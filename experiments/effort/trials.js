@@ -80,6 +80,23 @@ export function makeTimeline(
       randomize_question_order: false,
       button_label: "Continue",
       scale_width: 950,
+      data: {
+        type: "response",
+        scenario_label: stimulus.scenario_label,
+        vignette: stimulus.vignette,
+      },
+    });
+
+    trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: "Next scenario",
+      choices: "NO_KEYS",
+      trial_duration: function () {
+        return jsPsych.randomization.sampleWithoutReplacement(
+          [1500, 1750, 2000, 2300],
+          1
+        )[0];
+      },
     });
   });
 

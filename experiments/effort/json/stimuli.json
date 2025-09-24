@@ -1,74 +1,74 @@
 [
-    {
-      "name": "cooking",
-      "vignette": "Liana and Serina are both major foodies who love cooking. They discover a new pasta recipe they're both excited to try, so they go to Serina's house in the evening to cook it together. They plan to enjoy their dinner while watching an episode of a TV show in the living room.",
-      "action_0": "Liana and Serina watch the TV show in the living room, but they do not share the pasta. Liana eats the pasta while Serina eats a salad.",
-      "action_1": "They use a shared serving utensil to transfer pasta from the pot onto their individual plates. They carry their plates to the living room, and use their own forks to eat the pasta from their own plates. When they want seconds, they return to the pot and serve themselves again with the shared utensil.",
-      "action_2": "They each use their own forks to serve pasta from the pot onto their individual plates. They carry their plates to the living room. When they get seconds, they return to the pot and use the same forks they've been eating with to transfer more pasta.",
-      "action_3": "They bring the pot, and two forks, to the living room. They eat the pasta together directly from the pot."
-    },
-    {
-      "name": "wedding",
-      "vignette": "Maxwell and Ralph are seated together at a wedding. After the appetizer, there are two dishes that guests can choose from for the main course. One dish is a mushroom risotto and the other dish is a coconut curry salmon. Both dishes look really good, so they both have a hard time selecting what to order. Maxwell ends up getting the mushroom risotto, and Ralph ends up getting the coconut curry salmon.",
-      "action_0": "Maxwell eats his mushroom risotto, and Ralph eats his coconut curry salmon. They do not share their food.",
-      "action_1": "They request an extra set of utensils. With these, they divide each dish in half and place half onto each other's plate, then eat from their own plates using their original utensils.",
-      "action_2": "They use their own utensils from the appetizer, to split the dishes and place halves on each other's plates.",
-      "action_3": "They start eating their own dishes — Maxwell the risotto and Ralph the salmon — but occasionally take bites directly from each other's plates. Halfway through the meal, they switch plates and finish the rest."
-    },
-    {
-      "name": "drinks",
-      "vignette": "Noah and Ria are at a party, and haven't seen each other for a long time. They bump into each other, and start catching up. Noah is holding a drink that he tells Ria is a special cocktail that he invented, that he made himself at the bar. (It's tequila mixed with ice cream.) He tells Ria how good it is, suggesting she try it.",
-      "action_0": "Ria does not drink any of Noah's drink. She goes to the bar and asks for her own separate drink.",
-      "action_1": "Ria gets another cup, and pours some of Noah's drink into that cup. They both sip from their own cups.",
-      "action_2": "Ria takes Noah's cup and asks him what side of the cup he drank from, and sips from the opposite side.",
-      "action_3": "Ria takes Noah's cup and sips from the exact same spot where he drank."
-    },
-    {
-      "name": "basketball",
-      "vignette": "Carissa and Josh are attending a basketball game together. During halftime, they go to the hot-dog stand in the arena. When they get to the stand, they realize that it's cash only, and that between them they only have enough cash to get one hot dog.",
-      "action_0": "They leave the stand and go back to the game.",
-      "action_1": "They order a hot dog. One of them goes to find a knife from another food stand, while the other waits. When they get the knife, they cut the hot dog in half, and each eats from their own portion.",
-      "action_2": "They order a hot dog. They take bites from opposite ends of the hot dog until it is finished.",
-      "action_3": "They order a hot dog. They take bites from the same end of the hot dog until it is finished."
-    },
-    {
-      "name": "hike",
-      "vignette": "Tony and Alvin go on a day hike in New Hampshire. Alvin packs snacks and energy bars, while Tony brings peanut butter and jelly sandwiches. Halfway down the mountain, they take a snack break. Tony pulls out a sandwich, and offers to share some of the sandwich with Alvin. The sandwich is entirely squished because it was all the way at the bottom of Tony's pack for hours.",
-      "action_0": "Alvin politely refuses, and Tony eats the sandwich himself.",
-      "action_1": "Tony digs out his backpacking knife, and uses it to cut the sandwich in half. He hands one half to Alvin.",
-      "action_2": "Tony eats half of the sandwich first, and then hands the rest to Alvin to finish.",
-      "action_3": "Tony takes a few bites, and then hands the sandwich to Alvin. They continue passing it back and forth until it's gone."
-    },
-    {
-      "name": "brunch",
-      "vignette": "Allison and Dana meet at a brunch restaurant together on Saturday morning. They each select their own dishes and then discuss what else to order. They are unsure about whether to order a stack of the restaurant's famous pancakes to share. They tell the server that they will keep the menu, and decide later.",
-      "action_0": "They do not order the pancakes to share.",
-      "action_1": "They order the pancakes. They ask for an unused fork and knife, which they use to cut the stack of pancakes in half and place each half on their own plates.",
-      "action_2": "They order the pancakes. Using their own utensils, they cut off slices of the stack as they go, transferring the slices to their own plates.",
-      "action_3": "They order the pancakes. They use their own utensils to eat directly from the stack of pancakes."
-    },
-    {
-      "name": "conference",
-      "vignette": "Emily and Elizabeth are at a conference for work. After a long day of events, they get back to the conference hotel. It is late and all the nearby places are closed, so they decide to order chicken tenders delivered to the hotel. When they open the bag, they see that the restaurant has only included one container of honey mustard dipping sauce.",
-      "action_0": "Emily and Elizabeth do not share the sauce. Emily dips from the honey mustard sauce container, while Elizabeth uses the ketchup packets.",
-      "action_1": "They pour half of the sauce onto the box lid, so that each person has their own dipping portion.",
-      "action_2": "They both dip (and double dip) their own chicken tenders into the single sauce container.",
-      "action_3": "They take turns biting and dipping the same chicken tender, passing it back and forth."
-    },
-    {
-      "name": "birthday",
-      "vignette": "Lio and Mitchell are at a birthday party. After everyone sings happy birthday, the birthday person cuts the cake into slices and puts the slices on plates with forks. The slices are really large, and Lio and Mitchell both don't think they can finish a full slice.",
-      "action_0": "Lio takes one slice of cake, and Mitchell takes one slice of cake. They each throw out the portions of their slices that they don't finish.",
-      "action_1": "Lio and Mitchell decide to share one slice. They find a knife and use it to cut the slice in half. They get another plate, put the half on a second plate, and find another fork. They eat the halves separately with their own forks.",
-      "action_2": "Lio and Mitchell decide to share one slice. They find another fork, and then use their own forks to eat the slice together from the same plate.",
-      "action_3": "Lio and Mitchell decide to share one slice. They share the single fork provided, taking turns taking bites from the same plate."
-    },
-    {
-      "name": "social",
-      "vignette": "Sonia and Alan arrive late to an ice cream social hosted by their religious organization. Unfortunately, there is only one ice cream cone left. There are other kinds of desserts available, however, including many flavors of cookies.",
-      "action_0": "Neither of them take the ice cream cone. They instead go and eat cookies.",
-      "action_1": "They each take a spoon and use their spoons to eat the ice cream out of the cone. When they reach the cone itself, they break pieces off with their fingers.",
-      "action_2": "Sonia eats half of the ice cream cone and then passes the rest to Alan, who finishes the cone.",
-      "action_3": "They pass the cone back and forth, taking turns licking the ice cream and biting into the cone."
-    }
-  ]
+  {
+    "scenario_label": "cooking",
+    "vignette": "Liana and Serina are both major foodies who love cooking. They discover a new pasta recipe they're both excited to try, so they go to Serina's house in the evening to cook it together. They plan to enjoy their dinner while watching an episode of a TV show in the living room.",
+    "action_0": "Liana and Serina watch the TV show in the living room, but they do not share the pasta. Liana eats the pasta while Serina eats a salad.",
+    "action_1": "They use a shared serving utensil to transfer pasta from the pot onto their individual plates. They carry their plates to the living room, and use their own forks to eat the pasta from their own plates. When they want seconds, they return to the pot and serve themselves again with the shared utensil.",
+    "action_2": "They each use their own forks to serve pasta from the pot onto their individual plates. They carry their plates to the living room. When they get seconds, they return to the pot and use the same forks they've been eating with to transfer more pasta.",
+    "action_3": "They bring the pot, and two forks, to the living room. They eat the pasta together directly from the pot."
+  },
+  {
+    "scenario_label": "wedding",
+    "vignette": "Maxwell and Ralph are seated together at a wedding. After the appetizer, there are two dishes that guests can choose from for the main course. One dish is a mushroom risotto and the other dish is a coconut curry salmon. Both dishes look really good, so they both have a hard time selecting what to order. Maxwell ends up getting the mushroom risotto, and Ralph ends up getting the coconut curry salmon.",
+    "action_0": "Maxwell eats his mushroom risotto, and Ralph eats his coconut curry salmon. They do not share their food.",
+    "action_1": "They request an extra set of utensils. With these, they divide each dish in half and place half onto each other's plate, then eat from their own plates using their original utensils.",
+    "action_2": "They use their own utensils from the appetizer, to split the dishes and place halves on each other's plates.",
+    "action_3": "They start eating their own dishes — Maxwell the risotto and Ralph the salmon — but occasionally take bites directly from each other's plates. Halfway through the meal, they switch plates and finish the rest."
+  },
+  {
+    "scenario_label": "drinks",
+    "vignette": "Noah and Ria are at a party, and haven't seen each other for a long time. They bump into each other, and start catching up. Noah is holding a drink that he tells Ria is a special cocktail that he invented, that he made himself at the bar. (It's tequila mixed with ice cream.) He tells Ria how good it is, suggesting she try it.",
+    "action_0": "Ria does not drink any of Noah's drink. She goes to the bar and asks for her own separate drink.",
+    "action_1": "Ria gets another cup, and pours some of Noah's drink into that cup. They both sip from their own cups.",
+    "action_2": "Ria takes Noah's cup and asks him what side of the cup he drank from, and sips from the opposite side.",
+    "action_3": "Ria takes Noah's cup and sips from the exact same spot where he drank."
+  },
+  {
+    "scenario_label": "basketball",
+    "vignette": "Carissa and Josh are attending a basketball game together. During halftime, they go to the hot-dog stand in the arena. When they get to the stand, they realize that it's cash only, and that between them they only have enough cash to get one hot dog.",
+    "action_0": "They leave the stand and go back to the game.",
+    "action_1": "They order a hot dog. One of them goes to find a knife from another food stand, while the other waits. When they get the knife, they cut the hot dog in half, and each eats from their own portion.",
+    "action_2": "They order a hot dog. They take bites from opposite ends of the hot dog until it is finished.",
+    "action_3": "They order a hot dog. They take bites from the same end of the hot dog until it is finished."
+  },
+  {
+    "scenario_label": "hike",
+    "vignette": "Tony and Alvin go on a day hike in New Hampshire. Alvin packs snacks and energy bars, while Tony brings peanut butter and jelly sandwiches. Halfway down the mountain, they take a snack break. Tony pulls out a sandwich, and offers to share some of the sandwich with Alvin. The sandwich is entirely squished because it was all the way at the bottom of Tony's pack for hours.",
+    "action_0": "Alvin politely refuses, and Tony eats the sandwich himself.",
+    "action_1": "Tony digs out his backpacking knife, and uses it to cut the sandwich in half. He hands one half to Alvin.",
+    "action_2": "Tony eats half of the sandwich first, and then hands the rest to Alvin to finish.",
+    "action_3": "Tony takes a few bites, and then hands the sandwich to Alvin. They continue passing it back and forth until it's gone."
+  },
+  {
+    "scenario_label": "brunch",
+    "vignette": "Allison and Dana meet at a brunch restaurant together on Saturday morning. They each select their own dishes and then discuss what else to order. They are unsure about whether to order a stack of the restaurant's famous pancakes to share. They tell the server that they will keep the menu, and decide later.",
+    "action_0": "They do not order the pancakes to share.",
+    "action_1": "They order the pancakes. They ask for an unused fork and knife, which they use to cut the stack of pancakes in half and place each half on their own plates.",
+    "action_2": "They order the pancakes. Using their own utensils, they cut off slices of the stack as they go, transferring the slices to their own plates.",
+    "action_3": "They order the pancakes. They use their own utensils to eat directly from the stack of pancakes."
+  },
+  {
+    "scenario_label": "conference",
+    "vignette": "Emily and Elizabeth are at a conference for work. After a long day of events, they get back to the conference hotel. It is late and all the nearby places are closed, so they decide to order chicken tenders delivered to the hotel. When they open the bag, they see that the restaurant has only included one container of honey mustard dipping sauce.",
+    "action_0": "Emily and Elizabeth do not share the sauce. Emily dips from the honey mustard sauce container, while Elizabeth uses the ketchup packets.",
+    "action_1": "They pour half of the sauce onto the box lid, so that each person has their own dipping portion.",
+    "action_2": "They both dip (and double dip) their own chicken tenders into the single sauce container.",
+    "action_3": "They take turns biting and dipping the same chicken tender, passing it back and forth."
+  },
+  {
+    "scenario_label": "birthday",
+    "vignette": "Lio and Mitchell are at a birthday party. After everyone sings happy birthday, the birthday person cuts the cake into slices and puts the slices on plates with forks. The slices are really large, and Lio and Mitchell both don't think they can finish a full slice.",
+    "action_0": "Lio takes one slice of cake, and Mitchell takes one slice of cake. They each throw out the portions of their slices that they don't finish.",
+    "action_1": "Lio and Mitchell decide to share one slice. They find a knife and use it to cut the slice in half. They get another plate, put the half on a second plate, and find another fork. They eat the halves separately with their own forks.",
+    "action_2": "Lio and Mitchell decide to share one slice. They find another fork, and then use their own forks to eat the slice together from the same plate.",
+    "action_3": "Lio and Mitchell decide to share one slice. They share the single fork provided, taking turns taking bites from the same plate."
+  },
+  {
+    "scenario_label": "social",
+    "vignette": "Sonia and Alan arrive late to an ice cream social hosted by their religious organization. Unfortunately, there is only one ice cream cone left. There are other kinds of desserts available, however, including many flavors of cookies.",
+    "action_0": "Neither of them take the ice cream cone. They instead go and eat cookies.",
+    "action_1": "They each take a spoon and use their spoons to eat the ice cream out of the cone. When they reach the cone itself, they break pieces off with their fingers.",
+    "action_2": "Sonia eats half of the ice cream cone and then passes the rest to Alan, who finishes the cone.",
+    "action_3": "They pass the cone back and forth, taking turns licking the ice cream and biting into the cone."
+  }
+]
