@@ -20,7 +20,7 @@ export function makeTimeline(
                 <h2>Social interactions survey</h2>
                 <p>In this survey, you will read vignettes about two people sharing different kinds of food in different situations. For each scenario, you will read about four different actions the two people can take.</p>
                 <p>For each action, we will ask you to evaluate how much effort that action takes, in the context of the scenario. Please consider each option independently.</p>
-                <p>Please read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $2.50 if you successfully complete the survey. </p>
+                <p>Please read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $3 if you successfully complete the survey. </p>
                 <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
                 <p>Press next to begin the survey.</p>
             </div>
@@ -87,7 +87,7 @@ export function makeTimeline(
       },
     });
 
-    // Insert attention check immediately after the "hike" scenario
+    // Attention check for the "hike" scenario
     if (stimulus.scenario_label === "hike") {
       trials.push({
         type: jsPsychSurveyMultiChoice,
@@ -135,6 +135,55 @@ export function makeTimeline(
       });
     }
 
+
+    // Attention check for the "wedding" scenario
+    if (stimulus.scenario_label === "wedding") {
+        trials.push({
+          type: jsPsychSurveyMultiChoice,
+          preamble: `
+            <div>
+              <h3>Attention Check</h3>
+              <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
+              <p>Please answer the following questions about the previous scenario.</p>
+            </div>
+          `,
+          questions: [
+            {
+              prompt: "Where were the people in the scenario?",
+              name: "location",
+              options: [
+                "A wedding",
+                "A party",
+                "A birthday party",
+                "A religious organization",
+              ],
+              required: true,
+            },
+            {
+              prompt: "What food did the people in the scenario order?",
+              name: "food",
+              options: [
+                "Ralph ordered the mushroom risotto, and Maxwell ordered the coconut curry salmon",
+                "Maxwell ordered the mushroom risotto, and Ralph ordered the coconut curry salmon",
+              ],
+              required: true,
+            },
+          ],
+          button_label: "Continue",
+          on_finish: function (data) {
+            const responses = data.response || {};
+            const correctLocation = responses.location === "A wedding" ? 1 : 0;
+            const correctFood =
+              responses.food === "Maxwell ordered the mushroom risotto, and Ralph ordered the coconut curry salmon" ? 1 : 0;
+            const totalCorrect = correctLocation + correctFood;
+            data.trial_type = "attention_check";
+            data.attention_correct_count = totalCorrect;
+            data.attention_correct_location = correctLocation;
+            data.attention_correct_food = correctFood;
+          },
+        });
+      }
+
     trials.push({
       type: jsPsychHtmlKeyboardResponse,
       stimulus: "Next scenario",
@@ -162,7 +211,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "aqa8eVvU3qSu",
+    experiment_id: "pnRwHvJ3SpWg",
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };
@@ -170,7 +219,7 @@ export function makeTimeline(
   const thankYou = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `<p>Thanks for participating in the experiment!</p>
-                  <p><a href="https://app.prolific.com/submissions/complete?cc=C1E1PWV8">Click here to return to Prolific and complete the study</a>.</p>
+                  <p><a href="https://app.prolific.com/submissions/complete?cc=C1A889GX">Click here to return to Prolific and complete the study</a>.</p>
                   <p>It is now safe to close the window. Your pay will be delivered within a few days.</p>
                   `,
     choices: "NO_KEYS",
