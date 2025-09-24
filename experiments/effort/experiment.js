@@ -40,9 +40,12 @@ function initExperiment() {
     url: window.location.href,
   });
 
+  // Randomize the order of scenarios before building the timeline
+  const shuffledStimuli = jsPsych.randomization.shuffle(stimuli);
+
   let timeline = makeTimeline(
     jsPsych,
-    stimuli,
+    shuffledStimuli,
     consentHtml,
     exitSurveyHtml,
     subject_id

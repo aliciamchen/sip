@@ -16,7 +16,7 @@ export function makeTimeline(
     type: jsPsychInstructions,
     pages: [
       `
-            <div>
+            <div class="instructions-container">
                 <h2>Social interactions survey</h2>
                 <p>In this survey, you will read vignettes about two people sharing different kinds of food in different situations. For each scenario, you will read about four different actions the two people can take.</p>
                 <p>For each action, we will ask you to evaluate how much effort that action takes, in the context of the scenario. Please consider each option independently.</p>
@@ -43,7 +43,7 @@ export function makeTimeline(
                         <div class="vignette-text">
                             <p>${stimulus.vignette}</p>
                         </div>
-                        <p><em>Press any key to see the actions.</em></p>
+                        <p style="text-align: center;"><em>Press any key to see the actions.</em></p>
                     </div>
                 `,
       choices: "ALL_KEYS",
@@ -81,11 +81,59 @@ export function makeTimeline(
       button_label: "Continue",
       scale_width: 950,
       data: {
-        type: "response",
+        trial_type: "response",
         scenario_label: stimulus.scenario_label,
         vignette: stimulus.vignette,
       },
     });
+
+    // Insert attention check immediately after the "hike" scenario
+    if (stimulus.scenario_label === "hike") {
+      trials.push({
+        type: jsPsychSurveyMultiChoice,
+        preamble: `
+          <div>
+            <h3>Attention Check</h3>
+            <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
+            <p>Please answer the following questions about the previous scenario.</p>
+          </div>
+        `,
+        questions: [
+          {
+            prompt: "What were the names of the people in the scenario?",
+            name: "names",
+            options: [
+              "Alvin and Allen",
+              "Tony and Kevin",
+              "Tony and Alvin",
+              "Kevin and Alvin",
+            ],
+            required: true,
+          },
+          {
+            prompt: "What food did Alvin bring?",
+            name: "food",
+            options: [
+              "Snacks and energy bars",
+              "Peanut butter and jelly sandwiches",
+            ],
+            required: true,
+          },
+        ],
+        button_label: "Continue",
+        on_finish: function (data) {
+          const responses = data.response || {};
+          const correctNames = responses.names === "Tony and Alvin" ? 1 : 0;
+          const correctFood =
+            responses.food === "Snacks and energy bars" ? 1 : 0;
+          const totalCorrect = correctNames + correctFood;
+          data.trial_type = "attention_check";
+          data.attention_correct_count = totalCorrect;
+          data.attention_correct_names = correctNames;
+          data.attention_correct_food = correctFood;
+        },
+      });
+    }
 
     trials.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -105,7 +153,7 @@ export function makeTimeline(
     preamble: `
       <div>
         <h2>Exit Survey</h2>
-        <p>To collect your pay, please complete the following questions. Your answer to these questions will not affect your pay, so please answer honestly.</p>
+        <p>You have reached the end of the survey. To collect your pay, please complete the following questions. Your answer to these questions will not affect your pay, so please answer honestly.</p>
       </div>
     `,
     html: exitSurveyHtml,

@@ -1,5 +1,8 @@
+/* =========================
+   Base typography
+   ========================= */
 p {
-  width: 50%;
+  width: 60%;
   margin: auto;
   margin-bottom: 15px;
   text-align: left;
@@ -9,15 +12,31 @@ h3 {
   width: 80%;
   text-align: center;
   margin: auto;
+  margin-bottom: 15px;
 }
 
+/* Utility */
 .center {
   display: block;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Make action text narrower */
+.consent-container p {
+  width: 50% !important;
+}
+
+.instructions-container p {
+  width: 50% !important;
+}
+
+.vignette-text p {
+  width: 50% !important;
+}
+
+/* =========================
+   Vignette/action text
+   ========================= */
 .action-text {
   width: 60%;
   margin: auto;
@@ -25,7 +44,9 @@ h3 {
   margin-bottom: 10px;
 }
 
-/* Make Likert scales narrower */
+/* =========================
+   Likert survey sizing
+   ========================= */
 .jspsych-survey-likert-table {
   width: 50% !important;
   margin: auto !important;
@@ -47,4 +68,72 @@ h3 {
 .jspsych-survey-likert-option {
   width: auto !important;
   min-width: 40px !important;
+}
+
+/* =========================
+   Attention check (multi-choice)
+   ========================= */
+.jspsych-survey-multi-choice-preamble p {
+  width: 100% !important;
+}
+
+p.jspsych-survey-multi-choice-text.survey-multi-choice {
+  width: 100%;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  text-align: left;
+}
+
+.jspsych-survey-multi-choice-question {
+  width: 100% !important;
+  margin-bottom: 24px !important;
+}
+
+.jspsych-survey-multi-choice-option {
+  width: 100% !important;
+}
+
+/* =========================
+   Exit survey styles (migrated from inline)
+   ========================= */
+.survey-container {
+  width: 55%;
+  margin: auto;
+  text-align: left;
+}
+
+.question {
+  margin-bottom: 20px;
+}
+
+.question-label {
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.question-option {
+  margin-bottom: 5px;
+}
+
+.question-option input {
+  margin-right: 8px;
+}
+
+.question-option label {
+  cursor: pointer;
+}
+
+.question input[type="text"],
+.question textarea {
+  width: 100%;
+  max-width: 350px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.question textarea {
+  height: 80px;
+  resize: vertical;
 }
