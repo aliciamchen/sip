@@ -1,0 +1,50 @@
+p {
+  width: 50%;
+  margin: auto;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+h3 {
+  width: 80%;
+  text-align: center;
+  margin: auto;
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Make action text narrower */
+.action-text {
+  width: 60%;
+  margin: auto;
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+/* Make Likert scales narrower */
+.jspsych-survey-likert-table {
+  width: 50% !important;
+  margin: auto !important;
+}
+
+.jspsych-survey-likert-row {
+  width: 100% !important;
+}
+
+.jspsych-survey-likert-question {
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.jspsych-survey-likert-options {
+  width: 100% !important;
+}
+
+.jspsych-survey-likert-option {
+  width: auto !important;
+  min-width: 40px !important;
+}
