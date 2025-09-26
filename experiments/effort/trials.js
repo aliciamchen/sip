@@ -81,21 +81,21 @@ export function makeTimeline(
       button_label: "Continue",
       scale_width: 950,
       data: {
-        trial_type: "response",
+        response_type: "response",
         scenario_label: stimulus.scenario_label,
         vignette: stimulus.vignette,
       },
     });
 
-    // Attention check for the "hike" scenario
+    // Memory check for the "hike" scenario
     if (stimulus.scenario_label === "hike") {
       trials.push({
         type: jsPsychSurveyMultiChoice,
         preamble: `
           <div>
-            <h3>Attention Check</h3>
-            <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
-            <p>Please answer the following questions about the previous scenario.</p>
+            <h3>Memory Check</h3>
+            <p>This is a memory check to make sure you're not a bot and that we can incorporate your responses into our study. Your responses on the memory check will not affect your pay.</p>
+            <p>Please answer the following ques tions about the previous scenario.</p>
           </div>
         `,
         questions: [
@@ -127,10 +127,10 @@ export function makeTimeline(
           const correctFood =
             responses.food === "Snacks and energy bars" ? 1 : 0;
           const totalCorrect = correctNames + correctFood;
-          data.trial_type = "attention_check";
-          data.attention_correct_count = totalCorrect;
-          data.attention_correct_names = correctNames;
-          data.attention_correct_food = correctFood;
+          data.response_type = "memory_check";
+          data.memory_correct_count = totalCorrect;
+          data.memory_correct_names = correctNames;
+          data.memory_correct_food = correctFood;
         },
       });
     }
@@ -142,8 +142,8 @@ export function makeTimeline(
           type: jsPsychSurveyMultiChoice,
           preamble: `
             <div>
-              <h3>Attention Check</h3>
-              <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
+              <h3>Memory Check</h3>
+              <p>This is a memory check to make sure you're not a bot and that we can incorporate your responses into our study. Your responses on the memory check will not affect your pay.</p>
               <p>Please answer the following questions about the previous scenario.</p>
             </div>
           `,
@@ -163,7 +163,7 @@ export function makeTimeline(
               prompt: "What food did the people in the scenario order?",
               name: "food",
               options: [
-                "Ralph ordered the mushroom risotto, and Maxwell ordered the coconut curry salmon",
+                "Ralph ordered the mushroom risotto, and Maxwell ordered the coconut curry potatoes",
                 "Maxwell ordered the mushroom risotto, and Ralph ordered the coconut curry salmon",
               ],
               required: true,
@@ -176,10 +176,10 @@ export function makeTimeline(
             const correctFood =
               responses.food === "Maxwell ordered the mushroom risotto, and Ralph ordered the coconut curry salmon" ? 1 : 0;
             const totalCorrect = correctLocation + correctFood;
-            data.trial_type = "attention_check";
-            data.attention_correct_count = totalCorrect;
-            data.attention_correct_location = correctLocation;
-            data.attention_correct_food = correctFood;
+            data.response_type = "memory_check";
+            data.memory_correct_count = totalCorrect;
+            data.memory_correct_location = correctLocation;
+            data.memory_correct_food = correctFood;
           },
         });
       }
