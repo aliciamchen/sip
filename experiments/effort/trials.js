@@ -1,3 +1,13 @@
+const effort_labels = [
+  "No effort at all",
+  "Very little effort",
+  "Little effort",
+  "Moderate effort",
+  "Considerable effort",
+  "High effort",
+  "Extremely high effort",
+];
+
 export function makeTimeline(
   jsPsych,
   stimuli,
@@ -33,6 +43,50 @@ export function makeTimeline(
   const trials = [];
 
   stimuli.forEach((stimulus, stimulusIndex) => {
+    // add attention check after the 14th scenario
+    if (stimulusIndex === 14) {
+      const attentionCheckQuestions = [];
+      const attentionCheckPrompts = [
+        `Please select "No effort at all."`,
+        `Please select "Extremely high effort."`,
+        `Please select "Moderate effort."`,
+        `Please select "Little effort."`,
+      ];
+      for (let i = 0; i < 4; i++) {
+        attentionCheckQuestions.push({
+          prompt: `<div class="action-text">${attentionCheckPrompts[i]}</div>`,
+          name: `attention_check_${i}`,
+          labels: effort_labels,
+          required: true,
+        });
+      }
+
+      trials.push({
+        type: jsPsychSurveyLikert,
+        questions: attentionCheckQuestions,
+        preamble: `
+          <div>
+            <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
+            <p><strong>Please answer the following questions.</strong></p>
+          </div>
+        `,
+        randomize_question_order: false,
+        button_label: "Continue",
+        scale_width: 950,
+        data: {
+          response_type: "attention_check",
+        },
+        on_finish: function (data) {
+          const responses = data.response || {};
+          data.attention_passed =
+            responses.attention_check_0 == 0 &&
+            responses.attention_check_1 == 6 &&
+            responses.attention_check_2 == 3 &&
+            responses.attention_check_3 == 2;
+        },
+      });
+    }
+
     trials.push({
       type: jsPsychHtmlKeyboardResponse,
       stimulus: `
@@ -55,15 +109,7 @@ export function makeTimeline(
       surveyQuestions.push({
         prompt: `<div class="action-text">${stimulus[`action_${i}`]}</div>`,
         name: `action_${i}`,
-        labels: [
-          "No effort at all",
-          "Very little effort",
-          "Little effort",
-          "Moderate effort",
-          "Considerable effort",
-          "High effort",
-          "Extremely high effort",
-        ],
+        labels: effort_labels,
         required: true,
       });
     }
@@ -82,6 +128,7 @@ export function makeTimeline(
       scale_width: 950,
       data: {
         response_type: "response",
+        stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         vignette: stimulus.vignette,
       },
@@ -95,7 +142,7 @@ export function makeTimeline(
           <div>
             <h3>Memory Check</h3>
             <p>This is a memory check to make sure you're not a bot and that we can incorporate your responses into our study. Your responses on the memory check will not affect your pay.</p>
-            <p>Please answer the following ques tions about the previous scenario.</p>
+            <p>Please answer the following questions about the previous scenario.</p>
           </div>
         `,
         questions: [
@@ -135,54 +182,41 @@ export function makeTimeline(
       });
     }
 
-
-    // Attention check for the "wedding" scenario
+    // Memory check for the "wedding" scenario
     if (stimulus.scenario_label === "wedding") {
-        trials.push({
-          type: jsPsychSurveyMultiChoice,
-          preamble: `
+      trials.push({
+        type: jsPsychSurveyMultiChoice,
+        preamble: `
             <div>
               <h3>Memory Check</h3>
               <p>This is a memory check to make sure you're not a bot and that we can incorporate your responses into our study. Your responses on the memory check will not affect your pay.</p>
-              <p>Please answer the following questions about the previous scenario.</p>
+              <p>Please answer the following question about the previous scenario.</p>
             </div>
           `,
-          questions: [
-            {
-              prompt: "Where were the people in the scenario?",
-              name: "location",
-              options: [
-                "A wedding",
-                "A darty",
-                "A birthday party",
-                "A religious organization",
-              ],
-              required: true,
-            },
-            {
-              prompt: "What food did the people in the scenario order?",
-              name: "food",
-              options: [
-                "Ralph ordered the mushroom risotto, and Maxwell ordered the coconut curry potatoes",
-                "Maxwell ordered the mushroom risotto, and Ralph ordered the coconut curry salmon",
-              ],
-              required: true,
-            },
-          ],
-          button_label: "Continue",
-          on_finish: function (data) {
-            const responses = data.response || {};
-            const correctLocation = responses.location === "A wedding" ? 1 : 0;
-            const correctFood =
-              responses.food === "Maxwell ordered the mushroom risotto, and Ralph ordered the coconut curry salmon" ? 1 : 0;
-            const totalCorrect = correctLocation + correctFood;
-            data.response_type = "memory_check";
-            data.memory_correct_count = totalCorrect;
-            data.memory_correct_location = correctLocation;
-            data.memory_correct_food = correctFood;
+        questions: [
+          {
+            prompt: "Where were the people in the scenario?",
+            name: "location",
+            options: [
+              "A wedding",
+              "A darty",
+              "A birthday party",
+              "A religious organization",
+            ],
+            required: true,
           },
-        });
-      }
+        ],
+        button_label: "Continue",
+        on_finish: function (data) {
+          const responses = data.response || {};
+          const correctLocation = responses.location === "A wedding" ? 1 : 0;
+          const totalCorrect = correctLocation;
+          data.response_type = "memory_check";
+          data.memory_correct_count = totalCorrect;
+          data.memory_correct_location = correctLocation;
+        },
+      });
+    }
 
     trials.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -206,6 +240,19 @@ export function makeTimeline(
       </div>
     `,
     html: exitSurveyHtml,
+    on_finish: function (data) {
+      data.attention_passed = jsPsych.data
+        .get()
+        .filter({ response_type: "attention_check" })
+        .select("attention_passed")
+        .values[0];
+      data.memory_correct_count = jsPsych.data
+        .get()
+        .filter({ response_type: "memory_check" })
+        .select("memory_correct_count")
+        .sum();
+      data.response_type = "exit_survey";
+    },
   };
 
   const saveData = {
