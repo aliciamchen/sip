@@ -153,7 +153,7 @@ export function makeTimeline(
               name: "location",
               options: [
                 "A wedding",
-                "A party",
+                "A darty",
                 "A birthday party",
                 "A religious organization",
               ],
