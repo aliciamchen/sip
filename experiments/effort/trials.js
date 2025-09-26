@@ -29,7 +29,7 @@ export function makeTimeline(
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
                 <p>In this survey, you will read vignettes about two people sharing different kinds of food in different situations. For each scenario, you will read about four different actions the two people can take.</p>
-                <p>For each action, we will ask you to evaluate how much effort that action takes, in the context of the scenario. Please consider each option independently.</p>
+                <p>For each action, we will ask you to evaluate how much effort that action requires, in the context of the scenario. Please consider each option independently.</p>
                 <p>Please read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
                 <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
                 <p>Press next to begin the survey.</p>
