@@ -1,0 +1,472 @@
+---
+title: "effort-risk"
+output: html_document
+---
+
+```{r}
+library(here)
+library(tidyverse)
+library(tidyboot)
+library(lme4)
+
+theme_set(theme_classic(base_size = 15))
+```
+
+## effort
+
+```{r}
+d.effort <- read_csv(here("data/effort/main_trials.csv")) %>% 
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "likert_rating"
+  ) %>%
+  mutate(likert_rating = likert_rating + 1, action = as.integer(action))  # ensure action is numeric (0, 1, 2, 3)
+```
+
+```{r}
+d.effort.summary <- d.effort %>%
+  group_by(scenario_label, action) %>%
+  tidyboot_mean(likert_rating, na.rm = T)
+```
+```{r}
+write_csv(d.effort.summary, here("data/effort/effort_summary.csv"))
+```
+
+
+## plot by scenario
+
+```{r fig.width=8, fig.height=8}
+ggplot(d.effort.summary, aes(x = action, y = mean, color = scenario_label)) +
+  geom_line() +
+  geom_point() +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = scenario_label), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
+  labs(
+    title = "Effort ratings by scenario",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How effortful?",
+    color = "Scenario",
+    fill = "Scenario"
+  ) + 
+  facet_wrap(~ scenario_label) +
+  theme(legend.position = "none")
+```
+
+## risk 
+
+```{r}
+d.risk <- read_csv(here("data/risk/main_trials.csv")) %>%
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "likert_rating"
+  ) %>%
+  mutate(likert_rating = likert_rating + 1, action = as.integer(action))  
+```
+```{r}
+d.risk.summary <- d.risk %>%
+  group_by(scenario_label, action) %>%
+  tidyboot_mean(likert_rating)
+```
+```{r}
+write_csv(d.risk.summary, here("data/risk/risk_summary.csv"))
+```
+
+```{r fig.width=8, fig.height=8}
+ggplot(d.risk.summary, aes(x = action, y = mean, color = scenario_label)) +
+  geom_line() +
+  geom_point() +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = scenario_label), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
+  labs(
+    title = "Risk ratings by scenario",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How risky?",
+    color = "Scenario",
+    fill = "Scenario"
+  ) + 
+  facet_wrap(~ scenario_label) +
+  theme(legend.position = "none")
+```
+
+
+
+## 
+
+For each scenario and action, plot effort vs. risk, shape (or color) is scenario? 
+
+```{r}
+d.effort.risk <- d.effort.summary %>%
+  rename(effort_mean = mean, effort_ci_lower = ci_lower, effort_ci_upper = ci_upper) %>%
+  inner_join(
+    d.risk.summary %>%
+      rename(risk_mean = mean, risk_ci_lower = ci_lower, risk_ci_upper = ci_upper),
+    by = c("scenario_label", "action")
+  )
+```
+
+```{r fig.width=10, fig.height=8}
+ggplot(d.effort.risk, aes(x = risk_mean, y = effort_mean, color = scenario_label, shape = as.factor(action), group = scenario_label)) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = risk_ci_lower, xmax = risk_ci_upper), height = 0.1) +
+  geom_errorbar(aes(ymin = effort_ci_lower, ymax = effort_ci_upper), width = 0.1) +
+  geom_line() +
+  labs(
+    x = "Risk rating",
+    y = "Effort rating",
+    color = "Scenario",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  facet_wrap(~ scenario_label) 
+```
+
+```{r fig.width=7, fig.height=7}
+ggplot(d.effort.risk, aes(x = effort_mean, y = risk_mean, color = scenario_label, shape = as.factor(action), group = scenario_label)) +
+  geom_point(size = 4) +
+  geom_errorbar(aes(ymin = risk_ci_lower, ymax = risk_ci_upper), width = 0.1) +
+  geom_errorbarh(aes(xmin = effort_ci_lower, xmax = effort_ci_upper), height = 0.1) +
+  labs(
+    x = "Mean effort rating",
+    y = "Mean risk rating",
+    color = "Scenario",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  theme(legend.position = "none")
+```
+
+## Discomfort
+
+```{r}
+d.discomfort <- read_csv(here("data/discomfort/main_trials.csv")) %>%
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "likert_rating"
+  ) %>%
+  mutate(likert_rating = likert_rating + 1, action = as.integer(action), 
+         closeness_condition = factor(closeness_condition, levels = c("not_close", "somewhat_close", "close", "extremely_close")), 
+         closeness = case_when(
+           closeness_condition == "not_close" ~ 0,
+           closeness_condition == "somewhat_close" ~ 1,
+           closeness_condition == "close" ~ 2,
+           closeness_condition == "extremely_close" ~ 3
+         )) %>%
+  relocate(closeness, .after = closeness_condition)
+```
+```{r}
+d.discomfort.summary.scenario <- d.discomfort %>%
+  group_by(scenario_label, closeness_condition, closeness, action) %>%
+  tidyboot_mean(likert_rating)
+```
+
+```{r}
+write_csv(d.discomfort.summary.scenario, here("data/discomfort/discomfort_summary.csv"))
+```
+
+
+Plot
+
+```{r fig.width=8, fig.height=8}
+ggplot(d.discomfort.summary.scenario, aes(x = action, y = mean, color = closeness_condition)) +
+  geom_line() +
+  geom_point() +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
+  labs(
+    title = "Discomfort ratings by scenario and closeness condition",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How uncomfortable?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  facet_wrap(~ scenario_label) +
+  theme(legend.position = "top")
+```
+
+
+```{r}
+d.discomfort.summary <- d.discomfort %>%
+  group_by(closeness_condition, action) %>%
+  tidyboot_mean(likert_rating)
+```
+
+```{r}
+ggplot(d.discomfort.summary, aes(x = action, y = mean, color = closeness_condition)) +
+  geom_jitter(data = d.discomfort, aes(x = action, y = likert_rating), size = 2.5, shape = 16, alpha = 0.21) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
+  labs(
+    title = "Discomfort ratings by closeness condition",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How uncomfortable?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  theme(legend.position = "top")
+```
+
+On x axis, plot empirical risk (mean risk rating for that action in that scenario)
+
+```{r}
+d.discomfort.risk <- d.discomfort.summary.scenario %>%
+  rename(discomfort_mean = empirical_stat, discomfort_ci_lower = ci_lower, discomfort_ci_upper = ci_upper) %>%
+  inner_join(
+    d.risk.summary %>%
+      rename(risk_mean = empirical_stat, risk_ci_lower = ci_lower, risk_ci_upper = ci_upper),
+    by = c("scenario_label", "action")
+  )
+```
+
+Plot risk on x axis, discomfort on y axis
+
+```{r}
+ggplot(d.discomfort.risk, aes(x = risk_mean, y = discomfort_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = risk_ci_lower, xmax = risk_ci_upper), height = 0.1) +
+  geom_errorbar(aes(ymin = discomfort_ci_lower, ymax = discomfort_ci_upper), width = 0.1) +
+  geom_line() +
+  labs(
+    x = "Risk rating",
+    y = "Discomfort rating",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  facet_wrap(~ scenario_label)
+```
+
+```{r}
+ggplot(d.discomfort.risk, aes(x = risk_mean, y = discomfort_mean, color = closeness_condition, group = as.factor(closeness_condition))) +
+  geom_point(aes(shape = factor(action)), size = 4, alpha = 0.3) +
+  geom_errorbar(aes(ymin = discomfort_ci_lower, ymax = discomfort_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_errorbarh(aes(xmin = risk_ci_lower, xmax = risk_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray") +
+  labs(
+    x = "Risk rating",
+    y = "Discomfort rating",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85)
+```
+
+Plot effort rating on x axis, discomfort rating on y axis
+
+```{r}
+d.discomfort.effort <- d.discomfort.summary.scenario %>%
+  rename(discomfort_mean = empirical_stat, discomfort_ci_lower = ci_lower, discomfort_ci_upper = ci_upper) %>%
+  inner_join(
+    d.effort.summary %>%
+      rename(effort_mean = empirical_stat, effort_ci_lower = ci_lower, effort_ci_upper = ci_upper),
+    by = c("scenario_label", "action")
+  )
+```
+
+```{r}
+ggplot(d.discomfort.effort, aes(x = effort_mean, y = discomfort_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
+  geom_point(size = 4) +
+  geom_errorbarh(aes(xmin = effort_ci_lower, xmax = effort_ci_upper), height = 0.1) +
+  geom_errorbar(aes(ymin = discomfort_ci_lower, ymax = discomfort_ci_upper), width = 0.1) +
+  geom_line() +
+  labs(
+    x = "Effort rating",
+    y = "Discomfort rating",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  facet_wrap(~ scenario_label)
+```
+```{r}
+ggplot(d.discomfort.effort, aes(x = effort_mean, y = discomfort_mean, color = closeness_condition, group = as.factor(closeness_condition))) +
+  geom_point(aes(shape = factor(action)), size = 4, alpha = 0.3) +
+  geom_errorbar(aes(ymin = discomfort_ci_lower, ymax = discomfort_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_errorbarh(aes(xmin = effort_ci_lower, xmax = effort_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray") +
+  labs(
+    x = "Effort rating",
+    y = "Discomfort rating",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85)
+```
+
+one reason this might look like this is because effort also correlates with discomfort in the data.
+
+So we want to see, how much does effort explain discomfort ratings, above and beyond risk?
+
+```{r}
+d.discomfort.effort.risk <- d.discomfort.effort %>% 
+  inner_join(
+    d.risk.summary %>%
+      rename(risk_mean = empirical_stat, risk_ci_lower = ci_lower, risk_ci_upper = ci_upper),
+    by = c("scenario_label", "action")
+  ) %>% mutate(
+    closeness = case_when(
+      closeness_condition == "not_close" ~ 0,
+      closeness_condition == "somewhat_close" ~ 1,
+      closeness_condition == "close" ~ 2,
+      closeness_condition == "extremely_close" ~ 3
+    )
+  )
+```
+
+Null hypothesis: discomfort is based on risk of saliva sharing action
+
+```{r}
+m0 <- lm(discomfort_mean ~ risk_mean, data = d.discomfort.effort.risk)
+summary(m0)
+```
+Alternative hypothesis: discomfort is based on risk of saliva sharing action modulated by closeness of relationship
+
+```{r}
+m1 <- lm(discomfort_mean ~ risk_mean * closeness, data = d.discomfort.effort.risk)
+summary(m1)
+```
+which one is better? 
+
+```{r}
+anova(m0, m1)
+```
+does adding effort help? nope... 
+
+```{r}
+m2 <- lm(discomfort_mean ~ risk_mean * closeness * effort_mean, data = d.discomfort.effort.risk)
+summary(m2)
+anova(m1, m2)
+```
+
+
+## PLANNING STUDY!!
+
+```{r}
+d.planning <- read_csv(here("data/planning-1/main_trials.csv")) %>%
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "likert_rating"
+  ) %>%
+  mutate(likert_rating = likert_rating + 1, action = as.integer(action), 
+         closeness_condition = factor(closeness_condition, levels = c("not_close", "somewhat_close", "close", "extremely_close")), 
+         closeness = case_when(
+           closeness_condition == "not_close" ~ 0,
+           closeness_condition == "somewhat_close" ~ 1,
+           closeness_condition == "close" ~ 2,
+           closeness_condition == "extremely_close" ~ 3
+         )) %>% 
+  relocate(closeness, .after = closeness_condition) %>%
+  group_by(subject_id, scenario_label) %>%
+  mutate(p_action = likert_rating / sum(likert_rating)) %>%
+  ungroup()
+
+write_csv(d.planning, here("data/planning-1/main_trials_tidy.csv"))
+```
+
+```{r}
+d.planning.summary.scenario <- d.planning %>%
+  group_by(scenario_label, closeness_condition, action) %>%
+  tidyboot_mean(likert_rating)
+```
+
+```{r}
+d.planning.summary <- d.planning %>%
+  group_by(closeness_condition, action) %>%
+  tidyboot_mean(likert_rating)
+```
+
+```{r}
+ggplot(d.planning.summary, aes(x = action, y = mean, color = closeness_condition)) +
+  geom_jitter(data = d.planning, aes(x = action, y = likert_rating), size = 2.5, shape = 16, alpha = 0.21) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
+  labs(
+    title = "How likely to choose actions?",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How likely?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  theme(legend.position = "top")
+```
+Put empirical measured risk on x axis
+
+```{r}
+d.planning.risk <- d.planning.summary.scenario %>%
+  rename(planning_mean = empirical_stat, planning_ci_lower = ci_lower, planning_ci_upper = ci_upper) %>%
+  inner_join(
+    d.risk.summary %>%
+      rename(risk_mean = empirical_stat, risk_ci_lower = ci_lower, risk_ci_upper = ci_upper),
+    by = c("scenario_label", "action")
+  )
+```
+
+```{r}
+ggplot(d.planning.risk, aes(x = risk_mean, y = planning_mean, color = closeness_condition, group = closeness_condition)) +
+  geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = risk_ci_lower, xmax = risk_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_errorbar(aes(ymin = planning_ci_lower, ymax = planning_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray") +
+  labs(
+    x = "Risk rating",
+    y = "How likely to choose action?",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) 
+```
+
+Put data into a form that is good for model fitting
+
+```{r}
+
+```
+
+
+
