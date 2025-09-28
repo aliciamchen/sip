@@ -1,0 +1,12 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+64a338ca-faca-553e-974f-3777e46dc0b7,female,29,yes,,True,2
+a8d798dc-b3f3-5fcd-952a-11018a266734,female,46,yes,no,True,1
+c8c31edd-db4d-5a8b-8451-3c8183bed401,female,36,yes,none,True,2
+bb1c6404-d3e0-5db8-b385-1e7026b4ba50,female,53,yes,,True,2
+1dd602cb-29d6-503f-b2a7-970fc1cdb058,female,29,yes,,True,3
+1876b167-5d47-5440-869f-5b650b3a3f3f,female,47,yes,,True,2
+530915a5-9159-5068-b0b8-971b07c71ae1,male,35,yes,,True,2
+c7b5adba-7d80-5528-a1bd-cad16542d008,female,38,yes,,True,1
+d376568d-f03b-5dda-9a50-f5b8de06bea7,male,39,yes,Best wishes with the research.,True,3
+86d110cb-8790-5336-8b67-b1633dd5c152,female,41,yes,,True,0
+7f1e8a90-1e9f-5376-9741-373d33453c56,female,63,yes,none,True,2
