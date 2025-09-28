@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 """
-Convert JSON files from effort experiment to CSV format.
+Convert JSON files from experiments to CSV format.
 
 This script processes JSON files containing experiment data and creates two CSV files:
-1. main_trials.csv - Contains survey-likert trial data with columns: subject_id, scenario_label, action_0, action_1, action_2, action_3, understood
-2. exit_survey.csv - Contains survey-html-form trial data with columns: subject_id, gender, age, understood, comments
+1. main_trials.csv - Contains survey-likert trial data
+2. exit_survey.csv - Contains survey-html-form trial data
+
+Usage:
+    python json_to_csv.py <experiment_name>
+    
+Available experiments:
+    - effort: Basic experiment with action ratings
+    - discomfort: Experiment with closeness conditions and attention/memory checks
+    - planning-1: Experiment with closeness conditions and attention/memory checks  
+    - risk: Experiment with attention/memory checks but no closeness conditions
 """
 
 import json
@@ -12,6 +21,7 @@ import csv
 import os
 import uuid
 import sys
+import argparse
 from pathlib import Path
 
 # Add project root to Python path
@@ -19,13 +29,46 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 from utils import get_project_root
 
-def process_json_files(input_dir, output_dir):
+# Experiment configurations
+EXPERIMENT_CONFIGS = {
+    'effort': {
+        'description': 'Basic experiment with action ratings',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments'],
+        'has_closeness': False,
+        'has_attention_memory': False
+    },
+    'discomfort': {
+        'description': 'Experiment with closeness conditions and attention/memory checks',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'closeness_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': True,
+        'has_attention_memory': True
+    },
+    'planning-1': {
+        'description': 'Experiment with closeness conditions and attention/memory checks',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'closeness_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': True,
+        'has_attention_memory': True
+    },
+    'risk': {
+        'description': 'Experiment with attention/memory checks but no closeness conditions',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': False,
+        'has_attention_memory': True
+    }
+}
+
+def process_json_files(input_dir, output_dir, config):
     """
     Process all JSON files in the input directory and create CSV files.
     
     Args:
         input_dir (str): Path to directory containing JSON files
         output_dir (str): Path to directory where CSV files will be saved
+        config (dict): Experiment configuration
     """
     input_path = Path(input_dir)
     output_path = Path(output_dir)
@@ -83,14 +126,21 @@ def process_json_files(input_dir, output_dir):
                     action_2 = response.get('action_2', '')
                     action_3 = response.get('action_3', '')
                     
-                    main_trials_data.append({
+                    # Build trial data dictionary
+                    trial_data = {
                         'subject_id': subject_id,
                         'scenario_label': scenario_label,
                         'action_0': action_0,
                         'action_1': action_1,
                         'action_2': action_2,
                         'action_3': action_3,
-                    })
+                    }
+                    
+                    # Add closeness condition if this experiment has it
+                    if config['has_closeness']:
+                        trial_data['closeness_condition'] = trial.get('closeness_condition', '')
+                    
+                    main_trials_data.append(trial_data)
                 
                 elif trial_type == 'exit_survey':
                     # Extract exit survey data
@@ -101,13 +151,21 @@ def process_json_files(input_dir, output_dir):
                     understood = response.get('understood', '')
                     comments = response.get('comments', '')
                     
-                    exit_survey_data.append({
+                    # Build survey data dictionary
+                    survey_data = {
                         'subject_id': subject_id,
                         'gender': gender,
                         'age': age,
                         'understood': understood,
                         'comments': comments
-                    })
+                    }
+                    
+                    # Add attention and memory data if this experiment has it
+                    if config['has_attention_memory']:
+                        survey_data['attention_passed'] = trial.get('attention_passed', '')
+                        survey_data['memory_correct_count'] = trial.get('memory_correct_count', '')
+                    
+                    exit_survey_data.append(survey_data)
         
         except Exception as e:
             print(f"Error processing {json_file.name}: {e}")
@@ -117,8 +175,7 @@ def process_json_files(input_dir, output_dir):
     main_trials_file = output_path / 'main_trials.csv'
     with open(main_trials_file, 'w', newline='', encoding='utf-8') as f:
         if main_trials_data:
-            fieldnames = ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3']
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=config['main_trial_fields'])
             writer.writeheader()
             writer.writerows(main_trials_data)
             print(f"Created {main_trials_file} with {len(main_trials_data)} rows")
@@ -129,8 +186,7 @@ def process_json_files(input_dir, output_dir):
     exit_survey_file = output_path / 'exit_survey.csv'
     with open(exit_survey_file, 'w', newline='', encoding='utf-8') as f:
         if exit_survey_data:
-            fieldnames = ['subject_id', 'gender', 'age', 'understood', 'comments']
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=config['exit_survey_fields'])
             writer.writeheader()
             writer.writerows(exit_survey_data)
             print(f"Created {exit_survey_file} with {len(exit_survey_data)} rows")
@@ -139,19 +195,49 @@ def process_json_files(input_dir, output_dir):
 
 def main():
     """Main function to run the conversion."""
+    parser = argparse.ArgumentParser(
+        description='Convert JSON files from experiments to CSV format',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Available experiments:
+  effort      Basic experiment with action ratings
+  discomfort  Experiment with closeness conditions and attention/memory checks
+  planning-1  Experiment with closeness conditions and attention/memory checks
+  risk        Experiment with attention/memory checks but no closeness conditions
+
+Examples:
+  python json_to_csv.py effort
+  python json_to_csv.py discomfort
+  python json_to_csv.py planning-1
+  python json_to_csv.py risk
+        """
+    )
+    
+    parser.add_argument(
+        'experiment',
+        choices=list(EXPERIMENT_CONFIGS.keys()),
+        help='Name of the experiment to process'
+    )
+    
+    args = parser.parse_args()
+    
+    # Get experiment configuration
+    config = EXPERIMENT_CONFIGS[args.experiment]
+    
     # Get project root directory
     project_root = get_project_root()
     
     # Define paths relative to project root
-    input_dir = project_root / "data/effort/raw_data"
-    output_dir = project_root / "data/effort"
+    input_dir = project_root / f"data/{args.experiment}/raw_data"
+    output_dir = project_root / f"data/{args.experiment}"
     
-    print("Converting JSON files to CSV...")
+    print(f"Converting JSON files to CSV for {args.experiment} experiment...")
+    print(f"Description: {config['description']}")
     print(f"Input directory: {input_dir}")
     print(f"Output directory: {output_dir}")
     
     # Process the files
-    process_json_files(input_dir, output_dir)
+    process_json_files(input_dir, output_dir, config)
     
     print("Conversion complete!")
 
