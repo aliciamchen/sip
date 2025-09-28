@@ -1,0 +1,34 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+17004f82-e7b4-569e-b113-b9e3468713cc,female,71,yes,,True,3
+6af607da-3fef-5afe-a091-4fc34664afff,female,35,yes,It was a bit hard to remember the names and what item belonged to each one during the attention checks. I was paying attention but not sure if I got all of those correct.,True,2
+1cff15f6-4740-5162-8963-dc100eee68e0,male,43,yes,,True,0
+fa37cbcc-b309-5b73-a2c0-bcd47509a6fd,female,55,yes,no comments,True,3
+75aacc5c-5603-59f0-8c5d-97cf3c8e0667,female,53,yes,,True,3
+5ee5f348-fcff-56bc-ab2c-00167b78d1c4,male,25,yes,,True,2
+15c9add8-0b66-5206-9487-5633c33cad7d,male,48,yes,None,True,2
+ff8ce42e-cd46-57ed-8295-da31af4620fc,female,60,yes,,True,2
+8c99a66b-f030-55ef-877b-e2aac3fc2292,male,53,yes,,True,3
+b8963747-56a2-599f-b198-bce71b7cc68d,male,63,yes,,True,3
+7f22077a-d96b-5896-b93c-7360396900e8,nonconforming,28,yes,,True,3
+3d07b49f-0f11-539e-93b5-28bfe67ea985,male,29,yes,The memory check questions were difficult even though I paid attention to each question,True,1
+79596f7a-4680-5d49-aad2-817f0633a4ff,male,44,yes,It is clear and enjoyable,True,3
+1623eafd-8217-5ec9-8f58-aaf77ef496a5,female,56,yes,,True,1
+7ab0263b-38dd-52ee-9d5b-ae75ad4cc406,nonconforming,29,yes,"I might have gotten the first attention check wrong! I honestly couldn't remember if it was a wedding or birthday party. But I promise I paid attention, I just felt a tad bit grossed out thinking about it all haha. Thank you!",True,2
+9db3c85c-a81f-5976-9b98-1af9e28e7fca,female,51,yes,,True,2
+ff69d70e-db56-59a2-a584-2129b470b9b9,female,29,yes,,True,2
+726fa2b3-07bc-5ad8-9ea8-96ae3b146331,male,28,yes,,True,3
+631fc6e4-d61e-542e-9970-06521d22ec24,female,38,yes,,True,2
+c40a344d-34d9-5202-8daf-9afe4f769102,female,22,yes,,True,3
+67679b8f-9c69-583c-bb8b-778e14925c52,female,47,yes,n/a,True,2
+dd154c58-1695-5a29-8119-c34a253e7895,nonconforming,42,yes,Thanks!,True,2
+62902140-5b40-563d-90e5-464f059aaf5d,male,80,yes,no,True,3
+ea5fdfee-b6e3-55a2-88d5-6b810d3625b1,female,45,yes,"I admit by the latter series of scenarios I started skimming through the details, as the ratings boiled down to the degree of sharing the same food and the food items. And the names also became a blur with one scenario after the other. 
+
+As for the amount of saliva exchanged, it's purely a guess where I at times tried to visualize the ""germs"" as in the scientific experiments with dye of the exchange. Even with that method, my ratings for the latter two of the scenario actions (extent of sharing) were not consistent (because it's not scientific). ",True,1
+a44d160a-ff0e-5b88-8d2c-ad39601fac2b,male,44,yes,,True,1
+9c08b29c-fc02-5e56-acff-ed2c01a2b70e,female,44,yes,Some of the memory questions were pretty difficult for me.,True,1
+e80c7a24-9a9e-5826-a9ce-d0e6a7042cfd,female,73,yes,N/A,False,3
+6597bc28-3dc0-585d-a8eb-c283e5227cbd,female,56,yes,,True,2
+10dddd8d-f41a-5ef6-ac8b-f55b3cc537f6,male,42,yes,No issues. Hope it is of some help!,True,3
+d1019e77-cfb0-5525-8c6f-61371c4883fd,female,32,yes,,True,0
+77d93ad6-ac84-5a43-a6e2-e49fd0beb254,male,33,yes,,True,2

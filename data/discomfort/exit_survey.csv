@@ -1,0 +1,31 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+c838fb8b-9e03-545d-8f5e-8a8e58450767,male,47,yes,I have no other comments or suggestions for now,True,3
+8488d1e0-f549-50fb-b532-237e8f6611b5,male,32,yes,I had a great time completing the survey,True,3
+f2e8a54d-9839-5bfd-8afe-e4e25056b0e8,female,50,yes,,True,2
+789fcd36-f99a-5738-bf43-a770fdfdf134,male,32,yes,no,True,2
+fbae9a90-912a-505a-94e7-4d26bddb6e42,female,41,yes,,True,1
+6e20e21e-b7bf-5bad-9aa3-fc8d9d83a6f2,male,41,yes,,True,3
+78231e96-9b51-54b1-8bb8-1e415123201a,female,47,yes,no comment,True,2
+f03bb561-fbcd-5321-923d-92168c237cc9,female,38,yes,,True,2
+508b66e9-1045-5aa4-ba39-37b61827ef57,male,34,yes,N/A,True,3
+a5afb998-b149-586b-b573-3f86416c05a4,female,29,yes,,True,3
+f086531d-930a-5083-918f-8c4238cc673b,female,57,yes,,True,2
+43b0a1a5-8b7a-59df-b163-09934ab482da,male,30,yes,,True,1
+5e1b6d7b-a3e9-5ed0-9f91-33dc7f7fd3c1,female,34,yes,,True,3
+58749198-38a2-51ed-b755-12328c335a04,female,50,yes,"No further feedback, thanks",True,2
+84415d87-aafe-50ed-8b52-f80e2c2252b7,male,31,yes,no comment,True,2
+a417c346-0508-522a-aa9e-485ae59b0b39,female,58,yes,Thank you for the opportunity to participate.,True,2
+4fd3f7e8-bcb2-5f23-b344-d5b8fb01337b,female,24,yes,"No, the study was fair and interesting. Thanks!",True,1
+0246926b-8bfa-5f5b-9495-46906e9af1b6,female,31,yes,,True,3
+46a70c8b-0a67-5a40-a3fe-30fe38a2fd00,male,39,yes,,True,2
+5aad7d3d-908b-55d2-a702-a7e5b469f73f,female,57,yes,,True,1
+79e715ee-5ad6-51b1-b70a-6334d11279ac,female,49,yes,None,True,3
+01c82d0f-81a1-52c6-81e4-13dbcdd0e277,male,60,yes,No comment,True,1
+890e6edc-36ba-5c90-aa4f-38a8ec6555bd,male,51,yes,I think about this so much. Am very interested in this study. ,True,2
+6a980783-0e60-5703-9c4f-f9ff47d88235,female,41,yes,,True,1
+b054c9ab-fef7-5397-a532-dabe79628ff4,female,42,yes,none,True,3
+32b657bd-6e46-5d36-88c8-810357378d4d,male,29,yes,,True,1
+ce444bdb-2531-5948-b210-1149c2aabc06,male,46,yes,no comment,True,2
+5de867db-71b0-5ae0-bb49-4fe29fbd846b,male,31,yes,"This was an enjoyable study, thanks!",True,1
+0316aab7-b377-551a-a316-34d650f22a0a,male,46,yes,"Scenarios involving Korean BBQ cooked at the diners' table, hot pot or fondue would be interesting to consider in a study.",True,3
+0868cd9a-8b30-5f5b-b3cc-3874c19f174f,male,41,yes,,True,2

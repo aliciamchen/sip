@@ -1,0 +1,36 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+4e70ab6c-08df-50a1-bce0-6269c2996b70,male,58,yes,,True,2
+407d1fea-b1a2-5af8-b2f1-b3c7f99a191f,female,54,yes,,True,2
+fb0131e3-93f3-5866-a741-7ee507735561,female,74,yes,,True,2
+51ce3748-52c5-58b7-85e5-ec7c4221ca19,male,56,yes,,True,1
+7dc80ecd-dcb4-56ef-85e9-4ba2d9c3d88e,male,20,yes,,True,1
+5f02c355-b17a-5fe8-9b89-5a48509ecb1e,male,43,yes,Nope,True,3
+24b40c18-ddee-52ef-be20-705e8071b2a8,female,56,yes,,True,3
+6eb99c51-6d33-5b68-8a76-91a0ef48223e,female,36,yes,Thanks for the study,True,2
+28a92461-d996-5f70-b903-7d853640e031,female,24,yes,,True,3
+173bb84d-2ac3-5ebb-bde5-a457051a1f9d,male,36,yes,No,True,2
+af0133cb-74e3-5d50-a228-5b8935751d0d,female,35,yes,"With the check for bots one about the names and other question, I don't know if I got the names correct. I was focused on the details important to the questions and scenario, not the names which didn't matter much. A suggestion not to question that because it would be typical for someone not to remember everything they are viewing for a short time.",True,2
+0991ac05-2b20-5b18-83c1-d8bea47bf4da,female,50,yes,None,True,2
+3ee7884f-795a-566a-8f76-5c3c884ec1c9,male,43,yes,":-)
+
+be careful with those Memory Checks, towards the end of determining who is, and who isn't, a Bot
+
+:-)
+
+(that's what Captchas are for)",True,3
+00c658b3-6a38-5515-87ad-65d359fa8826,female,27,yes,,True,3
+c44d9d67-395e-5ada-b0b0-df8c3dfc43a5,male,35,yes,,True,2
+fbe32ed4-2dc9-53ee-88a9-cbcf7b514d2e,male,32,yes,The progress bar was helpful. Everything was good.,True,2
+fbb31246-7720-564a-beae-96a52519b0bb,male,38,yes,,True,3
+5f148266-9dea-5f4f-9e8c-6b0e7226daa2,male,42,yes,,True,2
+43679822-97ff-566a-895d-f37691331bc2,male,29,yes,,True,2
+12c03e70-66bc-5bde-8cc5-7c26efc67f18,female,28,yes,None,True,1
+fe4ed079-c4ff-5f27-aa1f-469046557c90,female,27,yes,,True,2
+4f5c5c64-a627-59e4-9600-d84c42d93f70,male,25,yes,This was a pretty interesting study. I felt that a lot of the scenarios were unhygenic enough to be unlikely even if the two people were close.,True,3
+8026e9b7-c504-50fc-aa1d-89e98edd10e0,female,50,yes,No,True,3
+010a872c-b52a-5fa0-b767-0830e51a102c,male,32,yes,,True,2
+83e03c46-b0e1-520d-8799-694b6404dd82,male,38,yes,"The exercise was long and challenging, however i would like to take part on another study like this one",True,2
+7c66cb3e-43c7-5382-96cc-a5f635a1e48d,female,31,yes,,True,2
+11d02432-9e52-5d1d-bab8-b1dbe240096c,male,34,yes,No comments to add.,True,2
+5013816e-c315-53f7-9654-c385e8036580,male,39,yes,,True,3
+e1136062-159d-5b33-ba96-7daca21b8a1c,female,54,yes,,True,3
