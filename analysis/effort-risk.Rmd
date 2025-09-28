@@ -468,5 +468,171 @@ Put data into a form that is good for model fitting
 
 ```
 
+## View model predictions
+
+```{r}
+d.with.preds <- read_csv(here("data/planning-1/data_with_preds.csv"))
+```
+```{r}
+d.data.summary <- d.with.preds %>%
+  group_by(closeness_condition, action) %>%
+  tidyboot_mean(p_action)
+
+d.h0.summary <- d.with.preds %>%
+  group_by(closeness_condition, action) %>%
+  tidyboot_mean(h0_pred)
+
+d.h1.summary <- d.with.preds %>%
+  group_by(closeness_condition, action) %>%
+  tidyboot_mean(h1_pred)
+```
+
+
+```{r}
+ggplot(d.data.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
+  geom_jitter(data = d.with.preds, aes(x = action, y = p_action), size = 2.5, shape = 16, alpha = 0.21) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(limits = c(0, 0.7)) +
+  labs(
+    title = "Data: How likely to choose actions?",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How likely?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  theme(legend.position = "top")
+```
+
+```{r}
+ggplot(d.h0.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(limits = c(0, 0.7)) +
+  labs(
+    title = "Model H0",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How likely?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  theme(legend.position = "top")
+```
+
+```{r}
+ggplot(d.h1.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(limits = c(0, 0.7)) +
+  labs(
+    title = "Model H0",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How likely?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  theme(legend.position = "top")
+```
+
+Scenario specific
+
+```{r}
+d.data.summary.scenario <- d.with.preds %>%
+  group_by(scenario_label, closeness_condition, action) %>%
+  tidyboot_mean(p_action)
+
+d.h0.summary.scenario <- d.with.preds %>%
+  group_by(scenario_label, closeness_condition, action) %>%
+  tidyboot_mean(h0_pred)
+
+d.h1.summary.scenario <- d.with.preds %>%
+  group_by(scenario_label, closeness_condition, action) %>%
+  tidyboot_mean(h1_pred)
+```
+
+Join dataframes
+
+```{r}
+d.combined <- d.data.summary.scenario %>%
+  rename(data_mean = empirical_stat, data_ci_lower = ci_lower, data_ci_upper = ci_upper) %>%
+  inner_join(
+    d.h0.summary.scenario %>%
+      rename(h0_mean = empirical_stat, h0_ci_lower = ci_lower, h0_ci_upper = ci_upper),
+    by = c("scenario_label", "closeness_condition", "action")
+  ) %>%
+  inner_join(
+    d.h1.summary.scenario %>%
+      rename(h1_mean = empirical_stat, h1_ci_lower = ci_lower, h1_ci_upper = ci_upper),
+    by = c("scenario_label", "closeness_condition", "action")
+  )
+```
+
+Plot: 
+- data vs. h0
+- data vs. h1
+
+```{r}
+ggplot(d.combined, aes(x = data_mean, y = h0_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
+  geom_point(size = 4, alpha = 0.3) +
+  geom_errorbar(aes(ymin = h0_ci_lower, ymax = h0_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_errorbarh(aes(xmin = data_ci_lower, xmax = data_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    x = "Empirical choice proportion",
+    y = "Model H0 predicted choice proportion",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85)
+```
+
+```{r}
+ggplot(d.combined, aes(x = data_mean, y = h1_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
+  geom_point(size = 4, alpha = 0.3) +
+  geom_errorbar(aes(ymin = h1_ci_lower, ymax = h1_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_errorbarh(aes(xmin = data_ci_lower, xmax = data_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(
+    x = "Empirical choice proportion",
+    y = "Model H1 predicted choice proportion",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85)
+```
+
+```{r}
+# compute correlation for both
+
+cor.test(d.combined$data_mean, d.combined$h0_mean)
+cor.test(d.combined$data_mean, d.combined$h1_mean)
+```
+
+
+
+
+
+
+
 
 
