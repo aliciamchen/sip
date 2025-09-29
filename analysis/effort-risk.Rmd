@@ -541,7 +541,7 @@ ggplot(d.h1.summary, aes(x = action, y = empirical_stat, color = closeness_condi
   scale_x_continuous(breaks = 0:3) +
   scale_y_continuous(limits = c(0, 0.7)) +
   labs(
-    title = "Model H0",
+    title = "Model H1",
     x = "Action (0 = least risky, 3 = most risky)",
     y = "How likely?",
     color = "Closeness",
@@ -616,7 +616,7 @@ ggplot(d.h1.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = c
   labs(
     x = "Risk rating",
     y = "How likely to choose action?",
-    title = "Model: Effort and discomfort",
+    title = "Model: Effort, risk, and discomfort",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -676,7 +676,7 @@ ggplot(d.h1.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = c
   labs(
     x = "Risk rating",
     y = "How likely to choose action?",
-    title = "Model: effort and discomfort",
+    title = "Model: effort, risk, and discomfort",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -736,7 +736,7 @@ ggplot(d.h1.summary.scenario, aes(x = action, y = empirical_stat, color = closen
   scale_x_continuous(breaks = 0:3) +
   scale_y_continuous(limits = c(0, 0.7)) +
   labs(
-    title = "Model H1: Effort and discomfort",
+    title = "Model H1: Effort, risk, and discomfort",
     x = "Action (0 = least risky, 3 = most risky)",
     y = "How likely?",
     color = "Closeness",
@@ -772,8 +772,7 @@ Plot:
 ```{r}
 ggplot(d.combined, aes(x = data_mean, y = h0_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
   geom_point(size = 4, alpha = 0.3) +
-  geom_errorbar(aes(ymin = h0_ci_lower, ymax = h0_ci_upper), width = 0.1, alpha = 0.3) +
-  geom_errorbarh(aes(xmin = data_ci_lower, xmax = data_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_errorbarh(aes(xmin = data_ci_lower, xmax = data_ci_upper), height = 0.02, alpha = 0.3) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   labs(
     x = "Empirical choice proportion",
@@ -781,8 +780,8 @@ ggplot(d.combined, aes(x = data_mean, y = h0_mean, color = closeness_condition, 
     color = "Closeness",
     shape = "Action"
   ) +
-  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) + 
+  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) + 
   scale_shape_manual(values = c(16, 17, 15, 18)) +
   scale_fill_viridis_d(begin = 0, end = 0.85) +
   scale_color_viridis_d(begin = 0, end = 0.85)
@@ -791,8 +790,7 @@ ggplot(d.combined, aes(x = data_mean, y = h0_mean, color = closeness_condition, 
 ```{r}
 ggplot(d.combined, aes(x = data_mean, y = h1_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
   geom_point(size = 4, alpha = 0.3) +
-  geom_errorbar(aes(ymin = h1_ci_lower, ymax = h1_ci_upper), width = 0.1, alpha = 0.3) +
-  geom_errorbarh(aes(xmin = data_ci_lower, xmax = data_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_errorbarh(aes(xmin = data_ci_lower, xmax = data_ci_upper), height = 0.02, alpha = 0.3) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   labs(
     x = "Empirical choice proportion",
@@ -800,8 +798,8 @@ ggplot(d.combined, aes(x = data_mean, y = h1_mean, color = closeness_condition, 
     color = "Closeness",
     shape = "Action"
   ) +
-  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.7)) + 
+  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) + 
   scale_shape_manual(values = c(16, 17, 15, 18)) +
   scale_fill_viridis_d(begin = 0, end = 0.85) +
   scale_color_viridis_d(begin = 0, end = 0.85)
