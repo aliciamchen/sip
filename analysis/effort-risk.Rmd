@@ -414,14 +414,14 @@ d.planning.summary <- d.planning %>%
 
 ```{r}
 ggplot(d.planning.summary, aes(x = action, y = mean, color = closeness_condition)) +
-  geom_jitter(data = d.planning, aes(x = action, y = likert_rating), size = 2.5, shape = 16, alpha = 0.21) +
+  geom_jitter(data = d.planning, aes(x = action, y = likert_rating), size = 2.5, shape = 16, alpha = 0.1) +
   geom_line() +
   geom_point(size = 3) +
   geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
   scale_x_continuous(breaks = 0:3) +
   scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
   labs(
-    title = "How likely to choose actions?",
+    title = "No communication",
     x = "Action (0 = least risky, 3 = most risky)",
     y = "How likely?",
     color = "Closeness",
@@ -452,6 +452,7 @@ ggplot(d.planning.risk, aes(x = risk_mean, y = planning_mean, color = closeness_
   labs(
     x = "Risk rating",
     y = "How likely to choose action?",
+    title = "No communication",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -496,14 +497,14 @@ d.h1.summary <- d.with.preds %>%
 
 ```{r}
 ggplot(d.data.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
-  geom_jitter(data = d.with.preds, aes(x = action, y = p_action), size = 2.5, shape = 16, alpha = 0.21) +
+  geom_jitter(data = d.with.preds, aes(x = action, y = p_action), size = 2.5, shape = 16, alpha = 0.1) +
   geom_line() +
   geom_point(size = 3) +
   geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
   scale_x_continuous(breaks = 0:3) +
   scale_y_continuous(limits = c(0, 0.7)) +
   labs(
-    title = "Data: How likely to choose actions?",
+    title = "No communication",
     x = "Action (0 = least risky, 3 = most risky)",
     y = "How likely?",
     color = "Closeness",
@@ -812,10 +813,97 @@ cor.test(d.combined$data_mean, d.combined$h0_mean)
 cor.test(d.combined$data_mean, d.combined$h1_mean)
 ```
 
+## Communication study
 
 
+```{r}
+d.planning_comm <- read_csv(here("data/planning_comm/main_trials.csv")) %>%
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "likert_rating"
+  ) %>%
+  mutate(likert_rating = likert_rating + 1, action = as.integer(action), 
+         closeness_condition = factor(closeness_condition, levels = c("not_close", "somewhat_close", "close", "extremely_close")), 
+         closeness = case_when(
+           closeness_condition == "not_close" ~ 0,
+           closeness_condition == "somewhat_close" ~ 1,
+           closeness_condition == "close" ~ 2,
+           closeness_condition == "extremely_close" ~ 3
+         )) %>% 
+  relocate(closeness, .after = closeness_condition) %>%
+  group_by(subject_id, scenario_label) %>%
+  mutate(p_action = likert_rating / sum(likert_rating)) %>%
+  ungroup()
+
+write_csv(d.planning, here("data/planning_comm/main_trials_tidy.csv"))
+```
+
+```{r}
+d.planning.comm.summary.scenario <- d.planning_comm %>%
+  group_by(scenario_label, closeness_condition, action) %>%
+  tidyboot_mean(likert_rating)
+```
+
+```{r}
+d.planning.comm.summary <- d.planning_comm %>%
+  group_by(closeness_condition, action) %>%
+  tidyboot_mean(likert_rating)
+```
+
+```{r}
+ggplot(d.planning.comm.summary, aes(x = action, y = mean, color = closeness_condition)) +
+  geom_jitter(data = d.planning, aes(x = action, y = likert_rating), size = 2.5, shape = 16, alpha = 0.1) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) +
+  labs(
+    title = "Communicative goal",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How likely?",
+    color = "Closeness",
+    fill = "Closeness"
+  ) + 
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  theme(legend.position = "top")
+```
 
 
+Put empirical measured risk on x axis
+
+```{r}
+d.planning_comm.risk <- d.planning.comm.summary.scenario %>%
+  rename(planning_mean = empirical_stat, planning_ci_lower = ci_lower, planning_ci_upper = ci_upper) %>%
+  inner_join(
+    d.risk.summary %>%
+      rename(risk_mean = empirical_stat, risk_ci_lower = ci_lower, risk_ci_upper = ci_upper),
+    by = c("scenario_label", "action")
+  )
+```
+
+```{r}
+ggplot(d.planning_comm.risk, aes(x = risk_mean, y = planning_mean, color = closeness_condition, group = closeness_condition)) +
+  geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = risk_ci_lower, xmax = risk_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_errorbar(aes(ymin = planning_ci_lower, ymax = planning_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray") +
+  labs(
+    x = "Risk rating",
+    y = "How likely to choose action?",
+    title = "Maintain, establish, or communicate about relationship",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) 
+```
 
 
 
