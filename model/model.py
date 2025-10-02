@@ -124,7 +124,7 @@ def get_scale(w_r, w_c, c):
 
 @jax.jit
 def get_shape(w_c, c):
-    return -c + 1
+    return -c + 5
     # return w_c * (-c + 1)
 
 
