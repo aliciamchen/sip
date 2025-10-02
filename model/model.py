@@ -118,19 +118,19 @@ def vanilla_actor[a: risk_levels, c: closeness_levels](scenario_idx, alpha, w_r,
 
 @jax.jit
 def get_scale(w_r, w_c, c):
-    return (w_r * jnp.exp(-w_c * c))
+    return w_r * jnp.exp(-w_c * c)
     # return w_r / (w_c * (1 + c))
 
 
 @jax.jit
-def get_shape(w_c, c):
-    return -c + 5
+def get_shape(p_0, kappa, c):
+    return p_0 - kappa * c  # p_0 is greater than 0, kappa is greater than or equal to 0
     # return w_c * (-c + 1)
 
 
 @memo
 def relationship_actor[a: risk_levels, c: closeness_levels](
-    scenario_idx, alpha, w_r, w_c
+    scenario_idx, alpha, w_r, w_c, p_0, kappa
 ):
     cast: [actor]
     actor: knows(c)
@@ -142,7 +142,7 @@ def relationship_actor[a: risk_levels, c: closeness_levels](
             * (
                 -1
                 * get_scale(w_r, w_c, c)
-                * log(c_risk(scenario_idx, a)) ** get_shape(w_c, c)
+                * (c_risk(scenario_idx, a)) ** get_shape(p_0, kappa, c)
             )
         ),
     )
@@ -151,13 +151,15 @@ def relationship_actor[a: risk_levels, c: closeness_levels](
 
 # define function for getting predictions for a single data point, given model type
 def get_actor_predictions(
-    model_type: str, scenario_idx, action, closeness, alpha, w_r, w_c
+    model_type: str, scenario_idx, action, closeness, alpha, w_r, w_c, p_0, kappa
 ):
     """Non-JIT version for string-based model selection"""
     if model_type == "vanilla":
         return vanilla_actor(scenario_idx, alpha, w_r, w_c)[action, 0]
     elif model_type == "relationship":
-        return relationship_actor(scenario_idx, alpha, w_r, w_c)[action, closeness]
+        return relationship_actor(scenario_idx, alpha, w_r, w_c, p_0, kappa)[
+            action, closeness
+        ]
 
 
 # Create individual JIT-compiled prediction functions for each model type
@@ -168,15 +170,19 @@ def get_vanilla_prediction(scenario_idx, action, closeness, alpha, w_r, w_c):
 
 
 @jax.jit
-def get_relationship_prediction(scenario_idx, action, closeness, alpha, w_r, w_c):
+def get_relationship_prediction(
+    scenario_idx, action, closeness, alpha, w_r, w_c, p_0, kappa
+):
     """JIT-compiled prediction for effort-only model"""
-    return relationship_actor(scenario_idx, alpha, w_r, w_c)[action, closeness]
+    return relationship_actor(scenario_idx, alpha, w_r, w_c, p_0, kappa)[
+        action, closeness
+    ]
 
 
 # Create vmap prediction functions for each model type
 @jax.jit
 def predict_vanilla_vmap(scenario_idx, action, closeness, alpha, w_r, w_c):
-    """Vectorized prediction function for risk-only model"""
+    """Vectorized prediction function for vanilla"""
     return jax.vmap(
         lambda s, a, c: get_vanilla_prediction(s, a, c, alpha, w_r, w_c),
         in_axes=(0, 0, 0),
@@ -184,10 +190,14 @@ def predict_vanilla_vmap(scenario_idx, action, closeness, alpha, w_r, w_c):
 
 
 @jax.jit
-def predict_relationship_vmap(scenario_idx, action, closeness, alpha, w_r, w_c):
-    """Vectorized prediction function for effort-only model"""
+def predict_relationship_vmap(
+    scenario_idx, action, closeness, alpha, w_r, w_c, p_0, kappa
+):
+    """Vectorized prediction function for relationship model"""
     return jax.vmap(
-        lambda s, a, c: get_relationship_prediction(s, a, c, alpha, w_r, w_c),
+        lambda s, a, c: get_relationship_prediction(
+            s, a, c, alpha, w_r, w_c, p_0, kappa
+        ),
         in_axes=(0, 0, 0),
     )(scenario_idx, action, closeness)
 
