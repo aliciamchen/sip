@@ -5,7 +5,6 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
-# constants
 
 scenario_labels = [
     "basketball",
@@ -30,14 +29,11 @@ risk_levels = [0, 1, 2, 3]
 closeness_levels = [0, 1, 2, 3]
 
 model_types = [
-    "risk",
-    "effort",
-    "discomfort",
-    "risk_effort",
-    "risk_effort_discomfort",
+    "vanilla",
+    "relationship",
 ]
 
-# Load and fill risk, effort, discomfort
+# Load and fill risk, effort, closeness
 
 risk_summary = pd.read_csv("../data/risk/risk_summary.csv")
 risk_summary.insert(
@@ -110,9 +106,7 @@ def c_discomfort(scenario_idx, a, c):
 
 
 @memo
-def actor_risk_only[a: risk_levels, c: closeness_levels](
-    scenario_idx, alpha, w_d, w_r, w_e
-):
+def vanilla_actor[a: risk_levels, c: closeness_levels](scenario_idx, alpha, w_r, w_c):
     cast: [actor]
     actor: knows(c)
     actor: chooses(
@@ -122,61 +116,33 @@ def actor_risk_only[a: risk_levels, c: closeness_levels](
     return Pr[actor.a == a]
 
 
-@memo
-def actor_effort_only[a: risk_levels, c: closeness_levels](
-    scenario_idx, alpha, w_d, w_r, w_e
-):
-    cast: [actor]
-    actor: knows(c)
-    actor: chooses(
-        a in risk_levels,
-        wpp=exp(alpha * (-w_e * c_effort(scenario_idx, a))),
-    )
-    return Pr[actor.a == a]
+@jax.jit
+def get_scale(w_r, w_c, c):
+    return (w_r * jnp.exp(-w_c * c))
+    # return w_r / (w_c * (1 + c))
+
+
+@jax.jit
+def get_shape(w_c, c):
+    return -c + 1
+    # return w_c * (-c + 1)
 
 
 @memo
-def actor_discomfort_only[a: risk_levels, c: closeness_levels](
-    scenario_idx, alpha, w_d, w_r, w_e
+def relationship_actor[a: risk_levels, c: closeness_levels](
+    scenario_idx, alpha, w_r, w_c
 ):
     cast: [actor]
     actor: knows(c)
-    actor: chooses(
-        a in risk_levels,
-        wpp=exp(alpha * (-w_d * c_discomfort(scenario_idx, a, c))),
-    )
-    return Pr[actor.a == a]
 
-
-@memo
-def actor_risk_effort[a: risk_levels, c: closeness_levels](
-    scenario_idx, alpha, w_d, w_r, w_e
-):
-    cast: [actor]
-    actor: knows(c)
-    actor: chooses(
-        a in risk_levels,
-        wpp=exp(
-            alpha * (-w_r * c_risk(scenario_idx, a) - w_e * c_effort(scenario_idx, a))
-        ),
-    )
-    return Pr[actor.a == a]
-
-
-@memo
-def actor_risk_effort_discomfort[a: risk_levels, c: closeness_levels](
-    scenario_idx, alpha, w_d, w_r, w_e
-):
-    cast: [actor]
-    actor: knows(c)
     actor: chooses(
         a in risk_levels,
         wpp=exp(
             alpha
             * (
-                -w_d * c_discomfort(scenario_idx, a, c)
-                - w_r * c_risk(scenario_idx, a)
-                - w_e * c_effort(scenario_idx, a)
+                -1
+                * get_scale(w_r, w_c, c)
+                * log(c_risk(scenario_idx, a)) ** get_shape(w_c, c)
             )
         ),
     )
@@ -184,94 +150,54 @@ def actor_risk_effort_discomfort[a: risk_levels, c: closeness_levels](
 
 
 # define function for getting predictions for a single data point, given model type
-def get_actor_predictions(model_type: str, scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
+def get_actor_predictions(
+    model_type: str, scenario_idx, action, closeness, alpha, w_r, w_c
+):
     """Non-JIT version for string-based model selection"""
-    if model_type == "risk":
-        return actor_risk_only(scenario_idx, alpha, w_d, w_r, w_e)[action, 0]
-    elif model_type == "effort":
-        return actor_effort_only(scenario_idx, alpha, w_d, w_r, w_e)[action, 0]
-    elif model_type == "discomfort":
-        return actor_discomfort_only(scenario_idx, alpha, w_d, w_r, w_e)[action, closeness]
-    elif model_type == "risk_effort":
-        return actor_risk_effort(scenario_idx, alpha, w_d, w_r, w_e)[action, 0]
-    elif model_type == "risk_effort_discomfort":
-        return actor_risk_effort_discomfort(scenario_idx, alpha, w_d, w_r, w_e)[action, closeness]
+    if model_type == "vanilla":
+        return vanilla_actor(scenario_idx, alpha, w_r, w_c)[action, 0]
+    elif model_type == "relationship":
+        return relationship_actor(scenario_idx, alpha, w_r, w_c)[action, closeness]
+
 
 # Create individual JIT-compiled prediction functions for each model type
 @jax.jit
-def get_risk_prediction(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
+def get_vanilla_prediction(scenario_idx, action, closeness, alpha, w_r, w_c):
     """JIT-compiled prediction for risk-only model"""
-    return actor_risk_only(scenario_idx, alpha, w_d, w_r, w_e)[action, 0]
+    return vanilla_actor(scenario_idx, alpha, w_r, w_c)[action, 0]
+
 
 @jax.jit
-def get_effort_prediction(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
+def get_relationship_prediction(scenario_idx, action, closeness, alpha, w_r, w_c):
     """JIT-compiled prediction for effort-only model"""
-    return actor_effort_only(scenario_idx, alpha, w_d, w_r, w_e)[action, 0]
+    return relationship_actor(scenario_idx, alpha, w_r, w_c)[action, closeness]
 
-@jax.jit
-def get_discomfort_prediction(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
-    """JIT-compiled prediction for discomfort-only model"""
-    return actor_discomfort_only(scenario_idx, alpha, w_d, w_r, w_e)[action, closeness]
-
-@jax.jit
-def get_risk_effort_prediction(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
-    """JIT-compiled prediction for risk+effort model"""
-    return actor_risk_effort(scenario_idx, alpha, w_d, w_r, w_e)[action, 0]
-
-@jax.jit
-def get_risk_effort_discomfort_prediction(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
-    """JIT-compiled prediction for risk+effort+discomfort model"""
-    return actor_risk_effort_discomfort(scenario_idx, alpha, w_d, w_r, w_e)[action, closeness]
 
 # Create vmap prediction functions for each model type
 @jax.jit
-def predict_risk_vmap(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
+def predict_vanilla_vmap(scenario_idx, action, closeness, alpha, w_r, w_c):
     """Vectorized prediction function for risk-only model"""
     return jax.vmap(
-        lambda s, a, c: get_risk_prediction(s, a, c, alpha, w_d, w_r, w_e),
+        lambda s, a, c: get_vanilla_prediction(s, a, c, alpha, w_r, w_c),
         in_axes=(0, 0, 0),
     )(scenario_idx, action, closeness)
 
+
 @jax.jit
-def predict_effort_vmap(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
+def predict_relationship_vmap(scenario_idx, action, closeness, alpha, w_r, w_c):
     """Vectorized prediction function for effort-only model"""
     return jax.vmap(
-        lambda s, a, c: get_effort_prediction(s, a, c, alpha, w_d, w_r, w_e),
+        lambda s, a, c: get_relationship_prediction(s, a, c, alpha, w_r, w_c),
         in_axes=(0, 0, 0),
     )(scenario_idx, action, closeness)
 
-@jax.jit
-def predict_discomfort_vmap(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
-    """Vectorized prediction function for discomfort-only model"""
-    return jax.vmap(
-        lambda s, a, c: get_discomfort_prediction(s, a, c, alpha, w_d, w_r, w_e),
-        in_axes=(0, 0, 0),
-    )(scenario_idx, action, closeness)
-
-@jax.jit
-def predict_risk_effort_vmap(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
-    """Vectorized prediction function for risk+effort model"""
-    return jax.vmap(
-        lambda s, a, c: get_risk_effort_prediction(s, a, c, alpha, w_d, w_r, w_e),
-        in_axes=(0, 0, 0),
-    )(scenario_idx, action, closeness)
-
-@jax.jit
-def predict_risk_effort_discomfort_vmap(scenario_idx, action, closeness, alpha, w_d, w_r, w_e):
-    """Vectorized prediction function for risk+effort+discomfort model"""
-    return jax.vmap(
-        lambda s, a, c: get_risk_effort_discomfort_prediction(s, a, c, alpha, w_d, w_r, w_e),
-        in_axes=(0, 0, 0),
-    )(scenario_idx, action, closeness)
 
 # Dictionary mapping model types to their vmap functions
 vmap_predictors = {
-    "risk": predict_risk_vmap,
-    "effort": predict_effort_vmap,
-    "discomfort": predict_discomfort_vmap,
-    "risk_effort": predict_risk_effort_vmap,
-    "risk_effort_discomfort": predict_risk_effort_discomfort_vmap,
+    "vanilla": predict_vanilla_vmap,
+    "relationship": predict_relationship_vmap,
 }
+
 
 def get_vmap_predictor(model_type: str):
     """Get the appropriate vmap prediction function for a model type"""

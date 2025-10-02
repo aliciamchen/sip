@@ -480,25 +480,13 @@ d.data.summary <- d.with.preds %>%
   group_by(closeness_condition, action) %>%
   tidyboot_mean(p_action)
 
-d.risk.summary <- d.with.preds %>%
+d.vanilla.summary <- d.with.preds %>%
   group_by(closeness_condition, action) %>%
-  tidyboot_mean(risk_pred)
+  tidyboot_mean(vanilla_pred)
 
-d.effort.summary <- d.with.preds %>%
+d.relationship.summary <- d.with.preds %>%
   group_by(closeness_condition, action) %>%
-  tidyboot_mean(effort_pred)
-
-d.discomfort.summary <- d.with.preds %>%
-  group_by(closeness_condition, action) %>%
-  tidyboot_mean(discomfort_pred)
-
-d.risk_effort.summary <- d.with.preds %>%
-  group_by(closeness_condition, action) %>%
-  tidyboot_mean(risk_effort_pred)
-
-d.risk_effort_discomfort.summary <- d.with.preds %>%
-  group_by(closeness_condition, action) %>%
-  tidyboot_mean(risk_effort_discomfort_pred)
+  tidyboot_mean(relationship_pred)
 ```
 
 Scenario-specific
@@ -508,25 +496,15 @@ d.data.summary.scenario <- d.with.preds %>%
   group_by(scenario_label, closeness_condition, action, risk_rating, ci_lower_risk, ci_upper_risk) %>%
   tidyboot_mean(p_action)
 
-d.risk.summary.scenario <- d.with.preds %>%
+d.vanilla.summary.scenario <- d.with.preds %>%
   group_by(scenario_label, closeness_condition, action, risk_rating, ci_lower_risk, ci_upper_risk) %>%
-  tidyboot_mean(risk_pred)
+  tidyboot_mean(vanilla_pred)
+```
 
-d.effort.summary.scenario <- d.with.preds %>%
+```{r}
+d.relationship.summary.scenario <- d.with.preds %>%
   group_by(scenario_label, closeness_condition, action, risk_rating, ci_lower_risk, ci_upper_risk) %>%
-  tidyboot_mean(effort_pred)
-
-d.discomfort.summary.scenario <- d.with.preds %>%
-  group_by(scenario_label, closeness_condition, action, risk_rating, ci_lower_risk, ci_upper_risk) %>%
-  tidyboot_mean(discomfort_pred)
-
-d.risk_effort.summary.scenario <- d.with.preds %>%
-  group_by(scenario_label, closeness_condition, action, risk_rating, ci_lower_risk, ci_upper_risk) %>%
-  tidyboot_mean(risk_effort_pred)
-
-d.risk_effort_discomfort.summary.scenario <- d.with.preds %>%
-  group_by(scenario_label, closeness_condition, action, risk_rating, ci_lower_risk, ci_upper_risk) %>%
-  tidyboot_mean(risk_effort_discomfort_pred)
+  tidyboot_mean(relationship_pred)
 ```
 
 ### Big plots 
@@ -552,7 +530,7 @@ ggplot(d.data.summary.scenario, aes(x = risk_rating, y = empirical_stat, color =
 ```
 
 ```{r}
-ggplot(d.risk.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
+ggplot(d.vanilla.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
   geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3, position = position_dodge(width = 0.1)) +
   geom_errorbarh(aes(xmin = ci_lower_risk, xmax = ci_upper_risk), height = 0.015, alpha = 0.3) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.3) +
@@ -560,7 +538,7 @@ ggplot(d.risk.summary.scenario, aes(x = risk_rating, y = empirical_stat, color =
   labs(
     x = "Risk rating",
     y = "How likely to choose action?",
-    title = "Model: Risk only",
+    title = "Model: Vanilla",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -572,67 +550,7 @@ ggplot(d.risk.summary.scenario, aes(x = risk_rating, y = empirical_stat, color =
 ```
 
 ```{r}
-ggplot(d.effort.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
-  geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3, position = position_dodge(width = 0.1)) +
-  geom_errorbarh(aes(xmin = ci_lower_risk, xmax = ci_upper_risk), height = 0.015, alpha = 0.3) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.3) +
-  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray", color = "black") +
-  labs(
-    x = "Risk rating",
-    y = "How likely to choose action?",
-    title = "Model: Effort only",
-    color = "Closeness",
-    shape = "Action"
-  ) +
-  scale_x_continuous(breaks = 1:7, limits = c(0.9, 6.4)) +
-  scale_y_continuous(limits = c(0, 0.65)) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) 
-```
-
-```{r}
-ggplot(d.discomfort.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
-  geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3) +
-  geom_errorbarh(aes(xmin = ci_lower_risk, xmax = ci_upper_risk), height = 0.015, alpha = 0.3) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.3) +
-  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray") +
-  labs(
-    x = "Risk rating",
-    y = "How likely to choose action?",
-    title = "Model: Discomfort only",
-    color = "Closeness",
-    shape = "Action"
-  ) +
-  scale_x_continuous(breaks = 1:7, limits = c(0.9, 6.4)) +
-  scale_y_continuous(limits = c(0, 0.65)) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) 
-```
-
-```{r}
-ggplot(d.risk_effort.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
-  geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3, position = position_dodge(width = 0.1)) +
-  geom_errorbarh(aes(xmin = ci_lower_risk, xmax = ci_upper_risk), height = 0.015, alpha = 0.3) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.3) +
-  geom_smooth(method = "gam", alpha = 0.5, fill = "lightgray", color = "black") +
-  labs(
-    x = "Risk rating",
-    y = "How likely to choose action?",
-    title = "Model: Risk and effort",
-    color = "Closeness",
-    shape = "Action"
-  ) +
-  scale_x_continuous(breaks = 1:7, limits = c(0.9, 6.4)) +
-  scale_y_continuous(limits = c(0, 0.65)) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) 
-```
-
-```{r}
-ggplot(d.risk_effort_discomfort.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
+ggplot(d.relationship.summary.scenario, aes(x = risk_rating, y = empirical_stat, color = closeness_condition, group = closeness_condition)) +
   geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3, position = position_dodge(width = 0.1)) +
   geom_errorbarh(aes(xmin = ci_lower_risk, xmax = ci_upper_risk), height = 0.015, alpha = 0.3) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.1, alpha = 0.3) +
@@ -640,7 +558,7 @@ ggplot(d.risk_effort_discomfort.summary.scenario, aes(x = risk_rating, y = empir
   labs(
     x = "Risk rating",
     y = "How likely to choose action?",
-    title = "Model: Risk, effort, and discomfort",
+    title = "Model: Relationship",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -649,79 +567,6 @@ ggplot(d.risk_effort_discomfort.summary.scenario, aes(x = risk_rating, y = empir
   scale_shape_manual(values = c(16, 17, 15, 18)) +
   scale_fill_viridis_d(begin = 0, end = 0.85) +
   scale_color_viridis_d(begin = 0, end = 0.85) 
-```
-
-```{r}
-d.data.summary <- d.with.preds %>%
-  group_by(closeness_condition, action) %>%
-  tidyboot_mean(p_action)
-
-d.h0.summary <- d.with.preds %>%
-  group_by(closeness_condition, action) %>%
-  tidyboot_mean(h0_pred)
-
-d.h1.summary <- d.with.preds %>%
-  group_by(closeness_condition, action) %>%
-  tidyboot_mean(h1_pred)
-```
-
-
-```{r}
-ggplot(d.data.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
-  geom_jitter(data = d.with.preds, aes(x = action, y = p_action), size = 2.5, shape = 16, alpha = 0.1) +
-  geom_line() +
-  geom_point(size = 3) +
-  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
-  scale_x_continuous(breaks = 0:3) +
-  scale_y_continuous(limits = c(0, 0.7)) +
-  labs(
-    title = "No communication",
-    x = "Action (0 = least risky, 3 = most risky)",
-    y = "How likely?",
-    color = "Closeness",
-    fill = "Closeness"
-  ) + 
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) +
-  theme(legend.position = "top")
-```
-
-```{r}
-ggplot(d.h0.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
-  geom_line() +
-  geom_point(size = 3) +
-  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
-  scale_x_continuous(breaks = 0:3) +
-  scale_y_continuous(limits = c(0, 0.7)) +
-  labs(
-    title = "Model H0",
-    x = "Action (0 = least risky, 3 = most risky)",
-    y = "How likely?",
-    color = "Closeness",
-    fill = "Closeness"
-  ) + 
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) +
-  theme(legend.position = "top")
-```
-
-```{r}
-ggplot(d.h1.summary, aes(x = action, y = empirical_stat, color = closeness_condition)) +
-  geom_line() +
-  geom_point(size = 3) +
-  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = closeness_condition), alpha = 0.2, color = NA) +
-  scale_x_continuous(breaks = 0:3) +
-  scale_y_continuous(limits = c(0, 0.7)) +
-  labs(
-    title = "Model H1",
-    x = "Action (0 = least risky, 3 = most risky)",
-    y = "How likely?",
-    color = "Closeness",
-    fill = "Closeness"
-  ) + 
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) +
-  theme(legend.position = "top")
 ```
 
 ### Scatter plots
@@ -732,49 +577,31 @@ Join dataframes
 d.combined <- d.data.summary.scenario %>%
   rename(data_mean = empirical_stat, data_ci_lower = ci_lower, data_ci_upper = ci_upper) %>%
   inner_join(
-    d.risk.summary.scenario %>%
-      rename(risk_mean = empirical_stat, risk_ci_lower = ci_lower, risk_ci_upper = ci_upper),
+    d.vanilla.summary.scenario %>%
+      rename(vanilla_mean = empirical_stat, vanilla_ci_lower = ci_lower, vanilla_ci_upper = ci_upper),
     by = c("scenario_label", "closeness_condition", "action")
   ) %>%
   inner_join(
-    d.effort.summary.scenario %>%
-      rename(effort_mean = empirical_stat, effort_ci_lower = ci_lower, effort_ci_upper = ci_upper),
+    d.relationship.summary.scenario %>%
+      rename(relationship_mean = empirical_stat, relationship_ci_lower = ci_lower, relationship_ci_upper = ci_upper),
     by = c("scenario_label", "closeness_condition", "action")
-  ) %>%
-  inner_join(
-    d.discomfort.summary.scenario %>%
-      rename(discomfort_mean = empirical_stat, discomfort_ci_lower = ci_lower, discomfort_ci_upper = ci_upper),
-    by = c("scenario_label", "closeness_condition", "action")
-  ) %>%
-  inner_join(
-    d.risk_effort.summary.scenario %>%
-      rename(risk_effort_mean = empirical_stat, risk_effort_ci_lower = ci_lower, risk_effort_ci_upper = ci_upper),
-    by = c("scenario_label", "closeness_condition", "action")
-  ) %>%
-  inner_join(
-    d.risk_effort_discomfort.summary.scenario %>%
-      rename(risk_effort_discomfort_mean = empirical_stat, risk_effort_discomfort_ci_lower = ci_lower, risk_effort_discomfort_ci_upper = ci_upper),
-    by = c("scenario_label", "closeness_condition", "action")
-  )
+  ) 
 ```
 
 Plot: 
-- data vs. risk
-- data vs. effort
-- data vs. discomfort
-- data vs. risk + effort
-- data vs. risk + effort + discomfort
+- data vs. vanilla
+- data vs. relationship
 
 
 ```{r}
-ggplot(d.combined, aes(x = risk_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
+ggplot(d.combined, aes(x = vanilla_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
   geom_point(size = 4, alpha = 0.3) +
   geom_errorbar(aes(ymin = data_ci_lower, ymax = data_ci_upper), width = 0.02, alpha = 0.3) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   labs(
     x = "Model",
     y = "Humans",
-    title = "Risk only",
+    title = "Vanilla",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -787,14 +614,14 @@ ggplot(d.combined, aes(x = risk_mean, y = data_mean, color = closeness_condition
 ```
 
 ```{r}
-ggplot(d.combined, aes(x = effort_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
+ggplot(d.combined, aes(x = relationship_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
   geom_point(size = 4, alpha = 0.3) +
   geom_errorbar(aes(ymin = data_ci_lower, ymax = data_ci_upper), width = 0.02, alpha = 0.3) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
   labs(
     x = "Model",
     y = "Humans",
-    title = "Effort only",
+    title = "Relationship",
     color = "Closeness",
     shape = "Action"
   ) +
@@ -807,71 +634,8 @@ ggplot(d.combined, aes(x = effort_mean, y = data_mean, color = closeness_conditi
 ```
 
 ```{r}
-ggplot(d.combined, aes(x = discomfort_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
-  geom_point(size = 4, alpha = 0.3) +
-  geom_errorbar(aes(ymin = data_ci_lower, ymax = data_ci_upper), width = 0.02, alpha = 0.3) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  labs(
-    x = "Model",
-    y = "Humans",
-    title = "Discomfort only",
-    color = "Closeness",
-    shape = "Action"
-  ) +
-  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) + 
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) +
-  coord_equal()
-```
-
-```{r}
-ggplot(d.combined, aes(x = risk_effort_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
-  geom_point(size = 4, alpha = 0.3) +
-  geom_errorbar(aes(ymin = data_ci_lower, ymax = data_ci_upper), width = 0.02, alpha = 0.3) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  labs(
-    x = "Model",
-    y = "Humans",
-    title = "Risk + effort",
-    color = "Closeness",
-    shape = "Action"
-  ) +
-  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) + 
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) +
-  coord_equal()
-```
-
-```{r}
-ggplot(d.combined, aes(x = risk_effort_discomfort_mean, y = data_mean, color = closeness_condition, shape = as.factor(action), group = closeness_condition)) +
-  geom_point(size = 4, alpha = 0.3) +
-  geom_errorbar(aes(ymin = data_ci_lower, ymax = data_ci_upper), width = 0.02, alpha = 0.3) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
-  labs(
-    x = "Model",
-    y = "Humans",
-    title = "Risk + effort + discomfort",
-    color = "Closeness",
-    shape = "Action"
-  ) +
-  scale_x_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.1), limits = c(0, 0.65)) + 
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  scale_fill_viridis_d(begin = 0, end = 0.85) +
-  scale_color_viridis_d(begin = 0, end = 0.85) +
-  coord_equal()
-```
-
-```{r}
-cor.test(d.combined$data_mean, d.combined$risk_mean)
-cor.test(d.combined$data_mean, d.combined$effort_mean)
-cor.test(d.combined$data_mean, d.combined$discomfort_mean)
-cor.test(d.combined$data_mean, d.combined$risk_effort_mean)
-cor.test(d.combined$data_mean, d.combined$risk_effort_discomfort_mean)
+cor.test(d.combined$data_mean, d.combined$vanilla_mean)
+cor.test(d.combined$data_mean, d.combined$relationship_mean)
 ```
 
 # old stuff
