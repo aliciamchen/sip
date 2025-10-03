@@ -123,19 +123,13 @@ def vanilla_actor[a: risk_levels, c: closeness_levels](scenario_idx, alpha, w_r,
 
 
 @jax.jit
-def get_scale(w_r, w_c, c):
-    return 1 / (c + 1)
-    # return w_r / (w_c * (1 + c))
+def get_scale(w_r, w_c, c, kappa):
+    return 1 / (kappa * (c + 1))
 
 
 @jax.jit
-def get_shape(p_0, kappa, c):
+def get_shape(p_0, kappa, c): # delete later
     return 1
-    # return p_0 - kappa * (
-    #     c + 1
-    # )
-    # p_0 is greater than 0, kappa is greater than or equal to 0
-    # return w_c * (-c + 1)
 
 
 @memo
@@ -151,9 +145,8 @@ def relationship_actor[a: risk_levels, c: closeness_levels](
             alpha
             * (
                 w_r * reward(a)
-                - w_c
-                * get_scale(w_r, w_c, c)
-                * (c_risk(scenario_idx, a)) ** get_shape(p_0, kappa, c)
+                # - w_c * c_discomfort(scenario_idx, a, c)
+                - w_c * get_scale(w_r, w_c, c, kappa) * (c_risk(scenario_idx, a))
             )
         ),
     )
