@@ -14,6 +14,7 @@ Available experiments:
     - discomfort: Experiment with closeness conditions and attention/memory checks
     - planning-1: Experiment with closeness conditions and attention/memory checks  
     - planning_comm: Experiment with closeness conditions and attention/memory checks
+    - planning_priors: Basic experiment with action ratings (no closeness)
     - risk: Experiment with attention/memory checks but no closeness conditions
 """
 
@@ -65,6 +66,13 @@ EXPERIMENT_CONFIGS = {
         'main_trial_fields': ['subject_id', 'scenario_label', 'closeness_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
         'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
         'has_closeness': True,
+        'has_attention_memory': True
+    },
+    'planning_priors': {
+        'description': 'Basic experiment with action ratings (no closeness)',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': False,
         'has_attention_memory': True
     }
 }
@@ -212,6 +220,7 @@ Available experiments:
   discomfort    Experiment with closeness conditions and attention/memory checks
   planning-1    Experiment with closeness conditions and attention/memory checks
   planning_comm Experiment with closeness conditions and attention/memory checks
+  planning_priors Basic experiment with action ratings (no closeness)
   risk          Experiment with attention/memory checks but no closeness conditions
 
 Examples:
@@ -219,6 +228,7 @@ Examples:
   python json_to_csv.py discomfort
   python json_to_csv.py planning-1
   python json_to_csv.py planning_comm
+  python json_to_csv.py planning_priors
   python json_to_csv.py risk
         """
     )

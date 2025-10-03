@@ -30,6 +30,7 @@ d.effort.summary <- d.effort %>%
   group_by(scenario_label, action) %>%
   tidyboot_mean(likert_rating, na.rm = T)
 ```
+
 ```{r}
 write_csv(d.effort.summary, here("data/effort/effort_summary.csv"))
 ```
@@ -463,6 +464,54 @@ ggplot(d.planning.risk, aes(x = risk_mean, y = planning_mean, color = closeness_
   scale_fill_viridis_d(begin = 0, end = 0.85) +
   scale_color_viridis_d(begin = 0, end = 0.85) 
 ```
+
+## What are people's priors for actions? 
+
+```{r}
+d.priors <- read_csv(here("data/planning_priors/main_trials.csv")) %>%
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "likert_rating"
+  ) %>%
+  mutate(likert_rating = likert_rating + 1, action = as.integer(action)) %>% 
+  group_by(subject_id, scenario_label) %>%
+  mutate(p_action = likert_rating / sum(likert_rating)) %>%
+  ungroup()
+```
+
+```{r}
+d.priors.summary <- d.priors %>%
+  group_by(scenario_label, action) %>%
+  tidyboot_mean(p_action, na.rm = T)
+```
+
+```{r}
+write_csv(d.priors.summary, here("data/planning_priors/priors_summary.csv"))
+```
+
+Plot priors
+
+```{r}
+ggplot(d.priors.summary, aes(x = action, y = empirical_stat, color = scenario_label)) +
+  geom_line() +
+  geom_point(size = 3) +
+  geom_ribbon(aes(ymin = ci_lower, ymax = ci_upper, fill = scenario_label), alpha = 0.2, color = NA) +
+  scale_x_continuous(breaks = 0:3) +
+  scale_y_continuous(limits = c(0, 0.7)) +
+  labs(
+    title = "Priors for actions",
+    x = "Action (0 = least risky, 3 = most risky)",
+    y = "How likely?",
+    color = "Scenario",
+    fill = "Scenario"
+  ) + 
+  theme(legend.position = "none") +
+  facet_wrap(~ scenario_label)
+```
+
+
 
 ## View model predictions
 
