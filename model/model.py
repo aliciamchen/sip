@@ -105,26 +105,36 @@ def c_discomfort(scenario_idx, a, c):
     return discomfort_matrix[scenario_idx, a, c]
 
 
+@jax.jit
+def reward(a):
+    # how much reward do you get for eating the food?
+    return jnp.where(a == 0, 0, 1)
+
+
 @memo
 def vanilla_actor[a: risk_levels, c: closeness_levels](scenario_idx, alpha, w_r, w_c):
     cast: [actor]
     actor: knows(c)
     actor: chooses(
         a in risk_levels,
-        wpp=exp(alpha * (-w_r * c_risk(scenario_idx, a))),
+        wpp=exp(alpha * (w_r * reward(a) - w_c * c_risk(scenario_idx, a))),
     )
     return Pr[actor.a == a]
 
 
 @jax.jit
 def get_scale(w_r, w_c, c):
-    return w_r * jnp.exp(-w_c * c)
+    return 1 / (c + 1)
     # return w_r / (w_c * (1 + c))
 
 
 @jax.jit
 def get_shape(p_0, kappa, c):
-    return p_0 - kappa * c  # p_0 is greater than 0, kappa is greater than or equal to 0
+    return 1
+    # return p_0 - kappa * (
+    #     c + 1
+    # )
+    # p_0 is greater than 0, kappa is greater than or equal to 0
     # return w_c * (-c + 1)
 
 
@@ -140,7 +150,8 @@ def relationship_actor[a: risk_levels, c: closeness_levels](
         wpp=exp(
             alpha
             * (
-                -1
+                w_r * reward(a)
+                - w_c
                 * get_scale(w_r, w_c, c)
                 * (c_risk(scenario_idx, a)) ** get_shape(p_0, kappa, c)
             )
