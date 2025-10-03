@@ -54,7 +54,6 @@ effort_summary.insert(
     "scenario_idx",
     effort_summary["scenario_label"].apply(lambda x: scenario_labels.index(x)),
 )
-effort_summary.head()
 
 effort_matrix = (
     effort_summary.pivot(
@@ -64,6 +63,23 @@ effort_matrix = (
     .values
 )
 assert effort_matrix.shape == (16, 4)
+
+priors_summary = pd.read_csv("../data/planning_priors/priors_summary.csv")
+priors_summary.insert(
+    priors_summary.columns.get_loc("scenario_label") + 1,
+    "scenario_idx",
+    priors_summary["scenario_label"].apply(lambda x: scenario_labels.index(x)),
+)
+
+priors_matrix = (
+    priors_summary.pivot(
+        index="scenario_idx", columns="action", values="empirical_stat"
+    )
+    .fillna(0)
+    .values
+)
+assert priors_matrix.shape == (16, 4)
+
 
 discomfort_summary = pd.read_csv("../data/discomfort/discomfort_summary.csv")
 discomfort_summary.insert(
@@ -87,6 +103,7 @@ discomfort_matrix = discomfort_pivot.values.reshape(
 risk_matrix = jnp.array(risk_matrix)
 effort_matrix = jnp.array(effort_matrix)
 discomfort_matrix = jnp.array(discomfort_matrix)
+priors_matrix = jnp.array(priors_matrix)
 
 
 # define functions for the model
@@ -106,9 +123,19 @@ def c_discomfort(scenario_idx, a, c):
 
 
 @jax.jit
+def action_priors(scenario_idx, a):
+    return priors_matrix[scenario_idx, a]
+
+
+@jax.jit
 def reward(a):
     # how much reward do you get for eating the food?
     return jnp.where(a == 0, 0, 1)
+
+
+@jax.jit
+def vanilla_utility(scenario_idx, a, c, w_r, w_c):
+    return w_r * reward(a) - w_c * c_risk(scenario_idx, a)
 
 
 @memo
@@ -117,19 +144,27 @@ def vanilla_actor[a: risk_levels, c: closeness_levels](scenario_idx, alpha, w_r,
     actor: knows(c)
     actor: chooses(
         a in risk_levels,
-        wpp=exp(alpha * (w_r * reward(a) - w_c * c_risk(scenario_idx, a))),
+        wpp=exp(
+            alpha
+            * (
+                vanilla_utility(scenario_idx, a, c, w_r, w_c)
+                + log(action_priors(scenario_idx, a))
+            )
+        ),
     )
     return Pr[actor.a == a]
 
 
 @jax.jit
 def get_scale(w_r, w_c, c, kappa):
-    return 1 / (kappa * (c + 1))
-
+    return 1 / (jnp.exp(c + 1))
 
 @jax.jit
-def get_shape(p_0, kappa, c): # delete later
-    return 1
+def relationship_utility(scenario_idx, a, c, w_r, w_c, p_0, kappa):
+    # return w_r * reward(a) - w_c * c_discomfort(scenario_idx, a, c)
+    return w_r * reward(a) - w_c * get_scale(w_r, w_c, c, kappa) * (
+        c_risk(scenario_idx, a)
+    )
 
 
 @memo
@@ -144,9 +179,8 @@ def relationship_actor[a: risk_levels, c: closeness_levels](
         wpp=exp(
             alpha
             * (
-                w_r * reward(a)
-                # - w_c * c_discomfort(scenario_idx, a, c)
-                - w_c * get_scale(w_r, w_c, c, kappa) * (c_risk(scenario_idx, a))
+                relationship_utility(scenario_idx, a, c, w_r, w_c, p_0, kappa)
+                + log(action_priors(scenario_idx, a))
             )
         ),
     )
