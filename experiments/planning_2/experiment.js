@@ -11,13 +11,20 @@ Promise.all([
   fetch("html/consent.html").then((response) => response.text()),
   fetch("html/exit-survey.html").then((response) => response.text()),
 ])
-  .then(([stimuliData, counterbalancingData, consentContent, exitSurveyContent]) => {
-    stimuli = stimuliData;
-    counterbalancing = counterbalancingData;
-    consentHtml = consentContent;
-    exitSurveyHtml = exitSurveyContent;
-    initExperiment();
-  })
+  .then(
+    ([
+      stimuliData,
+      counterbalancingData,
+      consentContent,
+      exitSurveyContent,
+    ]) => {
+      stimuli = stimuliData;
+      counterbalancing = counterbalancingData;
+      consentHtml = consentContent;
+      exitSurveyHtml = exitSurveyContent;
+      initExperiment();
+    }
+  )
   .catch((error) => {
     console.error("Error loading experiment files:", error);
     alert("Error loading experiment data. Please refresh the page.");
@@ -44,12 +51,14 @@ async function createExperiment() {
 
   const condition_assignment = await jsPsychPipe.getCondition("jqvunRpntsxV");
   const assignedSequence = counterbalancing[condition_assignment];
-  
-  const stimuliWithIntimacy = stimuli.map(stimulus => {
-    const sequenceItem = assignedSequence.find(item => item.scenario_label === stimulus.scenario_label);
+
+  const stimuliWithIntimacy = stimuli.map((stimulus) => {
+    const sequenceItem = assignedSequence.find(
+      (item) => item.scenario_label === stimulus.scenario_label
+    );
     return {
       ...stimulus,
-      intimacy_condition: sequenceItem ? sequenceItem.intimacy : ""
+      intimacy_condition: sequenceItem ? sequenceItem.intimacy : "",
     };
   });
 
