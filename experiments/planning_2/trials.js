@@ -1,18 +1,8 @@
-const likert_labels = [
-  "Extremely unlikely",
-  "Unlikely",
-  "Somewhat unlikely",
-  "Neither likely nor unlikely",
-  "Somewhat likely",
-  "Likely",
-  "Extremely likely",
-];
-
-const closeness_texts = {
-  not_close: "not close",
-  somewhat_close: "somewhat close",
-  close: "close",
-  extremely_close: "extremely close",
+const intimacy_texts = {
+  0: "0 (maximally formal)",
+  50: "50 (neither formal nor intimate)",
+  75: "75 (somewhat intimate)",
+  100: "100 (maximally intimate)",
 };
 
 export function makeTimeline(
@@ -29,19 +19,46 @@ export function makeTimeline(
     show_page_number: true,
   };
 
-  const instructions = {
+  const instructionsPage1 = {
     type: jsPsychInstructions,
     pages: [
       `
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
-                <p>In this survey, you will read vignettes about two people in different kinds of social relationships, sharing different kinds of food in different situations. For each scenario, you will read about four different actions the two people can take.</p>
-                <p>For each scenario, you will use sliders to indicate the probability that the two people will choose each action. The probabilities must sum to 100%. You can move sliders freely, and when you release a slider, all values will be automatically adjusted to sum to 100%.</p>
-                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
-                <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
-                <p>Press next to begin the survey.</p>
+                <p>In this survey, you will read vignettes about two people in different kinds of social relationships, sharing different kinds of food in different situations.</p>
+                <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p> 
             </div>
             `,
+    ],
+    show_clickable_nav: true,
+    show_page_number: true,
+  };
+
+  const instructionsPage2 = {
+    type: jsPsychInstructions,
+    pages: [
+      `
+            <div class="instructions-container">
+                <h2>Social interactions survey</h2>
+                <p>For each scenario, you will read about four different actions the two people can take. You will use sliders to indicate the probability that the two people will choose each action. The probabilities must sum to 100%. You can move sliders freely, and when you release a slider, all values will be automatically adjusted to sum to 100%.</p>
+            </div>
+            `,
+    ],
+    show_clickable_nav: true,
+    show_page_number: true,
+  };
+
+  const instructionsPage3 = {
+    type: jsPsychInstructions,
+    pages: [
+      `
+        <div class="instructions-container">
+          <h2>Social interactions survey</h2>
+            <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
+            <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
+            <p>Press next to begin the survey.</p>
+        </div>
+      `,
     ],
     show_clickable_nav: true,
     show_page_number: true,
@@ -52,44 +69,38 @@ export function makeTimeline(
   stimuli.forEach((stimulus, stimulusIndex) => {
     // add attention check after the 14th scenario
     if (stimulusIndex === 14) {
-      const attentionCheckQuestions = [];
-      const attentionCheckPrompts = [
-        `Please select "Extremely unlikely."`,
-        `Please select "Extremely likely."`,
-        `Please select "Neither likely nor unlikely."`,
-        `Please select "Somewhat unlikely."`,
+      const attentionCheckLabels = [
+        "Please set this slider to 0%",
+        "Please set this slider to 100%",
+        "Please set this slider to 50%",
+        "Please set this slider to 25%",
       ];
-      for (let i = 0; i < 4; i++) {
-        attentionCheckQuestions.push({
-          prompt: `<div class="action-text">${attentionCheckPrompts[i]}</div>`,
-          name: `attention_check_${i}`,
-          labels: likert_labels,
-          required: true,
-        });
-      }
 
       trials.push({
-        type: jsPsychSurveyLikert,
-        questions: attentionCheckQuestions,
-        preamble: `
+        type: jsPsychProbabilitySliders,
+        labels: attentionCheckLabels,
+        start: [0.25, 0.25, 0.25, 0.25], // Start with equal probabilities
+        button_label: "Continue",
+        show_reset: true,
+        show_chips: false,
+        instruction_html: `
           <div>
             <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
-            <p><strong>Please answer the following questions.</strong></p>
+            <p><strong>Please set each slider to the exact percentage requested below.</strong></p>
           </div>
         `,
-        randomize_question_order: false,
-        button_label: "Continue",
-        scale_width: 950,
+        precision: 3,
+        require_total_exact: false, // Allow non-100% totals for attention check
         data: {
           response_type: "attention_check",
         },
         on_finish: function (data) {
-          const responses = data.response || {};
+          const probs = data.probs || [];
           data.attention_passed =
-            responses.attention_check_0 == 0 &&
-            responses.attention_check_1 == 6 &&
-            responses.attention_check_2 == 3 &&
-            responses.attention_check_3 == 2;
+            Math.abs(probs[0] - 0.0) < 0.05 && // 0% (within 5% tolerance)
+            Math.abs(probs[1] - 1.0) < 0.05 && // 100% (within 5% tolerance)
+            Math.abs(probs[2] - 0.5) < 0.05 && // 50% (within 5% tolerance)
+            Math.abs(probs[3] - 0.25) < 0.05; // 25% (within 5% tolerance)
         },
       });
     }
@@ -102,12 +113,12 @@ export function makeTimeline(
         stimuli.length
       }</h2>
                         <div class="vignette-text">
-                        <p class="closeness-info">Consider ${
+                        <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
                           stimulus.name_0
                         } and ${
         stimulus.name_1
-      }, who would describe their relationship as <strong>${
-        closeness_texts[stimulus.closeness_condition]
+      } are in a relationship they would describe as <strong>${
+        intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
                             <p>${stimulus.vignette}</p>
                         </div>
@@ -132,10 +143,12 @@ export function makeTimeline(
       show_chips: true,
       instruction_html: `
         <div>
-          <p class="closeness-info">Consider ${stimulus.name_0} and ${
+          <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+            stimulus.name_0
+          } and ${
         stimulus.name_1
-      }, who would describe their relationship as <strong>${
-        closeness_texts[stimulus.closeness_condition]
+      } are in a relationship they would describe as <strong>${
+        intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
           <p>${stimulus.vignette}</p>
           <p><strong>Please indicate the probability that the two people will choose each action.</strong></p>
@@ -148,7 +161,7 @@ export function makeTimeline(
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         vignette: stimulus.vignette,
-        closeness_condition: stimulus.closeness_condition,
+        intimacy_condition: stimulus.intimacy_condition,
       },
     });
 
@@ -292,7 +305,9 @@ export function makeTimeline(
   let timeline = [];
 
   timeline.push(consent);
-  timeline.push(instructions);
+  timeline.push(instructionsPage1);
+  timeline.push(instructionsPage2);
+  timeline.push(instructionsPage3);
   timeline.push(...trials);
   timeline.push(exitSurvey);
   timeline.push(saveData);

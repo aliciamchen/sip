@@ -144,7 +144,7 @@ var jsPsychProbabilitySliders = (function (jspsych) {
               <div class="ps-totalbar" style="display:flex;justify-content:flex-end;align-items:center;margin-top:34px;">
                 <div>
                   ${resetBtn}
-                  <button class="ps-btn" id="ps-continue" type="button" style="padding:10px 16px;border:1px solid #ccc;border-radius:10px;background:#f5f5f5;cursor:pointer;">${trial.button_label}</button>
+                  <button class="ps-btn" id="ps-continue" type="button" style="padding:10px 16px;border:1px solid #ccc;border-radius:10px;background:#f5f5f5;cursor:pointer;" disabled>${trial.button_label}</button>
                 </div>
               </div>
             </div>`;
@@ -161,6 +161,8 @@ var jsPsychProbabilitySliders = (function (jspsych) {
         const btnCont = display_element.querySelector('#ps-continue');
         const btnReset = display_element.querySelector('#ps-reset');
 
+        let hasSliderMoved = false;
+
         const updateUI = () => {
           for (let i=0;i<n;i++) {
             const s = display_element.querySelector(`#ps-slider-${i}`);
@@ -168,8 +170,8 @@ var jsPsychProbabilitySliders = (function (jspsych) {
             if (s) s.value = percents[i];
             if (v) v.textContent = percents[i];
           }
-          // Always enable continue button since we normalize on release
-          if (btnCont) btnCont.disabled = false;
+          // Enable continue button only after a slider has been moved
+          if (btnCont) btnCont.disabled = !hasSliderMoved;
         };
   
         // Wire sliders
@@ -178,12 +180,14 @@ var jsPsychProbabilitySliders = (function (jspsych) {
           s.addEventListener('input', (e) => {
             // Allow free dragging - just update the specific slider value
             percents[i] = Number(e.target.value);
+            hasSliderMoved = true;
             updateUI();
           });
           s.addEventListener('change', (e) => {
             // On release, normalize all values to sum to 100
             percents[i] = Number(e.target.value);
             percents = normalize(percents);
+            hasSliderMoved = true;
             updateUI();
           });
         }
@@ -191,6 +195,7 @@ var jsPsychProbabilitySliders = (function (jspsych) {
         if (btnReset) {
           btnReset.addEventListener('click', () => {
             percents = equalPercents(n);
+            hasSliderMoved = false;
             updateUI();
           });
         }

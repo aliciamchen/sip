@@ -45,15 +45,15 @@ async function createExperiment() {
   const condition_assignment = await jsPsychPipe.getCondition("jqvunRpntsxV");
   const assignedSequence = counterbalancing[condition_assignment];
   
-  const stimuliWithCloseness = stimuli.map(stimulus => {
+  const stimuliWithIntimacy = stimuli.map(stimulus => {
     const sequenceItem = assignedSequence.find(item => item.scenario_label === stimulus.scenario_label);
     return {
       ...stimulus,
-      closeness_condition: sequenceItem ? sequenceItem.closeness : ""
+      intimacy_condition: sequenceItem ? sequenceItem.intimacy : ""
     };
   });
 
-  const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithCloseness);
+  const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithIntimacy);
 
   let timeline = makeTimeline(
     jsPsych,
