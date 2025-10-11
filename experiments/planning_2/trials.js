@@ -19,7 +19,7 @@ export function makeTimeline(
     show_page_number: true,
   };
 
-  const instructionsPage1 = {
+  const instructions = {
     type: jsPsychInstructions,
     pages: [
       `
@@ -33,6 +33,7 @@ export function makeTimeline(
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
                 <p>For each scenario, you will read about four different actions the two people can take. You will use sliders to indicate the probability that the two people will choose each action. The probabilities must sum to 100%. You can move sliders freely, and when you release a slider, all values will be automatically adjusted to sum to 100%.</p>
+                <p>Note that this means that sometimes you might have to move the sliders multiple times to get to the probabilities you want.</p>
             </div>
             `,
       `
@@ -85,8 +86,6 @@ export function makeTimeline(
             Math.abs(probs[1] - 0.0) < 0.01 &&
             Math.abs(probs[2] - 0.25) < 0.01 &&
             Math.abs(probs[3] - 0.75) < 0.01;
-
-          console.log(data);
         },
       });
     }
@@ -159,7 +158,7 @@ export function makeTimeline(
         vignette: stimulus.vignette,
         intimacy_condition: stimulus.intimacy_condition,
         reward_condition: stimulus.reward_condition,
-      },
+      }
     });
 
     // Memory check for the "hike" scenario
@@ -302,9 +301,7 @@ export function makeTimeline(
   let timeline = [];
 
   timeline.push(consent);
-  timeline.push(instructionsPage1);
-  timeline.push(instructionsPage2);
-  timeline.push(instructionsPage3);
+  timeline.push(instructions);
   timeline.push(...trials);
   timeline.push(exitSurvey);
   timeline.push(saveData);
