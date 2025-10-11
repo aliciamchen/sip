@@ -82,10 +82,10 @@ export function makeTimeline(
         on_finish: function (data) {
           const probs = data.probs || [];
           data.attention_passed =
-            Math.abs(probs[0] - 0.0) < 0.01 &&
-            Math.abs(probs[1] - 0.0) < 0.01 &&
-            Math.abs(probs[2] - 0.25) < 0.01 &&
-            Math.abs(probs[3] - 0.75) < 0.01;
+            Math.abs(probs[0] - 0.0) < 0.02 &&
+            Math.abs(probs[1] - 0.0) < 0.02 &&
+            Math.abs(probs[2] - 0.25) < 0.02 &&
+            Math.abs(probs[3] - 0.75) < 0.02;
         },
       });
     }
