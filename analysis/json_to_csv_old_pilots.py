@@ -10,7 +10,12 @@ Usage:
     python json_to_csv.py <experiment_name>
     
 Available experiments:
-    - planning-2: Experiment with probability sliders for action ratings
+    - effort: Basic experiment with action ratings
+    - discomfort: Experiment with closeness conditions and attention/memory checks
+    - planning-1: Experiment with closeness conditions and attention/memory checks  
+    - planning_comm: Experiment with closeness conditions and attention/memory checks
+    - planning_priors: Basic experiment with action ratings (no closeness)
+    - risk: Experiment with attention/memory checks but no closeness conditions
 """
 
 import json
@@ -28,11 +33,46 @@ from utils import get_project_root
 
 # Experiment configurations
 EXPERIMENT_CONFIGS = {
-    'planning-2': {
-        'description': 'Experiment with probability sliders for action ratings',
-        'main_trial_fields': ['subject_id', 'scenario_label', 'intimacy_condition', 'reward_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
+    'effort': {
+        'description': 'Basic experiment with action ratings',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments'],
+        'has_closeness': False,
+        'has_attention_memory': False
+    },
+    'discomfort': {
+        'description': 'Experiment with closeness conditions and attention/memory checks',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'closeness_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
         'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
         'has_closeness': True,
+        'has_attention_memory': True
+    },
+    'planning-1': {
+        'description': 'Experiment with closeness conditions and attention/memory checks',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'closeness_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': True,
+        'has_attention_memory': True
+    },
+    'risk': {
+        'description': 'Experiment with attention/memory checks but no closeness conditions',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': False,
+        'has_attention_memory': True
+    },
+    'planning_comm': {
+        'description': 'Experiment with closeness conditions and attention/memory checks',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'closeness_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': True,
+        'has_attention_memory': True
+    },
+    'planning_priors': {
+        'description': 'Basic experiment with action ratings (no closeness)',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_0', 'action_1', 'action_2', 'action_3'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': False,
         'has_attention_memory': True
     }
 }
@@ -94,13 +134,13 @@ def process_json_files(input_dir, output_dir, config):
                 if trial_type == 'response':
                     # Extract main trial data
                     scenario_label = trial.get('scenario_label', '')
+                    response = trial.get('response', {})
                     
-                    # Extract action probabilities from probs field
-                    probs = trial.get('probs', [])
-                    action_0 = probs[0] if len(probs) > 0 else ''
-                    action_1 = probs[1] if len(probs) > 1 else ''
-                    action_2 = probs[2] if len(probs) > 2 else ''
-                    action_3 = probs[3] if len(probs) > 3 else ''
+                    # Extract action ratings
+                    action_0 = response.get('action_0', '')
+                    action_1 = response.get('action_1', '')
+                    action_2 = response.get('action_2', '')
+                    action_3 = response.get('action_3', '')
                     
                     # Build trial data dictionary
                     trial_data = {
@@ -112,10 +152,9 @@ def process_json_files(input_dir, output_dir, config):
                         'action_3': action_3,
                     }
                     
-                    # Add intimacy and reward conditions if this experiment has them
+                    # Add closeness condition if this experiment has it
                     if config['has_closeness']:
-                        trial_data['intimacy_condition'] = trial.get('intimacy_condition', '')
-                        trial_data['reward_condition'] = trial.get('reward_condition', '')
+                        trial_data['closeness_condition'] = trial.get('closeness_condition', '')
                     
                     main_trials_data.append(trial_data)
                 
@@ -177,10 +216,20 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available experiments:
-  planning-2    Experiment with probability sliders for action ratings
+  effort        Basic experiment with action ratings
+  discomfort    Experiment with closeness conditions and attention/memory checks
+  planning-1    Experiment with closeness conditions and attention/memory checks
+  planning_comm Experiment with closeness conditions and attention/memory checks
+  planning_priors Basic experiment with action ratings (no closeness)
+  risk          Experiment with attention/memory checks but no closeness conditions
 
 Examples:
-  python json_to_csv.py planning-2
+  python json_to_csv.py effort
+  python json_to_csv.py discomfort
+  python json_to_csv.py planning-1
+  python json_to_csv.py planning_comm
+  python json_to_csv.py planning_priors
+  python json_to_csv.py risk
         """
     )
     
