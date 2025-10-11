@@ -4,3 +4,4 @@ raw_data
 .Rproj.user
 *.Rproj
 __pycache__
+*.Rhistory
