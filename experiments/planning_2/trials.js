@@ -121,6 +121,11 @@ export function makeTimeline(
         intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
                             <p>${stimulus.vignette}</p>
+                            <p>${
+                              stimulus.reward_condition == "low"
+                                ? stimulus.reward_low
+                                : stimulus.reward_high
+                            }</p>
                         </div>
                         <p style="text-align: center;"><em>Press any key to see the actions.</em></p>
                     </div>
@@ -151,6 +156,11 @@ export function makeTimeline(
         intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
           <p>${stimulus.vignette}</p>
+          <p>${
+            stimulus.reward_condition == "low"
+              ? stimulus.reward_low
+              : stimulus.reward_high
+          }</p>
           <p><strong>Please indicate the probability that the two people will choose each action.</strong></p>
         </div>
       `,
@@ -162,6 +172,7 @@ export function makeTimeline(
         scenario_label: stimulus.scenario_label,
         vignette: stimulus.vignette,
         intimacy_condition: stimulus.intimacy_condition,
+        reward_condition: stimulus.reward_condition,
       },
     });
 
@@ -288,7 +299,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "jqvunRpntsxV",
+    experiment_id: "7Us7gCwbtXqM",
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };

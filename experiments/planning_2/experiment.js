@@ -49,20 +49,21 @@ async function createExperiment() {
     url: window.location.href,
   });
 
-  const condition_assignment = await jsPsychPipe.getCondition("jqvunRpntsxV");
+  const condition_assignment = await jsPsychPipe.getCondition("7Us7gCwbtXqM");
   const assignedSequence = counterbalancing[condition_assignment];
 
-  const stimuliWithIntimacy = stimuli.map((stimulus) => {
+  const stimuliWithIntimacyReward = stimuli.map((stimulus) => {
     const sequenceItem = assignedSequence.find(
       (item) => item.scenario_label === stimulus.scenario_label
     );
     return {
       ...stimulus,
       intimacy_condition: sequenceItem ? sequenceItem.intimacy : "",
+      reward_condition: sequenceItem ? sequenceItem.reward : "",
     };
   });
 
-  const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithIntimacy);
+  const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithIntimacyReward);
 
   let timeline = makeTimeline(
     jsPsych,

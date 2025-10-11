@@ -29,34 +29,38 @@ all_stories = [
     "wedding",
 ]
 
-all_conditions = [
-    0, # maximally formal 
-    0,  
-    0,  
-    0,  
-    50,  
-    50,  
-    50,  
-    50,  
-    75,  
-    75,  
-    75,  
-    75,
-    100, 
-    100,  
-    100,  
-    100,  # maximally intimate
+all_intimacy = [
+    (0, "low"),  # maximally formal
+    (0, "low"),
+    (0, "high"),
+    (0, "high"),
+    (50, "low"),
+    (50, "low"),
+    (50, "high"),
+    (50, "high"),
+    (75, "low"),
+    (75, "low"),
+    (75, "high"),
+    (75, "high"),
+    (100, "low"),
+    (100, "low"),
+    (100, "high"),
+    (100, "high"),  # maximally intimate
 ]
 
 
-def make_trial_sequence(story_list, condition_list):
-    """Create a sequence of trials with story-condition pairs."""
-    assert len(story_list) == len(condition_list)
+def make_trial_sequence(story_list, intimacy_list):
+    """Create a sequence of trials with story-intimacy pairs."""
+    assert len(story_list) == len(intimacy_list)
     return list(
         map(
-            lambda story, condition: {"scenario_label": story, "intimacy": condition},
+            lambda story, intimacy: {
+                "scenario_label": story,
+                "intimacy": intimacy[0],
+                "reward": intimacy[1],
+            },
             story_list,
-            condition_list,
+            intimacy_list,
         )
     )
 
@@ -67,7 +71,7 @@ def make_counterbalancing_once(stories):
     for trial_idx in range(len(stories)):
         # Rotate the stories list
         stories_temp = stories[trial_idx:] + stories[:trial_idx]
-        this_trial_seq = make_trial_sequence(stories_temp, all_conditions)
+        this_trial_seq = make_trial_sequence(stories_temp, all_intimacy)
         counterbalance_seq.append(this_trial_seq)
     return counterbalance_seq
 
