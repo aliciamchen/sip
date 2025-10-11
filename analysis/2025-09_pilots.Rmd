@@ -465,6 +465,29 @@ ggplot(d.planning.risk, aes(x = risk_mean, y = planning_mean, color = closeness_
   scale_color_viridis_d(begin = 0, end = 0.85) 
 ```
 
+look at scenario wide
+
+```{r}
+ggplot(d.planning.risk, aes(x = risk_mean, y = planning_mean, color = closeness_condition, group = closeness_condition)) +
+  geom_point(size = 4, aes(shape = as.factor(action)), alpha = 0.3) +
+  geom_errorbarh(aes(xmin = risk_ci_lower, xmax = risk_ci_upper), height = 0.1, alpha = 0.3) +
+  geom_errorbar(aes(ymin = planning_ci_lower, ymax = planning_ci_upper), width = 0.1, alpha = 0.3) +
+  geom_line()+
+  labs(
+    x = "Risk rating",
+    y = "How likely to choose action?",
+    title = "No communication",
+    color = "Closeness",
+    shape = "Action"
+  ) +
+  scale_x_continuous(breaks = 1:7, limits = c(1, 7)) +
+  scale_y_continuous(breaks = 1:7, limits = c(1, 7)) + 
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) + 
+  facet_wrap(~ scenario_label)
+```
+
 ## What are people's priors for actions? 
 
 ```{r}
@@ -686,6 +709,56 @@ ggplot(d.combined, aes(x = relationship_mean, y = data_mean, color = closeness_c
 cor.test(d.combined$data_mean, d.combined$vanilla_mean)
 cor.test(d.combined$data_mean, d.combined$relationship_mean)
 ```
+
+What are the scenarios where the model under predicts? 
+
+```{r}
+d.combined.resid <- d.combined %>%
+  mutate(vanilla_resid = data_mean - vanilla_mean,
+         relationship_resid = data_mean - relationship_mean) %>% 
+  select(scenario_label, closeness_condition, action, vanilla_resid, relationship_resid) 
+
+ggplot(d.combined.resid, aes(x = scenario_label, y = vanilla_resid, fill = closeness_condition)) +
+  geom_bar(stat = "identity", position = position_dodge()) 
+```
+
+Plot residuals
+
+```{r}
+ggplot(d.combined.resid, aes(x = closeness_condition, y = relationship_resid, color = closeness_condition, shape = as.factor(action))) +
+  geom_point(size = 4, alpha = 0.8, position = position_dodge(width = 0.8)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    x = "Closeness",
+    y = "Residual (data - model)",
+    title = "Relationship model residuals",
+  ) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~ scenario_label)
+```
+
+Vanilla model residuals
+
+```{r}
+ggplot(d.combined.resid, aes(x = closeness_condition, y = vanilla_resid, color = closeness_condition, shape = as.factor(action))) +
+  geom_point(size = 4, alpha = 0.8, position = position_dodge(width = 0.8)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    x = "Closeness",
+    y = "Residual (data - model)",
+    title = "Vanilla model residuals",
+  ) +
+  scale_fill_viridis_d(begin = 0, end = 0.85) +
+  scale_color_viridis_d(begin = 0, end = 0.85) +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  facet_wrap(~ scenario_label)
+```
+
+
 
 # old stuff
 
