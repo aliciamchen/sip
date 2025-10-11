@@ -71,9 +71,9 @@ export function makeTimeline(
     if (stimulusIndex === 14) {
       const attentionCheckLabels = [
         "Please set this slider to 0%",
-        "Please set this slider to 100%",
-        "Please set this slider to 50%",
+        "Please set this slider to 0%",
         "Please set this slider to 25%",
+        "Please set this slider to 75%",
       ];
 
       trials.push({
@@ -90,17 +90,19 @@ export function makeTimeline(
           </div>
         `,
         precision: 3,
-        require_total_exact: false, // Allow non-100% totals for attention check
+        require_total_exact: true, // Allow non-100% totals for attention check
         data: {
           response_type: "attention_check",
         },
         on_finish: function (data) {
           const probs = data.probs || [];
           data.attention_passed =
-            Math.abs(probs[0] - 0.0) < 0.05 && // 0% (within 5% tolerance)
-            Math.abs(probs[1] - 1.0) < 0.05 && // 100% (within 5% tolerance)
-            Math.abs(probs[2] - 0.5) < 0.05 && // 50% (within 5% tolerance)
-            Math.abs(probs[3] - 0.25) < 0.05; // 25% (within 5% tolerance)
+            Math.abs(probs[0] - 0.0) < 0.01 &&
+            Math.abs(probs[1] - 0.0) < 0.01 &&
+            Math.abs(probs[2] - 0.25) < 0.01 &&
+            Math.abs(probs[3] - 0.75) < 0.01;
+
+          console.log(data);
         },
       });
     }
