@@ -29,36 +29,20 @@ export function makeTimeline(
                 <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p> 
             </div>
             `,
-    ],
-    show_clickable_nav: true,
-    show_page_number: true,
-  };
-
-  const instructionsPage2 = {
-    type: jsPsychInstructions,
-    pages: [
       `
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
                 <p>For each scenario, you will read about four different actions the two people can take. You will use sliders to indicate the probability that the two people will choose each action. The probabilities must sum to 100%. You can move sliders freely, and when you release a slider, all values will be automatically adjusted to sum to 100%.</p>
             </div>
             `,
-    ],
-    show_clickable_nav: true,
-    show_page_number: true,
-  };
-
-  const instructionsPage3 = {
-    type: jsPsychInstructions,
-    pages: [
       `
-        <div class="instructions-container">
-          <h2>Social interactions survey</h2>
-            <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
-            <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
-            <p>Press next to begin the survey.</p>
-        </div>
-      `,
+            <div class="instructions-container">
+              <h2>Social interactions survey</h2>
+                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
+                <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
+                <p>Press next to begin the survey.</p>
+            </div>
+          `,
     ],
     show_clickable_nav: true,
     show_page_number: true,
