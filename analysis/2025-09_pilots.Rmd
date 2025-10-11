@@ -712,16 +712,6 @@ cor.test(d.combined$data_mean, d.combined$relationship_mean)
 
 What are the scenarios where the model under predicts? 
 
-```{r}
-d.combined.resid <- d.combined %>%
-  mutate(vanilla_resid = data_mean - vanilla_mean,
-         relationship_resid = data_mean - relationship_mean) %>% 
-  select(scenario_label, closeness_condition, action, vanilla_resid, relationship_resid) 
-
-ggplot(d.combined.resid, aes(x = scenario_label, y = vanilla_resid, fill = closeness_condition)) +
-  geom_bar(stat = "identity", position = position_dodge()) 
-```
-
 Plot residuals
 
 ```{r}

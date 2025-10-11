@@ -1,0 +1,103 @@
+---
+title: "2025-10_pilots"
+output: html_document
+---
+
+
+```{r}
+library(here)
+library(tidyverse)
+library(tidyboot)
+library(lme4)
+
+theme_set(theme_classic(base_size = 15))
+```
+
+## planning-2 pilot 1
+
+This experiment manipulates how much two people want the food (`low` vs. `high` reward), and the relationship between the two people (0, 50, 75, or 100 on a 100 point scale between 'intimate' and 'formal'). 
+
+```{r}
+df_planning <- read_csv(here("data", "planning-2", "main_trials.csv")) |> 
+  rename(intimacy = intimacy_condition, 
+         reward = reward_condition) |> 
+  mutate(reward = factor(reward, levels = c("low", "high")), 
+         model = "humans") |>
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "p_action")
+```
+### Look at summary across scenarios
+
+Calculate means
+
+```{r}
+df_planning_summary <- df_planning |> 
+  group_by(intimacy, reward, action) |> 
+  tidyboot_mean(p_action)
+```
+
+Plot
+
+```{r}
+ggplot(df_planning_summary, aes(x = action, y = empirical_stat, color = intimacy, group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                position = position_dodge(width = 0.2), size = 1, width = 0.3) + 
+  geom_line(position = position_dodge(width = 0.2), size = 1) +
+  scale_color_viridis_c(begin = 0, end = 0.85) +
+  labs(y = "P(action)", x = "Action", color = "Intimacy") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~reward, labeller = label_both)
+```
+
+## Look at toy model predictions
+
+```{r}
+df_model <- read_csv(here("model", "toy_model_predictions.csv")) |> 
+  mutate(reward = factor(reward, levels = c("low", "high")), 
+         action = factor(action)) 
+```
+
+Stack the dataframes
+
+```{r}
+df_combined <- bind_rows(df_planning, df_model) |> 
+  mutate(
+    model = case_when(
+    model == "humans" ~ "Humans", 
+    model == "vanilla" ~ "Vanilla model", 
+    model == "relationship" ~ "Relationship model"
+  )) |> 
+  mutate(model = factor(model, levels = c("Vanilla model", "Relationship model", "Humans")))
+```
+
+### Summarize combined
+
+```{r}
+df_combined_summary <- df_combined |> 
+  group_by(intimacy, reward, model, action) |> 
+  tidyboot_mean(p_action)
+```
+
+Plot
+
+```{r}
+ggplot(df_combined_summary, aes(x = action, y = empirical_stat, color = intimacy, group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                position = position_dodge(width = 0.2), size = 1, width = 0.3) + 
+  geom_line(position = position_dodge(width = 0.2), size = 1) +
+  scale_color_viridis_c(begin = 0, end = 0.85) +
+  labs(y = "P(action)", x = "Action", color = "Intimacy", title = "Forward planning") +
+  theme(legend.position = "bottom") +
+  facet_grid(reward ~ model)
+```
+
+
+
+
+
+
