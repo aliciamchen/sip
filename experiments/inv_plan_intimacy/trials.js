@@ -26,7 +26,7 @@ export function makeTimeline(
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
                 <p>In this survey, you will read vignettes about two people sharing different kinds of food in different situations.</p>
-                <p>For each scenario, you will read about four different actions the two people can take.</p>
+                <p>For each scenario, you will read about four different actions you might expect the two people to take.</p>
                 <p>Before observing what action they decide to take, we will ask you to evaluate what kind of social relationship you think the two people are in.</p>
                 <p>Then, we will show you what action they take, and ask you to re-evaluate what kind of social relationship you think the two people are in.</p>
             </div>
@@ -56,38 +56,29 @@ export function makeTimeline(
   stimuli.forEach((stimulus, stimulusIndex) => {
     // add attention check after the 14th scenario
     if (stimulusIndex === 14) {
-      const attentionCheckLabels = [
-        "Please set this slider to 0%",
-        "Please set this slider to 0%",
-        "Please set this slider to 25%",
-        "Please set this slider to 75%",
-      ];
-
       trials.push({
         type: jsPsychHtmlSliderResponse,
-        labels: attentionCheckLabels,
-        start: [0.25, 0.25, 0.25, 0.25], // Start with equal probabilities
+        labels: [
+          "0<br>Maximally formal",
+          "50<br>Neither formal nor intimate",
+          "100<br>Maximally intimate",
+        ],
+        slider_min: 0,
+        slider_max: 100,
+        step: 1,
+        require_movement: true,
         button_label: "Continue",
-        show_reset: true,
-        show_chips: false,
-        instruction_html: `
+        stimulus: `
           <div>
             <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
-            <p><strong>Please set each slider to the exact percentage requested below.</strong></p>
+            <p><strong>Please set the slider to "Maximally formal".</strong></p>
           </div>
         `,
-        precision: 3,
-        require_total_exact: true, // Allow non-100% totals for attention check
         data: {
           response_type: "attention_check",
         },
         on_finish: function (data) {
-          const probs = data.probs || [];
-          data.attention_passed =
-            Math.abs(probs[0] - 0.0) < 0.02 &&
-            Math.abs(probs[1] - 0.0) < 0.02 &&
-            Math.abs(probs[2] - 0.25) < 0.02 &&
-            Math.abs(probs[3] - 0.75) < 0.02;
+          data.attention_passed = Math.abs(data.response - 0) < 0.02;
         },
       });
     }
@@ -111,20 +102,20 @@ export function makeTimeline(
                                 ? stimulus.reward_low
                                 : stimulus.reward_high
                             }</p>
-                            <p><em>${stimulus.name_0} and ${
+                            <p><em>You expect that ${stimulus.name_0} and ${
         stimulus.name_1
-      } can take the following actions:</em></p>
+      } will take one of the following actions:</em></p>
                             <ul>
                               <li>${stimulus[`action_0`]}</li>
                               <li>${stimulus[`action_1`]}</li>
                               <li>${stimulus[`action_2`]}</li>
                               <li>${stimulus[`action_3`]}</li>
                             </ul>
-                        <p><strong>On a scale from 0 (maximally formal) to 100 (maximally intimate), how do you think ${
+                        <p><strong>Before observing what they decide to do, how do you think ${
                           stimulus.name_0
                         } and ${
         stimulus.name_1
-      } would describe their relationship?</strong></p>
+      } would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate)?</strong></p>
                     </div>
                 `,
       slider_width: 900,
@@ -159,9 +150,9 @@ export function makeTimeline(
               ? stimulus.reward_low
               : stimulus.reward_high
           }</p>
-          <p><em>${stimulus.name_0} and ${
+          <p><em>You expect that ${stimulus.name_0} and ${
         stimulus.name_1
-      } can take the following actions:</em></p>
+      } will take one of the following actions:</em></p>
           <ul>
             <li>${stimulus[`action_0`]}</li>
             <li>${stimulus[`action_1`]}</li>
@@ -170,11 +161,11 @@ export function makeTimeline(
           </ul>
           <p><em>They decide to take the following action:</em></p>
           <p>${stimulus[`${stimulus.action_condition}`]}</p>
-          <p><strong>Now that you have observed what they decide to do, on a scale from 0 (maximally formal) to 100 (maximally intimate), how do you think ${
+          <p><strong>Now that you have observed what they decide to do, how do you think ${
             stimulus.name_0
           } and ${
         stimulus.name_1
-      } would describe their relationship?</strong></p>
+      } would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate)?</strong></p>
         </div>
       `,
       slider_width: 900,
@@ -321,7 +312,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "7Us7gCwbtXqM",
+    experiment_id: "CC2eJ7iDg1TG",
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };

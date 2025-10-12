@@ -49,7 +49,7 @@ async function createExperiment() {
     url: window.location.href,
   });
 
-  const condition_assignment = await jsPsychPipe.getCondition("7Us7gCwbtXqM");
+  const condition_assignment = await jsPsychPipe.getCondition("CC2eJ7iDg1TG");
   const assignedSequence = counterbalancing[condition_assignment];
 
   const stimuliWithConditions = stimuli.map((stimulus) => {
