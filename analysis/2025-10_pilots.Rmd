@@ -56,7 +56,7 @@ ggplot(df_planning_summary, aes(x = action, y = empirical_stat, color = intimacy
 ## Look at toy model predictions
 
 ```{r}
-df_model <- read_csv(here("model", "toy_model_predictions.csv")) |> 
+df_model_forward <- read_csv(here("model", "model_preds_forward_planning.csv")) |> 
   mutate(reward = factor(reward, levels = c("low", "high")), 
          action = factor(action)) 
 ```
@@ -95,6 +95,61 @@ ggplot(df_combined_summary, aes(x = action, y = empirical_stat, color = intimacy
   theme(legend.position = "bottom") +
   facet_grid(reward ~ model)
 ```
+
+
+# Inverse planning
+
+```{r}
+df_model_inverse <- read_csv(here("model", "model_preds_inverse_planning.csv")) |> 
+  mutate(reward = factor(reward, levels = c("low", "high")), 
+         action = factor(action))
+```
+
+```{r}
+ggplot(df_model_inverse, aes(x = intimacy, y = density, color = action, fill = action)) +
+  geom_area(size = 1, alpha = 0.2, position = "identity") +
+  scale_color_viridis_d(option = "plasma") +
+  scale_fill_viridis_d(option = "plasma") +
+  labs(y = "Density", x = "Intimacy", title = "Inverse planning model predictions") +
+  theme(legend.position = "bottom") +
+  facet_grid(model~reward, labeller = label_both)
+```
+
+Check if `action=0` cases are always the same as the `action=1` cases
+
+```{r}
+df_model_inverse_check <- df_model_inverse |> 
+  select(model, reward, intimacy, action, density) |> 
+  pivot_wider(names_from = action, values_from = density, names_prefix = "action_") |> 
+  mutate(diff = action_0 - action_1)
+```
+
+```{r}
+df_model_inverse_check |> 
+  filter(abs(diff) > 1e-6)
+```
+
+### Inferring reward (whether its low reward or high reward) given information about the relationship and the action taken
+
+```{r}
+df_model_inverse_reward <- read_csv(here("model", "model_preds_inverse_planning_reward.csv")) |> 
+  mutate(reward = factor(reward, levels = c("low", "high")), 
+         action = factor(action))
+```
+Is it that observing more risky actions doesn't necessarily give you more information about reward??? 
+(i think yes beause its like the fact that you did a food sharing action versus no food sharing action in the first place...)
+
+
+```{r}
+ggplot(df_model_inverse_reward, aes(x = intimacy, y = p_reward, color = reward, fill = reward, group = reward)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_line(position = position_dodge(width = 0.2), size = 1) +
+  labs(y = "P(reward)", x = "Intimacy", title = "Inverse planning model predictions") +
+  facet_grid(model~action, labeller = label_both) 
+```
+
+
+
 
 
 
