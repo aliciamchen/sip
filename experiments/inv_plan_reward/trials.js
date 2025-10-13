@@ -58,11 +58,7 @@ export function makeTimeline(
     if (stimulusIndex === 14) {
       trials.push({
         type: jsPsychHtmlSliderResponse,
-        labels: [
-          "0<br>Maximally formal",
-          "50<br>Neither formal nor intimate",
-          "100<br>Maximally intimate",
-        ],
+        labels: ["0", "50", "100"],
         slider_min: 0,
         slider_max: 100,
         step: 1,
@@ -71,7 +67,7 @@ export function makeTimeline(
         stimulus: `
           <div>
             <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
-            <p><strong>Please set the slider to "Maximally formal".</strong></p>
+            <p><strong>Please set the slider all the way to the left (0).</strong></p>
           </div>
         `,
         data: {
@@ -88,6 +84,26 @@ export function makeTimeline(
     for (let i = 0; i < 4; i++) {
       actionLabels.push(stimulus[`action_${i}`]);
     }
+
+    trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+                    <div>
+                        <h2>Scenario ${stimulusIndex + 1} of ${
+        stimuli.length
+      }</h2>
+                        <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+                          stimulus.name_0
+                        } and ${
+        stimulus.name_1
+      } are in a relationship they would describe as <strong>${
+        intimacy_texts[stimulus.intimacy_condition]
+      }</strong>.</p>
+                        <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
+                    </div>
+                `,
+      choices: "ALL_KEYS",
+    });
 
     trials.push({
       type: jsPsychHtmlSliderResponse,
@@ -310,7 +326,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "CC2eJ7iDg1TG",
+    experiment_id: "QsZBwjtGHTen",
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };
