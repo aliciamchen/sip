@@ -11,6 +11,7 @@ Usage:
     
 Available experiments:
     - planning-2: Experiment with probability sliders for action ratings
+    - inv_plan_intimacy: Inverse planning experiment measuring intimacy ratings before and after observing actions
 """
 
 import json
@@ -34,10 +35,17 @@ EXPERIMENT_CONFIGS = {
         'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
         'has_closeness': True,
         'has_attention_memory': True
+    },
+    'inv_plan_intimacy': {
+        'description': 'Inverse planning experiment measuring intimacy ratings before and after observing actions',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_condition', 'reward_condition', 'stage', 'intimacy_rating'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': False,
+        'has_attention_memory': True
     }
 }
 
-def process_json_files(input_dir, output_dir, config):
+def process_json_files(input_dir, output_dir, config, experiment_name):
     """
     Process all JSON files in the input directory and create CSV files.
     
@@ -45,6 +53,7 @@ def process_json_files(input_dir, output_dir, config):
         input_dir (str): Path to directory containing JSON files
         output_dir (str): Path to directory where CSV files will be saved
         config (dict): Experiment configuration
+        experiment_name (str): Name of the experiment being processed
     """
     input_path = Path(input_dir)
     output_path = Path(output_dir)
@@ -95,27 +104,46 @@ def process_json_files(input_dir, output_dir, config):
                     # Extract main trial data
                     scenario_label = trial.get('scenario_label', '')
                     
-                    # Extract action probabilities from probs field
-                    probs = trial.get('probs', [])
-                    action_0 = probs[0] if len(probs) > 0 else ''
-                    action_1 = probs[1] if len(probs) > 1 else ''
-                    action_2 = probs[2] if len(probs) > 2 else ''
-                    action_3 = probs[3] if len(probs) > 3 else ''
+                    # Handle different experiment types
+                    if experiment_name == 'planning-2':
+                        # Extract action probabilities from probs field
+                        probs = trial.get('probs', [])
+                        action_0 = probs[0] if len(probs) > 0 else ''
+                        action_1 = probs[1] if len(probs) > 1 else ''
+                        action_2 = probs[2] if len(probs) > 2 else ''
+                        action_3 = probs[3] if len(probs) > 3 else ''
+                        
+                        # Build trial data dictionary
+                        trial_data = {
+                            'subject_id': subject_id,
+                            'scenario_label': scenario_label,
+                            'action_0': action_0,
+                            'action_1': action_1,
+                            'action_2': action_2,
+                            'action_3': action_3,
+                        }
+                        
+                        # Add intimacy and reward conditions if this experiment has them
+                        if config['has_closeness']:
+                            trial_data['intimacy_condition'] = trial.get('intimacy_condition', '')
+                            trial_data['reward_condition'] = trial.get('reward_condition', '')
                     
-                    # Build trial data dictionary
-                    trial_data = {
-                        'subject_id': subject_id,
-                        'scenario_label': scenario_label,
-                        'action_0': action_0,
-                        'action_1': action_1,
-                        'action_2': action_2,
-                        'action_3': action_3,
-                    }
-                    
-                    # Add intimacy and reward conditions if this experiment has them
-                    if config['has_closeness']:
-                        trial_data['intimacy_condition'] = trial.get('intimacy_condition', '')
-                        trial_data['reward_condition'] = trial.get('reward_condition', '')
+                    elif experiment_name == 'inv_plan_intimacy':
+                        # Extract intimacy rating and stage information
+                        intimacy_rating = trial.get('response', '')
+                        stage = trial.get('stage', '')
+                        action_condition = trial.get('action_condition', '')
+                        reward_condition = trial.get('reward_condition', '')
+                        
+                        # Build trial data dictionary
+                        trial_data = {
+                            'subject_id': subject_id,
+                            'scenario_label': scenario_label,
+                            'action_condition': action_condition,
+                            'reward_condition': reward_condition,
+                            'stage': stage,
+                            'intimacy_rating': intimacy_rating,
+                        }
                     
                     main_trials_data.append(trial_data)
                 
@@ -177,10 +205,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available experiments:
-  planning-2    Experiment with probability sliders for action ratings
+  planning-2         Experiment with probability sliders for action ratings
+  inv_plan_intimacy Inverse planning experiment measuring intimacy ratings before and after observing actions
 
 Examples:
   python json_to_csv.py planning-2
+  python json_to_csv.py inv_plan_intimacy
         """
     )
     
@@ -208,7 +238,7 @@ Examples:
     print(f"Output directory: {output_dir}")
     
     # Process the files
-    process_json_files(input_dir, output_dir, config)
+    process_json_files(input_dir, output_dir, config, args.experiment)
     
     print("Conversion complete!")
 

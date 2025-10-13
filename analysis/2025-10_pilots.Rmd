@@ -108,8 +108,8 @@ df_model_inverse <- read_csv(here("model", "model_preds_inverse_planning.csv")) 
 ```{r}
 ggplot(df_model_inverse, aes(x = intimacy, y = density, color = action, fill = action)) +
   geom_area(size = 1, alpha = 0.2, position = "identity") +
-  scale_color_viridis_d(option = "plasma") +
-  scale_fill_viridis_d(option = "plasma") +
+  scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   labs(y = "Density", x = "Intimacy", title = "Inverse planning model predictions") +
   theme(legend.position = "bottom") +
   facet_grid(model~reward, labeller = label_both)
@@ -149,8 +149,48 @@ ggplot(df_model_inverse_reward, aes(x = intimacy, y = p_reward, color = reward, 
 ```
 
 
+# Inverse planning - inferring intimacy
 
+```{r}
+df_inv_intimacy <- read_csv(here("data", "inv_plan_intimacy", "main_trials.csv")) |> 
+  rename(reward = reward_condition, action = action_condition) |> 
+  mutate(action = str_replace(action, "action_", ""), 
+         reward = factor(reward, levels = c("low", "high")), 
+         stage = factor(stage, levels = c("prior", "posterior")),
+         model = "humans")    
+```
+Calculate aggregate summary
 
+```{r}
+df_inv_intimacy_summary <- df_inv_intimacy |> 
+  group_by(reward, action, stage, model) |> 
+  tidyboot_mean(intimacy_rating)
+```
+Plot 
+
+```{r fig.width=5, fig.height=8}
+ggplot(df_inv_intimacy_summary, aes(x = stage, y = empirical_stat, color = action, group = action)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                position = position_dodge(width = 0.2), size = 1, width = 0.3) + 
+  geom_line(position = position_dodge(width = 0.2), size = 1) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "grey") +
+  scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  labs(y = "Intimacy rating", x = "Stage", color = "Action") +
+  theme(legend.position = "bottom") +
+  facet_grid(action~reward, labeller = label_both)
+```
+
+Plot distributions
+
+```{r}
+ggplot(df_inv_intimacy, aes(x = intimacy_rating, fill = action)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  labs(y = "Density", x = "Intimacy rating", fill = "Action") +
+  theme(legend.position = "bottom") +
+  facet_grid(stage~reward, labeller = label_both)
+```
 
 
 
