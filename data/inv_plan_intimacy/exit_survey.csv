@@ -1,31 +1,32 @@
 subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
-c6fde83e-12d0-5c5a-b363-db6bc3ce5609,female,43,yes,Scenario 14 (the shared oysters) was horrific to me and I feel like Will and Jay should be criminally charged for this action.,True,3
-5bfd5b4c-9020-5bc3-b120-269c6d69b138,male,27,yes,,True,3
-f0288401-3117-5e57-9f0e-4bf876c5338b,female,71,yes,,True,0
-d07a9dbd-b878-5861-9d2d-c46a595adab3,female,36,yes,Thank you!,True,3
-6699970c-256c-55a3-988b-12d12ed202c0,male,57,yes,,True,1
-091c15e4-219f-5ac6-b0f5-6c72a070fb69,male,61,yes,I think I got the checks right. I read the scenario and was focusing on their relationship.,True,2
-634d47e3-6706-51c5-905d-4e66024e8333,male,33,yes,no,True,3
-6f85d2af-bdff-5638-8058-91267169a255,female,40,yes,,True,2
-f3fd02f8-82ea-521f-8c74-6e73095759b6,female,44,yes,,True,2
-f9bde5f7-934b-5e73-b442-a20d7b0fd6e0,male,29,yes,No.,True,2
-63728efe-8114-51f1-beeb-b4005b4381a1,female,49,yes,,True,3
-8e66eeb0-d6bd-5221-967f-55134cb1fa26,male,26,yes,,True,2
-e448280c-3a36-57b4-9917-6763488d8423,male,25,yes,N/A,True,2
-b8489637-5c0d-5499-8b61-31af4fc4597d,male,50,yes,,True,1
-ce2900a4-9171-53dc-938d-8f3354682c38,female,34,yes,,True,2
-3e23a7f0-bd50-568d-a31b-39abd0f8352c,male,50,yes,It was an interesting and thought provoking study.,True,1
-3a63536e-8fc4-5faf-be47-f6b46282490c,female,32,yes,,True,2
-f723a3b4-de1c-5e9a-8e03-8fb691444310,male,33,yes,,True,3
-844a753a-cbe4-50b9-99e2-69fa60b788e8,female,45,yes,N/A,True,3
-e94617cd-ab75-5670-939c-90764ad72523,female,49,yes,Thanks for including me in your study.,True,2
-ebd4e293-97c2-51cc-ad7f-131291832833,female,47,yes,Thank you,True,3
-b1c424dc-1843-5f12-9dcf-6fd63f41e7a1,male,55,yes,"on the one attention check I hope I got the names right, but other than that it was very interesting. Have a great day!",True,1
-08a3e4dc-caed-58f5-bed1-7bd8842bc98d,female,47,yes,,True,2
-f1997065-fa95-5345-8fd6-52313ed4b68a,female,37,yes,Very hard to remember all the names. Scenarios were extremely boring and also weird. I suspect AI was used to help write this which was offputting.,True,2
-412d402e-7427-562d-b46d-1c83ed754079,female,33,yes,This was a nice study and I would like to participate in another one in the future.,True,3
-ebfdb490-372b-5539-a654-0bef03126fd4,female,58,yes,none,True,2
-9c2bd49a-17b5-5dcf-ab12-28044f06bab2,female,52,yes,This was interesting.,True,1
-e101d26a-ccdd-5214-8d60-255d81ea34cc,female,37,yes,,True,3
-d405c72e-1c88-5f49-a0eb-970885ae441e,male,31,yes,,True,2
-fd507633-a644-5b47-bc11-fdfe2853f0f5,female,66,yes,,True,1
+3783f1a5-931a-5726-9027-34b2d0b32530,female,39,yes,,True,2
+8364343f-385d-5f37-bdb0-1c65e9b8c687,male,79,yes,,True,2
+497c661f-485e-5089-919c-12efc20bb2d3,male,32,yes,,True,3
+a62801a4-9486-5770-a2ee-f33bae2d6886,female,27,yes,,False,3
+de3a51a4-ca9e-53b4-8813-7a2b88efcdcd,male,34,yes,,True,2
+ee56c8f3-e0be-54ac-a0ee-16c364de6414,male,25,yes,nothing of note,True,3
+81515880-a008-5e37-b72b-2d7afb2ea9ae,male,30,yes,Enjoyable study,True,3
+5a18a78e-f914-5102-a611-3da423ec539f,male,31,yes,The study fails to classify the third variable of people who do less sanitary things like double dipping and drinking from others drinks and are not doing it on a scale of formal or intimate manners. Likewise there are those who are intimate with others but never share out of a desire not to get bacteria from sharing food or drinks. Those types of people are hard to classify on the scale since more information is needed from the scenarios.  ,True,2
+bfbbde9c-7826-5602-8a6b-5367422921bf,male,29,yes,,True,2
+0aa9138a-9d4d-5f6d-b7f7-7c7fe104b37d,male,34,yes,no,True,3
+ff3a618e-486f-5fc1-b030-cbbd56ce1878,female,36,yes,No.,True,3
+6df437aa-561f-5095-9fed-c75e6f07efbb,male,34,yes,thank you,True,3
+3312a73d-083f-5e15-bd89-5f12a0532ad3,male,49,yes,,True,3
+89786b85-9395-5d36-924b-c509165ee659,male,27,yes,i had no issues with the study. ,True,3
+82f87596-403d-5bde-ba8e-b40501f3a595,female,36,yes,,True,2
+4e9419c3-9e43-50eb-91b8-fa2d19e95154,female,34,yes,I enjoyed participating in this survey.,True,1
+25bbc3fd-0f49-5f73-863c-6cbd47bf8235,male,49,yes,,True,2
+0ee79fe5-febe-5c4f-957e-52340dd07b40,male,44,yes,,True,2
+207ee218-76c3-5b54-bf69-bbdb4fbc4de9,female,58,yes,No,True,2
+c52796c5-4c43-5121-874f-78ce7dc2a311,female,32,yes,None,True,3
+f278e0fd-7220-5862-8d4a-f634f770608e,female,36,yes,,True,2
+ac221c66-c32a-528e-9740-b1ba0476ce3f,male,38,yes,None,True,3
+41bf0681-b839-53e6-9471-1eee4fb4291e,male,25,yes,,True,3
+c1ddc237-651c-5bd5-ad2c-d265bd6c1ce4,male,37,yes,,True,1
+97888ae8-4f91-50ee-aa77-a5b8245428b6,female,37,yes,,True,2
+1df2095b-ae10-5222-9752-99159b822aa5,male,46,yes,N/A,True,2
+f86b6413-d542-5bac-843d-132ad5d87bdc,male,15,yes,,True,2
+ca6ed690-f922-5832-8c66-0e27491922f2,female,36,yes,no comment,True,3
+7831e34f-c90e-53f5-b3d0-648e0d132c62,male,25,yes,,True,2
+22983d4d-6d9d-5700-ada9-ec1b461de58d,male,34,yes,no,True,3
+8f5adfd3-cc5b-51ed-882f-89d66c4c9c7a,male,54,yes,,True,1
