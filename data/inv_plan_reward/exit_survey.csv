@@ -1,0 +1,31 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+5d39fb34-fa95-59c4-8027-ffb7787c8631,female,39,yes,No suggestions.,True,3
+1b65a665-6cc9-51b2-ae6c-24b73a7dc56e,female,52,yes,,True,1
+7dec91bb-fc0c-59b6-bdd4-d3ce49d870b9,female,35,yes,,True,2
+276a3e75-cca1-5154-a74a-e5dd96079946,female,29,yes,,True,3
+a72857dd-8fd3-5b5d-8332-8ccc5336f92f,female,41,yes,,True,1
+75efd08d-c89b-5196-b2ee-0cd8a320a2d4,male,27,yes,So many suggestions and what could or could not happen. A very tough read and it didn't feel relevant to the questions which made it difficult to get through. ,True,3
+5ff29bdd-c3e0-5966-809d-bc14f160ed66,female,47,yes,,True,1
+e1776860-b801-5319-9c93-8b505f798557,female,55,yes,,True,3
+99c5c630-c9e2-5c04-87d1-7b4132c49cc5,female,42,yes,,True,3
+396b7a9a-02b3-5a2d-a6fd-2823b6effdd5,male,36,yes,None.,True,2
+599cbeab-b52d-559d-98cd-e0758b3f0beb,male,36,yes,,True,3
+8498ee8b-3184-5842-8b27-ba620bdb2355,female,28,yes,no ,True,3
+981c3eba-f597-5bfc-a798-459ad5aad59a,female,63,yes,Thank you,True,3
+33b51c6d-7a84-5fa9-a512-00c845cfdba2,nonconforming,35,yes,No comments.,True,3
+474daa9b-ad07-5da7-8a92-12d4a8b4622e,male,23,yes,,True,3
+410336e9-0bc1-5f1e-898a-02199d6cda09,female,46,yes,,True,3
+03ba2466-724b-5ae3-9568-75754c8a60e9,male,39,yes,Interesting way to do this kind of study I think it worked well and allowed each scenario to be understood better.,True,2
+eef9f0f0-9ec8-5f32-b82d-cd7430004c07,male,50,yes,NA,True,1
+02123068-5930-5b96-a5e9-763c97c1fb94,male,43,yes,,True,3
+73479427-4c86-59aa-ae13-6e592feddf04,male,36,yes,,True,3
+da9e68e9-3784-50db-b3c1-fbfe5b5a98a0,male,36,yes,Nothing comes to mind. Thank you.,True,3
+016573ea-9a29-5668-b4e5-94d7f5fe393f,female,45,yes,,True,3
+74b09485-6478-5899-bc85-891fa9effce5,male,40,yes,,True,2
+11885642-58fe-5deb-b3bc-bb63ba1fbab8,female,38,yes,,True,2
+a183a47c-21c8-5bf5-902d-29e63f70f8a5,female,31,yes,,True,3
+e591c3ff-c009-5171-a16e-9f3c0a1009ee,female,36,yes,,True,1
+26928599-78c5-5467-9298-800b5d425507,male,27,yes,,True,2
+87cedb79-417f-5f05-9204-5aaf0bef5b90,nonconforming,26,yes,"Sharing an oyster is a WILD thing to do. All in  all this was a fun study, thank you for the opportunity!",True,3
+78d688b1-ff38-5701-8b74-8559c3619160,male,45,yes,none,True,1
+d42f9f8a-765f-5da3-81ca-0fa7c3993f6f,female,30,yes,,True,2

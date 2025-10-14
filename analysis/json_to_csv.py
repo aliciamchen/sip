@@ -12,6 +12,7 @@ Usage:
 Available experiments:
     - planning-2: Experiment with probability sliders for action ratings
     - inv_plan_intimacy: Inverse planning experiment measuring intimacy ratings before and after observing actions
+    - inv_plan_reward: Inverse planning experiment measuring reward likelihood ratings before and after observing actions
 """
 
 import json
@@ -39,6 +40,13 @@ EXPERIMENT_CONFIGS = {
     'inv_plan_intimacy': {
         'description': 'Inverse planning experiment measuring intimacy ratings before and after observing actions',
         'main_trial_fields': ['subject_id', 'scenario_label', 'action_condition', 'reward_condition', 'stage', 'intimacy_rating'],
+        'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
+        'has_closeness': False,
+        'has_attention_memory': True
+    },
+    'inv_plan_reward': {
+        'description': 'Inverse planning experiment measuring reward likelihood ratings before and after observing actions',
+        'main_trial_fields': ['subject_id', 'scenario_label', 'action_condition', 'intimacy_condition', 'stage', 'response'],
         'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
         'has_closeness': False,
         'has_attention_memory': True
@@ -145,6 +153,23 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             'intimacy_rating': intimacy_rating,
                         }
                     
+                    elif experiment_name == 'inv_plan_reward':
+                        # Extract reward likelihood rating and stage information
+                        response = trial.get('response', '')
+                        stage = trial.get('stage', '')
+                        action_condition = trial.get('action_condition', '')
+                        intimacy_condition = trial.get('intimacy_condition', '')
+                        
+                        # Build trial data dictionary
+                        trial_data = {
+                            'subject_id': subject_id,
+                            'scenario_label': scenario_label,
+                            'action_condition': action_condition,
+                            'intimacy_condition': intimacy_condition,
+                            'stage': stage,
+                            'response': response,
+                        }
+                    
                     main_trials_data.append(trial_data)
                 
                 elif trial_type == 'exit_survey':
@@ -207,10 +232,12 @@ def main():
 Available experiments:
   planning-2         Experiment with probability sliders for action ratings
   inv_plan_intimacy Inverse planning experiment measuring intimacy ratings before and after observing actions
+  inv_plan_reward   Inverse planning experiment measuring reward likelihood ratings before and after observing actions
 
 Examples:
   python json_to_csv.py planning-2
   python json_to_csv.py inv_plan_intimacy
+  python json_to_csv.py inv_plan_reward
         """
     )
     

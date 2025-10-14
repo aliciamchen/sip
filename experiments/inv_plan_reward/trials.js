@@ -34,7 +34,7 @@ export function makeTimeline(
                 <h2>Social interactions survey</h2>
                 <p>For each scenario, you will read about four different actions you might expect the two people to take.</p>
                 <p>Before observing what action they decide to take, we will ask you to evaluate how likely you think two possible situations are, for the two people in the scenario.</p>
-                <p>You will use a slider to evaluate the likelihood of the two situations. The slider will be labeled with the two situations. The farther you move it toward one side, the more likely you think that situation is compared to the other.</p>
+                <p>You will use a slider to evaluate the likelihood of the two situations. The slider will be labeled with the two situations. The farther you move it toward one side, the more likely you think that situation is, compared to the other.</p>
                 <p>Then, we will show you what action they take, and ask you to re-evaluate how likely you think the two possible situations are.</p>
             </div>
             `,
@@ -151,6 +151,8 @@ export function makeTimeline(
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
+        reward_low: stimulus.reward_low,
+        reward_high: stimulus.reward_high,
       },
     });
 
@@ -200,6 +202,8 @@ export function makeTimeline(
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
+        reward_low: stimulus.reward_low,
+        reward_high: stimulus.reward_high,
       },
     });
 
