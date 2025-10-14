@@ -3,6 +3,6 @@
 `ssh aliciach@athena.dialup.mit.edu "mkdir -p ~/www/food-sharing"`
 
 `cd experiments`
-`rsync -av --delete inv_plan_intimacy/ aliciach@athena.dialup.mit.edu:~/www/food-sharing/inv-plan-intimacy`
+`rsync -av --delete inv_plan_intimacy/ aliciach@athena.dialup.mit.edu:~/www/food-sharing/inv-plan-intimacy-1`
     
-URL: https://web.mit.edu/aliciach/www/food-sharing/inv-plan-intimacy
+URL: https://web.mit.edu/aliciach/www/food-sharing/inv-plan-intimacy-1

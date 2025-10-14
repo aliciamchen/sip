@@ -42,15 +42,16 @@ async function createExperiment() {
   var study_id = jsPsych.data.getURLVariable("STUDY_ID");
   var session_id = jsPsych.data.getURLVariable("SESSION_ID");
 
+  const condition_assignment = await jsPsychPipe.getCondition("CC2eJ7iDg1TG");
+  const assignedSequence = counterbalancing[condition_assignment];
+
   jsPsych.data.addProperties({
     study_id: study_id,
     session_id: session_id,
     subject_id: subject_id,
     url: window.location.href,
+    condition_assignment: condition_assignment,
   });
-
-  const condition_assignment = await jsPsychPipe.getCondition("CC2eJ7iDg1TG");
-  const assignedSequence = counterbalancing[condition_assignment];
 
   const stimuliWithConditions = stimuli.map((stimulus) => {
     const sequenceItem = assignedSequence.find(
