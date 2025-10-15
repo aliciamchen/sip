@@ -24,7 +24,7 @@ class RelationshipConditions(IntEnum):
     ONE_HUNDRED = 3
 
 
-# Core utility functions
+# Utility functions
 
 
 @jax.jit
@@ -75,7 +75,10 @@ def get_discomfort(action, relationship, is_relationship_condition=False):
         Discomfort value considering formality and risk
     """
     intimacy = jax.lax.cond(
-        is_relationship_condition, lambda x: get_intimacy(x), lambda x: x, relationship
+        is_relationship_condition,
+        lambda x: get_intimacy(x).astype(jnp.float32),
+        lambda x: jnp.asarray(x, dtype=jnp.float32),
+        relationship,
     )
     formality = 1 - intimacy
     risk = get_risk(action)
@@ -85,7 +88,7 @@ def get_discomfort(action, relationship, is_relationship_condition=False):
 # Models
 
 
-class ModelLabels(IntEnum):
+class ModelLabels(IntEnum): # will i use these?
     DISCOMFORT_ONLY = 0
     VANILLA_INV_PLAN = 1
     FULL_MODEL = 2
@@ -141,7 +144,7 @@ def get_utility_full_model(
     )
 
 
-# memo
+# memo functions
 
 
 ## Actor models picking actions given discrete relationships (4 options)
