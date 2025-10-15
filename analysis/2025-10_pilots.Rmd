@@ -10,7 +10,11 @@ library(tidyverse)
 library(tidyboot)
 library(lme4)
 
-theme_set(theme_classic(base_size = 15))
+theme_set(theme_minimal(base_size = 15) +
+     theme(
+      panel.grid.minor = element_blank(),
+      legend.position = "bottom"
+    ))
 ```
 
 ## planning-2 pilot 1
@@ -64,7 +68,7 @@ df_model_forward <- read_csv(here("model", "model_preds_forward_planning.csv")) 
 Stack the dataframes
 
 ```{r}
-df_combined <- bind_rows(df_planning, df_model) |> 
+df_combined <- bind_rows(df_planning, df_model_forward) |> 
   mutate(
     model = case_when(
     model == "humans" ~ "Humans", 
@@ -81,7 +85,6 @@ df_combined_summary <- df_combined |>
   group_by(intimacy, reward, model, action) |> 
   tidyboot_mean(p_action)
 ```
-
 Plot
 
 ```{r}
@@ -99,23 +102,173 @@ ggplot(df_combined_summary, aes(x = action, y = empirical_stat, color = intimacy
 
 # Inverse planning
 
+## Inferring intimacy of relationship, given information about the reward and the action taken
+
+Load data and add belief updates
+
 ```{r}
-df_model_inverse <- read_csv(here("model", "model_preds_inverse_planning.csv")) |> 
+df_inv_intimacy <- read_csv(here("data", "inv_plan_intimacy", "main_trials.csv")) |> 
+  rename(reward = reward_condition, action = action_condition) |> 
+  mutate(action = str_replace(action, "action_", ""), 
+         reward = factor(reward, levels = c("low", "high")), 
+         stage = factor(stage, levels = c("prior", "posterior")),
+         model = "humans")
+
+df_inv_intimacy <- df_inv_intimacy |> 
+  group_by(subject_id, scenario_label) |> 
+  mutate(belief_update = ifelse(stage == "posterior", intimacy_rating[stage == "posterior"] - intimacy_rating[stage == "prior"], NA)) |>
+  ungroup()
+```
+Plot distributions
+
+```{r}
+ggplot(df_inv_intimacy, aes(x = intimacy_rating, fill = action)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  labs(y = "Density", x = "Intimacy rating", fill = "Action") +
+  theme(legend.position = "bottom") +
+  facet_grid(stage~reward, labeller = label_both)
+```
+
+Calculate aggregate summary
+
+```{r}
+df_inv_intimacy_summary <- df_inv_intimacy |> 
+  group_by(reward, action, stage, model) |> 
+  tidyboot_mean(intimacy_rating)
+```
+
+Plot priors vs. posteriors for each action and reward condition
+
+
+```{r}
+ggplot() +
+  geom_violin(
+    data = df_inv_intimacy,
+    aes(x = stage, y = intimacy_rating, fill = action),
+    position = position_dodge(width = 0.8),
+    alpha = 0.5,
+    width = 0.7
+  ) +
+  geom_point(
+    data = df_inv_intimacy_summary,
+    aes(x = stage, y = empirical_stat, color = action, group = action),
+    position = position_dodge(width = 0.8),
+    size = 3
+  ) +
+  geom_errorbar(
+    data = df_inv_intimacy_summary,
+    aes(x = stage, ymin = ci_lower, ymax = ci_upper, color = action, group = action),
+    position = position_dodge(width = 0.8),
+    width = 0.1,
+    size = 1 
+  ) +
+  geom_line(
+    data = df_inv_intimacy_summary,
+    aes(x = stage, y = empirical_stat, color = action, group = action),
+    position = position_dodge(width = 0.8),
+    size = 1
+  ) +
+  facet_grid(reward ~ action, labeller = label_both) +
+  scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  labs(
+    title = "Intimacy ratings before and after observing action",
+    y = "Intimacy rating",
+    x = "Stage",
+    fill = "Observed action",
+    color = "Observed action"
+  )
+
+```
+
+
+Calculate belief update summary
+
+```{r}
+df_inv_intimacy_belief_update_summary <- df_inv_intimacy |> 
+  filter(stage == "posterior") |> 
+  group_by(reward, action, model) |> 
+  tidyboot_mean(belief_update)
+```
+Plot belief updates
+
+```{r}
+ggplot(df_inv_intimacy_belief_update_summary, aes(x = action, y = empirical_stat, group = reward, fill = reward)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = 0.9) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                position = position_dodge(width = 0.8), size = 1, width = 0.1, color = "black", alpha = 0.8) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(title = "Change in intimacy rating after observing action", y = "Belief update", x = "Observed action", fill = "Reward of sharing food") +
+  theme(legend.position = "bottom") 
+```
+
+Model predictions
+
+```{r}
+df_model_inv_intimacy <- read_csv(here("model", "model_preds_inverse_planning_relationship.csv")) |> 
   mutate(reward = factor(reward, levels = c("low", "high")), 
          action = factor(action))
 ```
 
+see basic model predictions
+
+TODO: right now, we don't visualize the model's priors, just the posteriors. But later we should load in the priors (empirically measured using the data, too)?
+
 ```{r}
-ggplot(df_model_inverse, aes(x = intimacy, y = density, color = action, fill = action)) +
+ggplot(df_model_inv_intimacy, aes(x = intimacy, y = density, color = action, fill = action)) +
   geom_area(size = 1, alpha = 0.2, position = "identity") +
   scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
-  labs(y = "Density", x = "Intimacy", title = "Inverse planning model predictions") +
+  labs(y = "Density", x = "Intimacy", title = "Inverse planning model predictions (uniform prior)") +
   theme(legend.position = "bottom") +
-  facet_grid(model~reward, labeller = label_both)
+  facet_grid(reward~model, labeller = labeller(reward = label_both, model = label_both))
 ```
 
-Check if `action=0` cases are always the same as the `action=1` cases
+Calculate expectation in each `{action, reward}` condition. 
+
+```{r}
+df_model_inv_intimacy_summary <- df_model_inv_intimacy |> 
+  group_by(model, reward, action) |> 
+  summarize(expected_intimacy = sum(intimacy * density)) |> 
+  mutate(belief_update = expected_intimacy - 50) # assuming uniform prior with mean 50
+```
+
+
+Combine data and model belief updates
+
+```{r}
+df_belief_update_combined <- bind_rows(
+  df_inv_intimacy_belief_update_summary |> mutate(model = "Humans", belief_update = empirical_stat),
+  df_model_inv_intimacy_summary |> mutate(
+    model = case_when(
+      model == "vanilla" ~ "Vanilla model",
+      model == "relationship" ~ "Relationship model"
+    )
+  ) |> select(-expected_intimacy)
+) |>
+  mutate(model = factor(model, levels = c(
+    "Vanilla model", "Relationship model", "Humans"
+  )))
+```
+
+Plot combined belief updates
+
+```{r}
+ggplot(df_belief_update_combined, aes(x = action, y = belief_update, group = interaction(model, reward), fill = reward)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = 0.9) +
+  geom_errorbar( 
+                aes(ymin = ci_lower, ymax = ci_upper), 
+                position = position_dodge(width = 0.8), size = 1, width = 0.1, color = "black", alpha = 0.8) + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_brewer(palette = "Set2") +
+  labs(title = "Change in intimacy rating after observing action", y = "Belief update", x = "Observed action", fill = "Reward of sharing food") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~model)
+```
+
+Check if `action=0` cases are always the same as the `action=1` cases...
 
 ```{r}
 df_model_inverse_check <- df_model_inverse |> 
@@ -149,50 +302,36 @@ ggplot(df_model_inverse_reward, aes(x = intimacy, y = p_reward, color = reward, 
 ```
 
 
-# Inverse planning - inferring intimacy
+# Reward study
 
 ```{r}
-df_inv_intimacy <- read_csv(here("data", "inv_plan_intimacy", "main_trials.csv")) |> 
-  rename(reward = reward_condition, action = action_condition) |> 
+df_inv_reward <- read_csv(here("data", "inv_plan_reward", "main_trials.csv")) |> 
+  rename(intimacy = intimacy_condition, action = action_condition, 
+         p_high_reward = response) |> 
   mutate(action = str_replace(action, "action_", ""), 
-         reward = factor(reward, levels = c("low", "high")), 
          stage = factor(stage, levels = c("prior", "posterior")),
-         model = "humans")    
+         model = "humans")
 ```
-Calculate aggregate summary
 
 ```{r}
-df_inv_intimacy_summary <- df_inv_intimacy |> 
-  group_by(reward, action, stage, model) |> 
-  tidyboot_mean(intimacy_rating)
+df_inv_reward_summary <- df_inv_reward |> 
+  group_by(intimacy, action, stage, model) |> 
+  tidyboot_mean(p_high_reward)
 ```
-Plot 
 
-```{r fig.width=5, fig.height=8}
-ggplot(df_inv_intimacy_summary, aes(x = stage, y = empirical_stat, color = action, group = action)) +
+```{r}
+ggplot(df_inv_reward_summary, aes(x = intimacy, y = empirical_stat, color = stage, group = stage)) +
   geom_point(position = position_dodge(width = 0.2), size = 3) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
                 position = position_dodge(width = 0.2), size = 1, width = 0.3) + 
   geom_line(position = position_dodge(width = 0.2), size = 1) +
   geom_hline(yintercept = 50, linetype = "dashed", color = "grey") +
-  scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
-  labs(y = "Intimacy rating", x = "Stage", color = "Action") +
+  labs(y = "P(high reward)", x = "Intimacy", color = "Stage") +
   theme(legend.position = "bottom") +
-  facet_grid(action~reward, labeller = label_both)
+  facet_grid(stage~action, labeller = label_both)
 ```
 
-Plot distributions
-
-```{r}
-ggplot(df_inv_intimacy, aes(x = intimacy_rating, fill = action)) +
-  geom_density(alpha = 0.5) +
-  scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
-  labs(y = "Density", x = "Intimacy rating", fill = "Action") +
-  theme(legend.position = "bottom") +
-  facet_grid(stage~reward, labeller = label_both)
-```
-
-
+Priors aon reward are based on the relationship
 
 
 
