@@ -60,26 +60,17 @@ def get_reward(action, reward_condition):
 
 
 @jax.jit
-def get_discomfort(action, relationship, is_relationship_condition=False):
-    """Get discomfort level for each action given the intimacy level
-    The more intimate the relationship, the smaller the discomfort.
-    Most formal relationship -> keep original risk value
-    Most intimate relationship -> scale down risk value
+def get_discomfort_from_intimacy(action, intimacy):
+    """Get discomfort for an action given an intimacy level in [0, 1]."""
+    formality = 1 - intimacy
+    risk = get_risk(action)
+    return formality * risk
 
-    Args:
-        action: The action taken (int)
-        relationship: The intimacy level (float) or relationship condition (int)
-        is_relationship_condition: Whether the relationship input is a relationship condition (True) or an intimacy level (False)
 
-    Returns:
-        Discomfort value considering formality and risk
-    """
-    intimacy = jax.lax.cond(
-        is_relationship_condition,
-        lambda x: get_intimacy(x).astype(jnp.float32),
-        lambda x: jnp.asarray(x, dtype=jnp.float32),
-        relationship,
-    )
+@jax.jit
+def get_discomfort_from_relationship_condition(action, relationship_condition):
+    """Get discomfort for an action given a discrete relationship condition."""
+    intimacy = get_intimacy(relationship_condition)
     formality = 1 - intimacy
     risk = get_risk(action)
     return formality * risk
@@ -95,17 +86,29 @@ class ModelLabels(IntEnum): # will i use these?
 
 
 @jax.jit
-def get_utility_discomfort_only(
+def get_utility_discomfort_only_discrete(
     action,
-    relationship,
+    relationship_condition,
     reward_condition,
     alpha,
     w_r,
     w_c,
     w_e,
-    is_relationship_condition=True,
 ):
-    return alpha * get_discomfort(action, relationship, is_relationship_condition)
+    return alpha * get_discomfort_from_relationship_condition(action, relationship_condition)
+
+
+@jax.jit
+def get_utility_discomfort_only_continuous(
+    action,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_r,
+    w_c,
+    w_e,
+):
+    return alpha * get_discomfort_from_intimacy(action, intimacy)
 
 
 @jax.jit
@@ -117,7 +120,6 @@ def get_utility_vanilla_inv_plan(
     w_r,
     w_c,
     w_e,
-    is_relationship_condition=True,
 ):
     return alpha * (
         w_r * get_reward(action, reward_condition)
@@ -127,19 +129,35 @@ def get_utility_vanilla_inv_plan(
 
 
 @jax.jit
-def get_utility_full_model(
+def get_utility_full_model_discrete(
     action,
-    relationship,
+    relationship_condition,
     reward_condition,
     alpha,
     w_r,
     w_c,
     w_e,
-    is_relationship_condition=True,
 ):
     return alpha * (
         w_r * get_reward(action, reward_condition)
-        - w_c * get_discomfort(action, relationship, is_relationship_condition)
+        - w_c * get_discomfort_from_relationship_condition(action, relationship_condition)
+        - w_e * get_effort(action)
+    )
+
+
+@jax.jit
+def get_utility_full_model_continuous(
+    action,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_r,
+    w_c,
+    w_e,
+):
+    return alpha * (
+        w_r * get_reward(action, reward_condition)
+        - w_c * get_discomfort_from_intimacy(action, intimacy)
         - w_e * get_effort(action)
     )
 
@@ -162,7 +180,7 @@ def actor_discrete_discomfort_only[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_discomfort_only(
+            get_utility_discomfort_only_discrete(
                 action,
                 relationship_condition,
                 reward_condition,
@@ -170,7 +188,6 @@ def actor_discrete_discomfort_only[
                 w_r,
                 w_c,
                 w_e,
-                is_relationship_condition=True,
             )
         ),
     )
@@ -199,7 +216,6 @@ def actor_discrete_vanilla_inv_plan[
                 w_r,
                 w_c,
                 w_e,
-                is_relationship_condition=True,
             )
         ),
     )
@@ -220,7 +236,7 @@ def actor_discrete_full_model[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_full_model(
+            get_utility_full_model_discrete(
                 action,
                 relationship_condition,
                 reward_condition,
@@ -228,7 +244,6 @@ def actor_discrete_full_model[
                 w_r,
                 w_c,
                 w_e,
-                is_relationship_condition=True,
             )
         ),
     )
@@ -250,7 +265,7 @@ def actor_continuous_discomfort_only[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_discomfort_only(
+            get_utility_discomfort_only_continuous(
                 action,
                 relationship,
                 reward_condition,
@@ -258,7 +273,6 @@ def actor_continuous_discomfort_only[
                 w_r,
                 w_c,
                 w_e,
-                is_relationship_condition=False,
             )
         ),
     )
@@ -287,7 +301,6 @@ def actor_continuous_vanilla_inv_plan[
                 w_r,
                 w_c,
                 w_e,
-                is_relationship_condition=False,
             )
         ),
     )
@@ -308,7 +321,7 @@ def actor_continuous_full_model[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_full_model(
+            get_utility_full_model_continuous(
                 action,
                 relationship,
                 reward_condition,
@@ -316,7 +329,6 @@ def actor_continuous_full_model[
                 w_r,
                 w_c,
                 w_e,
-                is_relationship_condition=False,
             )
         ),
     )
