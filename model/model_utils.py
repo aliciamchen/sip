@@ -44,9 +44,8 @@ def get_effort(action):
     """Get effort level for each action (food sharing is more effortful than no food sharing)"""
     return jnp.array([0, 1, 1, 1])[action]
 
-
 @jax.jit
-def get_reward(action, reward_condition):
+def get_reward_base(action, reward_condition):
     """Get reward for action given reward condition
     Low reward: the characters don't particularly want to eat the food together. So regardless of whether they eat or not eat the food, they get the same reward.
     High reward: the characters want to eat the food together. So the reward is higher if they eat the food together.
@@ -57,6 +56,19 @@ def get_reward(action, reward_condition):
         reward_condition == RewardConditions.LOW, low_reward, high_reward
     )
     return which_reward[action]
+
+@jax.jit
+def get_reward_from_intimacy(action, reward_condition, intimacy):
+    "scale reward based on intimacy"
+    intimacy_multiplier = jnp.array([1, 1, 1, 1]) + intimacy * jnp.array([0, 1, 1, 1]) # higher intimacy -> higher reward of sharing the food together in the first place
+    base_reward = get_reward_base(action, reward_condition)
+    return base_reward * intimacy_multiplier[action]
+
+@jax.jit
+def get_reward_from_relationship_condition(action, reward_condition, relationship_condition):
+    "scale reward based on relationship condition"
+    intimacy = get_intimacy(relationship_condition)
+    return get_reward_from_intimacy(action, reward_condition, intimacy)
 
 
 @jax.jit
@@ -122,7 +134,7 @@ def get_utility_vanilla_inv_plan(
     w_e,
 ):
     return alpha * (
-        w_r * get_reward(action, reward_condition)
+        w_r * get_reward_base(action, reward_condition)
         - w_c * get_risk(action)
         - w_e * get_effort(action)
     )
@@ -139,7 +151,7 @@ def get_utility_full_model_discrete(
     w_e,
 ):
     return alpha * (
-        w_r * get_reward(action, reward_condition)
+        w_r * get_reward_from_relationship_condition(action, reward_condition, relationship_condition)
         - w_c * get_discomfort_from_relationship_condition(action, relationship_condition)
         - w_e * get_effort(action)
     )
@@ -156,7 +168,7 @@ def get_utility_full_model_continuous(
     w_e,
 ):
     return alpha * (
-        w_r * get_reward(action, reward_condition)
+        w_r * get_reward_from_intimacy(action, reward_condition, intimacy)
         - w_c * get_discomfort_from_intimacy(action, intimacy)
         - w_e * get_effort(action)
     )
