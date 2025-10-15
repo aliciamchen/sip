@@ -95,7 +95,7 @@ def get_utility_discomfort_only_discrete(
     w_c,
     w_e,
 ):
-    return alpha * get_discomfort_from_relationship_condition(action, relationship_condition)
+    return alpha * -1 * get_discomfort_from_relationship_condition(action, relationship_condition)
 
 
 @jax.jit
@@ -108,7 +108,7 @@ def get_utility_discomfort_only_continuous(
     w_c,
     w_e,
 ):
-    return alpha * get_discomfort_from_intimacy(action, intimacy)
+    return alpha * -1 * get_discomfort_from_intimacy(action, intimacy)
 
 
 @jax.jit
