@@ -8,6 +8,7 @@ import os
 import sys
 from pathlib import Path
 import time
+import numpy as np
 import pandas as pd
 from huggingface_hub import InferenceClient
 
@@ -17,10 +18,14 @@ sys.path.insert(0, str(project_root))
 from utils import get_project_root
 
 # Configuration
-MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct"
+MODEL_ID = "meta-llama/Llama-3.1-8B-Instruct"
+NUM_RUNS = 10
+TEMPERATURE = 0.2
 
 # Instructions given to human participants + output formatting
-SYSTEM_PROMPT = """In this survey, you will read vignettes about two people sharing different kinds of food in different situations. For each scenario, you will read about four different actions the two people can take.
+SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
+
+In this survey, you will read vignettes about two people sharing different kinds of food in different situations. For each scenario, you will read about four different actions the two people can take.
 
 For each action, we will ask you to evaluate how much saliva is likely to be exchanged between the two people, in the context of the scenario. Please consider each option independently.
 
@@ -40,7 +45,7 @@ Guidelines:
 - People rarely perceive actions as absolutely 0 or maximum 6
 - Consider both direct paths (shared utensils, bites) and indirect paths (shared containers, surfaces)
 
-Respond ONLY with a JSON object mapping each action to a numeric rating (decimals allowed), like:
+Respond by first writing out your reasoning for each action, then provide your numerical ratings in the following JSON format:
 {"action_0": 0.5, "action_1": 1.2, "action_2": 3.8, "action_3": 5.5}"""
 
 
@@ -95,8 +100,9 @@ def parse_response(response_text):
 
 
 def get_predictions(stimuli, client):
-    """Get LM predictions for all stimuli."""
+    """Get LM predictions for all stimuli with multiple runs."""
     predictions = []
+    all_explanations = []
 
     for i, stimulus in enumerate(stimuli):
         print(f"Processing {i+1}/{len(stimuli)}: {stimulus['scenario_label']}")
@@ -106,45 +112,67 @@ def get_predictions(stimuli, client):
             {"role": "user", "content": format_user_prompt(stimulus)}
         ]
 
-        try:
-            response = client.chat_completion(
-                messages=messages,
-                max_tokens=100,
-                temperature=0.05,
-            )
-            response_text = response.choices[0].message.content
-            ratings = parse_response(response_text)
+        # Collect ratings from multiple runs
+        run_ratings = {f"action_{j}": [] for j in range(4)}
+        run_explanations = []
 
-            if ratings:
-                for action_idx in range(4):
-                    predictions.append({
-                        "scenario_label": stimulus["scenario_label"],
-                        "action": action_idx,
-                        "lm_rating": ratings[f"action_{action_idx}"]
-                    })
-                print(f"  Ratings: {ratings}")
+        for run in range(NUM_RUNS):
+            try:
+                response = client.chat_completion(
+                    messages=messages,
+                    max_tokens=500,  # More tokens for explanations
+                    temperature=TEMPERATURE,
+                )
+                response_text = response.choices[0].message.content
+                ratings = parse_response(response_text)
+
+                if ratings:
+                    for action_idx in range(4):
+                        run_ratings[f"action_{action_idx}"].append(ratings[f"action_{action_idx}"])
+                    run_explanations.append(response_text)
+                    print(f"  Run {run+1}: {ratings}")
+                else:
+                    print(f"  Run {run+1}: Failed to parse response")
+
+            except Exception as e:
+                print(f"  Run {run+1} Error: {e}")
+
+            # Small delay to avoid rate limiting
+            time.sleep(0.3)
+
+        # Calculate mean ratings across runs
+        for action_idx in range(4):
+            action_key = f"action_{action_idx}"
+            if run_ratings[action_key]:
+                mean_rating = np.mean(run_ratings[action_key])
+                std_rating = np.std(run_ratings[action_key])
+                n_valid = len(run_ratings[action_key])
             else:
-                print(f"  Failed to parse response: {response_text}")
-                for action_idx in range(4):
-                    predictions.append({
-                        "scenario_label": stimulus["scenario_label"],
-                        "action": action_idx,
-                        "lm_rating": float("nan")
-                    })
+                mean_rating = float("nan")
+                std_rating = float("nan")
+                n_valid = 0
 
-        except Exception as e:
-            print(f"  Error: {e}")
-            for action_idx in range(4):
-                predictions.append({
-                    "scenario_label": stimulus["scenario_label"],
-                    "action": action_idx,
-                    "lm_rating": float("nan")
-                })
+            predictions.append({
+                "scenario_label": stimulus["scenario_label"],
+                "action": action_idx,
+                "lm_rating": mean_rating,
+                "lm_rating_std": std_rating,
+                "n_valid_runs": n_valid
+            })
 
-        # Small delay to avoid rate limiting
-        time.sleep(0.5)
+        # Save one example explanation per scenario
+        if run_explanations:
+            all_explanations.append({
+                "scenario_label": stimulus["scenario_label"],
+                "explanation": run_explanations[0]  # Save first explanation as example
+            })
 
-    return pd.DataFrame(predictions)
+        print(f"  Mean ratings: " + ", ".join([
+            f"action_{j}={np.mean(run_ratings[f'action_{j}']):.2f}"
+            for j in range(4) if run_ratings[f'action_{j}']
+        ]))
+
+    return pd.DataFrame(predictions), pd.DataFrame(all_explanations)
 
 
 def main():
@@ -169,13 +197,18 @@ def main():
     print(f"\nInitializing client for {MODEL_ID}...")
     client = InferenceClient(model=MODEL_ID, token=hf_token)
 
-    print("\nGetting LM predictions...")
-    predictions_df = get_predictions(stimuli, client)
+    print(f"\nGetting LM predictions ({NUM_RUNS} runs per scenario, temperature={TEMPERATURE})...")
+    predictions_df, explanations_df = get_predictions(stimuli, client)
 
     # Save predictions
     output_path = get_project_root() / "data" / "risk" / "lm_predictions.csv"
     predictions_df.to_csv(output_path, index=False)
     print(f"\nSaved predictions to {output_path}")
+
+    # Save explanations
+    explanations_path = get_project_root() / "data" / "risk" / "lm_explanations.csv"
+    explanations_df.to_csv(explanations_path, index=False)
+    print(f"Saved explanations to {explanations_path}")
 
     # Load human data and merge for comparison
     print("\nLoading human data for comparison...")
