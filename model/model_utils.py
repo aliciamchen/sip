@@ -88,6 +88,87 @@ def get_discomfort_from_relationship_condition(action, relationship_condition):
     return formality * risk
 
 
+# Forward planning utility functions (using w_r, w_d, w_c naming convention)
+
+
+@jax.jit
+def get_sharing_cost(action):
+    """Get sharing/coordination cost for each action.
+    Action 0 (not eating) has no cost; actions 1-3 (sharing) have cost 1.
+    """
+    return jnp.array([0, 1, 1, 1])[action]
+
+
+@jax.jit
+def get_reward_forw(action, reward_condition, intimacy):
+    """Get reward for forward planning model.
+
+    Action 0 always has 0 reward.
+    Actions 1-3: base reward (1 for high motivation, 0 for low) scaled by (1 + intimacy).
+    This captures that eating together is more rewarding when:
+    - motivation is high (they want to eat the food)
+    - intimacy is high (closer relationship makes sharing more rewarding)
+    """
+    # Base reward: 1 for high motivation, 0 for low
+    base = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
+    # Only actions 1-3 get reward (action 0 = not eating = no reward)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    # Scale by intimacy: higher intimacy -> higher reward of sharing
+    return base * action_has_reward * (1 + intimacy)
+
+
+@jax.jit
+def get_reward_forw_vanilla(action, reward_condition):
+    """Get reward for vanilla model (no intimacy scaling).
+
+    Action 0 always has 0 reward.
+    Actions 1-3: base reward (1 for high motivation, 0 for low).
+    """
+    base = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    return base * action_has_reward
+
+
+@jax.jit
+def get_utility_forw_full(action, intimacy, reward_condition, alpha, w_r, w_d, w_c):
+    """Full forward planning utility with intimacy-scaled reward and discomfort.
+
+    U = w_r * r(a|s,I) - w_d * d(a|I) - w_c * c(a)
+    where:
+    - r(a|s,I) = reward scaled by motivation s and intimacy I
+    - d(a|I) = (1-I) * risk(a) = discomfort from saliva transfer
+    - c(a) = sharing cost
+    """
+    reward = get_reward_forw(action, reward_condition, intimacy)
+    discomfort = get_discomfort_from_intimacy(action, intimacy)
+    sharing_cost = get_sharing_cost(action)
+    return alpha * (w_r * reward - w_d * discomfort - w_c * sharing_cost)
+
+
+@jax.jit
+def get_utility_forw_vanilla(action, intimacy, reward_condition, alpha, w_r, w_d, w_c):
+    """Vanilla forward planning utility (no intimacy scaling).
+
+    U = w_r * r(a|s) - w_d * risk(a) - w_c * c(a)
+    Reward and discomfort are NOT scaled by intimacy.
+    """
+    reward = get_reward_forw_vanilla(action, reward_condition)
+    risk = get_risk(action)  # raw risk, not scaled by intimacy
+    sharing_cost = get_sharing_cost(action)
+    return alpha * (w_r * reward - w_d * risk - w_c * sharing_cost)
+
+
+@jax.jit
+def get_utility_forw_discomfort_only(action, intimacy, alpha, w_d):
+    """Discomfort-only forward planning utility.
+
+    U = -w_d * d(a|I)
+    Only considers how intimacy mitigates discomfort from risky actions.
+    """
+    discomfort = get_discomfort_from_intimacy(action, intimacy)
+    return alpha * (-w_d * discomfort)
+
+
 # Models
 
 
@@ -341,6 +422,91 @@ def actor_continuous_full_model[
                 w_r,
                 w_c,
                 w_e,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+## Forward planning actor models (using w_r, w_d, w_c naming)
+# Full model: intimacy scales both reward and discomfort
+@memo
+def actor_forw_full[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_forw_full(
+                action,
+                intimacy,
+                reward_condition,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# Vanilla model: no intimacy scaling
+@memo
+def actor_forw_vanilla[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_forw_vanilla(
+                action,
+                intimacy,
+                reward_condition,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# Discomfort-only model: only considers discomfort
+@memo
+def actor_forw_discomfort_only[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    alpha, w_d
+):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_forw_discomfort_only(
+                action,
+                intimacy,
+                alpha,
+                w_d,
             )
         ),
     )
