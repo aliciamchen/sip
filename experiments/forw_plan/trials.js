@@ -129,7 +129,6 @@ export function makeTimeline(
       choices: "ALL_KEYS",
     });
 
-    // Create action labels for probability sliders
     const actionLabels = [];
     for (let i = 0; i < 4; i++) {
       actionLabels.push(stimulus[`action_${i}`]);
@@ -138,7 +137,7 @@ export function makeTimeline(
     trials.push({
       type: jsPsychProbabilitySliders,
       labels: actionLabels,
-      start: [0.25, 0.25, 0.25, 0.25], // Start with equal probabilities
+      start: [0.25, 0.25, 0.25, 0.25], 
       button_label: "Continue",
       show_reset: true,
       show_chips: true,
