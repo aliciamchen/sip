@@ -8,13 +8,16 @@ const intimacy_texts = {
 const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
-  INTER_TRIAL_DURATIONS: [1500, 1750, 2000, 2300],
+  INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
   PIPE_EXPERIMENT_ID: "7Us7gCwbtXqM",
-  PROLIFIC_COMPLETION_URL: "https://app.prolific.com/submissions/complete?cc=C1A889GX",
+  PROLIFIC_COMPLETION_URL:
+    "https://app.prolific.com/submissions/complete?cc=C1A889GX",
 };
 
 const getRewardText = (stimulus) =>
-  stimulus.reward_condition === "low" ? stimulus.reward_low : stimulus.reward_high;
+  stimulus.reward_condition === "low"
+    ? stimulus.reward_low
+    : stimulus.reward_high;
 
 export function makeTimeline(
   jsPsych,
@@ -50,7 +53,7 @@ export function makeTimeline(
       `
             <div class="instructions-container">
               <h2>Social interactions survey</h2>
-                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
+                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $6.25 if you successfully complete the survey. </p>
                 <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
                 <p>Press next to begin the survey.</p>
             </div>
@@ -110,7 +113,7 @@ export function makeTimeline(
         stimuli.length
       }</h2>
                         <div class="vignette-text">
-                        <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+                        <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
                           stimulus.name_0
                         } and ${
         stimulus.name_1
@@ -140,8 +143,9 @@ export function makeTimeline(
       show_reset: true,
       show_chips: true,
       instruction_html: `
-        <div>
-          <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+        <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+        <div class="vignette-text vignette-text-wide">
+          <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
             stimulus.name_0
           } and ${
         stimulus.name_1
@@ -150,8 +154,8 @@ export function makeTimeline(
       }</strong>.</p>
           <p>${stimulus.vignette}</p>
           <p>${getRewardText(stimulus)}</p>
-          <p><strong>Please indicate the probability that the two people will choose each action.</strong></p>
         </div>
+        <p><strong>Please indicate the probability that the two people will choose each action.</strong></p>
       `,
       precision: 3,
       require_total_exact: true,
