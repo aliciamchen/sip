@@ -128,24 +128,18 @@ var jsPsychProbabilitySliders = (function (jspsych) {
       };
 
       const renderHTML = (labels, percents) => {
+        const sliderWidthStyle = trial.slider_width
+          ? `style="max-width:${trial.slider_width}px;"`
+          : "";
+
         const rows = labels
           .map(
             (lbl, i) => `
-            <div class="ps-row" style="margin:20px 0;">
-              <div class="ps-label" style="font-weight:normal;margin-bottom:8px;font-size:18px;text-align:left;padding-left:20px;">${lbl}</div>
-              <div style="display:flex;align-items:center;gap:12px;">
-                <input class="ps-slider" type="range" min="${
-                  trial.slider_min
-                }" max="${trial.slider_max}" step="${
-              trial.slider_step
-            }" value="${
-              percents[i]
-            }" id="ps-slider-${i}" style="flex:1;max-width:800px;${
-              trial.slider_width ? `max-width:${trial.slider_width}px;` : ""
-            }" />
-                <div style="min-width:60px;text-align:right;"><span id="ps-val-${i}">${
-              percents[i]
-            }</span>%</div>
+            <div class="ps-row">
+              <div class="ps-label">${lbl}</div>
+              <div class="ps-slider-wrapper">
+                <input class="ps-slider" type="range" min="${trial.slider_min}" max="${trial.slider_max}" step="${trial.slider_step}" value="${percents[i]}" id="ps-slider-${i}" ${sliderWidthStyle} />
+                <div class="ps-value"><span id="ps-val-${i}">${percents[i]}</span>%</div>
               </div>
             </div>
           `
@@ -153,19 +147,19 @@ var jsPsychProbabilitySliders = (function (jspsych) {
           .join("");
 
         const resetBtn = trial.show_reset
-          ? `<button class="ps-btn" id="ps-reset" type="button" style="padding:10px 16px;border:1px solid #ccc;border-radius:10px;background:#f5f5f5;cursor:pointer;">Reset</button>`
+          ? `<button class="ps-btn" id="ps-reset" type="button">Reset</button>`
           : "";
 
         return `
-            <div class="ps-instruction-container" style="max-width:1400px;margin:0 auto;">
+            <div class="ps-instruction-container">
               ${trial.instruction_html}
             </div>
-            <div class="ps-slider-container" style="max-width:800px;margin:40px auto 0 auto;">
+            <div class="ps-slider-container">
               ${rows}
-              <div class="ps-totalbar" style="display:flex;justify-content:flex-end;align-items:center;margin-top:34px;">
+              <div class="ps-totalbar">
                 <div>
                   ${resetBtn}
-                  <button class="ps-btn" id="ps-continue" type="button" style="padding:10px 16px;border:1px solid #ccc;border-radius:10px;background:#f5f5f5;cursor:pointer;" disabled>${trial.button_label}</button>
+                  <button class="ps-btn" id="ps-continue" type="button" disabled>${trial.button_label}</button>
                 </div>
               </div>
             </div>`;
@@ -222,36 +216,28 @@ var jsPsychProbabilitySliders = (function (jspsych) {
         });
       }
 
+      const createTrialData = () => {
+        const probs = percents.map((v) => +(v / 100).toFixed(trial.precision));
+        return {
+          labels: trial.labels.slice(),
+          probs,
+          percents: percents.slice(),
+          sum_check: +probs.reduce((a, b) => a + b, 0).toFixed(trial.precision),
+        };
+      };
+
       const end_trial = (data) => {
         display_element.innerHTML = "";
         this.jsPsych.finishTrial(data);
       };
 
       btnCont.addEventListener("click", () => {
-        const probs = percents.map((v) => +(v / 100).toFixed(trial.precision));
-        const sumCheck = probs.reduce((a, b) => a + b, 0);
-        const data = {
-          labels: trial.labels.slice(),
-          probs: probs,
-          percents: percents.slice(),
-          sum_check: +sumCheck.toFixed(trial.precision),
-        };
-        end_trial(data);
+        end_trial(createTrialData());
       });
 
       if (trial.trial_duration !== null) {
         this.jsPsych.pluginAPI.setTimeout(() => {
-          const probs = percents.map(
-            (v) => +(v / 100).toFixed(trial.precision)
-          );
-          const sumCheck = probs.reduce((a, b) => a + b, 0);
-          const data = {
-            labels: trial.labels.slice(),
-            probs: probs,
-            percents: percents.slice(),
-            sum_check: +sumCheck.toFixed(trial.precision),
-          };
-          end_trial(data);
+          end_trial(createTrialData());
         }, trial.trial_duration);
       }
 

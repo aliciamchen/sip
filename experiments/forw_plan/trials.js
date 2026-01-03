@@ -5,6 +5,17 @@ const intimacy_texts = {
   100: "100 (maximally intimate)",
 };
 
+const CONFIG = {
+  ATTENTION_CHECK_INDEX: 14,
+  ATTENTION_TOLERANCE: 0.02,
+  INTER_TRIAL_DURATIONS: [1500, 1750, 2000, 2300],
+  PIPE_EXPERIMENT_ID: "7Us7gCwbtXqM",
+  PROLIFIC_COMPLETION_URL: "https://app.prolific.com/submissions/complete?cc=C1A889GX",
+};
+
+const getRewardText = (stimulus) =>
+  stimulus.reward_condition === "low" ? stimulus.reward_low : stimulus.reward_high;
+
 export function makeTimeline(
   jsPsych,
   stimuli,
@@ -53,7 +64,7 @@ export function makeTimeline(
 
   stimuli.forEach((stimulus, stimulusIndex) => {
     // add attention check after the 14th scenario
-    if (stimulusIndex === 14) {
+    if (stimulusIndex === CONFIG.ATTENTION_CHECK_INDEX) {
       const attentionCheckLabels = [
         "Please set this slider to 0%",
         "Please set this slider to 0%",
@@ -81,11 +92,12 @@ export function makeTimeline(
         },
         on_finish: function (data) {
           const probs = data.probs || [];
+          const tol = CONFIG.ATTENTION_TOLERANCE;
           data.attention_passed =
-            Math.abs(probs[0] - 0.0) < 0.02 &&
-            Math.abs(probs[1] - 0.0) < 0.02 &&
-            Math.abs(probs[2] - 0.25) < 0.02 &&
-            Math.abs(probs[3] - 0.75) < 0.02;
+            Math.abs(probs[0] - 0.0) < tol &&
+            Math.abs(probs[1] - 0.0) < tol &&
+            Math.abs(probs[2] - 0.25) < tol &&
+            Math.abs(probs[3] - 0.75) < tol;
         },
       });
     }
@@ -106,11 +118,7 @@ export function makeTimeline(
         intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
                             <p>${stimulus.vignette}</p>
-                            <p>${
-                              stimulus.reward_condition == "low"
-                                ? stimulus.reward_low
-                                : stimulus.reward_high
-                            }</p>
+                            <p>${getRewardText(stimulus)}</p>
                         </div>
                         <p style="text-align: center;"><em>Press any key to see the actions.</em></p>
                     </div>
@@ -141,11 +149,7 @@ export function makeTimeline(
         intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
           <p>${stimulus.vignette}</p>
-          <p>${
-            stimulus.reward_condition == "low"
-              ? stimulus.reward_low
-              : stimulus.reward_high
-          }</p>
+          <p>${getRewardText(stimulus)}</p>
           <p><strong>Please indicate the probability that the two people will choose each action.</strong></p>
         </div>
       `,
@@ -251,7 +255,7 @@ export function makeTimeline(
       choices: "NO_KEYS",
       trial_duration: function () {
         return jsPsych.randomization.sampleWithoutReplacement(
-          [1500, 1750, 2000, 2300],
+          CONFIG.INTER_TRIAL_DURATIONS,
           1
         )[0];
       },
@@ -284,7 +288,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "7Us7gCwbtXqM",
+    experiment_id: CONFIG.PIPE_EXPERIMENT_ID,
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };
@@ -292,7 +296,7 @@ export function makeTimeline(
   const thankYou = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `<p>Thanks for participating in the experiment!</p>
-                  <p><a href="https://app.prolific.com/submissions/complete?cc=C1A889GX">Click here to return to Prolific and complete the study</a>.</p>
+                  <p><a href="${CONFIG.PROLIFIC_COMPLETION_URL}">Click here to return to Prolific and complete the study</a>.</p>
                   <p>It is now safe to close the window. Your pay will be delivered within a few days.</p>
                   `,
     choices: "NO_KEYS",
