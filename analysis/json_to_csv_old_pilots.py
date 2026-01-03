@@ -248,8 +248,8 @@ Examples:
     project_root = get_project_root()
     
     # Define paths relative to project root
-    input_dir = project_root / f"data/{args.experiment}/raw_data"
-    output_dir = project_root / f"data/{args.experiment}"
+    input_dir = project_root / f"data/pilots/{args.experiment}/raw_data"
+    output_dir = project_root / f"data/pilots/{args.experiment}"
     
     print(f"Converting JSON files to CSV for {args.experiment} experiment...")
     print(f"Description: {config['description']}")

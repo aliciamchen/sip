@@ -98,7 +98,7 @@ ggplot(df_combined_summary, aes(x = action, y = empirical_stat, color = intimacy
   geom_line(position = position_dodge(width = 0.2), size = 1) +
   scale_color_viridis_c(begin = 0, end = 0.85) +
   labs(y = "P(action)", x = "Action", color = "Intimacy", title = "Forward planning") +
-  facet_grid(reward ~ model, labeller = labeller(reward = label_both)) +
+  facet_grid(reward ~ model) +
   theme(legend.position = "bottom")
 ```
 
@@ -130,7 +130,7 @@ ggplot(df_inv_intimacy, aes(x = intimacy_rating, fill = action)) +
   scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   labs(y = "Density", x = "Intimacy rating", fill = "Action") +
   theme(legend.position = "bottom") +
-  facet_grid(stage~reward, labeller = label_both)
+  facet_grid(stage~reward, labeller = labeller(reward = c("low" = "motivation: low", "high" = "motivation: high")))
 ```
 
 Calculate aggregate summary
@@ -270,7 +270,7 @@ ggplot(df_belief_update_combined, aes(x = action, y = belief_update, group = int
                 position = position_dodge(width = 0.8), size = 1, width = 0.1, color = "black", alpha = 0.8) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_brewer(palette = "Set2") +
-  labs(title = "Change in intimacy rating after observing action", y = "Belief update", x = "Observed action", fill = "Reward of sharing food") +
+  labs(title = "Change in intimacy rating after observing action", y = "Belief update", x = "Observed action", fill = "Motivational state") +
   theme(legend.position = "bottom") +
   facet_wrap(~model, nrow = 1)
 ```
@@ -300,7 +300,7 @@ Plot distributions
 ggplot(df_inv_reward, aes(x = p_high_reward, fill = action)) +
   geom_density(alpha = 0.5) +
   scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
-  labs(y = "Density", x = "P(high reward)", fill = "Action") +
+  labs(y = "Density", x = "P(high motivation)", fill = "Action") +
   theme(legend.position = "bottom") +
   facet_grid(stage~intimacy, labeller = label_both)
 ```
@@ -344,8 +344,8 @@ ggplot() +
   scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   labs(
-    title = "P(high reward) before and after observing action",
-    y = "P(high reward)",
+    title = "P(high motivation) before and after observing action",
+    y = "P(high motivation)",
     x = "Stage",
     fill = "Observed action",
     color = "Observed action"
@@ -369,7 +369,7 @@ ggplot(df_inv_reward_belief_update_summary, aes(x = action, y = empirical_stat, 
                 position = position_dodge(width = 0.8), size = 1, width = 0.1, color = "black", alpha = 0.8) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_viridis_c(begin = 0, end = 0.85) +
-  labs(title = "Change in P(high reward) after observing action", y = "Belief update", x = "Observed action", fill = "Intimacy") +
+  labs(title = "Change in P(high motivation) after observing action", y = "Belief update", x = "Observed action", fill = "Intimacy") +
   theme(legend.position = "bottom")
 ```
 
@@ -393,7 +393,7 @@ Basic model predictions
 ggplot(df_model_inverse_reward |> filter(reward == "high"), aes(x = action, y = p_reward, color = intimacy, group = intimacy)) +
   geom_point(position = position_dodge(width = 0.2), size = 3) +
   geom_line(position = position_dodge(width = 0.2), size = 1) +
-  labs(y = "P(high reward)", x = "Observed action", title = "Inverse planning model predictions") +
+  labs(y = "P(high motivation)", x = "Observed action", title = "Inverse planning model predictions") +
   scale_color_viridis_c(begin = 0, end = 0.85) +
   facet_grid(~model, labeller = label_both) 
 ```
@@ -434,7 +434,7 @@ ggplot(df_reward_belief_update_combined, aes(x = action, y = belief_update, grou
                 position = position_dodge(width = 0.8), size = 1, width = 0, color = "black", alpha = 0.8) + 
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_viridis_c(begin = 0, end = 0.85) +
-  labs(title = "Change in P(high reward) after observing action", y = "Belief update", x = "Observed action", fill = "Intimacy") +
+  labs(title = "Change in P(high motivation) after observing action", y = "Belief update", x = "Observed action", fill = "Intimacy") +
   theme(legend.position = "bottom") +
   facet_wrap(~model, nrow = 1)
 ```

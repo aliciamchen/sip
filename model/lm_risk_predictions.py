@@ -51,14 +51,14 @@ Respond by first writing out your reasoning for each action, then provide your n
 
 def load_stimuli():
     """Load the risk experiment stimuli."""
-    stimuli_path = get_project_root() / "experiments" / "risk" / "json" / "stimuli.json"
+    stimuli_path = get_project_root() / "experiments" / "pilots" / "risk" / "json" / "stimuli.json"
     with open(stimuli_path, "r") as f:
         return json.load(f)
 
 
 def load_human_data():
     """Load human risk ratings for comparison."""
-    data_path = get_project_root() / "data" / "risk" / "risk_summary.csv"
+    data_path = get_project_root() / "data" / "pilots" / "risk" / "risk_summary.csv"
     return pd.read_csv(data_path)
 
 
@@ -201,12 +201,12 @@ def main():
     predictions_df, explanations_df = get_predictions(stimuli, client)
 
     # Save predictions
-    output_path = get_project_root() / "data" / "risk" / "lm_predictions.csv"
+    output_path = get_project_root() / "data" / "pilots" / "risk" / "lm_predictions.csv"
     predictions_df.to_csv(output_path, index=False)
     print(f"\nSaved predictions to {output_path}")
 
     # Save explanations
-    explanations_path = get_project_root() / "data" / "risk" / "lm_explanations.csv"
+    explanations_path = get_project_root() / "data" / "pilots" / "risk" / "lm_explanations.csv"
     explanations_df.to_csv(explanations_path, index=False)
     print(f"Saved explanations to {explanations_path}")
 
@@ -222,7 +222,7 @@ def main():
     merged = merged.rename(columns={"mean": "human_mean"})
 
     # Save merged comparison
-    comparison_path = get_project_root() / "data" / "risk" / "lm_human_comparison.csv"
+    comparison_path = get_project_root() / "data" / "pilots" / "risk" / "lm_human_comparison.csv"
     merged.to_csv(comparison_path, index=False)
     print(f"Saved comparison to {comparison_path}")
 

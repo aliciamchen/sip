@@ -15,7 +15,7 @@ theme_set(theme_classic(base_size = 15))
 ## effort
 
 ```{r}
-d.effort <- read_csv(here("data/effort/main_trials.csv")) %>% 
+d.effort <- read_csv(here("data/pilots/effort/main_trials.csv")) %>% 
   pivot_longer(
     cols = starts_with("action_"),
     names_to = "action",
@@ -32,7 +32,7 @@ d.effort.summary <- d.effort %>%
 ```
 
 ```{r}
-write_csv(d.effort.summary, here("data/effort/effort_summary.csv"))
+write_csv(d.effort.summary, here("data/pilots/effort/effort_summary.csv"))
 ```
 
 
@@ -59,7 +59,7 @@ ggplot(d.effort.summary, aes(x = action, y = mean, color = scenario_label)) +
 ## risk 
 
 ```{r}
-d.risk <- read_csv(here("data/risk/main_trials.csv")) %>%
+d.risk <- read_csv(here("data/pilots/risk/main_trials.csv")) %>%
   pivot_longer(
     cols = starts_with("action_"),
     names_to = "action",
@@ -76,7 +76,7 @@ d.risk.summary <- d.risk %>%
 ```
 
 ```{r}
-write_csv(d.risk.summary, here("data/risk/risk_summary.csv"))
+write_csv(d.risk.summary, here("data/pilots/risk/risk_summary.csv"))
 ```
 
 ```{r fig.width=8, fig.height=8}
@@ -150,7 +150,7 @@ ggplot(d.effort.risk, aes(x = effort_mean, y = risk_mean, color = scenario_label
 ## Discomfort
 
 ```{r}
-d.discomfort <- read_csv(here("data/discomfort/main_trials.csv")) %>%
+d.discomfort <- read_csv(here("data/pilots/discomfort/main_trials.csv")) %>%
   pivot_longer(
     cols = starts_with("action_"),
     names_to = "action",
@@ -174,7 +174,7 @@ d.discomfort.summary.scenario <- d.discomfort %>%
 ```
 
 ```{r}
-write_csv(d.discomfort.summary.scenario, here("data/discomfort/discomfort_summary.csv"))
+write_csv(d.discomfort.summary.scenario, here("data/pilots/discomfort/discomfort_summary.csv"))
 ```
 
 
@@ -379,7 +379,7 @@ anova(m1, m2)
 ## PLANNING STUDY!!
 
 ```{r}
-d.planning <- read_csv(here("data/planning-1/main_trials.csv")) %>%
+d.planning <- read_csv(here("data/pilots/planning-1/main_trials.csv")) %>%
   pivot_longer(
     cols = starts_with("action_"),
     names_to = "action",
@@ -399,7 +399,7 @@ d.planning <- read_csv(here("data/planning-1/main_trials.csv")) %>%
   mutate(p_action = likert_rating / sum(likert_rating)) %>%
   ungroup()
 
-write_csv(d.planning, here("data/planning-1/main_trials_tidy.csv"))
+write_csv(d.planning, here("data/pilots/planning-1/main_trials_tidy.csv"))
 ```
 
 ```{r}
@@ -491,7 +491,7 @@ ggplot(d.planning.risk, aes(x = risk_mean, y = planning_mean, color = closeness_
 ## What are people's priors for actions? 
 
 ```{r}
-d.priors <- read_csv(here("data/planning_priors/main_trials.csv")) %>%
+d.priors <- read_csv(here("data/pilots/planning_priors/main_trials.csv")) %>%
   pivot_longer(
     cols = starts_with("action_"),
     names_to = "action",
@@ -511,7 +511,7 @@ d.priors.summary <- d.priors %>%
 ```
 
 ```{r}
-write_csv(d.priors.summary, here("data/planning_priors/priors_summary.csv"))
+write_csv(d.priors.summary, here("data/pilots/planning_priors/priors_summary.csv"))
 ```
 
 Plot priors
@@ -539,7 +539,7 @@ ggplot(d.priors.summary, aes(x = action, y = empirical_stat, color = scenario_la
 ## View model predictions
 
 ```{r}
-d.with.preds <- read_csv(here("data/planning-1/main_trials_tidy_with_preds.csv")) %>% 
+d.with.preds <- read_csv(here("data/pilots/planning-1/main_trials_tidy_with_preds.csv")) %>% 
   mutate(closeness_condition = factor(closeness_condition, levels = c("not_close", "somewhat_close", "close", "extremely_close"))) %>% 
   left_join(d.risk.summary, by = c("scenario_label", "action")) %>%
   rename(risk_rating = empirical_stat, ci_lower_risk = ci_lower, ci_upper_risk = ci_upper)

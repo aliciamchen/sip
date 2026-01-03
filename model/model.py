@@ -1,3 +1,4 @@
+# model fitting code where each scenario is fit separately
 from memo import memo
 import jax
 import jax.numpy as jnp
@@ -35,7 +36,7 @@ model_types = [
 
 # Load and fill risk, effort, closeness
 
-risk_summary = pd.read_csv("../data/risk/risk_summary.csv")
+risk_summary = pd.read_csv("../data/pilots/risk/risk_summary.csv")
 risk_summary.insert(
     risk_summary.columns.get_loc("scenario_label") + 1,
     "scenario_idx",
@@ -48,7 +49,7 @@ risk_matrix = (
 )
 assert risk_matrix.shape == (16, 4)
 
-effort_summary = pd.read_csv("../data/effort/effort_summary.csv")
+effort_summary = pd.read_csv("../data/pilots/effort/effort_summary.csv")
 effort_summary.insert(
     effort_summary.columns.get_loc("scenario_label") + 1,
     "scenario_idx",
@@ -64,7 +65,7 @@ effort_matrix = (
 )
 assert effort_matrix.shape == (16, 4)
 
-priors_summary = pd.read_csv("../data/planning_priors/priors_summary.csv")
+priors_summary = pd.read_csv("../data/pilots/planning_priors/priors_summary.csv")
 priors_summary.insert(
     priors_summary.columns.get_loc("scenario_label") + 1,
     "scenario_idx",
@@ -81,7 +82,7 @@ priors_matrix = (
 assert priors_matrix.shape == (16, 4)
 
 
-discomfort_summary = pd.read_csv("../data/discomfort/discomfort_summary.csv")
+discomfort_summary = pd.read_csv("../data/pilots/discomfort/discomfort_summary.csv")
 discomfort_summary.insert(
     discomfort_summary.columns.get_loc("scenario_label") + 1,
     "scenario_idx",
@@ -157,7 +158,15 @@ def vanilla_actor[a: risk_levels, c: closeness_levels](scenario_idx, alpha, w_r,
 
 @jax.jit
 def get_scale(w_r, w_c, c, kappa):
-    return 1 / (jnp.exp(c + 1))
+    # return 1 / (1 + kappa * (c + 1))
+    # return (c + 1) ** (-kappa)
+    return 1 / (jnp.exp((c + 1)))
+
+
+@jax.jit
+def get_shape(p_0, kappa, c):
+    return 0.65 + (kappa - 0.65) * ((3 - c) / 3)
+
 
 @jax.jit
 def relationship_utility(scenario_idx, a, c, w_r, w_c, p_0, kappa):

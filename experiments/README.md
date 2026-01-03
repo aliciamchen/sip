@@ -1,14 +1,16 @@
 # Experiments
 
-## Pilot experiments
+## Main experiments
 
-- [planning priors pilot](planning_priors/README.md)
-- [planning_comm pilot](planning_comm/README.md)
-- [risk pilot](risk/README.md)
-- [effort pilot](effort/README.md)
-- [discomfort pilot](discomfort/README.md)
+- [inv_plan_intimacy](inv_plan_intimacy/README.md) - Inverse planning: infer intimacy from observed actions
+- [inv_plan_reward](inv_plan_reward/README.md) - Inverse planning: infer reward from observed actions
+- [planning_2](planning_2/README.md) - Planning with better-defined rewards and reward manipulations
+- [planning_comm](planning_comm/README.md) - Planning with communciative goals 
 
+## Pilot experiments (pilots/)
 
-Edited stimuli 
-
-- `planning_2`: rewards are better defined in relation to 0 action. Also has reward manipulations
+- [planning_1](pilots/planning_1/README.md) - Initial planning task
+- [planning_priors](pilots/planning_priors/README.md) - Prior beliefs about actions
+- [risk](pilots/risk/README.md) - Risk/saliva transfer perception
+- [effort](pilots/effort/README.md) - Effort cost perception
+- [discomfort](pilots/discomfort/README.md) - Discomfort/saliva concern perception
