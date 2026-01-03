@@ -19,9 +19,48 @@ library(tidyverse)
 library(tidyboot)
 library(lme4)
 
-theme_set(theme_minimal(base_size = 15) +
-     theme(
-      panel.grid.minor = element_blank(),
-      legend.position = "bottom"
-    ))
+theme_set(theme_classic(base_size = 18))
+```
+
+This experiment manipulates how much two people want the food (`low` vs. `high` reward), and the relationship between the two people (0, 50, 75, or 100 on a 100 point scale between 'intimate' and 'formal'). 
+
+```{r}
+df <- read_csv(here("data", "forw_plan", "main_trials.csv")) |>
+  rename(
+    intimacy = intimacy_condition,
+    motivation = reward_condition
+  ) |>
+  mutate(
+    motivation = factor(motivation, levels = c("low", "high")),
+    model = "humans"
+  ) |>
+  pivot_longer(
+    cols = starts_with("action_"),
+    names_to = "action",
+    names_prefix = "action_",
+    values_to = "p_action"
+  )
+```
+
+Calculate means
+
+```{r}
+df_summary <- df |>
+  group_by(intimacy, motivation, action) |>
+  tidyboot_mean(p_action)
+```
+
+Plot
+
+```{r}
+ggplot(df_summary, aes(x = action, y = empirical_stat, color = intimacy, group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.2), size = 1, width = 0.3
+  ) +
+  geom_line(position = position_dodge(width = 0.2), size = 1) +
+  scale_color_viridis_c(begin = 0, end = 0.85) +
+  labs(y = "P(action)", x = "Action", color = "Intimacy") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~motivation, labeller = label_both)
 ```
