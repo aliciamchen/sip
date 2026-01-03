@@ -4,7 +4,7 @@
 
 - [inv_plan_intimacy](inv_plan_intimacy/README.md) - Inverse planning: infer intimacy from observed actions
 - [inv_plan_reward](inv_plan_reward/README.md) - Inverse planning: infer reward from observed actions
-- [planning_2](planning_2/README.md) - Planning with better-defined rewards and reward manipulations
+- [forw_plan](forw_plan/README.md) - Planning with better-defined rewards and reward manipulations
 - [planning_comm](planning_comm/README.md) - Planning with communciative goals 
 
 ## Pilot experiments (pilots/)

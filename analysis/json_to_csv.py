@@ -10,7 +10,7 @@ Usage:
     python json_to_csv.py <experiment_name>
     
 Available experiments:
-    - planning-2: Experiment with probability sliders for action ratings
+    - forw_plan: Experiment with probability sliders for action ratings
     - inv_plan_intimacy: Inverse planning experiment measuring intimacy ratings before and after observing actions
     - inv_plan_reward: Inverse planning experiment measuring reward likelihood ratings before and after observing actions
 """
@@ -30,7 +30,7 @@ from utils import get_project_root
 
 # Experiment configurations
 EXPERIMENT_CONFIGS = {
-    'planning-2': {
+    'forw_plan': {
         'description': 'Experiment with probability sliders for action ratings',
         'main_trial_fields': ['subject_id', 'scenario_label', 'intimacy_condition', 'reward_condition', 'action_0', 'action_1', 'action_2', 'action_3'],
         'exit_survey_fields': ['subject_id', 'gender', 'age', 'understood', 'comments', 'attention_passed', 'memory_correct_count'],
@@ -113,7 +113,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                     scenario_label = trial.get('scenario_label', '')
                     
                     # Handle different experiment types
-                    if experiment_name == 'planning-2':
+                    if experiment_name == 'forw_plan':
                         # Extract action probabilities from probs field
                         probs = trial.get('probs', [])
                         action_0 = probs[0] if len(probs) > 0 else ''
@@ -230,12 +230,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available experiments:
-  planning-2         Experiment with probability sliders for action ratings
+  forw_plan         Experiment with probability sliders for action ratings
   inv_plan_intimacy Inverse planning experiment measuring intimacy ratings before and after observing actions
   inv_plan_reward   Inverse planning experiment measuring reward likelihood ratings before and after observing actions
 
 Examples:
-  python json_to_csv.py planning-2
+  python json_to_csv.py forw_plan
   python json_to_csv.py inv_plan_intimacy
   python json_to_csv.py inv_plan_reward
         """
