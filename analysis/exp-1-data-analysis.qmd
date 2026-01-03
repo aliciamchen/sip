@@ -1,0 +1,27 @@
+---
+title: Experiment 1 (forward planning) data analysis
+author: Alicia Chen
+date: 2026-01-03
+format:
+  html:
+    toc: true
+    code-fold: true
+    df-print: paged
+    page-layout: full
+    search: false
+execute:
+  warning: false 
+---
+
+```{r setup}
+library(here)
+library(tidyverse)
+library(tidyboot)
+library(lme4)
+
+theme_set(theme_minimal(base_size = 15) +
+     theme(
+      panel.grid.minor = element_blank(),
+      legend.position = "bottom"
+    ))
+```
