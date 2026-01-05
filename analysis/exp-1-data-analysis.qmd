@@ -137,9 +137,37 @@ fit_results |>
   knitr::kable(digits = 3, caption = "Model fitting results")
 ```
 
-The full model provides the best fit (lowest NLL), followed by the vanilla model and then the discomfort-only model. Likelihood ratio tests confirm that:
+The full model provides the best fit (lowest NLL), followed by the vanilla model and then the discomfort-only model.
 
-- Full model is significantly better than discomfort-only (p < 0.001)
-- Vanilla model is significantly better than discomfort-only (p < 0.05)
+### AIC/BIC comparison
 
-This supports the prediction that the full model best captures human behavior by accounting for how intimacy modulates both the reward of sharing and the discomfort of risky actions.
+```{r}
+n_obs <- nrow(df)  # number of observations
+
+fit_results <- fit_results |>
+  mutate(
+    AIC = 2 * n_params + 2 * nll,
+    BIC = n_params * log(n_obs) + 2 * nll
+  )
+
+fit_results |>
+  select(model, nll, n_params, AIC, BIC) |>
+  arrange(AIC) |>
+  knitr::kable(digits = 2, caption = "Model comparison (lower AIC/BIC is better)")
+```
+
+```{r}
+# Compute differences from best model (full)
+full_aic <- fit_results$AIC[fit_results$model == "full"]
+full_bic <- fit_results$BIC[fit_results$model == "full"]
+
+fit_results |>
+  mutate(
+    delta_AIC = AIC - full_aic,
+    delta_BIC = BIC - full_bic
+  ) |>
+  select(model, delta_AIC, delta_BIC) |>
+  knitr::kable(digits = 2, caption = "Difference from best model (Full)")
+```
+
+**Interpretation**: The full model has the lowest AIC and BIC, indicating the best trade-off between fit and complexity. For Full vs Vanilla (same number of parameters), the ΔAIC of `r round(fit_results$AIC[fit_results$model == "vanilla"] - full_aic, 2)` favors the full model, indicating that intimacy scaling of reward and discomfort improves model fit.

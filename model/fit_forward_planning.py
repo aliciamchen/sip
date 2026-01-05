@@ -15,7 +15,6 @@ import jax.numpy as jnp
 import optax
 import numpy as np
 import pandas as pd
-from scipy.stats import chi2
 
 from model_utils import (
     actions,
@@ -288,28 +287,6 @@ def fit_discomfort_only_model(
     return params, best_nll
 
 
-# Likelihood ratio test
-
-
-def likelihood_ratio_test(nll_full: float, nll_reduced: float, df_diff: int):
-    """Perform likelihood ratio test.
-
-    Tests H0: reduced model is sufficient vs H1: full model is better.
-
-    Args:
-        nll_full: NLL of full (more complex) model
-        nll_reduced: NLL of reduced (simpler) model
-        df_diff: difference in degrees of freedom (number of additional params in full model)
-
-    Returns:
-        lr_stat: likelihood ratio test statistic
-        p_value: p-value from chi-squared distribution
-    """
-    lr_stat = 2 * (nll_reduced - nll_full)
-    p_value = 1 - chi2.cdf(lr_stat, df_diff)
-    return lr_stat, p_value
-
-
 # Main script
 
 
@@ -366,31 +343,6 @@ def main():
         print(f"\n{model_name.upper()}:")
         print(f"  NLL: {result['nll']:.4f}")
         print(f"  Params: {result['params']}")
-
-    # Likelihood ratio tests
-    print("\n" + "-" * 40)
-    print("LIKELIHOOD RATIO TESTS")
-    print("-" * 40)
-
-    # Full vs Vanilla (same params, but vanilla doesn't use intimacy scaling)
-    # These models have the same number of parameters, so we use difference in NLL directly
-    print(f"\nFull vs Vanilla:")
-    print(f"  Full NLL: {full_nll:.4f}, Vanilla NLL: {vanilla_nll:.4f}")
-    print(f"  Difference: {vanilla_nll - full_nll:.4f} (positive = full is better)")
-
-    # Full vs Discomfort-only (full has 2 more params: w_r, w_c)
-    lr_stat, p_val = likelihood_ratio_test(full_nll, discomfort_nll, df_diff=2)
-    print(f"\nFull vs Discomfort-only:")
-    print(f"  LR statistic: {lr_stat:.4f}")
-    print(f"  p-value: {p_val:.6f}")
-    print(f"  {'Full model significantly better' if p_val < 0.05 else 'No significant difference'}")
-
-    # Vanilla vs Discomfort-only (vanilla has 2 more params: w_r, w_c)
-    lr_stat, p_val = likelihood_ratio_test(vanilla_nll, discomfort_nll, df_diff=2)
-    print(f"\nVanilla vs Discomfort-only:")
-    print(f"  LR statistic: {lr_stat:.4f}")
-    print(f"  p-value: {p_val:.6f}")
-    print(f"  {'Vanilla model significantly better' if p_val < 0.05 else 'No significant difference'}")
 
     # Generate predictions and save to CSV
     print("\n" + "-" * 40)
