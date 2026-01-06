@@ -117,15 +117,64 @@ df_preds_summary <- df_preds |>
 ### Model predictions vs human data
 
 ```{r fig.width=10, fig.height=6}
-ggplot(df_preds_summary, aes(x = action, y = empirical_stat, color = intimacy, group = intimacy)) +
-  geom_point(position = position_dodge(width = 0.2), size = 2) +
+ggplot(df_preds_summary, aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
     position = position_dodge(width = 0.2), width = 0.2
   ) +
   geom_line(position = position_dodge(width = 0.2)) +
   scale_color_viridis_c(begin = 0, end = 0.85) +
-  labs(y = "P(action)", x = "Action", color = "Intimacy") +
+  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action") +
   facet_grid(motivation ~ model, labeller = labeller(motivation = label_both))
+```
+
+### Model-human correlation
+
+```{r fig.width=10, fig.height=4}
+# Prepare data for correlation plots
+df_corr <- df_preds_summary |>
+  select(intimacy, motivation, action, model, empirical_stat, ci_lower, ci_upper) |>
+  pivot_wider(
+    names_from = model,
+    values_from = c(empirical_stat, ci_lower, ci_upper)
+  )
+
+# Reshape for faceted plotting
+df_corr_long <- df_corr |>
+  pivot_longer(
+    cols = c(`empirical_stat_Vanilla model`, `empirical_stat_Discomfort only`, `empirical_stat_Full model`),
+    names_to = "model",
+    names_prefix = "empirical_stat_",
+    values_to = "model_pred"
+  ) |>
+  rename(
+    Human = `empirical_stat_Human`,
+    Human_ci_lower = `ci_lower_Human`,
+    Human_ci_upper = `ci_upper_Human`
+  ) |>
+  mutate(
+    model = factor(model, levels = c("Vanilla model", "Discomfort only", "Full model")),
+    action = factor(action)
+  )
+
+# Calculate correlations for annotations
+correlations <- df_corr_long |>
+  group_by(model) |>
+  summarize(
+    r = cor(model_pred, Human),
+    label = paste0("r = ", round(r, 2))
+  )
+
+ggplot(df_corr_long, aes(x = model_pred, y = Human, color = intimacy, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray50") +
+  geom_errorbar(aes(ymin = Human_ci_lower, ymax = Human_ci_upper), width = 0.02) +
+  geom_point(size = 3) +
+  geom_text(data = correlations, aes(x = 0.1, y = 0.9, label = label),
+            inherit.aes = FALSE, hjust = 0, size = 5) +
+  scale_color_viridis_c(begin = 0, end = 0.85) +
+  labs(x = "Model prediction", y = "Human data", color = "Intimacy", shape = "Action") +
+  facet_wrap(~model, nrow = 1) +
+  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
 ```
 
 ### Model fit results

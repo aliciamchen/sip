@@ -1,7 +1,16 @@
 subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
 1290d972-ed4e-58cc-89a9-bae85cdf375e,male,24,yes,nope,True,3
+d6a24019-37e7-5e54-91df-86eb36d09f98,female,36,yes,,False,2
 c953754b-4b61-51cd-b273-4c61878b7b08,male,32,yes,,True,3
+32b6d2da-595c-5f89-8b3a-b3ed72260bd7,female,69,yes,Thank you. Happy New Year!,True,3
+42452586-cc32-570b-a963-6fe95c5b4190,female,52,yes,,True,3
+53690498-782e-502a-b5d0-6982c12bb42a,female,46,yes,,True,2
 a0617d10-0f54-540d-91fa-fd0ca9959a20,female,62,yes,Good luck with your research!,True,3
+790f85a4-c7a1-5886-9746-69ec0399b8cb,male,30,yes,"None, thank you!",True,2
+4974e480-fb4d-5fcf-947e-193d2475d45c,male,30,yes,,True,3
 3b9312fe-f094-5641-936d-d6f8fa326519,female,60,yes,,True,3
+194eda41-9a2d-56bc-bdeb-e97699ff064f,female,66,yes,thank you,True,3
+13cd3ef8-12c0-54a3-9a57-2c7bb2c82b30,female,34,yes,,True,2
 d1048db8-5e16-5ce4-99f8-18723fb90cf4,male,45,yes,,True,1
+13f05912-eb11-5ed4-bc43-498de1246097,female,48,yes,I enjoyed completing these scenarios very much!,True,2
 5091b562-1ff1-57fd-9b51-0884bd83df81,male,53,yes,ty have a good day.,True,3
