@@ -5,6 +5,15 @@ const intimacy_texts = {
   100: "100 (maximally intimate)",
 };
 
+const CONFIG = {
+  ATTENTION_CHECK_INDEX: 14,
+  ATTENTION_TOLERANCE: 0.02,
+  INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
+  PIPE_EXPERIMENT_ID: "QsZBwjtGHTen",
+  PROLIFIC_COMPLETION_URL:
+    "https://app.prolific.com/submissions/complete?cc=C1A889GX",
+};
+
 export function makeTimeline(
   jsPsych,
   stimuli,
@@ -55,7 +64,7 @@ export function makeTimeline(
 
   stimuli.forEach((stimulus, stimulusIndex) => {
     // add attention check after the 14th scenario
-    if (stimulusIndex === 14) {
+    if (stimulusIndex === CONFIG.ATTENTION_CHECK_INDEX) {
       trials.push({
         type: jsPsychHtmlSliderResponse,
         labels: ["0", "50", "100"],
@@ -74,7 +83,8 @@ export function makeTimeline(
           response_type: "attention_check",
         },
         on_finish: function (data) {
-          data.attention_passed = Math.abs(data.response - 0) < 0.02;
+          data.attention_passed =
+            Math.abs(data.response - 0) < CONFIG.ATTENTION_TOLERANCE;
         },
       });
     }
@@ -88,51 +98,50 @@ export function makeTimeline(
     trials.push({
       type: jsPsychHtmlKeyboardResponse,
       stimulus: `
-                    <div>
-                        <h2>Scenario ${stimulusIndex + 1} of ${
-        stimuli.length
-      }</h2>
-                        <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
-                          stimulus.name_0
-                        } and ${
+        <div>
+          <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+          <div class="vignette-text">
+            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+              stimulus.name_0
+            } and ${
         stimulus.name_1
       } are in a relationship they would describe as <strong>${
         intimacy_texts[stimulus.intimacy_condition]
       }</strong>.</p>
-                        <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
-                    </div>
-                `,
+          </div>
+          <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
+        </div>
+      `,
       choices: "ALL_KEYS",
     });
 
     trials.push({
       type: jsPsychHtmlSliderResponse,
       stimulus: `
-                    <div>
-                        <h2>Scenario ${stimulusIndex + 1} of ${
-        stimuli.length
-      }</h2>
-      <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
-        stimulus.name_0
-      } and ${
+        <div>
+          <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+          <div class="vignette-text">
+            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+              stimulus.name_0
+            } and ${
         stimulus.name_1
       } are in a relationship they would describe as <strong>${
         intimacy_texts[stimulus.intimacy_condition]
-      }</strong>.
-      </p>
-                            <p>${stimulus.vignette}</p>
-                            <p><em>You expect that ${stimulus.name_0} and ${
+      }</strong>.</p>
+            <p>${stimulus.vignette}</p>
+            <p><em>You expect that ${stimulus.name_0} and ${
         stimulus.name_1
       } will take one of the following actions:</em></p>
-                            <ul>
-                              <li>${stimulus[`action_0`]}</li>
-                              <li>${stimulus[`action_1`]}</li>
-                              <li>${stimulus[`action_2`]}</li>
-                              <li>${stimulus[`action_3`]}</li>
-                            </ul>
-                        <p><strong>Before observing what they decide to do, which situation do you think is more likely?</strong></p>
-                    </div>
-                `,
+            <ul>
+              <li>${stimulus[`action_0`]}</li>
+              <li>${stimulus[`action_1`]}</li>
+              <li>${stimulus[`action_2`]}</li>
+              <li>${stimulus[`action_3`]}</li>
+            </ul>
+          </div>
+          <p><strong>Before observing what they decide to do, which situation do you think is more likely?</strong></p>
+        </div>
+      `,
       slider_width: 900,
       slider_min: 0,
       slider_max: 100,
@@ -160,27 +169,30 @@ export function makeTimeline(
       type: jsPsychHtmlSliderResponse,
       stimulus: `
         <div>
-        <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
-      <p class="closeness-info">On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
-        stimulus.name_0
-      } and ${
+          <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+          <div class="vignette-text">
+            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+              stimulus.name_0
+            } and ${
         stimulus.name_1
       } are in a relationship they would describe as <strong>${
         intimacy_texts[stimulus.intimacy_condition]
-      }</strong>.
-      </p>
-          <p>${stimulus.vignette}</p>
-          <p><em>You expect that ${stimulus.name_0} and ${
+      }</strong>.</p>
+            <p>${stimulus.vignette}</p>
+            <p><em>You expect that ${stimulus.name_0} and ${
         stimulus.name_1
       } will take one of the following actions:</em></p>
-          <ul>
-            <li>${stimulus[`action_0`]}</li>
-            <li>${stimulus[`action_1`]}</li>
-            <li>${stimulus[`action_2`]}</li>
-            <li>${stimulus[`action_3`]}</li>
-          </ul>
-          <p><em>They decide to take the following action:</em></p>
-          <p>${stimulus[`${stimulus.action_condition}`]}</p>
+            <ul>
+              <li>${stimulus[`action_0`]}</li>
+              <li>${stimulus[`action_1`]}</li>
+              <li>${stimulus[`action_2`]}</li>
+              <li>${stimulus[`action_3`]}</li>
+            </ul>
+          </div>
+          <div class="vignette-text vignette-observed">
+            <p><em>They decide to take the following action:</em></p>
+            <p>${stimulus[`${stimulus.action_condition}`]}</p>
+          </div>
           <p><strong>Now that you have observed what they decide to do, which situation do you think is more likely?</strong></p>
         </div>
       `,
@@ -297,7 +309,7 @@ export function makeTimeline(
       choices: "NO_KEYS",
       trial_duration: function () {
         return jsPsych.randomization.sampleWithoutReplacement(
-          [1500, 1750, 2000, 2300],
+          CONFIG.INTER_TRIAL_DURATIONS,
           1
         )[0];
       },
@@ -330,7 +342,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "QsZBwjtGHTen",
+    experiment_id: CONFIG.PIPE_EXPERIMENT_ID,
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };
@@ -338,7 +350,7 @@ export function makeTimeline(
   const thankYou = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `<p>Thanks for participating in the experiment!</p>
-                  <p><a href="https://app.prolific.com/submissions/complete?cc=C1A889GX">Click here to return to Prolific and complete the study</a>.</p>
+                  <p><a href="${CONFIG.PROLIFIC_COMPLETION_URL}">Click here to return to Prolific and complete the study</a>.</p>
                   <p>It is now safe to close the window. Your pay will be delivered within a few days.</p>
                   `,
     choices: "NO_KEYS",
