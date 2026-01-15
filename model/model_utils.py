@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 from enum import IntEnum
+from pathlib import Path
 
 
 # ==============================================================================
@@ -24,6 +25,63 @@ class RelationshipConditions(IntEnum):
     FIFTY = 1
     SEVENTY_FIVE = 2
     ONE_HUNDRED = 3
+
+
+# ==============================================================================
+# LLM-Derived Scenario-Specific Parameters (loaded from CSV)
+# ==============================================================================
+# Scenarios indexed alphabetically (0-15)
+SCENARIO_LABELS = [
+    'apples', 'basketball', 'birthday', 'brunch', 'cooking', 'dip',
+    'drinks', 'driving', 'fair', 'gala', 'hike', 'oysters',
+    'social', 'soup', 'takeout', 'wedding'
+]
+SCENARIO_TO_IDX = {label: idx for idx, label in enumerate(SCENARIO_LABELS)}
+ScenarioIndices = jnp.arange(16)
+
+
+def _load_lm_params():
+    """Load LLM-derived parameters from CSV file.
+
+    Returns:
+        LLM_RISK: jnp.array of shape (16, 4) - risk values per scenario/action
+        LLM_EFFORT: jnp.array of shape (16, 4) - effort values per scenario/action
+        LLM_REWARD: jnp.array of shape (16,) - reward values per scenario
+    """
+    csv_path = Path(__file__).parent / "lm_scenario_params.csv"
+    df = pd.read_csv(csv_path)
+
+    # Pivot to get [scenario, action] arrays, sorted alphabetically by scenario
+    risk_pivot = df.pivot(index='scenario_label', columns='action', values='risk').sort_index()
+    effort_pivot = df.pivot(index='scenario_label', columns='action', values='effort').sort_index()
+
+    # Reward is per-scenario (same for all actions), take first row per scenario
+    reward_df = df.groupby('scenario_label')['reward'].first().sort_index()
+
+    return (
+        jnp.array(risk_pivot.values),
+        jnp.array(effort_pivot.values),
+        jnp.array(reward_df.values)
+    )
+
+
+# Load LLM parameters at module initialization
+LLM_RISK, LLM_EFFORT, LLM_REWARD = _load_lm_params()
+
+# Scenario-aware getters for LLM parameters
+@jax.jit
+def get_risk_lm(action, scenario_idx):
+    return LLM_RISK[scenario_idx, action]
+
+
+@jax.jit
+def get_effort_lm(action, scenario_idx):
+    return LLM_EFFORT[scenario_idx, action]
+
+
+@jax.jit
+def get_reward_base_lm(scenario_idx):
+    return LLM_REWARD[scenario_idx]
 
 
 # ==============================================================================
@@ -173,6 +231,28 @@ def get_utility_forw_discomfort_only(action, intimacy, alpha, w_d):
     """
     discomfort = get_discomfort_from_intimacy(action, intimacy)
     return alpha * (-w_d * discomfort)
+
+
+@jax.jit
+def get_utility_forw_full_lm(action, intimacy, reward_condition, scenario_idx, alpha, w_r, w_d, w_c):
+    """Full forward planning utility using LLM-derived scenario-specific parameters.
+
+    Same structure as get_utility_forw_full but uses LLM values for risk, effort, reward.
+    """
+    # Reward: LLM base reward scaled by (1 + intimacy) for high motivation
+    base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base_reward * action_has_reward * (1 + intimacy)
+
+    # Discomfort: (1 - intimacy) * LLM risk
+    formality = 1 - intimacy
+    risk = get_risk_lm(action, scenario_idx)
+    discomfort = formality * risk
+
+    # Effort: LLM effort
+    effort = get_effort_lm(action, scenario_idx)
+
+    return alpha * (w_r * reward - w_d * discomfort - w_c * effort)
 
 
 # ==============================================================================
@@ -515,6 +595,36 @@ def actor_forw_discomfort_only[
                 intimacy,
                 alpha,
                 w_d,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# Full model with LLM-derived scenario-specific parameters
+@memo
+def actor_forw_full_lm[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_forw_full_lm(
+                action,
+                intimacy,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
             )
         ),
     )

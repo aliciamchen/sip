@@ -23,6 +23,8 @@ from model_utils import (
     actor_forw_full,
     actor_forw_vanilla,
     actor_forw_discomfort_only,
+    actor_forw_full_lm,
+    SCENARIO_TO_IDX,
 )
 
 
@@ -35,6 +37,7 @@ def load_data(filepath: str = "../data/forw_plan/main_trials_long.csv"):
     Converts:
     - intimacy: 0/50/75/100 -> 0.0/0.5/0.75/1.0
     - motivation: low/high -> 0/1 (RewardConditions enum)
+    - scenario_label: alphabetical index (0-15)
 
     Returns:
         data: pandas DataFrame
@@ -42,6 +45,7 @@ def load_data(filepath: str = "../data/forw_plan/main_trials_long.csv"):
         reward_condition: JAX array of reward conditions (0 or 1)
         action: JAX array of actions (0-3)
         p_action: JAX array of human response probabilities
+        scenario_idx: JAX array of scenario indices (0-15)
     """
     print("Loading forward planning data...")
     data = pd.read_csv(filepath)
@@ -54,17 +58,21 @@ def load_data(filepath: str = "../data/forw_plan/main_trials_long.csv"):
     motivation_map = {"low": 0, "high": 1}
     data["reward_condition"] = data["motivation"].map(motivation_map)
 
+    # Convert scenario_label to index
+    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
+
     # Extract JAX arrays
     intimacy = jnp.array(data["intimacy_scaled"].values)
     reward_condition = jnp.array(data["reward_condition"].values)
     action = jnp.array(data["action"].values)
     p_action = jnp.array(data["p_action"].values)
+    scenario_idx = jnp.array(data["scenario_idx"].values)
 
     print(f"Loaded {len(data)} data points")
     print(f"  Unique subjects: {data['subject_id'].nunique()}")
     print(f"  Scenarios: {data['scenario_label'].nunique()}")
 
-    return data, intimacy, reward_condition, action, p_action
+    return data, intimacy, reward_condition, action, p_action, scenario_idx
 
 
 # Loss function
@@ -147,6 +155,23 @@ def predict_discomfort_only(intimacy, reward_condition, action, alpha, w_d):
         lambda i, r, a: get_discomfort_only_prediction(i, r, a, alpha, w_d),
         in_axes=(0, 0, 0),
     )(intimacy, reward_condition, action)
+
+
+# LLM model prediction functions
+@jax.jit
+def get_full_lm_prediction(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
+    """Get prediction from LLM full model for single data point."""
+    intimacy_idx = get_intimacy_index(intimacy)
+    return actor_forw_full_lm(scenario_idx, alpha, w_r, w_d, w_c)[action, intimacy_idx, reward_condition]
+
+
+@jax.jit
+def predict_full_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
+    """Vectorized prediction function for LLM full model."""
+    return jax.vmap(
+        lambda i, r, a, s: get_full_lm_prediction(i, r, a, s, alpha, w_r, w_d, w_c),
+        in_axes=(0, 0, 0, 0),
+    )(intimacy, reward_condition, action, scenario_idx)
 
 
 # Model fitting
@@ -287,6 +312,52 @@ def fit_discomfort_only_model(
     return params, best_nll
 
 
+def fit_full_lm_model(
+    intimacy: jnp.ndarray,
+    reward_condition: jnp.ndarray,
+    action: jnp.ndarray,
+    p_action: jnp.ndarray,
+    scenario_idx: jnp.ndarray,
+    lr: float = 0.01,
+    max_steps: int = 5000,
+    verbose: bool = True,
+):
+    """Fit LLM full model parameters (alpha, w_r, w_d, w_c) using scenario-specific LLM values."""
+
+    def loss_fn(params):
+        alpha, w_r, w_d, w_c = params[0], params[1], params[2], params[3]
+        preds = predict_full_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c)
+        return compute_nll(preds, p_action)
+
+    params = jnp.array([1.0, 1.0, 1.0, 1.0])
+    grad_fn = jax.value_and_grad(loss_fn)
+    opt = optax.adam(learning_rate=lr)
+    opt_state = opt.init(params)
+
+    prev_nll = None
+    for step in range(max_steps):
+        nll, grad = grad_fn(params)
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 1e-6, jnp.inf)
+
+        if verbose and step % 1000 == 0:
+            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
+
+        if prev_nll is not None and nll > prev_nll + 1e-6:
+            if verbose:
+                print(f"  NLL increased at step {step}, stopping")
+            break
+        prev_nll = nll
+
+    best_nll = float(loss_fn(params))
+    if verbose:
+        print(f"  Final NLL: {best_nll:.4f}")
+        print(f"  Final params: {params}")
+
+    return params, best_nll
+
+
 # Main script
 
 
@@ -296,7 +367,7 @@ def main():
     print("=" * 60)
 
     # Load data
-    data, intimacy, reward_condition, action, p_action = load_data()
+    data, intimacy, reward_condition, action, p_action, scenario_idx = load_data()
 
     # Fit models
     results = {}
@@ -334,6 +405,17 @@ def main():
         "n_params": 2,
     }
 
+    # LLM full model: 4 params (alpha, w_r, w_d, w_c) with LLM-derived scenario params
+    print("\n" + "-" * 40)
+    print("Fitting FULL_LM model (LLM-derived scenario params)...")
+    print("-" * 40)
+    full_lm_params, full_lm_nll = fit_full_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
+    results["full_lm"] = {
+        "params": {"alpha": float(full_lm_params[0]), "w_r": float(full_lm_params[1]), "w_d": float(full_lm_params[2]), "w_c": float(full_lm_params[3])},
+        "nll": full_lm_nll,
+        "n_params": 4,
+    }
+
     # Summary
     print("\n" + "=" * 60)
     print("RESULTS SUMMARY")
@@ -362,6 +444,10 @@ def main():
         intimacy, reward_condition, action,
         discomfort_params[0], discomfort_params[1]
     ))
+    data["pred_full_lm"] = np.array(predict_full_lm(
+        intimacy, reward_condition, action, scenario_idx,
+        full_lm_params[0], full_lm_params[1], full_lm_params[2], full_lm_params[3]
+    ))
 
     # Save
     output_path = "forward_planning_fits.csv"
@@ -373,6 +459,7 @@ def main():
         {"model": "full", "nll": full_nll, "n_params": 4, **{f"param_{k}": v for k, v in results["full"]["params"].items()}},
         {"model": "vanilla", "nll": vanilla_nll, "n_params": 4, **{f"param_{k}": v for k, v in results["vanilla"]["params"].items()}},
         {"model": "discomfort_only", "nll": discomfort_nll, "n_params": 2, **{f"param_{k}": v for k, v in results["discomfort_only"]["params"].items()}},
+        {"model": "full_lm", "nll": full_lm_nll, "n_params": 4, **{f"param_{k}": v for k, v in results["full_lm"]["params"].items()}},
     ])
     results_path = "forward_planning_fit_results.csv"
     results_df.to_csv(results_path, index=False)
