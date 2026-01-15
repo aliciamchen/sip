@@ -1,5 +1,8 @@
 # Experiments
 
+`scenarios.csv` is a spreadsheet of the scenarios, which is used to generate the stimuli for the experiments.
+
+Conversion script to go from this csv to the stimuli for each experiment: 
 ## Main experiments
 
 - [inv_plan_intimacy](inv_plan_intimacy/README.md) - Inverse planning: infer intimacy from observed actions

@@ -26,7 +26,7 @@ renv::restore()
 
 ## How to run analyses
 
-Convert raw data (not included in the repository) to csv format:
+Convert raw data (not included in the repository) to csv format with anonymized participant ids:
 
 ```bash
 python analysis/json_to_csv.py <experiment_name> # available experiments: forw_plan, inv_plan_intimacy, inv_plan_reward

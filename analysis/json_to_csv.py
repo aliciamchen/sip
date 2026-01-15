@@ -23,6 +23,8 @@ import sys
 import argparse
 from pathlib import Path
 
+import pandas as pd
+
 # Add project root to Python path
 project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
@@ -223,6 +225,66 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
         else:
             print("No exit survey data found")
 
+
+def create_forw_plan_long(output_dir):
+    """
+    Create main_trials_long.csv for forw_plan experiment.
+
+    This pivots action_0-3 columns to long format and filters out participants
+    who failed attention check or got 0 correct on memory check.
+
+    Args:
+        output_dir (str): Path to directory containing main_trials.csv and exit_survey.csv
+    """
+    output_path = Path(output_dir)
+
+    # Read the data
+    main_trials = pd.read_csv(output_path / 'main_trials.csv')
+    exit_survey = pd.read_csv(output_path / 'exit_survey.csv')
+
+    # Find participants to exclude:
+    # - attention_passed is False (or not True)
+    # - memory_correct_count is 0
+    excluded_subjects = exit_survey[
+        (exit_survey['attention_passed'] != True) |
+        (exit_survey['memory_correct_count'] == 0)
+    ]['subject_id'].tolist()
+
+    n_excluded = len(excluded_subjects)
+    n_total = exit_survey['subject_id'].nunique()
+    print(f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)")
+
+    # Filter out excluded participants
+    main_trials_filtered = main_trials[~main_trials['subject_id'].isin(excluded_subjects)]
+
+    # Pivot to long format
+    main_trials_long = main_trials_filtered.melt(
+        id_vars=['subject_id', 'scenario_label', 'intimacy_condition', 'reward_condition'],
+        value_vars=['action_0', 'action_1', 'action_2', 'action_3'],
+        var_name='action',
+        value_name='p_action'
+    )
+
+    # Clean up action column (remove 'action_' prefix)
+    main_trials_long['action'] = main_trials_long['action'].str.replace('action_', '').astype(int)
+
+    # Rename columns to match existing analysis expectations
+    main_trials_long = main_trials_long.rename(columns={
+        'intimacy_condition': 'intimacy',
+        'reward_condition': 'motivation'
+    })
+
+    # Sort for consistent output
+    main_trials_long = main_trials_long.sort_values(
+        ['subject_id', 'scenario_label', 'action']
+    ).reset_index(drop=True)
+
+    # Save
+    output_file = output_path / 'main_trials_long.csv'
+    main_trials_long.to_csv(output_file, index=False)
+    print(f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)")
+
+
 def main():
     """Main function to run the conversion."""
     parser = argparse.ArgumentParser(
@@ -266,8 +328,13 @@ Examples:
     
     # Process the files
     process_json_files(input_dir, output_dir, config, args.experiment)
-    
-    print("Conversion complete!")
+
+    # Create long format for forw_plan experiment
+    if args.experiment == 'forw_plan':
+        print("\nCreating long format with exclusions...")
+        create_forw_plan_long(output_dir)
+
+    print("\nConversion complete!")
 
 if __name__ == "__main__":
     main()
