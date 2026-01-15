@@ -5,11 +5,11 @@ const intimacy_texts = {
   100: "100 (maximally intimate)",
 };
 
-const CONFIG = {
+export const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
-  PIPE_EXPERIMENT_ID: "QsZBwjtGHTen",
+  PIPE_EXPERIMENT_ID: "1p56Xsptu0tX",
   PROLIFIC_COMPLETION_URL:
     "https://app.prolific.com/submissions/complete?cc=C1A889GX",
 };
@@ -163,6 +163,13 @@ export function makeTimeline(
         reward_low: stimulus.reward_low,
         reward_high: stimulus.reward_high,
       },
+    });
+
+    trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: "",
+      choices: "NO_KEYS",
+      trial_duration: 1000,
     });
 
     trials.push({

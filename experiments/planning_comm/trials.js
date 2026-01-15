@@ -15,6 +15,12 @@ const closeness_texts = {
   extremely_close: "extremely close",
 };
 
+export const CONFIG = {
+  PIPE_EXPERIMENT_ID: "oOYpWkStTX9B",
+  PROLIFIC_COMPLETION_URL:
+    "https://app.prolific.com/submissions/complete?cc=C1A889GX",
+};
+
 export function makeTimeline(
   jsPsych,
   stimuli,
@@ -288,7 +294,7 @@ export function makeTimeline(
   const saveData = {
     type: jsPsychPipe,
     action: "save",
-    experiment_id: "oOYpWkStTX9B",
+    experiment_id: CONFIG.PIPE_EXPERIMENT_ID,
     filename: `${subjectId}.json`,
     data_string: () => jsPsych.data.get().json(),
   };

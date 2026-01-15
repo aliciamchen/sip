@@ -97,6 +97,8 @@ random.shuffle(all_stories)
 tenth_sixteen = make_counterbalancing_once(all_stories)
 random.shuffle(all_stories)
 eleventh_sixteen = make_counterbalancing_once(all_stories)
+random.shuffle(all_stories)
+twelfth_sixteen = make_counterbalancing_once(all_stories)
 
 counterbalancing = (
     first_sixteen
@@ -110,6 +112,7 @@ counterbalancing = (
     + ninth_sixteen
     + tenth_sixteen
     + eleventh_sixteen
+    + twelfth_sixteen
 )
 
 # Get project root and construct the output path

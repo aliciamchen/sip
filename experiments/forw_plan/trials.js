@@ -5,7 +5,7 @@ const intimacy_texts = {
   100: "100 (maximally intimate)",
 };
 
-const CONFIG = {
+export const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],

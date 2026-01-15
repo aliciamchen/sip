@@ -1,4 +1,4 @@
-import { makeTimeline } from "./trials.js";
+import { makeTimeline, CONFIG } from "./trials.js";
 
 let stimuli = [];
 let consentHtml = "";
@@ -42,7 +42,7 @@ async function createExperiment() {
   var study_id = jsPsych.data.getURLVariable("STUDY_ID");
   var session_id = jsPsych.data.getURLVariable("SESSION_ID");
 
-  const condition_assignment = await jsPsychPipe.getCondition("CC2eJ7iDg1TG");
+  const condition_assignment = await jsPsychPipe.getCondition(CONFIG.PIPE_EXPERIMENT_ID);
   const assignedSequence = counterbalancing[condition_assignment];
 
   jsPsych.data.addProperties({
