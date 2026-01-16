@@ -68,6 +68,132 @@ def _load_lm_params():
 # Load LLM parameters at module initialization
 LLM_RISK, LLM_EFFORT, LLM_REWARD = _load_lm_params()
 
+
+# ==============================================================================
+# Empirical Priors (loaded from CSV)
+# ==============================================================================
+
+def _load_empirical_priors():
+    """Load empirical priors from CSV files as JAX arrays.
+
+    Returns:
+        EMPIRICAL_PRIOR_INTIMACY: jnp.array of shape (2, 101) - [motivation, intimacy_idx]
+            motivation: 0=low, 1=high
+            intimacy_idx: 0-100 corresponding to intimacy values 0.00-1.00
+        EMPIRICAL_PRIOR_REWARD_BINARY: jnp.array of shape (4, 2) - [relationship_condition, reward_condition]
+            relationship_condition: 0-3 for 0%, 50%, 75%, 100% intimacy
+            reward_condition: 0=low, 1=high
+    """
+    # Load intimacy priors
+    intimacy_csv_path = Path(__file__).parent / "empirical_priors_intimacy.csv"
+    if intimacy_csv_path.exists():
+        df_int = pd.read_csv(intimacy_csv_path)
+        # Reshape to (2, 101): [motivation, intimacy_idx]
+        # motivation: low=0, high=1
+        low_prior = df_int[df_int['motivation'] == 'low'].sort_values('intimacy_100')['density'].values
+        high_prior = df_int[df_int['motivation'] == 'high'].sort_values('intimacy_100')['density'].values
+        empirical_prior_intimacy = jnp.array([low_prior, high_prior])
+    else:
+        # Fallback to uniform if file doesn't exist
+        empirical_prior_intimacy = jnp.ones((2, 101)) / 101
+
+    # Load reward priors and convert to binary
+    reward_csv_path = Path(__file__).parent / "empirical_priors_reward.csv"
+    if reward_csv_path.exists():
+        df_rew = pd.read_csv(reward_csv_path)
+        # For each intimacy condition, compute P(high) = mean / 100
+        # intimacy_condition: 0, 50, 75, 100 -> relationship_condition: 0, 1, 2, 3
+        intimacy_to_rel = {0: 0, 50: 1, 75: 2, 100: 3}
+        reward_grid = np.arange(101)
+        binary_priors = np.zeros((4, 2))
+        for int_cond in [0, 50, 75, 100]:
+            rel_cond = intimacy_to_rel[int_cond]
+            subset = df_rew[df_rew['intimacy_condition'] == int_cond].sort_values('reward_value')
+            density = subset['density'].values
+            prior_mean = (reward_grid * density).sum()
+            p_high = prior_mean / 100.0
+            p_low = 1 - p_high
+            binary_priors[rel_cond, 0] = p_low
+            binary_priors[rel_cond, 1] = p_high
+        empirical_prior_reward_binary = jnp.array(binary_priors)
+    else:
+        # Fallback to uniform if file doesn't exist
+        empirical_prior_reward_binary = jnp.ones((4, 2)) / 2
+
+    return empirical_prior_intimacy, empirical_prior_reward_binary
+
+
+# Load empirical priors at module initialization
+EMPIRICAL_PRIOR_INTIMACY, EMPIRICAL_PRIOR_REWARD_BINARY = _load_empirical_priors()
+
+
+@jax.jit
+def get_empirical_prior_intimacy(relationship_value, reward_condition):
+    """Get empirical prior density for intimacy given motivation (reward_condition).
+
+    Args:
+        relationship_value: float in [0, 1] representing intimacy level
+        reward_condition: 0 (low motivation) or 1 (high motivation)
+    Returns:
+        Prior density at this intimacy level for the given motivation condition
+    """
+    idx = jnp.round(relationship_value * 100).astype(jnp.int32)
+    idx = jnp.clip(idx, 0, 100)  # Ensure index is in bounds
+    return EMPIRICAL_PRIOR_INTIMACY[reward_condition, idx]
+
+
+@jax.jit
+def get_empirical_prior_reward(reward_condition, relationship_condition):
+    """Get empirical prior probability for reward given intimacy condition.
+
+    Args:
+        reward_condition: 0 (low) or 1 (high)
+        relationship_condition: 0, 1, 2, 3 (for 0%, 50%, 75%, 100% intimacy)
+    Returns:
+        Prior probability for this reward level given the intimacy condition
+    """
+    return EMPIRICAL_PRIOR_REWARD_BINARY[relationship_condition, reward_condition]
+
+
+# Mixed prior getters (blend between empirical and uniform priors)
+UNIFORM_PRIOR_INTIMACY = 1.0 / 101.0  # Uniform over 101 intimacy levels
+
+
+@jax.jit
+def get_mixed_prior_intimacy(relationship_value, reward_condition, prior_weight):
+    """Get mixed prior for intimacy: blend of empirical and uniform.
+
+    prior = prior_weight * empirical + (1 - prior_weight) * uniform
+
+    Args:
+        relationship_value: float in [0, 1] representing intimacy level
+        reward_condition: 0 (low motivation) or 1 (high motivation)
+        prior_weight: weight on empirical prior (0 = uniform, 1 = pure empirical)
+    Returns:
+        Mixed prior density at this intimacy level
+    """
+    empirical = get_empirical_prior_intimacy(relationship_value, reward_condition)
+    return prior_weight * empirical + (1 - prior_weight) * UNIFORM_PRIOR_INTIMACY
+
+
+@jax.jit
+def get_mixed_prior_reward(reward_condition, relationship_condition, prior_weight):
+    """Get mixed prior for reward: blend of empirical and uniform.
+
+    prior = prior_weight * empirical + (1 - prior_weight) * uniform
+
+    Args:
+        reward_condition: 0 (low) or 1 (high)
+        relationship_condition: 0, 1, 2, 3 (for 0%, 50%, 75%, 100% intimacy)
+        prior_weight: weight on empirical prior (0 = uniform, 1 = pure empirical)
+    Returns:
+        Mixed prior probability for this reward level
+    """
+    empirical = get_empirical_prior_reward(reward_condition, relationship_condition)
+    uniform = 0.5  # Uniform over 2 reward levels
+    return prior_weight * empirical + (1 - prior_weight) * uniform
+
+
 # Scenario-aware getters for LLM parameters
 @jax.jit
 def get_risk_lm(action, scenario_idx):
@@ -108,12 +234,14 @@ def get_effort(action):
 
 @jax.jit
 def get_reward_base(action, reward_condition):
-    """Get reward for action given reward condition
-    Low reward: the characters don't particularly want to eat the food together. So regardless of whether they eat or not eat the food, they get the same reward.
-    High reward: the characters want to eat the food together. So the reward is higher if they eat the food together.
+    """Get reward for action given reward condition.
+
+    Aligned with forward planning reward (get_reward_forw) per preregistration:
+    - Low reward: 0 for all actions (characters don't want to eat together)
+    - High reward: 0 for action 0, 1 for actions 1-3 (base reward r_0=1)
     """
-    low_reward = jnp.array([1, 1, 1, 1])
-    high_reward = jnp.array([0, 2, 2, 2])
+    low_reward = jnp.array([0, 0, 0, 0])
+    high_reward = jnp.array([0, 1, 1, 1])
     which_reward = jnp.where(
         reward_condition == RewardConditions.LOW, low_reward, high_reward
     )
@@ -121,8 +249,16 @@ def get_reward_base(action, reward_condition):
 
 @jax.jit
 def get_reward_from_intimacy(action, reward_condition, intimacy):
-    "scale reward based on intimacy"
-    intimacy_multiplier = jnp.array([1, 1, 1, 1]) + intimacy * jnp.array([0, 1, 1, 1]) # higher intimacy -> higher reward of sharing the food together in the first place
+    """Scale reward based on intimacy.
+
+    Aligned with get_reward_forw() per preregistration (r_0=1):
+    - LOW motivation: 0 for all actions
+    - HIGH motivation, action 0: 0
+    - HIGH motivation, actions 1-3: 1 * (1 + intimacy)
+
+    Higher intimacy increases the reward of sharing food together.
+    """
+    intimacy_multiplier = jnp.array([1, 1, 1, 1]) + intimacy * jnp.array([0, 1, 1, 1])
     base_reward = get_reward_base(action, reward_condition)
     return base_reward * intimacy_multiplier[action]
 
@@ -255,6 +391,40 @@ def get_utility_forw_full_lm(action, intimacy, reward_condition, scenario_idx, a
     return alpha * (w_r * reward - w_d * discomfort - w_c * effort)
 
 
+@jax.jit
+def get_utility_forw_vanilla_lm(action, intimacy, reward_condition, scenario_idx, alpha, w_r, w_d, w_c):
+    """Vanilla forward planning utility using LLM-derived scenario-specific parameters.
+
+    No intimacy scaling - reward and risk are independent of relationship.
+    Uses LLM values for risk, effort, and reward.
+    """
+    # Reward: LLM base reward (no intimacy scaling)
+    base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base_reward * action_has_reward
+
+    # Risk: LLM risk (no intimacy scaling)
+    risk = get_risk_lm(action, scenario_idx)
+
+    # Effort: LLM effort
+    effort = get_effort_lm(action, scenario_idx)
+
+    return alpha * (w_r * reward - w_d * risk - w_c * effort)
+
+
+@jax.jit
+def get_utility_forw_discomfort_only_lm(action, intimacy, scenario_idx, alpha, w_d):
+    """Discomfort-only forward planning utility using LLM-derived risk.
+
+    Only considers how intimacy mitigates discomfort from risky actions.
+    Uses LLM risk values instead of stipulated values.
+    """
+    formality = 1 - intimacy
+    risk = get_risk_lm(action, scenario_idx)
+    discomfort = formality * risk
+    return alpha * (-w_d * discomfort)
+
+
 # ==============================================================================
 # Inverse Planning Utility Functions
 # ==============================================================================
@@ -334,6 +504,112 @@ def get_utility_full_model_continuous(
         w_r * get_reward_from_intimacy(action, reward_condition, intimacy)
         - w_d * get_discomfort_from_intimacy(action, intimacy)
         - w_c * get_effort(action)
+    )
+
+
+# ==============================================================================
+# Inverse Planning Utility Functions (LM-based)
+# ==============================================================================
+
+
+@jax.jit
+def get_utility_inv_plan_full_lm_continuous(
+    action,
+    intimacy,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+):
+    """Full inverse planning utility with LLM-derived scenario params (continuous intimacy)."""
+    base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base_reward * action_has_reward * (1 + intimacy)
+
+    formality = 1 - intimacy
+    risk = get_risk_lm(action, scenario_idx)
+    discomfort = formality * risk
+
+    effort = get_effort_lm(action, scenario_idx)
+
+    return alpha * (w_r * reward - w_d * discomfort - w_c * effort)
+
+
+@jax.jit
+def get_utility_inv_plan_full_lm_discrete(
+    action,
+    relationship_condition,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+):
+    """Full inverse planning utility with LLM-derived scenario params (discrete intimacy)."""
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_inv_plan_full_lm_continuous(
+        action, intimacy, reward_condition, scenario_idx, alpha, w_r, w_d, w_c
+    )
+
+
+@jax.jit
+def get_utility_inv_plan_vanilla_lm(
+    action,
+    relationship,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+):
+    """Vanilla inverse planning utility with LLM-derived scenario params (no intimacy scaling)."""
+    base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base_reward * action_has_reward
+
+    risk = get_risk_lm(action, scenario_idx)
+    effort = get_effort_lm(action, scenario_idx)
+
+    return alpha * (w_r * reward - w_d * risk - w_c * effort)
+
+
+@jax.jit
+def get_utility_inv_plan_discomfort_only_lm_continuous(
+    action,
+    intimacy,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+):
+    """Discomfort-only inverse planning utility with LLM risk (continuous intimacy)."""
+    formality = 1 - intimacy
+    risk = get_risk_lm(action, scenario_idx)
+    discomfort = formality * risk
+    return alpha * (-w_d * discomfort)
+
+
+@jax.jit
+def get_utility_inv_plan_discomfort_only_lm_discrete(
+    action,
+    relationship_condition,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+):
+    """Discomfort-only inverse planning utility with LLM risk (discrete intimacy)."""
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_inv_plan_discomfort_only_lm_continuous(
+        action, intimacy, reward_condition, scenario_idx, alpha, w_r, w_d, w_c
     )
 
 
@@ -427,6 +703,98 @@ def actor_discrete_full_model[
 
 
 # ==============================================================================
+# Inverse Planning Actor Models (Discrete, LM-based)
+# ==============================================================================
+
+
+@memo
+def actor_discrete_full_model_lm[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_full_lm_discrete(
+                action,
+                relationship_condition,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_vanilla_lm[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_vanilla_lm(
+                action,
+                relationship_condition,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_discomfort_only_lm[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_discomfort_only_lm_discrete(
+                action,
+                relationship_condition,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ==============================================================================
 # Inverse Planning Actor Models (Continuous)
 # ==============================================================================
 
@@ -505,6 +873,98 @@ def actor_continuous_full_model[
                 action,
                 relationship,
                 reward_condition,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ==============================================================================
+# Inverse Planning Actor Models (Continuous, LM-based)
+# ==============================================================================
+
+
+@memo
+def actor_continuous_full_model_lm[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_full_lm_continuous(
+                action,
+                relationship,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_vanilla_lm[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_vanilla_lm(
+                action,
+                relationship,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_discomfort_only_lm[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_discomfort_only_lm_continuous(
+                action,
+                relationship,
+                reward_condition,
+                scenario_idx,
                 alpha,
                 w_r,
                 w_d,
@@ -631,6 +1091,63 @@ def actor_forw_full_lm[
     return Pr[actor.action == action]
 
 
+# Vanilla model with LLM-derived scenario-specific parameters
+@memo
+def actor_forw_vanilla_lm[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c
+):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_forw_vanilla_lm(
+                action,
+                intimacy,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# Discomfort-only model with LLM-derived scenario-specific parameters
+@memo
+def actor_forw_discomfort_only_lm[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_d
+):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_forw_discomfort_only_lm(
+                action,
+                intimacy,
+                scenario_idx,
+                alpha,
+                w_d,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
 # ==============================================================================
 # Observer Models - Inferring Intimacy
 # ==============================================================================
@@ -642,7 +1159,7 @@ def observer_intimacy_discomfort_only[
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
 ](
-    alpha, w_r, w_d, w_c
+    alpha, w_r, w_d, w_c, alpha_observer
 ):
     cast: [actor, observer]
     observer: knows(reward_condition)
@@ -658,7 +1175,8 @@ def observer_intimacy_discomfort_only[
     ]
     observer: observes[actor.action] is action
     observer: chooses(
-        relationship in IntimacyLevels, wpp=E[actor.relationship == relationship]
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
     )
     return Pr[observer.relationship == relationship]
 
@@ -669,7 +1187,7 @@ def observer_intimacy_vanilla_inv_plan[
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
 ](
-    alpha, w_r, w_d, w_c
+    alpha, w_r, w_d, w_c, alpha_observer
 ):
     cast: [actor, observer]
     observer: knows(reward_condition)
@@ -685,7 +1203,8 @@ def observer_intimacy_vanilla_inv_plan[
     ]
     observer: observes[actor.action] is action
     observer: chooses(
-        relationship in IntimacyLevels, wpp=E[actor.relationship == relationship]
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
     )
     return Pr[observer.relationship == relationship]
 
@@ -694,7 +1213,7 @@ def observer_intimacy_vanilla_inv_plan[
 def observer_intimacy_full_model[
     action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
 ](
-    alpha, w_r, w_d, w_c
+    alpha, w_r, w_d, w_c, alpha_observer
 ):
     cast: [actor, observer]
     observer: knows(reward_condition)
@@ -710,7 +1229,91 @@ def observer_intimacy_full_model[
     ]
     observer: observes[actor.action] is action
     observer: chooses(
-        relationship in IntimacyLevels, wpp=E[actor.relationship == relationship]
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+# ==============================================================================
+# Observer Models - Inferring Intimacy (LM-based)
+# ==============================================================================
+
+
+@memo
+def observer_intimacy_full_model_lm[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_full_model_lm[action, relationship, reward_condition](
+                scenario_idx, alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_vanilla_lm[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_vanilla_lm[action, relationship, reward_condition](
+                scenario_idx, alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_discomfort_only_lm[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_discomfort_only_lm[action, relationship, reward_condition](
+                scenario_idx, alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
     )
     return Pr[observer.relationship == relationship]
 
@@ -726,7 +1329,7 @@ def observer_reward_discomfort_only[
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
 ](
-    alpha, w_r, w_d, w_c
+    alpha, w_r, w_d, w_c, alpha_observer
 ):
     cast: [actor, observer]
     observer: knows(relationship_condition)
@@ -743,7 +1346,7 @@ def observer_reward_discomfort_only[
     observer: observes[actor.action] is action
     observer: chooses(
         reward_condition in RewardConditions,
-        wpp=E[actor.reward_condition == reward_condition],
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
     )
     return Pr[observer.reward_condition == reward_condition]
 
@@ -754,7 +1357,7 @@ def observer_reward_vanilla_inv_plan[
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
 ](
-    alpha, w_r, w_d, w_c
+    alpha, w_r, w_d, w_c, alpha_observer
 ):
     cast: [actor, observer]
     observer: knows(relationship_condition)
@@ -771,7 +1374,7 @@ def observer_reward_vanilla_inv_plan[
     observer: observes[actor.action] is action
     observer: chooses(
         reward_condition in RewardConditions,
-        wpp=E[actor.reward_condition == reward_condition],
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
     )
     return Pr[observer.reward_condition == reward_condition]
 
@@ -782,7 +1385,7 @@ def observer_reward_full_model[
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
 ](
-    alpha, w_r, w_d, w_c
+    alpha, w_r, w_d, w_c, alpha_observer
 ):
     cast: [actor, observer]
     observer: knows(relationship_condition)
@@ -799,6 +1402,285 @@ def observer_reward_full_model[
     observer: observes[actor.action] is action
     observer: chooses(
         reward_condition in RewardConditions,
-        wpp=E[actor.reward_condition == reward_condition],
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+# ==============================================================================
+# Observer Models - Inferring Reward (LM-based)
+# ==============================================================================
+
+
+@memo
+def observer_reward_full_model_lm[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_full_model_lm[
+                action, relationship_condition, reward_condition
+            ](scenario_idx, alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_vanilla_lm[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_vanilla_lm[
+                action, relationship_condition, reward_condition
+            ](scenario_idx, alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_discomfort_only_lm[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_discomfort_only_lm[
+                action, relationship_condition, reward_condition
+            ](scenario_idx, alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+# ==============================================================================
+# Observer Models - Inferring Intimacy (Empirical Prior)
+# ==============================================================================
+
+
+@memo
+def observer_intimacy_full_model_empirical_prior[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(
+            relationship in IntimacyLevels,
+            wpp=get_empirical_prior_intimacy(relationship, reward_condition)
+        ),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_full_model[action, relationship, reward_condition](
+                alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_vanilla_empirical_prior[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(
+            relationship in IntimacyLevels,
+            wpp=get_empirical_prior_intimacy(relationship, reward_condition)
+        ),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_vanilla_inv_plan[action, relationship, reward_condition](
+                alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_discomfort_only_empirical_prior[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(
+            relationship in IntimacyLevels,
+            wpp=get_empirical_prior_intimacy(relationship, reward_condition)
+        ),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_discomfort_only[action, relationship, reward_condition](
+                alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+# ==============================================================================
+# Observer Models - Inferring Reward (Empirical Prior)
+# ==============================================================================
+
+
+@memo
+def observer_reward_full_model_empirical_prior[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(
+            reward_condition in RewardConditions,
+            wpp=get_empirical_prior_reward(reward_condition, relationship_condition)
+        ),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_full_model[
+                action, relationship_condition, reward_condition
+            ](alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_vanilla_empirical_prior[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(
+            reward_condition in RewardConditions,
+            wpp=get_empirical_prior_reward(reward_condition, relationship_condition)
+        ),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_vanilla_inv_plan[
+                action, relationship_condition, reward_condition
+            ](alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_discomfort_only_empirical_prior[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c, alpha_observer
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(
+            reward_condition in RewardConditions,
+            wpp=get_empirical_prior_reward(reward_condition, relationship_condition)
+        ),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_discomfort_only[
+                action, relationship_condition, reward_condition
+            ](alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
     )
     return Pr[observer.reward_condition == reward_condition]
