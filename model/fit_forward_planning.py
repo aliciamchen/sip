@@ -15,6 +15,7 @@ import jax.numpy as jnp
 import optax
 import numpy as np
 import pandas as pd
+from scipy import stats
 
 from model_utils import (
     actions,
@@ -24,6 +25,8 @@ from model_utils import (
     actor_forw_vanilla,
     actor_forw_discomfort_only,
     actor_forw_full_lm,
+    actor_forw_vanilla_lm,
+    actor_forw_discomfort_only_lm,
     SCENARIO_TO_IDX,
 )
 
@@ -96,6 +99,66 @@ def compute_nll(preds, responses):
     responses_safe = jnp.clip(responses, epsilon, 1.0)
     nll = -jnp.sum(responses_safe * jnp.log(preds_safe))
     return nll
+
+
+# Model comparison metrics
+
+
+def compute_aic(nll, n_params):
+    """Compute Akaike Information Criterion.
+
+    AIC = 2k + 2*NLL where k is number of parameters.
+    """
+    return 2 * n_params + 2 * nll
+
+
+def compute_bic(nll, n_params, n_obs):
+    """Compute Bayesian Information Criterion.
+
+    BIC = k*ln(n) + 2*NLL where k is number of parameters, n is observations.
+    """
+    return n_params * np.log(n_obs) + 2 * nll
+
+
+def compute_pearson_r_by_condition(data, pred_col, human_col, group_cols, n_boot=1000):
+    """Compute Pearson r at condition x action level with bootstrap CI.
+
+    Per preregistration: correlation computed at condition x action level
+    with 95% bootstrapped confidence intervals.
+
+    Args:
+        data: DataFrame with predictions and human responses
+        pred_col: column name for model predictions
+        human_col: column name for human responses
+        group_cols: columns to group by (e.g., ['intimacy', 'motivation', 'action'])
+        n_boot: number of bootstrap samples
+
+    Returns:
+        dict with r, p, ci_lower, ci_upper
+    """
+    # Aggregate to condition x action level
+    agg = data.groupby(group_cols).agg({
+        pred_col: 'mean',
+        human_col: 'mean'
+    }).reset_index()
+
+    # Compute correlation
+    r, p = stats.pearsonr(agg[pred_col], agg[human_col])
+
+    # Bootstrap CI
+    np.random.seed(42)
+    boot_rs = []
+    for _ in range(n_boot):
+        idx = np.random.choice(len(agg), size=len(agg), replace=True)
+        boot_pred = agg[pred_col].iloc[idx].values
+        boot_human = agg[human_col].iloc[idx].values
+        boot_r, _ = stats.pearsonr(boot_pred, boot_human)
+        boot_rs.append(boot_r)
+
+    ci_lower = np.percentile(boot_rs, 2.5)
+    ci_upper = np.percentile(boot_rs, 97.5)
+
+    return {"r": r, "p": p, "ci_lower": ci_lower, "ci_upper": ci_upper}
 
 
 # Vectorized prediction functions
@@ -174,6 +237,40 @@ def predict_full_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r
     )(intimacy, reward_condition, action, scenario_idx)
 
 
+# LLM vanilla model prediction functions
+@jax.jit
+def get_vanilla_lm_prediction(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
+    """Get prediction from LLM vanilla model for single data point."""
+    intimacy_idx = get_intimacy_index(intimacy)
+    return actor_forw_vanilla_lm(scenario_idx, alpha, w_r, w_d, w_c)[action, intimacy_idx, reward_condition]
+
+
+@jax.jit
+def predict_vanilla_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
+    """Vectorized prediction function for LLM vanilla model."""
+    return jax.vmap(
+        lambda i, r, a, s: get_vanilla_lm_prediction(i, r, a, s, alpha, w_r, w_d, w_c),
+        in_axes=(0, 0, 0, 0),
+    )(intimacy, reward_condition, action, scenario_idx)
+
+
+# LLM discomfort-only model prediction functions
+@jax.jit
+def get_discomfort_only_lm_prediction(intimacy, reward_condition, action, scenario_idx, alpha, w_d):
+    """Get prediction from LLM discomfort-only model for single data point."""
+    intimacy_idx = get_intimacy_index(intimacy)
+    return actor_forw_discomfort_only_lm(scenario_idx, alpha, w_d)[action, intimacy_idx, reward_condition]
+
+
+@jax.jit
+def predict_discomfort_only_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_d):
+    """Vectorized prediction function for LLM discomfort-only model."""
+    return jax.vmap(
+        lambda i, r, a, s: get_discomfort_only_lm_prediction(i, r, a, s, alpha, w_d),
+        in_axes=(0, 0, 0, 0),
+    )(intimacy, reward_condition, action, scenario_idx)
+
+
 # Model fitting
 
 
@@ -186,14 +283,20 @@ def fit_full_model(
     max_steps: int = 5000,
     verbose: bool = True,
 ):
-    """Fit full model parameters (alpha, w_r, w_d, w_c)."""
+    """Fit full model parameters (w_r, w_d, w_c) with alpha fixed to 1.
+
+    Alpha is fixed to 1 for identifiability - only the products alpha*w_i
+    are identifiable from the data, so we fix alpha=1 and let the weights
+    absorb the scaling.
+    """
+    ALPHA = 1.0  # Fixed for identifiability
 
     def loss_fn(params):
-        alpha, w_r, w_d, w_c = params[0], params[1], params[2], params[3]
-        preds = predict_full(intimacy, reward_condition, action, alpha, w_r, w_d, w_c)
+        w_r, w_d, w_c = params[0], params[1], params[2]
+        preds = predict_full(intimacy, reward_condition, action, ALPHA, w_r, w_d, w_c)
         return compute_nll(preds, p_action)
 
-    params = jnp.array([1.0, 1.0, 1.0, 1.0])
+    params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
@@ -217,9 +320,11 @@ def fit_full_model(
     best_nll = float(loss_fn(params))
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params: {params}")
+        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
 
-    return params, best_nll
+    # Return with alpha=1 prepended for compatibility
+    full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
+    return full_params, best_nll
 
 
 def fit_vanilla_model(
@@ -231,14 +336,15 @@ def fit_vanilla_model(
     max_steps: int = 5000,
     verbose: bool = True,
 ):
-    """Fit vanilla model parameters (alpha, w_r, w_d, w_c)."""
+    """Fit vanilla model parameters (w_r, w_d, w_c) with alpha fixed to 1."""
+    ALPHA = 1.0  # Fixed for identifiability
 
     def loss_fn(params):
-        alpha, w_r, w_d, w_c = params[0], params[1], params[2], params[3]
-        preds = predict_vanilla(intimacy, reward_condition, action, alpha, w_r, w_d, w_c)
+        w_r, w_d, w_c = params[0], params[1], params[2]
+        preds = predict_vanilla(intimacy, reward_condition, action, ALPHA, w_r, w_d, w_c)
         return compute_nll(preds, p_action)
 
-    params = jnp.array([1.0, 1.0, 1.0, 1.0])
+    params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
@@ -262,9 +368,11 @@ def fit_vanilla_model(
     best_nll = float(loss_fn(params))
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params: {params}")
+        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
 
-    return params, best_nll
+    # Return with alpha=1 prepended for compatibility
+    full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
+    return full_params, best_nll
 
 
 def fit_discomfort_only_model(
@@ -276,14 +384,15 @@ def fit_discomfort_only_model(
     max_steps: int = 5000,
     verbose: bool = True,
 ):
-    """Fit discomfort-only model parameters (alpha, w_d)."""
+    """Fit discomfort-only model parameters (w_d) with alpha fixed to 1."""
+    ALPHA = 1.0  # Fixed for identifiability
 
     def loss_fn(params):
-        alpha, w_d = params[0], params[1]
-        preds = predict_discomfort_only(intimacy, reward_condition, action, alpha, w_d)
+        w_d = params[0]
+        preds = predict_discomfort_only(intimacy, reward_condition, action, ALPHA, w_d)
         return compute_nll(preds, p_action)
 
-    params = jnp.array([1.0, 1.0])
+    params = jnp.array([1.0])  # w_d only
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
@@ -307,9 +416,11 @@ def fit_discomfort_only_model(
     best_nll = float(loss_fn(params))
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params: {params}")
+        print(f"  Final params (alpha=1 fixed): w_d={params[0]:.4f}")
 
-    return params, best_nll
+    # Return with alpha=1 prepended for compatibility
+    full_params = jnp.array([ALPHA, params[0]])
+    return full_params, best_nll
 
 
 def fit_full_lm_model(
@@ -322,14 +433,15 @@ def fit_full_lm_model(
     max_steps: int = 5000,
     verbose: bool = True,
 ):
-    """Fit LLM full model parameters (alpha, w_r, w_d, w_c) using scenario-specific LLM values."""
+    """Fit LLM full model parameters (w_r, w_d, w_c) with alpha fixed to 1."""
+    ALPHA = 1.0  # Fixed for identifiability
 
     def loss_fn(params):
-        alpha, w_r, w_d, w_c = params[0], params[1], params[2], params[3]
-        preds = predict_full_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c)
+        w_r, w_d, w_c = params[0], params[1], params[2]
+        preds = predict_full_lm(intimacy, reward_condition, action, scenario_idx, ALPHA, w_r, w_d, w_c)
         return compute_nll(preds, p_action)
 
-    params = jnp.array([1.0, 1.0, 1.0, 1.0])
+    params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
@@ -353,9 +465,109 @@ def fit_full_lm_model(
     best_nll = float(loss_fn(params))
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params: {params}")
+        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
 
-    return params, best_nll
+    # Return with alpha=1 prepended for compatibility
+    full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
+    return full_params, best_nll
+
+
+def fit_vanilla_lm_model(
+    intimacy: jnp.ndarray,
+    reward_condition: jnp.ndarray,
+    action: jnp.ndarray,
+    p_action: jnp.ndarray,
+    scenario_idx: jnp.ndarray,
+    lr: float = 0.01,
+    max_steps: int = 5000,
+    verbose: bool = True,
+):
+    """Fit LLM vanilla model parameters (w_r, w_d, w_c) with alpha fixed to 1."""
+    ALPHA = 1.0  # Fixed for identifiability
+
+    def loss_fn(params):
+        w_r, w_d, w_c = params[0], params[1], params[2]
+        preds = predict_vanilla_lm(intimacy, reward_condition, action, scenario_idx, ALPHA, w_r, w_d, w_c)
+        return compute_nll(preds, p_action)
+
+    params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
+    grad_fn = jax.value_and_grad(loss_fn)
+    opt = optax.adam(learning_rate=lr)
+    opt_state = opt.init(params)
+
+    prev_nll = None
+    for step in range(max_steps):
+        nll, grad = grad_fn(params)
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 1e-6, jnp.inf)
+
+        if verbose and step % 1000 == 0:
+            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
+
+        if prev_nll is not None and nll > prev_nll + 1e-6:
+            if verbose:
+                print(f"  NLL increased at step {step}, stopping")
+            break
+        prev_nll = nll
+
+    best_nll = float(loss_fn(params))
+    if verbose:
+        print(f"  Final NLL: {best_nll:.4f}")
+        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
+
+    # Return with alpha=1 prepended for compatibility
+    full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
+    return full_params, best_nll
+
+
+def fit_discomfort_only_lm_model(
+    intimacy: jnp.ndarray,
+    reward_condition: jnp.ndarray,
+    action: jnp.ndarray,
+    p_action: jnp.ndarray,
+    scenario_idx: jnp.ndarray,
+    lr: float = 0.01,
+    max_steps: int = 5000,
+    verbose: bool = True,
+):
+    """Fit LLM discomfort-only model parameters (w_d) with alpha fixed to 1."""
+    ALPHA = 1.0  # Fixed for identifiability
+
+    def loss_fn(params):
+        w_d = params[0]
+        preds = predict_discomfort_only_lm(intimacy, reward_condition, action, scenario_idx, ALPHA, w_d)
+        return compute_nll(preds, p_action)
+
+    params = jnp.array([1.0])  # w_d only
+    grad_fn = jax.value_and_grad(loss_fn)
+    opt = optax.adam(learning_rate=lr)
+    opt_state = opt.init(params)
+
+    prev_nll = None
+    for step in range(max_steps):
+        nll, grad = grad_fn(params)
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 1e-6, jnp.inf)
+
+        if verbose and step % 1000 == 0:
+            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
+
+        if prev_nll is not None and nll > prev_nll + 1e-6:
+            if verbose:
+                print(f"  NLL increased at step {step}, stopping")
+            break
+        prev_nll = nll
+
+    best_nll = float(loss_fn(params))
+    if verbose:
+        print(f"  Final NLL: {best_nll:.4f}")
+        print(f"  Final params (alpha=1 fixed): w_d={params[0]:.4f}")
+
+    # Return with alpha=1 prepended for compatibility
+    full_params = jnp.array([ALPHA, params[0]])
+    return full_params, best_nll
 
 
 # Main script
@@ -372,48 +584,70 @@ def main():
     # Fit models
     results = {}
 
-    # Full model: 4 params (alpha, w_r, w_d, w_c)
+    # Full model: 3 free params (w_r, w_d, w_c) with alpha=1 fixed
     print("\n" + "-" * 40)
-    print("Fitting FULL model...")
+    print("Fitting FULL model (alpha=1 fixed)...")
     print("-" * 40)
     full_params, full_nll = fit_full_model(intimacy, reward_condition, action, p_action)
     results["full"] = {
         "params": {"alpha": float(full_params[0]), "w_r": float(full_params[1]), "w_d": float(full_params[2]), "w_c": float(full_params[3])},
         "nll": full_nll,
-        "n_params": 4,
+        "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
     }
 
-    # Vanilla model: 4 params (alpha, w_r, w_d, w_c)
+    # Vanilla model: 3 free params (w_r, w_d, w_c) with alpha=1 fixed
     print("\n" + "-" * 40)
-    print("Fitting VANILLA model...")
+    print("Fitting VANILLA model (alpha=1 fixed)...")
     print("-" * 40)
     vanilla_params, vanilla_nll = fit_vanilla_model(intimacy, reward_condition, action, p_action)
     results["vanilla"] = {
         "params": {"alpha": float(vanilla_params[0]), "w_r": float(vanilla_params[1]), "w_d": float(vanilla_params[2]), "w_c": float(vanilla_params[3])},
         "nll": vanilla_nll,
-        "n_params": 4,
+        "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
     }
 
-    # Discomfort-only model: 2 params (alpha, w_d)
+    # Discomfort-only model: 1 free param (w_d) with alpha=1 fixed
     print("\n" + "-" * 40)
-    print("Fitting DISCOMFORT-ONLY model...")
+    print("Fitting DISCOMFORT-ONLY model (alpha=1 fixed)...")
     print("-" * 40)
     discomfort_params, discomfort_nll = fit_discomfort_only_model(intimacy, reward_condition, action, p_action)
     results["discomfort_only"] = {
         "params": {"alpha": float(discomfort_params[0]), "w_d": float(discomfort_params[1])},
         "nll": discomfort_nll,
-        "n_params": 2,
+        "n_params": 1,  # w_d only (alpha fixed to 1)
     }
 
-    # LLM full model: 4 params (alpha, w_r, w_d, w_c) with LLM-derived scenario params
+    # LLM full model: 3 free params (w_r, w_d, w_c) with alpha=1 fixed
     print("\n" + "-" * 40)
-    print("Fitting FULL_LM model (LLM-derived scenario params)...")
+    print("Fitting FULL_LM model (alpha=1 fixed, LLM scenario params)...")
     print("-" * 40)
     full_lm_params, full_lm_nll = fit_full_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
     results["full_lm"] = {
         "params": {"alpha": float(full_lm_params[0]), "w_r": float(full_lm_params[1]), "w_d": float(full_lm_params[2]), "w_c": float(full_lm_params[3])},
         "nll": full_lm_nll,
-        "n_params": 4,
+        "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
+    }
+
+    # LLM vanilla model: 3 free params (w_r, w_d, w_c) with alpha=1 fixed
+    print("\n" + "-" * 40)
+    print("Fitting VANILLA_LM model (alpha=1 fixed, LLM scenario params)...")
+    print("-" * 40)
+    vanilla_lm_params, vanilla_lm_nll = fit_vanilla_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
+    results["vanilla_lm"] = {
+        "params": {"alpha": float(vanilla_lm_params[0]), "w_r": float(vanilla_lm_params[1]), "w_d": float(vanilla_lm_params[2]), "w_c": float(vanilla_lm_params[3])},
+        "nll": vanilla_lm_nll,
+        "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
+    }
+
+    # LLM discomfort-only model: 1 free param (w_d) with alpha=1 fixed
+    print("\n" + "-" * 40)
+    print("Fitting DISCOMFORT_ONLY_LM model (alpha=1 fixed, LLM scenario params)...")
+    print("-" * 40)
+    discomfort_lm_params, discomfort_lm_nll = fit_discomfort_only_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
+    results["discomfort_only_lm"] = {
+        "params": {"alpha": float(discomfort_lm_params[0]), "w_d": float(discomfort_lm_params[1])},
+        "nll": discomfort_lm_nll,
+        "n_params": 1,  # w_d only (alpha fixed to 1)
     }
 
     # Summary
@@ -448,22 +682,71 @@ def main():
         intimacy, reward_condition, action, scenario_idx,
         full_lm_params[0], full_lm_params[1], full_lm_params[2], full_lm_params[3]
     ))
+    data["pred_vanilla_lm"] = np.array(predict_vanilla_lm(
+        intimacy, reward_condition, action, scenario_idx,
+        vanilla_lm_params[0], vanilla_lm_params[1], vanilla_lm_params[2], vanilla_lm_params[3]
+    ))
+    data["pred_discomfort_only_lm"] = np.array(predict_discomfort_only_lm(
+        intimacy, reward_condition, action, scenario_idx,
+        discomfort_lm_params[0], discomfort_lm_params[1]
+    ))
 
-    # Save
+    # Save predictions
     output_path = "forward_planning_fits.csv"
     data.to_csv(output_path, index=False)
     print(f"Saved predictions to {output_path}")
 
-    # Save results summary
-    results_df = pd.DataFrame([
-        {"model": "full", "nll": full_nll, "n_params": 4, **{f"param_{k}": v for k, v in results["full"]["params"].items()}},
-        {"model": "vanilla", "nll": vanilla_nll, "n_params": 4, **{f"param_{k}": v for k, v in results["vanilla"]["params"].items()}},
-        {"model": "discomfort_only", "nll": discomfort_nll, "n_params": 2, **{f"param_{k}": v for k, v in results["discomfort_only"]["params"].items()}},
-        {"model": "full_lm", "nll": full_lm_nll, "n_params": 4, **{f"param_{k}": v for k, v in results["full_lm"]["params"].items()}},
-    ])
+    # Compute model comparison metrics (AIC, BIC, Pearson r)
+    print("\n" + "-" * 40)
+    print("Computing model comparison metrics...")
+    print("-" * 40)
+
+    n_obs = len(data)
+    group_cols = ["intimacy", "motivation", "action"]
+    model_metrics = {}
+
+    for model_name in ["full", "vanilla", "discomfort_only", "full_lm", "vanilla_lm", "discomfort_only_lm"]:
+        nll = results[model_name]["nll"]
+        n_params = results[model_name]["n_params"]
+
+        # AIC and BIC
+        aic = compute_aic(nll, n_params)
+        bic = compute_bic(nll, n_params, n_obs)
+
+        # Pearson r at condition x action level
+        pred_col = f"pred_{model_name}"
+        r_result = compute_pearson_r_by_condition(data, pred_col, "p_action", group_cols)
+
+        model_metrics[model_name] = {
+            "aic": aic,
+            "bic": bic,
+            "r": r_result["r"],
+            "r_ci_lower": r_result["ci_lower"],
+            "r_ci_upper": r_result["ci_upper"],
+        }
+
+        print(f"  {model_name}: AIC={aic:.2f}, BIC={bic:.2f}, r={r_result['r']:.3f} [{r_result['ci_lower']:.3f}, {r_result['ci_upper']:.3f}]")
+
+    # Save results summary with all metrics
+    results_rows = []
+    for model_name in ["full", "vanilla", "discomfort_only", "full_lm", "vanilla_lm", "discomfort_only_lm"]:
+        row = {
+            "model": model_name,
+            "nll": results[model_name]["nll"],
+            "n_params": results[model_name]["n_params"],
+            "aic": model_metrics[model_name]["aic"],
+            "bic": model_metrics[model_name]["bic"],
+            "r": model_metrics[model_name]["r"],
+            "r_ci_lower": model_metrics[model_name]["r_ci_lower"],
+            "r_ci_upper": model_metrics[model_name]["r_ci_upper"],
+            **{f"param_{k}": v for k, v in results[model_name]["params"].items()}
+        }
+        results_rows.append(row)
+
+    results_df = pd.DataFrame(results_rows)
     results_path = "forward_planning_fit_results.csv"
     results_df.to_csv(results_path, index=False)
-    print(f"Saved fit results to {results_path}")
+    print(f"\nSaved fit results to {results_path}")
 
     print("\n" + "=" * 60)
     print("Done!")
