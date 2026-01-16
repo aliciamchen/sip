@@ -101,7 +101,7 @@ where:
 
 **Discomfort-only model**: Only considers how intimacy mitigates the discomfort of taking a risky action ($U = -w_d \cdot d(a|I)$), without a representation of reward or sharing cost.
 
-**Social planning (LLM)**: Same structure as the full model, but uses LLM-derived scenario-specific values for risk $\rho(a)$, effort $c(a)$, and base reward $r_0$ instead of stipulated constants. The LLM (Llama-3.3-70B-Instruct) was prompted to rate each scenario's actions on scales of saliva-transfer risk, coordination effort, and sharing reward.
+**LLM-based models**: We also fit versions of all three models (full, vanilla, discomfort-only) using LLM-derived scenario-specific parameters instead of stipulated constants. The LLM (Llama-3.3-70B-Instruct) was prompted to rate each scenario's actions on scales of saliva-transfer risk, coordination effort, and sharing reward.
 
 **LLM Direct**: Direct LLM predictions without any cognitive model structure. The LLM (Llama-3.3-70B-Instruct) was presented with the exact experiment instructions and stimuli, and asked to predict the probability distribution over actions for each scenario and condition. This tests whether an LLM can directly simulate human behavior without explicit utility-based reasoning.
 
@@ -115,9 +115,11 @@ llm_direct <- read_csv(here("model", "llm_direct_predictions.csv")) |>
 df_preds <- read_csv(here("model", "forward_planning_fits.csv")) |>
   left_join(llm_direct, by = c("scenario_label", "intimacy", "motivation", "action")) |>
   select(subject_id, scenario_label, intimacy, motivation, action, p_action,
-         pred_full, pred_vanilla, pred_discomfort_only, pred_full_lm, pred_llm) |>
+         pred_full, pred_vanilla, pred_discomfort_only,
+         pred_full_lm, pred_vanilla_lm, pred_discomfort_only_lm, pred_llm) |>
   pivot_longer(
-    cols = c(p_action, pred_full, pred_vanilla, pred_discomfort_only, pred_full_lm, pred_llm),
+    cols = c(p_action, pred_full, pred_vanilla, pred_discomfort_only,
+             pred_full_lm, pred_vanilla_lm, pred_discomfort_only_lm, pred_llm),
     names_to = "model",
     values_to = "p_action"
   ) |>
@@ -127,24 +129,48 @@ df_preds <- read_csv(here("model", "forward_planning_fits.csv")) |>
       model == "pred_full" ~ "Social planning",
       model == "pred_vanilla" ~ "Vanilla planning",
       model == "pred_discomfort_only" ~ "Discomfort only",
-      model == "pred_full_lm" ~ "LLM hybrid",
+      model == "pred_full_lm" ~ "Social planning (LM)",
+      model == "pred_vanilla_lm" ~ "Vanilla planning (LM)",
+      model == "pred_discomfort_only_lm" ~ "Discomfort only (LM)",
       model == "pred_llm" ~ "LLM only"
     ),
-    model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning", "LLM hybrid", "LLM only", "Humans")),
+    # Create param_source variable for grouping
+    param_source = case_when(
+      model %in% c("Vanilla planning", "Discomfort only", "Social planning") ~ "Stipulated",
+      model %in% c("Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)") ~ "LM",
+      model == "LLM only" ~ "LLM Direct",
+      model == "Humans" ~ "Humans"
+    ),
+    # Model type without param source suffix (for parallel plotting)
+    model_type = case_when(
+      model %in% c("Vanilla planning", "Vanilla planning (LM)") ~ "Vanilla",
+      model %in% c("Discomfort only", "Discomfort only (LM)") ~ "Discomfort only",
+      model %in% c("Social planning", "Social planning (LM)") ~ "Social planning",
+      model == "LLM only" ~ "LLM only",
+      model == "Humans" ~ "Humans"
+    ),
+    model = factor(model, levels = c(
+      "Vanilla planning", "Discomfort only", "Social planning",
+      "Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)",
+      "LLM only", "Humans"
+    )),
+    model_type = factor(model_type, levels = c("Vanilla", "Discomfort only", "Social planning", "LLM only", "Humans")),
     motivation = factor(motivation, levels = c("low", "high"))
   )
 
 df_preds_summary <- df_preds |>
-  group_by(intimacy, motivation, action, model) |>
-  tidyboot_mean(p_action)
+  group_by(intimacy, motivation, action, model, param_source, model_type) |>
+  tidyboot_mean(p_action) |>
+  ungroup()
 ```
 
 ### Model predictions vs human data
 
-Cognitive models:
+Stipulated parameter models:
 ```{r fig.width=12, fig.height=5.2}
 df_preds_summary |>
   filter(model %in% c("Vanilla planning", "Discomfort only", "Social planning", "Humans")) |>
+  mutate(model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning", "Humans"))) |>
   ggplot(aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
   geom_point(position = position_dodge(width = 0.2), size = 3) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
@@ -153,14 +179,33 @@ df_preds_summary |>
   geom_line(position = position_dodge(width = 0.2)) +
   scale_color_viridis_c(begin = 0, end = 0.85) +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action") +
+  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action",
+       title = "Stipulated Parameters") +
   facet_grid(motivation ~ model, labeller = labeller(motivation = label_both))
 ```
 
-LLM-based models:
-```{r fig.width=9, fig.height=5.2}
+LM-derived parameter models:
+```{r fig.width=12, fig.height=5.2}
 df_preds_summary |>
-  filter(model %in% c("LLM hybrid", "LLM only", "Humans")) |>
+  filter(model %in% c("Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)", "Humans")) |>
+  mutate(model = factor(model, levels = c("Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)", "Humans"))) |>
+  ggplot(aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.2), width = 0.4
+  ) +
+  geom_line(position = position_dodge(width = 0.2)) +
+  scale_color_viridis_c(begin = 0, end = 0.85) +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action",
+       title = "LM-Derived Parameters") +
+  facet_grid(motivation ~ model, labeller = labeller(motivation = label_both))
+```
+
+LLM Direct predictions:
+```{r fig.width=6, fig.height=5.2}
+df_preds_summary |>
+  filter(model %in% c("LLM only", "Humans")) |>
   ggplot(aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
   geom_point(position = position_dodge(width = 0.2), size = 3) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
@@ -176,183 +221,230 @@ df_preds_summary |>
 ### Model-human correlation
 
 ```{r}
-# Prepare data for correlation plots
-df_corr <- df_preds_summary |>
-  select(intimacy, motivation, action, model, empirical_stat, ci_lower, ci_upper) |>
-  pivot_wider(
-    names_from = model,
-    values_from = c(empirical_stat, ci_lower, ci_upper)
-  )
-
-# Bootstrap function for correlation CI
+# Bootstrap function for correlation CI (handles NAs)
 boot_cor <- function(x, y, n_boot = 1000) {
+  # Remove NAs
+  complete <- complete.cases(x, y)
+  x <- x[complete]
+  y <- y[complete]
   n <- length(x)
+  if (n < 3) return(list(r = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_))
   boot_rs <- replicate(n_boot, {
     idx <- sample(n, replace = TRUE)
     cor(x[idx], y[idx])
   })
-  c(
+  list(
     r = cor(x, y),
-    ci_lower = quantile(boot_rs, 0.025),
-    ci_upper = quantile(boot_rs, 0.975)
+    ci_lower = as.numeric(quantile(boot_rs, 0.025, na.rm = TRUE)),
+    ci_upper = as.numeric(quantile(boot_rs, 0.975, na.rm = TRUE))
   )
 }
 
-# Reshape for cognitive models
-df_corr_cognitive <- df_corr |>
-  pivot_longer(
-    cols = c(`empirical_stat_Vanilla planning`, `empirical_stat_Discomfort only`, `empirical_stat_Social planning`),
-    names_to = "model",
-    names_prefix = "empirical_stat_",
-    values_to = "model_pred"
-  ) |>
-  rename(
-    Humans = `empirical_stat_Humans`,
-    Humans_ci_lower = `ci_lower_Humans`,
-    Humans_ci_upper = `ci_upper_Humans`
-  ) |>
-  mutate(
-    model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning")),
-    action = factor(action)
-  )
+# Get human data for joining
+df_humans <- df_preds_summary |>
+  filter(model == "Humans") |>
+  select(intimacy, motivation, action,
+         Humans = empirical_stat,
+         Humans_ci_lower = ci_lower,
+         Humans_ci_upper = ci_upper)
 
-# Reshape for LLM models
-df_corr_llm <- df_corr |>
-  pivot_longer(
-    cols = c(`empirical_stat_LLM hybrid`, `empirical_stat_LLM only`),
-    names_to = "model",
-    names_prefix = "empirical_stat_",
-    values_to = "model_pred"
-  ) |>
-  rename(
-    Humans = `empirical_stat_Humans`,
-    Humans_ci_lower = `ci_lower_Humans`,
-    Humans_ci_upper = `ci_upper_Humans`
-  ) |>
-  mutate(
-    model = factor(model, levels = c("LLM hybrid", "LLM only")),
-    action = factor(action)
-  )
+# Create correlation data by joining model predictions with human data
+df_corr_all <- df_preds_summary |>
+  filter(model != "Humans") |>
+  select(intimacy, motivation, action, model, model_pred = empirical_stat) |>
+  left_join(df_humans, by = c("intimacy", "motivation", "action")) |>
+  filter(!is.na(model_pred), !is.na(Humans)) |>
+  mutate(action = factor(action))
+
+# Debug: check what models exist
+cat("Models in df_corr_all:", unique(as.character(df_corr_all$model)), "\n")
+
+# Split by model type
+df_corr_stipulated <- df_corr_all |>
+  filter(model %in% c("Vanilla planning", "Discomfort only", "Social planning")) |>
+  mutate(model = droplevels(model))
+
+df_corr_lm <- df_corr_all |>
+  filter(model %in% c("Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)")) |>
+  mutate(model = droplevels(model))
+
+df_corr_llm_direct <- df_corr_all |>
+  filter(model == "LLM only") |>
+  mutate(model = droplevels(model))
+
+cat("Rows in df_corr_stipulated:", nrow(df_corr_stipulated), "\n")
+cat("Rows in df_corr_lm:", nrow(df_corr_lm), "\n")
+cat("Rows in df_corr_llm_direct:", nrow(df_corr_llm_direct), "\n")
 ```
 
-Cognitive models:
+Stipulated parameter models:
 ```{r fig.width=12, fig.height=4}
-# Calculate correlations for cognitive models
-correlations_cognitive <- df_corr_cognitive |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_pred, Humans)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, `[`, "r"),
-    ci_lower = sapply(boot_result, `[`, "ci_lower.2.5%"),
-    ci_upper = sapply(boot_result, `[`, "ci_upper.97.5%"),
-    label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
-  ) |>
-  select(-boot_result)
+if (nrow(df_corr_stipulated) > 0) {
+  # Calculate correlations for stipulated models
+  correlations_stipulated <- df_corr_stipulated |>
+    group_by(model) |>
+    summarize(
+      boot_result = list(boot_cor(model_pred, Humans)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      r = as.numeric(sapply(boot_result, function(x) x$r)),
+      ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+      ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper)),
+      label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
+    ) |>
+    select(-boot_result)
 
-ggplot(df_corr_cognitive, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
-  geom_point(size = 3) +
-  geom_text(data = correlations_cognitive, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
-  facet_wrap(~model, nrow = 1) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+  print(ggplot(df_corr_stipulated, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+    geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+    geom_point(size = 3) +
+    geom_text(data = correlations_stipulated, aes(x = 0.05, y = 0.9, label = label),
+              inherit.aes = FALSE, hjust = 0, size = 5) +
+    scale_color_viridis_c(begin = 0, end = 0.85) +
+    scale_shape_manual(values = c(16, 17, 15, 18)) +
+    labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action",
+         title = "Stipulated Parameters") +
+    facet_wrap(~model, nrow = 1) +
+    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)))
+} else {
+  cat("No data for stipulated models correlation plot\n")
+}
 ```
 
-LLM-based models:
-```{r fig.width=8, fig.height=4}
-# Calculate correlations for LLM models
-correlations_llm <- df_corr_llm |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_pred, Humans)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, `[`, "r"),
-    ci_lower = sapply(boot_result, `[`, "ci_lower.2.5%"),
-    ci_upper = sapply(boot_result, `[`, "ci_upper.97.5%"),
-    label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
-  ) |>
-  select(-boot_result)
+LM-derived parameter models:
+```{r fig.width=12, fig.height=4}
+if (nrow(df_corr_lm) > 0) {
+  # Calculate correlations for LM models
+  correlations_lm <- df_corr_lm |>
+    group_by(model) |>
+    summarize(
+      boot_result = list(boot_cor(model_pred, Humans)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      r = as.numeric(sapply(boot_result, function(x) x$r)),
+      ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+      ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper)),
+      label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
+    ) |>
+    select(-boot_result)
 
-ggplot(df_corr_llm, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
-  geom_point(size = 3) +
-  geom_text(data = correlations_llm, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
-  facet_wrap(~model, nrow = 1) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+  print(ggplot(df_corr_lm, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+    geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+    geom_point(size = 3) +
+    geom_text(data = correlations_lm, aes(x = 0.05, y = 0.9, label = label),
+              inherit.aes = FALSE, hjust = 0, size = 5) +
+    scale_color_viridis_c(begin = 0, end = 0.85) +
+    scale_shape_manual(values = c(16, 17, 15, 18)) +
+    labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action",
+         title = "LM-Derived Parameters") +
+    facet_wrap(~model, nrow = 1) +
+    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)))
+} else {
+  cat("No data for LM models correlation plot\n")
+}
+```
+
+LLM Direct predictions:
+```{r fig.width=5, fig.height=4}
+if (nrow(df_corr_llm_direct) > 0) {
+  # Calculate correlations for LLM Direct
+  correlations_llm_direct <- df_corr_llm_direct |>
+    group_by(model) |>
+    summarize(
+      boot_result = list(boot_cor(model_pred, Humans)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      r = as.numeric(sapply(boot_result, function(x) x$r)),
+      ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+      ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper)),
+      label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
+    ) |>
+    select(-boot_result)
+
+  print(ggplot(df_corr_llm_direct, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+    geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+    geom_point(size = 3) +
+    geom_text(data = correlations_llm_direct, aes(x = 0.05, y = 0.9, label = label),
+              inherit.aes = FALSE, hjust = 0, size = 5) +
+    scale_color_viridis_c(begin = 0, end = 0.85) +
+    scale_shape_manual(values = c(16, 17, 15, 18)) +
+    labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
+    facet_wrap(~model, nrow = 1) +
+    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)))
+} else {
+  cat("No data for LLM Direct correlation plot\n")
+}
 ```
 
 Plot motivation on separate panels
 
-Cognitive models:
+Stipulated parameter models:
 ```{r fig.width=12, fig.height=6}
-correlations_motiv_cognitive <- df_corr_cognitive |>
-  group_by(model, motivation) |>
-  summarize(
-    boot_result = list(boot_cor(model_pred, Humans)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, `[`, "r"),
-    ci_lower = sapply(boot_result, `[`, "ci_lower.2.5%"),
-    ci_upper = sapply(boot_result, `[`, "ci_upper.97.5%"),
-    label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
-  ) |>
-  select(-boot_result)
+if (nrow(df_corr_stipulated) > 0) {
+  correlations_motiv_stipulated <- df_corr_stipulated |>
+    group_by(model, motivation) |>
+    summarize(
+      boot_result = list(boot_cor(model_pred, Humans)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      r = as.numeric(sapply(boot_result, function(x) x$r)),
+      ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+      ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper)),
+      label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
+    ) |>
+    select(-boot_result)
 
-ggplot(df_corr_cognitive, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
-  geom_point(size = 3) +
-  geom_text(data = correlations_motiv_cognitive, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
-  facet_grid(motivation~model, labeller = labeller(motivation = label_both)) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+  print(ggplot(df_corr_stipulated, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+    geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+    geom_point(size = 3) +
+    geom_text(data = correlations_motiv_stipulated, aes(x = 0.05, y = 0.9, label = label),
+              inherit.aes = FALSE, hjust = 0, size = 5) +
+    scale_color_viridis_c(begin = 0, end = 0.85) +
+    scale_shape_manual(values = c(16, 17, 15, 18)) +
+    labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action",
+         title = "Stipulated Parameters") +
+    facet_grid(motivation~model, labeller = labeller(motivation = label_both)) +
+    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)))
+}
 ```
 
-LLM-based models:
-```{r fig.width=8, fig.height=6}
-correlations_motiv_llm <- df_corr_llm |>
-  group_by(model, motivation) |>
-  summarize(
-    boot_result = list(boot_cor(model_pred, Humans)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, `[`, "r"),
-    ci_lower = sapply(boot_result, `[`, "ci_lower.2.5%"),
-    ci_upper = sapply(boot_result, `[`, "ci_upper.97.5%"),
-    label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
-  ) |>
-  select(-boot_result)
+LM-derived parameter models:
+```{r fig.width=12, fig.height=6}
+if (nrow(df_corr_lm) > 0) {
+  correlations_motiv_lm <- df_corr_lm |>
+    group_by(model, motivation) |>
+    summarize(
+      boot_result = list(boot_cor(model_pred, Humans)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      r = as.numeric(sapply(boot_result, function(x) x$r)),
+      ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+      ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper)),
+      label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
+    ) |>
+    select(-boot_result)
 
-ggplot(df_corr_llm, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
-  geom_point(size = 3) +
-  geom_text(data = correlations_motiv_llm, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
-  facet_grid(motivation~model, labeller = labeller(motivation = label_both)) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+  print(ggplot(df_corr_lm, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+    geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+    geom_point(size = 3) +
+    geom_text(data = correlations_motiv_lm, aes(x = 0.05, y = 0.9, label = label),
+              inherit.aes = FALSE, hjust = 0, size = 5) +
+    scale_color_viridis_c(begin = 0, end = 0.85) +
+    scale_shape_manual(values = c(16, 17, 15, 18)) +
+    labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action",
+         title = "LM-Derived Parameters") +
+    facet_grid(motivation~model, labeller = labeller(motivation = label_both)) +
+    coord_fixed(xlim = c(0, 1), ylim = c(0, 1)))
+}
 ```
 
 ### Model fit results
@@ -397,24 +489,52 @@ fit_results |>
   knitr::kable(digits = 2, caption = "Difference from best model (Full)")
 ```
 
-**Interpretation**: The full model (with stipulated parameters) has the lowest AIC and BIC, indicating the best trade-off between fit and complexity. For Full vs Vanilla (same number of parameters), the ΔAIC of `r round(fit_results$AIC[fit_results$model == "vanilla"] - full_aic, 2)` favors the full model, indicating that intimacy scaling of reward and discomfort improves model fit.
+**Interpretation**:
 
-Comparing the stipulated Full model vs the LLM-derived Full model (both with 4 parameters), the ΔAIC of `r round(fit_results$AIC[fit_results$model == "full_lm"] - full_aic, 2)` favors the stipulated model. This suggests that the hand-crafted action parameters (risk = [0,0,1,2], effort = [0,1,1,1]) capture the relevant structure better than the LLM-derived scenario-specific values.
+*Stipulated vs LM parameters*: We compare stipulated models (hand-crafted risk = [0,0,1,2], effort = [0,1,1,1]) against models using LLM-derived scenario-specific values for risk, effort, and reward.
 
-## LLM Models: Scenario-by-Scenario Predictions
+```{r}
+# Compare stipulated vs LM for each model type
+comparison_df <- fit_results |>
+  mutate(
+    model_type = case_when(
+      model %in% c("full", "full_lm") ~ "Social planning",
+      model %in% c("vanilla", "vanilla_lm") ~ "Vanilla",
+      model %in% c("discomfort_only", "discomfort_only_lm") ~ "Discomfort only"
+    ),
+    param_source = ifelse(grepl("_lm$", model), "LM", "Stipulated")
+  ) |>
+  select(model_type, param_source, AIC, BIC) |>
+  pivot_wider(names_from = param_source, values_from = c(AIC, BIC)) |>
+  mutate(
+    delta_AIC = AIC_LM - AIC_Stipulated,
+    delta_BIC = BIC_LM - BIC_Stipulated
+  )
 
-We can examine how the LLM-based models (Social planning with LLM parameters and LLM Direct) capture variation across scenarios.
+comparison_df |>
+  select(model_type, delta_AIC, delta_BIC) |>
+  knitr::kable(digits = 2, caption = "LM - Stipulated (negative = LM is better)",
+               col.names = c("Model Type", "ΔAIC", "ΔBIC"))
+```
 
-### LLM predictions by scenario
+*Model comparison*: The full (social planning) model with intimacy scaling has the lowest AIC/BIC among stipulated models, indicating that intimacy modulates both reward and discomfort. Among LM models, the pattern is similar—the full model outperforms vanilla and discomfort-only variants.
+
+## LM Models: Scenario-by-Scenario Predictions
+
+We can examine how the LM-based models capture variation across scenarios, since they use scenario-specific parameters derived from the LLM.
+
+### LM model predictions by scenario
 
 ```{r}
 df_preds_scenario <- df_preds |>
-  filter(model %in% c("Humans", "LLM hybrid", "LLM only")) |>
+  filter(model %in% c("Humans", "Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)", "LLM only")) |>
+  mutate(model = factor(model, levels = c("Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)", "LLM only", "Humans"))) |>
   group_by(scenario_label, intimacy, motivation, action, model) |>
-  tidyboot_mean(p_action)
+  tidyboot_mean(p_action) |>
+  ungroup()
 ```
 
-```{r fig.width=14, fig.height=30}
+```{r fig.width=18, fig.height=30}
 ggplot(df_preds_scenario, aes(x = action, y = empirical_stat, color = intimacy, group = intimacy)) +
   geom_point(position = position_dodge(width = 0.2), size = 2) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
@@ -429,11 +549,10 @@ ggplot(df_preds_scenario, aes(x = action, y = empirical_stat, color = intimacy, 
              labeller = labeller(motivation = label_both))
 ```
 
-### Model-human correlation by scenario (LLM models)
+### Model-human correlation by scenario (LM models)
 
 ```{r}
-
-# Compare LLM models' correlations per scenario
+# Compare LM models' correlations per scenario
 df_corr_scenario <- df_preds_scenario |>
   filter(model != "Humans") |>
   select(scenario_label, intimacy, motivation, action, model, model_pred = empirical_stat) |>
@@ -473,14 +592,18 @@ ggplot(df_corr_scenario, aes(x = model_pred, y = human_pred, color = intimacy)) 
 ```{r}
 scenario_correlations |>
   pivot_wider(names_from = model, values_from = c(r, label)) |>
-  select(scenario_label, `r_LLM hybrid`, `r_LLM only`) |>
+  select(scenario_label,
+         `r_Vanilla planning (LM)`, `r_Discomfort only (LM)`,
+         `r_Social planning (LM)`, `r_LLM only`) |>
   rename(
     Scenario = scenario_label,
-    `LLM params r` = `r_LLM hybrid`,
-    `LLM Direct r` = `r_LLM only`
+    `Vanilla (LM)` = `r_Vanilla planning (LM)`,
+    `Discomfort (LM)` = `r_Discomfort only (LM)`,
+    `Social (LM)` = `r_Social planning (LM)`,
+    `LLM Direct` = `r_LLM only`
   ) |>
-  arrange(desc(`LLM Direct r`)) |>
-  knitr::kable(digits = 3, caption = "Correlation with human data by scenario (LLM models)")
+  arrange(desc(`Social (LM)`)) |>
+  knitr::kable(digits = 3, caption = "Correlation with human data by scenario (LM models)")
 ```
 
 ### Estimate stability: Bootstrap CIs on per-scenario correlations
@@ -496,9 +619,9 @@ scenario_corr_boot <- df_corr_scenario |>
     .groups = "drop"
   ) |>
   mutate(
-    r = sapply(boot_result, `[`, "r"),
-    ci_lower = sapply(boot_result, `[`, "ci_lower.2.5%"),
-    ci_upper = sapply(boot_result, `[`, "ci_upper.97.5%")
+    r = as.numeric(sapply(boot_result, function(x) x$r)),
+    ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+    ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper))
   ) |>
   select(-boot_result)
 
@@ -511,9 +634,9 @@ overall_corr <- df_corr_scenario |>
   ) |>
   mutate(
     scenario_label = "OVERALL",
-    r = sapply(boot_result, `[`, "r"),
-    ci_lower = sapply(boot_result, `[`, "ci_lower.2.5%"),
-    ci_upper = sapply(boot_result, `[`, "ci_upper.97.5%")
+    r = as.numeric(sapply(boot_result, function(x) x$r)),
+    ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
+    ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper))
   ) |>
   select(-boot_result)
 
@@ -525,7 +648,7 @@ scenario_corr_boot <- bind_rows(scenario_corr_boot, overall_corr) |>
   )
 ```
 
-```{r fig.width=10, fig.height=6}
+```{r fig.width=14, fig.height=6}
 # Forest plot
 ggplot(scenario_corr_boot, aes(x = r, y = scenario_label, color = is_overall)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray70") +
@@ -535,8 +658,8 @@ ggplot(scenario_corr_boot, aes(x = r, y = scenario_label, color = is_overall)) +
   scale_size_manual(values = c("FALSE" = 2, "TRUE" = 4), guide = "none") +
   labs(x = "Correlation (r) with human data", y = "Scenario",
        title = "Per-scenario model-human correlations with 95% bootstrap CIs") +
-  facet_wrap(~model) +
-  theme(axis.text.y = element_text(size = 9))
+  facet_wrap(~model, nrow = 1) +
+  theme(axis.text.y = element_text(size = 8))
 ```
 
 ```{r}
@@ -555,7 +678,7 @@ stability_summary <- scenario_corr_boot |>
 
 stability_summary |>
   knitr::kable(digits = 3,
-               caption = "Stability of per-scenario correlations",
+               caption = "Stability of per-scenario correlations (LM models)",
                col.names = c("Model", "Mean r", "SD of r", "Min r", "Max r", "Mean CI width"))
 ```
 
