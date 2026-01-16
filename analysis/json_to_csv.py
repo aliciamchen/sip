@@ -285,6 +285,98 @@ def create_forw_plan_long(output_dir):
     print(f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)")
 
 
+def create_inv_plan_intimacy_long(output_dir):
+    """
+    Create main_trials_long.csv for inv_plan_intimacy experiment.
+
+    Filters out participants who failed attention check or got 0 correct on memory check.
+
+    Args:
+        output_dir (str): Path to directory containing main_trials.csv and exit_survey.csv
+    """
+    output_path = Path(output_dir)
+
+    # Read the data
+    main_trials = pd.read_csv(output_path / 'main_trials.csv')
+    exit_survey = pd.read_csv(output_path / 'exit_survey.csv')
+
+    # Find participants to exclude:
+    # - attention_passed is False (or not True)
+    # - memory_correct_count is 0
+    excluded_subjects = exit_survey[
+        (exit_survey['attention_passed'] != True) |
+        (exit_survey['memory_correct_count'] == 0)
+    ]['subject_id'].tolist()
+
+    n_excluded = len(excluded_subjects)
+    n_total = exit_survey['subject_id'].nunique()
+    print(f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)")
+
+    # Filter out excluded participants
+    main_trials_filtered = main_trials[~main_trials['subject_id'].isin(excluded_subjects)]
+
+    # Rename columns for consistency with forw_plan
+    main_trials_long = main_trials_filtered.rename(columns={
+        'reward_condition': 'motivation'
+    })
+
+    # Sort for consistent output
+    main_trials_long = main_trials_long.sort_values(
+        ['subject_id', 'scenario_label', 'action_condition', 'stage']
+    ).reset_index(drop=True)
+
+    # Save
+    output_file = output_path / 'main_trials_long.csv'
+    main_trials_long.to_csv(output_file, index=False)
+    print(f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)")
+
+
+def create_inv_plan_reward_long(output_dir):
+    """
+    Create main_trials_long.csv for inv_plan_reward experiment.
+
+    Filters out participants who failed attention check or got 0 correct on memory check.
+
+    Args:
+        output_dir (str): Path to directory containing main_trials.csv and exit_survey.csv
+    """
+    output_path = Path(output_dir)
+
+    # Read the data
+    main_trials = pd.read_csv(output_path / 'main_trials.csv')
+    exit_survey = pd.read_csv(output_path / 'exit_survey.csv')
+
+    # Find participants to exclude:
+    # - attention_passed is False (or not True)
+    # - memory_correct_count is 0
+    excluded_subjects = exit_survey[
+        (exit_survey['attention_passed'] != True) |
+        (exit_survey['memory_correct_count'] == 0)
+    ]['subject_id'].tolist()
+
+    n_excluded = len(excluded_subjects)
+    n_total = exit_survey['subject_id'].nunique()
+    print(f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)")
+
+    # Filter out excluded participants
+    main_trials_filtered = main_trials[~main_trials['subject_id'].isin(excluded_subjects)]
+
+    # Rename columns for consistency with forw_plan
+    main_trials_long = main_trials_filtered.rename(columns={
+        'intimacy_condition': 'intimacy'
+    })
+
+    # Sort for consistent output
+    main_trials_long = main_trials_long.sort_values(
+        ['subject_id', 'scenario_label', 'action_condition', 'stage']
+    ).reset_index(drop=True)
+
+    # Save
+    output_file = output_path / 'main_trials_long.csv'
+    main_trials_long.to_csv(output_file, index=False)
+    print(f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)")
+
+
 def main():
     """Main function to run the conversion."""
     parser = argparse.ArgumentParser(
@@ -329,10 +421,16 @@ Examples:
     # Process the files
     process_json_files(input_dir, output_dir, config, args.experiment)
 
-    # Create long format for forw_plan experiment
+    # Create long format with exclusions
     if args.experiment == 'forw_plan':
         print("\nCreating long format with exclusions...")
         create_forw_plan_long(output_dir)
+    elif args.experiment == 'inv_plan_intimacy':
+        print("\nCreating long format with exclusions...")
+        create_inv_plan_intimacy_long(output_dir)
+    elif args.experiment == 'inv_plan_reward':
+        print("\nCreating long format with exclusions...")
+        create_inv_plan_reward_long(output_dir)
 
     print("\nConversion complete!")
 
