@@ -337,7 +337,7 @@ def get_utility_forw_full(action, intimacy, reward_condition, alpha, w_r, w_d, w
     where:
     - r(a|s,I) = reward scaled by motivation s and intimacy I
     - d(a|I) = (1-I) * risk(a) = discomfort from saliva transfer
-    - c(a) = sharing cost
+    - c(a) = sharing cost (NOT scaled by intimacy per pre-registration)
     """
     reward = get_reward_forw(action, reward_condition, intimacy)
     discomfort = get_discomfort_from_intimacy(action, intimacy)
@@ -374,6 +374,7 @@ def get_utility_forw_full_lm(action, intimacy, reward_condition, scenario_idx, a
     """Full forward planning utility using LLM-derived scenario-specific parameters.
 
     Same structure as get_utility_forw_full but uses LLM values for risk, effort, reward.
+    Effort is NOT scaled by intimacy (per pre-registration).
     """
     # Reward: LLM base reward scaled by (1 + intimacy) for high motivation
     base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
@@ -385,7 +386,7 @@ def get_utility_forw_full_lm(action, intimacy, reward_condition, scenario_idx, a
     risk = get_risk_lm(action, scenario_idx)
     discomfort = formality * risk
 
-    # Effort: LLM effort
+    # Effort: LLM effort (NOT scaled by intimacy per pre-registration)
     effort = get_effort_lm(action, scenario_idx)
 
     return alpha * (w_r * reward - w_d * discomfort - w_c * effort)
@@ -483,11 +484,43 @@ def get_utility_full_model_discrete(
     w_d,
     w_c,
 ):
+    """Pre-registered full model: effort NOT scaled by intimacy."""
     return alpha * (
         w_r * get_reward_from_relationship_condition(action, reward_condition, relationship_condition)
         - w_d * get_discomfort_from_relationship_condition(action, relationship_condition)
         - w_c * get_effort(action)
     )
+
+
+@jax.jit
+def get_utility_full_model_discrete_modified(
+    action,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+    delta,
+):
+    """Modified full model: reward scaled by (1 + delta * intimacy).
+
+    delta controls how much observers think actors' reward scales with intimacy.
+    delta=0: no intimacy scaling on reward (vanilla-like)
+    delta=1: pre-registered model (full intimacy scaling)
+    """
+    intimacy = get_intimacy(relationship_condition)
+    risk = get_risk(action)
+
+    # Reward with discounted intimacy scaling
+    base = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base * action_has_reward * (1 + delta * intimacy)
+
+    # Discomfort unchanged (standard model)
+    discomfort = (1 - intimacy) * risk
+
+    return alpha * (w_r * reward - w_d * discomfort - w_c * get_effort(action))
 
 
 @jax.jit
@@ -500,11 +533,42 @@ def get_utility_full_model_continuous(
     w_d,
     w_c,
 ):
+    """Pre-registered full model: effort NOT scaled by intimacy."""
     return alpha * (
         w_r * get_reward_from_intimacy(action, reward_condition, intimacy)
         - w_d * get_discomfort_from_intimacy(action, intimacy)
         - w_c * get_effort(action)
     )
+
+
+@jax.jit
+def get_utility_full_model_continuous_modified(
+    action,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+    delta,
+):
+    """Modified full model: reward scaled by (1 + delta * intimacy).
+
+    delta controls how much observers think actors' reward scales with intimacy.
+    delta=0: no intimacy scaling on reward (vanilla-like)
+    delta=1: pre-registered model (full intimacy scaling)
+    """
+    risk = get_risk(action)
+
+    # Reward with discounted intimacy scaling
+    base = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base * action_has_reward * (1 + delta * intimacy)
+
+    # Discomfort unchanged (standard model)
+    discomfort = (1 - intimacy) * risk
+
+    return alpha * (w_r * reward - w_d * discomfort - w_c * get_effort(action))
 
 
 # ==============================================================================
@@ -523,11 +587,47 @@ def get_utility_inv_plan_full_lm_continuous(
     w_d,
     w_c,
 ):
-    """Full inverse planning utility with LLM-derived scenario params (continuous intimacy)."""
+    """Pre-registered full inverse planning utility with LLM params (continuous intimacy).
+
+    Effort is NOT scaled by intimacy (per pre-registration).
+    """
     base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
     action_has_reward = jnp.array([0, 1, 1, 1])[action]
     reward = base_reward * action_has_reward * (1 + intimacy)
 
+    formality = 1 - intimacy
+    risk = get_risk_lm(action, scenario_idx)
+    discomfort = formality * risk
+
+    effort = get_effort_lm(action, scenario_idx)
+
+    return alpha * (w_r * reward - w_d * discomfort - w_c * effort)
+
+
+@jax.jit
+def get_utility_inv_plan_full_lm_continuous_modified(
+    action,
+    intimacy,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+    delta,
+):
+    """Modified full inverse planning utility with LLM params (continuous intimacy).
+
+    Reward is scaled by (1 + delta * intimacy) - captures observers' beliefs about
+    how much actors' reward scales with intimacy.
+    delta=0: no intimacy scaling on reward (vanilla-like)
+    delta=1: pre-registered model (full intimacy scaling)
+    """
+    base_reward = jnp.where(reward_condition == RewardConditions.HIGH, get_reward_base_lm(scenario_idx), 0.0)
+    action_has_reward = jnp.array([0, 1, 1, 1])[action]
+    reward = base_reward * action_has_reward * (1 + delta * intimacy)
+
+    # Discomfort unchanged (standard model)
     formality = 1 - intimacy
     risk = get_risk_lm(action, scenario_idx)
     discomfort = formality * risk
@@ -548,10 +648,29 @@ def get_utility_inv_plan_full_lm_discrete(
     w_d,
     w_c,
 ):
-    """Full inverse planning utility with LLM-derived scenario params (discrete intimacy)."""
+    """Pre-registered full inverse planning utility with LLM params (discrete intimacy)."""
     intimacy = get_intimacy(relationship_condition)
     return get_utility_inv_plan_full_lm_continuous(
         action, intimacy, reward_condition, scenario_idx, alpha, w_r, w_d, w_c
+    )
+
+
+@jax.jit
+def get_utility_inv_plan_full_lm_discrete_modified(
+    action,
+    relationship_condition,
+    reward_condition,
+    scenario_idx,
+    alpha,
+    w_r,
+    w_d,
+    w_c,
+    delta,
+):
+    """Modified full inverse planning utility with LLM params (discrete intimacy)."""
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_inv_plan_full_lm_continuous_modified(
+        action, intimacy, reward_condition, scenario_idx, alpha, w_r, w_d, w_c, delta
     )
 
 
@@ -702,6 +821,35 @@ def actor_discrete_full_model[
     return Pr[actor.action == action]
 
 
+@memo
+def actor_discrete_full_model_modified[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c, delta
+):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_full_model_discrete_modified(
+                action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+                delta,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
 # ==============================================================================
 # Inverse Planning Actor Models (Discrete, LM-based)
 # ==============================================================================
@@ -730,6 +878,36 @@ def actor_discrete_full_model_lm[
                 w_r,
                 w_d,
                 w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_full_model_lm_modified[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c, delta
+):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_full_lm_discrete_modified(
+                action,
+                relationship_condition,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+                delta,
             )
         ),
     )
@@ -883,6 +1061,35 @@ def actor_continuous_full_model[
     return Pr[actor.action == action]
 
 
+@memo
+def actor_continuous_full_model_modified[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c, delta
+):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_full_model_continuous_modified(
+                action,
+                relationship,
+                reward_condition,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+                delta,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
 # ==============================================================================
 # Inverse Planning Actor Models (Continuous, LM-based)
 # ==============================================================================
@@ -911,6 +1118,36 @@ def actor_continuous_full_model_lm[
                 w_r,
                 w_d,
                 w_c,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_full_model_lm_modified[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c, delta
+):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_inv_plan_full_lm_continuous_modified(
+                action,
+                relationship,
+                reward_condition,
+                scenario_idx,
+                alpha,
+                w_r,
+                w_d,
+                w_c,
+                delta,
             )
         ),
     )
@@ -1235,6 +1472,32 @@ def observer_intimacy_full_model[
     return Pr[observer.relationship == relationship]
 
 
+@memo
+def observer_intimacy_full_model_modified[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    alpha, w_r, w_d, w_c, alpha_observer, delta
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_full_model_modified[action, relationship, reward_condition](
+                alpha, w_r, w_d, w_c, delta
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
 # ==============================================================================
 # Observer Models - Inferring Intimacy (LM-based)
 # ==============================================================================
@@ -1255,6 +1518,32 @@ def observer_intimacy_full_model_lm[
             action in actions,
             wpp=actor_continuous_full_model_lm[action, relationship, reward_condition](
                 scenario_idx, alpha, w_r, w_d, w_c
+            ),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_full_model_lm_modified[
+    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer, delta
+):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_full_model_lm_modified[action, relationship, reward_condition](
+                scenario_idx, alpha, w_r, w_d, w_c, delta
             ),
         ),
     ]
@@ -1407,6 +1696,34 @@ def observer_reward_full_model[
     return Pr[observer.reward_condition == reward_condition]
 
 
+@memo
+def observer_reward_full_model_modified[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    alpha, w_r, w_d, w_c, alpha_observer, delta
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_full_model_modified[
+                action, relationship_condition, reward_condition
+            ](alpha, w_r, w_d, w_c, delta),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
 # ==============================================================================
 # Observer Models - Inferring Reward (LM-based)
 # ==============================================================================
@@ -1430,6 +1747,34 @@ def observer_reward_full_model_lm[
             wpp=actor_discrete_full_model_lm[
                 action, relationship_condition, reward_condition
             ](scenario_idx, alpha, w_r, w_d, w_c),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_full_model_lm_modified[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](
+    scenario_idx, alpha, w_r, w_d, w_c, alpha_observer, delta
+):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_full_model_lm_modified[
+                action, relationship_condition, reward_condition
+            ](scenario_idx, alpha, w_r, w_d, w_c, delta),
         ),
     ]
     observer: observes[actor.action] is action

@@ -23,25 +23,37 @@ from model_utils import (
     SCENARIO_LABELS,
     SCENARIO_TO_IDX,
 
-    # Stipulated observer models for intimacy inference
+    # Stipulated observer models for intimacy inference (pre-registered)
     observer_intimacy_full_model,
     observer_intimacy_vanilla_inv_plan,
     observer_intimacy_discomfort_only,
 
-    # LM-based observer models for intimacy inference
+    # Modified stipulated observer for intimacy inference (effort scaled by intimacy)
+    observer_intimacy_full_model_modified,
+
+    # LM-based observer models for intimacy inference (pre-registered)
     observer_intimacy_full_model_lm,
     observer_intimacy_vanilla_lm,
     observer_intimacy_discomfort_only_lm,
 
-    # Stipulated observer models for reward inference
+    # Modified LM-based observer for intimacy inference
+    observer_intimacy_full_model_lm_modified,
+
+    # Stipulated observer models for reward inference (pre-registered)
     observer_reward_full_model,
     observer_reward_vanilla_inv_plan,
     observer_reward_discomfort_only,
 
-    # LM-based observer models for reward inference
+    # Modified stipulated observer for reward inference (effort scaled by intimacy)
+    observer_reward_full_model_modified,
+
+    # LM-based observer models for reward inference (pre-registered)
     observer_reward_full_model_lm,
     observer_reward_vanilla_lm,
     observer_reward_discomfort_only_lm,
+
+    # Modified LM-based observer for reward inference
+    observer_reward_full_model_lm_modified,
 )
 
 
@@ -68,29 +80,65 @@ def load_fitted_alpha_observer(filepath: str = "inverse_planning_fit_results.csv
     """Load fitted alpha_observer values from inverse planning fit results.
 
     Returns dict with (model, experiment) -> alpha_observer
+
+    Note: If alpha_observer is NaN (e.g., for vanilla intimacy model where the
+    utility doesn't depend on intimacy, making the gradient zero), we default
+    to 1.0. This produces the uniform prior as expected.
     """
     df = pd.read_csv(filepath)
     alpha_obs = {}
     for _, row in df.iterrows():
         key = (row["model"], row["experiment"])
-        alpha_obs[key] = row["alpha_observer"]
+        alpha_val = row["alpha_observer"]
+        # Default to 1.0 if NaN (happens when gradient is zero, e.g., vanilla intimacy)
+        alpha_obs[key] = alpha_val if pd.notna(alpha_val) else 1.0
     return alpha_obs
+
+
+def load_fitted_delta(filepath: str = "inverse_planning_fit_results.csv") -> dict:
+    """Load fitted delta values from inverse planning fit results.
+
+    Returns dict with (model, experiment) -> delta
+
+    Delta is only defined for modified models. Non-modified models have NaN.
+    """
+    df = pd.read_csv(filepath)
+    delta_vals = {}
+    for _, row in df.iterrows():
+        key = (row["model"], row["experiment"])
+        delta_val = row.get("delta", np.nan)
+        if pd.notna(delta_val):
+            delta_vals[key] = delta_val
+    return delta_vals
 
 
 # ==============================================================================
 # Intimacy Inference Predictions
 # ==============================================================================
 
-def generate_intimacy_preds_stipulated(params: dict, model_name: str, alpha_observer: float = 1.0) -> pd.DataFrame:
+def generate_intimacy_preds_stipulated(params: dict, model_name: str, alpha_observer: float = 1.0, modified: bool = False, delta: float = 1.0) -> pd.DataFrame:
     """Generate intimacy inference predictions using stipulated parameters.
 
     Returns DataFrame with posterior distribution over intimacy for each (action, reward_condition).
+
+    Args:
+        params: Dictionary with alpha, w_r, w_d, w_c
+        model_name: "full", "vanilla", or "discomfort_only"
+        alpha_observer: Observer inverse temperature
+        modified: If True, use the modified model (reward scaled by 1 + delta*intimacy)
+        delta: Reward-intimacy scaling parameter (only used for modified models)
     """
     if model_name == "full":
-        result = observer_intimacy_full_model(
-            alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
-            alpha_observer=alpha_observer
-        )
+        if modified:
+            result = observer_intimacy_full_model_modified(
+                alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
+                alpha_observer=alpha_observer, delta=delta
+            )
+        else:
+            result = observer_intimacy_full_model(
+                alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
+                alpha_observer=alpha_observer
+            )
     elif model_name == "vanilla":
         result = observer_intimacy_vanilla_inv_plan(
             alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
@@ -124,32 +172,62 @@ def generate_intimacy_preds_stipulated(params: dict, model_name: str, alpha_obse
     return df
 
 
-def generate_intimacy_preds_lm(params: dict, model_name: str, alpha_observer: float = 1.0) -> pd.DataFrame:
+def generate_intimacy_preds_lm(params: dict, model_name: str, alpha_observer: float = 1.0, modified: bool = False, delta: float = 1.0) -> pd.DataFrame:
     """Generate intimacy inference predictions using LM-derived parameters.
 
     Returns DataFrame with scenario-specific posterior distribution.
-    """
-    if model_name == "full":
-        observer_fn = observer_intimacy_full_model_lm
-    elif model_name == "vanilla":
-        observer_fn = observer_intimacy_vanilla_lm
-    elif model_name == "discomfort_only":
-        observer_fn = observer_intimacy_discomfort_only_lm
-    else:
-        raise ValueError(f"Unknown model: {model_name}")
 
+    Args:
+        params: Dictionary with alpha, w_r, w_d, w_c
+        model_name: "full", "vanilla", or "discomfort_only"
+        alpha_observer: Observer inverse temperature
+        modified: If True, use the modified model (reward scaled by 1 + delta*intimacy)
+        delta: Reward-intimacy scaling parameter (only used for modified models)
+    """
     dfs = []
     for scenario_label in SCENARIO_LABELS:
         scenario_idx = SCENARIO_TO_IDX[scenario_label]
 
-        result = observer_fn(
-            scenario_idx=scenario_idx,
-            alpha=params["alpha"],
-            w_r=params["w_r"],
-            w_d=params["w_d"],
-            w_c=params["w_c"],
-            alpha_observer=alpha_observer,
-        )
+        if model_name == "full":
+            if modified:
+                result = observer_intimacy_full_model_lm_modified(
+                    scenario_idx=scenario_idx,
+                    alpha=params["alpha"],
+                    w_r=params["w_r"],
+                    w_d=params["w_d"],
+                    w_c=params["w_c"],
+                    alpha_observer=alpha_observer,
+                    delta=delta,
+                )
+            else:
+                result = observer_intimacy_full_model_lm(
+                    scenario_idx=scenario_idx,
+                    alpha=params["alpha"],
+                    w_r=params["w_r"],
+                    w_d=params["w_d"],
+                    w_c=params["w_c"],
+                    alpha_observer=alpha_observer,
+                )
+        elif model_name == "vanilla":
+            result = observer_intimacy_vanilla_lm(
+                scenario_idx=scenario_idx,
+                alpha=params["alpha"],
+                w_r=params["w_r"],
+                w_d=params["w_d"],
+                w_c=params["w_c"],
+                alpha_observer=alpha_observer,
+            )
+        elif model_name == "discomfort_only":
+            result = observer_intimacy_discomfort_only_lm(
+                scenario_idx=scenario_idx,
+                alpha=params["alpha"],
+                w_r=params["w_r"],
+                w_d=params["w_d"],
+                w_c=params["w_c"],
+                alpha_observer=alpha_observer,
+            )
+        else:
+            raise ValueError(f"Unknown model: {model_name}")
 
         # Convert to DataFrame
         data = []
@@ -177,16 +255,29 @@ def generate_intimacy_preds_lm(params: dict, model_name: str, alpha_observer: fl
 # Reward Inference Predictions
 # ==============================================================================
 
-def generate_reward_preds_stipulated(params: dict, model_name: str, alpha_observer: float = 1.0) -> pd.DataFrame:
+def generate_reward_preds_stipulated(params: dict, model_name: str, alpha_observer: float = 1.0, modified: bool = False, delta: float = 1.0) -> pd.DataFrame:
     """Generate reward inference predictions using stipulated parameters.
 
     Returns DataFrame with P(reward_condition | action, intimacy_condition).
+
+    Args:
+        params: Dictionary with alpha, w_r, w_d, w_c
+        model_name: "full", "vanilla", or "discomfort_only"
+        alpha_observer: Observer inverse temperature
+        modified: If True, use the modified model (reward scaled by 1 + delta*intimacy)
+        delta: Reward-intimacy scaling parameter (only used for modified models)
     """
     if model_name == "full":
-        result = observer_reward_full_model(
-            alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
-            alpha_observer=alpha_observer
-        )
+        if modified:
+            result = observer_reward_full_model_modified(
+                alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
+                alpha_observer=alpha_observer, delta=delta
+            )
+        else:
+            result = observer_reward_full_model(
+                alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
+                alpha_observer=alpha_observer
+            )
     elif model_name == "vanilla":
         result = observer_reward_vanilla_inv_plan(
             alpha=params["alpha"], w_r=params["w_r"], w_d=params["w_d"], w_c=params["w_c"],
@@ -221,33 +312,63 @@ def generate_reward_preds_stipulated(params: dict, model_name: str, alpha_observ
     return df
 
 
-def generate_reward_preds_lm(params: dict, model_name: str, alpha_observer: float = 1.0) -> pd.DataFrame:
+def generate_reward_preds_lm(params: dict, model_name: str, alpha_observer: float = 1.0, modified: bool = False, delta: float = 1.0) -> pd.DataFrame:
     """Generate reward inference predictions using LM-derived parameters.
 
     Returns DataFrame with scenario-specific P(reward_condition | action, intimacy_condition).
-    """
-    if model_name == "full":
-        observer_fn = observer_reward_full_model_lm
-    elif model_name == "vanilla":
-        observer_fn = observer_reward_vanilla_lm
-    elif model_name == "discomfort_only":
-        observer_fn = observer_reward_discomfort_only_lm
-    else:
-        raise ValueError(f"Unknown model: {model_name}")
 
+    Args:
+        params: Dictionary with alpha, w_r, w_d, w_c
+        model_name: "full", "vanilla", or "discomfort_only"
+        alpha_observer: Observer inverse temperature
+        modified: If True, use the modified model (reward scaled by 1 + delta*intimacy)
+        delta: Reward-intimacy scaling parameter (only used for modified models)
+    """
     intimacy_map = {0: 0, 1: 50, 2: 75, 3: 100}
     dfs = []
     for scenario_label in SCENARIO_LABELS:
         scenario_idx = SCENARIO_TO_IDX[scenario_label]
 
-        result = observer_fn(
-            scenario_idx=scenario_idx,
-            alpha=params["alpha"],
-            w_r=params["w_r"],
-            w_d=params["w_d"],
-            w_c=params["w_c"],
-            alpha_observer=alpha_observer,
-        )
+        if model_name == "full":
+            if modified:
+                result = observer_reward_full_model_lm_modified(
+                    scenario_idx=scenario_idx,
+                    alpha=params["alpha"],
+                    w_r=params["w_r"],
+                    w_d=params["w_d"],
+                    w_c=params["w_c"],
+                    alpha_observer=alpha_observer,
+                    delta=delta,
+                )
+            else:
+                result = observer_reward_full_model_lm(
+                    scenario_idx=scenario_idx,
+                    alpha=params["alpha"],
+                    w_r=params["w_r"],
+                    w_d=params["w_d"],
+                    w_c=params["w_c"],
+                    alpha_observer=alpha_observer,
+                )
+        elif model_name == "vanilla":
+            result = observer_reward_vanilla_lm(
+                scenario_idx=scenario_idx,
+                alpha=params["alpha"],
+                w_r=params["w_r"],
+                w_d=params["w_d"],
+                w_c=params["w_c"],
+                alpha_observer=alpha_observer,
+            )
+        elif model_name == "discomfort_only":
+            result = observer_reward_discomfort_only_lm(
+                scenario_idx=scenario_idx,
+                alpha=params["alpha"],
+                w_r=params["w_r"],
+                w_d=params["w_d"],
+                w_c=params["w_c"],
+                alpha_observer=alpha_observer,
+            )
+        else:
+            raise ValueError(f"Unknown model: {model_name}")
 
         # Convert to DataFrame
         data = []
@@ -314,6 +435,9 @@ def main():
     print("Generating Inverse Planning Predictions")
     print("Using Frozen Forward Planning Parameters + Fitted alpha_observer")
     print("=" * 60)
+    print("\nGenerating predictions for:")
+    print("  - Pre-registered models: full, vanilla, discomfort_only")
+    print("  - Modified model: full_modified (effort scaled by intimacy)")
 
     output_dir = Path(__file__).parent
 
@@ -329,8 +453,12 @@ def main():
     for (model, exp), alpha in alpha_obs.items():
         print(f"  {model} ({exp}): alpha_observer={alpha:.3f}")
 
-    # Note: Empirical priors are loaded in model_utils.py at module init
-    print("\nEmpirical priors loaded from model_utils.py (integrated into observer models)")
+    # Load fitted delta values (only for modified models)
+    print("\nLoading fitted delta values...")
+    delta_vals = load_fitted_delta()
+    for (model, exp), delta in delta_vals.items():
+        print(f"  {model} ({exp}): delta={delta:.3f}")
+
 
     # -------------------------------------------------------------------------
     # Intimacy Inference Predictions
@@ -341,11 +469,11 @@ def main():
 
     intimacy_dfs = []
 
-    # Stipulated models
+    # Pre-registered stipulated models
     for model_name in ["full", "vanilla", "discomfort_only"]:
         alpha_observer = alpha_obs.get((model_name, "intimacy"), 1.0)
-        print(f"  {model_name} (stipulated, alpha_observer={alpha_observer:.3f})...")
-        df = generate_intimacy_preds_stipulated(params[model_name], model_name, alpha_observer=alpha_observer)
+        print(f"  {model_name} (stipulated, pre-reg, alpha_observer={alpha_observer:.3f})...")
+        df = generate_intimacy_preds_stipulated(params[model_name], model_name, alpha_observer=alpha_observer, modified=False)
         # Add scenario_label column (same prediction for all scenarios)
         scenario_dfs = []
         for scenario_label in SCENARIO_LABELS:
@@ -354,12 +482,33 @@ def main():
             scenario_dfs.append(df_scenario)
         intimacy_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
 
-    # LM models
+    # Modified full model (stipulated) - use its own fitted alpha_observer and delta
+    alpha_observer = alpha_obs.get(("full_modified", "intimacy"), 1.0)
+    delta = delta_vals.get(("full_modified", "intimacy"), 1.0)
+    print(f"  full_modified (stipulated, modified, alpha_observer={alpha_observer:.3f}, delta={delta:.3f})...")
+    df = generate_intimacy_preds_stipulated(params["full"], "full", alpha_observer=alpha_observer, modified=True, delta=delta)
+    df["model"] = "full_modified"  # Rename to distinguish from pre-reg
+    scenario_dfs = []
+    for scenario_label in SCENARIO_LABELS:
+        df_scenario = df.copy()
+        df_scenario["scenario_label"] = scenario_label
+        scenario_dfs.append(df_scenario)
+    intimacy_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
+
+    # Pre-registered LM models
     for model_name, lm_model_name in [("full", "full_lm"), ("vanilla", "vanilla_lm"), ("discomfort_only", "discomfort_only_lm")]:
         alpha_observer = alpha_obs.get((lm_model_name, "intimacy"), 1.0)
-        print(f"  {model_name} (LM, alpha_observer={alpha_observer:.3f})...")
-        df = generate_intimacy_preds_lm(params[lm_model_name], model_name, alpha_observer=alpha_observer)
+        print(f"  {model_name} (LM, pre-reg, alpha_observer={alpha_observer:.3f})...")
+        df = generate_intimacy_preds_lm(params[lm_model_name], model_name, alpha_observer=alpha_observer, modified=False)
         intimacy_dfs.append(df)
+
+    # Modified full model (LM) - use its own fitted alpha_observer and delta
+    alpha_observer = alpha_obs.get(("full_lm_modified", "intimacy"), 1.0)
+    delta = delta_vals.get(("full_lm_modified", "intimacy"), 1.0)
+    print(f"  full_modified (LM, modified, alpha_observer={alpha_observer:.3f}, delta={delta:.3f})...")
+    df = generate_intimacy_preds_lm(params["full_lm"], "full", alpha_observer=alpha_observer, modified=True, delta=delta)
+    df["model"] = "full_modified"  # Rename to distinguish from pre-reg
+    intimacy_dfs.append(df)
 
     # Combine all intimacy predictions
     df_intimacy_full = pd.concat(intimacy_dfs, ignore_index=True)
@@ -385,11 +534,11 @@ def main():
 
     reward_dfs = []
 
-    # Stipulated models
+    # Pre-registered stipulated models
     for model_name in ["full", "vanilla", "discomfort_only"]:
         alpha_observer = alpha_obs.get((model_name, "reward"), 1.0)
-        print(f"  {model_name} (stipulated, alpha_observer={alpha_observer:.3f})...")
-        df = generate_reward_preds_stipulated(params[model_name], model_name, alpha_observer=alpha_observer)
+        print(f"  {model_name} (stipulated, pre-reg, alpha_observer={alpha_observer:.3f})...")
+        df = generate_reward_preds_stipulated(params[model_name], model_name, alpha_observer=alpha_observer, modified=False)
         # Add scenario_label column (same prediction for all scenarios)
         scenario_dfs = []
         for scenario_label in SCENARIO_LABELS:
@@ -398,12 +547,33 @@ def main():
             scenario_dfs.append(df_scenario)
         reward_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
 
-    # LM models
+    # Modified full model (stipulated) - use its own fitted alpha_observer and delta
+    alpha_observer = alpha_obs.get(("full_modified", "reward"), 1.0)
+    delta = delta_vals.get(("full_modified", "reward"), 1.0)
+    print(f"  full_modified (stipulated, modified, alpha_observer={alpha_observer:.3f}, delta={delta:.3f})...")
+    df = generate_reward_preds_stipulated(params["full"], "full", alpha_observer=alpha_observer, modified=True, delta=delta)
+    df["model"] = "full_modified"  # Rename to distinguish from pre-reg
+    scenario_dfs = []
+    for scenario_label in SCENARIO_LABELS:
+        df_scenario = df.copy()
+        df_scenario["scenario_label"] = scenario_label
+        scenario_dfs.append(df_scenario)
+    reward_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
+
+    # Pre-registered LM models
     for model_name, lm_model_name in [("full", "full_lm"), ("vanilla", "vanilla_lm"), ("discomfort_only", "discomfort_only_lm")]:
         alpha_observer = alpha_obs.get((lm_model_name, "reward"), 1.0)
-        print(f"  {model_name} (LM, alpha_observer={alpha_observer:.3f})...")
-        df = generate_reward_preds_lm(params[lm_model_name], model_name, alpha_observer=alpha_observer)
+        print(f"  {model_name} (LM, pre-reg, alpha_observer={alpha_observer:.3f})...")
+        df = generate_reward_preds_lm(params[lm_model_name], model_name, alpha_observer=alpha_observer, modified=False)
         reward_dfs.append(df)
+
+    # Modified full model (LM) - use its own fitted alpha_observer and delta
+    alpha_observer = alpha_obs.get(("full_lm_modified", "reward"), 1.0)
+    delta = delta_vals.get(("full_lm_modified", "reward"), 1.0)
+    print(f"  full_modified (LM, modified, alpha_observer={alpha_observer:.3f}, delta={delta:.3f})...")
+    df = generate_reward_preds_lm(params["full_lm"], "full", alpha_observer=alpha_observer, modified=True, delta=delta)
+    df["model"] = "full_modified"  # Rename to distinguish from pre-reg
+    reward_dfs.append(df)
 
     # Combine all reward predictions
     df_reward_full = pd.concat(reward_dfs, ignore_index=True)
