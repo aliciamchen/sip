@@ -65,7 +65,7 @@ df_model_2a <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
       model == "full" ~ "Social inv plan",
       model == "vanilla" ~ "Vanilla inv plan",
       model == "discomfort_only" ~ "Discomfort only",
-      model == "full_modified" ~ "Social inv plan (modified)"
+      model == "full_modified" ~ "SIP modified"
     )
   ) |>
   group_by(motivation, action, model) |>
@@ -110,6 +110,7 @@ df_model_2b <- read_csv(here("model", "inv_plan_reward_preds_summary.csv")) |>
     action = as.character(action),
     model_belief_update = (p_high_reward / 100) - 0.5,
     model = case_when(
+      model == "full_modified" ~ "SIP modified",
       model == "full" ~ "Social inv plan",
       model == "vanilla" ~ "Vanilla inv plan",
       model == "discomfort_only" ~ "Discomfort only"
@@ -145,10 +146,13 @@ df_corr_2b <- df_2b_summary |>
 
 # Combine both experiments
 df_combined <- bind_rows(
-  df_corr_2a |> select(model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update),
-  df_corr_2b |> select(model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update)
+  df_corr_2a |> select(action, model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update),
+  df_corr_2b |> select(action, model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update)
 ) |>
-  mutate(model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan")))
+  mutate(
+    model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan", "SIP modified")),
+    action = factor(action)
+  )
 ```
 
 ## Compute Correlations
@@ -164,15 +168,19 @@ correlations_combined <- df_combined |>
     r = sapply(boot_result, function(x) x$r),
     ci_lower = sapply(boot_result, function(x) x$ci_lower),
     ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
+    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
   ) |>
   select(-boot_result)
 ```
 
 ## Aggregated Correlation Plot
 
-```{r fig.width=12, fig.height=4}
-ggplot(df_combined, aes(x = model_belief_update, y = human_belief_update, color = experiment)) +
+Main comparison (excludes preregistered Social inv plan):
+
+```{r fig.width=10, fig.height=4}
+df_combined |>
+  filter(model != "Social inv plan") |>
+  ggplot(aes(x = model_belief_update, y = human_belief_update, color = experiment, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
   geom_errorbar(
     aes(ymin = ci_lower, ymax = ci_upper),
@@ -180,15 +188,48 @@ ggplot(df_combined, aes(x = model_belief_update, y = human_belief_update, color 
   ) +
   geom_point(size = 3, alpha = 0.8) +
   geom_text(
-    data = correlations_combined,
+    data = correlations_combined |> filter(model != "Social inv plan"),
     aes(x = -0.6, y = 0.4, label = label),
     inherit.aes = FALSE, hjust = 0, size = 4
   ) +
   scale_color_brewer(palette = "Set1") +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
   labs(
     x = "Model belief update",
     y = "Human belief update",
-    color = "Experiment"
+    color = "Experiment",
+    shape = "Action"
+  ) +
+  theme(legend.position = "bottom") +
+  facet_wrap(~model, nrow = 1) +
+  coord_fixed(xlim = c(-0.6, 0.5), ylim = c(-0.6, 0.5))
+```
+
+Preregistered vs modified model comparison:
+
+```{r fig.width=8, fig.height=4}
+df_combined |>
+  filter(model %in% c("Social inv plan", "SIP modified")) |>
+  mutate(model = factor(model, levels = c("Social inv plan", "SIP modified"))) |>
+  ggplot(aes(x = model_belief_update, y = human_belief_update, color = experiment, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    width = 0, alpha = 0.5
+  ) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_text(
+    data = correlations_combined |> filter(model %in% c("Social inv plan", "SIP modified")),
+    aes(x = -0.6, y = 0.4, label = label),
+    inherit.aes = FALSE, hjust = 0, size = 4
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  labs(
+    x = "Model belief update",
+    y = "Human belief update",
+    color = "Experiment",
+    shape = "Action"
   ) +
   theme(legend.position = "bottom") +
   facet_wrap(~model, nrow = 1) +
@@ -205,4 +246,69 @@ correlations_combined |>
     caption = "Aggregated model-human correlations (Exp 2a + 2b)",
     col.names = c("Model", "r", "CI lower", "CI upper")
   )
+```
+
+## Export Figures
+
+```{r}
+#| output: false
+
+# Main correlation (excludes preregistered)
+p_combined_main <- df_combined |>
+  filter(model != "Social inv plan") |>
+  ggplot(aes(x = model_belief_update, y = human_belief_update, color = experiment, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    width = 0, alpha = 0.5
+  ) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_text(
+    data = correlations_combined |> filter(model != "Social inv plan"),
+    aes(x = -0.6, y = 0.4, label = label),
+    inherit.aes = FALSE, hjust = 0, size = 4
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  labs(
+    x = "Model belief update",
+    y = "Human belief update",
+    color = "Experiment",
+    shape = "Action"
+  ) +
+  theme(legend.position = "bottom") +
+  facet_wrap(~model, nrow = 1) +
+  coord_fixed(xlim = c(-0.6, 0.5), ylim = c(-0.6, 0.5))
+
+save_figure(p_combined_main, "exp2_combined_correlation_main.pdf", width = 10, height = 4)
+
+# Preregistered vs modified comparison
+p_combined_comparison <- df_combined |>
+  filter(model %in% c("Social inv plan", "SIP modified")) |>
+  mutate(model = factor(model, levels = c("Social inv plan", "SIP modified"))) |>
+  ggplot(aes(x = model_belief_update, y = human_belief_update, color = experiment, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    width = 0, alpha = 0.5
+  ) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_text(
+    data = correlations_combined |> filter(model %in% c("Social inv plan", "SIP modified")),
+    aes(x = -0.6, y = 0.4, label = label),
+    inherit.aes = FALSE, hjust = 0, size = 4
+  ) +
+  scale_color_brewer(palette = "Set1") +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  labs(
+    x = "Model belief update",
+    y = "Human belief update",
+    color = "Experiment",
+    shape = "Action"
+  ) +
+  theme(legend.position = "bottom") +
+  facet_wrap(~model, nrow = 1) +
+  coord_fixed(xlim = c(-0.6, 0.5), ylim = c(-0.6, 0.5))
+
+save_figure(p_combined_comparison, "exp2_combined_correlation_comparison.pdf", width = 8, height = 4)
 ```

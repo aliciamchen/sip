@@ -8,11 +8,18 @@ This script generates predictions for two inverse planning experiments:
 Uses parameters fitted from forward planning experiment (frozen, not re-fitted).
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+_project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_project_root))
+
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
+from utils import get_project_root
 from model_utils import (
     # Constants
     actions,
@@ -44,8 +51,10 @@ from model_utils import (
 # Load Fitted Parameters
 # ==============================================================================
 
-def load_fitted_params(filepath: str = "forward_planning_fit_results.csv") -> dict:
+def load_fitted_params(filepath: str = None) -> dict:
     """Load fitted parameters from forward planning fit results."""
+    if filepath is None:
+        filepath = get_project_root() / "model" / "forward_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
@@ -59,7 +68,7 @@ def load_fitted_params(filepath: str = "forward_planning_fit_results.csv") -> di
     return params
 
 
-def load_fitted_alpha_observer(filepath: str = "inverse_planning_fit_results.csv") -> dict:
+def load_fitted_alpha_observer(filepath: str = None) -> dict:
     """Load fitted alpha_observer values from inverse planning fit results.
 
     Returns dict with (model, experiment) -> alpha_observer
@@ -68,6 +77,8 @@ def load_fitted_alpha_observer(filepath: str = "inverse_planning_fit_results.csv
     utility doesn't depend on intimacy, making the gradient zero), we default
     to 1.0. This produces the uniform prior as expected.
     """
+    if filepath is None:
+        filepath = get_project_root() / "model" / "inverse_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     alpha_obs = {}
     for _, row in df.iterrows():
@@ -78,13 +89,15 @@ def load_fitted_alpha_observer(filepath: str = "inverse_planning_fit_results.csv
     return alpha_obs
 
 
-def load_fitted_beta(filepath: str = "inverse_planning_fit_results.csv") -> dict:
+def load_fitted_beta(filepath: str = None) -> dict:
     """Load fitted beta values from inverse planning fit results.
 
     Returns dict with (model, experiment) -> beta
 
     Beta is only defined for modified models. Non-modified models have NaN.
     """
+    if filepath is None:
+        filepath = get_project_root() / "model" / "inverse_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     beta_vals = {}
     for _, row in df.iterrows():

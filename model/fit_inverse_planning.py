@@ -10,13 +10,20 @@ For intimacy inference: NLL = -log(P(intimacy = response/100 | action, reward))
 For reward inference: Binary cross-entropy between response/100 and P(high reward)
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+_project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_project_root))
+
 import jax
 import jax.numpy as jnp
 import optax
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
+from utils import get_project_root
 from model_utils import (
     actions,
     IntimacyLevels,
@@ -44,8 +51,10 @@ from model_utils import (
 # ==============================================================================
 
 
-def load_fitted_params(filepath: str = "forward_planning_fit_results.csv") -> dict:
+def load_fitted_params(filepath: str = None) -> dict:
     """Load frozen actor parameters from forward planning fit results."""
+    if filepath is None:
+        filepath = get_project_root() / "model" / "forward_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
@@ -59,7 +68,7 @@ def load_fitted_params(filepath: str = "forward_planning_fit_results.csv") -> di
     return params
 
 
-def load_intimacy_data(filepath: str = "../data/inv_plan_intimacy/main_trials_long.csv"):
+def load_intimacy_data(filepath: str = None):
     """Load and preprocess intimacy inference data.
 
     Filters to posterior only and converts action_condition to int.
@@ -71,6 +80,8 @@ def load_intimacy_data(filepath: str = "../data/inv_plan_intimacy/main_trials_lo
         response: JAX array of human intimacy ratings (0-100)
         scenario_idx: JAX array of scenario indices (0-15)
     """
+    if filepath is None:
+        filepath = get_project_root() / "data" / "inv_plan_intimacy" / "main_trials_long.csv"
     print("Loading intimacy inference data...")
     data = pd.read_csv(filepath)
 
@@ -100,7 +111,7 @@ def load_intimacy_data(filepath: str = "../data/inv_plan_intimacy/main_trials_lo
     return data, action, reward_condition, response, scenario_idx
 
 
-def load_reward_data(filepath: str = "../data/inv_plan_reward/main_trials_long.csv"):
+def load_reward_data(filepath: str = None):
     """Load and preprocess reward inference data.
 
     Filters to posterior only and converts action_condition to int.
@@ -112,6 +123,8 @@ def load_reward_data(filepath: str = "../data/inv_plan_reward/main_trials_long.c
         response: JAX array of human reward likelihood ratings (0-100)
         scenario_idx: JAX array of scenario indices (0-15)
     """
+    if filepath is None:
+        filepath = get_project_root() / "data" / "inv_plan_reward" / "main_trials_long.csv"
     print("Loading reward inference data...")
     data = pd.read_csv(filepath)
 

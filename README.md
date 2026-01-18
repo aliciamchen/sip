@@ -3,9 +3,9 @@
 ## Experiments: 
 
 - Experiment 1: Forward planning
-- Experiment 2: Inverse planning (intimacy)
-- Experiment 3: Inverse planning (reward)
-- Experiment 4: Planning with communicative goals
+    - Preregistration
+- Experiment 2a: Inverse planning (intimacy)
+- Experiment 2b: Inverse planning (reward)
 
 ## Dependencies
 
@@ -23,6 +23,10 @@ In R, run:
 renv::restore()
 ```
 
+You also need xquartz for the font in the plots to render correctly: 
+```bash
+brew install --cask xquartz
+```
 
 ## Quick Start
 

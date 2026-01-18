@@ -10,6 +10,13 @@ Uses maximum likelihood estimation with gradient descent (optax.adam).
 Performs likelihood ratio tests to compare models.
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to path for imports
+_project_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_project_root))
+
 import jax
 import jax.numpy as jnp
 import optax
@@ -17,6 +24,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from utils import get_project_root
 from model_utils import (
     actions,
     IntimacyLevels,
@@ -31,7 +39,7 @@ from model_utils import (
 # Data loading and preprocessing
 
 
-def load_data(filepath: str = "../data/forw_plan/main_trials_long.csv"):
+def load_data(filepath: str = None):
     """Load and preprocess forward planning data.
 
     Converts:
@@ -47,6 +55,8 @@ def load_data(filepath: str = "../data/forw_plan/main_trials_long.csv"):
         p_action: JAX array of human response probabilities
         scenario_idx: JAX array of scenario indices (0-15)
     """
+    if filepath is None:
+        filepath = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
     print("Loading forward planning data...")
     data = pd.read_csv(filepath)
 
