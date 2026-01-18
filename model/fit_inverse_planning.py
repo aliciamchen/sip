@@ -232,7 +232,7 @@ def get_intimacy_posterior_lm(observer_fn, actor_params, alpha_observer, action,
 # ==============================================================================
 
 
-def get_intimacy_posterior_stipulated_modified(observer_fn, actor_params, alpha_observer, delta, action, reward_condition):
+def get_intimacy_posterior_stipulated_modified(observer_fn, actor_params, alpha_observer, action, reward_condition):
     """Get posterior distribution over intimacy from modified stipulated model."""
     posterior = observer_fn(
         alpha=actor_params["alpha"],
@@ -240,13 +240,12 @@ def get_intimacy_posterior_stipulated_modified(observer_fn, actor_params, alpha_
         w_d=actor_params["w_d"],
         w_c=actor_params["w_c"],
         alpha_observer=alpha_observer,
-        delta=delta,
     )
     post = posterior[action, :, reward_condition]
     return post
 
 
-def get_intimacy_posterior_lm_modified(observer_fn, actor_params, alpha_observer, delta, action, reward_condition, scenario_idx):
+def get_intimacy_posterior_lm_modified(observer_fn, actor_params, alpha_observer, action, reward_condition, scenario_idx):
     """Get posterior distribution over intimacy from modified LM model."""
     posterior = observer_fn(
         scenario_idx=scenario_idx,
@@ -255,13 +254,12 @@ def get_intimacy_posterior_lm_modified(observer_fn, actor_params, alpha_observer
         w_d=actor_params["w_d"],
         w_c=actor_params["w_c"],
         alpha_observer=alpha_observer,
-        delta=delta,
     )
     post = posterior[action, :, reward_condition]
     return post
 
 
-def get_reward_p_high_stipulated_modified(observer_fn, actor_params, alpha_observer, delta, action, intimacy_idx):
+def get_reward_p_high_stipulated_modified(observer_fn, actor_params, alpha_observer, action, intimacy_idx):
     """Get P(high reward) from modified stipulated model."""
     posterior = observer_fn(
         alpha=actor_params["alpha"],
@@ -269,13 +267,12 @@ def get_reward_p_high_stipulated_modified(observer_fn, actor_params, alpha_obser
         w_d=actor_params["w_d"],
         w_c=actor_params["w_c"],
         alpha_observer=alpha_observer,
-        delta=delta,
     )
     p_high_reward = posterior[action, intimacy_idx, 1]
     return p_high_reward
 
 
-def get_reward_p_high_lm_modified(observer_fn, actor_params, alpha_observer, delta, action, intimacy_idx, scenario_idx):
+def get_reward_p_high_lm_modified(observer_fn, actor_params, alpha_observer, action, intimacy_idx, scenario_idx):
     """Get P(high reward) from modified LM model."""
     posterior = observer_fn(
         scenario_idx=scenario_idx,
@@ -284,7 +281,6 @@ def get_reward_p_high_lm_modified(observer_fn, actor_params, alpha_observer, del
         w_d=actor_params["w_d"],
         w_c=actor_params["w_c"],
         alpha_observer=alpha_observer,
-        delta=delta,
     )
     p_high_reward = posterior[action, intimacy_idx, 1]
     return p_high_reward
@@ -531,11 +527,11 @@ def fit_reward_alpha_observer(
 
 
 # ==============================================================================
-# Fitting Functions for Modified Models (joint alpha_observer and delta)
+# Fitting Functions for Modified Models (alpha_observer only)
 # ==============================================================================
 
 
-def fit_intimacy_alpha_observer_and_delta(
+def fit_intimacy_alpha_observer_modified(
     observer_fn,
     actor_params: dict,
     action: jnp.ndarray,
@@ -547,62 +543,56 @@ def fit_intimacy_alpha_observer_and_delta(
     max_steps: int = 1000,
     verbose: bool = True,
 ):
-    """Fit alpha_observer and delta for modified intimacy inference model.
+    """Fit alpha_observer for modified intimacy inference model.
 
-    delta controls how much observers think actors' reward scales with intimacy.
-    delta=0: no intimacy scaling on reward (vanilla-like)
-    delta=1: pre-registered model (full intimacy scaling)
+    The modified model uses vanilla-style reward (no intimacy scaling)
+    with full-model discomfort (scales with 1 - intimacy).
     """
 
     if is_lm:
-        def get_nll(alpha_observer, delta, a, r, s, resp):
-            posterior = get_intimacy_posterior_lm_modified(observer_fn, actor_params, alpha_observer, delta, a, r, s)
+        def get_nll(alpha_observer, a, r, s, resp):
+            posterior = get_intimacy_posterior_lm_modified(observer_fn, actor_params, alpha_observer, a, r, s)
             return compute_intimacy_nll(posterior, resp)
 
         vmap_get_nll = jax.vmap(
-            lambda alpha_obs, delta, a, r, s, resp: get_nll(alpha_obs, delta, a, r, s, resp),
-            in_axes=(None, None, 0, 0, 0, 0),
+            lambda alpha_obs, a, r, s, resp: get_nll(alpha_obs, a, r, s, resp),
+            in_axes=(None, 0, 0, 0, 0),
         )
 
-        def loss_fn(params):
-            alpha_observer, delta = params[0], params[1]
-            nlls = vmap_get_nll(alpha_observer, delta, action, reward_condition, scenario_idx, response)
+        def loss_fn(alpha_observer):
+            nlls = vmap_get_nll(alpha_observer, action, reward_condition, scenario_idx, response)
             return jnp.sum(nlls)
     else:
-        def get_nll(alpha_observer, delta, a, r, resp):
-            posterior = get_intimacy_posterior_stipulated_modified(observer_fn, actor_params, alpha_observer, delta, a, r)
+        def get_nll(alpha_observer, a, r, resp):
+            posterior = get_intimacy_posterior_stipulated_modified(observer_fn, actor_params, alpha_observer, a, r)
             return compute_intimacy_nll(posterior, resp)
 
         vmap_get_nll = jax.vmap(
-            lambda alpha_obs, delta, a, r, resp: get_nll(alpha_obs, delta, a, r, resp),
-            in_axes=(None, None, 0, 0, 0),
+            lambda alpha_obs, a, r, resp: get_nll(alpha_obs, a, r, resp),
+            in_axes=(None, 0, 0, 0),
         )
 
-        def loss_fn(params):
-            alpha_observer, delta = params[0], params[1]
-            nlls = vmap_get_nll(alpha_observer, delta, action, reward_condition, response)
+        def loss_fn(alpha_observer):
+            nlls = vmap_get_nll(alpha_observer, action, reward_condition, response)
             return jnp.sum(nlls)
 
-    # Initialize: alpha_observer = 1.0, delta = 0.5 (start with partial scaling)
-    params = jnp.array([1.0, 0.5])
+    # Initialize: alpha_observer = 1.0
+    alpha_observer = jnp.array(1.0)
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
-    opt_state = opt.init(params)
+    opt_state = opt.init(alpha_observer)
 
     prev_loss = None
     for step in range(max_steps):
-        loss, grad = grad_fn(params)
+        loss, grad = grad_fn(alpha_observer)
 
         updates, opt_state = opt.update(grad, opt_state)
-        params = optax.apply_updates(params, updates)
-        # Keep alpha_observer positive, delta in [0, 1] range
-        params = jnp.array([
-            jnp.clip(params[0], 0.01, 10.0),
-            jnp.clip(params[1], 0.0, 1.0),
-        ])
+        alpha_observer = optax.apply_updates(alpha_observer, updates)
+        # Keep alpha_observer positive
+        alpha_observer = jnp.clip(alpha_observer, 0.01, 10.0)
 
         if verbose and step % 200 == 0:
-            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}, delta: {params[1]:.4f}")
+            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {alpha_observer:.4f}")
 
         if prev_loss is not None and loss > prev_loss + 1e-4:
             if verbose:
@@ -610,18 +600,17 @@ def fit_intimacy_alpha_observer_and_delta(
             break
         prev_loss = loss
 
-    best_nll = float(loss_fn(params))
-    final_alpha = float(params[0])
-    final_delta = float(params[1])
+    best_nll = float(loss_fn(alpha_observer))
+    final_alpha = float(alpha_observer)
 
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final alpha_observer: {final_alpha:.4f}, delta: {final_delta:.4f}")
+        print(f"  Final alpha_observer: {final_alpha:.4f}")
 
-    return final_alpha, final_delta, best_nll
+    return final_alpha, best_nll
 
 
-def fit_reward_alpha_observer_and_delta(
+def fit_reward_alpha_observer_modified(
     observer_fn,
     actor_params: dict,
     action: jnp.ndarray,
@@ -633,62 +622,56 @@ def fit_reward_alpha_observer_and_delta(
     max_steps: int = 1000,
     verbose: bool = True,
 ):
-    """Fit alpha_observer and delta for modified reward inference model.
+    """Fit alpha_observer for modified reward inference model.
 
-    delta controls how much observers think actors' reward scales with intimacy.
-    delta=0: no intimacy scaling on reward (vanilla-like)
-    delta=1: pre-registered model (full intimacy scaling)
+    The modified model uses vanilla-style reward (no intimacy scaling)
+    with full-model discomfort (scales with 1 - intimacy).
     """
 
     if is_lm:
-        def get_nll(alpha_observer, delta, a, i, s, resp):
-            p_high = get_reward_p_high_lm_modified(observer_fn, actor_params, alpha_observer, delta, a, i, s)
+        def get_nll(alpha_observer, a, i, s, resp):
+            p_high = get_reward_p_high_lm_modified(observer_fn, actor_params, alpha_observer, a, i, s)
             return compute_reward_nll(p_high, resp)
 
         vmap_get_nll = jax.vmap(
-            lambda alpha_obs, delta, a, i, s, resp: get_nll(alpha_obs, delta, a, i, s, resp),
-            in_axes=(None, None, 0, 0, 0, 0),
+            lambda alpha_obs, a, i, s, resp: get_nll(alpha_obs, a, i, s, resp),
+            in_axes=(None, 0, 0, 0, 0),
         )
 
-        def loss_fn(params):
-            alpha_observer, delta = params[0], params[1]
-            nlls = vmap_get_nll(alpha_observer, delta, action, intimacy_condition, scenario_idx, response)
+        def loss_fn(alpha_observer):
+            nlls = vmap_get_nll(alpha_observer, action, intimacy_condition, scenario_idx, response)
             return jnp.sum(nlls)
     else:
-        def get_nll(alpha_observer, delta, a, i, resp):
-            p_high = get_reward_p_high_stipulated_modified(observer_fn, actor_params, alpha_observer, delta, a, i)
+        def get_nll(alpha_observer, a, i, resp):
+            p_high = get_reward_p_high_stipulated_modified(observer_fn, actor_params, alpha_observer, a, i)
             return compute_reward_nll(p_high, resp)
 
         vmap_get_nll = jax.vmap(
-            lambda alpha_obs, delta, a, i, resp: get_nll(alpha_obs, delta, a, i, resp),
-            in_axes=(None, None, 0, 0, 0),
+            lambda alpha_obs, a, i, resp: get_nll(alpha_obs, a, i, resp),
+            in_axes=(None, 0, 0, 0),
         )
 
-        def loss_fn(params):
-            alpha_observer, delta = params[0], params[1]
-            nlls = vmap_get_nll(alpha_observer, delta, action, intimacy_condition, response)
+        def loss_fn(alpha_observer):
+            nlls = vmap_get_nll(alpha_observer, action, intimacy_condition, response)
             return jnp.sum(nlls)
 
-    # Initialize: alpha_observer = 1.0, delta = 0.5 (start with partial scaling)
-    params = jnp.array([1.0, 0.5])
+    # Initialize: alpha_observer = 1.0
+    alpha_observer = jnp.array(1.0)
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
-    opt_state = opt.init(params)
+    opt_state = opt.init(alpha_observer)
 
     prev_loss = None
     for step in range(max_steps):
-        loss, grad = grad_fn(params)
+        loss, grad = grad_fn(alpha_observer)
 
         updates, opt_state = opt.update(grad, opt_state)
-        params = optax.apply_updates(params, updates)
-        # Keep alpha_observer positive, delta in [0, 1] range
-        params = jnp.array([
-            jnp.clip(params[0], 0.01, 10.0),
-            jnp.clip(params[1], 0.0, 1.0),
-        ])
+        alpha_observer = optax.apply_updates(alpha_observer, updates)
+        # Keep alpha_observer positive
+        alpha_observer = jnp.clip(alpha_observer, 0.01, 10.0)
 
         if verbose and step % 200 == 0:
-            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}, delta: {params[1]:.4f}")
+            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {alpha_observer:.4f}")
 
         if prev_loss is not None and loss > prev_loss + 1e-4:
             if verbose:
@@ -696,15 +679,14 @@ def fit_reward_alpha_observer_and_delta(
             break
         prev_loss = loss
 
-    best_nll = float(loss_fn(params))
-    final_alpha = float(params[0])
-    final_delta = float(params[1])
+    best_nll = float(loss_fn(alpha_observer))
+    final_alpha = float(alpha_observer)
 
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final alpha_observer: {final_alpha:.4f}, delta: {final_delta:.4f}")
+        print(f"  Final alpha_observer: {final_alpha:.4f}")
 
-    return final_alpha, final_delta, best_nll
+    return final_alpha, best_nll
 
 
 # ==============================================================================
@@ -776,13 +758,13 @@ def main():
             "n_params": 1,
         })
 
-    # Fit modified models (alpha_observer and delta)
+    # Fit modified models (alpha_observer only, no intimacy scaling on reward)
     for model_name, (observer_fn, actor_param_key, is_lm) in intimacy_models_modified.items():
         print(f"\n{'-' * 40}")
-        print(f"Fitting {model_name} (with delta)...")
+        print(f"Fitting {model_name}...")
         print(f"{'-' * 40}")
 
-        alpha_observer, delta, nll = fit_intimacy_alpha_observer_and_delta(
+        alpha_observer, nll = fit_intimacy_alpha_observer_modified(
             observer_fn=observer_fn,
             actor_params=actor_params[actor_param_key],
             action=int_action,
@@ -796,9 +778,9 @@ def main():
             "model": model_name,
             "experiment": "intimacy",
             "alpha_observer": alpha_observer,
-            "delta": delta,
+            "delta": np.nan,
             "nll": nll,
-            "n_params": 2,
+            "n_params": 1,
         })
 
     # -------------------------------------------------------------------------
@@ -851,13 +833,13 @@ def main():
             "n_params": 1,
         })
 
-    # Fit modified models (alpha_observer and delta)
+    # Fit modified models (alpha_observer only, no intimacy scaling on reward)
     for model_name, (observer_fn, actor_param_key, is_lm) in reward_models_modified.items():
         print(f"\n{'-' * 40}")
-        print(f"Fitting {model_name} (with delta)...")
+        print(f"Fitting {model_name}...")
         print(f"{'-' * 40}")
 
-        alpha_observer, delta, nll = fit_reward_alpha_observer_and_delta(
+        alpha_observer, nll = fit_reward_alpha_observer_modified(
             observer_fn=observer_fn,
             actor_params=actor_params[actor_param_key],
             action=rew_action,
@@ -871,9 +853,9 @@ def main():
             "model": model_name,
             "experiment": "reward",
             "alpha_observer": alpha_observer,
-            "delta": delta,
+            "delta": np.nan,
             "nll": nll,
-            "n_params": 2,
+            "n_params": 1,
         })
 
     # -------------------------------------------------------------------------
