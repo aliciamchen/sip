@@ -24,7 +24,28 @@ renv::restore()
 ```
 
 
-## How to run analyses
+## Quick Start
+
+Run the full pipeline using Make:
+
+```bash
+make all       # Run full pipeline: fit models, generate predictions, render analysis
+```
+
+Other useful targets:
+
+```bash
+make help      # Show all available targets
+make fit       # Fit forward + inverse planning models
+make predictions  # Generate model predictions
+make analysis  # Render all Quarto analysis documents
+make test      # Run model compliance tests
+make clean     # Remove generated model outputs
+```
+
+The processed data CSVs are included in the repository, so `make all` works without raw JSON data.
+
+## Manual Pipeline Steps
 
 Convert raw data (not included in the repository) to csv format with anonymized participant ids:
 
@@ -52,7 +73,8 @@ Analyze data and generate plots
 
 ```bash
 cd analysis
-quarto render exp-1-data-analysis.qmd
-quarto render exp-2a-data-analysis.qmd
-quarto render exp-2b-data-analysis.qmd
+quarto render exp-1-analysis.qmd
+quarto render exp-2a-inv-plan-intimacy-analysis.qmd
+quarto render exp-2b-inv-plan-reward-analysis.qmd
+quarto render exp-2-combined-correlation.qmd
 ```
