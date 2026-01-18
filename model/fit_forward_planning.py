@@ -24,9 +24,6 @@ from model_utils import (
     actor_forw_full,
     actor_forw_vanilla,
     actor_forw_discomfort_only,
-    actor_forw_full_lm,
-    actor_forw_vanilla_lm,
-    actor_forw_discomfort_only_lm,
     SCENARIO_TO_IDX,
 )
 
@@ -220,57 +217,6 @@ def predict_discomfort_only(intimacy, reward_condition, action, alpha, w_d):
     )(intimacy, reward_condition, action)
 
 
-# LLM model prediction functions
-@jax.jit
-def get_full_lm_prediction(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
-    """Get prediction from LLM full model for single data point."""
-    intimacy_idx = get_intimacy_index(intimacy)
-    return actor_forw_full_lm(scenario_idx, alpha, w_r, w_d, w_c)[action, intimacy_idx, reward_condition]
-
-
-@jax.jit
-def predict_full_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
-    """Vectorized prediction function for LLM full model."""
-    return jax.vmap(
-        lambda i, r, a, s: get_full_lm_prediction(i, r, a, s, alpha, w_r, w_d, w_c),
-        in_axes=(0, 0, 0, 0),
-    )(intimacy, reward_condition, action, scenario_idx)
-
-
-# LLM vanilla model prediction functions
-@jax.jit
-def get_vanilla_lm_prediction(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
-    """Get prediction from LLM vanilla model for single data point."""
-    intimacy_idx = get_intimacy_index(intimacy)
-    return actor_forw_vanilla_lm(scenario_idx, alpha, w_r, w_d, w_c)[action, intimacy_idx, reward_condition]
-
-
-@jax.jit
-def predict_vanilla_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_r, w_d, w_c):
-    """Vectorized prediction function for LLM vanilla model."""
-    return jax.vmap(
-        lambda i, r, a, s: get_vanilla_lm_prediction(i, r, a, s, alpha, w_r, w_d, w_c),
-        in_axes=(0, 0, 0, 0),
-    )(intimacy, reward_condition, action, scenario_idx)
-
-
-# LLM discomfort-only model prediction functions
-@jax.jit
-def get_discomfort_only_lm_prediction(intimacy, reward_condition, action, scenario_idx, alpha, w_d):
-    """Get prediction from LLM discomfort-only model for single data point."""
-    intimacy_idx = get_intimacy_index(intimacy)
-    return actor_forw_discomfort_only_lm(scenario_idx, alpha, w_d)[action, intimacy_idx, reward_condition]
-
-
-@jax.jit
-def predict_discomfort_only_lm(intimacy, reward_condition, action, scenario_idx, alpha, w_d):
-    """Vectorized prediction function for LLM discomfort-only model."""
-    return jax.vmap(
-        lambda i, r, a, s: get_discomfort_only_lm_prediction(i, r, a, s, alpha, w_d),
-        in_axes=(0, 0, 0, 0),
-    )(intimacy, reward_condition, action, scenario_idx)
-
-
 # Model fitting
 
 
@@ -423,153 +369,6 @@ def fit_discomfort_only_model(
     return full_params, best_nll
 
 
-def fit_full_lm_model(
-    intimacy: jnp.ndarray,
-    reward_condition: jnp.ndarray,
-    action: jnp.ndarray,
-    p_action: jnp.ndarray,
-    scenario_idx: jnp.ndarray,
-    lr: float = 0.01,
-    max_steps: int = 5000,
-    verbose: bool = True,
-):
-    """Fit LLM full model parameters (w_r, w_d, w_c) with alpha fixed to 1."""
-    ALPHA = 1.0  # Fixed for identifiability
-
-    def loss_fn(params):
-        w_r, w_d, w_c = params[0], params[1], params[2]
-        preds = predict_full_lm(intimacy, reward_condition, action, scenario_idx, ALPHA, w_r, w_d, w_c)
-        return compute_nll(preds, p_action)
-
-    params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
-    grad_fn = jax.value_and_grad(loss_fn)
-    opt = optax.adam(learning_rate=lr)
-    opt_state = opt.init(params)
-
-    prev_nll = None
-    for step in range(max_steps):
-        nll, grad = grad_fn(params)
-        updates, opt_state = opt.update(grad, opt_state)
-        params = optax.apply_updates(params, updates)
-        params = jnp.clip(params, 1e-6, jnp.inf)
-
-        if verbose and step % 1000 == 0:
-            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
-
-        if prev_nll is not None and nll > prev_nll + 1e-6:
-            if verbose:
-                print(f"  NLL increased at step {step}, stopping")
-            break
-        prev_nll = nll
-
-    best_nll = float(loss_fn(params))
-    if verbose:
-        print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
-
-    # Return with alpha=1 prepended for compatibility
-    full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
-    return full_params, best_nll
-
-
-def fit_vanilla_lm_model(
-    intimacy: jnp.ndarray,
-    reward_condition: jnp.ndarray,
-    action: jnp.ndarray,
-    p_action: jnp.ndarray,
-    scenario_idx: jnp.ndarray,
-    lr: float = 0.01,
-    max_steps: int = 5000,
-    verbose: bool = True,
-):
-    """Fit LLM vanilla model parameters (w_r, w_d, w_c) with alpha fixed to 1."""
-    ALPHA = 1.0  # Fixed for identifiability
-
-    def loss_fn(params):
-        w_r, w_d, w_c = params[0], params[1], params[2]
-        preds = predict_vanilla_lm(intimacy, reward_condition, action, scenario_idx, ALPHA, w_r, w_d, w_c)
-        return compute_nll(preds, p_action)
-
-    params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
-    grad_fn = jax.value_and_grad(loss_fn)
-    opt = optax.adam(learning_rate=lr)
-    opt_state = opt.init(params)
-
-    prev_nll = None
-    for step in range(max_steps):
-        nll, grad = grad_fn(params)
-        updates, opt_state = opt.update(grad, opt_state)
-        params = optax.apply_updates(params, updates)
-        params = jnp.clip(params, 1e-6, jnp.inf)
-
-        if verbose and step % 1000 == 0:
-            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
-
-        if prev_nll is not None and nll > prev_nll + 1e-6:
-            if verbose:
-                print(f"  NLL increased at step {step}, stopping")
-            break
-        prev_nll = nll
-
-    best_nll = float(loss_fn(params))
-    if verbose:
-        print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
-
-    # Return with alpha=1 prepended for compatibility
-    full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
-    return full_params, best_nll
-
-
-def fit_discomfort_only_lm_model(
-    intimacy: jnp.ndarray,
-    reward_condition: jnp.ndarray,
-    action: jnp.ndarray,
-    p_action: jnp.ndarray,
-    scenario_idx: jnp.ndarray,
-    lr: float = 0.01,
-    max_steps: int = 5000,
-    verbose: bool = True,
-):
-    """Fit LLM discomfort-only model parameters (w_d) with alpha fixed to 1."""
-    ALPHA = 1.0  # Fixed for identifiability
-
-    def loss_fn(params):
-        w_d = params[0]
-        preds = predict_discomfort_only_lm(intimacy, reward_condition, action, scenario_idx, ALPHA, w_d)
-        return compute_nll(preds, p_action)
-
-    params = jnp.array([1.0])  # w_d only
-    grad_fn = jax.value_and_grad(loss_fn)
-    opt = optax.adam(learning_rate=lr)
-    opt_state = opt.init(params)
-
-    prev_nll = None
-    for step in range(max_steps):
-        nll, grad = grad_fn(params)
-        updates, opt_state = opt.update(grad, opt_state)
-        params = optax.apply_updates(params, updates)
-        params = jnp.clip(params, 1e-6, jnp.inf)
-
-        if verbose and step % 1000 == 0:
-            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
-
-        if prev_nll is not None and nll > prev_nll + 1e-6:
-            if verbose:
-                print(f"  NLL increased at step {step}, stopping")
-            break
-        prev_nll = nll
-
-    best_nll = float(loss_fn(params))
-    if verbose:
-        print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params (alpha=1 fixed): w_d={params[0]:.4f}")
-
-    # Return with alpha=1 prepended for compatibility
-    full_params = jnp.array([ALPHA, params[0]])
-    return full_params, best_nll
-
-
 # Main script
 
 
@@ -617,39 +416,6 @@ def main():
         "n_params": 1,  # w_d only (alpha fixed to 1)
     }
 
-    # LLM full model: 3 free params (w_r, w_d, w_c) with alpha=1 fixed
-    print("\n" + "-" * 40)
-    print("Fitting FULL_LM model (alpha=1 fixed, LLM scenario params)...")
-    print("-" * 40)
-    full_lm_params, full_lm_nll = fit_full_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
-    results["full_lm"] = {
-        "params": {"alpha": float(full_lm_params[0]), "w_r": float(full_lm_params[1]), "w_d": float(full_lm_params[2]), "w_c": float(full_lm_params[3])},
-        "nll": full_lm_nll,
-        "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
-    }
-
-    # LLM vanilla model: 3 free params (w_r, w_d, w_c) with alpha=1 fixed
-    print("\n" + "-" * 40)
-    print("Fitting VANILLA_LM model (alpha=1 fixed, LLM scenario params)...")
-    print("-" * 40)
-    vanilla_lm_params, vanilla_lm_nll = fit_vanilla_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
-    results["vanilla_lm"] = {
-        "params": {"alpha": float(vanilla_lm_params[0]), "w_r": float(vanilla_lm_params[1]), "w_d": float(vanilla_lm_params[2]), "w_c": float(vanilla_lm_params[3])},
-        "nll": vanilla_lm_nll,
-        "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
-    }
-
-    # LLM discomfort-only model: 1 free param (w_d) with alpha=1 fixed
-    print("\n" + "-" * 40)
-    print("Fitting DISCOMFORT_ONLY_LM model (alpha=1 fixed, LLM scenario params)...")
-    print("-" * 40)
-    discomfort_lm_params, discomfort_lm_nll = fit_discomfort_only_lm_model(intimacy, reward_condition, action, p_action, scenario_idx)
-    results["discomfort_only_lm"] = {
-        "params": {"alpha": float(discomfort_lm_params[0]), "w_d": float(discomfort_lm_params[1])},
-        "nll": discomfort_lm_nll,
-        "n_params": 1,  # w_d only (alpha fixed to 1)
-    }
-
     # Summary
     print("\n" + "=" * 60)
     print("RESULTS SUMMARY")
@@ -678,18 +444,6 @@ def main():
         intimacy, reward_condition, action,
         discomfort_params[0], discomfort_params[1]
     ))
-    data["pred_full_lm"] = np.array(predict_full_lm(
-        intimacy, reward_condition, action, scenario_idx,
-        full_lm_params[0], full_lm_params[1], full_lm_params[2], full_lm_params[3]
-    ))
-    data["pred_vanilla_lm"] = np.array(predict_vanilla_lm(
-        intimacy, reward_condition, action, scenario_idx,
-        vanilla_lm_params[0], vanilla_lm_params[1], vanilla_lm_params[2], vanilla_lm_params[3]
-    ))
-    data["pred_discomfort_only_lm"] = np.array(predict_discomfort_only_lm(
-        intimacy, reward_condition, action, scenario_idx,
-        discomfort_lm_params[0], discomfort_lm_params[1]
-    ))
 
     # Save predictions
     output_path = "forward_planning_fits.csv"
@@ -705,7 +459,7 @@ def main():
     group_cols = ["intimacy", "motivation", "action"]
     model_metrics = {}
 
-    for model_name in ["full", "vanilla", "discomfort_only", "full_lm", "vanilla_lm", "discomfort_only_lm"]:
+    for model_name in ["full", "vanilla", "discomfort_only"]:
         nll = results[model_name]["nll"]
         n_params = results[model_name]["n_params"]
 
@@ -729,7 +483,7 @@ def main():
 
     # Save results summary with all metrics
     results_rows = []
-    for model_name in ["full", "vanilla", "discomfort_only", "full_lm", "vanilla_lm", "discomfort_only_lm"]:
+    for model_name in ["full", "vanilla", "discomfort_only"]:
         row = {
             "model": model_name,
             "nll": results[model_name]["nll"],

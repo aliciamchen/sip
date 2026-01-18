@@ -156,11 +156,7 @@ df_fit_results <- read_csv(here("model", "inverse_planning_fit_results.csv")) |>
       model == "full" ~ "Social inv plan",
       model == "vanilla" ~ "Vanilla inv plan",
       model == "discomfort_only" ~ "Discomfort only",
-      model == "full_lm" ~ "Social inv plan (LM)",
-      model == "vanilla_lm" ~ "Vanilla inv plan (LM)",
-      model == "discomfort_only_lm" ~ "Discomfort only (LM)",
-      model == "full_modified" ~ "Social inv plan (modified)",
-      model == "full_lm_modified" ~ "Social inv plan (LM, modified)"
+      model == "full_modified" ~ "Social inv plan (modified)"
     )
   ) |>
   select(model_label, alpha_observer, beta, nll, n_params)
@@ -192,15 +188,8 @@ df_model <- read_csv(here("model", "inv_plan_reward_preds_summary.csv")) |>
       model == "discomfort_only" ~ "Discomfort only",
       model == "full_modified" ~ "Social inv plan (modified)"
     ),
-    param_source = case_when(
-      param_source == "stipulated" ~ "Stipulated",
-      param_source == "lm" ~ "LM"
-    )
+    param_source = "Stipulated"
   )
-
-# Filter to stipulated parameters only for main comparison
-df_model_stipulated <- df_model |>
-  filter(param_source == "Stipulated")
 ```
 
 ### Combine human and model data
@@ -210,7 +199,7 @@ df_combined <- bind_rows(
   df_belief_update_summary |>
     mutate(belief_update = empirical_stat) |>
     select(intimacy, action, model, belief_update, ci_lower, ci_upper),
-  df_model_stipulated |>
+  df_model |>
     group_by(intimacy, action, model) |>
     summarize(belief_update = mean(belief_update), .groups = "drop") |>
     mutate(ci_lower = NA_real_, ci_upper = NA_real_)
@@ -306,122 +295,6 @@ correlations |>
     digits = 3,
     caption = "Model-human correlation (belief updates)",
     col.names = c("Model", "r", "CI lower", "CI upper")
-  )
-```
-
-## LM-derived parameter models
-
-We also compare models using LLM-derived scenario-specific parameters.
-
-```{r}
-df_model_lm <- df_model |>
-  filter(param_source == "LM") |>
-  mutate(
-    model = case_when(
-      model == "Social inv plan (modified)" ~ "Social inv plan (LM, modified)",
-      TRUE ~ paste0(model, " (LM)")
-    )
-  )
-
-df_combined_lm <- bind_rows(
-  df_belief_update_summary |>
-    mutate(belief_update = empirical_stat) |>
-    select(intimacy, action, model, belief_update, ci_lower, ci_upper),
-  df_model_lm |>
-    group_by(intimacy, action, model) |>
-    summarize(belief_update = mean(belief_update), .groups = "drop") |>
-    mutate(ci_lower = NA_real_, ci_upper = NA_real_)
-) |>
-  mutate(
-    model = factor(model, levels = c(
-      "Vanilla inv plan (LM)", "Discomfort only (LM)", "Social inv plan (LM)", "Social inv plan (LM, modified)", "Humans"
-    ))
-  )
-```
-
-```{r fig.width=18, fig.height=5}
-ggplot(df_combined_lm, aes(x = action, y = belief_update, group = interaction(model, intimacy), fill = intimacy)) +
-  geom_col(position = position_dodge(width = 0.9), alpha = 0.9) +
-  geom_errorbar(
-    aes(ymin = ci_lower, ymax = ci_upper),
-    position = position_dodge(width = 0.9), size = 1, width = 0, color = "black", alpha = 0.8
-  ) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  scale_fill_viridis_c(begin = 0, end = 0.85) +
-  labs(
-    title = "Change in P(high motivation) after observing action (LM parameters)",
-    y = "Belief update",
-    x = "Observed action",
-    fill = "Intimacy"
-  ) +
-  theme(legend.position = "bottom") +
-  facet_wrap(~model, nrow = 1)
-```
-
-### LM model correlations
-
-```{r}
-df_corr_lm <- df_combined_lm |>
-  select(intimacy, action, model, belief_update) |>
-  pivot_wider(names_from = model, values_from = belief_update)
-
-df_corr_lm_long <- df_corr_lm |>
-  pivot_longer(
-    cols = c(`Vanilla inv plan (LM)`, `Discomfort only (LM)`, `Social inv plan (LM)`, `Social inv plan (LM, modified)`),
-    names_to = "model",
-    values_to = "model_pred"
-  ) |>
-  rename(human_pred = Humans) |>
-  filter(!is.na(model_pred), !is.na(human_pred)) |>
-  mutate(
-    model = factor(model, levels = c("Vanilla inv plan (LM)", "Discomfort only (LM)", "Social inv plan (LM)", "Social inv plan (LM, modified)")),
-    action = factor(action)
-  )
-
-correlations_lm <- df_corr_lm_long |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_pred, human_pred)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, function(x) x$r),
-    ci_lower = sapply(boot_result, function(x) x$ci_lower),
-    ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0("r = ", round(r, 2), " [", round(ci_lower, 2), ", ", round(ci_upper, 2), "]")
-  ) |>
-  select(-boot_result)
-```
-
-```{r fig.width=16, fig.height=4}
-ggplot(df_corr_lm_long, aes(x = model_pred, y = human_pred, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_point(size = 4) +
-  geom_text(
-    data = correlations_lm,
-    aes(x = -0.3, y = 0.35, label = label),
-    inherit.aes = FALSE, hjust = 0, size = 4
-  ) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model prediction", y = "Human data", color = "Intimacy", shape = "Action") +
-  facet_wrap(~model, nrow = 1) +
-  coord_fixed(xlim = c(-0.35, 0.45), ylim = c(-0.35, 0.45))
-```
-
-### Summary: All model correlations
-
-```{r}
-bind_rows(
-  correlations |> mutate(param_source = "Stipulated"),
-  correlations_lm |> mutate(param_source = "LM")
-) |>
-  select(param_source, model, r, ci_lower, ci_upper) |>
-  arrange(param_source, model) |>
-  knitr::kable(
-    digits = 3,
-    caption = "Model-human correlations",
-    col.names = c("Parameters", "Model", "r", "CI lower", "CI upper")
   )
 ```
 
