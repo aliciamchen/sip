@@ -14,12 +14,8 @@ execute:
 ---
 
 ```{r setup}
-library(here)
-library(tidyverse)
-library(tidyboot)
-
-theme_set(theme_classic(base_size = 18))
-set.seed(67)
+source(here::here("analysis", "utils.R"))
+setup_analysis()
 ```
 
 This experiment presents participants with scenarios where they observe an action taken by one person toward another. Participants rate their belief about the intimacy of the relationship before (prior) and after (posterior) observing the action. The experiment manipulates:
@@ -42,16 +38,7 @@ df <- read_csv(here("data", "inv_plan_intimacy", "main_trials_long.csv")) |>
   select(-action_condition)
 
 # Calculate belief updates
-df <- df |>
-  group_by(subject_id, scenario_label) |>
-  mutate(
-    belief_update = ifelse(
-      stage == "posterior",
-      intimacy_rating[stage == "posterior"] - intimacy_rating[stage == "prior"],
-      NA
-    )
-  ) |>
-  ungroup()
+df <- calculate_belief_update(df, "intimacy_rating")
 ```
 
 ## Human data: Prior vs posterior ratings
@@ -262,24 +249,6 @@ ggplot(df_combined, aes(x = action, y = belief_update, group = interaction(model
 df_corr <- df_combined |>
   select(motivation, action, model, belief_update) |>
   pivot_wider(names_from = model, values_from = belief_update)
-
-# Bootstrap function for correlation CI
-boot_cor <- function(x, y, n_boot = 1000) {
-  complete <- complete.cases(x, y)
-  x <- x[complete]
-  y <- y[complete]
-  n <- length(x)
-  if (n < 3) return(list(r = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_))
-  boot_rs <- replicate(n_boot, {
-    idx <- sample(n, replace = TRUE)
-    cor(x[idx], y[idx])
-  })
-  list(
-    r = cor(x, y),
-    ci_lower = as.numeric(quantile(boot_rs, 0.025, na.rm = TRUE)),
-    ci_upper = as.numeric(quantile(boot_rs, 0.975, na.rm = TRUE))
-  )
-}
 ```
 
 ```{r}

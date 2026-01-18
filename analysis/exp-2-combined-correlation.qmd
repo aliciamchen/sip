@@ -12,12 +12,8 @@ execute:
 ---
 
 ```{r setup}
-library(here)
-library(tidyverse)
-library(tidyboot)
-
-theme_set(theme_classic(base_size = 18))
-set.seed(67)
+source(here::here("analysis", "utils.R"))
+setup_analysis()
 ```
 
 This notebook aggregates model-human correlations across both inverse planning experiments:
@@ -155,23 +151,6 @@ df_combined <- bind_rows(
 ## Compute Correlations
 
 ```{r}
-boot_cor <- function(x, y, n_boot = 1000) {
-  complete <- complete.cases(x, y)
-  x <- x[complete]
-  y <- y[complete]
-  n <- length(x)
-  if (n < 3) return(list(r = NA_real_, ci_lower = NA_real_, ci_upper = NA_real_))
-  boot_rs <- replicate(n_boot, {
-    idx <- sample(n, replace = TRUE)
-    cor(x[idx], y[idx])
-  })
-  list(
-    r = cor(x, y),
-    ci_lower = as.numeric(quantile(boot_rs, 0.025, na.rm = TRUE)),
-    ci_upper = as.numeric(quantile(boot_rs, 0.975, na.rm = TRUE))
-  )
-}
-
 correlations_combined <- df_combined |>
   group_by(model) |>
   summarize(
