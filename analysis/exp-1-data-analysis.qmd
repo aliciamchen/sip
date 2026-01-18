@@ -9,18 +9,16 @@ format:
     df-print: paged
     page-layout: full
     search: false
+knitr:
+  opts_chunk:
+    dev: "ragg_png"
 execute:
   warning: false 
 ---
 
 ```{r setup}
-library(here)
-library(tidyverse)
-library(tidyboot)
-library(lme4)
-
-theme_set(theme_classic(base_size = 18))
-set.seed(67)
+source(here::here("analysis", "utils.R"))
+setup_analysis()
 ```
 
 This experiment manipulates how much two people want the food (`low` vs. `high` reward), and the relationship between the two people (0, 50, 75, or 100 on a 100 point scale between 'intimate' and 'formal'). 

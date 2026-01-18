@@ -7,6 +7,9 @@ format:
     toc: true
     code-fold: true
     df-print: paged
+knitr:
+  opts_chunk:
+    dev: "ragg_png"
 execute:
   warning: false
 ---

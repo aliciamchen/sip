@@ -3,10 +3,14 @@
 library(here)
 library(tidyverse)
 library(tidyboot)
+library(ragg)
 
 # Standard theme setup
 setup_analysis <- function() {
-  theme_set(theme_classic(base_size = 18))
+  theme_set(theme_classic(base_size = 18) +
+              theme(
+                strip.background = element_blank(), text = element_text(family = "Arial Nova"), panel.spacing = unit(1, "lines"), strip.text = element_text(size = 18), legend.key = element_blank()
+              ))
   set.seed(67)
 }
 

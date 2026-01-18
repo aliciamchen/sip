@@ -9,9 +9,16 @@ format:
     df-print: paged
     page-layout: full
     search: false
+knitr:
+  opts_chunk:
+    dev: "ragg_png"
 execute:
   warning: false
 ---
+
+```{r}
+systemfonts::system_fonts()
+```
 
 ```{r setup}
 source(here::here("analysis", "utils.R"))
@@ -51,6 +58,7 @@ ggplot(df, aes(x = p_high_reward, fill = action)) +
   labs(y = "Density", x = "P(high motivation)", fill = "Action") +
   theme(legend.position = "bottom") +
   facet_grid(stage ~ intimacy, labeller = label_both)
+  # theme_minimal(base_family = "Lato")
 ```
 
 ### Summary statistics
