@@ -63,9 +63,10 @@ df_model_2a <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
     motivation = factor(motivation, levels = c("low", "high")),
     model_belief_update = expected_intimacy - 50,
     model = case_when(
-      model == "full" ~ "Social planning",
-      model == "vanilla" ~ "Vanilla planning",
-      model == "discomfort_only" ~ "Discomfort only"
+      model == "full" ~ "Social inv plan",
+      model == "vanilla" ~ "Vanilla inv plan",
+      model == "discomfort_only" ~ "Discomfort only",
+      model == "full_modified" ~ "Social inv plan (modified)"
     )
   ) |>
   group_by(motivation, action, model) |>
@@ -110,8 +111,8 @@ df_model_2b <- read_csv(here("model", "inv_plan_reward_preds_summary.csv")) |>
     action = as.character(action),
     model_belief_update = (p_high_reward / 100) - 0.5,
     model = case_when(
-      model == "full" ~ "Social planning",
-      model == "vanilla" ~ "Vanilla planning",
+      model == "full" ~ "Social inv plan",
+      model == "vanilla" ~ "Vanilla inv plan",
       model == "discomfort_only" ~ "Discomfort only"
     )
   ) |>
@@ -148,7 +149,7 @@ df_combined <- bind_rows(
   df_corr_2a |> select(model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update),
   df_corr_2b |> select(model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update)
 ) |>
-  mutate(model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning")))
+  mutate(model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan")))
 ```
 
 ## Compute Correlations

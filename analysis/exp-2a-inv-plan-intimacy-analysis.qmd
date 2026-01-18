@@ -153,13 +153,42 @@ ggplot(df_belief_update_summary, aes(x = action, y = empirical_stat, group = mot
 
 We compare three models that perform inverse planning to infer intimacy from observed actions:
 
-**Full model (Social planning)**: Inverts a forward model where actors consider reward (scaled by intimacy and motivation), discomfort (scaled by intimacy), and effort costs.
+**Full model (Social inv plan)**: Inverts a forward model where actors consider reward (scaled by intimacy and motivation), discomfort (scaled by intimacy), and effort costs.
 
 **Vanilla model**: Inverts a forward model with reward, discomfort, and effort, but without intimacy scaling these utilities.
 
 **Discomfort-only model**: Inverts a forward model where actors only consider discomfort from saliva transfer (scaled by intimacy).
 
-All models assume a uniform prior over intimacy (0-100 scale) and compute posteriors via Bayesian inference.
+**Full modified model**: A hybrid model that uses vanilla-style reward (no intimacy scaling) with full-model discomfort (scales with 1 - intimacy). This captures the intuition that observers don't think actors value sharing more with closer friends, but do recognize that discomfort decreases with intimacy.
+
+All models assume a uniform prior over intimacy (0-100 scale) and compute posteriors via Bayesian inference. The observer inverse temperature ($\alpha_{\text{observer}}$) is fitted to human data.
+
+### Fitted parameters
+
+```{r}
+df_fit_results <- read_csv(here("model", "inverse_planning_fit_results.csv")) |>
+  filter(experiment == "intimacy") |>
+  mutate(
+    model_label = case_when(
+      model == "full" ~ "Social inv plan",
+      model == "vanilla" ~ "Vanilla inv plan",
+      model == "discomfort_only" ~ "Discomfort only",
+      model == "full_lm" ~ "Social inv plan (LM)",
+      model == "vanilla_lm" ~ "Vanilla inv plan (LM)",
+      model == "discomfort_only_lm" ~ "Discomfort only (LM)",
+      model == "full_modified" ~ "Social inv plan (modified)",
+      model == "full_lm_modified" ~ "Social inv plan (LM, modified)"
+    )
+  ) |>
+  select(model_label, alpha_observer, beta, nll, n_params)
+
+df_fit_results |>
+  knitr::kable(
+    digits = 3,
+    caption = "Fitted observer parameters for intimacy inference",
+    col.names = c("Model", "α_observer", "β", "NLL", "n_params")
+  )
+```
 
 ### Load model predictions
 
@@ -172,9 +201,10 @@ df_model <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
     # Belief update from uniform prior (mean = 50)
     belief_update = expected_intimacy - 50,
     model = case_when(
-      model == "full" ~ "Social planning",
-      model == "vanilla" ~ "Vanilla planning",
-      model == "discomfort_only" ~ "Discomfort only"
+      model == "full" ~ "Social inv plan",
+      model == "vanilla" ~ "Vanilla inv plan",
+      model == "discomfort_only" ~ "Discomfort only",
+      model == "full_modified" ~ "Social inv plan (modified)"
     ),
     param_source = case_when(
       param_source == "stipulated" ~ "Stipulated",
@@ -200,13 +230,13 @@ df_combined <- bind_rows(
     mutate(ci_lower = NA_real_, ci_upper = NA_real_)
 ) |>
   mutate(
-    model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning", "Humans"))
+    model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan", "Social inv plan (modified)", "Humans"))
   )
 ```
 
 ### Belief updates: Model vs human comparison
 
-```{r fig.width=14, fig.height=5}
+```{r fig.width=18, fig.height=5}
 ggplot(df_combined, aes(x = action, y = belief_update, group = interaction(model, motivation), fill = motivation)) +
   geom_col(position = position_dodge(width = 0.9), alpha = 0.9) +
   geom_errorbar(
@@ -256,14 +286,14 @@ boot_cor <- function(x, y, n_boot = 1000) {
 # Reshape for correlation plots
 df_corr_long <- df_corr |>
   pivot_longer(
-    cols = c(`Vanilla planning`, `Discomfort only`, `Social planning`),
+    cols = c(`Vanilla inv plan`, `Discomfort only`, `Social inv plan`, `Social inv plan (modified)`),
     names_to = "model",
     values_to = "model_pred"
   ) |>
   rename(human_pred = Humans) |>
   filter(!is.na(model_pred), !is.na(human_pred)) |>
   mutate(
-    model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning")),
+    model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan", "Social inv plan (modified)")),
     action = factor(action)
   )
 
@@ -283,14 +313,14 @@ correlations <- df_corr_long |>
   select(-boot_result)
 ```
 
-```{r fig.width=12, fig.height=4}
+```{r fig.width=16, fig.height=4}
 ggplot(df_corr_long, aes(x = model_pred, y = human_pred, color = motivation, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
   geom_point(size = 4) +
   geom_text(
     data = correlations,
     aes(x = -15, y = 25, label = label),
-    inherit.aes = FALSE, hjust = 0, size = 5
+    inherit.aes = FALSE, hjust = 0, size = 4
   ) +
   scale_color_brewer(palette = "Set2") +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
@@ -319,7 +349,10 @@ We also compare models using LLM-derived scenario-specific parameters.
 df_model_lm <- df_model |>
   filter(param_source == "LM") |>
   mutate(
-    model = paste0(model, " (LM)")
+    model = case_when(
+      model == "Social inv plan (modified)" ~ "Social inv plan (LM, modified)",
+      TRUE ~ paste0(model, " (LM)")
+    )
   )
 
 df_combined_lm <- bind_rows(
@@ -333,12 +366,12 @@ df_combined_lm <- bind_rows(
 ) |>
   mutate(
     model = factor(model, levels = c(
-      "Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)", "Humans"
+      "Vanilla inv plan (LM)", "Discomfort only (LM)", "Social inv plan (LM)", "Social inv plan (LM, modified)", "Humans"
     ))
   )
 ```
 
-```{r fig.width=14, fig.height=5}
+```{r fig.width=18, fig.height=5}
 ggplot(df_combined_lm, aes(x = action, y = belief_update, group = interaction(model, motivation), fill = motivation)) +
   geom_col(position = position_dodge(width = 0.9), alpha = 0.9) +
   geom_errorbar(
@@ -366,14 +399,14 @@ df_corr_lm <- df_combined_lm |>
 
 df_corr_lm_long <- df_corr_lm |>
   pivot_longer(
-    cols = c(`Vanilla planning (LM)`, `Discomfort only (LM)`, `Social planning (LM)`),
+    cols = c(`Vanilla inv plan (LM)`, `Discomfort only (LM)`, `Social inv plan (LM)`, `Social inv plan (LM, modified)`),
     names_to = "model",
     values_to = "model_pred"
   ) |>
   rename(human_pred = Humans) |>
   filter(!is.na(model_pred), !is.na(human_pred)) |>
   mutate(
-    model = factor(model, levels = c("Vanilla planning (LM)", "Discomfort only (LM)", "Social planning (LM)")),
+    model = factor(model, levels = c("Vanilla inv plan (LM)", "Discomfort only (LM)", "Social inv plan (LM)", "Social inv plan (LM, modified)")),
     action = factor(action)
   )
 
@@ -392,14 +425,14 @@ correlations_lm <- df_corr_lm_long |>
   select(-boot_result)
 ```
 
-```{r fig.width=12, fig.height=4}
+```{r fig.width=16, fig.height=4}
 ggplot(df_corr_lm_long, aes(x = model_pred, y = human_pred, color = motivation, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
   geom_point(size = 4) +
   geom_text(
     data = correlations_lm,
     aes(x = -15, y = 25, label = label),
-    inherit.aes = FALSE, hjust = 0, size = 5
+    inherit.aes = FALSE, hjust = 0, size = 4
   ) +
   scale_color_brewer(palette = "Set2") +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
