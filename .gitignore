@@ -10,3 +10,5 @@ CLAUDE.md
 /.quarto/
 **/*.quarto_ipynb
 _output
+*test*
+*verify*

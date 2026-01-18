@@ -29,7 +29,9 @@ renv::restore()
 Convert raw data (not included in the repository) to csv format with anonymized participant ids:
 
 ```bash
-python analysis/json_to_csv.py <experiment_name> # available experiments: forw_plan, inv_plan_intimacy, inv_plan_reward
+python analysis/json_to_csv.py forw_plan
+python analysis/json_to_csv.py inv_plan_intimacy
+python analysis/json_to_csv.py inv_plan_reward
 ```
 
 Fit forward planning models
@@ -39,9 +41,18 @@ cd model
 python fit_forward_planning.py
 ```
 
+Use forward planning parameters to fit inverse planning models and generate predictions
+```bash
+cd model
+python fit_inverse_planning.py
+python generate_inverse_planning_preds.py
+```
+
 Analyze data and generate plots
 
 ```bash
 cd analysis
 quarto render exp-1-data-analysis.qmd
+quarto render exp-2a-data-analysis.qmd
+quarto render exp-2b-data-analysis.qmd
 ```
