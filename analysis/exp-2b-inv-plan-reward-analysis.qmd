@@ -21,6 +21,26 @@ source(here::here("analysis", "utils.R"))
 setup_analysis()
 ```
 
+## Demographics
+
+```{r}
+df_exit <- read_csv(here("data", "inv_plan_reward", "exit_survey.csv"), show_col_types = FALSE)
+
+n_total <- nrow(df_exit)
+n_passed <- df_exit |>
+  filter(attention_passed == TRUE, memory_correct_count > 0) |>
+  nrow()
+
+cat("Total participants recruited:", n_total, "\n")
+cat("Passed attention checks:", n_passed, "\n")
+cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
+    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1))
+cat("\nGender:\n")
+print(table(df_exit$gender))
+```
+
+## Results
+
 This experiment presents participants with scenarios where they observe an action taken by one person toward another. Participants rate their belief about the probability that the actors have high motivation (want the food) before (prior) and after (posterior) observing the action. The experiment manipulates:
 - **Action**: Which action was taken (action 0-3, varying in saliva-transfer risk)
 - **Intimacy**: The relationship closeness between the actors (0, 50, 75, or 100)
@@ -33,6 +53,7 @@ This experiment presents participants with scenarios where they observe an actio
 df <- read_csv(here("data", "inv_plan_reward", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
+    intimacy = factor(intimacy),
     p_high_reward = response / 100,  # Convert to probability scale
     stage = factor(stage, levels = c("prior", "posterior")),
     model = "Humans"
@@ -48,13 +69,15 @@ df <- calculate_belief_update(df, "p_high_reward")
 ### Distribution of ratings
 
 ```{r}
+#| fig-width: 12
+#| fig-asp: 0.45
+
 ggplot(df, aes(x = p_high_reward, fill = action)) +
   geom_density(alpha = 0.5) +
   scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   labs(y = "Density", x = "P(high motivation)", fill = "Action") +
   theme(legend.position = "right") +
-  facet_grid(stage ~ intimacy, labeller = label_both)
-  # theme_minimal(base_family = "Lato")
+  facet_grid(stage ~ intimacy, labeller = labeller(intimacy = label_both, stage = label_value))
 ```
 
 ### Summary statistics
@@ -67,7 +90,10 @@ df_summary <- df |>
 
 ### Prior vs posterior by action and intimacy
 
-```{r fig.width=14, fig.height=8}
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.7
+
 ggplot() +
   geom_violin(
     data = df,
@@ -80,7 +106,8 @@ ggplot() +
     data = df_summary,
     aes(x = stage, y = empirical_stat, color = action, group = action),
     position = position_dodge(width = 0.8),
-    size = 3
+    size = 3,
+    alpha = PLOT_ALPHA
   ) +
   geom_errorbar(
     data = df_summary,
@@ -122,7 +149,7 @@ df_belief_update_summary <- df |>
 
 We compare three models that perform inverse planning to infer reward/motivation from observed actions:
 
-**Full model (Social inv plan)**: Inverts a forward model where actors consider reward (scaled by intimacy and motivation), discomfort (scaled by intimacy), and effort costs.
+**Full model (Social)**: Inverts a forward model where actors consider reward (scaled by intimacy and motivation), discomfort (scaled by intimacy), and effort costs.
 
 **Vanilla model**: Inverts a forward model with reward, discomfort, and effort, but without intimacy scaling these utilities.
 
@@ -139,10 +166,10 @@ df_fit_results <- read_csv(here("model", "inverse_planning_fit_results.csv")) |>
   filter(experiment == "reward") |>
   mutate(
     model_label = case_when(
-      model == "full" ~ "Social inv plan",
-      model == "vanilla" ~ "Vanilla inv plan",
-      model == "discomfort_only" ~ "Discomfort only",
-      model == "full_modified" ~ "SIP modified"
+      model == "full" ~ "Social (pre-reg)",
+      model == "vanilla" ~ "Vanilla",
+      model == "discomfort_only" ~ "Discomfort-only",
+      model == "full_modified" ~ "Social"
     )
   ) |>
   select(model_label, alpha_observer, beta, nll, n_params)
@@ -151,11 +178,11 @@ df_fit_results |>
   knitr::kable(
     digits = 3,
     caption = "Fitted observer parameters for reward inference",
-    col.names = c("Model", "α_observer", "δ", "NLL", "n_params")
+    col.names = c("Model", "α_observer", "beta", "NLL", "n_params")
   )
 ```
 
-Note: The δ parameter captures how much observers think actors' reward scales with intimacy. δ < 1 indicates observers believe actors value sharing less with closer friends than the pre-registered model assumes.
+Note: The $\beta$ parameter captures how much observers think actors' reward scales with intimacy. $\beta < 1$ indicates observers believe actors value sharing less with closer friends than the pre-registered model assumes.
 
 ### AIC comparison
 
@@ -187,15 +214,16 @@ df_model <- read_csv(here("model", "inv_plan_reward_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   mutate(
     action = as.character(action),
+    intimacy = factor(intimacy),
     # Model predictions are P(high reward) in percentage
     p_high_reward = p_high_reward / 100,
     # Belief update from uniform prior (50%)
     belief_update = p_high_reward - 0.5,
     model = case_when(
-      model == "full" ~ "Social inv plan",
-      model == "vanilla" ~ "Vanilla inv plan",
-      model == "discomfort_only" ~ "Discomfort only",
-      model == "full_modified" ~ "SIP modified"
+      model == "full" ~ "Social (pre-reg)",
+      model == "vanilla" ~ "Vanilla",
+      model == "discomfort_only" ~ "Discomfort-only",
+      model == "full_modified" ~ "Social"
     ),
     param_source = "Stipulated"
   )
@@ -214,18 +242,21 @@ df_combined <- bind_rows(
     mutate(ci_lower = NA_real_, ci_upper = NA_real_)
 ) |>
   mutate(
-    model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan", "SIP modified", "Humans")),
+    model = factor(model, levels = c("Vanilla", "Discomfort-only", "Social", "Social (pre-reg)", "Humans")),
     action = factor(action)
   )
 ```
 
 ### Belief updates: Model vs human comparison
 
-Main comparison (excludes preregistered Social inv plan):
+Main comparison (excludes preregistered Social):
 
-```{r fig.width=14, fig.height=5}
-p_belief_main <- df_combined |>
-  filter(model != "Social inv plan") |>
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.3
+
+df_combined |>
+  filter(model != "Social (pre-reg)") |>
   ggplot(aes(x = action, y = belief_update, group = interaction(model, intimacy), fill = intimacy)) +
   geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
   geom_errorbar(
@@ -237,16 +268,19 @@ p_belief_main <- df_combined |>
   labs(y = "Belief update", x = "Observed action", fill = "Intimacy") +
   theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1)
-p_belief_main
-save_figure(p_belief_main, "exp2b_belief_main.pdf", width = FIG_WIDTH_LARGE, height = FIG_HEIGHT_STANDARD)
+
+ggsave(here("figures", "exp2b_belief_main.pdf"), device = cairo_pdf)
 ```
 
 Preregistered vs modified model comparison:
 
-```{r fig.width=10, fig.height=5}
-p_belief_comparison <- df_combined |>
-  filter(model %in% c("Social inv plan", "SIP modified", "Humans")) |>
-  mutate(model = factor(model, levels = c("Social inv plan", "SIP modified", "Humans"))) |>
+```{r}
+#| fig-width: 10 
+#| fig-asp: 0.35
+
+df_combined |>
+  filter(model %in% c("Social (pre-reg)", "Social", "Humans")) |>
+  mutate(model = factor(model, levels = c("Social (pre-reg)", "Social", "Humans"))) |>
   ggplot(aes(x = action, y = belief_update, group = interaction(model, intimacy), fill = intimacy)) +
   geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
   geom_errorbar(
@@ -258,108 +292,11 @@ p_belief_comparison <- df_combined |>
   labs(y = "Belief update", x = "Observed action", fill = "Intimacy") +
   theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1)
-p_belief_comparison
-save_figure(p_belief_comparison, "exp2b_belief_comparison.pdf", width = FIG_WIDTH_STANDARD, height = FIG_HEIGHT_STANDARD)
+
+ggsave(here("figures", "exp2b_belief_comparison.pdf"), device = cairo_pdf)
 ```
 
-### Model-human correlation
-
-```{r}
-# Prepare data for correlation
-df_corr <- df_combined |>
-  select(intimacy, action, model, belief_update) |>
-  pivot_wider(names_from = model, values_from = belief_update)
-```
-
-```{r}
-# Reshape for correlation plots
-df_corr_long <- df_corr |>
-  pivot_longer(
-    cols = c(`Vanilla inv plan`, `Discomfort only`, `Social inv plan`, `SIP modified`),
-    names_to = "model",
-    values_to = "model_pred"
-  ) |>
-  rename(human_pred = Humans) |>
-  filter(!is.na(model_pred), !is.na(human_pred)) |>
-  mutate(
-    model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan", "SIP modified")),
-    action = factor(action)
-  )
-
-# Calculate correlations
-correlations <- df_corr_long |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_pred, human_pred)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, function(x) x$r),
-    ci_lower = sapply(boot_result, function(x) x$ci_lower),
-    ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
-  ) |>
-  select(-boot_result)
-```
-
-Main correlation plot (excludes preregistered Social inv plan):
-
-```{r fig.width=12, fig.height=4}
-p_corr_main <- df_corr_long |>
-  filter(model != "Social inv plan") |>
-  ggplot(aes(x = model_pred, y = human_pred, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_point(size = 4) +
-  geom_text(
-    data = correlations |> filter(model != "Social inv plan"),
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE, hjust = -0.1, vjust = 1.5, size = 5
-  ) +
-  scale_color_intimacy() +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model prediction", y = "Human data", color = "Intimacy", shape = "Action") +
-  facet_wrap(~model, nrow = 1) +
-  coord_fixed_symmetric(df_corr_long$model_pred, df_corr_long$human_pred)
-p_corr_main
-save_figure(p_corr_main, "exp2b_correlation_main.pdf", width = FIG_WIDTH_STANDARD, height = FIG_HEIGHT_SHORT)
-```
-
-Preregistered vs modified model correlation:
-
-```{r fig.width=8, fig.height=4}
-p_corr_comparison <- df_corr_long |>
-  filter(model %in% c("Social inv plan", "SIP modified")) |>
-  mutate(model = factor(model, levels = c("Social inv plan", "SIP modified"))) |>
-  ggplot(aes(x = model_pred, y = human_pred, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_point(size = 4) +
-  geom_text(
-    data = correlations |> filter(model %in% c("Social inv plan", "SIP modified")),
-    aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE, hjust = -0.1, vjust = 1.5, size = 5
-  ) +
-  scale_color_intimacy() +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model prediction", y = "Human data", color = "Intimacy", shape = "Action") +
-  facet_wrap(~model, nrow = 1) +
-  coord_fixed_symmetric(df_corr_long$model_pred, df_corr_long$human_pred)
-p_corr_comparison
-save_figure(p_corr_comparison, "exp2b_correlation_comparison.pdf", width = FIG_WIDTH_STANDARD, height = FIG_HEIGHT_SHORT)
-```
-
-### Correlation summary
-
-```{r}
-correlations |>
-  select(model, r, ci_lower, ci_upper) |>
-  knitr::kable(
-    digits = 3,
-    caption = "Model-human correlation (belief updates)",
-    col.names = c("Model", "r", "CI lower", "CI upper")
-  )
-```
-
-## Scenario-level analysis
+## Scenario-level
 
 ### Human belief updates by scenario
 

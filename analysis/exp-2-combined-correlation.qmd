@@ -1,5 +1,5 @@
 ---
-title: Combined Inverse Planning Correlation Analysis (Exp 2a + 2b)
+title: Combined Experiment 2a and 2b correlation plots
 author: Alicia Chen
 date: today
 format:
@@ -17,6 +17,15 @@ execute:
 ```{r setup}
 source(here::here("analysis", "utils.R"))
 setup_analysis()
+library(ggnewscale)
+
+# Define condition sets for each experiment
+EXP2A_CONDITIONS <- c("Low desire", "High desire")
+EXP2B_CONDITIONS <- c("Intimacy: 0", "Intimacy: 50", "Intimacy: 75", "Intimacy: 100")
+
+# Create intimacy colors with correct names for this analysis
+EXP2B_COLORS <- INTIMACY_COLORS
+names(EXP2B_COLORS) <- paste0("Intimacy: ", names(INTIMACY_COLORS))
 ```
 
 This notebook aggregates model-human correlations across both inverse planning experiments:
@@ -31,7 +40,7 @@ This notebook aggregates model-human correlations across both inverse planning e
 df_2a <- read_csv(here("data", "inv_plan_intimacy", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
-    motivation = factor(motivation, levels = c("low", "high")),
+    motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     stage = factor(stage, levels = c("prior", "posterior"))
   ) |>
   group_by(subject_id, scenario_label) |>
@@ -59,13 +68,13 @@ df_model_2a <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
   filter(param_source == "stipulated") |>
   mutate(
     action = as.character(action),
-    motivation = factor(motivation, levels = c("low", "high")),
+    motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     model_belief_update = expected_intimacy - 50,
     model = case_when(
-      model == "full" ~ "Social inv plan",
-      model == "vanilla" ~ "Vanilla inv plan",
-      model == "discomfort_only" ~ "Discomfort only",
-      model == "full_modified" ~ "SIP modified"
+      model == "full" ~ "Social (pre-reg)",
+      model == "vanilla" ~ "Vanilla",
+      model == "discomfort_only" ~ "Discomfort-only",
+      model == "full_modified" ~ "Social"
     )
   ) |>
   group_by(motivation, action, model) |>
@@ -80,6 +89,7 @@ df_model_2a <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
 df_2b <- read_csv(here("data", "inv_plan_reward", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
+    intimacy = factor(intimacy),
     p_high_reward = response / 100,
     stage = factor(stage, levels = c("prior", "posterior"))
   ) |>
@@ -108,12 +118,13 @@ df_model_2b <- read_csv(here("model", "inv_plan_reward_preds_summary.csv")) |>
   filter(param_source == "stipulated") |>
   mutate(
     action = as.character(action),
+    intimacy = factor(intimacy),
     model_belief_update = (p_high_reward / 100) - 0.5,
     model = case_when(
-      model == "full_modified" ~ "SIP modified",
-      model == "full" ~ "Social inv plan",
-      model == "vanilla" ~ "Vanilla inv plan",
-      model == "discomfort_only" ~ "Discomfort only"
+      model == "full_modified" ~ "Social",
+      model == "full" ~ "Social (pre-reg)",
+      model == "vanilla" ~ "Vanilla",
+      model == "discomfort_only" ~ "Discomfort-only"
     )
   ) |>
   group_by(intimacy, action, model) |>
@@ -146,12 +157,20 @@ df_corr_2b <- df_2b_summary |>
 
 # Combine both experiments
 df_combined <- bind_rows(
-  df_corr_2a |> select(action, model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update),
-  df_corr_2b |> select(action, model, experiment, human_belief_update, ci_lower, ci_upper, model_belief_update)
+  df_corr_2a |>
+    mutate(condition = as.character(motivation)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
+  df_corr_2b |>
+    mutate(condition = paste0("Intimacy: ", intimacy)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update)
 ) |>
   mutate(
-    model = factor(model, levels = c("Vanilla inv plan", "Discomfort only", "Social inv plan", "SIP modified")),
-    action = factor(action)
+    model = factor(model, levels = c("Vanilla", "Discomfort-only", "Social", "Social (pre-reg)")),
+    action = factor(action),
+    condition = factor(condition, levels = c(
+      "Low desire", "High desire",
+      "Intimacy: 0", "Intimacy: 50", "Intimacy: 75", "Intimacy: 100"
+    ))
   )
 ```
 
@@ -175,69 +194,117 @@ correlations_combined <- df_combined |>
 
 ## Aggregated Correlation Plot
 
-Main comparison (excludes preregistered Social inv plan):
+Main comparison (excludes preregistered Social):
 
-```{r fig.width=10, fig.height=4}
-p_combined_main <- df_combined |>
-  filter(model != "Social inv plan") |>
-  ggplot(aes(x = model_belief_update, y = human_belief_update, color = experiment, shape = action)) +
+```{r}
+#| fig-width: 11
+#| fig-asp: 0.4
+
+df_plot <- df_combined |> filter(model != "Social (pre-reg)")
+
+ggplot(df_plot, aes(x = model_belief_update, y = human_belief_update, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  # Exp 2a points (motivation)
   geom_errorbar(
-    aes(ymin = ci_lower, ymax = ci_upper),
-    width = 0, alpha = 0.5
+    data = \(d) filter(d, condition %in% EXP2A_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
   ) +
-  geom_point(size = 3, alpha = 0.8) +
-  geom_text(
-    data = correlations_combined |> filter(model != "Social inv plan"),
+  geom_point(
+    data = \(d) filter(d, condition %in% EXP2A_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(name = "Exp 2a", values = MOTIVATION_COLORS, guide = guide_legend(order = 2)) +
+  new_scale_color() +
+  # Exp 2b points (intimacy)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% EXP2B_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% EXP2B_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(
+    name = "Exp 2b",
+    values = EXP2B_COLORS,
+    labels = \(x) gsub("Intimacy: (\\d+)", "\\1 intimacy", x),
+    guide = guide_legend(order = 3)
+  ) +
+  # Correlation labels
+  geom_label(
+    data = correlations_combined |> filter(model != "Social (pre-reg)"),
     aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE, hjust = -0.1, vjust = 1.5, size = 5
+    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 4.5,
+    fill = "white", alpha = 0.5, label.size = 0
   ) +
-  scale_color_brewer(palette = "Set1") +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(
-    x = "Model belief update",
-    y = "Human belief update",
-    color = "Experiment",
-    shape = "Action"
+  scale_shape_manual(values = c(16, 17, 15, 18), guide = guide_legend(order = 1)) +
+  labs(x = "Model belief update", y = "Human belief update", shape = "Action") +
+
+  theme(
+    legend.position = "right",
+    legend.spacing.y = unit(0, "lines"),
   ) +
-  theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1) +
-  coord_fixed_symmetric(df_combined$model_belief_update, df_combined$human_belief_update)
-p_combined_main
-save_figure(p_combined_main, "exp2_combined_correlation_main.pdf", width = FIG_WIDTH_STANDARD, height = FIG_HEIGHT_STANDARD)
+  coord_fixed_symmetric(df_plot$model_belief_update, df_plot$human_belief_update)
+
+ggsave(here("figures", "exp2_combined_correlation_main.pdf"), device = cairo_pdf)
 ```
 
 Preregistered vs modified model comparison:
 
-```{r fig.width=8, fig.height=4}
-p_combined_comparison <- df_combined |>
-  filter(model %in% c("Social inv plan", "SIP modified")) |>
-  mutate(model = factor(model, levels = c("Social inv plan", "SIP modified"))) |>
-  ggplot(aes(x = model_belief_update, y = human_belief_update, color = experiment, shape = action)) +
+```{r}
+#| fig-width: 10
+#| fig-asp: 0.4
+
+df_plot_comp <- df_combined |>
+  filter(model %in% c("Social (pre-reg)", "Social")) |>
+  mutate(model = factor(model, levels = c("Social (pre-reg)", "Social")))
+
+ggplot(df_plot_comp, aes(x = model_belief_update, y = human_belief_update, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  # Exp 2a points (motivation)
   geom_errorbar(
-    aes(ymin = ci_lower, ymax = ci_upper),
-    width = 0, alpha = 0.5
+    data = \(d) filter(d, condition %in% EXP2A_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
   ) +
-  geom_point(size = 3, alpha = 0.8) +
-  geom_text(
-    data = correlations_combined |> filter(model %in% c("Social inv plan", "SIP modified")),
+  geom_point(
+    data = \(d) filter(d, condition %in% EXP2A_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(name = "Exp 2a", values = MOTIVATION_COLORS, guide = guide_legend(order = 2)) +
+  new_scale_color() +
+  # Exp 2b points (intimacy)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% EXP2B_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% EXP2B_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(
+    name = "Exp 2b",
+    values = EXP2B_COLORS,
+    labels = \(x) gsub("Intimacy: (\\d+)", "\\1 intimacy", x),
+    guide = guide_legend(order = 3)
+  ) +
+  # Correlation labels
+  geom_label(
+    data = correlations_combined |> filter(model %in% c("Social (pre-reg)", "Social")),
     aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE, hjust = -0.1, vjust = 1.5, size = 5
+    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 4.5,
+    fill = "white", alpha = 0.5, label.size = 0
   ) +
-  scale_color_brewer(palette = "Set1") +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(
-    x = "Model belief update",
-    y = "Human belief update",
-    color = "Experiment",
-    shape = "Action"
+  scale_shape_manual(values = c(16, 17, 15, 18), guide = guide_legend(order = 1)) +
+  labs(x = "Model belief update", y = "Human belief update", shape = "Action") +
+  theme(
+    legend.position = "right",
+    legend.spacing.y = unit(0.0, "lines"),
   ) +
-  theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1) +
-  coord_fixed_symmetric(df_combined$model_belief_update, df_combined$human_belief_update)
-p_combined_comparison
-save_figure(p_combined_comparison, "exp2_combined_correlation_comparison.pdf", width = FIG_WIDTH_STANDARD, height = FIG_HEIGHT_STANDARD)
+  coord_fixed_symmetric(df_plot_comp$model_belief_update, df_plot_comp$human_belief_update)
+
+ggsave(here("figures", "exp2_combined_correlation_comparison.pdf"), device = cairo_pdf)
 ```
 
 ## Summary Table

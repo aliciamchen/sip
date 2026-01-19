@@ -15,19 +15,35 @@ FIG_HEIGHT_STANDARD <- 4  # For single-row faceted plots
 FIG_HEIGHT_SHORT <- 3.5   # For correlation plots
 
 # Color scheme constants
-PLOT_ALPHA <- 0.85
+PLOT_ALPHA <- 0.95
 
-# Intimacy color scales (continuous) - inferno palette
+# Intimacy color scale parameters - adjust these to test different ranges
+INTIMACY_PALETTE <- "cividis"
+INTIMACY_BEGIN <- 0.1
+INTIMACY_END <- 0.85
+INTIMACY_LEVELS <- c(0, 50, 75, 100)
+
+# Generate discrete intimacy colors
+INTIMACY_COLORS <- viridisLite::viridis(
+  n = length(INTIMACY_LEVELS),
+  begin = INTIMACY_BEGIN,
+  end = INTIMACY_END,
+  option = INTIMACY_PALETTE
+)
+names(INTIMACY_COLORS) <- as.character(INTIMACY_LEVELS)
+
+# Intimacy color scales (discrete)
 scale_fill_intimacy <- function() {
-  scale_fill_viridis_c(option = "inferno", begin = 0.15, end = 0.85)
+  scale_fill_manual(values = INTIMACY_COLORS)
 }
 
 scale_color_intimacy <- function() {
-  scale_color_viridis_c(option = "inferno", begin = 0.15, end = 0.85)
+  scale_color_manual(values = INTIMACY_COLORS)
 }
 
-# Motivation color scales (discrete) - manual green values
-MOTIVATION_COLORS <- c("low" = "#a1d99b", "high" = "#238b45")
+# Motivation color scales (discrete)
+MOTIVATION_LEVELS <- c("Low desire", "High desire")
+MOTIVATION_COLORS <- c("Low desire" = "#C9A8B0", "High desire" = "#7A4A5A")
 
 scale_fill_motivation <- function() {
   scale_fill_manual(values = MOTIVATION_COLORS)
@@ -35,6 +51,25 @@ scale_fill_motivation <- function() {
 
 scale_color_motivation <- function() {
   scale_color_manual(values = MOTIVATION_COLORS)
+}
+
+# Combined condition colors for exp-2-combined (motivation + intimacy)
+.intimacy_levels <- c(0, 50, 75, 100)
+.intimacy_colors <- viridisLite::viridis(
+  n = length(.intimacy_levels),
+  begin = INTIMACY_BEGIN,
+  end = INTIMACY_END,
+  option = INTIMACY_PALETTE
+)
+names(.intimacy_colors) <- paste0("Intimacy: ", .intimacy_levels)
+
+COMBINED_CONDITION_COLORS <- c(
+  MOTIVATION_COLORS,
+  .intimacy_colors
+)
+
+scale_color_combined_condition <- function() {
+  scale_color_manual(values = COMBINED_CONDITION_COLORS)
 }
 
 # Standard theme setup
@@ -87,7 +122,7 @@ calculate_belief_update <- function(df, rating_col) {
 
 # Create coord_fixed with symmetric x and y limits
 # Calculates shared range from data and applies to both axes
-coord_fixed_symmetric <- function(x, y, expand = 0.05) {
+coord_fixed_symmetric <- function(x, y, expand = 0.06) {
   range_val <- range(c(x, y), na.rm = TRUE)
   padding <- diff(range_val) * expand
   limits <- c(range_val[1] - padding, range_val[2] + padding)
