@@ -50,9 +50,9 @@ ggplot(df_summary, aes(x = action, y = empirical_stat, color = intimacy, group =
     position = position_dodge(width = 0.2), width = 0.2
   ) +
   geom_line(position = position_dodge(width = 0.2), size = 1) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
+  scale_color_intimacy() +
   labs(y = "P(action)", x = "Action", color = "Intimacy") +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "right") +
   facet_wrap(~motivation, labeller = label_both)
 ```
 
@@ -70,9 +70,9 @@ ggplot(df_summary_scenario, aes(x = action, y = empirical_stat, color = intimacy
     position = position_dodge(width = 0.2), width = 0.2
   ) +
   geom_line(position = position_dodge(width = 0.2), size = 1) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
+  scale_color_intimacy() +
   labs(y = "P(action)", x = "Action", color = "Intimacy") +
-  theme(legend.position = "bottom",
+  theme(legend.position = "right",
         axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(motivation~scenario_label, labeller = labeller(motivation = label_both, scenario_label = label_wrap_gen(15)))
 ```
@@ -133,7 +133,7 @@ df_preds_summary <- df_preds |>
 
 Stipulated parameter models:
 ```{r fig.width=12, fig.height=5.2}
-df_preds_summary |>
+p_model_comparison <- df_preds_summary |>
   filter(model %in% c("Vanilla planning", "Discomfort only", "Social planning", "Humans")) |>
   mutate(model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning", "Humans"))) |>
   ggplot(aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
@@ -142,11 +142,12 @@ df_preds_summary |>
     position = position_dodge(width = 0.2), width = 0.4
   ) +
   geom_line(position = position_dodge(width = 0.2)) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
+  scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action",
-       title = "Stipulated Parameters") +
+  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action") +
   facet_grid(motivation ~ model, labeller = labeller(motivation = label_both))
+p_model_comparison
+save_figure(p_model_comparison, "exp1_model_comparison.pdf", width = FIG_WIDTH_LARGE, height = FIG_HEIGHT_TALL)
 ```
 
 ### Model-human correlation
@@ -213,17 +214,19 @@ correlations <- df_corr |>
   ) |>
   select(-boot_result)
 
-ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+p_correlation <- ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
   geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
   geom_point(size = 3) +
-  geom_text(data = correlations, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
+  geom_text(data = correlations, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.5, size = 5) +
+  scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
   labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
   facet_wrap(~model, nrow = 1) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+  coord_fixed_symmetric(df_corr$model_pred, df_corr$Humans)
+p_correlation
+save_figure(p_correlation, "exp1_correlation.pdf", width = FIG_WIDTH_STANDARD, height = FIG_HEIGHT_SHORT)
 ```
 
 Plot motivation on separate panels:
@@ -247,13 +250,13 @@ ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
   geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
   geom_point(size = 3) +
-  geom_text(data = correlations_motiv, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
+  geom_text(data = correlations_motiv, aes(x = -Inf, y = Inf, label = label),
+            inherit.aes = FALSE, hjust = -0.1, vjust = 1.5, size = 5) +
+  scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
   labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
   facet_grid(motivation~model, labeller = labeller(motivation = label_both)) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+  coord_fixed_symmetric(df_corr$model_pred, df_corr$Humans)
 ```
 
 ### Model fit results
@@ -299,41 +302,3 @@ fit_results |>
 ```
 
 **Interpretation**: The full (social planning) model with intimacy scaling has the lowest AIC/BIC, indicating that intimacy modulates both reward and discomfort.
-
-## Export Figures
-
-```{r}
-#| output: false
-
-# Model predictions vs human data
-p_model_comparison <- df_preds_summary |>
-  filter(model %in% c("Vanilla planning", "Discomfort only", "Social planning", "Humans")) |>
-  mutate(model = factor(model, levels = c("Vanilla planning", "Discomfort only", "Social planning", "Humans"))) |>
-  ggplot(aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
-  geom_point(position = position_dodge(width = 0.2), size = 3) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
-    position = position_dodge(width = 0.2), width = 0.4
-  ) +
-  geom_line(position = position_dodge(width = 0.2)) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(y = "P(action)", x = "Action", color = "Intimacy", shape = "Action") +
-  facet_grid(motivation ~ model, labeller = labeller(motivation = label_both))
-
-save_figure(p_model_comparison, "exp1_model_comparison.pdf", width = 12, height = 5.2)
-
-# Correlation plot
-p_correlation <- ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
-  geom_point(size = 3) +
-  geom_text(data = correlations, aes(x = 0.05, y = 0.9, label = label),
-            inherit.aes = FALSE, hjust = 0, size = 5) +
-  scale_color_viridis_c(begin = 0, end = 0.85) +
-  scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
-  facet_wrap(~model, nrow = 1) +
-  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
-
-save_figure(p_correlation, "exp1_correlation.pdf", width = 12, height = 4)
-```
