@@ -22,4 +22,4 @@
 
 - [ ] Come up with name for the SIP model
 - [ ] Make schematic figure
-- [ ]
+- [ ] make the color scheme on the plots better / finalize color scheme

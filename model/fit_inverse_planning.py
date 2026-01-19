@@ -54,7 +54,7 @@ from model_utils import (
 def load_fitted_params(filepath: str = None) -> dict:
     """Load frozen actor parameters from forward planning fit results."""
     if filepath is None:
-        filepath = get_project_root() / "model" / "forward_planning_fit_results.csv"
+        filepath = get_project_root() / "model" / "outputs" / "forward_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
@@ -742,7 +742,9 @@ def main():
     print(results_df.to_string(index=False))
 
     # Save
-    results_path = "inverse_planning_fit_results.csv"
+    output_dir = Path(__file__).parent / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    results_path = output_dir / "inverse_planning_fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
 

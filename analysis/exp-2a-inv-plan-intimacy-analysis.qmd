@@ -156,7 +156,7 @@ All models assume a uniform prior over intimacy (0-100 scale) and compute poster
 ### Fitted parameters
 
 ```{r}
-df_fit_results <- read_csv(here("model", "inverse_planning_fit_results.csv")) |>
+df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_fit_results.csv")) |>
   filter(experiment == "intimacy") |>
   mutate(
     model_label = case_when(
@@ -202,7 +202,7 @@ df_fit_results |>
 ### Load model predictions
 
 ```{r}
-df_model <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
+df_model <- read_csv(here("model", "outputs", "inv_plan_intimacy_preds_summary.csv")) |>
   rename(motivation = reward_condition) |>
   mutate(
     action = as.character(action),

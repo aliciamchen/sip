@@ -54,7 +54,7 @@ from model_utils import (
 def load_fitted_params(filepath: str = None) -> dict:
     """Load fitted parameters from forward planning fit results."""
     if filepath is None:
-        filepath = get_project_root() / "model" / "forward_planning_fit_results.csv"
+        filepath = get_project_root() / "model" / "outputs" / "forward_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
@@ -78,7 +78,7 @@ def load_fitted_alpha_observer(filepath: str = None) -> dict:
     to 1.0. This produces the uniform prior as expected.
     """
     if filepath is None:
-        filepath = get_project_root() / "model" / "inverse_planning_fit_results.csv"
+        filepath = get_project_root() / "model" / "outputs" / "inverse_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     alpha_obs = {}
     for _, row in df.iterrows():
@@ -97,7 +97,7 @@ def load_fitted_beta(filepath: str = None) -> dict:
     Beta is only defined for modified models. Non-modified models have NaN.
     """
     if filepath is None:
-        filepath = get_project_root() / "model" / "inverse_planning_fit_results.csv"
+        filepath = get_project_root() / "model" / "outputs" / "inverse_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     beta_vals = {}
     for _, row in df.iterrows():
@@ -276,7 +276,8 @@ def main():
     print("  - Pre-registered models: full, vanilla, discomfort_only")
     print("  - Modified model: full_modified (effort scaled by intimacy)")
 
-    output_dir = Path(__file__).parent
+    output_dir = Path(__file__).parent / "outputs"
+    output_dir.mkdir(exist_ok=True)
 
     # Load fitted actor parameters
     print("\nLoading fitted actor parameters...")

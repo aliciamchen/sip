@@ -63,7 +63,7 @@ df_2a_summary <- df_2a |>
 ### Model predictions
 
 ```{r}
-df_model_2a <- read_csv(here("model", "inv_plan_intimacy_preds_summary.csv")) |>
+df_model_2a <- read_csv(here("model", "outputs", "inv_plan_intimacy_preds_summary.csv")) |>
   rename(motivation = reward_condition) |>
   filter(param_source == "stipulated") |>
   mutate(
@@ -113,7 +113,7 @@ df_2b_summary <- df_2b |>
 ### Model predictions
 
 ```{r}
-df_model_2b <- read_csv(here("model", "inv_plan_reward_preds_summary.csv")) |>
+df_model_2b <- read_csv(here("model", "outputs", "inv_plan_reward_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   filter(param_source == "stipulated") |>
   mutate(

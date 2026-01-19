@@ -83,7 +83,7 @@ where:
 ### Load model predictions
 
 ```{r}
-df_preds <- read_csv(here("model", "forward_planning_fits.csv")) |>
+df_preds <- read_csv(here("model", "outputs", "forward_planning_fits.csv")) |>
   select(subject_id, scenario_label, intimacy, motivation, action, p_action,
          pred_full, pred_vanilla, pred_discomfort_only) |>
   pivot_longer(
@@ -326,7 +326,7 @@ ggplot(df_summary_scenario, aes(x = action, y = empirical_stat, color = intimacy
 ### Model fit results
 
 ```{r}
-fit_results <- read_csv(here("model", "forward_planning_fit_results.csv"))
+fit_results <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"))
 fit_results |>
   select(model, nll, n_params, starts_with("param_")) |>
   knitr::kable(digits = 3, caption = "Model fitting results")

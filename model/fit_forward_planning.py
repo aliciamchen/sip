@@ -456,7 +456,9 @@ def main():
     ))
 
     # Save predictions
-    output_path = "forward_planning_fits.csv"
+    output_dir = Path(__file__).parent / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / "forward_planning_fits.csv"
     data.to_csv(output_path, index=False)
     print(f"Saved predictions to {output_path}")
 
@@ -508,7 +510,7 @@ def main():
         results_rows.append(row)
 
     results_df = pd.DataFrame(results_rows)
-    results_path = "forward_planning_fit_results.csv"
+    results_path = output_dir / "forward_planning_fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
 

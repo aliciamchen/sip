@@ -60,34 +60,34 @@ fit: fit-forward fit-inverse
 
 # Forward planning model fitting
 # Depends on processed CSV (included in repo)
-model/forward_planning_fit_results.csv model/forward_planning_fits.csv: data/forw_plan/main_trials_long.csv model/fit_forward_planning.py model/model_utils.py
+model/outputs/forward_planning_fit_results.csv model/outputs/forward_planning_fits.csv: data/forw_plan/main_trials_long.csv model/fit_forward_planning.py model/model_utils.py
 	python model/fit_forward_planning.py
 
-fit-forward: model/forward_planning_fit_results.csv
+fit-forward: model/outputs/forward_planning_fit_results.csv
 
 # Inverse planning model fitting
 # Depends on forward planning results and processed CSVs
-model/inverse_planning_fit_results.csv: model/forward_planning_fit_results.csv \
+model/outputs/inverse_planning_fit_results.csv: model/outputs/forward_planning_fit_results.csv \
                                         data/inv_plan_intimacy/main_trials_long.csv \
                                         data/inv_plan_reward/main_trials_long.csv \
                                         model/fit_inverse_planning.py \
                                         model/model_utils.py
 	python model/fit_inverse_planning.py
 
-fit-inverse: model/inverse_planning_fit_results.csv
+fit-inverse: model/outputs/inverse_planning_fit_results.csv
 
 # =============================================================================
 # Model Predictions
 # =============================================================================
 
-model/inv_plan_intimacy_preds_summary.csv model/inv_plan_reward_preds_summary.csv: \
-        model/forward_planning_fit_results.csv \
-        model/inverse_planning_fit_results.csv \
+model/outputs/inv_plan_intimacy_preds_summary.csv model/outputs/inv_plan_reward_preds_summary.csv: \
+        model/outputs/forward_planning_fit_results.csv \
+        model/outputs/inverse_planning_fit_results.csv \
         model/generate_inverse_planning_preds.py \
         model/model_utils.py
 	python model/generate_inverse_planning_preds.py
 
-predictions: model/inv_plan_intimacy_preds_summary.csv
+predictions: model/outputs/inv_plan_intimacy_preds_summary.csv
 
 # =============================================================================
 # Analysis
@@ -95,16 +95,16 @@ predictions: model/inv_plan_intimacy_preds_summary.csv
 
 analysis: analysis-exp1 analysis-exp2a analysis-exp2b analysis-combined
 
-analysis-exp1: model/forward_planning_fits.csv
+analysis-exp1: model/outputs/forward_planning_fits.csv
 	quarto render analysis/exp-1-analysis.qmd
 
-analysis-exp2a: model/inv_plan_intimacy_preds_summary.csv
+analysis-exp2a: model/outputs/inv_plan_intimacy_preds_summary.csv
 	quarto render analysis/exp-2a-inv-plan-intimacy-analysis.qmd
 
-analysis-exp2b: model/inv_plan_reward_preds_summary.csv
+analysis-exp2b: model/outputs/inv_plan_reward_preds_summary.csv
 	quarto render analysis/exp-2b-inv-plan-reward-analysis.qmd
 
-analysis-combined: model/inv_plan_intimacy_preds_summary.csv model/inv_plan_reward_preds_summary.csv
+analysis-combined: model/outputs/inv_plan_intimacy_preds_summary.csv model/outputs/inv_plan_reward_preds_summary.csv
 	quarto render analysis/exp-2-combined-correlation.qmd
 
 # =============================================================================
@@ -115,10 +115,10 @@ test:
 	python model/test_model_compliance.py
 
 clean:
-	rm -f model/forward_planning_fits.csv
-	rm -f model/forward_planning_fit_results.csv
-	rm -f model/inverse_planning_fit_results.csv
-	rm -f model/inv_plan_intimacy_preds_full.csv
-	rm -f model/inv_plan_intimacy_preds_summary.csv
-	rm -f model/inv_plan_reward_preds_full.csv
-	rm -f model/inv_plan_reward_preds_summary.csv
+	rm -f model/outputs/forward_planning_fits.csv
+	rm -f model/outputs/forward_planning_fit_results.csv
+	rm -f model/outputs/inverse_planning_fit_results.csv
+	rm -f model/outputs/inv_plan_intimacy_preds_full.csv
+	rm -f model/outputs/inv_plan_intimacy_preds_summary.csv
+	rm -f model/outputs/inv_plan_reward_preds_full.csv
+	rm -f model/outputs/inv_plan_reward_preds_summary.csv
