@@ -253,6 +253,12 @@ Main comparison (excludes preregistered Social):
 df_combined |>
   filter(model != "Social (pre-reg)") |>
   ggplot(aes(x = action, y = belief_update, group = interaction(model, motivation), fill = motivation)) +
+  geom_crossbar(
+    aes(y = 0, ymin = -0.01, ymax = 0.01),
+    position = position_dodge(width = 0.9),
+    width = 0.9,
+    color = NA
+  ) +
   geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
   geom_errorbar(
     aes(ymin = ci_lower, ymax = ci_upper),
@@ -277,6 +283,12 @@ df_combined |>
   filter(model %in% c("Social (pre-reg)", "Social", "Humans")) |>
   mutate(model = factor(model, levels = c("Social (pre-reg)", "Social", "Humans"))) |>
   ggplot(aes(x = action, y = belief_update, group = interaction(model, motivation), fill = motivation)) +
+  geom_crossbar(
+    aes(y = 0, ymin = -0.01, ymax = 0.01),
+    position = position_dodge(width = 0.9),
+    width = 0.9,
+    color = NA
+  ) +
   geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
   geom_errorbar(
     aes(ymin = ci_lower, ymax = ci_upper),

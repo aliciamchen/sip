@@ -131,7 +131,7 @@ df_preds_summary |>
   labs(y = "P(Action)", x = "Action", color = "Intimacy", shape = "Action") +
   facet_grid(motivation ~ model)
 
-ggsave(here("figures", "exp1_model_comparison.pdf"),
+ggsave(here("figures", "exp1_comparison.pdf"),
          device = cairo_pdf)
 ```
 

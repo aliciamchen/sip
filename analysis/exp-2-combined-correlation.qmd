@@ -234,7 +234,7 @@ ggplot(df_plot, aes(x = model_belief_update, y = human_belief_update, shape = ac
   geom_label(
     data = correlations_combined |> filter(model != "Social (pre-reg)"),
     aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 4.5,
+    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 5,
     fill = "white", alpha = 0.5, label.size = 0
   ) +
   scale_shape_manual(values = c(16, 17, 15, 18), guide = guide_legend(order = 1)) +
@@ -292,7 +292,7 @@ ggplot(df_plot_comp, aes(x = model_belief_update, y = human_belief_update, shape
   geom_label(
     data = correlations_combined |> filter(model %in% c("Social (pre-reg)", "Social")),
     aes(x = -Inf, y = Inf, label = label),
-    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 4.5,
+    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 5,
     fill = "white", alpha = 0.5, label.size = 0
   ) +
   scale_shape_manual(values = c(16, 17, 15, 18), guide = guide_legend(order = 1)) +
