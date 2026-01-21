@@ -25,6 +25,7 @@ renv::restore()
 
 You also need xquartz for the font in the plots to render correctly: 
 ```bash
+brew install graphviz
 brew install --cask xquartz
 ```
 

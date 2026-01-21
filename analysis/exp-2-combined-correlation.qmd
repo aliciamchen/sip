@@ -20,7 +20,7 @@ setup_analysis()
 library(ggnewscale)
 
 # Define condition sets for each experiment
-EXP2A_CONDITIONS <- c("Low desire", "High desire")
+EXP2A_CONDITIONS <- c("Low", "High")
 EXP2B_CONDITIONS <- c("Intimacy: 0", "Intimacy: 50", "Intimacy: 75", "Intimacy: 100")
 
 # Create intimacy colors with correct names for this analysis
@@ -168,7 +168,7 @@ df_combined <- bind_rows(
     model = factor(model, levels = c("Vanilla", "Discomfort-only", "Social", "Social (pre-reg)")),
     action = factor(action),
     condition = factor(condition, levels = c(
-      "Low desire", "High desire",
+      "Low", "High",
       "Intimacy: 0", "Intimacy: 50", "Intimacy: 75", "Intimacy: 100"
     ))
   )

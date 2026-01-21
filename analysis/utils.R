@@ -42,8 +42,8 @@ scale_color_intimacy <- function() {
 }
 
 # Motivation color scales (discrete)
-MOTIVATION_LEVELS <- c("Low desire", "High desire")
-MOTIVATION_COLORS <- c("Low desire" = "#C9A8B0", "High desire" = "#7A4A5A")
+MOTIVATION_LEVELS <- c("Low", "High")
+MOTIVATION_COLORS <- c("Low" = "#C9A8B0", "High" = "#7A4A5A")
 
 scale_fill_motivation <- function() {
   scale_fill_manual(values = MOTIVATION_COLORS)

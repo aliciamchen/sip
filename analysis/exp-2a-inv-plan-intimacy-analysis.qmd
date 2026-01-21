@@ -73,7 +73,7 @@ ggplot(df, aes(x = intimacy_rating, fill = action)) +
   scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
   labs(y = "Density", x = "Intimacy rating", fill = "Action") +
   theme(legend.position = "right") +
-  facet_grid(stage ~ motivation)
+  facet_grid(stage ~ motivation, labeller = labeller(motivation = label_both))
 ```
 
 Calculate summary statistics
@@ -266,7 +266,7 @@ df_combined |>
   ) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_motivation() +
-  labs(y = "Belief update", x = "Observed action", fill = "State") +
+  labs(y = "Belief update", x = "Observed action", fill = "Desire") +
   theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1)
 
@@ -296,7 +296,7 @@ df_combined |>
   ) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_motivation() +
-  labs(y = "Belief update", x = "Observed action", fill = "Motivation") +
+  labs(y = "Belief update", x = "Observed action", fill = "Desire") +
   theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1)
 
