@@ -34,7 +34,9 @@ n_passed <- df_exit |>
 cat("Total participants recruited:", n_total, "\n")
 cat("Passed attention checks:", n_passed, "\n")
 cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
-    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1))
+    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
+    "Min age:", min(df_exit$age, na.rm = TRUE),
+    "Max age:", max(df_exit$age, na.rm = TRUE))
 cat("\nGender:\n")
 print(table(df_exit$gender))
 ```
