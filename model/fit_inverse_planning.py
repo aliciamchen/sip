@@ -19,32 +19,31 @@ sys.path.insert(0, str(_project_root))
 
 import jax
 import jax.numpy as jnp
-import optax
 import numpy as np
+import optax
 import pandas as pd
-
-from utils import get_project_root
 from model_utils import (
-    actions,
-    IntimacyLevels,
-    RewardConditions,
-    RelationshipConditions,
     SCENARIO_LABELS,
     SCENARIO_TO_IDX,
+    IntimacyLevels,
+    RelationshipConditions,
+    RewardConditions,
+    actions,
+    observer_intimacy_discomfort_only,
     # Pre-registered intimacy observer models
     observer_intimacy_full_model,
-    observer_intimacy_vanilla_inv_plan,
-    observer_intimacy_discomfort_only,
     # Modified intimacy observer models (effort scaled by intimacy)
     observer_intimacy_full_model_modified,
+    observer_intimacy_vanilla_inv_plan,
+    observer_reward_discomfort_only,
     # Pre-registered reward observer models
     observer_reward_full_model,
-    observer_reward_vanilla_inv_plan,
-    observer_reward_discomfort_only,
     # Modified reward observer models (effort scaled by intimacy)
     observer_reward_full_model_modified,
+    observer_reward_vanilla_inv_plan,
 )
 
+from utils import get_project_root
 
 # ==============================================================================
 # Data Loading
@@ -54,7 +53,12 @@ from model_utils import (
 def load_fitted_params(filepath: str = None) -> dict:
     """Load frozen actor parameters from forward planning fit results."""
     if filepath is None:
-        filepath = get_project_root() / "model" / "outputs" / "forward_planning_fit_results.csv"
+        filepath = (
+            get_project_root()
+            / "model"
+            / "outputs"
+            / "forward_planning_fit_results.csv"
+        )
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
@@ -81,7 +85,9 @@ def load_intimacy_data(filepath: str = None):
         scenario_idx: JAX array of scenario indices (0-15)
     """
     if filepath is None:
-        filepath = get_project_root() / "data" / "inv_plan_intimacy" / "main_trials_long.csv"
+        filepath = (
+            get_project_root() / "data" / "inv_plan_intimacy" / "main_trials_long.csv"
+        )
     print("Loading intimacy inference data...")
     data = pd.read_csv(filepath)
 
@@ -124,7 +130,9 @@ def load_reward_data(filepath: str = None):
         scenario_idx: JAX array of scenario indices (0-15)
     """
     if filepath is None:
-        filepath = get_project_root() / "data" / "inv_plan_reward" / "main_trials_long.csv"
+        filepath = (
+            get_project_root() / "data" / "inv_plan_reward" / "main_trials_long.csv"
+        )
     print("Loading reward inference data...")
     data = pd.read_csv(filepath)
 
@@ -200,7 +208,9 @@ def compute_reward_nll(p_high, response):
 # ==============================================================================
 
 
-def get_intimacy_posterior(observer_fn, actor_params, alpha_observer, action, reward_condition):
+def get_intimacy_posterior(
+    observer_fn, actor_params, alpha_observer, action, reward_condition
+):
     """Get posterior distribution over intimacy from model for single data point."""
     # Get full posterior distribution
     posterior = observer_fn(
@@ -221,7 +231,9 @@ def get_intimacy_posterior(observer_fn, actor_params, alpha_observer, action, re
 # ==============================================================================
 
 
-def get_intimacy_posterior_modified(observer_fn, actor_params, alpha_observer, beta, action, reward_condition):
+def get_intimacy_posterior_modified(
+    observer_fn, actor_params, alpha_observer, beta, action, reward_condition
+):
     """Get posterior distribution over intimacy from modified model."""
     posterior = observer_fn(
         alpha=actor_params["alpha"],
@@ -235,7 +247,9 @@ def get_intimacy_posterior_modified(observer_fn, actor_params, alpha_observer, b
     return post
 
 
-def get_reward_p_high_modified(observer_fn, actor_params, alpha_observer, beta, action, intimacy_idx):
+def get_reward_p_high_modified(
+    observer_fn, actor_params, alpha_observer, beta, action, intimacy_idx
+):
     """Get P(high reward) from modified model."""
     posterior = observer_fn(
         alpha=actor_params["alpha"],
@@ -288,7 +302,9 @@ def fit_intimacy_alpha_observer(
     """Fit alpha_observer for intimacy inference model using NLL."""
 
     def get_nll(alpha_observer, a, r, resp):
-        posterior = get_intimacy_posterior(observer_fn, actor_params, alpha_observer, a, r)
+        posterior = get_intimacy_posterior(
+            observer_fn, actor_params, alpha_observer, a, r
+        )
         return compute_intimacy_nll(posterior, resp)
 
     vmap_get_nll = jax.vmap(
@@ -319,8 +335,12 @@ def fit_intimacy_alpha_observer(
             if zero_grad_count >= 5:
                 if verbose:
                     print(f"  Gradient is zero/NaN for 5 consecutive steps.")
-                    print(f"  This typically means the model's likelihood doesn't depend on the latent variable")
-                    print(f"  (e.g., vanilla model for intimacy inference). Returning alpha_observer=1.0.")
+                    print(
+                        f"  This typically means the model's likelihood doesn't depend on the latent variable"
+                    )
+                    print(
+                        f"  (e.g., vanilla model for intimacy inference). Returning alpha_observer=1.0."
+                    )
                 return 1.0, float(loss)
         else:
             zero_grad_count = 0
@@ -399,7 +419,9 @@ def fit_reward_alpha_observer(
             if zero_grad_count >= 5:
                 if verbose:
                     print(f"  Gradient is zero/NaN for 5 consecutive steps.")
-                    print(f"  This typically means the model's likelihood doesn't depend on the latent variable.")
+                    print(
+                        f"  This typically means the model's likelihood doesn't depend on the latent variable."
+                    )
                     print(f"  Returning alpha_observer=1.0.")
                 return 1.0, float(loss)
         else:
@@ -458,7 +480,9 @@ def fit_intimacy_alpha_observer_and_beta(
     """
 
     def get_nll(alpha_observer, beta, a, r, resp):
-        posterior = get_intimacy_posterior_modified(observer_fn, actor_params, alpha_observer, beta, a, r)
+        posterior = get_intimacy_posterior_modified(
+            observer_fn, actor_params, alpha_observer, beta, a, r
+        )
         return compute_intimacy_nll(posterior, resp)
 
     vmap_get_nll = jax.vmap(
@@ -484,13 +508,17 @@ def fit_intimacy_alpha_observer_and_beta(
         updates, opt_state = opt.update(grad, opt_state)
         params = optax.apply_updates(params, updates)
         # Keep alpha_observer positive, beta in [0, 1] range
-        params = jnp.array([
-            jnp.clip(params[0], 0.01, 10.0),
-            jnp.clip(params[1], 0.0, 1.0),
-        ])
+        params = jnp.array(
+            [
+                jnp.clip(params[0], 0.01, 10.0),
+                jnp.clip(params[1], 0.0, 1.0),
+            ]
+        )
 
         if verbose and step % 200 == 0:
-            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}, beta: {params[1]:.4f}")
+            print(
+                f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}, beta: {params[1]:.4f}"
+            )
 
         if prev_loss is not None and loss > prev_loss + 1e-4:
             if verbose:
@@ -527,7 +555,9 @@ def fit_reward_alpha_observer_and_beta(
     """
 
     def get_nll(alpha_observer, beta, a, i, resp):
-        p_high = get_reward_p_high_modified(observer_fn, actor_params, alpha_observer, beta, a, i)
+        p_high = get_reward_p_high_modified(
+            observer_fn, actor_params, alpha_observer, beta, a, i
+        )
         return compute_reward_nll(p_high, resp)
 
     vmap_get_nll = jax.vmap(
@@ -553,13 +583,17 @@ def fit_reward_alpha_observer_and_beta(
         updates, opt_state = opt.update(grad, opt_state)
         params = optax.apply_updates(params, updates)
         # Keep alpha_observer positive, beta in [0, 1] range
-        params = jnp.array([
-            jnp.clip(params[0], 0.01, 10.0),
-            jnp.clip(params[1], 0.0, 1.0),
-        ])
+        params = jnp.array(
+            [
+                jnp.clip(params[0], 0.01, 10.0),
+                jnp.clip(params[1], 0.0, 1.0),
+            ]
+        )
 
         if verbose and step % 200 == 0:
-            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}, beta: {params[1]:.4f}")
+            print(
+                f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}, beta: {params[1]:.4f}"
+            )
 
         if prev_loss is not None and loss > prev_loss + 1e-4:
             if verbose:
@@ -593,7 +627,9 @@ def main():
     print("\nLoading frozen actor parameters...")
     actor_params = load_fitted_params()
     for model_name, p in actor_params.items():
-        print(f"  {model_name}: alpha={p['alpha']:.3f}, w_r={p['w_r']:.3f}, w_d={p['w_d']:.3f}, w_c={p['w_c']:.3f}")
+        print(
+            f"  {model_name}: alpha={p['alpha']:.3f}, w_r={p['w_r']:.3f}, w_d={p['w_d']:.3f}, w_c={p['w_c']:.3f}"
+        )
 
     results = []
 
@@ -604,7 +640,9 @@ def main():
     print("INTIMACY INFERENCE")
     print("=" * 60)
 
-    int_data, int_action, int_reward_condition, int_response, int_scenario_idx = load_intimacy_data()
+    int_data, int_action, int_reward_condition, int_response, int_scenario_idx = (
+        load_intimacy_data()
+    )
 
     # Pre-registered models (fit alpha_observer only)
     intimacy_models = {
@@ -632,14 +670,16 @@ def main():
             response=int_response,
         )
 
-        results.append({
-            "model": model_name,
-            "experiment": "intimacy",
-            "alpha_observer": alpha_observer,
-            "beta": np.nan,
-            "nll": nll,
-            "n_params": 1,
-        })
+        results.append(
+            {
+                "model": model_name,
+                "experiment": "intimacy",
+                "alpha_observer": alpha_observer,
+                "beta": np.nan,
+                "nll": nll,
+                "n_params": 1,
+            }
+        )
 
     # Fit modified models (alpha_observer and beta)
     for model_name, (observer_fn, actor_param_key) in intimacy_models_modified.items():
@@ -655,14 +695,16 @@ def main():
             response=int_response,
         )
 
-        results.append({
-            "model": model_name,
-            "experiment": "intimacy",
-            "alpha_observer": alpha_observer,
-            "beta": beta,
-            "nll": nll,
-            "n_params": 2,
-        })
+        results.append(
+            {
+                "model": model_name,
+                "experiment": "intimacy",
+                "alpha_observer": alpha_observer,
+                "beta": beta,
+                "nll": nll,
+                "n_params": 2,
+            }
+        )
 
     # -------------------------------------------------------------------------
     # Fit Reward Inference Models
@@ -671,7 +713,9 @@ def main():
     print("REWARD INFERENCE")
     print("=" * 60)
 
-    rew_data, rew_action, rew_intimacy_condition, rew_response, rew_scenario_idx = load_reward_data()
+    rew_data, rew_action, rew_intimacy_condition, rew_response, rew_scenario_idx = (
+        load_reward_data()
+    )
 
     # Pre-registered models (fit alpha_observer only)
     reward_models = {
@@ -699,14 +743,16 @@ def main():
             response=rew_response,
         )
 
-        results.append({
-            "model": model_name,
-            "experiment": "reward",
-            "alpha_observer": alpha_observer,
-            "beta": np.nan,
-            "nll": nll,
-            "n_params": 1,
-        })
+        results.append(
+            {
+                "model": model_name,
+                "experiment": "reward",
+                "alpha_observer": alpha_observer,
+                "beta": np.nan,
+                "nll": nll,
+                "n_params": 1,
+            }
+        )
 
     # Fit modified models (alpha_observer and beta)
     for model_name, (observer_fn, actor_param_key) in reward_models_modified.items():
@@ -722,14 +768,16 @@ def main():
             response=rew_response,
         )
 
-        results.append({
-            "model": model_name,
-            "experiment": "reward",
-            "alpha_observer": alpha_observer,
-            "beta": beta,
-            "nll": nll,
-            "n_params": 2,
-        })
+        results.append(
+            {
+                "model": model_name,
+                "experiment": "reward",
+                "alpha_observer": alpha_observer,
+                "beta": beta,
+                "nll": nll,
+                "n_params": 2,
+            }
+        )
 
     # -------------------------------------------------------------------------
     # Save Results

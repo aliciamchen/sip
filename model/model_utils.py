@@ -1,8 +1,8 @@
-from memo import memo
-import jax
-import jax.numpy as jnp
 from enum import IntEnum
 
+import jax
+import jax.numpy as jnp
+from memo import memo
 
 # ==============================================================================
 # Constants
@@ -29,9 +29,22 @@ class RelationshipConditions(IntEnum):
 # ==============================================================================
 # Scenarios indexed alphabetically (0-15)
 SCENARIO_LABELS = [
-    'apples', 'basketball', 'birthday', 'brunch', 'cooking', 'dip',
-    'drinks', 'driving', 'fair', 'gala', 'hike', 'oysters',
-    'social', 'soup', 'takeout', 'wedding'
+    "apples",
+    "basketball",
+    "birthday",
+    "brunch",
+    "cooking",
+    "dip",
+    "drinks",
+    "driving",
+    "fair",
+    "gala",
+    "hike",
+    "oysters",
+    "social",
+    "soup",
+    "takeout",
+    "wedding",
 ]
 SCENARIO_TO_IDX = {label: idx for idx, label in enumerate(SCENARIO_LABELS)}
 
@@ -58,6 +71,7 @@ def get_effort(action):
     """Get effort level for each action (food sharing is more effortful than no food sharing)"""
     return jnp.array([0, 1, 1, 1])[action]
 
+
 @jax.jit
 def get_reward_base(action, reward_condition):
     """Get reward for action given reward condition.
@@ -72,6 +86,7 @@ def get_reward_base(action, reward_condition):
         reward_condition == RewardConditions.LOW, low_reward, high_reward
     )
     return which_reward[action]
+
 
 @jax.jit
 def get_reward_from_intimacy(action, reward_condition, intimacy):
@@ -88,8 +103,11 @@ def get_reward_from_intimacy(action, reward_condition, intimacy):
     base_reward = get_reward_base(action, reward_condition)
     return base_reward * intimacy_multiplier[action]
 
+
 @jax.jit
-def get_reward_from_relationship_condition(action, reward_condition, relationship_condition):
+def get_reward_from_relationship_condition(
+    action, reward_condition, relationship_condition
+):
     "scale reward based on relationship condition"
     intimacy = get_intimacy(relationship_condition)
     return get_reward_from_intimacy(action, reward_condition, intimacy)
@@ -210,7 +228,11 @@ def get_utility_discomfort_only_discrete(
     w_d,
     w_c,
 ):
-    return alpha * -1 * get_discomfort_from_relationship_condition(action, relationship_condition)
+    return (
+        alpha
+        * -1
+        * get_discomfort_from_relationship_condition(action, relationship_condition)
+    )
 
 
 @jax.jit
@@ -255,8 +277,12 @@ def get_utility_full_model_discrete(
 ):
     """Pre-registered full model: effort NOT scaled by intimacy."""
     return alpha * (
-        w_r * get_reward_from_relationship_condition(action, reward_condition, relationship_condition)
-        - w_d * get_discomfort_from_relationship_condition(action, relationship_condition)
+        w_r
+        * get_reward_from_relationship_condition(
+            action, reward_condition, relationship_condition
+        )
+        - w_d
+        * get_discomfort_from_relationship_condition(action, relationship_condition)
         - w_c * get_effort(action)
     )
 
@@ -350,9 +376,7 @@ def actor_discrete_discomfort_only[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(relationship_condition)
     actor: knows(reward_condition)
@@ -378,9 +402,7 @@ def actor_discrete_vanilla_inv_plan[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(relationship_condition)
     actor: knows(reward_condition)
@@ -406,9 +428,7 @@ def actor_discrete_full_model[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(relationship_condition)
     actor: knows(reward_condition)
@@ -434,9 +454,7 @@ def actor_discrete_full_model_modified[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, beta
-):
+](alpha, w_r, w_d, w_c, beta):
     cast: [actor]
     actor: knows(relationship_condition)
     actor: knows(reward_condition)
@@ -468,9 +486,7 @@ def actor_continuous_discomfort_only[
     action: actions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(relationship)
     actor: knows(reward_condition)
@@ -496,9 +512,7 @@ def actor_continuous_vanilla_inv_plan[
     action: actions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(relationship)
     actor: knows(reward_condition)
@@ -524,9 +538,7 @@ def actor_continuous_full_model[
     action: actions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(relationship)
     actor: knows(reward_condition)
@@ -552,9 +564,7 @@ def actor_continuous_full_model_modified[
     action: actions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, beta
-):
+](alpha, w_r, w_d, w_c, beta):
     cast: [actor]
     actor: knows(relationship)
     actor: knows(reward_condition)
@@ -584,9 +594,7 @@ def actor_forw_full[
     action: actions,
     intimacy: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(intimacy)
     actor: knows(reward_condition)
@@ -613,9 +621,7 @@ def actor_forw_vanilla[
     action: actions,
     intimacy: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c
-):
+](alpha, w_r, w_d, w_c):
     cast: [actor]
     actor: knows(intimacy)
     actor: knows(reward_condition)
@@ -642,9 +648,7 @@ def actor_forw_discomfort_only[
     action: actions,
     intimacy: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_d
-):
+](alpha, w_d):
     cast: [actor]
     actor: knows(intimacy)
     actor: knows(reward_condition)
@@ -672,9 +676,7 @@ def observer_intimacy_discomfort_only[
     action: actions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, alpha_observer
-):
+](alpha, w_r, w_d, w_c, alpha_observer):
     cast: [actor, observer]
     observer: knows(reward_condition)
     observer: thinks[
@@ -700,9 +702,7 @@ def observer_intimacy_vanilla_inv_plan[
     action: actions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, alpha_observer
-):
+](alpha, w_r, w_d, w_c, alpha_observer):
     cast: [actor, observer]
     observer: knows(reward_condition)
     observer: thinks[
@@ -725,10 +725,10 @@ def observer_intimacy_vanilla_inv_plan[
 
 @memo
 def observer_intimacy_full_model[
-    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
-](
-    alpha, w_r, w_d, w_c, alpha_observer
-):
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d, w_c, alpha_observer):
     cast: [actor, observer]
     observer: knows(reward_condition)
     observer: thinks[
@@ -751,10 +751,10 @@ def observer_intimacy_full_model[
 
 @memo
 def observer_intimacy_full_model_modified[
-    action: actions, relationship: IntimacyLevels, reward_condition: RewardConditions
-](
-    alpha, w_r, w_d, w_c, alpha_observer, beta
-):
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d, w_c, alpha_observer, beta):
     cast: [actor, observer]
     observer: knows(reward_condition)
     observer: thinks[
@@ -762,9 +762,9 @@ def observer_intimacy_full_model_modified[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_continuous_full_model_modified[action, relationship, reward_condition](
-                alpha, w_r, w_d, w_c, beta
-            ),
+            wpp=actor_continuous_full_model_modified[
+                action, relationship, reward_condition
+            ](alpha, w_r, w_d, w_c, beta),
         ),
     ]
     observer: observes[actor.action] is action
@@ -785,9 +785,7 @@ def observer_reward_discomfort_only[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, alpha_observer
-):
+](alpha, w_r, w_d, w_c, alpha_observer):
     cast: [actor, observer]
     observer: knows(relationship_condition)
     observer: thinks[
@@ -813,9 +811,7 @@ def observer_reward_vanilla_inv_plan[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, alpha_observer
-):
+](alpha, w_r, w_d, w_c, alpha_observer):
     cast: [actor, observer]
     observer: knows(relationship_condition)
     observer: thinks[
@@ -841,9 +837,7 @@ def observer_reward_full_model[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, alpha_observer
-):
+](alpha, w_r, w_d, w_c, alpha_observer):
     cast: [actor, observer]
     observer: knows(relationship_condition)
     observer: thinks[
@@ -869,9 +863,7 @@ def observer_reward_full_model_modified[
     action: actions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](
-    alpha, w_r, w_d, w_c, alpha_observer, beta
-):
+](alpha, w_r, w_d, w_c, alpha_observer, beta):
     cast: [actor, observer]
     observer: knows(relationship_condition)
     observer: thinks[

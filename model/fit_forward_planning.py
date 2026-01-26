@@ -19,22 +19,21 @@ sys.path.insert(0, str(_project_root))
 
 import jax
 import jax.numpy as jnp
-import optax
 import numpy as np
+import optax
 import pandas as pd
+from model_utils import (
+    SCENARIO_TO_IDX,
+    IntimacyLevels,
+    RewardConditions,
+    actions,
+    actor_forw_discomfort_only,
+    actor_forw_full,
+    actor_forw_vanilla,
+)
 from scipy import stats
 
 from utils import get_project_root
-from model_utils import (
-    actions,
-    IntimacyLevels,
-    RewardConditions,
-    actor_forw_full,
-    actor_forw_vanilla,
-    actor_forw_discomfort_only,
-    SCENARIO_TO_IDX,
-)
-
 
 # Data loading and preprocessing
 
@@ -144,10 +143,11 @@ def compute_pearson_r_by_condition(data, pred_col, human_col, group_cols, n_boot
         dict with r, p, ci_lower, ci_upper
     """
     # Aggregate to condition x action level
-    agg = data.groupby(group_cols).agg({
-        pred_col: 'mean',
-        human_col: 'mean'
-    }).reset_index()
+    agg = (
+        data.groupby(group_cols)
+        .agg({pred_col: "mean", human_col: "mean"})
+        .reset_index()
+    )
 
     # Compute correlation
     r, p = stats.pearsonr(agg[pred_col], agg[human_col])
@@ -189,14 +189,18 @@ def get_full_prediction(intimacy, reward_condition, action, alpha, w_r, w_d, w_c
 def get_vanilla_prediction(intimacy, reward_condition, action, alpha, w_r, w_d, w_c):
     """Get prediction from vanilla model for single data point."""
     intimacy_idx = get_intimacy_index(intimacy)
-    return actor_forw_vanilla(alpha, w_r, w_d, w_c)[action, intimacy_idx, reward_condition]
+    return actor_forw_vanilla(alpha, w_r, w_d, w_c)[
+        action, intimacy_idx, reward_condition
+    ]
 
 
 @jax.jit
 def get_discomfort_only_prediction(intimacy, reward_condition, action, alpha, w_d):
     """Get prediction from discomfort-only model for single data point."""
     intimacy_idx = get_intimacy_index(intimacy)
-    return actor_forw_discomfort_only(alpha, w_d)[action, intimacy_idx, reward_condition]
+    return actor_forw_discomfort_only(alpha, w_d)[
+        action, intimacy_idx, reward_condition
+    ]
 
 
 # Vectorized prediction functions
@@ -276,7 +280,9 @@ def fit_full_model(
     best_nll = float(loss_fn(params))
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
+        print(
+            f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}"
+        )
 
     # Return with alpha=1 prepended for compatibility
     full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
@@ -297,7 +303,9 @@ def fit_vanilla_model(
 
     def loss_fn(params):
         w_r, w_d, w_c = params[0], params[1], params[2]
-        preds = predict_vanilla(intimacy, reward_condition, action, ALPHA, w_r, w_d, w_c)
+        preds = predict_vanilla(
+            intimacy, reward_condition, action, ALPHA, w_r, w_d, w_c
+        )
         return compute_nll(preds, p_action)
 
     params = jnp.array([1.0, 1.0, 1.0])  # w_r, w_d, w_c
@@ -324,7 +332,9 @@ def fit_vanilla_model(
     best_nll = float(loss_fn(params))
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}")
-        print(f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}")
+        print(
+            f"  Final params (alpha=1 fixed): w_r={params[0]:.4f}, w_d={params[1]:.4f}, w_c={params[2]:.4f}"
+        )
 
     # Return with alpha=1 prepended for compatibility
     full_params = jnp.array([ALPHA, params[0], params[1], params[2]])
@@ -399,7 +409,12 @@ def main():
     print("-" * 40)
     full_params, full_nll = fit_full_model(intimacy, reward_condition, action, p_action)
     results["full"] = {
-        "params": {"alpha": float(full_params[0]), "w_r": float(full_params[1]), "w_d": float(full_params[2]), "w_c": float(full_params[3])},
+        "params": {
+            "alpha": float(full_params[0]),
+            "w_r": float(full_params[1]),
+            "w_d": float(full_params[2]),
+            "w_c": float(full_params[3]),
+        },
         "nll": full_nll,
         "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
     }
@@ -408,9 +423,16 @@ def main():
     print("\n" + "-" * 40)
     print("Fitting VANILLA model (alpha=1 fixed)...")
     print("-" * 40)
-    vanilla_params, vanilla_nll = fit_vanilla_model(intimacy, reward_condition, action, p_action)
+    vanilla_params, vanilla_nll = fit_vanilla_model(
+        intimacy, reward_condition, action, p_action
+    )
     results["vanilla"] = {
-        "params": {"alpha": float(vanilla_params[0]), "w_r": float(vanilla_params[1]), "w_d": float(vanilla_params[2]), "w_c": float(vanilla_params[3])},
+        "params": {
+            "alpha": float(vanilla_params[0]),
+            "w_r": float(vanilla_params[1]),
+            "w_d": float(vanilla_params[2]),
+            "w_c": float(vanilla_params[3]),
+        },
         "nll": vanilla_nll,
         "n_params": 3,  # w_r, w_d, w_c (alpha fixed to 1)
     }
@@ -419,9 +441,14 @@ def main():
     print("\n" + "-" * 40)
     print("Fitting DISCOMFORT-ONLY model (alpha=1 fixed)...")
     print("-" * 40)
-    discomfort_params, discomfort_nll = fit_discomfort_only_model(intimacy, reward_condition, action, p_action)
+    discomfort_params, discomfort_nll = fit_discomfort_only_model(
+        intimacy, reward_condition, action, p_action
+    )
     results["discomfort_only"] = {
-        "params": {"alpha": float(discomfort_params[0]), "w_d": float(discomfort_params[1])},
+        "params": {
+            "alpha": float(discomfort_params[0]),
+            "w_d": float(discomfort_params[1]),
+        },
         "nll": discomfort_nll,
         "n_params": 1,  # w_d only (alpha fixed to 1)
     }
@@ -442,18 +469,37 @@ def main():
     print("-" * 40)
 
     # Add predictions to dataframe
-    data["pred_full"] = np.array(predict_full(
-        intimacy, reward_condition, action,
-        full_params[0], full_params[1], full_params[2], full_params[3]
-    ))
-    data["pred_vanilla"] = np.array(predict_vanilla(
-        intimacy, reward_condition, action,
-        vanilla_params[0], vanilla_params[1], vanilla_params[2], vanilla_params[3]
-    ))
-    data["pred_discomfort_only"] = np.array(predict_discomfort_only(
-        intimacy, reward_condition, action,
-        discomfort_params[0], discomfort_params[1]
-    ))
+    data["pred_full"] = np.array(
+        predict_full(
+            intimacy,
+            reward_condition,
+            action,
+            full_params[0],
+            full_params[1],
+            full_params[2],
+            full_params[3],
+        )
+    )
+    data["pred_vanilla"] = np.array(
+        predict_vanilla(
+            intimacy,
+            reward_condition,
+            action,
+            vanilla_params[0],
+            vanilla_params[1],
+            vanilla_params[2],
+            vanilla_params[3],
+        )
+    )
+    data["pred_discomfort_only"] = np.array(
+        predict_discomfort_only(
+            intimacy,
+            reward_condition,
+            action,
+            discomfort_params[0],
+            discomfort_params[1],
+        )
+    )
 
     # Save predictions
     output_dir = Path(__file__).parent / "outputs"
@@ -481,7 +527,9 @@ def main():
 
         # Pearson r at condition x action level
         pred_col = f"pred_{model_name}"
-        r_result = compute_pearson_r_by_condition(data, pred_col, "p_action", group_cols)
+        r_result = compute_pearson_r_by_condition(
+            data, pred_col, "p_action", group_cols
+        )
 
         model_metrics[model_name] = {
             "aic": aic,
@@ -491,7 +539,9 @@ def main():
             "r_ci_upper": r_result["ci_upper"],
         }
 
-        print(f"  {model_name}: AIC={aic:.2f}, BIC={bic:.2f}, r={r_result['r']:.3f} [{r_result['ci_lower']:.3f}, {r_result['ci_upper']:.3f}]")
+        print(
+            f"  {model_name}: AIC={aic:.2f}, BIC={bic:.2f}, r={r_result['r']:.3f} [{r_result['ci_lower']:.3f}, {r_result['ci_upper']:.3f}]"
+        )
 
     # Save results summary with all metrics
     results_rows = []
@@ -505,7 +555,7 @@ def main():
             "r": model_metrics[model_name]["r"],
             "r_ci_lower": model_metrics[model_name]["r_ci_lower"],
             "r_ci_upper": model_metrics[model_name]["r_ci_upper"],
-            **{f"param_{k}": v for k, v in results[model_name]["params"].items()}
+            **{f"param_{k}": v for k, v in results[model_name]["params"].items()},
         }
         results_rows.append(row)
 
