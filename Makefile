@@ -44,13 +44,13 @@ help:
 data: data-forw data-intimacy data-reward
 
 data-forw:
-	python analysis/json_to_csv.py forw_plan
+	uv run python analysis/json_to_csv.py forw_plan
 
 data-intimacy:
-	python analysis/json_to_csv.py inv_plan_intimacy
+	uv run python analysis/json_to_csv.py inv_plan_intimacy
 
 data-reward:
-	python analysis/json_to_csv.py inv_plan_reward
+	uv run python analysis/json_to_csv.py inv_plan_reward
 
 # =============================================================================
 # Model Fitting
@@ -61,7 +61,7 @@ fit: fit-forward fit-inverse
 # Forward planning model fitting
 # Depends on processed CSV (included in repo)
 model/outputs/forward_planning_fit_results.csv model/outputs/forward_planning_fits.csv: data/forw_plan/main_trials_long.csv model/fit_forward_planning.py model/model_utils.py
-	python model/fit_forward_planning.py
+	uv run python model/fit_forward_planning.py
 
 fit-forward: model/outputs/forward_planning_fit_results.csv
 
@@ -72,7 +72,7 @@ model/outputs/inverse_planning_fit_results.csv: model/outputs/forward_planning_f
                                         data/inv_plan_reward/main_trials_long.csv \
                                         model/fit_inverse_planning.py \
                                         model/model_utils.py
-	python model/fit_inverse_planning.py
+	uv run python model/fit_inverse_planning.py
 
 fit-inverse: model/outputs/inverse_planning_fit_results.csv
 
@@ -85,7 +85,7 @@ model/outputs/inv_plan_intimacy_preds_summary.csv model/outputs/inv_plan_reward_
         model/outputs/inverse_planning_fit_results.csv \
         model/generate_inverse_planning_preds.py \
         model/model_utils.py
-	python model/generate_inverse_planning_preds.py
+	uv run python model/generate_inverse_planning_preds.py
 
 predictions: model/outputs/inv_plan_intimacy_preds_summary.csv
 
@@ -112,7 +112,7 @@ analysis-combined: model/outputs/inv_plan_intimacy_preds_summary.csv model/outpu
 # =============================================================================
 
 test:
-	python model/test_model_compliance.py
+	uv run python model/test_model_compliance.py
 
 clean:
 	rm -f model/outputs/forward_planning_fits.csv
