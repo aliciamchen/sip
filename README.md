@@ -23,10 +23,18 @@ uv sync
 
 ### R Environment
 
-The R packages are managed by `renv`, the R version is `4.5.2`.
+The R packages are managed by `renv`. **R version 4.5.2 is required** (specified in the lockfile).
 
-In R, run:
+On a fresh clone, open R from the project directory. The first time you open R, renv will automatically bootstrap itself via `.Rprofile`. Then install all packages from the lockfile:
+
 ```r
+renv::restore()
+```
+
+If the auto-bootstrap fails or you see "renv not found", manually bootstrap:
+```r
+install.packages("renv")
+renv::activate()
 renv::restore()
 ```
 
