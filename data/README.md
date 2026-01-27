@@ -1,6 +1,11 @@
 # Data Codebook
 
+
 Each experiment folder contains `main_trials.csv`, `main_trials_long.csv`, and `exit_survey.csv`.
+
+## Terminology note
+
+In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
 
 ## Exit Survey (all experiments)
 

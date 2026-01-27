@@ -1,35 +1,38 @@
-# saliva-inverse-planning
+# Inverse planning in the context of sociological structure
 
 ## Experiments: 
 
 - Experiment 1: Forward planning
-    - Preregistration
-- Experiment 2a: Inverse planning (intimacy)
-- Experiment 2b: Inverse planning (desire)
-
-### Terminology Note
-
-In Experiment 2b, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
-but refer to "desire" in the theoretical framework. User-facing labels use "desire" to match the
-conceptual meaning.
-- Experiment 2a: Inverse planning (inferring intimacy)
-- Experiment 2b: Inverse planning (inferring desire state)
+- Experiment 2a: Inverse planning (given desire, infer intimacy)
+- Experiment 2b: Inverse planning (given intimacy, infer desire)
 
 ### Scenarios
 
 See [scenarios here](experiments/scenarios.csv)
 
-### Data Codebooks
+## Directory structure
 
-- [Experiment data](data/README.md) - Column definitions for trial data and exit surveys
-- [Model outputs](model/outputs/README.md) - Column definitions for fitted parameters and predictions
-- [Experiments & scenarios](experiments/README.md) - Scenario structure and action scale
+```
+├── analysis/          # R/Quarto analysis scripts and data processing
+│   ├── *.qmd          # Quarto analysis documents
+│   ├── json_to_csv.py # Raw data processing
+│   └── utils.R        # Shared R utilities
+├── data/              # Processed experiment data (see [codebook](data/README.md))
+│   ├── forw_plan/     # Experiment 1
+│   ├── inv_plan_intimacy/  # Experiment 2a
+│   └── inv_plan_desire/    # Experiment 2b
+├── experiments/       # jsPsych experiment code (see [README](experiments/README.md))
+│   └── scenarios.csv  # Scenario definitions
+├── model/             # Computational models (see [README](model/README.md))
+│   ├── model_utils.py # Actor and observer model definitions
+│   ├── fit_*.py       # Model fitting scripts
+│   └── outputs/       # Fitted parameters and predictions
+└── figures/           # Generated figures
+```
 
 ## Dependencies
 
 ### Python environment
-
-**Python 3.12 or higher is required.**
 
 #### Option 1: Using uv (recommended)
 
@@ -130,3 +133,5 @@ quarto render exp-2a-inv-plan-intimacy-analysis.qmd
 quarto render exp-2b-inv-plan-desire-analysis.qmd
 quarto render exp-2-combined-correlation.qmd
 ```
+
+The plots are saved in the `figures/` directory.

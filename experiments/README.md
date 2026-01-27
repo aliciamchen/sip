@@ -1,5 +1,9 @@
 # Experiments
 
+## Terminology note
+
+In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
+
 ## Scenarios (`scenarios.csv`)
 
 Spreadsheet of scenarios used to generate stimuli for the experiments.
