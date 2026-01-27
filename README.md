@@ -9,21 +9,30 @@
 
 ## Dependencies
 
-Python packages:
+### Python Environment (using uv)
+
+This project uses [uv](https://github.com/astral-sh/uv) for Python package management.
 
 ```bash
-conda env create -f environment.yaml
-conda activate saliva-inverse-planning
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install dependencies and create virtual environment
+uv sync
 ```
+
+### R Environment
 
 The R packages are managed by `renv`, the R version is `4.5.2`.
 
-In R, run: 
+In R, run:
 ```r
 renv::restore()
 ```
 
-You also need xquartz for the font in the plots to render correctly: 
+### System Dependencies (macOS)
+
+For font rendering in plots:
 ```bash
 brew install graphviz
 brew install --cask xquartz
@@ -55,23 +64,21 @@ The processed data CSVs are included in the repository, so `make all` works with
 Convert raw data (not included in the repository) to csv format with anonymized participant ids:
 
 ```bash
-python analysis/json_to_csv.py forw_plan
-python analysis/json_to_csv.py inv_plan_intimacy
-python analysis/json_to_csv.py inv_plan_reward
+uv run python analysis/json_to_csv.py forw_plan
+uv run python analysis/json_to_csv.py inv_plan_intimacy
+uv run python analysis/json_to_csv.py inv_plan_reward
 ```
 
 Fit forward planning models
 
 ```bash
-cd model
-python fit_forward_planning.py
+uv run python model/fit_forward_planning.py
 ```
 
 Use forward planning parameters to fit inverse planning models and generate predictions
 ```bash
-cd model
-python fit_inverse_planning.py
-python generate_inverse_planning_preds.py
+uv run python model/fit_inverse_planning.py
+uv run python model/generate_inverse_planning_preds.py
 ```
 
 Analyze data and generate plots
