@@ -131,7 +131,7 @@ def load_reward_data(filepath: str = None):
     """
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "inv_plan_reward" / "main_trials_long.csv"
+            get_project_root() / "data" / "inv_plan_desire" / "main_trials_long.csv"
         )
     print("Loading reward inference data...")
     data = pd.read_csv(filepath)

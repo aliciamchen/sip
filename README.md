@@ -5,7 +5,13 @@
 - Experiment 1: Forward planning
     - Preregistration
 - Experiment 2a: Inverse planning (intimacy)
-- Experiment 2b: Inverse planning (reward)
+- Experiment 2b: Inverse planning (desire)
+
+### Terminology Note
+
+In Experiment 2b, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
+but refer to "desire" in the theoretical framework. User-facing labels use "desire" to match the
+conceptual meaning.
 
 ## Dependencies
 
@@ -74,7 +80,7 @@ Convert raw data (not included in the repository) to csv format with anonymized 
 ```bash
 uv run python analysis/json_to_csv.py forw_plan
 uv run python analysis/json_to_csv.py inv_plan_intimacy
-uv run python analysis/json_to_csv.py inv_plan_reward
+uv run python analysis/json_to_csv.py inv_plan_desire
 ```
 
 Fit forward planning models
@@ -95,6 +101,6 @@ Analyze data and generate plots
 cd analysis
 quarto render exp-1-analysis.qmd
 quarto render exp-2a-inv-plan-intimacy-analysis.qmd
-quarto render exp-2b-inv-plan-reward-analysis.qmd
+quarto render exp-2b-inv-plan-desire-analysis.qmd
 quarto render exp-2-combined-correlation.qmd
 ```

@@ -12,7 +12,7 @@ Usage:
 Available experiments:
     - forw_plan: Experiment with probability sliders for action ratings
     - inv_plan_intimacy: Inverse planning experiment measuring intimacy ratings before and after observing actions
-    - inv_plan_reward: Inverse planning experiment measuring reward likelihood ratings before and after observing actions
+    - inv_plan_desire: Inverse planning experiment measuring desire likelihood ratings before and after observing actions
 """
 
 import argparse
@@ -78,8 +78,8 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "inv_plan_reward": {
-        "description": "Inverse planning experiment measuring reward likelihood ratings before and after observing actions",
+    "inv_plan_desire": {
+        "description": "Inverse planning experiment measuring desire likelihood ratings before and after observing actions",
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -209,7 +209,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_rating": intimacy_rating,
                         }
 
-                    elif experiment_name == "inv_plan_reward":
+                    elif experiment_name == "inv_plan_desire":
                         # Extract reward likelihood rating and stage information
                         response = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -407,9 +407,9 @@ def create_inv_plan_intimacy_long(output_dir):
     )
 
 
-def create_inv_plan_reward_long(output_dir):
+def create_inv_plan_desire_long(output_dir):
     """
-    Create main_trials_long.csv for inv_plan_reward experiment.
+    Create main_trials_long.csv for inv_plan_desire experiment.
 
     Filters out participants who failed attention check or got 0 correct on memory check.
 
@@ -468,12 +468,12 @@ def main():
 Available experiments:
   forw_plan         Experiment with probability sliders for action ratings
   inv_plan_intimacy Inverse planning experiment measuring intimacy ratings before and after observing actions
-  inv_plan_reward   Inverse planning experiment measuring reward likelihood ratings before and after observing actions
+  inv_plan_desire   Inverse planning experiment measuring desire likelihood ratings before and after observing actions
 
 Examples:
   python json_to_csv.py forw_plan
   python json_to_csv.py inv_plan_intimacy
-  python json_to_csv.py inv_plan_reward
+  python json_to_csv.py inv_plan_desire
         """,
     )
 
@@ -510,9 +510,9 @@ Examples:
     elif args.experiment == "inv_plan_intimacy":
         print("\nCreating long format with exclusions...")
         create_inv_plan_intimacy_long(output_dir)
-    elif args.experiment == "inv_plan_reward":
+    elif args.experiment == "inv_plan_desire":
         print("\nCreating long format with exclusions...")
-        create_inv_plan_reward_long(output_dir)
+        create_inv_plan_desire_long(output_dir)
 
     print("\nConversion complete!")
 

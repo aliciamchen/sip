@@ -30,7 +30,7 @@ names(EXP2B_COLORS) <- paste0("Intimacy: ", names(INTIMACY_COLORS))
 
 This notebook aggregates model-human correlations across both inverse planning experiments:
 - **Exp 2a**: Intimacy inference (infer relationship closeness from observed action)
-- **Exp 2b**: Reward inference (infer motivation from observed action)
+- **Exp 2b**: Desire inference (infer motivation from observed action)
 
 ## Load Exp 2a (Intimacy Inference) Data
 
@@ -86,7 +86,7 @@ df_model_2a <- read_csv(here("model", "outputs", "inv_plan_intimacy_preds_summar
 ### Human data
 
 ```{r}
-df_2b <- read_csv(here("data", "inv_plan_reward", "main_trials_long.csv")) |>
+df_2b <- read_csv(here("data", "inv_plan_desire", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     intimacy = factor(intimacy),
@@ -113,7 +113,7 @@ df_2b_summary <- df_2b |>
 ### Model predictions
 
 ```{r}
-df_model_2b <- read_csv(here("model", "outputs", "inv_plan_reward_preds_summary.csv")) |>
+df_model_2b <- read_csv(here("model", "outputs", "inv_plan_desire_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   filter(param_source == "stipulated") |>
   mutate(
@@ -153,7 +153,7 @@ df_corr_2a <- df_2a_summary |>
 # Combine human and model for exp 2b (already on 0-1 scale)
 df_corr_2b <- df_2b_summary |>
   left_join(df_model_2b, by = c("intimacy", "action")) |>
-  mutate(experiment = "Exp 2b: Reward")
+  mutate(experiment = "Exp 2b: Desire")
 
 # Combine both experiments
 df_combined <- bind_rows(

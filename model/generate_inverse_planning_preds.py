@@ -3,7 +3,7 @@ Generate inverse planning predictions using frozen forward planning parameters.
 
 This script generates predictions for two inverse planning experiments:
 1. inv_plan_intimacy: Infer intimacy from observed action (given reward condition)
-2. inv_plan_reward: Infer reward condition from observed action (given intimacy)
+2. inv_plan_desire: Infer desire condition from observed action (given intimacy)
 
 Uses parameters fitted from forward planning experiment (frozen, not re-fitted).
 """
@@ -391,8 +391,8 @@ def main():
     df_reward_summary = compute_p_high_reward(df_reward_full)
 
     # Save
-    full_path = output_dir / "inv_plan_reward_preds_full.csv"
-    summary_path = output_dir / "inv_plan_reward_preds_summary.csv"
+    full_path = output_dir / "inv_plan_desire_preds_full.csv"
+    summary_path = output_dir / "inv_plan_desire_preds_summary.csv"
     df_reward_full.to_csv(full_path, index=False)
     df_reward_summary.to_csv(summary_path, index=False)
     print(f"  Saved {len(df_reward_full)} rows to {full_path}")

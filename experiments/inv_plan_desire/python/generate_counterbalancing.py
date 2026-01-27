@@ -118,7 +118,7 @@ counterbalancing = (
 # Get project root and construct the output path
 project_root = get_project_root()
 output_path = (
-    project_root / "experiments/inv_plan_reward/json/full_counterbalancing.json"
+    project_root / "experiments/inv_plan_desire/json/full_counterbalancing.json"
 )
 
 with open(output_path, "w") as f:
