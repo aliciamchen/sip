@@ -1,5 +1,9 @@
 # Model Outputs Codebook
 
+## Terminology note
+
+In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
+
 ## forward_planning_fits.csv
 
 Per-trial model predictions for Experiment 1.
@@ -44,7 +48,7 @@ Summary of fitted inverse planning (observer) models.
 | Column | Description |
 |--------|-------------|
 | `model` | Model name |
-| `experiment` | Experiment ("intimacy" or "desire") |
+| `experiment` | Experiment ("intimacy" or "reward (==desire)") |
 | `alpha_observer` | Fitted observer inverse temperature |
 | `beta` | Fitted reward-intimacy scaling (modified models only) |
 | `nll` | Negative log-likelihood |
