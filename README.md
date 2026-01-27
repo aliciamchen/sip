@@ -12,10 +12,16 @@
 In Experiment 2b, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
 but refer to "desire" in the theoretical framework. User-facing labels use "desire" to match the
 conceptual meaning.
+- Experiment 2a: Inverse planning (inferring intimacy)
+- Experiment 2b: Inverse planning (inferring desire state)
+
+### Scenarios
+
+See [scenarios here](experiments/scenarios.csv)
 
 ## Dependencies
 
-### Python Environment (using uv)
+### Python environment (using uv)
 
 This project uses [uv](https://github.com/astral-sh/uv) for Python package management.
 
@@ -27,7 +33,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync
 ```
 
-### R Environment
+### R environment
 
 The R packages are managed by `renv`. **R version 4.5.2 is required** (specified in the lockfile).
 
@@ -44,15 +50,11 @@ renv::activate()
 renv::restore()
 ```
 
-### System Dependencies (macOS)
+### Quarto
 
-For font rendering in plots:
-```bash
-brew install graphviz
-brew install --cask xquartz
-```
+[Quarto](https://quarto.org/docs/get-started/) is needed to render the analysis documents.
 
-## Quick Start
+## Quick start
 
 Run the full pipeline using Make:
 
@@ -67,13 +69,12 @@ make help      # Show all available targets
 make fit       # Fit forward + inverse planning models
 make predictions  # Generate model predictions
 make analysis  # Render all Quarto analysis documents
-make test      # Run model compliance tests
 make clean     # Remove generated model outputs
 ```
 
 The processed data CSVs are included in the repository, so `make all` works without raw JSON data.
 
-## Manual Pipeline Steps
+## Manual pipeline steps
 
 Convert raw data (not included in the repository) to csv format with anonymized participant ids:
 
