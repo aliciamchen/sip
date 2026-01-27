@@ -16,3 +16,4 @@ legacy
 sandbox
 *.ai
 .venv/
+experiments/pilots/
