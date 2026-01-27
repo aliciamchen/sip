@@ -1,8 +1,28 @@
 # Experiments
 
-`scenarios.csv` is a spreadsheet of the scenarios, which is used to generate the stimuli for the experiments.
+## Scenarios (`scenarios.csv`)
 
-Conversion script to go from this csv to the stimuli for each experiment: 
+Spreadsheet of scenarios used to generate stimuli for the experiments.
+
+| Column | Description |
+|--------|-------------|
+| `scenario_label` | Scenario identifier used in data files |
+| `name_0`, `name_1` | Character names in the vignette |
+| `vignette` | Base scenario description |
+| `reward_low` | Text describing low motivation condition |
+| `reward_high` | Text describing high motivation condition |
+| `action_0` | Description of action 0 (no sharing) |
+| `action_1` | Description of action 1 (minimal sharing) |
+| `action_2` | Description of action 2 (moderate sharing) |
+| `action_3` | Description of action 3 (maximum sharing) |
+
+### Action Scale
+
+Actions are ordered by degree of saliva-sharing risk:
+- **Action 0**: No sharing
+- **Action 1**: Sharing with no saliva risk (e.g., cutting food in half, using separate utensils)
+- **Action 2**: Sharing with moderate saliva risk (e.g., eating from opposite ends)
+- **Action 3**: Sharing with high saliva risk (e.g., same utensil, same bite location) 
 ## Main experiments
 
 - [inv_plan_intimacy](inv_plan_intimacy/README.md) - Inverse planning: infer intimacy from observed actions

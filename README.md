@@ -19,9 +19,19 @@ conceptual meaning.
 
 See [scenarios here](experiments/scenarios.csv)
 
+### Data Codebooks
+
+- [Experiment data](data/README.md) - Column definitions for trial data and exit surveys
+- [Model outputs](model/outputs/README.md) - Column definitions for fitted parameters and predictions
+- [Experiments & scenarios](experiments/README.md) - Scenario structure and action scale
+
 ## Dependencies
 
-### Python environment (using uv)
+### Python environment
+
+**Python 3.12 or higher is required.**
+
+#### Option 1: Using uv (recommended)
 
 This project uses [uv](https://github.com/astral-sh/uv) for Python package management.
 
@@ -32,6 +42,21 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install dependencies and create virtual environment
 uv sync
 ```
+
+#### Option 2: Using pip
+
+If you don't have uv, you can use pip with the standard `pyproject.toml`:
+
+```bash
+# Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install .
+```
+
+Then run scripts with `python` instead of `uv run python`.
 
 ### R environment
 
