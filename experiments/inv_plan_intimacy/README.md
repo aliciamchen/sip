@@ -1,4 +1,4 @@
-# planning 2 pilot 1
+#  Running experiment
 
 `ssh aliciach@athena.dialup.mit.edu "mkdir -p ~/www/food-sharing"`
 
