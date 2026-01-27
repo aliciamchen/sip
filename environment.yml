@@ -137,6 +137,7 @@ dependencies:
       - optax==0.2.6
       - pyyaml==6.0.3
       - shellingham==1.5.4
+      - together==1.4.1
       - toolz==1.0.0
       - tqdm==4.67.1
       - typer-slim==0.21.0
