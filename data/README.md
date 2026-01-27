@@ -5,7 +5,7 @@ Each experiment folder contains `main_trials.csv`, `main_trials_long.csv`, and `
 
 ## Terminology note
 
-In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
+In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
 
 ## Exit Survey (all experiments)
 
