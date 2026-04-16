@@ -73,6 +73,20 @@ def get_effort(action):
 
 
 @jax.jit
+def get_access(action):
+    """Graded bodily/spatial exposure of each action to the other person.
+
+    access(a) = [0, 0.3, 1, 2][a]: action 0 opens nothing, action 1 (sharing with
+    no saliva) opens a small amount of personal/spatial access, actions 2-3
+    (double-dip, same-item) open progressively more bodily access via saliva
+    transfer. The gap between 1 and 2 is larger than between 0 and 1, since
+    saliva transfer is a qualitatively bigger step in exposure than simply
+    eating together.
+    """
+    return jnp.array([0.0, 0.3, 1.0, 2.0])[action]
+
+
+@jax.jit
 def get_reward_base(action, reward_condition):
     """Get reward for action given reward condition.
 
@@ -364,6 +378,96 @@ def get_utility_full_model_continuous_modified(
     discomfort = (1 - intimacy) * risk
 
     return alpha * (w_r * reward - w_d * discomfort - w_c * get_effort(action))
+
+
+# ==============================================================================
+# Access-Based Utility Functions
+# ==============================================================================
+# Canonical reformulation (access_full):
+#   U(a|s, I) = w_v * V(a|s)
+#             + w_r * access(a) * I
+#             - w_d * access(a) * (1 - I)
+#             - w_e * effort(a)
+# where V(a|s) is the food reward (not scaled by intimacy) and access(a) is
+# graded bodily/spatial exposure to the other person.
+#
+# Three variants are fit to data:
+#   - access_full  : full utility above (the main model)
+#   - access_only  : only the two access terms (no food reward, no effort cost)
+#   - no_access    : only food reward and effort cost (base model / baseline)
+#
+# Each variant has one continuous-intimacy utility (shared by forward-planning
+# and continuous-observer memo models) and one discrete wrapper keyed on
+# RelationshipConditions (used by observer_reward_* memo models).
+
+
+@jax.jit
+def get_utility_access_full(
+    action, intimacy, reward_condition, alpha, w_v, w_r, w_d, w_e
+):
+    V = get_reward_base(action, reward_condition)
+    access = get_access(action)
+    effort = get_effort(action)
+    return alpha * (
+        w_v * V
+        + w_r * access * intimacy
+        - w_d * access * (1 - intimacy)
+        - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_access_full_disc(
+    action, relationship_condition, reward_condition, alpha, w_v, w_r, w_d, w_e
+):
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_access_full(
+        action, intimacy, reward_condition, alpha, w_v, w_r, w_d, w_e
+    )
+
+
+@jax.jit
+def get_utility_access_only(
+    action, intimacy, reward_condition, alpha, w_r, w_d
+):
+    """Access-only utility: both positive and negative access terms, no food reward, no effort.
+
+    U = alpha * (w_r * access(a) * I  -  w_d * access(a) * (1 - I))
+
+    Tests whether the access terms alone — stripped of the food-reward motive
+    and the physical-effort cost — can account for behavior.
+    """
+    access = get_access(action)
+    return alpha * (w_r * access * intimacy - w_d * access * (1 - intimacy))
+
+
+@jax.jit
+def get_utility_access_only_disc(
+    action, relationship_condition, reward_condition, alpha, w_r, w_d
+):
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_access_only(
+        action, intimacy, reward_condition, alpha, w_r, w_d
+    )
+
+
+@jax.jit
+def get_utility_no_access(
+    action, intimacy, reward_condition, alpha, w_v, w_e
+):
+    V = get_reward_base(action, reward_condition)
+    effort = get_effort(action)
+    return alpha * (w_v * V - w_e * effort)
+
+
+@jax.jit
+def get_utility_no_access_disc(
+    action, relationship_condition, reward_condition, alpha, w_v, w_e
+):
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_no_access(
+        action, intimacy, reward_condition, alpha, w_v, w_e
+    )
 
 
 # ==============================================================================
@@ -874,6 +978,384 @@ def observer_reward_full_model_modified[
             wpp=actor_discrete_full_model_modified[
                 action, relationship_condition, reward_condition
             ](alpha, w_r, w_d, w_c, beta),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+# ==============================================================================
+# Access-Based Models — Forward Planning (Actor, Exp 1)
+# ==============================================================================
+
+
+@memo
+def actor_forw_access_full[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_r, w_d, w_e):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_full(
+                action, intimacy, reward_condition, alpha, w_v, w_r, w_d, w_e
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_forw_access_only[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_only(
+                action, intimacy, reward_condition, alpha, w_r, w_d
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_forw_no_access[
+    action: actions,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e):
+    cast: [actor]
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_no_access(
+                action, intimacy, reward_condition, alpha, w_v, w_e
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ==============================================================================
+# Access-Based Models — Inverse Planning Actor (Discrete)
+# ==============================================================================
+
+
+@memo
+def actor_discrete_access_full[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_r, w_d, w_e):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_full_disc(
+                action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_v,
+                w_r,
+                w_d,
+                w_e,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_access_only[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_only_disc(
+                action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_r,
+                w_d,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_no_access[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e):
+    cast: [actor]
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_no_access_disc(
+                action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_v,
+                w_e,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ==============================================================================
+# Access-Based Models — Inverse Planning Actor (Continuous)
+# ==============================================================================
+
+
+@memo
+def actor_continuous_access_full[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_r, w_d, w_e):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_full(
+                action, relationship, reward_condition, alpha, w_v, w_r, w_d, w_e
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_access_only[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_only(
+                action, relationship, reward_condition, alpha, w_r, w_d
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_no_access[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e):
+    cast: [actor]
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_no_access(
+                action, relationship, reward_condition, alpha, w_v, w_e
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ==============================================================================
+# Access-Based Models — Observer Inferring Intimacy (Exp 2a)
+# ==============================================================================
+
+
+@memo
+def observer_intimacy_access_full[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_r, w_d, w_e, alpha_observer):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_access_full[
+                action, relationship, reward_condition
+            ](alpha, w_v, w_r, w_d, w_e),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_access_only[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d, alpha_observer):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_access_only[
+                action, relationship, reward_condition
+            ](alpha, w_r, w_d),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+@memo
+def observer_intimacy_no_access[
+    action: actions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e, alpha_observer):
+    cast: [actor, observer]
+    observer: knows(reward_condition)
+    observer: thinks[
+        actor : knows(reward_condition),
+        actor : chooses(relationship in IntimacyLevels, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_continuous_no_access[
+                action, relationship, reward_condition
+            ](alpha, w_v, w_e),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        relationship in IntimacyLevels,
+        wpp=E[actor.relationship == relationship] ** alpha_observer,
+    )
+    return Pr[observer.relationship == relationship]
+
+
+# ==============================================================================
+# Access-Based Models — Observer Inferring Reward (Exp 2b)
+# ==============================================================================
+
+
+@memo
+def observer_reward_access_full[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_r, w_d, w_e, alpha_observer):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_access_full[
+                action, relationship_condition, reward_condition
+            ](alpha, w_v, w_r, w_d, w_e),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_access_only[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](alpha, w_r, w_d, alpha_observer):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_access_only[
+                action, relationship_condition, reward_condition
+            ](alpha, w_r, w_d),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_no_access[
+    action: actions,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e, alpha_observer):
+    cast: [actor, observer]
+    observer: knows(relationship_condition)
+    observer: thinks[
+        actor : knows(relationship_condition),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            action in actions,
+            wpp=actor_discrete_no_access[
+                action, relationship_condition, reward_condition
+            ](alpha, w_v, w_e),
         ),
     ]
     observer: observes[actor.action] is action

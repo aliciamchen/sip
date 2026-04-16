@@ -29,17 +29,25 @@ from model_utils import (
     RelationshipConditions,
     RewardConditions,
     actions,
+    # Access-based intimacy observer models
+    observer_intimacy_access_full,
+    observer_intimacy_access_only,
     observer_intimacy_discomfort_only,
     # Pre-registered intimacy observer models
     observer_intimacy_full_model,
     # Modified intimacy observer models (effort scaled by intimacy)
     observer_intimacy_full_model_modified,
+    observer_intimacy_no_access,
     observer_intimacy_vanilla_inv_plan,
+    # Access-based reward observer models
+    observer_reward_access_full,
+    observer_reward_access_only,
     observer_reward_discomfort_only,
     # Pre-registered reward observer models
     observer_reward_full_model,
     # Modified reward observer models (effort scaled by intimacy)
     observer_reward_full_model_modified,
+    observer_reward_no_access,
     observer_reward_vanilla_inv_plan,
 )
 
@@ -51,7 +59,13 @@ from utils import get_project_root
 
 
 def load_fitted_params(filepath: str = None) -> dict:
-    """Load frozen actor parameters from forward planning fit results."""
+    """Load frozen actor parameters from forward planning fit results.
+
+    Returns a dict: model_name -> dict of every `param_*` column present in that
+    row (stripped of the `param_` prefix). Missing/NaN columns are omitted, so
+    each model keeps only its own parameter set (e.g. access_full has w_v/w_r/w_d/w_e,
+    whereas the pre-registered full model has w_r/w_d/w_c).
+    """
     if filepath is None:
         filepath = (
             get_project_root()
@@ -63,12 +77,15 @@ def load_fitted_params(filepath: str = None) -> dict:
     params = {}
     for _, row in df.iterrows():
         model_name = row["model"]
-        params[model_name] = {
-            "alpha": row["param_alpha"],
-            "w_r": row.get("param_w_r", 0.0) if pd.notna(row.get("param_w_r")) else 0.0,
-            "w_d": row["param_w_d"],
-            "w_c": row.get("param_w_c", 0.0) if pd.notna(row.get("param_w_c")) else 0.0,
-        }
+        model_params = {}
+        for col in df.columns:
+            if col.startswith("param_") and pd.notna(row[col]):
+                model_params[col.replace("param_", "")] = float(row[col])
+        # Legacy defaults so existing callers that unconditionally look up
+        # w_r/w_d/w_c against pre-registered models continue to work.
+        for legacy_key in ("w_r", "w_d", "w_c"):
+            model_params.setdefault(legacy_key, 0.0)
+        params[model_name] = model_params
     return params
 
 
@@ -613,6 +630,157 @@ def fit_reward_alpha_observer_and_beta(
 
 
 # ==============================================================================
+# Access-Based Model Fitting (generic on param signature)
+# ==============================================================================
+#
+# The pre-registered observer fitters hard-code the (alpha, w_r, w_d, w_c) actor
+# signature. Access variants use different parameter sets (w_v/w_r/w_d/w_e or
+# subsets), so we fit each via a generic routine that builds the observer_fn
+# kwargs dynamically from a dict of actor-param names.
+
+
+def _fit_alpha_observer_generic(
+    observer_fn,
+    actor_params: dict,
+    actor_kwarg_names,
+    action: jnp.ndarray,
+    conditioning: jnp.ndarray,
+    response: jnp.ndarray,
+    nll_fn,
+    posterior_slicer,
+    lr: float = 0.1,
+    max_steps: int = 1000,
+    verbose: bool = True,
+):
+    """Fit alpha_observer for any observer model by dict-keyed actor params.
+
+    Args:
+        observer_fn: memo observer function.
+        actor_params: dict of fitted actor params (e.g. {'alpha':1,'w_v':..., ...}).
+        actor_kwarg_names: iterable of keys from actor_params to pass into observer_fn.
+        conditioning: per-trial int array passed as the second indexing axis into the
+            observer's output table (reward_condition for intimacy-inference, or
+            intimacy_idx for reward-inference).
+        nll_fn: (slice, response) -> scalar NLL.
+        posterior_slicer: (posterior_tensor, action_i, cond_i) -> relevant slice to
+            pass into nll_fn.
+    """
+    actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
+
+    def observer_table(alpha_observer):
+        return observer_fn(**actor_kwargs, alpha_observer=alpha_observer)
+
+    def get_nll(alpha_observer, a, c, resp):
+        table = observer_table(alpha_observer)
+        slc = posterior_slicer(table, a, c)
+        return nll_fn(slc, resp)
+
+    vmap_get_nll = jax.vmap(
+        lambda alpha_obs, a, c, resp: get_nll(alpha_obs, a, c, resp),
+        in_axes=(None, 0, 0, 0),
+    )
+
+    def loss_fn(params):
+        alpha_observer = params[0]
+        nlls = vmap_get_nll(alpha_observer, action, conditioning, response)
+        return jnp.sum(nlls)
+
+    params = jnp.array([1.0])
+    grad_fn = jax.value_and_grad(loss_fn)
+    opt = optax.adam(learning_rate=lr)
+    opt_state = opt.init(params)
+
+    prev_loss = None
+    zero_grad_count = 0
+    for step in range(max_steps):
+        loss, grad = grad_fn(params)
+        grad_mag = float(jnp.abs(grad[0]))
+        if jnp.isnan(grad[0]) or grad_mag < 1e-10:
+            zero_grad_count += 1
+            if zero_grad_count >= 5:
+                if verbose:
+                    print("  Gradient zero/NaN for 5 consecutive steps; alpha_observer=1.0")
+                return 1.0, float(loss)
+        else:
+            zero_grad_count = 0
+
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 0.01, 10.0)
+
+        if verbose and step % 200 == 0:
+            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}")
+
+        if prev_loss is not None and loss > prev_loss + 1e-4:
+            if verbose:
+                print(f"  Loss increased at step {step}, stopping")
+            break
+        prev_loss = loss
+
+    best_nll = float(loss_fn(params))
+    final_alpha = float(params[0])
+    if jnp.isnan(final_alpha):
+        final_alpha = 1.0
+    if verbose:
+        print(f"  Final NLL: {best_nll:.4f}, alpha_observer: {final_alpha:.4f}")
+    return final_alpha, best_nll
+
+
+def fit_access_intimacy_observer(
+    observer_fn, actor_params, actor_kwarg_names,
+    action, reward_condition, response, **kwargs,
+):
+    return _fit_alpha_observer_generic(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        conditioning=reward_condition,
+        response=response,
+        nll_fn=compute_intimacy_nll,
+        posterior_slicer=lambda tab, a, r: tab[a, :, r],
+        **kwargs,
+    )
+
+
+def fit_access_reward_observer(
+    observer_fn, actor_params, actor_kwarg_names,
+    action, intimacy_condition, response, **kwargs,
+):
+    return _fit_alpha_observer_generic(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        conditioning=intimacy_condition,
+        response=response,
+        nll_fn=compute_reward_nll,
+        posterior_slicer=lambda tab, a, i: tab[a, i, 1],
+        **kwargs,
+    )
+
+
+# Access variant registry: name -> (intimacy_observer, reward_observer, actor_kwargs)
+ACCESS_VARIANTS = {
+    "access_full": (
+        observer_intimacy_access_full,
+        observer_reward_access_full,
+        ["alpha", "w_v", "w_r", "w_d", "w_e"],
+    ),
+    "access_only": (
+        observer_intimacy_access_only,
+        observer_reward_access_only,
+        ["alpha", "w_r", "w_d"],
+    ),
+    "no_access": (
+        observer_intimacy_no_access,
+        observer_reward_no_access,
+        ["alpha", "w_v", "w_e"],
+    ),
+}
+
+
+# ==============================================================================
 # Main Script
 # ==============================================================================
 
@@ -706,6 +874,33 @@ def main():
             }
         )
 
+    # Fit access-based intimacy observers (actor params frozen from forward fit)
+    for variant_name, (int_obs, _rew_obs, kw_names) in ACCESS_VARIANTS.items():
+        if variant_name not in actor_params:
+            print(f"  (skipping {variant_name}: no forward fit available)")
+            continue
+        print(f"\n{'-' * 40}")
+        print(f"Fitting {variant_name} (intimacy inference)...")
+        print(f"{'-' * 40}")
+        alpha_observer, nll = fit_access_intimacy_observer(
+            observer_fn=int_obs,
+            actor_params=actor_params[variant_name],
+            actor_kwarg_names=kw_names,
+            action=int_action,
+            reward_condition=int_reward_condition,
+            response=int_response,
+        )
+        results.append(
+            {
+                "model": variant_name,
+                "experiment": "intimacy",
+                "alpha_observer": alpha_observer,
+                "beta": np.nan,
+                "nll": nll,
+                "n_params": 1,
+            }
+        )
+
     # -------------------------------------------------------------------------
     # Fit Reward Inference Models
     # -------------------------------------------------------------------------
@@ -779,6 +974,33 @@ def main():
             }
         )
 
+    # Fit access-based reward observers (actor params frozen from forward fit)
+    for variant_name, (_int_obs, rew_obs, kw_names) in ACCESS_VARIANTS.items():
+        if variant_name not in actor_params:
+            print(f"  (skipping {variant_name}: no forward fit available)")
+            continue
+        print(f"\n{'-' * 40}")
+        print(f"Fitting {variant_name} (reward inference)...")
+        print(f"{'-' * 40}")
+        alpha_observer, nll = fit_access_reward_observer(
+            observer_fn=rew_obs,
+            actor_params=actor_params[variant_name],
+            actor_kwarg_names=kw_names,
+            action=rew_action,
+            intimacy_condition=rew_intimacy_condition,
+            response=rew_response,
+        )
+        results.append(
+            {
+                "model": variant_name,
+                "experiment": "reward",
+                "alpha_observer": alpha_observer,
+                "beta": np.nan,
+                "nll": nll,
+                "n_params": 1,
+            }
+        )
+
     # -------------------------------------------------------------------------
     # Save Results
     # -------------------------------------------------------------------------
@@ -795,6 +1017,11 @@ def main():
     results_path = output_dir / "inverse_planning_fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
+
+    access_df = results_df[results_df["model"].isin(ACCESS_VARIANTS.keys())].copy()
+    access_path = output_dir / "access_model_inverse_fit_results.csv"
+    access_df.to_csv(access_path, index=False)
+    print(f"Saved access-model comparison to {access_path}")
 
     print("\n" + "=" * 60)
     print("Done!")

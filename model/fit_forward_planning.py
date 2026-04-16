@@ -27,8 +27,11 @@ from model_utils import (
     IntimacyLevels,
     RewardConditions,
     actions,
+    actor_forw_access_full,
+    actor_forw_access_only,
     actor_forw_discomfort_only,
     actor_forw_full,
+    actor_forw_no_access,
     actor_forw_vanilla,
 )
 from scipy import stats
@@ -231,6 +234,30 @@ def predict_discomfort_only(intimacy, reward_condition, action, alpha, w_d):
     )(intimacy, reward_condition, action)
 
 
+# Access-based model predictions
+
+
+@jax.jit
+def predict_access_full(intimacy, reward_condition, action, alpha, w_v, w_r, w_d, w_e):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_access_full(alpha, w_v, w_r, w_d, w_e)
+    return jax.vmap(lambda i, r, a: probs[a, i, r])(intimacy_idx, reward_condition, action)
+
+
+@jax.jit
+def predict_access_only(intimacy, reward_condition, action, alpha, w_r, w_d):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_access_only(alpha, w_r, w_d)
+    return jax.vmap(lambda i, r, a: probs[a, i, r])(intimacy_idx, reward_condition, action)
+
+
+@jax.jit
+def predict_no_access(intimacy, reward_condition, action, alpha, w_v, w_e):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_no_access(alpha, w_v, w_e)
+    return jax.vmap(lambda i, r, a: probs[a, i, r])(intimacy_idx, reward_condition, action)
+
+
 # Model fitting
 
 
@@ -389,6 +416,88 @@ def fit_discomfort_only_model(
     return full_params, best_nll
 
 
+# Access-based model fitting (alpha=1 fixed)
+
+
+def _fit_with_adam(
+    loss_fn, init_params, lr=0.01, max_steps=5000, verbose=True, label=""
+):
+    """Shared adam fit loop with non-negativity clipping and NLL monotonicity stop."""
+    params = jnp.array(init_params)
+    grad_fn = jax.value_and_grad(loss_fn)
+    opt = optax.adam(learning_rate=lr)
+    opt_state = opt.init(params)
+
+    prev_nll = None
+    for step in range(max_steps):
+        nll, grad = grad_fn(params)
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 1e-6, jnp.inf)
+
+        if verbose and step % 1000 == 0:
+            print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
+
+        if prev_nll is not None and nll > prev_nll + 1e-6:
+            if verbose:
+                print(f"  NLL increased at step {step}, stopping")
+            break
+        prev_nll = nll
+
+    best_nll = float(loss_fn(params))
+    if verbose:
+        print(f"  {label} final NLL: {best_nll:.4f}, params: {params}")
+    return params, best_nll
+
+
+def fit_access_full_model(intimacy, reward_condition, action, p_action, **kwargs):
+    ALPHA = 1.0
+
+    def loss_fn(params):
+        w_v, w_r, w_d, w_e = params
+        preds = predict_access_full(
+            intimacy, reward_condition, action, ALPHA, w_v, w_r, w_d, w_e
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
+
+
+def fit_access_only_model(intimacy, reward_condition, action, p_action, **kwargs):
+    ALPHA = 1.0
+
+    def loss_fn(params):
+        w_r, w_d = params
+        preds = predict_access_only(
+            intimacy, reward_condition, action, ALPHA, w_r, w_d
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0], label="access_only", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1]]), nll
+
+
+def fit_no_access_model(intimacy, reward_condition, action, p_action, **kwargs):
+    ALPHA = 1.0
+
+    def loss_fn(params):
+        w_v, w_e = params
+        preds = predict_no_access(
+            intimacy, reward_condition, action, ALPHA, w_v, w_e
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0], label="no_access", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1]]), nll
+
+
 # Main script
 
 
@@ -453,6 +562,41 @@ def main():
         "n_params": 1,  # w_d only (alpha fixed to 1)
     }
 
+    # Access-based model comparison (canonical reformulation)
+    # Three variants: Full model (access_full), Access only, Base/No access
+    access_fits = {
+        "access_full": (
+            fit_access_full_model,
+            predict_access_full,
+            ["w_v", "w_r", "w_d", "w_e"],
+        ),
+        "access_only": (
+            fit_access_only_model,
+            predict_access_only,
+            ["w_r", "w_d"],
+        ),
+        "no_access": (
+            fit_no_access_model,
+            predict_no_access,
+            ["w_v", "w_e"],
+        ),
+    }
+    access_param_arrays = {}
+    for name, (fit_fn, _pred_fn, param_names) in access_fits.items():
+        print("\n" + "-" * 40)
+        print(f"Fitting {name.upper()} model (alpha=1 fixed)...")
+        print("-" * 40)
+        params, nll = fit_fn(intimacy, reward_condition, action, p_action)
+        access_param_arrays[name] = params
+        results[name] = {
+            "params": {
+                "alpha": float(params[0]),
+                **{pn: float(params[i + 1]) for i, pn in enumerate(param_names)},
+            },
+            "nll": nll,
+            "n_params": len(param_names),
+        }
+
     # Summary
     print("\n" + "=" * 60)
     print("RESULTS SUMMARY")
@@ -501,6 +645,13 @@ def main():
         )
     )
 
+    # Access-model predictions per datapoint
+    for name, (_fit_fn, pred_fn, _param_names) in access_fits.items():
+        params = access_param_arrays[name]
+        data[f"pred_{name}"] = np.array(
+            pred_fn(intimacy, reward_condition, action, *params)
+        )
+
     # Save predictions
     output_dir = Path(__file__).parent / "outputs"
     output_dir.mkdir(exist_ok=True)
@@ -516,8 +667,16 @@ def main():
     n_obs = len(data)
     group_cols = ["intimacy", "motivation", "action"]
     model_metrics = {}
+    all_model_names = [
+        "full",
+        "vanilla",
+        "discomfort_only",
+        "access_full",
+        "access_only",
+        "no_access",
+    ]
 
-    for model_name in ["full", "vanilla", "discomfort_only"]:
+    for model_name in all_model_names:
         nll = results[model_name]["nll"]
         n_params = results[model_name]["n_params"]
 
@@ -545,7 +704,7 @@ def main():
 
     # Save results summary with all metrics
     results_rows = []
-    for model_name in ["full", "vanilla", "discomfort_only"]:
+    for model_name in all_model_names:
         row = {
             "model": model_name,
             "nll": results[model_name]["nll"],
@@ -563,6 +722,18 @@ def main():
     results_path = output_dir / "forward_planning_fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
+
+    # Also emit a focused access-model-only CSV for the 3-way comparison
+    access_model_names = [
+        "access_full",
+        "access_only",
+        "no_access",
+    ]
+    access_rows = [r for r in results_rows if r["model"] in access_model_names]
+    access_df = pd.DataFrame(access_rows)
+    access_results_path = output_dir / "access_model_forward_fit_results.csv"
+    access_df.to_csv(access_results_path, index=False)
+    print(f"Saved access-model comparison to {access_results_path}")
 
     print("\n" + "=" * 60)
     print("Done!")

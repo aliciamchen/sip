@@ -44,6 +44,14 @@ from model_utils import (
 
     # Modified observer for reward inference (effort scaled by intimacy)
     observer_reward_full_model_modified,
+
+    # Access-based observer models (new canonical reformulation)
+    observer_intimacy_access_full,
+    observer_intimacy_access_only,
+    observer_intimacy_no_access,
+    observer_reward_access_full,
+    observer_reward_access_only,
+    observer_reward_no_access,
 )
 
 
@@ -52,19 +60,25 @@ from model_utils import (
 # ==============================================================================
 
 def load_fitted_params(filepath: str = None) -> dict:
-    """Load fitted parameters from forward planning fit results."""
+    """Load fitted actor parameters from forward planning fit results.
+
+    Returns a dict: model_name -> dict of every `param_*` column present in that
+    row (stripped of the `param_` prefix). Missing/NaN columns are omitted.
+    """
     if filepath is None:
         filepath = get_project_root() / "model" / "outputs" / "forward_planning_fit_results.csv"
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
         model_name = row["model"]
-        params[model_name] = {
-            "alpha": row["param_alpha"],
-            "w_r": row.get("param_w_r", 0.0) if pd.notna(row.get("param_w_r")) else 0.0,
-            "w_d": row["param_w_d"],
-            "w_c": row.get("param_w_c", 0.0) if pd.notna(row.get("param_w_c")) else 0.0,
-        }
+        model_params = {}
+        for col in df.columns:
+            if col.startswith("param_") and pd.notna(row[col]):
+                model_params[col.replace("param_", "")] = float(row[col])
+        # Legacy defaults used by the pre-registered-model codepath
+        for legacy_key in ("w_r", "w_d", "w_c"):
+            model_params.setdefault(legacy_key, 0.0)
+        params[model_name] = model_params
     return params
 
 
@@ -230,6 +244,77 @@ def generate_reward_preds_stipulated(params: dict, model_name: str, alpha_observ
 
 
 # ==============================================================================
+# Access-Based Prediction Generators
+# ==============================================================================
+#
+# Each access variant has its own actor-param signature. We hold those as a
+# registry keyed by variant name and dispatch generically.
+
+ACCESS_INTIMACY_OBSERVERS = {
+    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_r", "w_d", "w_e"]),
+    "access_only": (observer_intimacy_access_only, ["alpha", "w_r", "w_d"]),
+    "no_access": (observer_intimacy_no_access, ["alpha", "w_v", "w_e"]),
+}
+
+ACCESS_REWARD_OBSERVERS = {
+    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_r", "w_d", "w_e"]),
+    "access_only": (observer_reward_access_only, ["alpha", "w_r", "w_d"]),
+    "no_access": (observer_reward_no_access, ["alpha", "w_v", "w_e"]),
+}
+
+
+def generate_intimacy_preds_access(
+    params: dict, variant_name: str, alpha_observer: float = 1.0
+) -> pd.DataFrame:
+    """Intimacy-inference predictions for one access variant."""
+    observer_fn, kw_names = ACCESS_INTIMACY_OBSERVERS[variant_name]
+    kwargs = {k: params[k] for k in kw_names}
+    kwargs["alpha_observer"] = alpha_observer
+    result = observer_fn(**kwargs)
+
+    data = []
+    for a_idx, a in enumerate(actions):
+        for r in [0, 1]:
+            for i_idx, i in enumerate(IntimacyLevels):
+                data.append({
+                    "action": int(a),
+                    "reward_condition": "low" if r == 0 else "high",
+                    "intimacy": float(i),
+                    "density": float(result[a_idx, i_idx, r]),
+                })
+    df = pd.DataFrame(data)
+    df["model"] = variant_name
+    df["param_source"] = "stipulated"
+    return df
+
+
+def generate_reward_preds_access(
+    params: dict, variant_name: str, alpha_observer: float = 1.0
+) -> pd.DataFrame:
+    """Reward-inference predictions for one access variant."""
+    observer_fn, kw_names = ACCESS_REWARD_OBSERVERS[variant_name]
+    kwargs = {k: params[k] for k in kw_names}
+    kwargs["alpha_observer"] = alpha_observer
+    result = observer_fn(**kwargs)
+
+    intimacy_map = {0: 0, 1: 50, 2: 75, 3: 100}
+    data = []
+    for a_idx, a in enumerate(actions):
+        for rel_idx in range(4):
+            for r in [0, 1]:
+                data.append({
+                    "action": int(a),
+                    "intimacy_condition": intimacy_map[rel_idx],
+                    "reward_condition": "low" if r == 0 else "high",
+                    "density": float(result[a_idx, rel_idx, r]),
+                })
+    df = pd.DataFrame(data)
+    df["model"] = variant_name
+    df["param_source"] = "stipulated"
+    return df
+
+
+# ==============================================================================
 # Summary Statistics
 # ==============================================================================
 
@@ -333,6 +418,23 @@ def main():
         scenario_dfs.append(df_scenario)
     intimacy_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
 
+    # Access-based variants (canonical reformulation)
+    for variant_name in ACCESS_INTIMACY_OBSERVERS:
+        if variant_name not in params:
+            print(f"  (skipping {variant_name}: no forward fit available)")
+            continue
+        alpha_observer = alpha_obs.get((variant_name, "intimacy"), 1.0)
+        print(f"  {variant_name} (access, alpha_observer={alpha_observer:.3f})...")
+        df = generate_intimacy_preds_access(
+            params[variant_name], variant_name, alpha_observer=alpha_observer
+        )
+        scenario_dfs = []
+        for scenario_label in SCENARIO_LABELS:
+            df_scenario = df.copy()
+            df_scenario["scenario_label"] = scenario_label
+            scenario_dfs.append(df_scenario)
+        intimacy_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
+
     # Combine all intimacy predictions
     df_intimacy_full = pd.concat(intimacy_dfs, ignore_index=True)
 
@@ -382,6 +484,23 @@ def main():
         df_scenario["scenario_label"] = scenario_label
         scenario_dfs.append(df_scenario)
     reward_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
+
+    # Access-based variants (canonical reformulation)
+    for variant_name in ACCESS_REWARD_OBSERVERS:
+        if variant_name not in params:
+            print(f"  (skipping {variant_name}: no forward fit available)")
+            continue
+        alpha_observer = alpha_obs.get((variant_name, "reward"), 1.0)
+        print(f"  {variant_name} (access, alpha_observer={alpha_observer:.3f})...")
+        df = generate_reward_preds_access(
+            params[variant_name], variant_name, alpha_observer=alpha_observer
+        )
+        scenario_dfs = []
+        for scenario_label in SCENARIO_LABELS:
+            df_scenario = df.copy()
+            df_scenario["scenario_label"] = scenario_label
+            scenario_dfs.append(df_scenario)
+        reward_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
 
     # Combine all reward predictions
     df_reward_full = pd.concat(reward_dfs, ignore_index=True)

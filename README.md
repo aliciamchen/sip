@@ -10,6 +10,26 @@
 
 See [scenarios here](experiments/scenarios.csv)
 
+## Utility model
+
+The canonical utility function is:
+
+```
+U(a|s, I) = w_v · V(a|s)
+          + w_r · access(a) · I
+          − w_d · access(a) · (1 − I)
+          − w_e · effort(a)
+```
+
+Here `V(a|s)` is the base reward of the food (not scaled by intimacy), and `access(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space. Intimacy `I` converts access into positive reward (close relationships) or negative discomfort (distant relationships). The fixed vectors are `access(a) = [0, 0.3, 1, 2]` across the four actions and `effort(a) = [0, 1, 1, 1]`. The jump between action 1 and action 2 is larger than the other steps because crossing into saliva transfer is a qualitatively bigger increment in bodily exposure than merely sharing a meal.
+
+Three variants are fit and compared for both the actor (Experiment 1) and observer (Experiments 2a/2b) models:
+- **access_full** — the full utility above: food reward, both access terms, and effort (the main model)
+- **access_only** — only the two access terms; drops food reward and physical effort to ask whether the access signal alone can account for behavior
+- **no_access** — `w_v · V − w_e · effort` (the Base model)
+
+The pre-registered models (full / vanilla / discomfort_only, which scale food reward by intimacy) are retained for comparison. Fit and comparison results for the three access variants are in `model/outputs/access_model_forward_fit_results.csv` and `model/outputs/access_model_inverse_fit_results.csv`.
+
 ## Directory structure
 
 ```
