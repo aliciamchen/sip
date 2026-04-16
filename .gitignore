@@ -6,7 +6,6 @@ raw_data
 __pycache__
 *.Rhistory
 .env
-CLAUDE.md
 /.quarto/
 **/*.quarto_ipynb
 _output
@@ -19,4 +18,3 @@ sandbox
 experiments/pilots/
 submissions
 cogsci-2026
-.claude
