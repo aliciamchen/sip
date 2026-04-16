@@ -17,3 +17,6 @@ sandbox
 *.ai
 .venv/
 experiments/pilots/
+submissions
+cogsci-2026
+.claude

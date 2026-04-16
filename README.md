@@ -1,10 +1,10 @@
 # Inverse planning in the context of sociological structure
 
-## Experiments: 
+## Experiments
 
-- Experiment 1: Forward planning
-- Experiment 2a: Inverse planning (given desire, infer intimacy)
-- Experiment 2b: Inverse planning (given intimacy, infer desire)
+- Experiment 1: Forward planning — actors choose actions based on intimacy and desire
+- Experiment 2a: Inverse planning — observers see an action (with the actor's desire known) and infer intimacy
+- Experiment 2b: Inverse planning — observers see an action (with the actor's intimacy known) and infer desire
 
 ### Scenarios
 
@@ -17,18 +17,20 @@ See [scenarios here](experiments/scenarios.csv)
 │   ├── *.qmd          # Quarto analysis documents
 │   ├── json_to_csv.py # Raw data processing
 │   └── utils.R        # Shared R utilities
-├── data/              # Processed experiment data (see [codebook](data/README.md))
+├── data/              # Processed experiment data
 │   ├── forw_plan/     # Experiment 1
 │   ├── inv_plan_intimacy/  # Experiment 2a
 │   └── inv_plan_desire/    # Experiment 2b
-├── experiments/       # jsPsych experiment code (see [README](experiments/README.md))
+├── experiments/       # jsPsych experiment code
 │   └── scenarios.csv  # Scenario definitions
-├── model/             # Computational models (see [README](model/README.md))
+├── model/             # Computational models
 │   ├── model_utils.py # Actor and observer model definitions
 │   ├── fit_*.py       # Model fitting scripts
 │   └── outputs/       # Fitted parameters and predictions
 └── figures/           # Generated figures
 ```
+
+See the [data codebook](data/README.md), [experiments README](experiments/README.md), and [model outputs README](model/outputs/README.md) for details on each directory.
 
 ## Dependencies
 
@@ -48,7 +50,7 @@ uv sync
 
 #### Option 2: Using pip
 
-If you don't have uv, you can use pip with the standard `pyproject.toml`:
+If you don't have uv, you can use pip with the standard `pyproject.toml`. With this setup, run scripts with `python` rather than `uv run python`:
 
 ```bash
 # Create and activate a virtual environment
@@ -58,8 +60,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install .
 ```
-
-Then run scripts with `python` instead of `uv run python`.
 
 ### R environment
 
@@ -104,7 +104,7 @@ The processed data CSVs are included in the repository, so `make all` works with
 
 ## Manual pipeline steps
 
-Convert raw data (not included in the repository) to csv format with anonymized participant ids:
+Convert raw data (not included in the repository) to CSV format with anonymized participant ids:
 
 ```bash
 uv run python analysis/json_to_csv.py forw_plan
