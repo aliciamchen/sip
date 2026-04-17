@@ -6,8 +6,10 @@ Uses Together AI's Llama-3.3-70B-Instruct-Turbo to estimate, for each of the 16
 scenarios in experiments/scenarios.csv:
 
 - access(a): physical / informational / spatial exposure per action  (0-6 -> [0, 2])
-- effort(a): social-coordination effort per action                    (0-6 -> [0, 1])
-- reward:    scenario-level food/occasion reward                      (0-6 -> ~1)
+- effort(a): physical / logistical cost per action                   (0-6 -> [0, 1])
+
+Reward is NOT elicited from the LLM — it's stipulated in `model/model_utils.py`
+as a binary planning-gate (V=1 iff HIGH motivation AND action involves sharing).
 
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
@@ -87,28 +89,8 @@ Respond with your numerical ratings in this JSON format only, no explanation nee
 {"action_0": 0.5, "action_1": 3.2, "action_2": 2.1, "action_3": 1.5}"""
 
 
-GOAL_VALUE_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read vignettes about two people in a food-sharing situation. For each scenario, rate the FOOD REWARD — the intrinsic goal value of eating this particular food in this situation, as it would motivate someone to act.
-
-Think of this as a planning agent's reward for reaching the goal state of "eating this food": assuming the person is motivated to eat, how good an outcome is consuming this food? This is the scalar utility that would make the food worth pursuing, separately from any cost or social meaning.
-
-Consider:
-- How appealing is the food itself — taste, quality, desirability as a dish?
-- Does the situation affect the food's quality in a concrete sensory way (e.g. a fresh warm pastry vs. something likely to be stale or unappetizing)?
-
-Rate only the food's intrinsic reward value. Do NOT include:
-- How close, intimate, or formal the relationship between the two people is
-- The social-bonding or emotional meaning of sharing
-- The effort, logistics, or cost of obtaining or preparing the food
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = Food someone would actively avoid or find unappetizing
-3 = Ordinary food — eaten without strong positive or negative feelings
-6 = Highly desirable food — something someone would genuinely seek out
-
-Respond with a single numerical rating in this JSON format only:
-{"reward": 3.5}"""
+# Reward is stipulated in model/model_utils.py as a binary planning-gate
+# (V=1 iff HIGH motivation AND action involves sharing). Not elicited from the LLM.
 
 
 # ==============================================================================
@@ -143,12 +125,6 @@ Action 2: {row["action_2"]}
 Action 3: {row["action_3"]}"""
 
 
-def format_reward_prompt(row):
-    return f"""Scenario: {row["vignette"]}
-
-Rate the intrinsic food reward in this scenario — the goal value of eating this food, independent of the relationship between the two people or any cost of sharing (0-6 scale):"""
-
-
 # ==============================================================================
 # Parsers + aggregators
 # ==============================================================================
@@ -172,22 +148,6 @@ def parse_action_response(response_text):
         expected = {"action_0", "action_1", "action_2", "action_3"}
         if expected.issubset(ratings.keys()):
             return {k: float(ratings[k]) for k in expected}
-    except (json.JSONDecodeError, ValueError) as e:
-        print(f"  Failed to parse JSON: {e}")
-    return None
-
-
-def parse_reward_response(response_text):
-    """Parse JSON rating with a single 'reward' key."""
-    if response_text is None:
-        return None
-    js = _find_json(response_text.strip())
-    if js is None:
-        return None
-    try:
-        ratings = json.loads(js)
-        if "reward" in ratings:
-            return float(ratings["reward"])
     except (json.JSONDecodeError, ValueError) as e:
         print(f"  Failed to parse JSON: {e}")
     return None
@@ -227,12 +187,6 @@ def aggregate_action_ratings(ratings_list):
     return result
 
 
-def aggregate_reward_ratings(ratings_list):
-    if not ratings_list:
-        return (np.nan, np.nan)
-    return (float(np.mean(ratings_list)), float(np.std(ratings_list)))
-
-
 # ==============================================================================
 # Normalization (0-6 LLM scale -> model-native scales)
 # ==============================================================================
@@ -245,11 +199,6 @@ def normalize_access(value, target_max=2.0):
 
 def normalize_effort(value, target_max=1.0):
     return value * (target_max / 6.0)
-
-
-def normalize_reward(value, target_mean=1.0):
-    """0-6 -> roughly [0.5, 1.5], centered at 1."""
-    return 0.5 + value * (1.0 / 6.0)
 
 
 # ==============================================================================
@@ -307,15 +256,6 @@ def main():
         )
         effort_agg = aggregate_action_ratings(effort_ratings)
 
-        print("  Getting reward rating...")
-        reward_ratings = get_ratings(
-            client,
-            GOAL_VALUE_SYSTEM_PROMPT,
-            format_reward_prompt(row),
-            parse_reward_response,
-        )
-        reward_mean, reward_std = aggregate_reward_ratings(reward_ratings)
-
         for action in range(4):
             key = f"action_{action}"
             a_mean, a_std = access_agg[key]
@@ -328,20 +268,10 @@ def main():
                     "access_raw_std": a_std,
                     "effort_raw": e_mean,
                     "effort_raw_std": e_std,
-                    "reward_raw": reward_mean,
-                    "reward_raw_std": reward_std,
-                    "access": normalize_access(a_mean)
-                    if not np.isnan(a_mean)
-                    else np.nan,
-                    "effort": normalize_effort(e_mean)
-                    if not np.isnan(e_mean)
-                    else np.nan,
-                    "reward": normalize_reward(reward_mean)
-                    if not np.isnan(reward_mean)
-                    else np.nan,
+                    "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                    "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
                     "n_runs_access": len(access_ratings),
                     "n_runs_effort": len(effort_ratings),
-                    "n_runs_reward": len(reward_ratings),
                 }
             )
 
@@ -349,7 +279,6 @@ def main():
         eff_str = [f"{effort_agg[f'action_{i}'][0]:.1f}" for i in range(4)]
         print(f"  Access (raw): {acc_str}")
         print(f"  Effort (raw): {eff_str}")
-        print(f"  Reward (raw): {reward_mean:.1f}")
 
     results_df = pd.DataFrame(results)
     output_dir = get_project_root() / "model" / "outputs"
@@ -360,7 +289,7 @@ def main():
 
     print("\n=== Summary ===")
     print(f"Total rows: {len(results_df)}")
-    for col, target in [("access", "[0, 2]"), ("effort", "[0, 1]"), ("reward", "~1")]:
+    for col, target in [("access", "[0, 2]"), ("effort", "[0, 1]")]:
         print(
             f"\n{col.capitalize()} (normalized, target {target}):"
             f"\n  Mean: {results_df[col].mean():.2f}, Std: {results_df[col].std():.2f}"

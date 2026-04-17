@@ -147,11 +147,11 @@ def get_intimacy_index(intimacy_value):
 def predict_access_full(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_r, w_d, w_e,
-    access_table, effort_table, reward_table,
+    access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_access_full(
-        alpha, w_v, w_r, w_d, w_e, access_table, effort_table, reward_table
+        alpha, w_v, w_r, w_d, w_e, access_table, effort_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
         intimacy_idx, reward_condition, action, scenario_idx
@@ -162,11 +162,11 @@ def predict_access_full(
 def predict_access_only(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_r, w_d,
-    access_table, effort_table, reward_table,
+    access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_access_only(
-        alpha, w_r, w_d, access_table, effort_table, reward_table
+        alpha, w_r, w_d, access_table, effort_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
         intimacy_idx, reward_condition, action, scenario_idx
@@ -177,11 +177,11 @@ def predict_access_only(
 def predict_no_access(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_e,
-    access_table, effort_table, reward_table,
+    access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_no_access(
-        alpha, w_v, w_e, access_table, effort_table, reward_table
+        alpha, w_v, w_e, access_table, effort_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
         intimacy_idx, reward_condition, action, scenario_idx
@@ -226,13 +226,13 @@ def fit_access_full_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     ALPHA = 1.0
-    a_tab, e_tab, r_tab = tables
+    a_tab, e_tab = tables
 
     def loss_fn(params):
         w_v, w_r, w_d, w_e = params
         preds = predict_access_full(
             intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_v, w_r, w_d, w_e, a_tab, e_tab, r_tab,
+            ALPHA, w_v, w_r, w_d, w_e, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -246,13 +246,13 @@ def fit_access_only_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     ALPHA = 1.0
-    a_tab, e_tab, r_tab = tables
+    a_tab, e_tab = tables
 
     def loss_fn(params):
         w_r, w_d = params
         preds = predict_access_only(
             intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_r, w_d, a_tab, e_tab, r_tab,
+            ALPHA, w_r, w_d, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -266,13 +266,13 @@ def fit_no_access_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     ALPHA = 1.0
-    a_tab, e_tab, r_tab = tables
+    a_tab, e_tab = tables
 
     def loss_fn(params):
         w_v, w_e = params
         preds = predict_no_access(
             intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_v, w_e, a_tab, e_tab, r_tab,
+            ALPHA, w_v, w_e, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -292,7 +292,7 @@ def main():
 
     data, intimacy, reward_condition, action, p_action, scenario_idx = load_data()
 
-    tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+    tables = (LLM_TABLES["access"], LLM_TABLES["effort"])
     fits = {
         "access_full": (
             fit_access_full_model,

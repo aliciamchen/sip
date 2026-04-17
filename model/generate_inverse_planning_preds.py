@@ -7,8 +7,8 @@ Generates predictions for two inverse planning experiments:
 
 Uses actor parameters fitted from the forward planning experiment (frozen, not
 re-fitted) and alpha_observer fitted from the inverse planning experiments.
-Every variant reads scenario-specific access/effort/reward from LLM_TABLES and
-emits per-scenario predictions.
+Every variant reads scenario-specific access/effort from LLM_TABLES (reward is
+stipulated as a binary planning gate) and emits per-scenario predictions.
 """
 
 import sys
@@ -107,9 +107,9 @@ def generate_intimacy_preds(
     observer_fn, kw_names = INTIMACY_OBSERVERS[variant_name]
     kwargs = {k: params[k] for k in kw_names}
     kwargs["alpha_observer"] = alpha_observer
-    a_tab, e_tab, r_tab = tables
+    a_tab, e_tab = tables
     result = observer_fn(
-        **kwargs, access_table=a_tab, effort_table=e_tab, reward_table=r_tab
+        **kwargs, access_table=a_tab, effort_table=e_tab,
     )
     # result shape: (actions, scenarios, intimacy_levels, reward_conditions)
     data = []
@@ -136,9 +136,9 @@ def generate_reward_preds(
     observer_fn, kw_names = REWARD_OBSERVERS[variant_name]
     kwargs = {k: params[k] for k in kw_names}
     kwargs["alpha_observer"] = alpha_observer
-    a_tab, e_tab, r_tab = tables
+    a_tab, e_tab = tables
     result = observer_fn(
-        **kwargs, access_table=a_tab, effort_table=e_tab, reward_table=r_tab
+        **kwargs, access_table=a_tab, effort_table=e_tab,
     )
     # result shape: (actions, scenarios, relationship_conditions, reward_conditions)
     intimacy_map = {0: 0, 1: 50, 2: 75, 3: 100}
@@ -217,7 +217,7 @@ def main():
     for (model, exp), alpha in alpha_obs.items():
         print(f"  {model} ({exp}): alpha_observer={alpha:.3f}")
 
-    tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+    tables = (LLM_TABLES["access"], LLM_TABLES["effort"])
 
     # -------------------------------------------------------------------------
     # Intimacy Inference Predictions

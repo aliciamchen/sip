@@ -159,7 +159,7 @@ def compute_reward_nll(p_high, response):
 # Observer Fitting
 # ==============================================================================
 # Observer memo models take (actor kwargs, alpha_observer, access_table,
-# effort_table, reward_table) and return 4D tables:
+# effort_table) and return 4D tables:
 # (action, scenario, intimacy_or_relationship, reward_condition).
 
 
@@ -181,15 +181,15 @@ def _fit_alpha_observer(
     """Fit alpha_observer by dict-keyed actor params.
 
     posterior_slicer: (table, action_i, scenario_i, cond_i) -> slice to pass to nll_fn.
-    tables: (access_table, effort_table, reward_table).
+    tables: (access_table, effort_table).
     """
     actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
-    a_tab, e_tab, r_tab = tables
+    a_tab, e_tab = tables
 
     def observer_table(alpha_observer):
         return observer_fn(
             **actor_kwargs, alpha_observer=alpha_observer,
-            access_table=a_tab, effort_table=e_tab, reward_table=r_tab,
+            access_table=a_tab, effort_table=e_tab,
         )
 
     def get_nll(alpha_observer, a, s, c, resp):
@@ -323,7 +323,7 @@ def main():
         param_str = ", ".join(f"{k}={v:.3f}" for k, v in p.items())
         print(f"  {model_name}: {param_str}")
 
-    tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+    tables = (LLM_TABLES["access"], LLM_TABLES["effort"])
     results = []
 
     # -------------------------------------------------------------------------
