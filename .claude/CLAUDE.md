@@ -13,7 +13,11 @@ Right now the project includes three experiments:
 
 ## Intermediate conference submission
 
-We are currently deciding how to extend this project for submission to a journal. An early version of this project has been submitted to a conference; the paper is in the `cogsci-2026` folder. This folder is gitignored but there is a git repo in that folder that syncs to Overleaf. The reviews for this submission are in `cogsci-2026/cogsci-2026-reviews.md`.
+We are currently deciding how to extend this project for submission to a journal. An early version of this project has been submitted to a conference; the paper is in the `cogsci-2026` folder. The reviews for this submission are in `cogsci-2026/cogsci-2026-reviews.md`.
+
+The journal version of the paper is in the `SIP_journal` folder. This is the most up-to-date version of the writeup. 
+
+Both of these folders are gitignored but there are git repos within these folders that sync to Overleaf. 
 
 ## README.md
 

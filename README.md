@@ -31,7 +31,7 @@ Three ablations of this utility are fit and compared for both the actor (Experim
 
 ### Where the utility values come from
 
-`V(a|s)` is **stipulated** as a binary planning gate: `V = 1` iff the agents are in the HIGH motivation condition AND the action involves sharing (action ≠ 0); `V = 0` otherwise. This captures goal-satisfaction in a planning-theoretic sense — the joint sharing-goal is satisfied only when both motivation and action support it.
+`V(a|s)` is **stipulated** as a binary goal-satisfaction gate: `V = 1` iff the action satisfies the active goal, and `V = 0` otherwise. Under HIGH motivation the goal is to eat/share, so `V = 1` for sharing actions (action ≠ 0); under LOW motivation the goal is to not eat, so `V = 1` for action 0. This captures goal-satisfaction in a planning-theoretic sense — the agent is rewarded when its behavior matches whatever goal is currently active, including the "don't eat" goal when no eating drive is present.
 
 `access(a)` and `effort(a)` are **LLM-generated per scenario** because they genuinely vary by scenario (a wedding meal differs from a basketball hot dog in both bodily exposure and logistical effort). `model/lm_scenario_params.py` uses Llama-3.3-70B via Together AI to produce these values (10 runs averaged, mean ± std saved), writing `model/outputs/lm_scenario_params.csv`. The prompts ask the LLM to rate, on a 0-6 scale:
 

@@ -8,7 +8,7 @@ Generates predictions for two inverse planning experiments:
 Uses actor parameters fitted from the forward planning experiment (frozen, not
 re-fitted) and alpha_observer fitted from the inverse planning experiments.
 Every variant reads scenario-specific access/effort from LLM_TABLES (reward is
-stipulated as a binary planning gate) and emits per-scenario predictions.
+stipulated as a binary goal-satisfaction gate) and emits per-scenario predictions.
 """
 
 import sys

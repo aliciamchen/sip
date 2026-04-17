@@ -85,7 +85,8 @@ def load_lm_scenario_params(filepath=None):
       - "effort": jnp.array of shape (16, 4)  — per (scenario, action)
 
     Reward is NOT loaded here; it's stipulated in the utility functions as a
-    binary gate (V=1 iff HIGH motivation AND action involves sharing).
+    binary goal-satisfaction gate (V=1 iff the action satisfies the active
+    goal: sharing under HIGH motivation, or not-sharing under LOW motivation).
 
     Rows are ordered by SCENARIO_LABELS (alphabetical). Raises FileNotFoundError
     if the CSV is missing — run `uv run python model/lm_scenario_params.py` first.
@@ -131,9 +132,10 @@ def get_intimacy(relationship_condition):
 #                    - w_d * access[scen, a] * (1 - I)
 #                    - w_e * effort[scen, a]
 #
-# Reward V(a|s) is stipulated as a binary planning-gate: V=1 iff motivation is
-# HIGH AND the action involves sharing (action != 0); V=0 otherwise. Reward
-# satisfies the joint sharing-goal exactly when both conditions hold.
+# Reward V(a|s) is stipulated as a binary goal-satisfaction gate: V=1 iff the
+# action satisfies the active goal. Under HIGH motivation the goal is to eat/
+# share, so V=1 for sharing actions (action != 0); under LOW motivation the
+# goal is to not eat, so V=1 for action 0. V=0 otherwise.
 #
 # Access and effort are LLM-derived per-scenario (access_table, effort_table)
 # and passed as memo parameters so memo can JIT-compile without baking them
@@ -147,10 +149,15 @@ def get_intimacy(relationship_condition):
 
 @jax.jit
 def get_stipulated_reward(action, reward_condition):
-    """Stipulated binary reward: V=1 iff HIGH motivation AND action involves sharing."""
+    """Stipulated binary reward encoding goal satisfaction.
+
+    V=1 iff the action satisfies the active goal:
+      - HIGH motivation (goal = eat/share): V=1 for sharing actions (1-3)
+      - LOW  motivation (goal = not eat):  V=1 for action 0 (no sharing)
+    """
     motivation = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
-    action_has_reward = jnp.array([0.0, 1.0, 1.0, 1.0])[action]
-    return motivation * action_has_reward
+    action_is_share = jnp.array([0.0, 1.0, 1.0, 1.0])[action]
+    return motivation * action_is_share + (1.0 - motivation) * (1.0 - action_is_share)
 
 
 @jax.jit

@@ -26,7 +26,7 @@ Parameters: `w_v` (food-reward weight), `w_r` (positive-access weight), `w_d` (n
 
 ## Where the utility values come from
 
-`V(a|s)` is **stipulated** in `model_utils.py` as a binary planning gate via `get_stipulated_reward(action, reward_condition)`: V=1 iff `reward_condition == HIGH` AND `action != 0`, else V=0. No LLM call; reward is a closed-form function of motivation × action.
+`V(a|s)` is **stipulated** in `model_utils.py` as a binary goal-satisfaction gate via `get_stipulated_reward(action, reward_condition)`: V=1 iff the action satisfies the active goal. Under HIGH motivation the goal is to eat/share, so V=1 for sharing actions (`action != 0`); under LOW motivation the goal is to not eat, so V=1 for `action == 0`. V=0 otherwise. No LLM call; reward is a closed-form function of motivation × action.
 
 `access(a)` and `effort(a)` are **LLM-generated per scenario** by `model/lm_scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged), saved to `model/outputs/lm_scenario_params.csv`. On import, `model_utils.py` loads these into `LLM_TABLES` — a dict of two JAX arrays: `access` (16×4) and `effort` (16×4). If the CSV is missing, import fails with `FileNotFoundError` — always regenerate it before running fits.
 

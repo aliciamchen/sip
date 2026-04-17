@@ -9,7 +9,8 @@ scenarios in experiments/scenarios.csv:
 - effort(a): physical / logistical cost per action                   (0-6 -> [0, 1])
 
 Reward is NOT elicited from the LLM — it's stipulated in `model/model_utils.py`
-as a binary planning-gate (V=1 iff HIGH motivation AND action involves sharing).
+as a binary goal-satisfaction gate (V=1 iff the action satisfies the active
+goal: sharing under HIGH motivation, not-sharing under LOW motivation).
 
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
@@ -89,8 +90,9 @@ Respond with your numerical ratings in this JSON format only, no explanation nee
 {"action_0": 0.5, "action_1": 3.2, "action_2": 2.1, "action_3": 1.5}"""
 
 
-# Reward is stipulated in model/model_utils.py as a binary planning-gate
-# (V=1 iff HIGH motivation AND action involves sharing). Not elicited from the LLM.
+# Reward is stipulated in model/model_utils.py as a binary goal-satisfaction
+# gate (V=1 iff the action satisfies the active goal: sharing under HIGH
+# motivation, not-sharing under LOW motivation). Not elicited from the LLM.
 
 
 # ==============================================================================
