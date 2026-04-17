@@ -30,6 +30,16 @@ Three variants are fit and compared for both the actor (Experiment 1) and observ
 
 The pre-registered models (full / vanilla / discomfort_only, which scale food reward by intimacy) are retained for comparison. Fit and comparison results for the three access variants are in `model/outputs/access_model_forward_fit_results.csv` and `model/outputs/access_model_inverse_fit_results.csv`.
 
+### LLM-derived scenario-specific values
+
+By default, `access(a)`, `effort(a)`, and `V(a|s)` are stipulated vectors that are the same across all 16 scenarios. As an alternative, `model/lm_scenario_params.py` uses Llama-3.3-70B via Together AI to generate scenario-specific values for each of these parameters (10 runs averaged, mean ± std saved). The prompts ask the LLM to rate, on a 0-6 scale:
+
+- `access`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both
+- `effort`: how much social-coordination effort each action requires
+- `reward`: how enjoyable sharing the food in this situation would be (scenario-level)
+
+Running the script writes `model/outputs/lm_scenario_params.csv`; the fitting and prediction scripts then produce `_llm` companions to each access variant (`access_full_llm`, `access_only_llm`, `no_access_llm`) that use the LLM values. Running this requires `TOGETHER_API_KEY` in `.env` and costs a few Together API calls.
+
 ## Directory structure
 
 ```

@@ -23,15 +23,19 @@ import numpy as np
 import optax
 import pandas as pd
 from model_utils import (
+    LLM_TABLES,
     SCENARIO_TO_IDX,
     IntimacyLevels,
     RewardConditions,
     actions,
     actor_forw_access_full,
+    actor_forw_access_full_llm,
     actor_forw_access_only,
+    actor_forw_access_only_llm,
     actor_forw_discomfort_only,
     actor_forw_full,
     actor_forw_no_access,
+    actor_forw_no_access_llm,
     actor_forw_vanilla,
 )
 from scipy import stats
@@ -256,6 +260,55 @@ def predict_no_access(intimacy, reward_condition, action, alpha, w_v, w_e):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_no_access(alpha, w_v, w_e)
     return jax.vmap(lambda i, r, a: probs[a, i, r])(intimacy_idx, reward_condition, action)
+
+
+# LLM-parameterized predictions. Shape note: memo models return tables of shape
+# (actions, scenarios, intimacy, reward_condition); we index per-trial.
+
+
+@jax.jit
+def predict_access_full_llm(
+    intimacy, reward_condition, action, scenario_idx,
+    alpha, w_v, w_r, w_d, w_e,
+    access_table, effort_table, reward_table,
+):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_access_full_llm(
+        alpha, w_v, w_r, w_d, w_e, access_table, effort_table, reward_table
+    )
+    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
+        intimacy_idx, reward_condition, action, scenario_idx
+    )
+
+
+@jax.jit
+def predict_access_only_llm(
+    intimacy, reward_condition, action, scenario_idx,
+    alpha, w_r, w_d,
+    access_table, effort_table, reward_table,
+):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_access_only_llm(
+        alpha, w_r, w_d, access_table, effort_table, reward_table
+    )
+    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
+        intimacy_idx, reward_condition, action, scenario_idx
+    )
+
+
+@jax.jit
+def predict_no_access_llm(
+    intimacy, reward_condition, action, scenario_idx,
+    alpha, w_v, w_e,
+    access_table, effort_table, reward_table,
+):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_no_access_llm(
+        alpha, w_v, w_e, access_table, effort_table, reward_table
+    )
+    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
+        intimacy_idx, reward_condition, action, scenario_idx
+    )
 
 
 # Model fitting
@@ -498,6 +551,70 @@ def fit_no_access_model(intimacy, reward_condition, action, p_action, **kwargs):
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
+# LLM-parameterized fits. Scenario-specific access/effort/reward tables are
+# passed in via `tables = (access_table, effort_table, reward_table)`.
+
+
+def fit_access_full_llm_model(
+    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
+):
+    ALPHA = 1.0
+    a_tab, e_tab, r_tab = tables
+
+    def loss_fn(params):
+        w_v, w_r, w_d, w_e = params
+        preds = predict_access_full_llm(
+            intimacy, reward_condition, action, scenario_idx,
+            ALPHA, w_v, w_r, w_d, w_e, a_tab, e_tab, r_tab,
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full_llm", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
+
+
+def fit_access_only_llm_model(
+    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
+):
+    ALPHA = 1.0
+    a_tab, e_tab, r_tab = tables
+
+    def loss_fn(params):
+        w_r, w_d = params
+        preds = predict_access_only_llm(
+            intimacy, reward_condition, action, scenario_idx,
+            ALPHA, w_r, w_d, a_tab, e_tab, r_tab,
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0], label="access_only_llm", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1]]), nll
+
+
+def fit_no_access_llm_model(
+    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
+):
+    ALPHA = 1.0
+    a_tab, e_tab, r_tab = tables
+
+    def loss_fn(params):
+        w_v, w_e = params
+        preds = predict_no_access_llm(
+            intimacy, reward_condition, action, scenario_idx,
+            ALPHA, w_v, w_e, a_tab, e_tab, r_tab,
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0], label="no_access_llm", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1]]), nll
+
+
 # Main script
 
 
@@ -597,6 +714,49 @@ def main():
             "n_params": len(param_names),
         }
 
+    # LLM-parameterized variants (same 3 models, scenario-specific access/effort/reward)
+    llm_fits = {}
+    if LLM_TABLES is not None:
+        llm_tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+        llm_fits = {
+            "access_full_llm": (
+                fit_access_full_llm_model,
+                predict_access_full_llm,
+                ["w_v", "w_r", "w_d", "w_e"],
+            ),
+            "access_only_llm": (
+                fit_access_only_llm_model,
+                predict_access_only_llm,
+                ["w_r", "w_d"],
+            ),
+            "no_access_llm": (
+                fit_no_access_llm_model,
+                predict_no_access_llm,
+                ["w_v", "w_e"],
+            ),
+        }
+        for name, (fit_fn, _pred_fn, param_names) in llm_fits.items():
+            print("\n" + "-" * 40)
+            print(f"Fitting {name.upper()} model (alpha=1 fixed)...")
+            print("-" * 40)
+            params, nll = fit_fn(
+                intimacy, reward_condition, action, scenario_idx, p_action, llm_tables
+            )
+            access_param_arrays[name] = params
+            results[name] = {
+                "params": {
+                    "alpha": float(params[0]),
+                    **{pn: float(params[i + 1]) for i, pn in enumerate(param_names)},
+                },
+                "nll": nll,
+                "n_params": len(param_names),
+            }
+    else:
+        print(
+            "\n(skipping _llm variants: model/outputs/lm_scenario_params.csv not found; "
+            "run `uv run python model/lm_scenario_params.py` first)"
+        )
+
     # Summary
     print("\n" + "=" * 60)
     print("RESULTS SUMMARY")
@@ -645,11 +805,21 @@ def main():
         )
     )
 
-    # Access-model predictions per datapoint
+    # Access-model predictions per datapoint (scenario-agnostic variants)
     for name, (_fit_fn, pred_fn, _param_names) in access_fits.items():
         params = access_param_arrays[name]
         data[f"pred_{name}"] = np.array(
             pred_fn(intimacy, reward_condition, action, *params)
+        )
+
+    # LLM-variant predictions (need scenario_idx + tables)
+    for name, (_fit_fn, pred_fn, _param_names) in llm_fits.items():
+        params = access_param_arrays[name]
+        data[f"pred_{name}"] = np.array(
+            pred_fn(
+                intimacy, reward_condition, action, scenario_idx,
+                *params, *llm_tables,
+            )
         )
 
     # Save predictions
@@ -674,7 +844,7 @@ def main():
         "access_full",
         "access_only",
         "no_access",
-    ]
+    ] + list(llm_fits.keys())
 
     for model_name in all_model_names:
         nll = results[model_name]["nll"]
@@ -723,12 +893,13 @@ def main():
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
 
-    # Also emit a focused access-model-only CSV for the 3-way comparison
+    # Also emit a focused access-model-only CSV for the comparison
+    # (3 stipulated-vector variants + up to 3 LLM variants)
     access_model_names = [
         "access_full",
         "access_only",
         "no_access",
-    ]
+    ] + list(llm_fits.keys())
     access_rows = [r for r in results_rows if r["model"] in access_model_names]
     access_df = pd.DataFrame(access_rows)
     access_results_path = output_dir / "access_model_forward_fit_results.csv"

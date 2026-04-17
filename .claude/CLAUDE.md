@@ -17,7 +17,7 @@ We are currently deciding how to extend this project for submission to a journal
 
 ## README.md
 
-`README.md` in the project root is the public-facing documentation — reviewers and the public read it to understand the repo and how to run the code. When you add or change a workflow, script, or tool that a user would need to know about, update the README too (not just CLAUDE.md or rules files).
+`README.md` in the project root is the public-facing documentation — reviewers and the public read it to understand the repo and how to run the code. When prompted to change CLAUDE.md or rules files, update the README too with relevant information. 
 
 ## Project instructions
 

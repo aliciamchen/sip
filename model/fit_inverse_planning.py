@@ -23,26 +23,35 @@ import numpy as np
 import optax
 import pandas as pd
 from model_utils import (
+    LLM_TABLES,
     SCENARIO_LABELS,
     SCENARIO_TO_IDX,
     IntimacyLevels,
     RelationshipConditions,
     RewardConditions,
     actions,
-    # Access-based intimacy observer models
+    # Access-based intimacy observer models (stipulated-vector)
     observer_intimacy_access_full,
     observer_intimacy_access_only,
     observer_intimacy_discomfort_only,
+    # LLM-parameterized intimacy observers
+    observer_intimacy_access_full_llm,
+    observer_intimacy_access_only_llm,
+    observer_intimacy_no_access_llm,
     # Pre-registered intimacy observer models
     observer_intimacy_full_model,
     # Modified intimacy observer models (effort scaled by intimacy)
     observer_intimacy_full_model_modified,
     observer_intimacy_no_access,
     observer_intimacy_vanilla_inv_plan,
-    # Access-based reward observer models
+    # Access-based reward observer models (stipulated-vector)
     observer_reward_access_full,
     observer_reward_access_only,
     observer_reward_discomfort_only,
+    # LLM-parameterized reward observers
+    observer_reward_access_full_llm,
+    observer_reward_access_only_llm,
+    observer_reward_no_access_llm,
     # Pre-registered reward observer models
     observer_reward_full_model,
     # Modified reward observer models (effort scaled by intimacy)
@@ -760,6 +769,137 @@ def fit_access_reward_observer(
     )
 
 
+# ==============================================================================
+# LLM-Parameterized Observer Fitting
+# ==============================================================================
+# LLM observer memo models add a `scenario_idx` dimension, so their output
+# tables are 4D: (action, scenario, intimacy_or_relationship, reward_condition).
+# Per-trial NLL indexes by (action, scenario, conditioning).
+
+
+def _fit_alpha_observer_llm_generic(
+    observer_fn,
+    actor_params: dict,
+    actor_kwarg_names,
+    action: jnp.ndarray,
+    scenario_idx: jnp.ndarray,
+    conditioning: jnp.ndarray,
+    response: jnp.ndarray,
+    nll_fn,
+    posterior_slicer,
+    tables,
+    lr: float = 0.1,
+    max_steps: int = 1000,
+    verbose: bool = True,
+):
+    """Fit alpha_observer for an _llm observer model.
+
+    posterior_slicer signature: (table, action_i, scenario_i, cond_i) -> slice.
+    tables: (access_table, effort_table, reward_table) passed to the observer.
+    """
+    actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
+    a_tab, e_tab, r_tab = tables
+
+    def observer_table(alpha_observer):
+        return observer_fn(
+            **actor_kwargs, alpha_observer=alpha_observer,
+            access_table=a_tab, effort_table=e_tab, reward_table=r_tab,
+        )
+
+    def get_nll(alpha_observer, a, s, c, resp):
+        table = observer_table(alpha_observer)
+        slc = posterior_slicer(table, a, s, c)
+        return nll_fn(slc, resp)
+
+    vmap_get_nll = jax.vmap(
+        lambda alpha_obs, a, s, c, resp: get_nll(alpha_obs, a, s, c, resp),
+        in_axes=(None, 0, 0, 0, 0),
+    )
+
+    def loss_fn(params):
+        return jnp.sum(
+            vmap_get_nll(params[0], action, scenario_idx, conditioning, response)
+        )
+
+    params = jnp.array([1.0])
+    grad_fn = jax.value_and_grad(loss_fn)
+    opt = optax.adam(learning_rate=lr)
+    opt_state = opt.init(params)
+
+    prev_loss = None
+    zero_grad_count = 0
+    for step in range(max_steps):
+        loss, grad = grad_fn(params)
+        grad_mag = float(jnp.abs(grad[0]))
+        if jnp.isnan(grad[0]) or grad_mag < 1e-10:
+            zero_grad_count += 1
+            if zero_grad_count >= 5:
+                if verbose:
+                    print("  Gradient zero/NaN for 5 consecutive steps; alpha_observer=1.0")
+                return 1.0, float(loss)
+        else:
+            zero_grad_count = 0
+
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 0.01, 10.0)
+
+        if verbose and step % 200 == 0:
+            print(f"  Step {step}, NLL: {loss:.4f}, alpha_observer: {params[0]:.4f}")
+
+        if prev_loss is not None and loss > prev_loss + 1e-4:
+            if verbose:
+                print(f"  Loss increased at step {step}, stopping")
+            break
+        prev_loss = loss
+
+    best_nll = float(loss_fn(params))
+    final_alpha = float(params[0])
+    if jnp.isnan(final_alpha):
+        final_alpha = 1.0
+    if verbose:
+        print(f"  Final NLL: {best_nll:.4f}, alpha_observer: {final_alpha:.4f}")
+    return final_alpha, best_nll
+
+
+def fit_access_intimacy_observer_llm(
+    observer_fn, actor_params, actor_kwarg_names,
+    action, scenario_idx, reward_condition, response, tables, **kwargs,
+):
+    return _fit_alpha_observer_llm_generic(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        scenario_idx=scenario_idx,
+        conditioning=reward_condition,
+        response=response,
+        nll_fn=compute_intimacy_nll,
+        posterior_slicer=lambda tab, a, s, r: tab[a, s, :, r],
+        tables=tables,
+        **kwargs,
+    )
+
+
+def fit_access_reward_observer_llm(
+    observer_fn, actor_params, actor_kwarg_names,
+    action, scenario_idx, intimacy_condition, response, tables, **kwargs,
+):
+    return _fit_alpha_observer_llm_generic(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        scenario_idx=scenario_idx,
+        conditioning=intimacy_condition,
+        response=response,
+        nll_fn=compute_reward_nll,
+        posterior_slicer=lambda tab, a, s, i: tab[a, s, i, 1],
+        tables=tables,
+        **kwargs,
+    )
+
+
 # Access variant registry: name -> (intimacy_observer, reward_observer, actor_kwargs)
 ACCESS_VARIANTS = {
     "access_full": (
@@ -775,6 +915,26 @@ ACCESS_VARIANTS = {
     "no_access": (
         observer_intimacy_no_access,
         observer_reward_no_access,
+        ["alpha", "w_v", "w_e"],
+    ),
+}
+
+# LLM variant registry (same structure; actor_params are loaded from the
+# _llm rows in forward_planning_fit_results.csv).
+ACCESS_LLM_VARIANTS = {
+    "access_full_llm": (
+        observer_intimacy_access_full_llm,
+        observer_reward_access_full_llm,
+        ["alpha", "w_v", "w_r", "w_d", "w_e"],
+    ),
+    "access_only_llm": (
+        observer_intimacy_access_only_llm,
+        observer_reward_access_only_llm,
+        ["alpha", "w_r", "w_d"],
+    ),
+    "no_access_llm": (
+        observer_intimacy_no_access_llm,
+        observer_reward_no_access_llm,
         ["alpha", "w_v", "w_e"],
     ),
 }
@@ -901,6 +1061,37 @@ def main():
             }
         )
 
+    # LLM-parameterized variants (need per-trial scenario_idx + scenario tables)
+    if LLM_TABLES is not None:
+        llm_tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+        for variant_name, (int_obs, _rew_obs, kw_names) in ACCESS_LLM_VARIANTS.items():
+            if variant_name not in actor_params:
+                print(f"  (skipping {variant_name}: no forward fit available)")
+                continue
+            print(f"\n{'-' * 40}")
+            print(f"Fitting {variant_name} (intimacy inference, LLM-param)...")
+            print(f"{'-' * 40}")
+            alpha_observer, nll = fit_access_intimacy_observer_llm(
+                observer_fn=int_obs,
+                actor_params=actor_params[variant_name],
+                actor_kwarg_names=kw_names,
+                action=int_action,
+                scenario_idx=int_scenario_idx,
+                reward_condition=int_reward_condition,
+                response=int_response,
+                tables=llm_tables,
+            )
+            results.append(
+                {
+                    "model": variant_name,
+                    "experiment": "intimacy",
+                    "alpha_observer": alpha_observer,
+                    "beta": np.nan,
+                    "nll": nll,
+                    "n_params": 1,
+                }
+            )
+
     # -------------------------------------------------------------------------
     # Fit Reward Inference Models
     # -------------------------------------------------------------------------
@@ -1001,6 +1192,37 @@ def main():
             }
         )
 
+    # LLM-parameterized variants (need per-trial scenario_idx + scenario tables)
+    if LLM_TABLES is not None:
+        llm_tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+        for variant_name, (_int_obs, rew_obs, kw_names) in ACCESS_LLM_VARIANTS.items():
+            if variant_name not in actor_params:
+                print(f"  (skipping {variant_name}: no forward fit available)")
+                continue
+            print(f"\n{'-' * 40}")
+            print(f"Fitting {variant_name} (reward inference, LLM-param)...")
+            print(f"{'-' * 40}")
+            alpha_observer, nll = fit_access_reward_observer_llm(
+                observer_fn=rew_obs,
+                actor_params=actor_params[variant_name],
+                actor_kwarg_names=kw_names,
+                action=rew_action,
+                scenario_idx=rew_scenario_idx,
+                intimacy_condition=rew_intimacy_condition,
+                response=rew_response,
+                tables=llm_tables,
+            )
+            results.append(
+                {
+                    "model": variant_name,
+                    "experiment": "reward",
+                    "alpha_observer": alpha_observer,
+                    "beta": np.nan,
+                    "nll": nll,
+                    "n_params": 1,
+                }
+            )
+
     # -------------------------------------------------------------------------
     # Save Results
     # -------------------------------------------------------------------------
@@ -1018,7 +1240,8 @@ def main():
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
 
-    access_df = results_df[results_df["model"].isin(ACCESS_VARIANTS.keys())].copy()
+    access_names = list(ACCESS_VARIANTS.keys()) + list(ACCESS_LLM_VARIANTS.keys())
+    access_df = results_df[results_df["model"].isin(access_names)].copy()
     access_path = output_dir / "access_model_inverse_fit_results.csv"
     access_df.to_csv(access_path, index=False)
     print(f"Saved access-model comparison to {access_path}")

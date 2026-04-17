@@ -31,6 +31,9 @@ dependencies = [
 
     # Utilities (transitive deps, but pinning for reproducibility)
     "tqdm>=4.60.0",
+
+    # LLM API client (used by model/lm_scenario_params.py)
+    "together>=1.3.0",
 ]
 
 [tool.uv]

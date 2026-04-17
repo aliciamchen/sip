@@ -45,13 +45,22 @@ from model_utils import (
     # Modified observer for reward inference (effort scaled by intimacy)
     observer_reward_full_model_modified,
 
-    # Access-based observer models (new canonical reformulation)
+    # Access-based observer models (stipulated-vector)
     observer_intimacy_access_full,
     observer_intimacy_access_only,
     observer_intimacy_no_access,
     observer_reward_access_full,
     observer_reward_access_only,
     observer_reward_no_access,
+
+    # LLM-parameterized observer models
+    LLM_TABLES,
+    observer_intimacy_access_full_llm,
+    observer_intimacy_access_only_llm,
+    observer_intimacy_no_access_llm,
+    observer_reward_access_full_llm,
+    observer_reward_access_only_llm,
+    observer_reward_no_access_llm,
 )
 
 
@@ -262,6 +271,20 @@ ACCESS_REWARD_OBSERVERS = {
     "no_access": (observer_reward_no_access, ["alpha", "w_v", "w_e"]),
 }
 
+# LLM variants: observer produces a 4D table indexed by scenario_idx, so
+# predictions are scenario-specific (no duplicate-across-scenarios in main()).
+ACCESS_LLM_INTIMACY_OBSERVERS = {
+    "access_full_llm": (observer_intimacy_access_full_llm, ["alpha", "w_v", "w_r", "w_d", "w_e"]),
+    "access_only_llm": (observer_intimacy_access_only_llm, ["alpha", "w_r", "w_d"]),
+    "no_access_llm": (observer_intimacy_no_access_llm, ["alpha", "w_v", "w_e"]),
+}
+
+ACCESS_LLM_REWARD_OBSERVERS = {
+    "access_full_llm": (observer_reward_access_full_llm, ["alpha", "w_v", "w_r", "w_d", "w_e"]),
+    "access_only_llm": (observer_reward_access_only_llm, ["alpha", "w_r", "w_d"]),
+    "no_access_llm": (observer_reward_no_access_llm, ["alpha", "w_v", "w_e"]),
+}
+
 
 def generate_intimacy_preds_access(
     params: dict, variant_name: str, alpha_observer: float = 1.0
@@ -311,6 +334,70 @@ def generate_reward_preds_access(
     df = pd.DataFrame(data)
     df["model"] = variant_name
     df["param_source"] = "stipulated"
+    return df
+
+
+def generate_intimacy_preds_access_llm(
+    params: dict, variant_name: str, alpha_observer, tables
+) -> pd.DataFrame:
+    """Intimacy-inference predictions for an LLM variant (per scenario).
+
+    Returns one row per (scenario, action, reward_condition, intimacy_level).
+    """
+    observer_fn, kw_names = ACCESS_LLM_INTIMACY_OBSERVERS[variant_name]
+    kwargs = {k: params[k] for k in kw_names}
+    kwargs["alpha_observer"] = alpha_observer
+    a_tab, e_tab, r_tab = tables
+    result = observer_fn(
+        **kwargs, access_table=a_tab, effort_table=e_tab, reward_table=r_tab
+    )
+    # result shape: (actions, scenarios, intimacy_levels, reward_conditions)
+    data = []
+    for s_idx, scenario_label in enumerate(SCENARIO_LABELS):
+        for a_idx, a in enumerate(actions):
+            for r in [0, 1]:
+                for i_idx, i in enumerate(IntimacyLevels):
+                    data.append({
+                        "scenario_label": scenario_label,
+                        "action": int(a),
+                        "reward_condition": "low" if r == 0 else "high",
+                        "intimacy": float(i),
+                        "density": float(result[a_idx, s_idx, i_idx, r]),
+                    })
+    df = pd.DataFrame(data)
+    df["model"] = variant_name
+    df["param_source"] = "llm"
+    return df
+
+
+def generate_reward_preds_access_llm(
+    params: dict, variant_name: str, alpha_observer, tables
+) -> pd.DataFrame:
+    """Reward-inference predictions for an LLM variant (per scenario)."""
+    observer_fn, kw_names = ACCESS_LLM_REWARD_OBSERVERS[variant_name]
+    kwargs = {k: params[k] for k in kw_names}
+    kwargs["alpha_observer"] = alpha_observer
+    a_tab, e_tab, r_tab = tables
+    result = observer_fn(
+        **kwargs, access_table=a_tab, effort_table=e_tab, reward_table=r_tab
+    )
+    # result shape: (actions, scenarios, relationship_conditions, reward_conditions)
+    intimacy_map = {0: 0, 1: 50, 2: 75, 3: 100}
+    data = []
+    for s_idx, scenario_label in enumerate(SCENARIO_LABELS):
+        for a_idx, a in enumerate(actions):
+            for rel_idx in range(4):
+                for r in [0, 1]:
+                    data.append({
+                        "scenario_label": scenario_label,
+                        "action": int(a),
+                        "intimacy_condition": intimacy_map[rel_idx],
+                        "reward_condition": "low" if r == 0 else "high",
+                        "density": float(result[a_idx, s_idx, rel_idx, r]),
+                    })
+    df = pd.DataFrame(data)
+    df["model"] = variant_name
+    df["param_source"] = "llm"
     return df
 
 
@@ -435,6 +522,22 @@ def main():
             scenario_dfs.append(df_scenario)
         intimacy_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
 
+    # LLM-parameterized access variants (scenario-specific predictions)
+    if LLM_TABLES is not None:
+        llm_tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+        for variant_name in ACCESS_LLM_INTIMACY_OBSERVERS:
+            if variant_name not in params:
+                print(f"  (skipping {variant_name}: no forward fit available)")
+                continue
+            alpha_observer = alpha_obs.get((variant_name, "intimacy"), 1.0)
+            print(f"  {variant_name} (LLM, alpha_observer={alpha_observer:.3f})...")
+            df = generate_intimacy_preds_access_llm(
+                params[variant_name], variant_name,
+                alpha_observer=alpha_observer, tables=llm_tables,
+            )
+            # Predictions already include scenario_label — no duplication needed
+            intimacy_dfs.append(df)
+
     # Combine all intimacy predictions
     df_intimacy_full = pd.concat(intimacy_dfs, ignore_index=True)
 
@@ -501,6 +604,21 @@ def main():
             df_scenario["scenario_label"] = scenario_label
             scenario_dfs.append(df_scenario)
         reward_dfs.append(pd.concat(scenario_dfs, ignore_index=True))
+
+    # LLM-parameterized access variants (scenario-specific predictions)
+    if LLM_TABLES is not None:
+        llm_tables = (LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["reward"])
+        for variant_name in ACCESS_LLM_REWARD_OBSERVERS:
+            if variant_name not in params:
+                print(f"  (skipping {variant_name}: no forward fit available)")
+                continue
+            alpha_observer = alpha_obs.get((variant_name, "reward"), 1.0)
+            print(f"  {variant_name} (LLM, alpha_observer={alpha_observer:.3f})...")
+            df = generate_reward_preds_access_llm(
+                params[variant_name], variant_name,
+                alpha_observer=alpha_observer, tables=llm_tables,
+            )
+            reward_dfs.append(df)
 
     # Combine all reward predictions
     df_reward_full = pd.concat(reward_dfs, ignore_index=True)

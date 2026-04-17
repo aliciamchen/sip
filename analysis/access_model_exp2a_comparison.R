@@ -1,16 +1,28 @@
-# Exp 2a (intimacy inference): 4-way access-model comparison.
+# Exp 2a (intimacy inference): access-model comparison.
 #
 # Produces:
 #   figures/access_model_exp2a_comparison.pdf — dodged bar chart of belief updates
-#   per action, filled by motivation, faceted by model (4 access variants + Humans).
+#   per action, filled by motivation, faceted by (param_source, model).
 #
-# Matches the style in analysis/exp-2a-inv-plan-intimacy-analysis.qmd
-# (scale_fill_motivation, geom_col+dodge, crossbar zero-line, cairo_pdf).
+# Three variants (Base, Access only, Full model) crossed with two parameter
+# sources when the LLM CSV is available (stipulated, llm); plus Humans.
+# Matches analysis/exp-2a-inv-plan-intimacy-analysis.qmd style conventions.
 
 source(here::here("analysis", "utils.R"))
 setup_analysis()
 
 MODEL_LEVELS <- c("Base", "Access only", "Full model", "Humans")
+
+model_label <- function(name) {
+  recode(name,
+    access_full = "Full model", access_full_llm = "Full model",
+    access_only = "Access only", access_only_llm = "Access only",
+    no_access   = "Base",        no_access_llm   = "Base",
+  )
+}
+param_source <- function(name) {
+  if_else(endsWith(name, "_llm"), "llm", "stipulated")
+}
 
 # ---- Human belief updates --------------------------------------------------
 
@@ -32,28 +44,29 @@ df_humans <- read_csv(
   mutate(
     belief_update = empirical_stat / 100,
     ci_lower = ci_lower / 100,
-    ci_upper = ci_upper / 100
+    ci_upper = ci_upper / 100,
+    param_source = "Humans"
   ) |>
-  select(motivation, action, model, belief_update, ci_lower, ci_upper)
+  select(motivation, action, model, belief_update, ci_lower, ci_upper, param_source)
 
 # ---- Access-variant model predictions --------------------------------------
+
+access_variants <- c("access_full", "access_only", "no_access",
+                     "access_full_llm", "access_only_llm", "no_access_llm")
 
 df_model <- read_csv(
   here("model", "outputs", "inv_plan_intimacy_preds_summary.csv"), show_col_types = FALSE
 ) |>
   rename(motivation = reward_condition) |>
-  filter(model %in% c("access_full", "access_only", "no_access")) |>
+  filter(model %in% access_variants) |>
   mutate(
     action = as.character(action),
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     belief_update = (expected_intimacy - 50) / 100,
-    model = recode(model,
-      access_full = "Full model",
-      access_only = "Access only",
-      no_access   = "Base"
-    )
+    param_source = param_source(model),
+    model = model_label(model)
   ) |>
-  group_by(motivation, action, model) |>
+  group_by(motivation, action, model, param_source) |>
   summarize(belief_update = mean(belief_update), .groups = "drop") |>
   mutate(ci_lower = NA_real_, ci_upper = NA_real_)
 
@@ -62,6 +75,7 @@ df_model <- read_csv(
 df_combined <- bind_rows(df_humans, df_model) |>
   mutate(
     model = factor(model, levels = MODEL_LEVELS),
+    param_source = factor(param_source, levels = c("stipulated", "llm", "Humans")),
     action = factor(action)
   )
 
@@ -83,12 +97,15 @@ p <- df_combined |>
   scale_fill_motivation() +
   labs(y = "Belief update", x = "Observed action", fill = "Desire") +
   theme(legend.position = "right") +
-  facet_wrap(~ model, nrow = 1)
+  facet_grid(param_source ~ model)
+
+n_rows <- length(unique(df_combined$param_source))
+fig_height <- max(FIG_HEIGHT_STANDARD, 2.5 * n_rows)
 
 ggsave(
   here("figures", "access_model_exp2a_comparison.pdf"),
   plot = p,
-  width = FIG_WIDTH_LARGE, height = FIG_HEIGHT_STANDARD, device = cairo_pdf
+  width = FIG_WIDTH_LARGE, height = fig_height, device = cairo_pdf
 )
 
 cat("Saved figures/access_model_exp2a_comparison.pdf\n")
