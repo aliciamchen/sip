@@ -16,5 +16,7 @@ sandbox
 *.ai
 .venv/
 experiments/pilots/
+data/pilots/
 submissions
 cogsci-2026
+.claude/scheduled_tasks.lock
