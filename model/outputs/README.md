@@ -6,7 +6,7 @@ In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `r
 
 ## lm_scenario_params.csv
 
-LLM-generated per-scenario values for access, effort, and reward. Produced by `model/lm_scenario_params.py`.
+LLM-generated per-scenario values for access and effort. Produced by `model/lm_scenario_params.py`. Reward is stipulated in `model_utils.py`, not in this file.
 
 | Column | Description |
 |--------|-------------|
@@ -14,11 +14,11 @@ LLM-generated per-scenario values for access, effort, and reward. Produced by `m
 | `action` | Action index (0-3) |
 | `access_raw`, `access_raw_std` | Mean and std of raw access ratings (0-6 scale, 10 runs) |
 | `effort_raw`, `effort_raw_std` | Same for effort |
-| `reward_raw`, `reward_raw_std` | Same for reward (scenario-level — duplicated across actions) |
 | `access` | Normalized access ([0, 2]) |
 | `effort` | Normalized effort ([0, 1]) |
-| `reward` | Normalized reward (centered at 1) |
-| `n_runs_access`, `n_runs_effort`, `n_runs_reward` | Number of successful LLM runs |
+| `n_runs_access`, `n_runs_effort` | Number of successful LLM runs |
+
+Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `model_utils.load_lm_scenario_params` and will be dropped the next time `lm_scenario_params.py` is run.
 
 ## forward_planning_fits.csv
 
