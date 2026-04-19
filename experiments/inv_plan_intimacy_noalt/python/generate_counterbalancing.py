@@ -117,7 +117,7 @@ counterbalancing = (
 
 # Get project root and construct the output path
 project_root = get_project_root()
-output_path = project_root / "experiments/inv_plan_intimacy/json/full_counterbalancing.json"
+output_path = project_root / "experiments/inv_plan_intimacy_noalt/json/full_counterbalancing.json"
 
 with open(output_path, "w") as f:
     json.dump(counterbalancing, f)

@@ -1,10 +1,3 @@
-const intimacy_texts = {
-  0: "0 (maximally formal)",
-  50: "50 (neither formal nor intimate)",
-  75: "75 (somewhat intimate)",
-  100: "100 (maximally intimate)",
-};
-
 export const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
@@ -90,12 +83,6 @@ export function makeTimeline(
             Math.abs(data.response - 0) < CONFIG.ATTENTION_TOLERANCE;
         },
       });
-    }
-
-    // Create action labels for probability sliders
-    const actionLabels = [];
-    for (let i = 0; i < 4; i++) {
-      actionLabels.push(stimulus[`action_${i}`]);
     }
 
     trials.push({
