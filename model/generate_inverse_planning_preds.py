@@ -85,14 +85,14 @@ def load_fitted_alpha_observer(filepath: str = None) -> dict:
 # row per (scenario, action, conditioning, reward_condition).
 
 INTIMACY_OBSERVERS = {
-    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_r", "w_d", "w_e"]),
-    "access_only": (observer_intimacy_access_only, ["alpha", "w_r", "w_d"]),
+    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_d", "w_e"]),
+    "access_only": (observer_intimacy_access_only, ["alpha", "w_d"]),
     "no_access":   (observer_intimacy_no_access,   ["alpha", "w_v", "w_e"]),
 }
 
 REWARD_OBSERVERS = {
-    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_r", "w_d", "w_e"]),
-    "access_only": (observer_reward_access_only, ["alpha", "w_r", "w_d"]),
+    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_d", "w_e"]),
+    "access_only": (observer_reward_access_only, ["alpha", "w_d"]),
     "no_access":   (observer_reward_no_access,   ["alpha", "w_v", "w_e"]),
 }
 

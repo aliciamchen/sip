@@ -11,18 +11,17 @@ Models are built using the `memo` DSL with JAX backend. Both actor (forward plan
 
 ```
 U(a|s, I) = w_v · V(a|s)
-          + w_r · access(a) · I
           − w_d · access(a) · (1 − I)
           − w_e · effort(a)
 ```
 
-Intimacy `I` scales `access(a)` (bodily/spatial/informational exposure). `V(a|s)` is the food-sharing reward (not scaled by intimacy). Three ablations are fit and compared:
+Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exposure): at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. `V(a|s)` is the food-sharing reward (not scaled by intimacy). Three ablations are fit and compared:
 
 - **access_full** — the full utility above (the main model)
-- **access_only** — only the two access terms (`w_r·access·I − w_d·access·(1−I)`); drops food reward and effort
-- **no_access** — `w_v·V − w_e·effort` (the base model)
+- **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)`); drops food reward and effort
+- **no_access** — `w_v · V − w_e · effort` (the base model)
 
-Parameters: `w_v` (food-reward weight), `w_r` (positive-access weight), `w_d` (negative-access weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires.
+Parameters: `w_v` (food-reward weight), `w_d` (access-discomfort weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires.
 
 ## Where the utility values come from
 

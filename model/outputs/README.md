@@ -54,8 +54,7 @@ Summary of fitted forward planning models (3 rows — one per ablation).
 | `r_ci_lower`, `r_ci_upper` | 95% CI bounds for correlation |
 | `param_alpha` | Fitted softmax inverse temperature (fixed to 1 during fitting) |
 | `param_w_v` | Fitted food-reward weight (access_full, no_access) |
-| `param_w_r` | Fitted positive-access weight (access_full, access_only) |
-| `param_w_d` | Fitted negative-access weight (access_full, access_only) |
+| `param_w_d` | Fitted access-discomfort weight (access_full, access_only) |
 | `param_w_e` | Fitted effort weight (access_full, no_access) |
 
 ## inverse_planning_fit_results.csv

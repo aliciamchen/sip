@@ -70,13 +70,13 @@ We fit three ablations of the canonical access utility to the human data. In all
 
 **Full model**: The full canonical utility is:
 
-$$U(a|s, I) = w_v \cdot V(a|s) + w_r \cdot \text{access}(a) \cdot I - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e \cdot \text{effort}(a)$$
+$$U(a|s, I) = w_v \cdot V(a|s) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e \cdot \text{effort}(a)$$
 
-where $V(a|s)$ is the intrinsic food reward, $\text{access}(a)$ captures graded bodily/spatial openness, and $\text{effort}(a)$ is the physical effort of executing the action. Intimacy $I$ converts access into reward (close relationships) or discomfort (distant relationships).
+where $V(a|s)$ is the intrinsic food reward, $\text{access}(a)$ captures graded bodily/spatial openness, and $\text{effort}(a)$ is the physical effort of executing the action. Intimacy $I$ scales the access-discomfort term: at high intimacy the $-w_d \cdot \text{access} \cdot (1 - I)$ penalty shrinks toward zero, so higher-access actions become relatively more attractive.
 
-**Access only**: Drops the food-reward and effort terms, keeping only $w_r \cdot \text{access}(a) \cdot I - w_d \cdot \text{access}(a) \cdot (1 - I)$.
+**Access only**: Drops the food-reward and effort terms, keeping only $-w_d \cdot \text{access}(a) \cdot (1 - I)$.
 
-**Base (no access)**: Drops both access terms: $U = w_v \cdot V(a|s) - w_e \cdot \text{effort}(a)$.
+**Base (no access)**: Drops the access term: $U = w_v \cdot V(a|s) - w_e \cdot \text{effort}(a)$.
 
 ### Load model predictions
 
