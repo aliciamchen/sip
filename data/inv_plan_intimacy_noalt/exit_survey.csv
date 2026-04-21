@@ -1,0 +1,31 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+e4911091-772b-5a43-a87e-93f64cc10636,female,56,yes,None at this time. ,True,3
+40e44a18-23ff-51ff-995a-eba1ae7a06cb,male,48,yes,,True,3
+4e2bf8f5-d773-5471-aa61-b9da6008f1ba,male,34,yes,"I remember seeing the check for the Gala scenario, however a Gala can refer to a party. One of the options said ""a darty"" (maybe a potential typo?). Regardless, I chose ""a wedding"" just in case the option ""a darty"" was an intentional typo.",True,3
+ec3b2d86-0312-5ba4-84d1-9cf16bbf39d8,male,32,yes,It's hard to remember both names of the characters in the scenarios after moving to the next page. A different type of memory check would be better.,True,1
+da05e69a-2179-5764-bc88-49b5e4a0c7df,female,40,yes,,True,3
+0252d930-528a-5e7f-bdca-50db4e9c6aaa,female,27,yes,,True,2
+7d56c55e-ca2b-5ceb-984a-703a9615f51e,female,35,yes,none,True,3
+40c4a222-8e6a-5352-901b-268ced7f8de0,female,24,yes,no,True,3
+e71eebd7-cd4a-5d2f-bd18-59e9493d7c4d,female,28,yes,,True,3
+accd9639-b385-53e2-b96a-226307bc9d21,female,34,yes,None,True,3
+5f513925-d1bc-545d-83d8-df5d85c3dd6e,male,36,yes,none,True,3
+d22fef6b-3d02-583a-88d8-02bd48a10e92,female,52,yes,thank you,True,1
+25761b12-b330-57b5-b26d-16ab205440e0,female,40,yes,Interesting survey!,True,3
+80f298a1-3598-54ed-a608-4a63c7707e89,male,36,yes,The study was interesting,True,3
+b9221213-6b8f-557b-a16e-397e12763f55,male,32,yes,"Nope, everything was straightforward. Though I think I may have gotten some of the names wrong on the attention check questions just because I'm terrible at remembering names.",True,1
+e48d6f02-3c3d-57de-819a-16d8df9e69b9,male,53,yes,Thank you for the opportunity,True,3
+01c2055b-acd3-5870-8e46-ecf3de87a8fb,female,32,yes,,True,2
+1cbe1bbd-4b2f-5f56-a25d-707a533f77a6,male,25,yes,,True,2
+51860ada-001c-57c7-b4c4-3c73abf02003,female,27,yes,,True,2
+d9e29057-29e2-57b6-ac47-f80cd0889a85,female,19,yes,,True,3
+0bd1654e-aaba-510f-bb5e-e24959d2798a,male,56,yes,"I often read names and don't recall them 30 seconds later, so I may have missed some of the checks (but I am real :-))",True,1
+e180d477-a1d6-5c15-ba16-780f81d0340e,male,36,yes,i judged most of them at first by the setting. like why would two people be at a house party setting up if they only have a formal relationship,True,2
+f808501c-d153-528e-b4e4-25f73a9477e1,female,57,yes,,True,2
+4c0cd5a6-5b8a-5e69-8e00-53e4b7ee2c8f,male,40,yes,One of the options on the first memory check reads 'darty' instead of 'party'.,True,3
+c0c1603e-f81c-5288-a5c0-70b51d189867,male,60,yes,nope,False,3
+668ac684-d16c-5ab5-af5f-4d37caba21bd,female,37,yes,"No, thank you.",True,1
+d022f0bd-d80e-5aad-8f45-0d6244547136,male,26,yes,,True,2
+c6268d12-9cd7-5bd0-92e1-40ffcbf05b1f,male,34,yes,None,True,3
+0ff29ec9-2c94-57de-9e72-0fbe1e583fe5,male,28,yes,,True,1
+90e641ed-e274-59e0-9cac-19129dd39176,male,36,yes,No comments,True,3
