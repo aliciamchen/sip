@@ -5,7 +5,7 @@ Each experiment folder contains `main_trials.csv`, `main_trials_long.csv`, and `
 
 ## Terminology note
 
-In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
+In the inverse-planning experiments, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after running the experiments, for clarity.
 
 ## Exit Survey (all experiments)
 
@@ -19,7 +19,7 @@ In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `r
 | `attention_passed` | Whether participant passed attention check (True/False) |
 | `memory_correct_count` | Number of correct responses on memory check (0-3) |
 
-## Experiment 1: Forward Planning (`forw_plan/`)
+## Forward planning (`forw_plan/`)
 
 **main_trials.csv** (wide format - one row per trial):
 
@@ -45,7 +45,7 @@ In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `r
 | `action` | Action index (0-3) |
 | `p_action` | Probability allocated to this action |
 
-## Experiment 2a: Intimacy Inference (`inv_plan_intimacy/`)
+## Intimacy inference, alternatives shown (`inv_plan_intimacy_alt/`)
 
 **main_trials.csv** and **main_trials_long.csv**:
 
@@ -60,7 +60,11 @@ In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `r
 
 Note: `main_trials_long.csv` uses `motivation` instead of `reward_condition`.
 
-## Experiment 2b: Desire Inference (`inv_plan_desire/`)
+## Intimacy inference, no alternatives shown (`inv_plan_intimacy_noalt/`)
+
+Same columns as `inv_plan_intimacy_alt/` above. The experimental procedure differs only in that participants see a single observed action at the posterior stage rather than the full four-action list; on the model side, counterfactual alternatives are supplied by a language model.
+
+## Desire inference, alternatives shown (`inv_plan_desire_alt/`)
 
 **main_trials.csv** and **main_trials_long.csv**:
 

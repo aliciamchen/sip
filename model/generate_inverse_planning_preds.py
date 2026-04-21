@@ -2,8 +2,8 @@
 Generate inverse planning predictions using frozen forward planning parameters.
 
 Generates predictions for two inverse planning experiments:
-1. inv_plan_intimacy: Infer intimacy from observed action (given reward condition)
-2. inv_plan_desire:   Infer desire (reward condition) from observed action (given intimacy)
+1. inv_plan_intimacy_alt: Infer intimacy from observed action (given reward condition), alternatives shown to participants
+2. inv_plan_desire_alt:   Infer desire (reward condition) from observed action (given intimacy), alternatives shown
 
 Uses actor parameters fitted from the forward planning experiment (frozen, not
 re-fitted) and alpha_observer fitted from the inverse planning experiments.
@@ -244,8 +244,8 @@ def main():
     print("  Computing expected intimacy...")
     df_intimacy_summary = compute_expected_intimacy(df_intimacy_full)
 
-    full_path = output_dir / "inv_plan_intimacy_preds_full.csv"
-    summary_path = output_dir / "inv_plan_intimacy_preds_summary.csv"
+    full_path = output_dir / "inv_plan_intimacy_alt_preds_full.csv"
+    summary_path = output_dir / "inv_plan_intimacy_alt_preds_summary.csv"
     df_intimacy_full.to_csv(full_path, index=False)
     df_intimacy_summary.to_csv(summary_path, index=False)
     print(f"  Saved {len(df_intimacy_full)} rows to {full_path}")
@@ -276,8 +276,8 @@ def main():
     print("  Computing P(high reward)...")
     df_reward_summary = compute_p_high_reward(df_reward_full)
 
-    full_path = output_dir / "inv_plan_desire_preds_full.csv"
-    summary_path = output_dir / "inv_plan_desire_preds_summary.csv"
+    full_path = output_dir / "inv_plan_desire_alt_preds_full.csv"
+    summary_path = output_dir / "inv_plan_desire_alt_preds_summary.csv"
     df_reward_full.to_csv(full_path, index=False)
     df_reward_summary.to_csv(summary_path, index=False)
     print(f"  Saved {len(df_reward_full)} rows to {full_path}")

@@ -1,5 +1,5 @@
 ---
-title: Experiment 1 (forward planning)
+title: Forward planning (data analysis)
 author: Alicia Chen
 date: 2026-01-03
 format:
@@ -129,7 +129,7 @@ df_preds_summary |>
   labs(y = "P(Action)", x = "Action", color = "Intimacy", shape = "Action") +
   facet_grid(motivation ~ model)
 
-ggsave(here("figures", "exp1_comparison.pdf"),
+ggsave(here("figures", "forw_plan_comparison.pdf"),
          device = cairo_pdf)
 ```
 
@@ -182,7 +182,7 @@ cat("Rows in df_corr:", nrow(df_corr), "\n")
 ```
 
 ```{r}
-#| label: fig-exp1-correlation
+#| label: fig-forw-plan-correlation
 #| fig-width: 10
 #| fig-asp: 0.4
 
@@ -247,12 +247,12 @@ ggplot(df_corr,
   facet_wrap( ~ model, nrow = 1) +
   coord_fixed_symmetric(df_corr$model_pred, df_corr$Humans)
 
-ggsave(here("figures", "exp1_correlation.pdf"),
+ggsave(here("figures", "forw_plan_correlation.pdf"),
          device = cairo_pdf)
 
 # p_correlation
-# 
-# save_figure(p_correlation, "exp1_correlation.pdf")
+#
+# save_figure(p_correlation, "forw_plan_correlation.pdf")
 ```
 
 Plot motivation on separate panels:
@@ -299,7 +299,7 @@ Plot each scenario separately
 
 
 ```{r}
-#| label: fig-exp1-scenario-summary
+#| label: fig-forw-plan-scenario-summary
 #| fig-width: 23 
 #| fig-asp: 0.18
 
@@ -324,7 +324,7 @@ ggplot(df_summary_scenario, aes(x = action, y = empirical_stat, color = intimacy
 Model predictions per scenario
 
 ```{r}
-#| label: fig-exp1-scenario-model-preds
+#| label: fig-forw-plan-scenario-model-preds
 #| fig-width: 23
 #| fig-asp: 0.55
 

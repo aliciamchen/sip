@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Generate LM counterfactual alternative action sets for the no-alternatives-shown
-inverse planning variant (Exp 2a no-alt).
+inverse-planning variant (`inv_plan_intimacy_noalt`).
 
 For each (scenario, observed_action, motivation) cell — 16 scenarios × 4
 canonical observed actions × 2 motivation levels = 128 cells — prompt

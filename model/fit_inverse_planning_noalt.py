@@ -1,7 +1,7 @@
 """
 Fit alpha_observer for the no-alternatives-shown intimacy inference variant.
 
-Fits three access-utility ablations (same three as the main Exp 2a fit):
+Fits three access-utility ablations (same three as the alt-shown inverse-planning fit):
   - access_full  : w_v * V - w_d * access * (1-I) - w_e * effort
   - access_only  : -w_d * access * (1-I)
   - no_access    : w_v * V - w_e * effort

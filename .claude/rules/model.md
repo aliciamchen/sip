@@ -35,7 +35,7 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 
 - `model_utils.py` — utility functions, `Scenarios` enum, `LLM_TABLES`, and memo models (forward actors, discrete/continuous inverse-planning actors, intimacy/reward observers)
 - `lm_scenario_params.py` — LLM-calls Together AI to generate the scenario CSV
-- `fit_forward_planning.py` — fits the three actor ablations to Exp 1 data (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
+- `fit_forward_planning.py` — fits the three actor ablations to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
 - `fit_inverse_planning.py` — fits `alpha_observer` for each ablation with frozen actor params (output: `inverse_planning_fit_results.csv`)
 - `generate_inverse_planning_preds.py` — emits per-scenario posterior predictions (output: `inv_plan_{intimacy,desire}_preds_{full,summary}.csv`)
 - `test_model_compliance.py` — validation tests

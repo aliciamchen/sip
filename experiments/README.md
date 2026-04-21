@@ -2,7 +2,7 @@
 
 ## Terminology note
 
-In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity 
+In the inverse-planning experiments, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — we changed the terminology to "desire" after running the experiments, for clarity.
 
 ## Scenarios (`scenarios.csv`)
 
@@ -29,6 +29,7 @@ Actions are ordered by degree of saliva-sharing risk:
 - **Action 3**: Sharing with high saliva risk (e.g., same utensil, same bite location) 
 ## Main experiments
 
-- [inv_plan_intimacy](inv_plan_intimacy/README.md) - Inverse planning: infer intimacy from observed actions
-- [inv_plan_desire](inv_plan_desire/README.md) - Inverse planning: infer desire from observed actions
-- [forw_plan](forw_plan/README.md) - Planning with better-defined rewards and reward manipulations
+- [forw_plan](forw_plan/README.md) — Forward planning: actors choose actions given intimacy and motivation
+- [inv_plan_intimacy_alt](inv_plan_intimacy_alt/README.md) — Inverse planning: infer intimacy from the observed action (four candidate actions shown to participants)
+- [inv_plan_intimacy_noalt](inv_plan_intimacy_noalt/README.md) — Same inference as `inv_plan_intimacy_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side
+- [inv_plan_desire_alt](inv_plan_desire_alt/README.md) — Inverse planning: infer desire from the observed action (four candidate actions shown)

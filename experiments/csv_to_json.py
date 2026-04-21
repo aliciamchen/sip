@@ -5,7 +5,7 @@ import csv
 import json
 from pathlib import Path
 
-EXPERIMENTS = ["forw_plan", "inv_plan_intimacy", "inv_plan_desire"]
+EXPERIMENTS = ["forw_plan", "inv_plan_intimacy_alt", "inv_plan_desire_alt", "inv_plan_intimacy_noalt"]
 
 
 def load_scenarios(csv_path):

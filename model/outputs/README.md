@@ -2,7 +2,7 @@
 
 ## Terminology note
 
-In Experiment 2, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after we ran the experiments, for clarity.
+In the inverse-planning experiments, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after running the experiments, for clarity.
 
 ## lm_scenario_params.csv
 
@@ -22,7 +22,7 @@ Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`
 
 ## forward_planning_fits.csv
 
-Per-trial model predictions for Experiment 1. One row per subject × scenario × condition × action.
+Per-trial model predictions for forward planning (`data/forw_plan/`). One row per subject × scenario × condition × action.
 
 | Column | Description |
 |--------|-------------|
@@ -69,9 +69,9 @@ Summary of fitted inverse planning (observer) models (6 rows — 3 ablations × 
 | `nll` | Negative log-likelihood |
 | `n_params` | Number of free parameters |
 
-## inv_plan_intimacy_preds_summary.csv
+## inv_plan_intimacy_alt_preds_summary.csv
 
-Summarized model predictions for Experiment 2a (intimacy inference). One row per scenario × action × motivation × model.
+Summarized model predictions for the alt-shown intimacy-inference experiment (`data/inv_plan_intimacy_alt/`). One row per scenario × action × motivation × model.
 
 | Column | Description |
 |--------|-------------|
@@ -81,9 +81,9 @@ Summarized model predictions for Experiment 2a (intimacy inference). One row per
 | `model` | Model name |
 | `expected_intimacy` | Model's expected intimacy (0-100) |
 
-## inv_plan_intimacy_preds_full.csv
+## inv_plan_intimacy_alt_preds_full.csv
 
-Full posterior distributions for intimacy inference (101 intimacy levels per row set).
+Full posterior distributions for alt-shown intimacy inference (101 intimacy levels per row set).
 
 | Column | Description |
 |--------|-------------|
@@ -94,9 +94,9 @@ Full posterior distributions for intimacy inference (101 intimacy levels per row
 | `density` | Posterior density at this intimacy value |
 | `model` | Model name |
 
-## inv_plan_desire_preds_summary.csv
+## inv_plan_desire_alt_preds_summary.csv
 
-Summarized model predictions for Experiment 2b (desire inference).
+Summarized model predictions for the alt-shown desire-inference experiment (`data/inv_plan_desire_alt/`).
 
 | Column | Description |
 |--------|-------------|
@@ -106,9 +106,9 @@ Summarized model predictions for Experiment 2b (desire inference).
 | `p_high_reward` | Model's predicted probability of high desire (0-100) |
 | `model` | Model name |
 
-## inv_plan_desire_preds_full.csv
+## inv_plan_desire_alt_preds_full.csv
 
-Full posterior distributions for desire inference.
+Full posterior distributions for alt-shown desire inference.
 
 | Column | Description |
 |--------|-------------|
@@ -118,3 +118,36 @@ Full posterior distributions for desire inference.
 | `reward_condition` | Desire state ("low" or "high") |
 | `density` | Posterior probability of this desire state |
 | `model` | Model name |
+
+## inverse_planning_noalt_fit_results.csv
+
+Summary of fitted observer parameters for the no-alternatives-shown intimacy-inference experiment (`data/inv_plan_intimacy_noalt/`), using the padded observer with LM-generated counterfactual alternatives. One row per utility ablation.
+
+| Column | Description |
+|--------|-------------|
+| `model` | Model name (e.g., `access_full_padded`) |
+| `experiment` | Always `intimacy_noalt` |
+| `alpha_observer` | Fitted observer inverse temperature |
+| `nll` | Negative log-likelihood |
+| `n_params` | Number of free parameters |
+
+## inv_plan_intimacy_noalt_preds_summary.csv / inv_plan_intimacy_noalt_preds_full.csv
+
+No-alt intimacy-inference predictions. `_summary.csv` has one row per (scenario, observed_action, motivation, model) with `expected_intimacy` (0-100). `_full.csv` has one row per (scenario, observed_action, motivation, intimacy_level, model) with the posterior `density`.
+
+## lm_alternatives.csv
+
+LM-generated counterfactual action sets used by the no-alt padded observer. One row per (scenario, observed_action, motivation, alt_idx).
+
+| Column | Description |
+|--------|-------------|
+| `scenario_label` | Scenario identifier |
+| `observed_action` | Canonical action that was observed (e.g., `action_0`) |
+| `motivation` | Stipulated motivational state ("low" or "high") |
+| `alt_idx` | Alternative index within the cell (0-based) |
+| `action_text` | Text of the LM-generated alternative action |
+| `is_share` | Binary tag: 1 if the alternative involves both characters eating the shared food, else 0 |
+
+## lm_alternatives_features.csv
+
+Access and effort features scored by the LM for each alternative in `lm_alternatives.csv`. One row per (scenario, observed_action, motivation, alt_idx) with the same identifier columns plus `access` (normalized to [0, 2]) and `effort` (normalized to [0, 1]).

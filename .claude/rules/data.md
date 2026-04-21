@@ -7,14 +7,17 @@ paths:
 
 Main experiments are at the top level:
 
+Each directory name reflects what the experiment measures, not a paper experiment number:
+
 ```
 data/
-  forw_plan/             # Experiment 1 (forward planning)
-  inv_plan_intimacy/     # Experiment 2a (intimacy inference)
-  inv_plan_desire/       # Experiment 2b (desire inference) — current
-  inv_plan_reward/       # Earlier "reward inference" version of Exp 2b (raw only)
-  planning_comm/         # Communication experiment
-  pilots/                # Pilot experiments
+  forw_plan/               # Forward planning (actors choose actions)
+  inv_plan_intimacy_alt/   # Intimacy inference, alternatives shown to participants
+  inv_plan_intimacy_noalt/ # Intimacy inference, no alternatives shown (LM-generated counterfactuals on the model side)
+  inv_plan_desire_alt/     # Desire inference, alternatives shown
+  inv_plan_reward/         # Earlier "reward inference" predecessor of inv_plan_desire_alt (raw only)
+  planning_comm/           # Communication experiment
+  pilots/                  # Pilot experiments
 ```
 
 Each experiment folder contains:

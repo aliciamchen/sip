@@ -11,8 +11,9 @@ Usage:
 
 Available experiments:
     - forw_plan: Experiment with probability sliders for action ratings
-    - inv_plan_intimacy: Inverse planning experiment measuring intimacy ratings before and after observing actions
-    - inv_plan_desire: Inverse planning experiment measuring desire likelihood ratings before and after observing actions
+    - inv_plan_intimacy_alt: Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
+    - inv_plan_intimacy_noalt: Same as inv_plan_intimacy_alt but with action alternatives hidden from participants
+    - inv_plan_desire_alt: Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
 """
 
 import argparse
@@ -56,8 +57,8 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": True,
         "has_attention_memory": True,
     },
-    "inv_plan_intimacy": {
-        "description": "Inverse planning experiment measuring intimacy ratings before and after observing actions",
+    "inv_plan_intimacy_alt": {
+        "description": "Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)",
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -79,7 +80,7 @@ EXPERIMENT_CONFIGS = {
         "has_attention_memory": True,
     },
     "inv_plan_intimacy_noalt": {
-        "description": "Inverse planning intimacy experiment where action alternatives are hidden from participants",
+        "description": "Inverse planning intimacy inference where action alternatives are hidden from participants",
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -100,8 +101,8 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "inv_plan_desire": {
-        "description": "Inverse planning experiment measuring desire likelihood ratings before and after observing actions",
+    "inv_plan_desire_alt": {
+        "description": "Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)",
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -214,7 +215,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                                 "reward_condition", ""
                             )
 
-                    elif experiment_name in ("inv_plan_intimacy", "inv_plan_intimacy_noalt"):
+                    elif experiment_name in ("inv_plan_intimacy_alt", "inv_plan_intimacy_noalt"):
                         # Extract intimacy rating and stage information
                         intimacy_rating = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -231,7 +232,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_rating": intimacy_rating,
                         }
 
-                    elif experiment_name == "inv_plan_desire":
+                    elif experiment_name == "inv_plan_desire_alt":
                         # Extract reward likelihood rating and stage information
                         response = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -379,7 +380,7 @@ def create_forw_plan_long(output_dir):
 
 def create_inv_plan_intimacy_long(output_dir):
     """
-    Create main_trials_long.csv for inv_plan_intimacy experiment.
+    Create main_trials_long.csv for the inv_plan_intimacy_alt / inv_plan_intimacy_noalt experiments.
 
     Filters out participants who failed attention check or got 0 correct on memory check.
 
@@ -431,7 +432,7 @@ def create_inv_plan_intimacy_long(output_dir):
 
 def create_inv_plan_desire_long(output_dir):
     """
-    Create main_trials_long.csv for inv_plan_desire experiment.
+    Create main_trials_long.csv for the inv_plan_desire_alt experiment.
 
     Filters out participants who failed attention check or got 0 correct on memory check.
 
@@ -488,16 +489,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Available experiments:
-  forw_plan               Experiment with probability sliders for action ratings
-  inv_plan_intimacy       Inverse planning experiment measuring intimacy ratings before and after observing actions
-  inv_plan_intimacy_noalt Same as inv_plan_intimacy but with action alternatives hidden from participants
-  inv_plan_desire         Inverse planning experiment measuring desire likelihood ratings before and after observing actions
+  forw_plan                Experiment with probability sliders for action ratings
+  inv_plan_intimacy_alt    Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
+  inv_plan_intimacy_noalt  Same as inv_plan_intimacy_alt but with action alternatives hidden from participants
+  inv_plan_desire_alt      Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
 
 Examples:
   python json_to_csv.py forw_plan
-  python json_to_csv.py inv_plan_intimacy
+  python json_to_csv.py inv_plan_intimacy_alt
   python json_to_csv.py inv_plan_intimacy_noalt
-  python json_to_csv.py inv_plan_desire
+  python json_to_csv.py inv_plan_desire_alt
         """,
     )
 
@@ -531,10 +532,10 @@ Examples:
     if args.experiment == "forw_plan":
         print("\nCreating long format with exclusions...")
         create_forw_plan_long(output_dir)
-    elif args.experiment in ("inv_plan_intimacy", "inv_plan_intimacy_noalt"):
+    elif args.experiment in ("inv_plan_intimacy_alt", "inv_plan_intimacy_noalt"):
         print("\nCreating long format with exclusions...")
         create_inv_plan_intimacy_long(output_dir)
-    elif args.experiment == "inv_plan_desire":
+    elif args.experiment == "inv_plan_desire_alt":
         print("\nCreating long format with exclusions...")
         create_inv_plan_desire_long(output_dir)
 

@@ -53,7 +53,7 @@ scale_color_motivation <- function() {
   scale_color_manual(values = MOTIVATION_COLORS)
 }
 
-# Combined condition colors for exp-2-combined (motivation + intimacy)
+# Combined condition colors for inv-plan-combined-correlation (motivation + intimacy)
 .intimacy_levels <- c(0, 50, 75, 100)
 .intimacy_colors <- viridisLite::viridis(
   n = length(.intimacy_levels),
@@ -88,7 +88,7 @@ setup_analysis <- function() {
 }
 
 # Bootstrap correlation with 95% CI
-# Used in: exp-2a, exp-2b, exp-2-combined
+# Used in: inv-plan-intimacy-alt, inv-plan-desire-alt, inv-plan-combined-correlation
 boot_cor <- function(x, y, n_boot = 1000) {
   complete <- complete.cases(x, y)
   x <- x[complete]

@@ -27,7 +27,7 @@ class RelationshipConditions(IntEnum):
     ONE_HUNDRED = 3
 
 
-# Padded-action constants for the no-alternatives-shown variant (Exp 2a no-alt).
+# Padded-action constants for the no-alternatives-shown inverse-planning variant.
 # See load_padded_lm_tables() below for how per-cell action tables are built.
 MAX_ACTIONS = 16
 padded_slots = jnp.arange(MAX_ACTIONS)
@@ -396,7 +396,7 @@ def get_utility_no_access_disc(
 
 
 # ==============================================================================
-# Forward-planning actor models (Exp 1)
+# Forward-planning actor models
 # ==============================================================================
 
 
@@ -627,7 +627,7 @@ def actor_continuous_no_access[
 
 
 # ==============================================================================
-# Observer inferring intimacy (Exp 2a)
+# Observer inferring intimacy (alt-shown action space)
 # ==============================================================================
 
 
@@ -719,7 +719,7 @@ def observer_intimacy_no_access[
 
 
 # ==============================================================================
-# Observer inferring reward (Exp 2b)
+# Observer inferring reward (alt-shown action space)
 # ==============================================================================
 
 
@@ -811,7 +811,7 @@ def observer_reward_no_access[
 
 
 # ==============================================================================
-# Padded-action utility and observer (Exp 2a no-alt variant)
+# Padded-action utility and observer (no-alternatives-shown variant, LM-generated counterfactuals)
 # ==============================================================================
 # The padded observer infers intimacy from a single observed action, using a
 # trial-specific action space that is the union of the observed action (slot 0)

@@ -6,10 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a cognitive science research project investigating inverse planning and social inference in food-sharing scenarios involving saliva transfer. The project explores how people make decisions about sharing food based on relationship closeness (intimacy) and motivation (reward), and how observers infer relationship closeness or desire from observed actions.
 
-Right now the project includes three experiments:
-- **Experiment 1 (Forward planning)**: Actors choose actions based on intimacy and motivation
-- **Experiment 2a (Intimacy inference)**: Observers infer relationship closeness from observed actions
-- **Experiment 2b (Desire inference)**: Observers infer the actor's desire (motivation) from observed actions
+The project comprises several experimental variants. Paper-level experiment numbering shifts as the writeup evolves, so the stable identifier for each variant is its data directory in `data/`.
+
+- **Forward planning** (`data/forw_plan/`) — actors choose actions based on intimacy and motivation.
+- **Intimacy inference, alternatives shown** (`data/inv_plan_intimacy_alt/`) — observers see the scenario plus all four candidate actions, then infer relationship closeness from the one the actor took.
+- **Desire inference, alternatives shown** (`data/inv_plan_desire_alt/`) — observers see all four candidate actions, then infer the actor's desire from the one they took.
+- **Intimacy inference, no alternatives shown** (`data/inv_plan_intimacy_noalt/`) — observers see only the single action the actor took and infer relationship closeness; on the model side, counterfactual alternatives are LM-generated.
 
 ## Intermediate conference submission
 
@@ -55,14 +57,14 @@ A `Makefile` at the repo root wraps the most common commands. Run `make help` fo
 Convert experiment JSON output to CSV:
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
-# Available experiments: forw_plan, inv_plan_intimacy, inv_plan_desire
+# Available experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt
 ```
 
 For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
 
 ### Model fitting
 
-**Forward planning (Exp 1)**:
+**Forward planning**:
 ```bash
 uv run python model/fit_forward_planning.py
 ```
@@ -70,29 +72,37 @@ Outputs (in `model/outputs/`):
 - `forward_planning_fits.csv` - Predictions for each data point
 - `forward_planning_fit_results.csv` - Fitted parameters and NLL
 
-**Inverse planning (Exp 2a & 2b)**:
+**Alt-shown inverse planning (intimacy + desire inference)**:
 ```bash
 uv run python model/fit_inverse_planning.py
 ```
 Outputs (in `model/outputs/`):
 - `inverse_planning_fit_results.csv` - Fitted observer parameters
 
-**Generate inverse planning predictions**:
+**Generate alt-shown inverse planning predictions**:
 ```bash
 uv run python model/generate_inverse_planning_preds.py
 ```
 Outputs (in `model/outputs/`):
-- `inv_plan_intimacy_preds_full.csv` / `inv_plan_intimacy_preds_summary.csv`
-- `inv_plan_desire_preds_full.csv` / `inv_plan_desire_preds_summary.csv`
+- `inv_plan_intimacy_alt_preds_full.csv` / `inv_plan_intimacy_alt_preds_summary.csv`
+- `inv_plan_desire_alt_preds_full.csv` / `inv_plan_desire_alt_preds_summary.csv`
+
+**No-alt intimacy inference** (LM-generated counterfactual alternatives):
+```bash
+uv run python model/fit_inverse_planning_noalt.py
+uv run python model/generate_inverse_planning_noalt_preds.py
+```
+Outputs: `inverse_planning_noalt_fit_results.csv`, `inv_plan_intimacy_noalt_preds_full.csv`, `inv_plan_intimacy_noalt_preds_summary.csv`.
 
 ### Running analysis
 
 Analysis files are Quarto documents (.qmd). Open in RStudio and render, or use:
 ```bash
-quarto render analysis/exp-1-analysis.qmd
-quarto render analysis/exp-2a-inv-plan-intimacy-analysis.qmd
-quarto render analysis/exp-2b-inv-plan-desire-analysis.qmd
-quarto render analysis/exp-2-combined-correlation.qmd
+quarto render analysis/forw-plan-analysis.qmd
+quarto render analysis/inv-plan-intimacy-alt-analysis.qmd
+quarto render analysis/inv-plan-desire-alt-analysis.qmd
+quarto render analysis/inv-plan-intimacy-noalt-analysis.qmd
+quarto render analysis/inv-plan-combined-correlation.qmd
 ```
 
 ### Model tests

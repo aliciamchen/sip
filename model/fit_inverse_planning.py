@@ -71,7 +71,7 @@ def load_intimacy_data(filepath: str = None):
     """Load and preprocess intimacy inference data (posterior stage only)."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "inv_plan_intimacy" / "main_trials_long.csv"
+            get_project_root() / "data" / "inv_plan_intimacy_alt" / "main_trials_long.csv"
         )
     print("Loading intimacy inference data...")
     data = pd.read_csv(filepath)
@@ -100,7 +100,7 @@ def load_reward_data(filepath: str = None):
     """Load and preprocess reward inference data (posterior stage only)."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "inv_plan_desire" / "main_trials_long.csv"
+            get_project_root() / "data" / "inv_plan_desire_alt" / "main_trials_long.csv"
         )
     print("Loading reward inference data...")
     data = pd.read_csv(filepath)

@@ -1,5 +1,5 @@
 ---
-title: Experiment 2a no-alt (inverse planning - intimacy inference, no alternatives shown) data analysis
+title: Inverse planning — intimacy inference, no alternatives shown (data analysis)
 author: Alicia Chen
 date: 2026-04-19
 format:
@@ -40,7 +40,7 @@ print(table(df_exit$gender))
 
 ## Results
 
-This experiment is a variant of Exp 2a in which participants observe a single action and infer the relationship **without seeing the other three alternative actions the actors could have taken**. The experiment manipulates the same factors as Exp 2a:
+This experiment is a variant of `inv_plan_intimacy_alt` in which participants observe a single action and infer the relationship **without seeing the other three alternative actions the actors could have taken**. The experiment manipulates the same factors as the alt-shown version:
 
 - **Action**: Which action was taken (action 0-3, varying in saliva-transfer risk)
 - **Motivation (desire)**: Whether both people want the food (high vs low)
@@ -271,7 +271,7 @@ p_belief <- df_combined |>
 
 print(p_belief)
 
-ggsave(here("figures", "exp2a_noalt_belief_main.pdf"), plot = p_belief, device = cairo_pdf)
+ggsave(here("figures", "inv_plan_intimacy_noalt_belief_main.pdf"), plot = p_belief, device = cairo_pdf)
 ```
 
 
