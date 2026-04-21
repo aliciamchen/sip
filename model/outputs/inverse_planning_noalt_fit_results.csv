@@ -1,0 +1,4 @@
+model,experiment,alpha_observer,nll,n_params
+access_full_padded,intimacy_noalt,2.0120155811309814,2053.10009765625,1
+access_only_padded,intimacy_noalt,2.0994603633880615,2048.168212890625,1
+no_access_padded,intimacy_noalt,0.7999629378318787,2141.416015625,1

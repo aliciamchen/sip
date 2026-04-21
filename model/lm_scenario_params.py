@@ -15,15 +15,18 @@ goal: sharing under HIGH motivation, not-sharing under LOW motivation).
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
 Usage:
-    uv run python model/lm_scenario_params.py
+    uv run python model/lm_scenario_params.py                    # canonical-4 features
+    uv run python model/lm_scenario_params.py --score-alternatives  # features for LM-generated alternatives
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
     - `together` Python package (add to pyproject.toml)
 """
 
+import argparse
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -301,5 +304,248 @@ def main():
     print("\nDone!")
 
 
+# ==============================================================================
+# Variable-length alternative scoring (for the no-alternatives-shown variant)
+# ==============================================================================
+
+
+def format_access_prompt_variable(vignette, action_texts):
+    lines = [f"Action {i}: {txt}" for i, txt in enumerate(action_texts)]
+    return f"""Scenario: {vignette}
+
+Rate how much each action opens each person up to the other — physically, informationally, or both (0-6 scale):
+
+""" + "\n".join(lines)
+
+
+def format_effort_prompt_variable(vignette, action_texts):
+    lines = [f"Action {i}: {txt}" for i, txt in enumerate(action_texts)]
+    return f"""Scenario: {vignette}
+
+Rate the physical and logistical cost of executing each action — how much physical work, preparation, or extra equipment is required (0-6 scale):
+
+""" + "\n".join(lines)
+
+
+VARIABLE_ACCESS_SYSTEM_PROMPT = ACCESS_SYSTEM_PROMPT.replace(
+    "For each scenario, you will read about four different actions the two people can take.",
+    "For each scenario, you will read about a set of alternative actions the two people could take. The number of actions varies.",
+).replace(
+    'Respond with your numerical ratings in this JSON format only, no explanation needed:\n{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8, "action_3": 5.5}',
+    'Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Example for 3 actions:\n{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8}',
+)
+
+VARIABLE_EFFORT_SYSTEM_PROMPT = EFFORT_SYSTEM_PROMPT.replace(
+    "For each scenario, you will read about four different actions the two people can take.",
+    "For each scenario, you will read about a set of alternative actions the two people could take. The number of actions varies.",
+).replace(
+    'Respond with your numerical ratings in this JSON format only, no explanation needed:\n{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1, "action_3": 1.5}',
+    'Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Example for 3 actions:\n{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1}',
+)
+
+
+def parse_action_response_variable(response_text, n_actions):
+    """Parse JSON with action_0..action_{n-1} keys."""
+    if response_text is None:
+        return None
+    js = _find_json(response_text.strip())
+    if js is None:
+        return None
+    try:
+        ratings = json.loads(js)
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"  Failed to parse JSON: {e}")
+        return None
+    out = {}
+    for i in range(n_actions):
+        key = f"action_{i}"
+        if key not in ratings:
+            return None
+        try:
+            out[key] = float(ratings[key])
+        except (TypeError, ValueError):
+            return None
+    return out
+
+
+def get_ratings_variable(client, system_prompt, user_prompt, n_actions, num_runs=NUM_RUNS):
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    all_ratings = []
+    for run in range(num_runs):
+        try:
+            response = client.chat.completions.create(
+                model=MODEL_ID,
+                messages=messages,
+                max_tokens=max(200, 40 * n_actions),
+                temperature=TEMPERATURE,
+            )
+            ratings = parse_action_response_variable(
+                response.choices[0].message.content, n_actions
+            )
+            if ratings is not None:
+                all_ratings.append(ratings)
+        except Exception as e:
+            print(f"  Run {run + 1} error: {e}")
+        time.sleep(0.5)
+    return all_ratings
+
+
+def aggregate_action_ratings_variable(ratings_list, n_actions):
+    if not ratings_list:
+        return {f"action_{i}": (np.nan, np.nan) for i in range(n_actions)}
+    result = {}
+    for i in range(n_actions):
+        key = f"action_{i}"
+        values = [r[key] for r in ratings_list if key in r]
+        result[key] = (np.mean(values), np.std(values)) if values else (np.nan, np.nan)
+    return result
+
+
+def score_alternatives_main():
+    """Score access/effort for LM-generated alternatives, batched by scenario.
+
+    Within each scenario, unique action strings (case-insensitive) are scored
+    once via a single access-prompt + effort-prompt (each with NUM_RUNS runs),
+    then features are broadcast back to every (observed_action, motivation,
+    alt_idx) row that used that action text. This is ~8x fewer API calls than
+    per-cell batching. Features depend on the full per-scenario action set
+    rather than the cell-level subset, which is more internally consistent.
+
+    Checkpoint behavior: after each scenario finishes, the accumulated results
+    are flushed to lm_alternatives_features.csv. If that file already exists
+    on startup, scenarios already present are skipped — so the script resumes
+    from where it left off.
+    """
+    api_key = _load_api_key()
+
+    print("Loading scenarios and LM alternatives...", flush=True)
+    scenarios_df = load_scenarios()
+    alt_path = get_project_root() / "model" / "outputs" / "lm_alternatives.csv"
+    if not alt_path.exists():
+        print(f"Error: {alt_path} not found. Run lm_generate_alternatives.py first.", flush=True)
+        sys.exit(1)
+    alt_df = pd.read_csv(alt_path)
+    alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
+    n_cells = alt_df.groupby(["scenario_label", "observed_action", "motivation"]).ngroups
+    print(
+        f"Loaded {len(alt_df)} alternatives across {n_cells} cells "
+        f"({alt_df['action_norm'].nunique()} unique action strings)",
+        flush=True,
+    )
+
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / "lm_alternatives_features.csv"
+
+    # Resume: load any scenarios already written in a prior run
+    results = []
+    already_done_scenarios = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done_scenarios = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done_scenarios)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
+    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
+    client = Together(api_key=api_key)
+
+    scenario_lookup = scenarios_df.set_index("scenario_label")["vignette"].to_dict()
+
+    scenarios_in_data = sorted(alt_df["scenario_label"].unique())
+    for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
+        if scenario in already_done_scenarios:
+            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            continue
+
+        sc_group = alt_df[alt_df["scenario_label"] == scenario]
+        unique_df = sc_group.drop_duplicates("action_norm").reset_index(drop=True)
+        unique_actions = unique_df["action_text"].tolist()
+        unique_norms = unique_df["action_norm"].tolist()
+        n_unique = len(unique_actions)
+        vignette = scenario_lookup[scenario]
+
+        print(
+            f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} | "
+            f"{len(sc_group)} rows | {n_unique} unique actions",
+            flush=True,
+        )
+
+        if n_unique == 0:
+            continue
+
+        print("  scoring access...", flush=True)
+        access_ratings = get_ratings_variable(
+            client,
+            VARIABLE_ACCESS_SYSTEM_PROMPT,
+            format_access_prompt_variable(vignette, unique_actions),
+            n_unique,
+        )
+        access_agg = aggregate_action_ratings_variable(access_ratings, n_unique)
+
+        print("  scoring effort...", flush=True)
+        effort_ratings = get_ratings_variable(
+            client,
+            VARIABLE_EFFORT_SYSTEM_PROMPT,
+            format_effort_prompt_variable(vignette, unique_actions),
+            n_unique,
+        )
+        effort_agg = aggregate_action_ratings_variable(effort_ratings, n_unique)
+
+        # Build lookup from action_norm → (access, effort, ...)
+        feats_by_norm = {}
+        for i, norm in enumerate(unique_norms):
+            key = f"action_{i}"
+            a_mean, a_std = access_agg[key]
+            e_mean, e_std = effort_agg[key]
+            feats_by_norm[norm] = {
+                "access_raw": a_mean,
+                "access_raw_std": a_std,
+                "effort_raw": e_mean,
+                "effort_raw_std": e_std,
+                "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
+                "n_runs_access": len(access_ratings),
+                "n_runs_effort": len(effort_ratings),
+            }
+
+        # Emit one row per original (scenario, observed, motivation, alt_idx)
+        new_rows = 0
+        for _, row in sc_group.iterrows():
+            f = feats_by_norm.get(row["action_norm"])
+            if f is None:
+                continue
+            results.append({
+                "scenario_label": scenario,
+                "observed_action": row["observed_action"],
+                "motivation": row["motivation"],
+                "alt_idx": int(row["alt_idx"]),
+                **f,
+            })
+            new_rows += 1
+
+        # Checkpoint: flush accumulated results to disk after each scenario
+        pd.DataFrame(results).to_csv(output_path, index=False)
+        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+
+    print(f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}", flush=True)
+
+
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--score-alternatives",
+        action="store_true",
+        help="Score access/effort for LM-generated alternatives in lm_alternatives.csv",
+    )
+    args = parser.parse_args()
+    if args.score_alternatives:
+        score_alternatives_main()
+    else:
+        main()

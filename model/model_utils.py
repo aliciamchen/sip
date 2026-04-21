@@ -156,8 +156,6 @@ def load_padded_lm_tables(
     canonical_path=None,
     alternatives_path=None,
     alternatives_features_path=None,
-    prior_path=None,
-    prior="uniform",
 ):
     """Build padded (16, 4, 2, MAX_ACTIONS) tables for access, effort, is_share,
     and prior.
@@ -166,14 +164,10 @@ def load_padded_lm_tables(
     observed canonical action's features (from lm_scenario_params.csv).
     Slots 1..k hold the LM-generated alternatives for that cell (from
     lm_alternatives.csv + lm_alternatives_features.csv). Remaining slots are
-    null-padded with access=0, effort=0, is_share=0, prior=0. A prior of 0
-    masks the slot out of the softmax (wpp = prior * exp(U) = 0), so null
-    padding contributes no mass regardless of utility.
-
-    The `prior` argument selects the actor-prior table:
-      - "uniform": uniform over valid (non-null) slots, 0 on null slots.
-      - "lm": LM-elicited per-action base rates from lm_alternatives_prior.csv,
-        restricted to each cell's action set and normalized to sum to 1.
+    null-padded with access=0, effort=0, is_share=0. The prior is uniform over
+    valid (non-null) slots; null slots get a tiny epsilon (1e-8) rather than
+    exactly 0 to keep `E[...] ** alpha_observer` differentiable in the observer
+    memo, while still contributing <1e-6 of softmax mass.
 
     Returns a dict {access, effort, is_share, prior} (each jnp.array of shape
     (16, 4, 2, MAX_ACTIONS)), or None if the alternative CSVs are missing.
@@ -184,22 +178,13 @@ def load_padded_lm_tables(
     alternatives_features_path = (
         alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
-    prior_path = prior_path or outputs_dir / "lm_alternatives_prior.csv"
 
     if not alternatives_path.exists() or not alternatives_features_path.exists():
         return None
-    if prior == "lm" and not prior_path.exists():
-        raise FileNotFoundError(
-            f"prior='lm' requested but {prior_path} not found. "
-            "Run lm_generate_prior.py first."
-        )
 
     canonical_df = pd.read_csv(canonical_path)
     alts_df = pd.read_csv(alternatives_path)
     feats_df = pd.read_csv(alternatives_features_path)
-    scenarios_df = pd.read_csv(
-        Path(__file__).resolve().parent.parent / "experiments" / "scenarios.csv"
-    )
 
     n_scenarios = len(SCENARIO_LABELS)
     n_observed = 4
@@ -208,7 +193,6 @@ def load_padded_lm_tables(
     access = np.zeros(shape, dtype=np.float32)
     effort = np.zeros(shape, dtype=np.float32)
     is_share = np.zeros(shape, dtype=np.float32)
-    prior_table = np.zeros(shape, dtype=np.float32)
     # valid_mask[s, o, m, slot] = True if the slot holds a real action (not null pad)
     valid_mask = np.zeros(shape, dtype=bool)
 
@@ -219,10 +203,6 @@ def load_padded_lm_tables(
             float(row["access"]),
             float(row["effort"]),
         )
-    canonical_texts = {}
-    for _, row in scenarios_df.iterrows():
-        for i in range(n_observed):
-            canonical_texts[(row["scenario_label"], i)] = row[f"action_{i}"]
     for scenario in SCENARIO_LABELS:
         s_idx = SCENARIO_TO_IDX[scenario]
         for observed in range(n_observed):
@@ -240,10 +220,6 @@ def load_padded_lm_tables(
         (r["scenario_label"], r["observed_action"], r["motivation"], int(r["alt_idx"])): int(
             r["is_share"]
         )
-        for _, r in alts_df.iterrows()
-    }
-    action_text_lookup = {
-        (r["scenario_label"], r["observed_action"], r["motivation"], int(r["alt_idx"])): r["action_text"]
         for _, r in alts_df.iterrows()
     }
     motivation_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
@@ -267,70 +243,11 @@ def load_padded_lm_tables(
         )
         valid_mask[s_idx, o_idx, m_idx, slot] = True
 
-    # Build prior_table. We floor the null-slot prior at a tiny epsilon instead
-    # of exactly 0, so that `E[...] ** alpha_observer` in the observer memo has
-    # non-zero gradient everywhere (0 ** alpha * log(0) = NaN otherwise). A
-    # 1e-8 floor keeps the null slots effectively masked (contributing < 1e-6
-    # of softmax mass) while keeping backpropagation stable.
     NULL_EPSILON = 1e-8
-    if prior == "uniform":
-        # 1/n_valid for valid slots, NULL_EPSILON for null
-        n_valid = valid_mask.sum(axis=-1, keepdims=True)  # (16, 4, 2, 1)
-        prior_table = np.where(
-            valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
-        ).astype(np.float32)
-    elif prior == "lm":
-        prior_df = pd.read_csv(prior_path)
-        # Lookup: (scenario, motivation, action_norm) -> raw prior mean
-        prior_df["action_norm"] = prior_df["action_text"].str.lower().str.strip()
-        prior_lookup = {}
-        for _, r in prior_df.iterrows():
-            key = (r["scenario_label"], r["motivation"], r["action_norm"])
-            prior_lookup[key] = float(r["prior_raw"])
-        for scenario in SCENARIO_LABELS:
-            s_idx = SCENARIO_TO_IDX[scenario]
-            for observed in range(n_observed):
-                for motivation_name, m_idx in motivation_to_idx.items():
-                    # Look up prior for each valid slot in this cell
-                    raw_priors = np.zeros(MAX_ACTIONS, dtype=np.float32)
-                    # Slot 0: canonical action text
-                    canon_text = canonical_texts[(scenario, observed)]
-                    canon_norm = canon_text.lower().strip()
-                    raw_priors[0] = prior_lookup.get(
-                        (scenario, motivation_name, canon_norm), 0.0
-                    )
-                    # Slots 1..k: LM alternative texts
-                    for slot in range(1, MAX_ACTIONS):
-                        if not valid_mask[s_idx, observed, m_idx, slot]:
-                            continue
-                        key = (scenario, f"action_{observed}", motivation_name, slot - 1)
-                        text = action_text_lookup.get(key)
-                        if text is None:
-                            continue
-                        norm = text.lower().strip()
-                        raw_priors[slot] = prior_lookup.get(
-                            (scenario, motivation_name, norm), 0.0
-                        )
-                    # Normalize valid-slot priors to sum to 1. Null slots get
-                    # NULL_EPSILON (tiny but non-zero — see note above).
-                    # Also floor valid-slot priors at NULL_EPSILON so LM ratings
-                    # of exactly 0 don't zero out a valid slot (same NaN-gradient
-                    # risk as null padding).
-                    total = raw_priors.sum()
-                    if total > 0:
-                        norm_priors = raw_priors / total
-                    else:
-                        vm = valid_mask[s_idx, observed, m_idx]
-                        nv = vm.sum()
-                        norm_priors = np.where(vm, 1.0 / max(nv, 1), 0.0).astype(np.float32)
-                    prior_table[s_idx, observed, m_idx] = np.maximum(
-                        np.where(
-                            valid_mask[s_idx, observed, m_idx], norm_priors, NULL_EPSILON
-                        ),
-                        NULL_EPSILON,
-                    )
-    else:
-        raise ValueError(f"prior must be 'uniform' or 'lm', got {prior!r}")
+    n_valid = valid_mask.sum(axis=-1, keepdims=True)  # (16, 4, 2, 1)
+    prior_table = np.where(
+        valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
+    ).astype(np.float32)
 
     max_alt_count = (
         feats_df.groupby(["scenario_label", "observed_action", "motivation"])

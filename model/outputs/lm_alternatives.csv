@@ -1,0 +1,1159 @@
+scenario_label,observed_action,motivation,alt_idx,action_text,is_share
+basketball,action_0,low,0,Carissa buys the hot dog and eats it alone,0
+basketball,action_0,low,1,Josh buys the hot dog and eats it alone,0
+basketball,action_0,low,2,They buy the hot dog and cut it in half to share,1
+basketball,action_0,low,3,They buy the hot dog and take turns biting from the same hot dog,1
+basketball,action_0,low,4,"Carissa buys the hot dog, takes a bite, and then gives it to Josh to finish",1
+basketball,action_0,low,5,"Josh buys the hot dog, takes a bite, and then gives it to Carissa to finish",1
+basketball,action_0,low,6,"They throw the money together and buy the hot dog, then Carissa eats most of it and Josh has a small bite",1
+basketball,action_0,low,7,"They throw the money together and buy the hot dog, then Josh eats most of it and Carissa has a small bite",1
+basketball,action_0,high,0,Carissa buys the hot dog and eats it alone,0
+basketball,action_0,high,1,Josh buys the hot dog and eats it alone,0
+basketball,action_0,high,2,They buy one hot dog and cut it in half to share,1
+basketball,action_0,high,3,They take turns biting from the same hot dog,1
+basketball,action_0,high,4,Carissa buys the hot dog and gives Josh a few bites,1
+basketball,action_0,high,5,Josh buys the hot dog and gives Carissa a few bites,1
+basketball,action_0,high,6,They buy one hot dog and use separate utensils to take turns eating from it,1
+basketball,action_0,high,7,"Carissa buys the hot dog, eats a portion, and then hands it to Josh to finish",1
+basketball,action_1,low,0,Carissa eats the whole hot dog by herself,0
+basketball,action_1,low,1,Josh eats the whole hot dog by himself,0
+basketball,action_1,low,2,They decide not to get a hot dog and look for other food options,0
+basketball,action_1,low,3,They take turns biting from the same hot dog,1
+basketball,action_1,low,4,They tear the hot dog in half with their hands and eat from their own portions,1
+basketball,action_1,low,5,Carissa gives the hot dog to Josh and he eats it all,0
+basketball,action_1,low,6,Josh gives the hot dog to Carissa and she eats it all,0
+basketball,action_1,low,7,They throw the hot dog away and don't eat it,0
+basketball,action_1,low,8,They use a fork to take alternating bites from the same hot dog,1
+basketball,action_1,low,9,One of them cuts the hot dog into smaller pieces and they eat from a shared plate,1
+basketball,action_1,high,0,One person buys and eats the hot dog alone,0
+basketball,action_1,high,1,They decide not to buy a hot dog and look for other food options,0
+basketball,action_1,high,2,They buy the hot dog and take turns biting from the same hot dog,1
+basketball,action_1,high,3,One person buys the hot dog and gives the other person a few bites from it,1
+basketball,action_1,high,4,They buy the hot dog and use separate utensils to take bites from the same hot dog,1
+basketball,action_1,high,5,"One person buys the hot dog and lets the other person have it, eating none themselves",0
+basketball,action_1,high,6,They throw away the hot dog and don't eat it,0
+basketball,action_1,high,7,They buy the hot dog and tear it in half with their hands to eat,1
+basketball,action_1,high,8,One person eats a few bites of the hot dog and then hands it to the other person to finish,1
+basketball,action_2,low,0,Carissa buys and eats the hot dog alone,0
+basketball,action_2,low,1,Josh buys and eats the hot dog alone,0
+basketball,action_2,low,2,They decide not to buy a hot dog and go without,0
+basketball,action_2,low,3,They cut the hot dog in half and each eat their own half,1
+basketball,action_2,low,4,Carissa eats half and then gives the remaining half to Josh,1
+basketball,action_2,low,5,Josh eats half and then gives the remaining half to Carissa,1
+basketball,action_2,low,6,They take turns biting from the same end of the hot dog,1
+basketball,action_2,low,7,Carissa eats the hot dog and Josh doesn't have any,0
+basketball,action_2,low,8,Josh eats the hot dog and Carissa doesn't have any,0
+basketball,action_2,low,9,They give the hot dog to one of the other spectators,0
+basketball,action_2,high,0,Carissa buys and eats the hot dog alone,0
+basketball,action_2,high,1,Josh buys and eats the hot dog alone,0
+basketball,action_2,high,2,They decide not to buy the hot dog and look for alternative food options,0
+basketball,action_2,high,3,They cut the hot dog in half and each eat their own half,1
+basketball,action_2,high,4,Carissa eats 3/4 of the hot dog and then hands the remaining 1/4 to Josh,1
+basketball,action_2,high,5,One person eats the hot dog and the other eats the bun,1
+basketball,action_2,high,6,They take turns biting from the same end of the hot dog,1
+basketball,action_2,high,7,They buy the hot dog and then give it to someone else,0
+basketball,action_2,high,8,Carissa eats the hot dog and then Josh licks her fingers,1
+basketball,action_3,low,0,Carissa buys and eats the hot dog alone,0
+basketball,action_3,low,1,Josh buys and eats the hot dog alone,0
+basketball,action_3,low,2,They decide not to buy a hot dog,0
+basketball,action_3,low,3,They cut the hot dog in half and each eat their own half,1
+basketball,action_3,low,4,"Carissa eats half of the hot dog, then Josh eats the other half",1
+basketball,action_3,low,5,They take turns biting from opposite ends of the hot dog,1
+basketball,action_3,low,6,Carissa eats the hot dog and Josh eats the bun,1
+basketball,action_3,low,7,One person eats the hot dog and the other eats a different food item they happen to have,0
+basketball,action_3,low,8,They buy the hot dog and then decide to share it by pulling it apart into two pieces,1
+basketball,action_3,high,0,Carissa buys and eats the hot dog alone,0
+basketball,action_3,high,1,Josh buys and eats the hot dog alone,0
+basketball,action_3,high,2,They decide not to buy a hot dog and go without eating,0
+basketball,action_3,high,3,They cut the hot dog in half and each eat their own half,1
+basketball,action_3,high,4,Carissa eats half of the hot dog and then gives the remaining half to Josh,1
+basketball,action_3,high,5,Josh eats half of the hot dog and then gives the remaining half to Carissa,1
+basketball,action_3,high,6,They take turns double dipping the hot dog in condiments,1
+basketball,action_3,high,7,One person bites from one end of the hot dog and the other from the other end,1
+birthday,action_0,low,0,Lio and Mitchell cut their slices in half and exchange halves to try each other's potential leftovers,1
+birthday,action_0,low,1,"Lio gives his whole slice to Mitchell, who eats the entire thing",0
+birthday,action_0,low,2,"Mitchell cuts his slice into smaller portions and offers some to Lio, who eats a few bites",1
+birthday,action_0,low,3,"Both Lio and Mitchell pick at the same slice with their forks, taking turns",1
+birthday,action_0,low,4,"Lio and Mitchell both eat a small portion from a single slice, then throw the rest away together",1
+birthday,action_0,low,5,"Lio eats a small portion of Mitchell's slice, then Mitchell finishes the rest",1
+birthday,action_0,low,6,"Mitchell eats his slice, then Lio takes a few bites of a new, untouched slice",0
+birthday,action_0,low,7,Neither Lio nor Mitchell eat any cake and throw their slices away,0
+birthday,action_0,low,8,Lio and Mitchell cut their slices into quarters and create a mix of the quarters on a new plate to share,1
+birthday,action_0,high,0,"Lio and Mitchell each take a separate slice and eat as much as they can, then throw the rest away",0
+birthday,action_0,high,1,Lio and Mitchell cut a single slice in half and each eat their half,1
+birthday,action_0,high,2,Mitchell eats a whole slice by himself,0
+birthday,action_0,high,3,Lio eats a whole slice by herself,0
+birthday,action_0,high,4,Lio and Mitchell take turns biting from the same slice of cake,1
+birthday,action_0,high,5,Lio and Mitchell use the same fork to take bites from a single slice of cake,1
+birthday,action_0,high,6,Lio and Mitchell cut a single slice into smaller pieces and take turns picking up pieces with their fingers to eat,1
+birthday,action_0,high,7,"Mitchell gives his slice to Lio, and she eats as much as she can",0
+birthday,action_0,high,8,Lio and Mitchell decide not to eat the cake at all and throw the slices away,0
+birthday,action_0,high,9,"Lio cuts a slice into smaller portions and gives some to Mitchell, but they both eat from their own separate portions",1
+birthday,action_1,low,0,Lio lets Mitchell have the whole slice,0
+birthday,action_1,low,1,Mitchell lets Lio have the whole slice,0
+birthday,action_1,low,2,They decide not to eat the cake at all,0
+birthday,action_1,low,3,Lio and Mitchell take turns biting into the same slice,1
+birthday,action_1,low,4,They cut the slice into smaller pieces and take turns picking one up with their fork,1
+birthday,action_1,low,5,Lio and Mitchell use the same fork to pick up different parts of the slice,1
+birthday,action_1,low,6,They tear the slice in half with their hands and eat their respective halves,1
+birthday,action_1,low,7,One person cuts off a small piece and hands it to the other,1
+birthday,action_1,low,8,They divide the slice into quarters and each eat two quarters,1
+birthday,action_1,high,0,Lio eats the whole slice by himself,0
+birthday,action_1,high,1,Mitchell eats the whole slice by himself,0
+birthday,action_1,high,2,They decide not to eat the cake at all,0
+birthday,action_1,high,3,Lio and Mitchell take turns biting into the same slice,1
+birthday,action_1,high,4,They cut the slice into small pieces and feed each other,1
+birthday,action_1,high,5,Lio and Mitchell use the same fork to take bites of the slice,1
+birthday,action_1,high,6,One person cuts the slice into quarters and they take turns picking up a quarter with their fingers,1
+birthday,action_1,high,7,Lio eats three-quarters of the slice and gives the last quarter to Mitchell,1
+birthday,action_1,high,8,They ask for a second slice to be cut in half so each can have a full half slice,0
+birthday,action_2,low,0,Lio eats the whole slice by himself,0
+birthday,action_2,low,1,Mitchell eats the whole slice by himself,0
+birthday,action_2,low,2,They cut the slice in half and each eats their own portion,1
+birthday,action_2,low,3,Lio and Mitchell take turns biting from the same piece of cake,1
+birthday,action_2,low,4,They decide not to eat the cake at all,0
+birthday,action_2,low,5,"Lio gives his slice to Mitchell, who eats the whole thing",0
+birthday,action_2,low,6,"Mitchell gives his slice to Lio, who eats the whole thing",0
+birthday,action_2,low,7,They use one fork to feed each other bites of the cake,1
+birthday,action_2,low,8,Lio and Mitchell double dip their forks into the raspberry sauce,1
+birthday,action_2,high,0,Lio eats one slice alone,0
+birthday,action_2,high,1,Mitchell eats one slice alone,0
+birthday,action_2,high,2,They each get their own slice and eat separately,0
+birthday,action_2,high,3,Lio and Mitchell cut one slice in half and eat their respective halves,1
+birthday,action_2,high,4,They take one slice and use a single fork to take turns eating from it,1
+birthday,action_2,high,5,Lio and Mitchell both bite from the same part of the slice without using forks,1
+birthday,action_2,high,6,One person eats the whole slice and the other person doesn't eat any cake,0
+birthday,action_2,high,7,They decide not to eat the cake at all and leave the slices on the plates,0
+birthday,action_2,high,8,"Lio and Mitchell ask for a smaller slice to share, then eat it together from the same plate with their own forks",1
+birthday,action_2,high,9,They double dip their forks into the raspberry sauce on the plate while eating their own separate slices,1
+birthday,action_3,low,0,Lio eats a whole slice by himself,0
+birthday,action_3,low,1,Mitchell eats a whole slice by himself,0
+birthday,action_3,low,2,They each get their own slice and eat separately,0
+birthday,action_3,low,3,Lio and Mitchell cut the slice in half and eat their halves with separate forks,1
+birthday,action_3,low,4,"Lio gives his slice to Mitchell, who eats the whole thing",0
+birthday,action_3,low,5,"Mitchell gives his slice to Lio, who eats the whole thing",0
+birthday,action_3,low,6,They decide not to eat the cake at all and throw it away,0
+birthday,action_3,low,7,Lio and Mitchell take turns biting from the same piece of cake,1
+birthday,action_3,low,8,Lio and Mitchell use their fingers to break the slice into smaller pieces and eat together,1
+birthday,action_3,low,9,They ask for an extra fork so they can split the slice but still eat from the same plate with their own utensils,1
+birthday,action_3,high,0,Lio eats the whole slice by himself,0
+birthday,action_3,high,1,Mitchell eats the whole slice by himself,0
+birthday,action_3,high,2,They ask for an extra fork and eat from the same slice on the same plate without sharing utensils,1
+birthday,action_3,high,3,They cut the slice in half and each eat their own portion with separate forks,1
+birthday,action_3,high,4,Lio cuts a small piece from the slice and gives the rest to Mitchell,0
+birthday,action_3,high,5,Mitchell cuts a small piece from the slice and gives the rest to Lio,0
+birthday,action_3,high,6,They decide not to eat the cake at all,0
+birthday,action_3,high,7,Lio and Mitchell take turns biting from the same piece of cake,1
+birthday,action_3,high,8,They request two separate slices and eat their own slices independently,0
+birthday,action_3,high,9,One of them eats a small portion and then hands the remainder to the other to finish,1
+brunch,action_0,low,0,Dana eats the whole stack of pancakes by herself,0
+brunch,action_0,low,1,Allison and Dana take turns biting from the same pancake,1
+brunch,action_0,low,2,They cut the stack of pancakes in half and each eat their own half,1
+brunch,action_0,low,3,Allison and Dana use separate utensils to eat from the same stack of pancakes,1
+brunch,action_0,low,4,Neither of them order the pancakes,0
+brunch,action_0,low,5,Allison eats one pancake and then Dana eats the rest,1
+brunch,action_0,low,6,"They decide to order a smaller dessert to share, such as a single piece of cake",1
+brunch,action_0,low,7,Allison eats the whole stack of pancakes and Dana doesn't have any,0
+brunch,action_0,low,8,They ask for individual pancakes instead of a stack to share,0
+brunch,action_0,low,9,Allison and Dana double dip their utensils into the same syrup and butter to eat their own separate pancakes,1
+brunch,action_0,high,0,Allison eats the entire stack of pancakes by herself,0
+brunch,action_0,high,1,Dana eats the entire stack of pancakes by herself,0
+brunch,action_0,high,2,They cut the stack of pancakes in half and each eat their own half,1
+brunch,action_0,high,3,They take turns biting into the same pancake,1
+brunch,action_0,high,4,Allison and Dana use separate utensils to eat from the same stack of pancakes,1
+brunch,action_0,high,5,They decide not to order the pancakes at all,0
+brunch,action_0,high,6,"One person orders the pancakes and the other does not, with no sharing",0
+brunch,action_0,high,7,They double dip into syrup or other toppings,1
+brunch,action_0,high,8,Allison and Dana eat from opposite sides of the same pancake,1
+brunch,action_1,low,0,Allison lets Dana eat the pancakes alone,0
+brunch,action_1,low,1,They don't order the pancakes at all,0
+brunch,action_1,low,2,"They order the pancakes, but Dana eats the whole stack by herself",0
+brunch,action_1,low,3,They double dip into the pancake stack using their own forks,1
+brunch,action_1,low,4,They tear the pancakes into pieces by hand and eat from the same stack,1
+brunch,action_1,low,5,"Allison eats a few bites of pancake from the stack, then hands it to Dana to finish",1
+brunch,action_1,low,6,They ask for an extra plate and serve themselves portions of pancakes from the stack,1
+brunch,action_1,low,7,"Dana cuts the pancakes and serves Allison a portion, then serves herself",1
+brunch,action_1,low,8,They take turns biting into the same pancake,1
+brunch,action_1,high,0,Allison eats the entire pancake stack alone,0
+brunch,action_1,high,1,Dana eats the entire pancake stack alone,0
+brunch,action_1,high,2,They decide not to order the pancakes,0
+brunch,action_1,high,3,They take turns biting into the same pancake,1
+brunch,action_1,high,4,They use their own forks to double dip into the pancake stack,1
+brunch,action_1,high,5,One person cuts the pancakes and serves the other,1
+brunch,action_1,high,6,"They ordered two separate pancake stacks, one for each person",0
+brunch,action_1,high,7,"They eat the pancakes directly from the serving plate, using their own forks",1
+brunch,action_2,low,0,Allison orders the pancakes and eats them alone,0
+brunch,action_2,low,1,Dana orders the pancakes and eats them alone,0
+brunch,action_2,low,2,They decide not to order the pancakes,0
+brunch,action_2,low,3,"They order the pancakes, but have the restaurant split the order into two separate stacks",0
+brunch,action_2,low,4,They cut the pancake stack in half and each take a half to their own plate,1
+brunch,action_2,low,5,They use a single serving utensil to cut and serve slices to each other,1
+brunch,action_2,low,6,They take turns biting into the same pancake from the stack,1
+brunch,action_2,low,7,Dana eats the pancakes and Allison doesn't have any,0
+brunch,action_2,low,8,Allison and Dana double dip their forks into the syrup and butter on the table,1
+brunch,action_2,low,9,They tear the pancakes into pieces and eat from the same plate,1
+brunch,action_2,high,0,Allison orders the pancakes and eats them alone,0
+brunch,action_2,high,1,Dana orders the pancakes and eats them alone,0
+brunch,action_2,high,2,They decide not to order the pancakes,0
+brunch,action_2,high,3,They order the pancakes and take turns biting into the stack,1
+brunch,action_2,high,4,One person cuts the entire stack into halves and they each take a half,1
+brunch,action_2,high,5,They use a single serving utensil to cut and serve slices to their own plates,1
+brunch,action_2,high,6,They double dip their utensils into the syrup and butter provided for the pancakes,1
+brunch,action_2,high,7,One person eats a few bites of the pancakes and then hands the rest to the other,1
+brunch,action_2,high,8,They tear the pancakes into pieces by hand and eat them together,1
+brunch,action_3,low,0,Allison eats the pancakes alone,0
+brunch,action_3,low,1,Dana eats the pancakes alone,0
+brunch,action_3,low,2,They don't order the pancakes,0
+brunch,action_3,low,3,They order the pancakes and cut them into separate portions on separate plates,1
+brunch,action_3,low,4,Allison and Dana take turns biting from the same pancake,1
+brunch,action_3,low,5,They use a serving utensil to put a portion of pancakes on each of their own plates,1
+brunch,action_3,low,6,One person cuts the pancakes into bite-sized pieces and they take turns picking up pieces with their fingers,1
+brunch,action_3,low,7,They double dip their utensils into syrup or butter on the table,1
+brunch,action_3,low,8,"Allison and Dana eat from opposite sides of the same pancake, meeting in the middle",1
+brunch,action_3,high,0,Each orders their own separate stack of pancakes,0
+brunch,action_3,high,1,One person orders the pancakes and eats the whole thing alone,0
+brunch,action_3,high,2,They decide not to order the pancakes at all,0
+brunch,action_3,high,3,"They order the pancakes, but have the server divide them onto two separate plates",1
+brunch,action_3,high,4,They cut the stack of pancakes into two separate portions on the same plate,1
+brunch,action_3,high,5,"One person eats a pancake, then hands the rest to the other person",1
+brunch,action_3,high,6,They use a single serving utensil to take turns eating from the stack of pancakes,1
+brunch,action_3,high,7,"They take bites from the same pancake, passing it back and forth",1
+brunch,action_3,high,8,One person tears a pancake in half and they each eat a half,1
+takeout,action_0,low,0,Elizabeth gives the honey mustard sauce to Emily and only uses ketchup packets herself,0
+takeout,action_0,low,1,Emily and Elizabeth take turns dipping their chicken tenders in the honey mustard sauce,1
+takeout,action_0,low,2,They pour the honey mustard sauce onto a plate and both dip from the plate,1
+takeout,action_0,low,3,"Emily and Elizabeth cut their chicken tenders in half and share one half with each other, using the honey mustard sauce on their own halves",1
+takeout,action_0,low,4,They decide not to use the honey mustard sauce and both use ketchup packets instead,0
+takeout,action_0,low,5,Elizabeth dips her chicken tender into the honey mustard sauce and then hands it to Emily to take a bite,1
+takeout,action_0,low,6,"They throw away the honey mustard sauce and the chicken tenders, opting not to eat",0
+takeout,action_0,low,7,Emily and Elizabeth divide the honey mustard sauce into two smaller containers and use their own,1
+takeout,action_0,low,8,One of them eats the chicken tenders without any sauce,0
+takeout,action_0,high,0,Emily and Elizabeth take turns dipping their chicken tenders in the honey mustard sauce,1
+takeout,action_0,high,1,"They cut the chicken tenders in half and share, with both using the honey mustard sauce",1
+takeout,action_0,high,2,"Emily gives the honey mustard sauce to Elizabeth, who uses it all",0
+takeout,action_0,high,3,"Elizabeth gives the honey mustard sauce to Emily, who uses it all",0
+takeout,action_0,high,4,"They pour the honey mustard sauce into two separate containers, using it to dip their chicken tenders individually",1
+takeout,action_0,high,5,They decide not to use the honey mustard sauce and both use the ketchup packets instead,1
+takeout,action_0,high,6,"They double dip from the honey mustard sauce container, alternating bites",1
+takeout,action_0,high,7,"One person bites a chicken tender and then hands it to the other to take a bite, using the honey mustard sauce",1
+takeout,action_0,high,8,They throw away the food and do not eat,0
+takeout,action_1,low,0,Emily uses the honey mustard sauce and Elizabeth uses the ketchup packets,0
+takeout,action_1,low,1,Elizabeth uses the honey mustard sauce and Emily uses the ketchup packets,0
+takeout,action_1,low,2,They take turns dipping their chicken tenders in the same honey mustard sauce,1
+takeout,action_1,low,3,They double dip from the same honey mustard sauce container,1
+takeout,action_1,low,4,Emily eats all the chicken tenders with the honey mustard sauce and Elizabeth eats none,0
+takeout,action_1,low,5,Elizabeth eats all the chicken tenders with the honey mustard sauce and Emily eats none,0
+takeout,action_1,low,6,They decide not to use the honey mustard sauce and both use the ketchup packets,1
+takeout,action_1,low,7,They cut their chicken tenders in half and each pair their half with a separate ketchup packet,1
+takeout,action_1,low,8,One person bites a chicken tender and then hands it to the other to take a bite,1
+takeout,action_1,high,0,Emily uses the honey mustard sauce and Elizabeth uses ketchup,0
+takeout,action_1,high,1,Elizabeth uses the honey mustard sauce and Emily uses ketchup,0
+takeout,action_1,high,2,They take turns dipping their tenders in the honey mustard sauce,1
+takeout,action_1,high,3,They double dip their tenders in the honey mustard sauce,1
+takeout,action_1,high,4,Emily eats all the chicken tenders with the honey mustard sauce and Elizabeth eats none,0
+takeout,action_1,high,5,Elizabeth eats all the chicken tenders with the honey mustard sauce and Emily eats none,0
+takeout,action_1,high,6,"They cut the chicken tenders in half and share, using the honey mustard sauce together",1
+takeout,action_1,high,7,"They decide not to use the honey mustard sauce and throw it away, using ketchup instead",1
+takeout,action_1,high,8,"One person gives the honey mustard sauce to the other, who uses it all",0
+takeout,action_2,low,0,Elizabeth uses the honey mustard and Emily uses ketchup,0
+takeout,action_2,low,1,Emily uses the honey mustard and Elizabeth uses ketchup,0
+takeout,action_2,low,2,They pour the honey mustard into two separate smaller containers to use individually,1
+takeout,action_2,low,3,"One person gives the honey mustard to the other, who uses it all",0
+takeout,action_2,low,4,"They take turns dipping their chicken tenders into the honey mustard, but wipe the container with a napkin between turns",1
+takeout,action_2,low,5,"They cut their chicken tenders into bite-sized pieces and then divide the pieces between them, with each using their preferred dipping sauce",1
+takeout,action_2,low,6,They order another container of honey mustard from the restaurant,1
+takeout,action_2,low,7,They decide not to use the honey mustard and just eat the chicken tenders plain,1
+takeout,action_2,low,8,"One person eats their chicken tenders first, then the other person uses the honey mustard",0
+takeout,action_2,low,9,They throw away the chicken tenders and order something else from a different restaurant,0
+takeout,action_2,high,0,Emily uses the honey mustard sauce and Elizabeth uses ketchup packets,0
+takeout,action_2,high,1,Elizabeth uses the honey mustard sauce and Emily uses ketchup packets,0
+takeout,action_2,high,2,They decide not to use any sauce and just eat the chicken tenders plain,1
+takeout,action_2,high,3,They cut the chicken tenders into smaller portions and take turns dipping into the honey mustard sauce,1
+takeout,action_2,high,4,One person eats all the chicken tenders with the honey mustard sauce and the other eats none,0
+takeout,action_2,high,5,They use the ketchup packets and leave the honey mustard sauce untouched,1
+takeout,action_2,high,6,They pour the honey mustard sauce into two separate containers to use individually,1
+takeout,action_2,high,7,"They take bites from the same chicken tender, passing it back and forth",1
+takeout,action_2,high,8,They divide the chicken tenders in half and each use the honey mustard sauce on their own portion without double dipping,1
+takeout,action_3,low,0,cut the chicken tenders into separate portions and use the honey mustard sauce and ketchup packets individually,1
+takeout,action_3,low,1,"use the ketchup packets only, avoiding the single honey mustard sauce",1
+takeout,action_3,low,2,Elizabeth uses the honey mustard sauce and gives all the ketchup packets to Emily,0
+takeout,action_3,low,3,Emily uses the honey mustard sauce and Elizabeth uses the ketchup packets,0
+takeout,action_3,low,4,they take turns dipping separate chicken tenders into the honey mustard sauce,1
+takeout,action_3,low,5,double dip separate chicken tenders into the honey mustard sauce,1
+takeout,action_3,low,6,"one person eats all the chicken tenders with the honey mustard sauce, the other eats none",0
+takeout,action_3,low,7,they throw away the food due to the limited dipping sauce,0
+takeout,action_3,low,8,they order additional dipping sauce from another place,1
+takeout,action_3,high,0,cut the chicken tenders into separate portions and use the honey mustard sauce individually,1
+takeout,action_3,high,1,use the ketchup packets instead of the honey mustard sauce,1
+takeout,action_3,high,2,"Emily eats all the chicken tenders with the honey mustard sauce, Elizabeth uses ketchup",0
+takeout,action_3,high,3,"Elizabeth eats all the chicken tenders with the honey mustard sauce, Emily uses ketchup",0
+takeout,action_3,high,4,they decide not to eat the chicken tenders due to the sauce issue,0
+takeout,action_3,high,5,alternate dipping their own chicken tenders in the honey mustard sauce,1
+takeout,action_3,high,6,double dip their own chicken tenders in the honey mustard sauce without sharing a tender,1
+takeout,action_3,high,7,"one person eats a few chicken tenders, then gives the rest to the other person, including the honey mustard sauce",1
+takeout,action_3,high,8,they request the delivery place to bring more honey mustard sauce,1
+cooking,action_0,low,0,"Liana and Serina both eat the pasta, taking turns biting from the same fork",1
+cooking,action_0,low,1,They cut the pasta into two separate portions and eat from their own plates,1
+cooking,action_0,low,2,Liana eats the pasta while Serina doesn't eat anything,0
+cooking,action_0,low,3,"Serina gives her salad to Liana and they both eat the salad, but not the pasta",1
+cooking,action_0,low,4,Liana and Serina dip separate forks into the same pasta dish to eat,1
+cooking,action_0,low,5,"They decide not to eat either the pasta or the salad, and order takeout instead",0
+cooking,action_0,low,6,"Liana and Serina eat the pasta together, but use separate serving spoons to serve themselves",1
+cooking,action_0,low,7,Serina eats the pasta and Liana eats her salad,0
+cooking,action_0,low,8,Liana and Serina double dip chips into a shared pasta sauce,1
+cooking,action_0,high,0,Liana and Serina sit together and eat from separate portions of the pasta,1
+cooking,action_0,high,1,They take turns biting from the same pasta dish,1
+cooking,action_0,high,2,Liana eats the entire pasta by herself,0
+cooking,action_0,high,3,Serina eats the entire pasta by herself,0
+cooking,action_0,high,4,They cut the pasta into bite-sized pieces and take turns picking one up with their forks,1
+cooking,action_0,high,5,"Liana and Serina use the same fork to eat the pasta, passing it back and forth",1
+cooking,action_0,high,6,"Neither of them eats the pasta, they decide to save it for later",0
+cooking,action_0,high,7,They make two separate plates of pasta and eat from their own plates,1
+cooking,action_0,high,8,"Liana gives her portion to Serina, who eats the entire pasta",0
+cooking,action_0,high,9,Liana and Serina double dip their forks into the same pasta dish,1
+cooking,action_1,low,0,Liana eats the entire pasta by herself,0
+cooking,action_1,low,1,Serina gives her portion to Liana and doesn't eat any,0
+cooking,action_1,low,2,They throw the pasta away and order takeout instead,0
+cooking,action_1,low,3,They divide the pasta into two equal portions and eat from separate pots,1
+cooking,action_1,low,4,Liana and Serina take turns eating from the same plate,1
+cooking,action_1,low,5,They use separate serving utensils to serve themselves,1
+cooking,action_1,low,6,"Liana and Serina eat pasta from the same plate with their own forks, but don't use a serving utensil",1
+cooking,action_1,low,7,"Serina doesn't eat, but Liana eats the entire pasta using the shared serving utensil and her own fork",0
+cooking,action_1,low,8,Liana and Serina double dip their forks into the pasta pot,1
+cooking,action_1,low,9,Liana and Serina eat from the same fork,1
+cooking,action_1,high,0,Liana and Serina each get their own portion of pasta and do not offer any to the other,0
+cooking,action_1,high,1,"One person eats the entire pasta dish by themselves, not sharing with the other",0
+cooking,action_1,high,2,They refuse to eat the pasta and throw it away,0
+cooking,action_1,high,3,"Liana serves the entire pasta dish onto Serina's plate, and Serina eats it all",0
+cooking,action_1,high,4,They divide the pasta into two equal portions using separate serving utensils,1
+cooking,action_1,high,5,They use a single fork to take turns eating directly from the pot,1
+cooking,action_1,high,6,"Liana and Serina cut a long pasta strand in half and both bite from their end, meeting in the middle",1
+cooking,action_1,high,7,"They eat from the same plate, using their own forks but double dipping into the same sauces",1
+cooking,action_1,high,8,One person feeds the other by taking pasta from the pot and putting it directly into their mouth,1
+cooking,action_2,low,0,Serve the pasta onto one large platter and eat directly from it using their own forks,1
+cooking,action_2,low,1,"Cut the pasta into individual portions before serving, so each person gets their own separate portion",1
+cooking,action_2,low,2,Use a serving spoon to portion out the pasta onto individual plates,1
+cooking,action_2,low,3,"Liana eats the entire pasta by herself, while Serina doesn't eat any",0
+cooking,action_2,low,4,"Serina gives her portion to Liana, who eats the entire pasta",0
+cooking,action_2,low,5,They throw the pasta away and order takeout instead,0
+cooking,action_2,low,6,"Take turns biting into the same piece of garlic bread, then serve the pasta onto individual plates",1
+cooking,action_2,low,7,Double dip their forks into a shared sauce bowl while eating,1
+cooking,action_2,low,8,Feed each other pasta from their individual plates,1
+cooking,action_2,low,9,Decide not to eat the pasta at all and watch TV instead,0
+cooking,action_2,high,0,"Liana serves the entire pasta onto one large platter, and they eat directly from it with their own forks",1
+cooking,action_2,high,1,"One person eats the entire pasta by themselves, while the other cooks something else",0
+cooking,action_2,high,2,"They use a serving spoon to portion out individual servings, then eat from their own plates",1
+cooking,action_2,high,3,Liana and Serina decide not to eat the pasta and instead order takeout,0
+cooking,action_2,high,4,"They cut the pasta into bite-sized pieces and eat from a shared plate, using their fingers",1
+cooking,action_2,high,5,"Serina eats the pasta, then offers Liana a bite from her fork",1
+cooking,action_2,high,6,"Liana and Serina take turns biting into the same piece of garlic bread, then serve themselves pasta",1
+cooking,action_2,high,7,"One person throws the pasta away, deciding it's not worth eating",0
+cooking,action_2,high,8,They use a single fork to feed each other pasta,1
+cooking,action_2,high,9,Liana and Serina divide the pasta into smaller portions and reheat them in individual microwave-safe containers,1
+cooking,action_3,low,0,Liana eats the pasta alone from the pot,0
+cooking,action_3,low,1,Liana and Serina divide the pasta into two separate plates and eat from their own plates,1
+cooking,action_3,low,2,They throw the pasta away since Serina doesn't want to eat it,0
+cooking,action_3,low,3,Liana eats the pasta from a separate plate while Serina doesn't eat any,0
+cooking,action_3,low,4,"Serina gives her share to Liana, who eats it all",0
+cooking,action_3,low,5,Liana and Serina use separate serving spoons to serve themselves from the pot,1
+cooking,action_3,low,6,They decide not to eat the pasta and order takeout instead,0
+cooking,action_3,low,7,Liana and Serina take turns biting from the same fork,1
+cooking,action_3,low,8,"Liana eats the pasta while Serina watches, then Serina eats something else",0
+cooking,action_3,high,0,Each takes a separate portion to the living room,1
+cooking,action_3,high,1,Liana eats the entire dish by herself,0
+cooking,action_3,high,2,Serina eats the entire dish by herself,0
+cooking,action_3,high,3,They decide not to eat the pasta and throw it away,0
+cooking,action_3,high,4,Liana and Serina take turns biting from the same forkful of pasta,1
+cooking,action_3,high,5,They use a single fork to take turns eating from the pot,1
+cooking,action_3,high,6,One person eats the pasta in the kitchen while the other waits in the living room,0
+cooking,action_3,high,7,Liana and Serina cut the pasta into individual portions and eat from separate plates,1
+cooking,action_3,high,8,They double dip bread into the pasta sauce from the pot,1
+apples,action_0,low,0,Haoyu picks a separate apple and they both eat their own,0
+apples,action_0,low,1,Camille and Haoyu cut the apple in half and each eat a half,1
+apples,action_0,low,2,They decide not to eat the apple and put it back on the tree,0
+apples,action_0,low,3,"Camille offers Haoyu a bite of her apple, and Haoyu accepts",1
+apples,action_0,low,4,Haoyu picks a separate apple and they take turns biting from each other's apples,1
+apples,action_0,low,5,Camille eats the whole apple and then offers to pick another one for Haoyu,0
+apples,action_0,low,6,They cut the apple into small pieces and feed each other,1
+apples,action_0,low,7,"Haoyu declines to taste, but Camille offers her the core after eating the apple",0
+apples,action_0,high,0,Camille hands the whole apple to Haoyu to eat,0
+apples,action_0,high,1,Camille and Haoyu each pick a separate Jonagold apple to taste,0
+apples,action_0,high,2,Camille cuts the apple in half and they both eat a half,1
+apples,action_0,high,3,"Camille takes a bite, then Haoyu takes a bite from the same apple",1
+apples,action_0,high,4,They decide not to taste any apples,0
+apples,action_0,high,5,Camille offers Haoyu a different apple variety to taste instead,0
+apples,action_0,high,6,Haoyu picks a different Jonagold apple and they both eat their own apples,0
+apples,action_0,high,7,Camille cuts a slice from the apple and hands it to Haoyu to eat,1
+apples,action_0,high,8,They put the apple back and do not eat it,0
+apples,action_1,low,0,Camille eats the whole apple by herself,0
+apples,action_1,low,1,Haoyu picks a separate apple and they each eat their own,0
+apples,action_1,low,2,Camille and Haoyu cut the apple in half and each eat a half,1
+apples,action_1,low,3,They throw the apple away without tasting it,0
+apples,action_1,low,4,Camille gives the whole apple to Haoyu to eat,0
+apples,action_1,low,5,Camille and Haoyu take turns biting from the same side of the apple,1
+apples,action_1,low,6,They leave the apple on the tree and do not eat it,0
+apples,action_1,low,7,Camille and Haoyu cut the apple into smaller pieces and eat from a shared plate,1
+apples,action_1,low,8,Haoyu picks a separate apple and they double dip into a shared caramel sauce,1
+apples,action_1,high,0,Camille eats the entire apple herself,0
+apples,action_1,high,1,Haoyu picks a separate apple and they each eat their own,0
+apples,action_1,high,2,Camille gives the entire apple to Haoyu to eat,0
+apples,action_1,high,3,They cut the apple in half and each eat their own half,1
+apples,action_1,high,4,They both bite from the same side of the apple,1
+apples,action_1,high,5,They double dip a slice of apple into a dip,1
+apples,action_1,high,6,Camille and Haoyu take turns biting from the same spot on the apple,1
+apples,action_1,high,7,They decide not to eat the apple and throw it away,0
+apples,action_1,high,8,Camille cuts the apple into smaller pieces and they each take a few pieces to eat,1
+apples,action_2,low,0,Camille eats the entire apple herself,0
+apples,action_2,low,1,Camille gives the entire apple to Haoyu to eat,0
+apples,action_2,low,2,They pick two separate apples and each eat their own,0
+apples,action_2,low,3,Camille cuts the apple in half and they each eat a half,1
+apples,action_2,low,4,Camille takes a small bite and then Haoyu eats the rest of the apple,1
+apples,action_2,low,5,They take turns double dipping into a bag of apple slices they picked,1
+apples,action_2,low,6,"Neither of them eats the apple, they just put it back",0
+apples,action_2,low,7,Camille and Haoyu cut the apple into smaller pieces and eat from the same cutting board,1
+apples,action_2,low,8,"Haoyu eats a different apple variety, while Camille eats the Jonagold",0
+apples,action_2,high,0,Camille eats the whole apple herself,0
+apples,action_2,high,1,Haoyu picks her own Jonagold apple to taste,0
+apples,action_2,high,2,They cut the apple in half and each eat their own half,1
+apples,action_2,high,3,"Camille hands the whole apple to Haoyu, who eats it all",0
+apples,action_2,high,4,They decide not to taste the apple,0
+apples,action_2,high,5,Camille and Haoyu take turns biting from the same side of the apple,1
+apples,action_2,high,6,They throw the apple away and try a different variety,0
+apples,action_2,high,7,"Camille cuts the apple into smaller pieces and they eat from the same piece, one after the other",1
+apples,action_2,high,8,Haoyu picks another apple and they eat their own separate apples,0
+apples,action_3,low,0,Camille eats the entire apple by herself,0
+apples,action_3,low,1,Camille and Haoyu each pick their own apple and eat separately,0
+apples,action_3,low,2,Camille cuts the apple in half and they each eat a separate half,1
+apples,action_3,low,3,"Camille takes a bite, then cuts the remaining part of the apple to share with Haoyu",1
+apples,action_3,low,4,They decide not to eat the apple and put it back on the tree,0
+apples,action_3,low,5,Haoyu picks a different apple and they eat their own apples together but separately,0
+apples,action_3,low,6,Camille hands the whole apple to Haoyu to eat by herself,0
+apples,action_3,low,7,Camille and Haoyu take turns biting from different sides of the same apple,1
+apples,action_3,low,8,They use a knife to slice the apple into smaller pieces and feed each other,1
+apples,action_3,high,0,Camille eats the apple alone,0
+apples,action_3,high,1,Camille gives the entire apple to Haoyu to eat,0
+apples,action_3,high,2,Camille and Haoyu each pick their own apple to taste,0
+apples,action_3,high,3,Camille cuts the apple in half and they each eat a separate half,1
+apples,action_3,high,4,Camille bites into one side of the apple and Haoyu bites into the other side,1
+apples,action_3,high,5,"Camille and Haoyu take turns biting into the same apple, but from different sides",1
+apples,action_3,high,6,They decide not to eat the apple and put it back on the tree,0
+apples,action_3,high,7,Camille and Haoyu use a knife to cut small pieces from the apple and feed each other,1
+apples,action_3,high,8,Camille sucks the juice from the apple and then hands it to Haoyu to do the same,1
+dip,action_0,low,0,"Declan tries a tortilla chip with the buffalo chicken dip, and Eric tries a pita chip with the spinach and artichoke dip",0
+dip,action_0,low,1,They take turns double dipping a tortilla chip into the buffalo chicken dip,1
+dip,action_0,low,2,Declan and Eric each get a separate plate with their own portions of chips and dips,0
+dip,action_0,low,3,Eric eats a whole bowl of pita chips with spinach and artichoke dip by himself,0
+dip,action_0,low,4,"Declan and Eric share a plate of tortilla chips, taking turns dipping them into the buffalo chicken dip",1
+dip,action_0,low,5,They cut a pita chip in half and both take a bite from their respective half,1
+dip,action_0,low,6,"Declan tries a bit of each dip with a separate tortilla chip, and then Eric does the same",0
+dip,action_0,low,7,"They decide to taste the dips with their fingers, taking turns dipping their fingers into the dips",1
+dip,action_0,low,8,Declan and Eric feed each other a tortilla chip with buffalo chicken dip,1
+dip,action_0,high,0,"Declan tries the chips and dips alone, without Eric",0
+dip,action_0,high,1,"Eric tries the chips and dips alone, without Declan",0
+dip,action_0,high,2,Declan and Eric each take a separate portion of chips and dips to eat,1
+dip,action_0,high,3,They cut the chips into smaller pieces and take turns trying them with different dips,1
+dip,action_0,high,4,Declan and Eric use separate utensils to try the chips and dips,1
+dip,action_0,high,5,They take turns double dipping the same chip into the same dip,1
+dip,action_0,high,6,"Declan and Eric bite from the same chip, alternating between dips",1
+dip,action_0,high,7,One person dips a chip and hands it to the other to try,1
+dip,action_0,high,8,They divide each dip into two smaller portions and eat from their own,1
+dip,action_0,high,9,"Declan gives all the chips and dips to Eric to try, then Eric reports back to Declan",0
+dip,action_1,low,0,"Declan tries all the dips and chips alone, without offering any to Eric",0
+dip,action_1,low,1,Eric and Declan each get their own separate plate of chips and dips,0
+dip,action_1,low,2,They cut the chips into smaller pieces and divide them into separate portions for each person,1
+dip,action_1,low,3,Declan and Eric double dip from the same dips with the same chips,1
+dip,action_1,low,4,"One person tries a dip, then hands the chip to the other to try",1
+dip,action_1,low,5,They decide not to try the dips and chips at all before serving,0
+dip,action_1,low,6,"Declan tries one kind of chip and dip, and Eric tries the other, then they switch",1
+dip,action_1,low,7,Eric and Declan take turns biting from the same chip that has been dipped,1
+dip,action_1,low,8,They both just eat the chips without trying the dips,1
+dip,action_1,low,9,"Declan gives all the chips and dips to Eric to try, and doesn't try any himself",0
+dip,action_1,high,0,"Declan tries all the combinations, then Eric tries all the combinations from separate portions",0
+dip,action_1,high,1,They take turns double dipping into the same dip with the same chip type,1
+dip,action_1,high,2,"Declan eats all the chips and dip, deciding what to serve to guests on his own",0
+dip,action_1,high,3,"They refuse to try the dips and chips, serving them to guests without testing",0
+dip,action_1,high,4,"They each get their own separate sets of all the chips and dips, eating from their own sets",0
+dip,action_1,high,5,"They pass a single chip back and forth, taking turns biting into it with different dips",1
+dip,action_1,high,6,"Eric tries one combination, then hands the rest of the chip to Declan to try a different dip",1
+dip,action_1,high,7,"They throw away the chips and dips, deciding not to serve them to guests",0
+dip,action_1,high,8,"Declan and Eric use separate utensils to take dip from the bowls, eating the chips on their own",0
+dip,action_1,high,9,"They eat from a single, large chip, taking turns dipping it into different dips",1
+dip,action_2,low,0,each person gets their own separate plate with chips and dip,0
+dip,action_2,low,1,they cut the chips into smaller pieces and serve themselves individual portions,1
+dip,action_2,low,2,"one person tries all the dips and chips, then reports back to the other",0
+dip,action_2,low,3,they use separate utensils to taste the dips and chips,1
+dip,action_2,low,4,"Declan tries one kind of chip and dip, Eric tries the other, then they swap",1
+dip,action_2,low,5,they decide not to try the dips and chips at all before serving,0
+dip,action_2,low,6,"one person eats all the chips and dip, the other doesn't have any",0
+dip,action_2,low,7,they throw away the chips and dips without trying them,0
+dip,action_2,low,8,"they take small, separate portions of each dip and chip, and eat from their own",1
+dip,action_2,low,9,"they bite from the same chip that has been dipped, taking turns",1
+dip,action_2,high,0,Each person gets their own separate plate with all the chips and dips,0
+dip,action_2,high,1,"They cut the chips into smaller portions and divide them evenly between two plates, each with all the dips",1
+dip,action_2,high,2,"One person tries all the chips and dips, and then reports back to the other person",0
+dip,action_2,high,3,"They use separate utensils, like forks or chips spears, to try the dips with the chips",1
+dip,action_2,high,4,"Declan tries all the chips and dips, and then gives the remaining food to Eric",0
+dip,action_2,high,5,"They decide not to try the food at all, and just serve it to their guests",0
+dip,action_2,high,6,They take turns biting from the same chip that has been dipped in one of the dips,1
+dip,action_2,high,7,"Eric prepares two identical sets of the chips and dips, and they sit at opposite ends of the table to try them",0
+dip,action_2,high,8,"They use a serving utensil, like a spoon or chip scoop, to transfer dip to their individual plates",1
+dip,action_3,low,0,Each person gets their own plate with a separate portion of chips and dips,0
+dip,action_3,low,1,"They divide each dip into two separate bowls, and each person dips their own chips",1
+dip,action_3,low,2,"One person tries all the dips with the chips, and then reports back to the other",0
+dip,action_3,low,3,"They use separate chips for each dip, and take turns trying a whole chip with each dip",1
+dip,action_3,low,4,"Declan tries all the combinations, and then gives some of each to Eric to try",1
+dip,action_3,low,5,Neither of them tries the dips with the chips before serving,0
+dip,action_3,low,6,"They use a utensil, like a spoon or carrot stick, to taste the dips, rather than chips",1
+dip,action_3,low,7,"Eric and Declan cut the chips into smaller pieces, and then take turns picking up pieces to dip",1
+dip,action_3,low,8,"They make a few 'testing' chips with a small amount of dip on each, and then eat those together",1
+dip,action_3,low,9,"One person gives the other all the chips and dips, and lets them try the combinations alone",0
+dip,action_3,high,0,Each person gets their own separate plate with all the chips and dips,0
+dip,action_3,high,1,One person tries all the combinations and the other doesn't try any,0
+dip,action_3,high,2,They cut the chips into smaller pieces and divide them into separate portions for each person,1
+dip,action_3,high,3,"They use separate utensils, like forks, to take bites of the chips with dip",1
+dip,action_3,high,4,"Declan tries one combination and Eric tries another, then they switch",0
+dip,action_3,high,5,They decide not to try the snacks at all and just serve them to the guests,0
+dip,action_3,high,6,"One person eats a whole chip with dip, then the other person eats a whole different chip with dip",0
+dip,action_3,high,7,"They double dip the same chip into different dips, then eat it together",1
+dip,action_3,high,8,"They take turns biting from the same chip, without handing it back and forth",1
+drinks,action_0,low,0,Noah drinks the entire cocktail by himself,0
+drinks,action_0,low,1,Ria tries a small sip from Noah's drink,1
+drinks,action_0,low,2,Noah and Ria take turns drinking from the same glass,1
+drinks,action_0,low,3,Noah pours half of the drink into another glass for Ria to try,1
+drinks,action_0,low,4,Ria asks Noah to make her a separate drink with the same ingredients,0
+drinks,action_0,low,5,"Noah gives the entire drink to Ria, who drinks it all",0
+drinks,action_0,low,6,They decide to throw the drink away and get something else together,0
+drinks,action_0,low,7,Noah and Ria both dip their straws into the drink and drink at the same time,1
+drinks,action_0,high,0,Noah hands Ria the drink and she finishes it,0
+drinks,action_0,high,1,Noah and Ria take turns sipping from the same drink,1
+drinks,action_0,high,2,Noah pours some of his drink into a new glass for Ria,1
+drinks,action_0,high,3,Ria drinks directly from Noah's glass without him finishing it first,1
+drinks,action_0,high,4,"Noah refuses to let Ria try any, and drinks the whole thing himself",0
+drinks,action_0,high,5,Noah and Ria decide not to drink it and throw it away,0
+drinks,action_0,high,6,Ria asks Noah to make her a separate drink at the bar,0
+drinks,action_0,high,7,"Noah gives Ria a small sip from his glass, then finishes the rest himself",1
+drinks,action_1,low,0,Noah drinks the entire cocktail by himself,0
+drinks,action_1,low,1,Ria declines to try the drink and neither of them consumes it,0
+drinks,action_1,low,2,Noah gives the whole drink to Ria and she consumes it alone,0
+drinks,action_1,low,3,They both drink directly from the same cup,1
+drinks,action_1,low,4,Ria dips a spoon into Noah's cup to taste a small amount,1
+drinks,action_1,low,5,Noah pours a small amount of the drink into a spoon for Ria to try,1
+drinks,action_1,low,6,Ria refuses to try it and Noah throws the drink away,0
+drinks,action_1,low,7,Noah and Ria go to the bar to make another one for Ria to try,0
+drinks,action_1,high,0,Ria drinks the whole drink by herself,0
+drinks,action_1,high,1,Noah drinks the whole drink by himself,0
+drinks,action_1,high,2,Ria and Noah both drink directly from the same cup,1
+drinks,action_1,high,3,They throw the drink away and get something else,0
+drinks,action_1,high,4,Noah gives the whole drink to Ria and doesn't drink any,0
+drinks,action_1,high,5,Ria gives Noah money to make her her own version of the drink,0
+drinks,action_1,high,6,They use a straw to share the drink,1
+drinks,action_2,low,0,Ria refuses to try the drink,0
+drinks,action_2,low,1,Noah drinks the whole thing by himself,0
+drinks,action_2,low,2,"Noah gives the drink to Ria, and she drinks the whole thing",0
+drinks,action_2,low,3,Ria and Noah each get their own separate drinks,0
+drinks,action_2,low,4,Ria and Noah use separate straws to drink from the same cup,1
+drinks,action_2,low,5,Noah pours some of the drink into a new cup for Ria to try,1
+drinks,action_2,low,6,Ria and Noah take turns drinking directly from the same side of the cup,1
+drinks,action_2,low,7,"Ria dips her finger into the drink to taste it, then Noah drinks from the cup",1
+drinks,action_2,high,0,Ria refuses to try the drink,0
+drinks,action_2,high,1,Noah pours some of the drink into a new cup for Ria,1
+drinks,action_2,high,2,"Ria drinks the entire cup, not offering any back to Noah",0
+drinks,action_2,high,3,Noah and Ria both drink directly from the same side of the cup,1
+drinks,action_2,high,4,"Noah hands Ria the cup and she finishes it, then Noah gets himself another drink",0
+drinks,action_2,high,5,Ria asks Noah to pour her a separate serving of the drink from the bar ingredients,0
+drinks,action_2,high,6,"Noah and Ria pass the cup back and forth, drinking from the same side",1
+drinks,action_2,high,7,Noah gives Ria the recipe and she decides to make her own drink at the bar,0
+drinks,action_3,low,0,Ria refuses to try the drink,0
+drinks,action_3,low,1,Noah pours some of the drink into a separate cup for Ria to try,1
+drinks,action_3,low,2,Ria asks Noah to pour a small amount of the drink into her own cup,1
+drinks,action_3,low,3,Noah hands Ria the cup and she drinks from a different spot,1
+drinks,action_3,low,4,Ria takes the cup but uses a straw to drink from it,1
+drinks,action_3,low,5,Noah gives Ria the entire cup and she drinks it all,0
+drinks,action_3,low,6,Ria suggests they both get their own separate drinks at the bar,0
+drinks,action_3,low,7,Noah and Ria decide to throw the drink away and get something else,0
+drinks,action_3,low,8,Ria dips a spoon into the drink to taste it without drinking directly from the cup,1
+drinks,action_3,high,0,Noah pours some of the drink into a new cup for Ria,1
+drinks,action_3,high,1,Ria declines to try the drink,0
+drinks,action_3,high,2,Noah hands Ria the cup and she drinks from a different spot,1
+drinks,action_3,high,3,Noah and Ria go to the bar and make a new drink together,1
+drinks,action_3,high,4,Ria asks Noah to pour a small amount into her own cup,1
+drinks,action_3,high,5,Noah finishes the drink himself and doesn't offer any to Ria,0
+drinks,action_3,high,6,"Ria takes a sip from Noah's cup, then wipes the rim with a napkin before handing it back",1
+drinks,action_3,high,7,Noah and Ria decide not to drink it and throw it away,0
+driving,action_0,low,0,Sonia drinks the coffee,0
+driving,action_0,low,1,They throw the coffee away,0
+driving,action_0,low,2,Danielle gives the coffee to Sonia,0
+driving,action_0,low,3,They go back inside to buy another coffee,0
+driving,action_0,low,4,They take turns sipping the coffee,1
+driving,action_0,low,5,They pour the coffee into two separate cups,1
+driving,action_0,low,6,"Danielle and Sonia pass the cup back and forth, double dipping",1
+driving,action_0,high,0,Sonia drinks the coffee,0
+driving,action_0,high,1,They throw the coffee away and buy another drink,0
+driving,action_0,high,2,They take the coffee back and try to get a refund,0
+driving,action_0,high,3,Danielle and Sonia take turns sipping the coffee,1
+driving,action_0,high,4,They pour the coffee into two separate cups to share,1
+driving,action_0,high,5,Danielle drinks most of the coffee and then hands it to Sonia to finish,1
+driving,action_1,low,0,Danielle drinks the entire cup of coffee alone,0
+driving,action_1,low,1,Sonia drinks the entire cup of coffee alone,0
+driving,action_1,low,2,They throw the coffee away and buy a different drink,0
+driving,action_1,low,3,They take turns sipping from the same cup,1
+driving,action_1,low,4,Danielle and Sonia cut a coffee cake or pastry they had with them to share,1
+driving,action_1,low,5,They buy another coffee and drink those separately,0
+driving,action_1,low,6,One person drinks from the cup and then hands it to the other to finish,1
+driving,action_1,low,7,They leave the coffee and go to a nearby cafe to buy more drinks,0
+driving,action_1,high,0,Danielle drinks the entire cup of coffee alone,0
+driving,action_1,high,1,Sonia drinks the entire cup of coffee alone,0
+driving,action_1,high,2,They throw the coffee away and buy another drink,0
+driving,action_1,high,3,They take turns sipping from the same cup,1
+driving,action_1,high,4,"Danielle drinks from the cup, then hands it to Sonia to finish",1
+driving,action_1,high,5,"Sonia drinks from the cup, then hands it to Danielle to finish",1
+driving,action_2,low,0,Danielle drinks the entire cup by herself,0
+driving,action_2,low,1,Sonia drinks the entire cup by herself,0
+driving,action_2,low,2,They throw the coffee away and buy another drink later,0
+driving,action_2,low,3,They go back inside to see if the gas station has any other coffee options,0
+driving,action_2,low,4,Danielle drinks from the cup and then gives it to Sonia to finish,1
+driving,action_2,low,5,They take turns sipping directly from the cup,1
+driving,action_2,low,6,One person buys another coffee from a different machine or store,0
+driving,action_2,low,7,They pour the coffee into two separate containers to drink,1
+driving,action_2,high,0,Danielle drinks the coffee alone,0
+driving,action_2,high,1,Sonia drinks the coffee alone,0
+driving,action_2,high,2,They throw the coffee away and buy another drink,0
+driving,action_2,high,3,They go to another gas station to get another cup of coffee,0
+driving,action_2,high,4,Danielle and Sonia take turns drinking directly from the cup,1
+driving,action_2,high,5,They pour the coffee into two separate containers to drink,1
+driving,action_2,high,6,One person drinks the coffee and then buys another coffee for the other person at the next stop,0
+driving,action_2,high,7,They decide to wait until the next gas station to get coffee for both of them,0
+driving,action_2,high,8,"Danielle and Sonia drink from the same cup without using straws, passing it back and forth",1
+driving,action_3,low,0,Danielle drinks the entire cup by herself,0
+driving,action_3,low,1,Sonia drinks the entire cup by herself,0
+driving,action_3,low,2,They throw the coffee away and buy another drink,0
+driving,action_3,low,3,They buy another cup of coffee from a different machine,0
+driving,action_3,low,4,They take turns sipping from the cup without using a straw,1
+driving,action_3,low,5,Danielle pours some coffee into the cap or a separate container for Sonia,1
+driving,action_3,low,6,They use two separate straws in the same cup,1
+driving,action_3,low,7,One person drinks directly from the cup and the other doesn't drink any,0
+driving,action_3,high,0,Danielle drinks the entire cup of coffee by herself,0
+driving,action_3,high,1,Sonia drinks the entire cup of coffee by herself,0
+driving,action_3,high,2,They throw the coffee away and buy another drink later,0
+driving,action_3,high,3,They go back into the gas station to see if they can get a refund or another coffee,0
+driving,action_3,high,4,Danielle pours some of the coffee into the gas station's water cup for Sonia,1
+driving,action_3,high,5,They take turns sipping directly from the cup,1
+driving,action_3,high,6,They use two separate straws to drink from the same cup,1
+driving,action_3,high,7,Danielle drinks from the cup and then Sonia drinks what's left,1
+fair,action_0,low,0,Marianne and Lisa cut the corn and other food into smaller portions and divide them evenly between themselves,1
+fair,action_0,low,1,"They decide to only eat the funnel cake and fried cheese, and throw the corn away",0
+fair,action_0,low,2,Marianne eats the corn and then gives the rest of the food to Lisa,0
+fair,action_0,low,3,"Lisa eats a few bites of corn directly from the skewer, then passes it to Marianne to finish",1
+fair,action_0,low,4,They take turns double dipping into the fried cheese with the same utensil,1
+fair,action_0,low,5,Marianne and Lisa both bite into the same piece of funnel cake,1
+fair,action_0,low,6,"Neither of them eats the corn, but they both eat their own separate portions of funnel cake and fried cheese",0
+fair,action_0,low,7,"Marianne and Lisa use separate utensils to eat from a shared plate of food, including the corn",1
+fair,action_0,low,8,They put all the food in the middle of the table and serve themselves from the shared dishes,1
+fair,action_0,high,0,Marianne gives the entire skewer of corn to Lisa,0
+fair,action_0,high,1,They cut the corn into two separate portions and eat from their own portions,1
+fair,action_0,high,2,They take turns biting from the same skewer of corn,1
+fair,action_0,high,3,Lisa eats half of the skewer and then hands it to Marianne to finish,1
+fair,action_0,high,4,They decide not to eat the corn and throw it away,0
+fair,action_0,high,5,"They use separate utensils to eat from the same funnel cake and fried cheese, but still don't share the corn",1
+fair,action_0,high,6,Marianne and Lisa double dip their funnel cake sticks into the same cheese sauce,1
+fair,action_0,high,7,They divide all the food into two equal portions and eat from their own portions,1
+fair,action_1,low,0,Marianne eats the corn off the cob by herself,0
+fair,action_1,low,1,Lisa eats the corn off the cob by herself,0
+fair,action_1,low,2,"They throw the corn away, focusing on the funnel cake and fried cheese",0
+fair,action_1,low,3,Marianne cuts the corn into small pieces and they both eat from the same plate,1
+fair,action_1,low,4,They take turns biting from the same corn on the cob,1
+fair,action_1,low,5,"Marianne gives the entire corn to Lisa, who eats it all",0
+fair,action_1,low,6,"Lisa gives the funnel cake and fried cheese to Marianne, and eats the corn herself",0
+fair,action_1,low,7,"They use the same utensils to eat the corn, taking turns",1
+fair,action_1,low,8,Marianne cuts the corn into two halves and they eat their respective halves off the cob,1
+fair,action_1,low,9,They decide not to eat the corn and only eat the funnel cake and fried cheese,0
+fair,action_1,high,0,Marianne eats the corn on the cob by herself,0
+fair,action_1,high,1,Lisa eats the corn on the cob by herself,0
+fair,action_1,high,2,They throw the corn away and only eat the funnel cake and fried cheese,0
+fair,action_1,high,3,They take turns biting from the same corn on the cob,1
+fair,action_1,high,4,Marianne cuts the corn off the cob and they both eat from the same plate without utensils,1
+fair,action_1,high,5,They cut the corn into smaller pieces and eat from a shared plate with their fingers,1
+fair,action_1,high,6,"One person cuts the corn off the cob and gives the entire plate to the other, who eats it all",0
+fair,action_1,high,7,They use a pair of tongs or serving utensils to feed each other the corn,1
+fair,action_1,high,8,"Marianne and Lisa both eat from the same corn on the cob, but use utensils to pull the corn off the cob and into their mouths",1
+fair,action_2,low,0,Marianne eats the entire corn on the cob by herself,0
+fair,action_2,low,1,Lisa eats the entire corn on the cob by herself,0
+fair,action_2,low,2,They cut the corn off the cob and divide it onto two plates,1
+fair,action_2,low,3,"They throw the corn away, not interested in eating it",0
+fair,action_2,low,4,"Marianne gives the entire corn on the cob to Lisa, who eats it all",0
+fair,action_2,low,5,"Lisa gives the funnel cake and fried cheese to Marianne, and Marianne gives the corn on the cob to Lisa",0
+fair,action_2,low,6,They both bite from the same side of the corn on the cob at the same time,1
+fair,action_2,low,7,Marianne and Lisa take turns double dipping the corn on the cob in a sauce,1
+fair,action_2,low,8,"They decide to only eat the funnel cake and fried cheese, and leave the corn on the cob uneaten",0
+fair,action_2,low,9,They cut the corn on the cob in half and eat their respective halves separately,1
+fair,action_2,high,0,Marianne eats the entire corn on the cob by herself,0
+fair,action_2,high,1,Lisa eats the entire corn on the cob by herself,0
+fair,action_2,high,2,They cut the corn off the cob and divide it into two separate portions,1
+fair,action_2,high,3,"They throw the corn away, deciding they're not hungry enough for it",0
+fair,action_2,high,4,"Marianne gives the entire corn on the cob to Lisa, and Marianne eats the funnel cake and fried cheese",0
+fair,action_2,high,5,"Lisa gives the funnel cake and fried cheese to Marianne, and Lisa eats the entire corn on the cob",0
+fair,action_2,high,6,They take turns double dipping the corn on the cob into a shared pool of butter or sauce,1
+fair,action_2,high,7,"They each take a bite from the same end of the corn on the cob, going back and forth",1
+fair,action_2,high,8,"They decide to only eat the funnel cake and fried cheese, and leave the corn on the cob uneaten",0
+fair,action_2,high,9,They use separate utensils to pull corn off the cob and eat it from their own plates,1
+fair,action_3,low,0,Marianne eats the corn by herself,0
+fair,action_3,low,1,Lisa eats the corn by herself,0
+fair,action_3,low,2,They throw the corn away,0
+fair,action_3,low,3,Marianne cuts the corn into two separate portions and they eat from their own portions,1
+fair,action_3,low,4,"They use separate utensils to pull corn off the cob, eating from the same cob but not the same area",1
+fair,action_3,low,5,One person eats a small portion of the corn and then gives the rest to the other,1
+fair,action_3,low,6,"Double dipping into a bowl of toppings, like butter or cheese, to add flavor to their individual portions of corn",1
+fair,action_3,low,7,"They take turns pulling corn off the cob with their hands, eating it as they go",1
+fair,action_3,low,8,"Neither of them eat the corn, focusing on the funnel cake and fried cheese instead",0
+fair,action_3,high,0,Marianne eats the corn and gives the funnel cake and fried cheese to Lisa,0
+fair,action_3,high,1,They cut the corn into two separate pieces and eat their own portions,1
+fair,action_3,high,2,"Lisa eats the corn, funnel cake, and fried cheese by herself",0
+fair,action_3,high,3,They use separate utensils to take turns picking corn kernels from the cob,1
+fair,action_3,high,4,Marianne and Lisa decide not to eat the food and throw it away,0
+fair,action_3,high,5,They take turns double dipping the fried cheese into a sauce,1
+fair,action_3,high,6,"Marianne eats a few bites of corn, then hands the rest to Lisa to finish",1
+fair,action_3,high,7,They divide all the food into two piles and eat from their own piles,1
+fair,action_3,high,8,"Neither of them eats the corn, but they share the funnel cake and fried cheese",1
+gala,action_0,low,0,Elena gives her drink to Todd and he drinks it all,0
+gala,action_0,low,1,Todd and Elena pour half of their drinks into each other's glasses and drink from their own,1
+gala,action_0,low,2,They don't order drinks and leave,0
+gala,action_0,low,3,Elena and Todd take tiny sips from each other's drinks,1
+gala,action_0,low,4,Todd orders another apple pie espresso martini and they both drink from their own,0
+gala,action_0,low,5,Elena and Todd pour their drinks into a shared pitcher and drink from it together,1
+gala,action_0,high,0,Elena and Todd exchange their drinks and drink from the other's glass,1
+gala,action_0,high,1,They pour a small amount of each drink into a new glass and share the mixture,1
+gala,action_0,high,2,Elena gives her drink to Todd and he drinks the whole thing,0
+gala,action_0,high,3,Todd dips his straw into Elena's drink to take a sip,1
+gala,action_0,high,4,"Elena and Todd take turns sipping from the same drink, starting with Elena's",1
+gala,action_0,high,5,They decide not to try each other's drinks and leave them untouched,0
+gala,action_0,high,6,Todd offers Elena his drink and she finishes it while he drinks hers,0
+gala,action_0,high,7,"Elena and Todd use two straws in one drink, alternating which drink they're straw-sharing",1
+gala,action_1,low,0,"Elena and Todd each drink only their own martini, without trying the other's",0
+gala,action_1,low,1,Elena and Todd pour their drinks into separate smaller glasses to taste each other's,1
+gala,action_1,low,2,"One person gives their whole drink to the other, who then drinks it alone",0
+gala,action_1,low,3,They ask the bartender for a small sample of each other's drink to try,1
+gala,action_1,low,4,Elena and Todd decide not to try each other's drinks and just stick to their own,0
+gala,action_1,low,5,They use a separate spoon or cup to scoop out a small amount of each other's drink to taste,1
+gala,action_1,low,6,"Elena and Todd drink directly from each other's glasses, without using straws",1
+gala,action_1,low,7,"One person drinks from the rim of the other's glass, then hands it back",1
+gala,action_1,high,0,Elena and Todd decide not to try each other's drinks,0
+gala,action_1,high,1,"Elena gives her drink to Todd and he drinks it all, then Todd gives his drink to Elena and she drinks it all",0
+gala,action_1,high,2,They pour a small amount of each drink into a new glass and share the mixture,1
+gala,action_1,high,3,Elena and Todd take sips from each other's glasses without using straws or utensils,1
+gala,action_1,high,4,One person drinks their own drink and the other person drinks the other drink,0
+gala,action_1,high,5,"They don't take a sip of each other's drink, but instead describe their drinks to each other",0
+gala,action_1,high,6,Elena and Todd use a spoon to take a small taste of each other's drinks,1
+gala,action_1,high,7,"They decide to order one of each drink to share, and then split the two drinks between them",1
+gala,action_1,high,8,"Elena tries Todd's drink by dipping her finger in it and tasting, then Todd does the same with Elena's drink",1
+gala,action_2,low,0,Elena and Todd decide not to try each other's drinks,0
+gala,action_2,low,1,They ask the bartender for a small sample of each other's drinks,1
+gala,action_2,low,2,Elena pours a small amount of her drink into a separate glass for Todd to try,1
+gala,action_2,low,3,Todd and Elena use separate straws to try each other's drinks,1
+gala,action_2,low,4,They swap glasses and drink from the other's glass,1
+gala,action_2,low,5,Elena and Todd double dip their straws into each other's drinks,1
+gala,action_2,low,6,One person drinks the entire drink and the other doesn't get any,0
+gala,action_2,low,7,They pour their drinks into a shared pitcher and drink from it together,1
+gala,action_2,high,0,use separate glasses for tasting each other's drinks,1
+gala,action_2,high,1,not try each other's drinks at all,0
+gala,action_2,high,2,pour a small amount of each drink into a new glass for the other to try,1
+gala,action_2,high,3,refuse to share drinks due to germ concerns,0
+gala,action_2,high,4,double dip their straws into each other's drinks,1
+gala,action_2,high,5,Elena drinks Todd's entire martini and Todd drinks Elena's entire martini,1
+gala,action_2,high,6,"Elena gives her drink to Todd and he drinks the whole thing, then Todd gives his drink to Elena and she drinks the whole thing",1
+gala,action_2,high,7,"they don't drink their own drinks after trying each other's, and instead order a new round",1
+gala,action_2,high,8,use a straw to try a sip from the other's glass without touching the rim,1
+gala,action_2,high,9,one person drinks their own drink and the other person doesn't get to try it,0
+gala,action_3,low,0,Elena and Todd do not try each other's drinks,0
+gala,action_3,low,1,They pour a small amount of each other's drink into a new glass to taste,1
+gala,action_3,low,2,Elena and Todd use separate straws to try each other's drinks,1
+gala,action_3,low,3,"One person drinks the other's entire drink, leaving their own untouched",0
+gala,action_3,low,4,"They swap drinks entirely, with Elena drinking Todd's and Todd drinking Elena's",0
+gala,action_3,low,5,"Elena and Todd dip a utensil, like a spoon, into each other's drinks to taste",1
+gala,action_3,low,6,"They decide to order one of each drink to share, splitting both drinks between them",1
+gala,action_3,low,7,Elena and Todd use cups or glasses to scoop a small amount from each other's drink for tasting,1
+gala,action_3,high,0,Elena and Todd each drink only their own martini,0
+gala,action_3,high,1,They pour a small amount of each other's drink into their own glasses to try,1
+gala,action_3,high,2,"Elena gives her drink to Todd and he drinks the whole thing, then Todd gives his drink to Elena",0
+gala,action_3,high,3,"They use separate glasses to split each drink in half, then swap halves to try the other's drink",1
+gala,action_3,high,4,Elena and Todd decide not to try each other's drinks at all,0
+gala,action_3,high,5,"They use a straw to take a sip from each other's glass, without touching the rim",1
+gala,action_3,high,6,Todd pours some of his drink into Elena's glass and she drinks from her own glass,1
+gala,action_3,high,7,Elena and Todd refuse to drink each other's drinks and order new ones to share,1
+hike,action_0,low,0,Tony cuts the sandwich in half and they both eat their own half,1
+hike,action_0,low,1,Alvin accepts the offer and takes a bite from the same part of the sandwich as Tony,1
+hike,action_0,low,2,Tony and Alvin tear the sandwich into smaller pieces and take turns eating from the same pieces,1
+hike,action_0,low,3,Alvin gives Tony one of his energy bars in exchange for eating the entire sandwich himself,0
+hike,action_0,low,4,Tony offers Alvin a small bite and then finishes the rest of the sandwich himself,1
+hike,action_0,low,5,They decide to save the sandwich for later and eat Alvin's snacks instead,0
+hike,action_0,low,6,Tony eats half the sandwich and then gives the other half to Alvin to eat,1
+hike,action_0,low,7,Alvin suggests they both eat their own food and not share,0
+hike,action_0,low,8,Tony and Alvin use separate utensils to eat the sandwich,1
+hike,action_0,low,9,They throw the sandwich away and continue hiking without eating,0
+hike,action_0,high,0,Tony cuts the sandwich in half and they each eat a half,1
+hike,action_0,high,1,Tony offers Alvin the whole sandwich and Alvin eats it,0
+hike,action_0,high,2,Alvin takes a bite of the sandwich and then Tony takes a bite from the same part,1
+hike,action_0,high,3,Tony and Alvin tear the sandwich into smaller pieces and eat from the same pile,1
+hike,action_0,high,4,"Alvin declines at first, but then changes his mind and they take turns biting from the same sandwich",1
+hike,action_0,high,5,Tony breaks the sandwich into quarters and they each eat two quarters,1
+hike,action_0,high,6,Alvin takes the sandwich and cuts it into smaller portions for them to share,1
+hike,action_0,high,7,Tony eats half the sandwich and then offers the remaining half to Alvin,1
+hike,action_0,high,8,They decide not to eat the sandwich and instead look for other food sources,0
+hike,action_0,high,9,Tony puts the sandwich away and they continue hiking without eating,0
+hike,action_1,low,0,"Tony eats the sandwich with Alvin watching, not offering any",0
+hike,action_1,low,1,"Tony offers the whole sandwich to Alvin, who eats it alone",0
+hike,action_1,low,2,"Tony and Alvin eat their own respective snacks, not sharing",0
+hike,action_1,low,3,Tony tears the sandwich in half and they both eat from their respective halves,1
+hike,action_1,low,4,"Tony hands the whole sandwich to Alvin, who cuts it in half to eat, then offers some back to Tony",1
+hike,action_1,low,5,Tony and Alvin take alternating bites from the same half of the sandwich,1
+hike,action_1,low,6,"Tony cuts the sandwich into quarters and they both eat from the same quarter, taking turns",1
+hike,action_1,low,7,"Alvin declines the offer, but Tony still eats the sandwich",0
+hike,action_1,low,8,They decide to save the sandwich for later and eat their other snacks instead,0
+hike,action_1,low,9,"Tony and Alvin both bite into the same whole sandwich, from opposite sides",1
+hike,action_1,high,0,Tony eats the whole sandwich by himself,0
+hike,action_1,high,1,Tony gives the whole sandwich to Alvin,0
+hike,action_1,high,2,They decide not to eat the sandwich and continue hiking,0
+hike,action_1,high,3,Tony tears the sandwich in half with his hands and gives one half to Alvin,1
+hike,action_1,high,4,Tony and Alvin take turns biting from the same half of the sandwich,1
+hike,action_1,high,5,Tony cuts the sandwich into quarters and they each eat two quarters,1
+hike,action_1,high,6,Alvin takes a bite of the sandwich and then hands it back to Tony,1
+hike,action_1,high,7,Tony and Alvin use their fingers to break off pieces from the same sandwich,1
+hike,action_1,high,8,"Tony offers Alvin a bite of the sandwich, but then takes it back to finish himself",1
+hike,action_2,low,0,Tony eats the entire sandwich by himself,0
+hike,action_2,low,1,Alvin declines the offer and eats his own snacks instead,0
+hike,action_2,low,2,Tony and Alvin cut the sandwich into smaller portions to share,1
+hike,action_2,low,3,They decide not to eat the sandwich and save it for later,0
+hike,action_2,low,4,Tony hands the whole sandwich to Alvin to eat,0
+hike,action_2,low,5,Tony and Alvin take turns biting from the same part of the sandwich,1
+hike,action_2,low,6,Tony cuts the sandwich in half and they eat their halves separately,1
+hike,action_2,low,7,They use separate utensils to pick at the sandwich,1
+hike,action_2,low,8,Alvin takes a bite of the sandwich and then hands it back to Tony,1
+hike,action_2,low,9,Tony and Alvin tear the sandwich into pieces and eat from a shared pile,1
+hike,action_2,high,0,Tony eats the whole sandwich by himself,0
+hike,action_2,high,1,Alvin eats the whole sandwich by himself,0
+hike,action_2,high,2,Tony and Alvin cut the sandwich into smaller pieces and take turns eating from the same piece,1
+hike,action_2,high,3,Tony and Alvin tear the sandwich in half and eat from their respective halves at the same time,1
+hike,action_2,high,4,"Tony offers Alvin a bite, then Alvin hands it back to Tony to finish",1
+hike,action_2,high,5,They decide not to eat the sandwich and save it for later,0
+hike,action_2,high,6,Tony cuts the sandwich into quarters and they each eat two quarters,1
+hike,action_2,high,7,"Alvin takes a bite of the sandwich, then hands the remainder back to Tony",1
+hike,action_2,high,8,"Tony hands the whole sandwich to Alvin, who eats it all",0
+hike,action_3,low,0,Tony eats the sandwich by himself,0
+hike,action_3,low,1,Tony gives the entire sandwich to Alvin,0
+hike,action_3,low,2,Tony and Alvin decide not to eat the sandwich,0
+hike,action_3,low,3,Tony cuts the sandwich in half and they each eat their own half,1
+hike,action_3,low,4,Tony and Alvin tear the sandwich into smaller pieces and eat from a shared pile,1
+hike,action_3,low,5,"Alvin declines the offer and Tony eats the sandwich alone, but they share Alvin's snacks",1
+hike,action_3,low,6,Tony and Alvin use separate utensils to take bites from the same sandwich,1
+hike,action_3,low,7,Tony breaks the sandwich into quarters and they take turns picking up a quarter to eat,1
+hike,action_3,low,8,Alvin takes one bite from the sandwich and then they throw the rest away,1
+hike,action_3,high,0,Tony eats the sandwich alone,0
+hike,action_3,high,1,Tony gives the entire sandwich to Alvin,0
+hike,action_3,high,2,They decide not to eat the sandwich and save it for later,0
+hike,action_3,high,3,Tony cuts the sandwich in half and they each eat their own half,1
+hike,action_3,high,4,They tear the sandwich into smaller pieces and eat from a shared pile,1
+hike,action_3,high,5,Tony and Alvin use separate utensils to eat from the same sandwich,1
+hike,action_3,high,6,"Alvin takes a few bites, then Tony finishes the rest of the sandwich",1
+hike,action_3,high,7,They double dip their fingers into the peanut butter and jelly,1
+hike,action_3,high,8,Tony and Alvin take turns biting from the same part of the sandwich without passing it,1
+oysters,action_0,low,0,"take turns eating oysters from the same platter, passing it back and forth",1
+oysters,action_0,low,1,cut each oyster in half and share the halves,1
+oysters,action_0,low,2,"Will eats all the oysters, Jay doesn't have any",0
+oysters,action_0,low,3,"Jay eats all the oysters, Will doesn't have any",0
+oysters,action_0,low,4,double dip their forks into the same oyster,1
+oysters,action_0,low,5,"use the same utensil to eat the oysters, taking turns",1
+oysters,action_0,low,6,"divide the platter into two portions, but then trade some oysters",1
+oysters,action_0,low,7,eat oysters from the same type of oyster on the platter at the same time,1
+oysters,action_0,low,8,"neither of them eat the oysters, they just leave the platter",0
+oysters,action_0,low,9,one person picks an oyster and hands it to the other to eat,1
+oysters,action_0,high,0,they take turns eating the same oyster,1
+oysters,action_0,high,1,one person eats all the oysters and describes them to the other,0
+oysters,action_0,high,2,they cut each oyster in half and split them,1
+oysters,action_0,high,3,they double dip their forks into the same oyster,1
+oysters,action_0,high,4,one person gives their entire selection to the other,0
+oysters,action_0,high,5,they use separate utensils to eat from a communal oyster pile,1
+oysters,action_0,high,6,they decide not to eat the oysters at all,0
+oysters,action_0,high,7,they take small portions from each other's plates using their own utensils,1
+oysters,action_0,high,8,"they eat from opposite sides of the same oyster, meeting in the middle",1
+oysters,action_1,low,0,Each person orders their own oyster platter and eats alone,0
+oysters,action_1,low,1,One person eats all the oysters and the other person doesn't eat any,0
+oysters,action_1,low,2,"They take turns eating a whole oyster each, without dividing or sharing",0
+oysters,action_1,low,3,"They use a single fork to pick up and eat oyster halves from the platter, taking turns",1
+oysters,action_1,low,4,"They double dip their forks into the same oyster, taking turns",1
+oysters,action_1,low,5,One person picks up an oyster with their fingers and hands it to the other person to eat,1
+oysters,action_1,low,6,They pour all the oyster brine into a single glass and take turns drinking from it,1
+oysters,action_1,low,7,"They eat oysters from the same side of the platter, but use separate forks and plates",1
+oysters,action_1,low,8,"They put all the oysters on one plate and take bites from the same oyster, one after the other",1
+oysters,action_1,low,9,They decide not to eat the oysters at all and leave the platter untouched,0
+oysters,action_1,high,0,"They each eat a whole oyster from the platter, without dividing or sharing",0
+oysters,action_1,high,1,"One person eats all the oysters, the other doesn't have any",0
+oysters,action_1,high,2,They take turns eating whole oysters from the platter,1
+oysters,action_1,high,3,They use separate forks to pick up and eat different whole oysters,1
+oysters,action_1,high,4,They use the same fork to pick up and eat different whole oysters,1
+oysters,action_1,high,5,They pour all the oyster brine into a single glass and take turns drinking from it,1
+oysters,action_1,high,6,They order a separate oyster platter for each person,0
+oysters,action_1,high,7,"They don't eat the oysters at all, and leave the platter untouched",0
+oysters,action_1,high,8,One person cuts all the oysters in half and gives half to the other person,1
+oysters,action_1,high,9,"They both bite into the same oyster, one after the other",1
+oysters,action_2,low,0,Will eats all the oysters and Jay eats nothing,0
+oysters,action_2,low,1,They take turns eating oysters from the same shell,1
+oysters,action_2,low,2,Jay and Will cut the oysters into smaller pieces and create separate portions for each other,1
+oysters,action_2,low,3,"Neither of them eats the oysters, they just look at the platter",0
+oysters,action_2,low,4,Will and Jay use separate utensils to eat the oysters from a shared plate,1
+oysters,action_2,low,5,They decide to double dip their utensils into a communal sauce for the oysters,1
+oysters,action_2,low,6,One person eats an oyster and then hands the shell to the other person to drink the brine and eat any remaining oyster,1
+oysters,action_2,low,7,Jay and Will order separate oyster platters for themselves,0
+oysters,action_2,low,8,"They pass a single oyster shell back and forth, taking bites from the same oyster",1
+oysters,action_2,high,0,Will and Jay each get their own oyster platter,0
+oysters,action_2,high,1,"They take turns eating oysters from the same platter, one at a time",1
+oysters,action_2,high,2,One person eats all the oysters and describes the flavors to the other,0
+oysters,action_2,high,3,They divide each oyster in half and share the halves,1
+oysters,action_2,high,4,Will and Jay use separate forks to pick up oyster meat from a shared platter,1
+oysters,action_2,high,5,They pour all the oyster brine into a glass and take turns drinking from it,1
+oysters,action_2,high,6,One person eats an oyster and then hands the shell to the other to drink the brine,1
+oysters,action_2,high,7,They do not eat the oysters at all and leave the platter untouched,0
+oysters,action_2,high,8,Will and Jay double dip their forks into the same oyster,1
+oysters,action_2,high,9,One person gives their entire share of oysters to the other,0
+oysters,action_3,low,0,"Will eats all the oysters, Jay eats none",0
+oysters,action_3,low,1,"Jay eats all the oysters, Will eats none",0
+oysters,action_3,low,2,"They divide the oyster platter into two portions, each eating their own set of oysters",1
+oysters,action_3,low,3,"They take turns eating whole oysters, one person eating one oyster then the other eating the next",1
+oysters,action_3,low,4,Will and Jay use separate forks to pick up and eat the oysters from the shell,1
+oysters,action_3,low,5,"They double dip their forks into the same oyster, then eat from their own forks",1
+oysters,action_3,low,6,"One person sucks the brine from the shell, the other eats the oyster",1
+oysters,action_3,low,7,"They pass the oyster shell back and forth, each taking a sip of the brine then passing it back",1
+oysters,action_3,high,0,Each person orders their own oyster platter,0
+oysters,action_3,high,1,"Will eats one oyster and Jay eats another, then they switch",0
+oysters,action_3,high,2,They use a single fork to pick up and eat separate oysters,1
+oysters,action_3,high,3,Will and Jay take turns eating whole oysters from the platter,1
+oysters,action_3,high,4,They divide the oysters into two piles and each person eats from their own pile,1
+oysters,action_3,high,5,One person eats all the oysters and describes them to the other,0
+oysters,action_3,high,6,They cut each oyster into smaller pieces and serve themselves,1
+oysters,action_3,high,7,Will and Jay double dip their bread into the brine,1
+oysters,action_3,high,8,They pour the brine into a separate bowl and take turns drinking from it,1
+oysters,action_3,high,9,"Neither of them eats the oysters, they just look at them and leave",0
+social,action_0,low,0,Sonia takes the ice cream cone and eats it alone,0
+social,action_0,low,1,Alan takes the ice cream cone and eats it alone,0
+social,action_0,low,2,They cut the ice cream cone in half and eat their respective halves,1
+social,action_0,low,3,Sonia takes a lick of the ice cream cone and then hands it to Alan to finish,1
+social,action_0,low,4,Alan takes a lick of the ice cream cone and then hands it to Sonia to finish,1
+social,action_0,low,5,They take turns licking the ice cream cone without cutting it,1
+social,action_0,low,6,"Sonia gives the ice cream cone to Alan, and he eats it while she eats a cookie",0
+social,action_0,low,7,"Alan gives the ice cream cone to Sonia, and she eats it while he eats a cookie",0
+social,action_0,high,0,Sonia takes the ice cream cone and eats it alone,0
+social,action_0,high,1,Alan takes the ice cream cone and eats it alone,0
+social,action_0,high,2,They cut the ice cream cone in half and each eat a half,1
+social,action_0,high,3,Sonia takes a lick of the ice cream cone and then Alan finishes it,1
+social,action_0,high,4,Alan takes a lick of the ice cream cone and then Sonia finishes it,1
+social,action_0,high,5,They take turns licking the ice cream cone,1
+social,action_0,high,6,Sonia bites the top of the ice cream cone and Alan eats the rest,1
+social,action_0,high,7,Alan bites the top of the ice cream cone and Sonia eats the rest,1
+social,action_0,high,8,They both bite from the same part of the ice cream cone at the same time,1
+social,action_1,low,0,Sonia eats the ice cream cone alone,0
+social,action_1,low,1,Alan eats the ice cream cone alone,0
+social,action_1,low,2,They decide not to eat the ice cream cone and have cookies instead,0
+social,action_1,low,3,They throw the ice cream cone away and eat cookies,0
+social,action_1,low,4,Sonia and Alan cut the ice cream cone in half and each eat a half,1
+social,action_1,low,5,They take turns licking the ice cream cone,1
+social,action_1,low,6,Sonia and Alan use one spoon to take turns eating the ice cream,1
+social,action_1,low,7,"They break the ice cream cone into smaller pieces and eat it together, piece by piece",1
+social,action_1,low,8,One of them scoops the ice cream out of the cone and into two separate bowls,1
+social,action_1,low,9,They double dip a cookie into the ice cream and take turns eating it,1
+social,action_1,high,0,Sonia eats the ice cream cone alone,0
+social,action_1,high,1,Alan eats the ice cream cone alone,0
+social,action_1,high,2,They decide to forgo the ice cream and eat cookies instead,0
+social,action_1,high,3,They cut the ice cream cone in half vertically and each eat a half,1
+social,action_1,high,4,"One person scoops the ice cream out of the cone and hands the empty cone to the other, who does not eat any ice cream",0
+social,action_1,high,5,Sonia scoops out half the ice cream and hands the cone with the remaining ice cream to Alan,1
+social,action_1,high,6,They take turns licking the ice cream cone,1
+social,action_1,high,7,They use one spoon and take turns eating the ice cream from the cone,1
+social,action_1,high,8,They throw the ice cream cone away and neither eats it,0
+social,action_2,low,0,Sonia eats the entire ice cream cone by herself,0
+social,action_2,low,1,Alan eats the entire ice cream cone by himself,0
+social,action_2,low,2,They decide not to eat the ice cream cone and have cookies instead,0
+social,action_2,low,3,Sonia and Alan cut the ice cream cone in half and eat their halves simultaneously,1
+social,action_2,low,4,They throw the ice cream cone away and move on to other desserts,0
+social,action_2,low,5,"Sonia gives the entire ice cream cone to Alan, but he doesn't want it so he gives it back to her",0
+social,action_2,low,6,Sonia and Alan take turns double dipping into the ice cream cone,1
+social,action_2,low,7,They break the ice cream cone into smaller pieces and eat from the same piece together,1
+social,action_2,low,8,One of them buys or finds another ice cream cone from somewhere else so they can both have one,0
+social,action_2,high,0,Sonia eats the ice cream cone alone,0
+social,action_2,high,1,Alan eats the ice cream cone alone,0
+social,action_2,high,2,They decide to skip the ice cream and eat cookies instead,0
+social,action_2,high,3,"Sonia and Alan take turns double dipping into a new, identical ice cream cone they find or purchase",1
+social,action_2,high,4,They cut the ice cream cone in half vertically and eat from their respective halves,1
+social,action_2,high,5,"Sonia licks the ice cream and then hands the cone to Alan, who licks the same area",1
+social,action_2,high,6,"They put the ice cream cone in the trash, not wanting to share",0
+social,action_2,high,7,"One of them gives the other the entire ice cream cone, and the giver eats a cookie",0
+social,action_2,high,8,They bite from opposite sides of the ice cream cone at the same time,1
+social,action_3,low,0,Sonia eats the ice cream cone alone,0
+social,action_3,low,1,Alan eats the ice cream cone alone,0
+social,action_3,low,2,They throw the ice cream cone away and get cookies instead,0
+social,action_3,low,3,Sonia and Alan each get a cookie to eat,0
+social,action_3,low,4,They cut the ice cream cone in half and eat their respective halves,1
+social,action_3,low,5,Sonia eats the top part of the ice cream and Alan eats the cone and remaining ice cream,1
+social,action_3,low,6,They use a knife to scoop ice cream into two separate bowls and eat from their own bowls,1
+social,action_3,low,7,One person licks the ice cream and the other bites into the cone,1
+social,action_3,low,8,"They take turns biting into the cone, but not licking the same part of the ice cream",1
+social,action_3,high,0,Sonia eats the ice cream cone alone,0
+social,action_3,high,1,Alan eats the ice cream cone alone,0
+social,action_3,high,2,They cut the cone in half and each eat a half,1
+social,action_3,high,3,They decide to skip the ice cream and eat cookies instead,0
+social,action_3,high,4,Sonia eats the top half of the ice cream and Alan eats the bottom half of the cone,1
+social,action_3,high,5,"They take turns biting into different parts of the cone, without licking the same areas",1
+social,action_3,high,6,One of them buys or finds another ice cream cone from somewhere else,0
+social,action_3,high,7,They both eat cookies and neither eats the ice cream cone,0
+social,action_3,high,8,They flip a coin to see who gets the ice cream cone,0
+soup,action_0,low,0,Christina gives her soup to Tanya,0
+soup,action_0,low,1,They exchange soups,1
+soup,action_0,low,2,Christina and Tanya pour some of each other's soup into their own bowls,1
+soup,action_0,low,3,They use the same spoon to taste each other's soups,1
+soup,action_0,low,4,Tanya takes a sip directly from Christina's bowl,1
+soup,action_0,low,5,Christina and Tanya decide not to eat their soups,0
+soup,action_0,low,6,They ask the waiter to mix the two soups together in a new bowl and share it,1
+soup,action_0,low,7,Christina takes a spoonful of Tanya's soup and then hands the spoon back to Tanya to use,1
+soup,action_0,low,8,Tanya refuses to eat and gives her soup to Christina,0
+soup,action_0,high,0,"Christina gives her chicken noodle soup to Tanya, and Tanya gives her lentil soup to Christina",0
+soup,action_0,high,1,They decide not to eat their soups,0
+soup,action_0,high,2,Christina and Tanya take turns tasting each other's soups using the same spoon,1
+soup,action_0,high,3,They ask the waiter to mix the two soups together and share the combined soup,1
+soup,action_0,high,4,"Christina and Tanya eat their own soups, but then switch bowls and finish each other's",1
+soup,action_0,high,5,Tanya tries Christina's chicken noodle soup by dipping her bread into Christina's bowl,1
+soup,action_0,high,6,Christina and Tanya order an extra serving of each soup to share alongside their own,1
+soup,action_0,high,7,They use separate spoons to take small portions from each other's bowls,1
+soup,action_0,high,8,"Christina and Tanya pour half of each of their soups into a new, shared bowl, and eat from that",1
+soup,action_1,low,0,Christina and Tanya decide not to share and eat their own soups,0
+soup,action_1,low,1,Christina gives her entire bowl of chicken noodle soup to Tanya,0
+soup,action_1,low,2,"They order a third soup to share, in addition to their own",1
+soup,action_1,low,3,Christina and Tanya use the same spoon to taste each other's soups,1
+soup,action_1,low,4,Tanya scoops some of Christina's chicken noodle soup directly into her own bowl,1
+soup,action_1,low,5,They ask the waiter to mix the two soups together in a new bowl for sharing,1
+soup,action_1,low,6,Christina and Tanya take turns drinking directly from each other's bowls,1
+soup,action_1,low,7,"Neither of them eats the soup, and they leave the restaurant",0
+soup,action_1,low,8,"Christina eats Tanya's lentil soup and Tanya eats Christina's chicken noodle soup, without sharing",0
+soup,action_1,low,9,"They cut a small portion of bread, dip it in one of the soups, and then the other person eats the dipped bread",1
+soup,action_1,high,0,Christina and Tanya decide not to share and stick to their own soups,0
+soup,action_1,high,1,Christina gives her entire bowl of chicken noodle soup to Tanya,0
+soup,action_1,high,2,Tanya and Christina take turns tasting from each other's original bowls,1
+soup,action_1,high,3,"They order a third soup to share, in addition to their own",1
+soup,action_1,high,4,Christina and Tanya use the same spoon to taste each other's soups,1
+soup,action_1,high,5,Tanya eats her lentil soup and then eats Christina's chicken noodle soup,0
+soup,action_1,high,6,They pour all the soup into a large bowl and eat from it together,1
+soup,action_1,high,7,Christina and Tanya cut a small portion from each of their soups and combine them into a new bowl to share,1
+soup,action_1,high,8,"Neither Christina nor Tanya eats the other's soup, and they finish their own",0
+soup,action_2,low,0,"Christina and Tanya don't share soups, eat their own",0
+soup,action_2,low,1,"Christina gives her whole soup to Tanya, Tanya eats it alone",0
+soup,action_2,low,2,"Tanya gives her whole soup to Christina, Christina eats it alone",0
+soup,action_2,low,3,They ask the waiter to split each soup into two portions,1
+soup,action_2,low,4,Christina and Tanya use the same spoon to eat from each other's bowls,1
+soup,action_2,low,5,They double dip bread into each other's soups,1
+soup,action_2,low,6,Christina and Tanya take turns eating directly from each other's bowls,1
+soup,action_2,low,7,They decide not to eat the soups at all and order something else,0
+soup,action_2,low,8,Christina and Tanya eat their own soups and then order a third soup to share,1
+soup,action_2,high,0,Christina and Tanya decide not to share and finish their own soups,0
+soup,action_2,high,1,"Christina gives her entire bowl of soup to Tanya, and Tanya eats it all",0
+soup,action_2,high,2,"Tanya gives her entire bowl of soup to Christina, and Christina eats it all",0
+soup,action_2,high,3,"They ask the waiter to split each of their soups into two smaller portions, and they each eat a portion of each type of soup",1
+soup,action_2,high,4,Christina and Tanya use the same spoon to take turns eating from each other's bowls,1
+soup,action_2,high,5,"Christina and Tanya eat directly from each other's bowls, without using an extra bowl or utensils",1
+soup,action_2,high,6,They leave their soups untouched and order something else to share,1
+soup,action_2,high,7,Christina and Tanya dip their bread into each other's soups,1
+soup,action_2,high,8,"Christina and Tanya use separate spoons to eat from a single, combined bowl of both soups",1
+soup,action_3,low,0,Christina and Tanya do not try each other's soup and eat only from their own bowls,0
+soup,action_3,low,1,"One person gives their entire bowl to the other, who eats the whole thing",0
+soup,action_3,low,2,"They ask the waiter to split each soup into two smaller portions, and then they eat from their own separate portions",1
+soup,action_3,low,3,"Christina and Tanya use a single spoon to take turns eating from one bowl, then the other",1
+soup,action_3,low,4,They decide not to eat the soup at all and order something else instead,0
+soup,action_3,low,5,Christina and Tanya pour some of each other's soup into their own bowls and eat from their own bowls,1
+soup,action_3,low,6,"One person eats a small amount from the other's bowl using their own spoon, then hands the bowl back",1
+soup,action_3,low,7,"They use separate spoons to scoop out portions of each soup into a third, shared bowl, and eat from that",1
+soup,action_3,low,8,Christina and Tanya take turns biting from the same bread or crouton dipped into the soups,1
+soup,action_3,high,0,Christina and Tanya do not try each other's soup,0
+soup,action_3,high,1,One person gives their entire bowl to the other,0
+soup,action_3,high,2,They ask the waiter to split each soup into two smaller portions,1
+soup,action_3,high,3,"Christina and Tanya use a single spoon to take turns eating from one bowl, then the other",1
+soup,action_3,high,4,"They pour some of each soup into a new, empty bowl to create a mixture",1
+soup,action_3,high,5,Christina and Tanya take turns eating a single spoonful from each other's bowl,1
+soup,action_3,high,6,"One person eats their own soup, then is given the other's unfinished bowl to finish",1
+soup,action_3,high,7,They request the restaurant to provide a tasting portion of each soup for the other person,1
+soup,action_3,high,8,Christina and Tanya decide to order an additional bowl of each soup to share,1
+soup,action_3,high,9,They use separate spoons to scoop some of each other's soup into their own bowls,1
+wedding,action_0,low,0,Maxwell and Ralph swap dishes,0
+wedding,action_0,low,1,"Maxwell gives his risotto to Ralph, who eats it all",0
+wedding,action_0,low,2,"Ralph gives his salmon to Maxwell, who eats it all",0
+wedding,action_0,low,3,They throw both dishes away,0
+wedding,action_0,low,4,Maxwell and Ralph cut their meals in half and exchange halves,1
+wedding,action_0,low,5,Maxwell and Ralph take turns eating from each other's plates,1
+wedding,action_0,low,6,"They order one of each dish to share, splitting both meals in half",1
+wedding,action_0,low,7,"Maxwell tries a bite of Ralph's salmon, but Ralph doesn't try the risotto",1
+wedding,action_0,low,8,"Ralph tries a bite of Maxwell's risotto, but Maxwell doesn't try the salmon",1
+wedding,action_0,low,9,Maxwell and Ralph use the same utensils to eat from both plates,1
+wedding,action_0,high,0,Maxwell and Ralph exchange dishes,0
+wedding,action_0,high,1,"Maxwell gives his risotto to Ralph, who eats it all",0
+wedding,action_0,high,2,"Ralph gives his salmon to Maxwell, who eats it all",0
+wedding,action_0,high,3,They throw away both dishes,0
+wedding,action_0,high,4,"Neither Maxwell nor Ralph eat, they just look at the food",0
+wedding,action_0,high,5,Maxwell and Ralph cut their dishes in half and swap halves,1
+wedding,action_0,high,6,Maxwell and Ralph use the same utensils to take turns eating from each dish,1
+wedding,action_0,high,7,"Maxwell takes a bite of Ralph's salmon, then Ralph takes a bite of Maxwell's risotto",1
+wedding,action_0,high,8,"They order a third dish to share, in addition to their own",1
+wedding,action_0,high,9,"Maxwell and Ralph eat from each other's plates, double dipping into the same sauces",1
+wedding,action_1,low,0,Maxwell and Ralph eat their own dishes without offering any to each other,0
+wedding,action_1,low,1,"Maxwell gives his entire dish to Ralph, and Ralph eats the whole thing",0
+wedding,action_1,low,2,They cut their meals in half and swap halves to try each other's dish,1
+wedding,action_1,low,3,Maxwell and Ralph take turns biting from the same piece of food from one of the dishes,1
+wedding,action_1,low,4,Ralph tries a small bite of Maxwell's dish using Maxwell's utensils,1
+wedding,action_1,low,5,They order an extra plate of each dish so they can both have a full portion of each,1
+wedding,action_1,low,6,Maxwell and Ralph decide not to eat their main courses and leave the table,0
+wedding,action_1,low,7,Maxwell and Ralph use the same utensils to take bites from each other's plates,1
+wedding,action_1,low,8,One of them finishes their meal and then eats the other's leftovers,1
+wedding,action_1,low,9,"They-pack their leftovers to take home and eat later, rather than sharing",0
+wedding,action_1,high,0,"Maxwell gives his entire dish to Ralph, and only Ralph eats",0
+wedding,action_1,high,1,"Ralph gives his entire dish to Maxwell, and only Maxwell eats",0
+wedding,action_1,high,2,They decide not to eat either dish,0
+wedding,action_1,high,3,Maxwell and Ralph take turns biting from the same piece of salmon,1
+wedding,action_1,high,4,They cut their dishes into smaller portions and create a mix of both on a new plate to share,1
+wedding,action_1,high,5,Maxwell and Ralph use the same utensils to pick up food from each other's plates,1
+wedding,action_1,high,6,"One person eats their dish, and the other eats none",0
+wedding,action_1,high,7,They ask the waiter to combine the two dishes into one new dish to share,1
+wedding,action_1,high,8,Maxwell and Ralph double dip chips or bread into each other's sauces,1
+wedding,action_1,high,9,"Neither of them touches the other's food, and they eat their own dishes separately",0
+wedding,action_2,low,0,Maxwell and Ralph decide not to eat their main courses,0
+wedding,action_2,low,1,Maxwell eats his mushroom risotto alone and Ralph eats his coconut curry salmon alone,0
+wedding,action_2,low,2,Maxwell gives his entire dish to Ralph and doesn't eat,0
+wedding,action_2,low,3,Ralph gives his entire dish to Maxwell and doesn't eat,0
+wedding,action_2,low,4,They ask the waiter to mix the two dishes together into a new single dish and then share it,1
+wedding,action_2,low,5,Maxwell and Ralph take turns biting from the same piece of food from each other's plates,1
+wedding,action_2,low,6,They use a single utensil to take bites from each other's plates,1
+wedding,action_2,low,7,Maxwell and Ralph order an extra plate and serve themselves small portions from each other's dishes onto the extra plate,1
+wedding,action_2,low,8,One person cuts their food into small pieces and the other person picks some up with their fork,1
+wedding,action_2,low,9,They double dip chips or bread into each other's sauces,1
+wedding,action_2,high,0,Maxwell and Ralph decide not to share and eat their own dishes,0
+wedding,action_2,high,1,"Maxwell gives his entire dish to Ralph, and Ralph eats the whole thing",0
+wedding,action_2,high,2,"Ralph gives his entire dish to Maxwell, and Maxwell eats the whole thing",0
+wedding,action_2,high,3,They throw away both dishes and don't eat anything,0
+wedding,action_2,high,4,"Maxwell and Ralph take turns eating from the same plate, using the same utensil",1
+wedding,action_2,high,5,They cut their food into bite-sized pieces and feed each other,1
+wedding,action_2,high,6,"Maxwell and Ralph order an extra plate of each dish, so they each have both",0
+wedding,action_2,high,7,"One person eats a few bites of the other's dish, then hands it back",1
+wedding,action_2,high,8,"They use a serving spoon to transfer food from one plate to the other, but don't switch plates",1
+wedding,action_2,high,9,Maxwell and Ralph eat from each other's plates without using utensils,1
+wedding,action_3,low,0,Maxwell and Ralph decide not to eat their main courses,0
+wedding,action_3,low,1,"Maxwell eats the entire risotto by himself and Ralph eats the entire salmon by himself, without sharing",0
+wedding,action_3,low,2,They cut their dishes in half and swap halves to try each other's food,1
+wedding,action_3,low,3,Maxwell gives his entire risotto to Ralph and Ralph gives his entire salmon to Maxwell,0
+wedding,action_3,low,4,One person eats their dish and then the other person eats the remaining dish,0
+wedding,action_3,low,5,They use separate forks to take bites from each other's plates,1
+wedding,action_3,low,6,Maxwell and Ralph order one dish to share between them and eat from a single plate,1
+wedding,action_3,low,7,"They ask the waiter to divide each dish into two portions, and then they eat their own portions",1
+wedding,action_3,low,8,"Neither Maxwell nor Ralph eats, and they give their food to other guests",0
+wedding,action_3,low,9,"Maxwell and Ralph take turns eating from the same fork, alternating bites of risotto and salmon",1
+wedding,action_3,high,0,Maxwell and Ralph decide to order one of each dish to share,1
+wedding,action_3,high,1,They ask the waiter if they can get a small tasting portion of each dish,1
+wedding,action_3,high,2,"Maxwell eats his risotto and Ralph eats his salmon, without trying the other's dish",0
+wedding,action_3,high,3,Maxwell gives his entire risotto to Ralph and gets a new salmon dish,0
+wedding,action_3,high,4,Ralph and Maxwell cut their dishes in half and swap halves,1
+wedding,action_3,high,5,They use separate utensils to take small portions from each other's plates,1
+wedding,action_3,high,6,Maxwell and Ralph refuse to eat their dishes and ask for something else,0
+wedding,action_3,high,7,"They take turns eating from a single, shared plate that they combined their dishes onto",1
+wedding,action_3,high,8,"Ralph eats his salmon and Maxwell only eats his risotto, but they discuss the flavors and ingredients",0
+wedding,action_3,high,9,"Maxwell and Ralph order a third, different dish to share instead of trying each other's",1
