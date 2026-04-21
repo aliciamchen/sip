@@ -11,3 +11,5 @@ Each experiment folder contains:
 - `trials.js` - Trial configuration
 
 Experiments collect data via jsPsych-contrib/pipe plugin to `data/<experiment_name>/raw_data/`.
+
+Each different experiment needs a new datapipe ID but they all have the same prolific completion link.

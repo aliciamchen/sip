@@ -13,7 +13,7 @@ Right now the project includes three experiments:
 
 ## Intermediate conference submission
 
-We are currently deciding how to extend this project for submission to a journal. An early version of this project has been submitted to a conference; the paper is in the `cogsci-2026` folder. The reviews for this submission are in `cogsci-2026/cogsci-2026-reviews.md`.
+We are currently deciding how to extend this project for submission to a journal. An early version of this project has been submitted to a conference; the paper is in the `cogsci-2026` folder. The reviews for this submission are in `cogsci-2026/cogsci-2026-reviews.md`. The model in this submission is an old version that we are not using for the journal version. 
 
 The journal version of the paper is in the `SIP_journal` folder. This is the most up-to-date version of the writeup. 
 
