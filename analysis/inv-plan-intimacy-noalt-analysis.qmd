@@ -206,7 +206,7 @@ df_fit_results |>
 ### Load model predictions
 
 ```{r}
-df_model <- read_csv(here("model", "outputs", "inv_plan_intimacy_noalt_preds_summary.csv")) |>
+df_model <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimacy_noalt_preds_summary.csv")) |>
   mutate(
     action = as.character(observed_action),
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),

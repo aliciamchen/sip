@@ -208,7 +208,7 @@ df_fit_results |>
 ### Load model predictions
 
 ```{r}
-df_model <- read_csv(here("model", "outputs", "inv_plan_desire_alt_preds_summary.csv")) |>
+df_model <- read_csv(here("model", "outputs", "cv_loso_inv_plan_desire_alt_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   mutate(
     action = as.character(action),
