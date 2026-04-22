@@ -80,26 +80,38 @@ where $V(a|s)$ is the intrinsic food reward, $\text{risk}(a)$ captures graded bo
 
 ### Load model predictions
 
-```{r}
-df_preds_raw <- read_csv(here("model", "outputs", "forward_planning_fits.csv"))
-pred_cols <- c("pred_access_full_prior", "pred_access_only_prior", "pred_no_access_prior")
+Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/cv_loso_preds.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios, never seeing that trial's scenario during training. This is what we report in the paper.
 
-df_preds <- df_preds_raw |>
-  select(subject_id, scenario_label, intimacy, motivation, action, p_action,
-         all_of(pred_cols)) |>
-  pivot_longer(
-    cols = c("p_action", all_of(pred_cols)),
-    names_to = "model",
-    values_to = "p_action"
+```{r}
+df_cv <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types = FALSE)
+
+# Humans (take from one variant — all three variants share the same p_action column)
+df_humans_cv <- df_cv |>
+  filter(variant == "access_full_prior") |>
+  transmute(
+    subject_id, scenario_label = held_out_scenario,
+    intimacy, motivation, action,
+    p_action, model = "Humans"
+  )
+
+# Out-of-sample model predictions, one row per trial per variant
+df_model_cv <- df_cv |>
+  mutate(
+    model = case_when(
+      variant == "access_full_prior" ~ "Full model",
+      variant == "access_only_prior" ~ "Discomfort-only",
+      variant == "no_access_prior" ~ "Base model"
+    )
   ) |>
+  transmute(
+    subject_id, scenario_label = held_out_scenario,
+    intimacy, motivation, action,
+    p_action = p_action_pred, model
+  )
+
+df_preds <- bind_rows(df_humans_cv, df_model_cv) |>
   mutate(
     intimacy = factor(intimacy),
-    model = case_when(
-      model == "p_action" ~ "Humans",
-      model == "pred_access_full_prior" ~ "Full model",
-      model == "pred_access_only_prior" ~ "Discomfort-only",
-      model == "pred_no_access_prior" ~ "Base model"
-    ),
     model = factor(model, levels = c(
       "Base model", "Discomfort-only", "Full model", "Humans"
     )),

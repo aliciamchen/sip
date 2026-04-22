@@ -1,0 +1,194 @@
+---
+title: Leave-one-scenario-out CV — forward planning
+author: Alicia Chen
+date: 2026-04-22
+format:
+  html:
+    toc: true
+    code-fold: true
+    df-print: paged
+    page-layout: full
+    search: false
+execute:
+  warning: false
+---
+
+```{r setup}
+source(here::here("analysis", "utils.R"))
+setup_analysis()
+```
+
+## Motivation
+
+The forward-planning model has four free actor parameters (`w_v`, `w_d`, `w_e`, `beta_prior`) fit on Experiment 1. In-sample Pearson r at the (intimacy, motivation, action) cell-mean level is 0.957 for the Full + LM prior variant. This metric doesn't distinguish "model captures the shared utility structure" from "model memorizes scenario-level quirks in the LLM-derived access/effort/prior values."
+
+Leave-one-scenario-out (LOSO) addresses this: for each of the 16 scenarios, hold it out, fit on the other 15, predict the held-out scenario, and aggregate.
+
+## Load results
+
+```{r}
+df_fold <- read_csv(here("model", "outputs", "cv_loso_forward.csv"), show_col_types = FALSE) |>
+  mutate(
+    variant_label = case_when(
+      variant == "access_full_prior" ~ "Full model",
+      variant == "access_only_prior" ~ "Discomfort-only",
+      variant == "no_access_prior" ~ "Base model"
+    ),
+    variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
+  )
+
+df_pred <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types = FALSE) |>
+  mutate(
+    motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
+    variant_label = case_when(
+      variant == "access_full_prior" ~ "Full model",
+      variant == "access_only_prior" ~ "Discomfort-only",
+      variant == "no_access_prior" ~ "Base model"
+    ),
+    variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
+  )
+
+df_full <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"), show_col_types = FALSE)
+```
+
+## Headline: in-sample vs out-of-sample fit quality
+
+For each variant, compare the in-sample r (from `forward_planning_fit_results.csv`, fit on all 16 scenarios) to the pooled out-of-sample r (cell means across all 16 held-out LOSO folds, at the (intimacy, motivation, action) level — the same group used for the in-sample r).
+
+```{r}
+df_pooled <- df_pred |>
+  group_by(variant, variant_label, intimacy, motivation, action) |>
+  summarize(humans = mean(p_action), model = mean(p_action_pred), .groups = "drop") |>
+  group_by(variant, variant_label) |>
+  summarize(
+    r_out_of_sample = cor(humans, model),
+    .groups = "drop"
+  )
+
+df_full_r <- df_full |>
+  select(variant = model, r_in_sample = r) |>
+  filter(variant %in% c("access_full_prior", "access_only_prior", "no_access_prior"))
+
+df_headline <- df_pooled |>
+  left_join(df_full_r, by = "variant") |>
+  left_join(
+    df_fold |>
+      group_by(variant) |>
+      summarize(mean_test_nll_per_trial = mean(test_nll_per_trial), .groups = "drop"),
+    by = "variant"
+  ) |>
+  mutate(delta_r = r_out_of_sample - r_in_sample) |>
+  arrange(variant_label) |>
+  select(Variant = variant_label, `In-sample r` = r_in_sample,
+         `Out-of-sample r (pooled)` = r_out_of_sample, Δ = delta_r,
+         `Mean test NLL / trial` = mean_test_nll_per_trial)
+
+df_headline |>
+  knitr::kable(digits = 3,
+               caption = "In-sample vs pooled out-of-sample fit quality. Δ = out − in.")
+```
+
+## Per-scenario out-of-sample r
+
+For each held-out scenario, the Pearson r between model predictions and human `p_action` at the (intimacy, motivation, action) cell-mean level. 32 cells per scenario. Scenarios ordered by Full-model r.
+
+```{r}
+#| fig-width: 10
+#| fig-asp: 0.55
+
+scenario_order <- df_fold |>
+  filter(variant == "access_full_prior") |>
+  arrange(desc(test_cell_r)) |>
+  pull(held_out_scenario)
+
+df_fold |>
+  mutate(held_out_scenario = factor(held_out_scenario, levels = scenario_order)) |>
+  ggplot(aes(x = held_out_scenario, y = test_cell_r, fill = variant_label)) +
+  geom_col(position = position_dodge(width = 0.8), alpha = PLOT_ALPHA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_manual(values = c(
+    "Base model" = "#c9b3bb",
+    "Discomfort-only" = "#a57582",
+    "Full model" = "#7A4A5A"
+  )) +
+  labs(x = "Held-out scenario", y = "Pearson r (test cell-means)", fill = NULL) +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Model vs human, pooled across folds
+
+Scatter of model-predicted vs human action probabilities at the (scenario, intimacy, motivation, action) cell level — one point per cell, colored by held-out scenario. Faceted by variant.
+
+```{r}
+#| fig-width: 13
+#| fig-asp: 0.4
+
+df_cell_pts <- df_pred |>
+  group_by(variant_label, held_out_scenario, intimacy, motivation, action) |>
+  summarize(humans = mean(p_action), model = mean(p_action_pred), .groups = "drop")
+
+ggplot(df_cell_pts, aes(x = model, y = humans, color = held_out_scenario)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_point(alpha = 0.6, size = 1.5) +
+  scale_color_viridis_d(option = "turbo") +
+  labs(x = "Model P(action) — held out of training",
+       y = "Human P(action)",
+       color = "Scenario") +
+  facet_wrap(~variant_label, nrow = 1) +
+  coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
+```
+
+## Fitted-parameter stability (Full + LM prior)
+
+Each LOSO fold refits the four parameters on 15 scenarios. If fitted weights captured a scenario-general utility, they should cluster around the full-data fit values (dashed horizontal line). Large variance across folds would flag parameter instability — e.g., a single scenario disproportionately driving a weight.
+
+```{r}
+#| fig-width: 11
+#| fig-asp: 0.32
+
+df_params <- df_fold |>
+  filter(variant == "access_full_prior") |>
+  select(held_out_scenario, param_w_v, param_w_d, param_w_e, param_beta_prior) |>
+  pivot_longer(starts_with("param_"), names_to = "parameter", values_to = "value") |>
+  mutate(
+    parameter = recode(parameter,
+                       "param_w_v" = "w_v",
+                       "param_w_d" = "w_d",
+                       "param_w_e" = "w_e",
+                       "param_beta_prior" = "beta_prior"),
+    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e", "beta_prior"))
+  )
+
+df_full_params <- df_full |>
+  filter(model == "access_full_prior") |>
+  select(param_w_v, param_w_d, param_w_e, param_beta_prior) |>
+  pivot_longer(everything(), names_to = "parameter", values_to = "full_value") |>
+  mutate(
+    parameter = recode(parameter,
+                       "param_w_v" = "w_v",
+                       "param_w_d" = "w_d",
+                       "param_w_e" = "w_e",
+                       "param_beta_prior" = "beta_prior"),
+    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e", "beta_prior"))
+  )
+
+ggplot(df_params, aes(x = reorder(held_out_scenario, value), y = value)) +
+  geom_col(fill = "#7A4A5A", alpha = PLOT_ALPHA) +
+  geom_hline(data = df_full_params, aes(yintercept = full_value),
+             linetype = "dashed", color = "black") +
+  labs(x = "Held-out scenario", y = "Fitted value") +
+  facet_wrap(~parameter, nrow = 1, scales = "free_y") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Takeaway
+
+```{r}
+#| echo: false
+full_out <- df_pooled |> filter(variant == "access_full_prior") |> pull(r_out_of_sample)
+full_in <- df_full_r |> filter(variant == "access_full_prior") |> pull(r_in_sample)
+per_fold <- df_fold |> filter(variant == "access_full_prior") |> pull(test_cell_r)
+```
+
+For the Full + LM prior model, held-out Pearson r pooled across the 16 LOSO folds is `r round(full_out, 3)`, compared to an in-sample r of `r round(full_in, 3)`. Per-fold held-out r (32 cells each) is `r sprintf("%.2f ± %.2f", mean(per_fold), sd(per_fold))`. Fitted weights cluster tightly around the full-data values, confirming that the model captures scenario-general utility structure rather than scenario-specific patterns.
