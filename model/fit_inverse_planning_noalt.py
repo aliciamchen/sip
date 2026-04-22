@@ -35,22 +35,30 @@ from model_utils import (
 
 from utils import get_project_root
 
+from fit_forward_planning import _fit_with_adam
 from fit_inverse_planning import compute_intimacy_nll, load_fitted_params
 
 
-# Variant registry: name -> (observer_fn, actor_kwarg_names)
+# Variant registry: name -> (observer_fn, actor_kwarg_names, utility_param_names).
+# `actor_kwarg_names` is the full kwargs needed by the observer memo (including
+# `alpha` for the actor softmax, which is fixed at 1). `utility_param_names` is
+# the subset that is actually fitted jointly with α_observer in the no-alt
+# pipeline (α_actor is not fitted).
 PADDED_VARIANTS = {
     "access_full": (
         observer_intimacy_access_full_padded,
         ["alpha", "w_v", "w_d", "w_e"],
+        ["w_v", "w_d", "w_e"],
     ),
     "access_only": (
         observer_intimacy_access_only_padded,
         ["alpha", "w_d"],
+        ["w_d"],
     ),
     "no_access": (
         observer_intimacy_no_access_padded,
         ["alpha", "w_v", "w_e"],
+        ["w_v", "w_e"],
     ),
 }
 
@@ -177,22 +185,67 @@ def fit_padded_alpha_observer(
     return final_alpha, best_nll
 
 
+def fit_padded_joint_model(
+    observer_fn,
+    utility_param_names,
+    observed_action,
+    scenario_idx,
+    reward_condition,
+    response,
+    access_table,
+    effort_table,
+    is_share_table,
+    prior_table,
+    lr=0.05,
+    max_steps=2000,
+    verbose=True,
+    label="padded_joint",
+):
+    """Jointly fit actor utility weights + α_observer for the padded observer.
+
+    Free params (in order): utility_param_names, then α_observer at the end.
+    α_actor is fixed at 1 (same as everywhere else).
+    """
+    ALPHA_ACTOR = 1.0
+    n_utility = len(utility_param_names)
+
+    def build_observer_table(params):
+        actor_kwargs = {"alpha": ALPHA_ACTOR}
+        for i, name in enumerate(utility_param_names):
+            actor_kwargs[name] = params[i]
+        return observer_fn(
+            **actor_kwargs,
+            alpha_observer=params[-1],
+            access_table=access_table,
+            effort_table=effort_table,
+            is_share_table=is_share_table,
+            prior_table=prior_table,
+        )
+
+    def nll_trial(table, obs_a, s, r, resp):
+        post = table[0, s, obs_a, :, r]
+        return compute_intimacy_nll(post, resp)
+
+    vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = build_observer_table(params)
+        return jnp.sum(
+            vmap_nll(table, observed_action, scenario_idx, reward_condition, response)
+        )
+
+    init_params = jnp.ones(n_utility + 1)
+    params, nll = _fit_with_adam(
+        loss_fn, init_params, lr=lr, max_steps=max_steps, verbose=verbose, label=label,
+    )
+    return params, float(nll)
+
+
 def main():
     print("=" * 60)
-    print("No-alt inverse planning — alpha_observer fit (3 variants)")
-    print("Padded observer; frozen actor params per variant; uniform actor prior")
+    print("No-alt inverse planning — joint fit (actor weights + α_observer)")
+    print("Padded observer; uniform-over-valid-slots actor prior")
     print("=" * 60)
-
-    print("\nLoading frozen actor parameters...")
-    actor_params_by_model = load_fitted_params()
-    for variant in PADDED_VARIANTS:
-        if variant not in actor_params_by_model:
-            print(f"  (missing {variant}; will skip)")
-        else:
-            param_str = ", ".join(
-                f"{k}={v:.3f}" for k, v in actor_params_by_model[variant].items()
-            )
-            print(f"  {variant}: {param_str}")
 
     data, observed_action, reward_condition, response, scenario_idx = (
         load_intimacy_noalt_data()
@@ -206,16 +259,13 @@ def main():
     print(f"  prior shape: {padded['prior'].shape}")
 
     results = []
-    for variant, (observer_fn, kw_names) in PADDED_VARIANTS.items():
-        if variant not in actor_params_by_model:
-            continue
+    for variant, (observer_fn, _kw_names, utility_names) in PADDED_VARIANTS.items():
         print(f"\n{'-' * 40}")
-        print(f"Fitting {variant}_padded...")
+        print(f"Jointly fitting {variant}_padded ({len(utility_names)} utility weights + α_observer)...")
         print(f"{'-' * 40}")
-        alpha_observer, nll = fit_padded_alpha_observer(
+        params, nll = fit_padded_joint_model(
             observer_fn=observer_fn,
-            actor_params=actor_params_by_model[variant],
-            actor_kwarg_names=kw_names,
+            utility_param_names=utility_names,
             observed_action=observed_action,
             scenario_idx=scenario_idx,
             reward_condition=reward_condition,
@@ -225,13 +275,17 @@ def main():
             is_share_table=padded["is_share"],
             prior_table=padded["prior"],
         )
-        results.append({
+        row = {
             "model": f"{variant}_padded",
             "experiment": "intimacy_noalt",
-            "alpha_observer": alpha_observer,
             "nll": nll,
-            "n_params": 1,
-        })
+            "n_params": len(utility_names) + 1,
+            "param_alpha": 1.0,
+            "alpha_observer": float(params[-1]),
+        }
+        for i, name in enumerate(utility_names):
+            row[f"param_{name}"] = float(params[i])
+        results.append(row)
 
     results_df = pd.DataFrame(results)
     output_dir = Path(__file__).parent / "outputs"

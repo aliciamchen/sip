@@ -155,7 +155,9 @@ We compare three ablations of the canonical risk utility (Base model, Discomfort
 
 **Base model**: Drops the risk term: $U = w_v \cdot V(a|s) - w_e \cdot \text{effort}(a)$.
 
-The softmax over actions is $P(a | I, s) \propto \pi(a|s, \text{mot}) \cdot \exp(U(a|I, s))$, where $\pi$ is uniform over the valid slots in each padded cell. All models assume a uniform intimacy prior and compute posteriors via Bayesian inference over the padded action space. Actor parameters are frozen per-variant from the forward-planning fit. Only the observer inverse temperature ($\alpha_{\text{observer}}$) is fitted to the no-alt human data.
+The softmax over actions is $P(a | I, s) \propto \pi(a|s, \text{mot}) \cdot \exp(U(a|I, s))$, where $\pi$ is uniform over the valid slots in each padded cell. All models assume a uniform intimacy prior and compute posteriors via Bayesian inference over the padded action space.
+
+**Fitting strategy for the no-alt experiment.** Unlike the alt-shown experiments (which freeze the Exp 1 forward-plan actor weights and fit only $\alpha_{\text{observer}}$), the no-alt experiment refits **all** actor weights jointly with $\alpha_{\text{observer}}$ on the no-alt observer data. The padded observer reasons over a variable-length LM-generated action set, so the softmax competition structure differs from Exp 1's fixed four-action space — the Exp 1 weights don't transplant cleanly. Per variant the free parameters are: Full = $\{w_v, w_d, w_e, \alpha_{\text{observer}}\}$, Discomfort-only = $\{w_d, \alpha_{\text{observer}}\}$, Base model = $\{w_v, w_e, \alpha_{\text{observer}}\}$. Actor's softmax temperature $\alpha$ is fixed at 1 for identifiability. Predictions reported below are out-of-sample (leave-one-scenario-out) from `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv`.
 
 ### Fitted parameters
 
@@ -169,14 +171,14 @@ df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_noalt_fit_
       utility == "no_access" ~ "Base model"
     )
   ) |>
-  select(model_label, alpha_observer, nll, n_params) |>
+  select(model_label, param_w_v, param_w_d, param_w_e, alpha_observer, nll, n_params) |>
   arrange(model_label)
 
 df_fit_results |>
   knitr::kable(
     digits = 3,
-    caption = "Fitted observer parameters for no-alt intimacy inference (3 utility variants)",
-    col.names = c("Utility", "α_observer", "NLL", "n_params")
+    caption = "Joint-fit parameters for no-alt intimacy inference. All actor weights fit on no-alt data (not frozen from Exp 1).",
+    col.names = c("Utility", "w_v", "w_d", "w_e", "α_observer", "NLL", "n_params")
   )
 ```
 

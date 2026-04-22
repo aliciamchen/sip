@@ -7,8 +7,11 @@ one prediction row per (scenario, observed_action, motivation, intimacy_level,
 model). Summary adds expected intimacy per (scenario, observed, motivation,
 model). Actor prior is uniform over valid padded slots.
 
-Actor params are frozen from forward planning (per variant).
-alpha_observer is loaded from inverse_planning_noalt_fit_results.csv.
+All actor weights and α_observer come from the JOINT fit on no-alt data
+(`inverse_planning_noalt_fit_results.csv`). This is different from the alt-
+shown experiments, which freeze actor weights from the forward fit. The
+padded observer's variable-length action space makes the Exp 1 weights a
+poor transplant, so the no-alt pipeline refits all weights directly.
 """
 
 import sys
@@ -29,20 +32,21 @@ from model_utils import (
     observer_intimacy_no_access_padded,
 )
 
-from generate_inverse_planning_preds import load_fitted_params
 
-
+# Variant registry: name -> (observer_fn, utility_param_names)
+# α_actor is fixed at 1; utility names are what we pull from the fit-results CSV.
 PADDED_VARIANTS = {
-    "access_full": (observer_intimacy_access_full_padded, ["alpha", "w_v", "w_d", "w_e"]),
-    "access_only": (observer_intimacy_access_only_padded, ["alpha", "w_d"]),
-    "no_access":   (observer_intimacy_no_access_padded,   ["alpha", "w_v", "w_e"]),
+    "access_full": (observer_intimacy_access_full_padded, ["w_v", "w_d", "w_e"]),
+    "access_only": (observer_intimacy_access_only_padded, ["w_d"]),
+    "no_access":   (observer_intimacy_no_access_padded,   ["w_v", "w_e"]),
 }
 
 
-def load_fitted_alpha_observer_noalt(filepath=None):
-    """Return dict: variant_name -> alpha_observer.
+def load_noalt_fit_results(filepath=None):
+    """Return dict: variant_name -> dict of all fitted params (utility + α_obs + α_actor).
 
-    model column looks like "access_full_padded".
+    Reads the joint-fit CSV written by fit_inverse_planning_noalt.py:main().
+    Keys are "access_full", "access_only", "no_access" (no `_padded` suffix).
     """
     if filepath is None:
         filepath = (
@@ -55,15 +59,24 @@ def load_fitted_alpha_observer_noalt(filepath=None):
     out = {}
     for _, row in df.iterrows():
         variant = str(row["model"]).replace("_padded", "")
-        alpha = row["alpha_observer"]
-        out[variant] = float(alpha) if pd.notna(alpha) else 1.0
+        params = {
+            "alpha": float(row["param_alpha"]) if pd.notna(row.get("param_alpha", None)) else 1.0,
+            "alpha_observer": float(row["alpha_observer"]),
+        }
+        for pn in ["w_v", "w_d", "w_e"]:
+            col = f"param_{pn}"
+            if col in row and pd.notna(row[col]):
+                params[pn] = float(row[col])
+        out[variant] = params
     return out
 
 
-def generate_noalt_preds(actor_params, variant_name, alpha_observer, padded):
-    observer_fn, kw_names = PADDED_VARIANTS[variant_name]
-    kwargs = {k: actor_params[k] for k in kw_names}
-    kwargs["alpha_observer"] = alpha_observer
+def generate_noalt_preds(params, variant_name, padded):
+    observer_fn, utility_names = PADDED_VARIANTS[variant_name]
+    kwargs = {"alpha": params["alpha"]}
+    for name in utility_names:
+        kwargs[name] = params[name]
+    kwargs["alpha_observer"] = params["alpha_observer"]
     result = observer_fn(
         **kwargs,
         access_table=padded["access"],
@@ -109,18 +122,17 @@ def compute_expected_intimacy_noalt(df):
 
 def main():
     print("=" * 60)
-    print("No-alt intimacy inference predictions (3 variants, uniform prior)")
+    print("No-alt intimacy inference predictions (3 variants, joint fit)")
     print("=" * 60)
 
     output_dir = Path(__file__).parent / "outputs"
     output_dir.mkdir(exist_ok=True)
 
-    print("\nLoading fitted actor parameters...")
-    params_by_variant = load_fitted_params()
-    print("\nLoading fitted alpha_observer (no-alt)...")
-    alpha_by_variant = load_fitted_alpha_observer_noalt()
-    for variant, alpha in alpha_by_variant.items():
-        print(f"  {variant}: alpha_observer = {alpha:.3f}")
+    print("\nLoading joint-fit parameters (actor weights + α_observer)...")
+    params_by_variant = load_noalt_fit_results()
+    for variant, params in params_by_variant.items():
+        param_str = ", ".join(f"{k}={v:.3f}" for k, v in params.items())
+        print(f"  {variant}: {param_str}")
 
     padded = load_padded_lm_tables()
     if padded is None:
@@ -130,16 +142,11 @@ def main():
     print("\nGenerating predictions per variant...")
     dfs_full = []
     for variant in PADDED_VARIANTS:
-        if variant not in params_by_variant or variant not in alpha_by_variant:
+        if variant not in params_by_variant:
             continue
         model_name = f"{variant}_padded"
         print(f"  {model_name}...")
-        df = generate_noalt_preds(
-            params_by_variant[variant],
-            variant,
-            alpha_by_variant[variant],
-            padded,
-        )
+        df = generate_noalt_preds(params_by_variant[variant], variant, padded)
         df["model"] = model_name
         dfs_full.append(df)
 

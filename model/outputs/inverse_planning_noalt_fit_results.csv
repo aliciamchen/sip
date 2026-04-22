@@ -1,4 +1,4 @@
-model,experiment,alpha_observer,nll,n_params
-access_full_padded,intimacy_noalt,2.0120155811309814,2053.10009765625,1
-access_only_padded,intimacy_noalt,2.0994603633880615,2048.168212890625,1
-no_access_padded,intimacy_noalt,0.7999629378318787,2141.416015625,1
+model,experiment,nll,n_params,param_alpha,alpha_observer,param_w_v,param_w_d,param_w_e
+access_full_padded,intimacy_noalt,2050.79345703125,4,1.0,1.6248177289962769,0.29377007484436035,1.6206774711608887,1.4596786499023438
+access_only_padded,intimacy_noalt,2048.793701171875,2,1.0,1.6673251390457153,,1.6639155149459839,
+no_access_padded,intimacy_noalt,2141.416015625,3,1.0,0.5499559640884399,1.059664011001587,,1.165984869003296
