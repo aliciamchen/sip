@@ -25,8 +25,11 @@ from model_utils import (
     LLM_TABLES,
     SCENARIO_TO_IDX,
     actor_forw_access_full,
+    actor_forw_access_full_prior,
     actor_forw_access_only,
+    actor_forw_access_only_prior,
     actor_forw_no_access,
+    actor_forw_no_access_prior,
 )
 from scipy import stats
 
@@ -159,6 +162,22 @@ def predict_access_full(
 
 
 @jax.jit
+def predict_access_full_prior(
+    intimacy, reward_condition, action, scenario_idx,
+    alpha, w_v, w_d, w_e, beta_prior,
+    access_table, effort_table, prior_table,
+):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_access_full_prior(
+        alpha, w_v, w_d, w_e, beta_prior,
+        access_table, effort_table, prior_table,
+    )
+    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
+        intimacy_idx, reward_condition, action, scenario_idx
+    )
+
+
+@jax.jit
 def predict_access_only(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_d,
@@ -182,6 +201,38 @@ def predict_no_access(
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_no_access(
         alpha, w_v, w_e, access_table, effort_table
+    )
+    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
+        intimacy_idx, reward_condition, action, scenario_idx
+    )
+
+
+@jax.jit
+def predict_access_only_prior(
+    intimacy, reward_condition, action, scenario_idx,
+    alpha, w_d, beta_prior,
+    access_table, effort_table, prior_table,
+):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_access_only_prior(
+        alpha, w_d, beta_prior,
+        access_table, effort_table, prior_table,
+    )
+    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
+        intimacy_idx, reward_condition, action, scenario_idx
+    )
+
+
+@jax.jit
+def predict_no_access_prior(
+    intimacy, reward_condition, action, scenario_idx,
+    alpha, w_v, w_e, beta_prior,
+    access_table, effort_table, prior_table,
+):
+    intimacy_idx = get_intimacy_index(intimacy)
+    probs = actor_forw_no_access_prior(
+        alpha, w_v, w_e, beta_prior,
+        access_table, effort_table, prior_table,
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
         intimacy_idx, reward_condition, action, scenario_idx
@@ -242,6 +293,27 @@ def fit_access_full_model(
     return jnp.array([ALPHA, params[0], params[1], params[2]]), nll
 
 
+def fit_access_full_prior_model(
+    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
+):
+    ALPHA = 1.0
+    a_tab, e_tab, p_tab = tables
+
+    def loss_fn(params):
+        w_v, w_d, w_e, beta_prior = params
+        preds = predict_access_full_prior(
+            intimacy, reward_condition, action, scenario_idx,
+            ALPHA, w_v, w_d, w_e, beta_prior,
+            a_tab, e_tab, p_tab,
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full_prior", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
+
+
 def fit_access_only_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
@@ -282,6 +354,48 @@ def fit_no_access_model(
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
+def fit_access_only_prior_model(
+    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
+):
+    ALPHA = 1.0
+    a_tab, e_tab, p_tab = tables
+
+    def loss_fn(params):
+        w_d, beta_prior = params
+        preds = predict_access_only_prior(
+            intimacy, reward_condition, action, scenario_idx,
+            ALPHA, w_d, beta_prior,
+            a_tab, e_tab, p_tab,
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0], label="access_only_prior", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1]]), nll
+
+
+def fit_no_access_prior_model(
+    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
+):
+    ALPHA = 1.0
+    a_tab, e_tab, p_tab = tables
+
+    def loss_fn(params):
+        w_v, w_e, beta_prior = params
+        preds = predict_no_access_prior(
+            intimacy, reward_condition, action, scenario_idx,
+            ALPHA, w_v, w_e, beta_prior,
+            a_tab, e_tab, p_tab,
+        )
+        return compute_nll(preds, p_action)
+
+    params, nll = _fit_with_adam(
+        loss_fn, [1.0, 1.0, 1.0], label="no_access_prior", **kwargs
+    )
+    return jnp.array([ALPHA, params[0], params[1], params[2]]), nll
+
+
 # Main script
 
 
@@ -293,32 +407,62 @@ def main():
     data, intimacy, reward_condition, action, p_action, scenario_idx = load_data()
 
     tables = (LLM_TABLES["access"], LLM_TABLES["effort"])
+    prior_tables = None
+    if "action_prior" in LLM_TABLES:
+        prior_tables = (
+            LLM_TABLES["access"], LLM_TABLES["effort"], LLM_TABLES["action_prior"],
+        )
+    else:
+        print("  (lm_action_priors.csv not found; skipping access_full_prior fit)")
+
     fits = {
         "access_full": (
             fit_access_full_model,
             predict_access_full,
             ["w_v", "w_d", "w_e"],
+            tables,
         ),
         "access_only": (
             fit_access_only_model,
             predict_access_only,
             ["w_d"],
+            tables,
         ),
         "no_access": (
             fit_no_access_model,
             predict_no_access,
             ["w_v", "w_e"],
+            tables,
         ),
     }
+    if prior_tables is not None:
+        fits["access_full_prior"] = (
+            fit_access_full_prior_model,
+            predict_access_full_prior,
+            ["w_v", "w_d", "w_e", "beta_prior"],
+            prior_tables,
+        )
+        fits["access_only_prior"] = (
+            fit_access_only_prior_model,
+            predict_access_only_prior,
+            ["w_d", "beta_prior"],
+            prior_tables,
+        )
+        fits["no_access_prior"] = (
+            fit_no_access_prior_model,
+            predict_no_access_prior,
+            ["w_v", "w_e", "beta_prior"],
+            prior_tables,
+        )
 
     results = {}
     param_arrays = {}
-    for name, (fit_fn, _pred_fn, param_names) in fits.items():
+    for name, (fit_fn, _pred_fn, param_names, tab) in fits.items():
         print("\n" + "-" * 40)
         print(f"Fitting {name.upper()} model (alpha=1 fixed)...")
         print("-" * 40)
         params, nll = fit_fn(
-            intimacy, reward_condition, action, scenario_idx, p_action, tables
+            intimacy, reward_condition, action, scenario_idx, p_action, tab
         )
         param_arrays[name] = params
         results[name] = {
@@ -344,12 +488,12 @@ def main():
     print("Saving predictions...")
     print("-" * 40)
 
-    for name, (_fit_fn, pred_fn, _param_names) in fits.items():
+    for name, (_fit_fn, pred_fn, _param_names, tab) in fits.items():
         params = param_arrays[name]
         data[f"pred_{name}"] = np.array(
             pred_fn(
                 intimacy, reward_condition, action, scenario_idx,
-                *params, *tables,
+                *params, *tab,
             )
         )
 

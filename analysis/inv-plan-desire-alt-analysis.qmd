@@ -166,11 +166,12 @@ df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_fit_result
   filter(experiment == "reward") |>
   mutate(
     model_label = case_when(
-      model == "access_full" ~ "Full model",
-      model == "access_only" ~ "Discomfort-only",
-      model == "no_access" ~ "Base model"
+      model == "access_full_prior" ~ "Full model",
+      model == "access_only_prior" ~ "Discomfort-only",
+      model == "no_access_prior" ~ "Base model"
     )
   ) |>
+  filter(!is.na(model_label)) |>
   select(model_label, alpha_observer, nll, n_params)
 
 df_fit_results |>
@@ -217,11 +218,14 @@ df_model <- read_csv(here("model", "outputs", "inv_plan_desire_alt_preds_summary
     # Belief update from uniform prior (50%)
     belief_update = p_high_reward - 0.5,
     model = case_when(
-      model == "access_full" ~ "Full model",
-      model == "access_only" ~ "Discomfort-only",
-      model == "no_access" ~ "Base model"
+      model == "access_full_prior" ~ "Full model",
+      model == "access_only_prior" ~ "Discomfort-only",
+      model == "no_access_prior" ~ "Base model"
     )
-  )
+  ) |>
+  filter(!is.na(model))
+
+MODEL_LEVELS <- c("Base model", "Discomfort-only", "Full model", "Humans")
 ```
 
 ### Combine human and model data
@@ -237,7 +241,7 @@ df_combined <- bind_rows(
     mutate(ci_lower = NA_real_, ci_upper = NA_real_)
 ) |>
   mutate(
-    model = factor(model, levels = c("Base model", "Discomfort-only", "Full model", "Humans")),
+    model = factor(model, levels = MODEL_LEVELS),
     action = factor(action)
   )
 ```
@@ -300,7 +304,7 @@ df_model_scenario_pts <- df_model |>
 
 df_risk_combined <- bind_rows(df_human_scenario_pts, df_model_scenario_pts) |>
   inner_join(df_canonical_risk, by = c("scenario_label", "action")) |>
-  mutate(model = factor(model, levels = c("Base model", "Discomfort-only", "Full model", "Humans")))
+  mutate(model = factor(model, levels = MODEL_LEVELS))
 
 pos <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
                             dodge.width = 0.06, seed = 67)

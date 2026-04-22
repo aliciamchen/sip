@@ -81,11 +81,14 @@ where $V(a|s)$ is the intrinsic food reward, $\text{risk}(a)$ captures graded bo
 ### Load model predictions
 
 ```{r}
-df_preds <- read_csv(here("model", "outputs", "forward_planning_fits.csv")) |>
+df_preds_raw <- read_csv(here("model", "outputs", "forward_planning_fits.csv"))
+pred_cols <- c("pred_access_full_prior", "pred_access_only_prior", "pred_no_access_prior")
+
+df_preds <- df_preds_raw |>
   select(subject_id, scenario_label, intimacy, motivation, action, p_action,
-         pred_access_full, pred_access_only, pred_no_access) |>
+         all_of(pred_cols)) |>
   pivot_longer(
-    cols = c(p_action, pred_access_full, pred_access_only, pred_no_access),
+    cols = c("p_action", all_of(pred_cols)),
     names_to = "model",
     values_to = "p_action"
   ) |>
@@ -93,9 +96,9 @@ df_preds <- read_csv(here("model", "outputs", "forward_planning_fits.csv")) |>
     intimacy = factor(intimacy),
     model = case_when(
       model == "p_action" ~ "Humans",
-      model == "pred_access_full" ~ "Full model",
-      model == "pred_access_only" ~ "Discomfort-only",
-      model == "pred_no_access" ~ "Base model"
+      model == "pred_access_full_prior" ~ "Full model",
+      model == "pred_access_only_prior" ~ "Discomfort-only",
+      model == "pred_no_access_prior" ~ "Base model"
     ),
     model = factor(model, levels = c(
       "Base model", "Discomfort-only", "Full model", "Humans"
@@ -116,8 +119,6 @@ df_preds_summary <- df_preds |>
 #| fig-asp: 0.43
 
 df_preds_summary |>
-  filter(model %in% c("Base model", "Discomfort-only", "Full model", "Humans")) |>
-  mutate(model = factor(model, levels = c("Base model", "Discomfort-only", "Full model", "Humans"))) |>
   ggplot(aes(x = action, y = empirical_stat, color = intimacy, shape = factor(action), group = intimacy)) +
   geom_point(position = position_dodge(width = 0.2), size = 4, alpha = PLOT_ALPHA) +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
@@ -431,9 +432,9 @@ fit_results |>
 ```
 
 ```{r}
-# Compute differences from best model (access_full)
-best_aic <- fit_results$AIC[fit_results$model == "access_full"]
-best_bic <- fit_results$BIC[fit_results$model == "access_full"]
+# Compute differences from best model (access_full_prior)
+best_aic <- fit_results$AIC[fit_results$model == "access_full_prior"]
+best_bic <- fit_results$BIC[fit_results$model == "access_full_prior"]
 
 fit_results |>
   mutate(
@@ -564,3 +565,4 @@ ggplot(df_cell, aes(x = risk, y = residual, color = scenario_label, group = scen
   labs(x = "LM-derived risk of action", y = "Residual (Humans − Full model)", color = "Scenario") +
   theme(legend.position = "right")
 ```
+
