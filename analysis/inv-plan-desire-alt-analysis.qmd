@@ -310,7 +310,7 @@ pos <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
                             dodge.width = 0.06, seed = 67)
 
 p_belief_risk <- df_risk_combined |>
-  ggplot(aes(x = risk, y = belief_update, color = intimacy, group = intimacy)) +
+  ggplot(aes(x = risk, y = belief_update, color = intimacy, shape = factor(action), group = intimacy)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   geom_errorbar(
     data = df_risk_combined |> filter(model == "Humans"),
@@ -321,7 +321,8 @@ p_belief_risk <- df_risk_combined |>
   geom_point(position = pos, alpha = 0.5, size = 2) +
   geom_smooth(se = FALSE, linewidth = 1) +
   scale_color_intimacy() +
-  labs(y = "Belief update", x = "LM-derived risk of observed action", color = "Intimacy") +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  labs(y = "Belief update", x = "LM-derived risk of observed action", color = "Intimacy", shape = "Action") +
   theme(legend.position = "right") +
   facet_wrap(~model, nrow = 1)
 

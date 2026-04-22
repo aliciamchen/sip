@@ -128,13 +128,15 @@ df_cell_pts <- df_pred |>
   group_by(variant_label, held_out_scenario, intimacy, motivation, action) |>
   summarize(humans = mean(p_action), model = mean(p_action_pred), .groups = "drop")
 
-ggplot(df_cell_pts, aes(x = model, y = humans, color = held_out_scenario)) +
+ggplot(df_cell_pts, aes(x = model, y = humans, color = held_out_scenario, shape = factor(action))) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
   geom_point(alpha = 0.6, size = 1.5) +
   scale_color_viridis_d(option = "turbo") +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
   labs(x = "Model P(action) — held out of training",
        y = "Human P(action)",
-       color = "Scenario") +
+       color = "Scenario",
+       shape = "Action") +
   facet_wrap(~variant_label, nrow = 1) +
   coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
 ```
