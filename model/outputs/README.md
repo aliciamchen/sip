@@ -137,14 +137,16 @@ Full posterior distributions for alt-shown desire inference.
 
 ## inverse_planning_noalt_fit_results.csv
 
-Summary of fitted observer parameters for the no-alternatives-shown intimacy-inference experiment (`data/inv_plan_intimacy_noalt/`), using the padded observer with LM-generated counterfactual alternatives. One row per utility ablation.
+Summary of jointly-fitted parameters for the no-alternatives-shown intimacy-inference experiment (`data/inv_plan_intimacy_noalt/`), using the padded observer with LM-generated counterfactual alternatives. One row per utility ablation. Unlike the alt-shown pipeline, actor weights are **not** frozen from the forward-planning fit — the padded observer reasons over a variable-length action set whose softmax competition structure differs from Exp 1's fixed four-action space, so all actor weights are refit jointly with α_observer on the no-alt data.
 
 | Column | Description |
 |--------|-------------|
 | `model` | Model name (e.g., `access_full_padded`) |
 | `experiment` | Always `intimacy_noalt` |
+| `param_alpha` | Actor softmax temperature (fixed at 1) |
+| `param_w_v`, `param_w_d`, `param_w_e` | Fitted utility weights (NaN where not applicable per ablation) |
 | `alpha_observer` | Fitted observer inverse temperature |
-| `nll` | Negative log-likelihood |
+| `nll` | Negative log-likelihood on all-data fit |
 | `n_params` | Number of free parameters |
 
 ## inv_plan_intimacy_noalt_preds_summary.csv / inv_plan_intimacy_noalt_preds_full.csv
@@ -167,3 +169,43 @@ LM-generated counterfactual action sets used by the no-alt padded observer. One 
 ## lm_alternatives_features.csv
 
 Access and effort features scored by the LM for each alternative in `lm_alternatives.csv`. One row per (scenario, observed_action, motivation, alt_idx) with the same identifier columns plus `access` (normalized to [0, 2]) and `effort` (normalized to [0, 1]).
+
+## Cross-validation CSVs (cv_loso_*)
+
+All model-vs-human correlations reported in the analysis qmds are **out-of-sample**, pooled from leave-one-scenario-out (LOSO) CV. Each inverse-planning qmd loads a `cv_loso_*_preds_summary.csv` as the source for model plots. Per-fold fitted parameters are in the corresponding `*_folds.csv` files.
+
+### cv_loso_forward.csv
+
+Per-fold forward-planning LOSO results. 48 rows (16 folds × 3 prior variants).
+
+| Column | Description |
+|--------|-------------|
+| `fold` | Held-out scenario index (0–15) |
+| `held_out_scenario` | Held-out scenario label |
+| `variant` | `access_full_prior`, `access_only_prior`, `no_access_prior` |
+| `train_nll`, `test_nll`, `train_nll_per_trial`, `test_nll_per_trial`, `n_train`, `n_test` | Fit diagnostics |
+| `param_alpha`, `param_w_v`, `param_w_d`, `param_w_e`, `param_beta_prior` | Per-fold fitted params (NaN where not applicable) |
+| `test_cell_r` | Pearson r at (intimacy, motivation, action) cell-means on the held-out scenario |
+
+### cv_loso_preds.csv
+
+Per-trial held-out forward-planning predictions, pooled across the 16 LOSO folds. One row per (trial, variant). Consumed by `analysis/forw-plan-analysis.qmd` for all model-vs-human displays.
+
+| Column | Description |
+|--------|-------------|
+| `fold`, `held_out_scenario`, `variant` | Fold metadata |
+| `subject_id`, `intimacy`, `motivation`, `action` | Trial identifiers |
+| `p_action` | Human response |
+| `p_action_pred` | Model prediction (fit on the other 15 scenarios) |
+
+### cv_loso_inv_plan_{intimacy_alt,desire_alt,intimacy_noalt}_preds_summary.csv
+
+Out-of-sample cell-mean predictions, same schema as the corresponding non-CV `inv_plan_*_preds_summary.csv` files. Populated by pooling held-out predictions across 16 folds. The alt-shown CVs refit only α_observer per fold (actor frozen from all-data Exp 1 fit); the no-alt CV refits all actor weights + α_observer jointly per fold.
+
+### cv_loso_inverse_alt_folds.csv / cv_loso_inverse_noalt_folds.csv
+
+Per-fold fitted parameters for the inverse-planning CVs.
+
+`cv_loso_inverse_alt_folds.csv` columns: `experiment` (intimacy or desire), `variant`, `fold`, `held_out_scenario`, `alpha_observer`, `train_nll`, `test_nll`, `n_train`, `n_test`.
+
+`cv_loso_inverse_noalt_folds.csv` adds `param_w_v`, `param_w_d`, `param_w_e` columns (NaN where not applicable per ablation) — these are the jointly-refit utility weights per fold.

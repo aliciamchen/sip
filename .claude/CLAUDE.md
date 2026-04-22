@@ -89,6 +89,7 @@ Outputs (in `model/outputs/`):
 ```bash
 uv run python model/fit_inverse_planning.py
 ```
+Fits only `α_observer` per variant; actor weights are frozen from the all-data forward fit (same 4-action space as Exp 1, so weights transplant cleanly).
 Outputs (in `model/outputs/`):
 - `inverse_planning_fit_results.csv` - Fitted observer parameters
 
@@ -105,7 +106,25 @@ Outputs (in `model/outputs/`):
 uv run python model/fit_inverse_planning_noalt.py
 uv run python model/generate_inverse_planning_noalt_preds.py
 ```
-Outputs: `inverse_planning_noalt_fit_results.csv`, `inv_plan_intimacy_noalt_preds_full.csv`, `inv_plan_intimacy_noalt_preds_summary.csv`.
+Unlike alt-shown, this pipeline jointly fits **all** actor weights + α_observer on the no-alt data. Actor weights are not frozen from Exp 1 because the padded observer reasons over a variable-length action set (different softmax competition structure than Exp 1's fixed 4 actions).
+Outputs: `inverse_planning_noalt_fit_results.csv` (with per-variant `param_w_v`/`param_w_d`/`param_w_e`/`alpha_observer`), `inv_plan_intimacy_noalt_preds_full.csv`, `inv_plan_intimacy_noalt_preds_summary.csv`.
+
+### Cross-validation
+
+All model-vs-human correlations reported in the analysis qmds are **out-of-sample**, pooled from leave-one-scenario-out (LOSO) cross-validation. 16 folds × 3 variants per experiment.
+
+```bash
+uv run python model/cv/loso_forward.py         # Exp 1 forward planning (refits w_v, w_d, w_e, β per fold)
+uv run python model/cv/loso_inverse_alt.py     # Exp 2a intimacy + 2b desire (refits only α_observer per fold)
+uv run python model/cv/loso_inverse_noalt.py   # Exp 2c intimacy (joint fit — refits all weights per fold)
+```
+
+Outputs (in `model/outputs/`):
+- `cv_loso_forward.csv` / `cv_loso_preds.csv` — per-fold fits + per-trial held-out forward predictions
+- `cv_loso_inv_plan_intimacy_alt_preds_summary.csv` / `cv_loso_inv_plan_desire_alt_preds_summary.csv` — held-out per-cell predictions; `cv_loso_inverse_alt_folds.csv` for fitted α_observer per fold
+- `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv` / `cv_loso_inverse_noalt_folds.csv` — held-out per-cell predictions + per-fold joint-fit weights
+
+The main analysis qmds load these CV CSVs as the source for all model plots; the non-CV `generate_inverse_planning_*_preds.py` CSVs are still generated (for anyone wanting the all-data fit) but are not what's displayed.
 
 ### Running analysis
 

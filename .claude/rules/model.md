@@ -45,8 +45,20 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 - `lm_scenario_params.py` — LLM-calls Together AI to generate per-scenario access and effort
 - `lm_action_priors.py` — LLM-calls Together AI to generate per-scenario action priors π(a|s)
 - `fit_forward_planning.py` — fits all six actor variants to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
-- `fit_inverse_planning.py` — fits `alpha_observer` for each variant with frozen actor params (output: `inverse_planning_fit_results.csv`)
-- `generate_inverse_planning_preds.py` — emits per-scenario posterior predictions (output: `inv_plan_{intimacy,desire}_preds_{full,summary}.csv`)
+- `fit_inverse_planning.py` — alt-shown observers; fits only `alpha_observer` with frozen actor params (output: `inverse_planning_fit_results.csv`)
+- `fit_inverse_planning_noalt.py` — no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_noalt_fit_results.csv`
+- `generate_inverse_planning_preds.py` — emits per-scenario posterior predictions for alt-shown (`inv_plan_{intimacy,desire}_preds_{full,summary}.csv`)
+- `generate_inverse_planning_noalt_preds.py` — same for no-alt, using the joint-fit weights from `inverse_planning_noalt_fit_results.csv`
 - `test_model_compliance.py` — validation tests
+
+## Cross-validation
+
+All model-vs-human correlations reported in the analysis qmds are out-of-sample, from leave-one-scenario-out (LOSO) CV. The analysis qmds load CV-prediction CSVs (`cv_loso_*`) as the source for all plots.
+
+- `cv/loso_forward.py` — Exp 1; refits $w_v, w_d, w_e, \beta$ per fold. Outputs: `cv_loso_forward.csv`, `cv_loso_preds.csv`
+- `cv/loso_inverse_alt.py` — Exp 2a intimacy + 2b desire; refits only $\alpha_{\mathrm{obs}}$ per fold (actor frozen from all-data Exp 1 fit, same 4-action space). Outputs: `cv_loso_inv_plan_{intimacy,desire}_alt_preds_summary.csv`, `cv_loso_inverse_alt_folds.csv`
+- `cv/loso_inverse_noalt.py` — Exp 2c no-alt; joint LOSO refit of all actor weights + $\alpha_{\mathrm{obs}}$ per fold. Outputs: `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv`, `cv_loso_inverse_noalt_folds.csv`
+
+The non-CV `fit_*` / `generate_*` pipelines still produce all-data fits; AIC and fitted-parameter tables in the qmds use the all-data fit, but all model-vs-human displays use the CV predictions.
 
 Model outputs are saved to `model/outputs/`. Preregistration documents are in `model/preregs/`. Legacy/experimental code is in `model/sandbox/`.

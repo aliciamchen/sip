@@ -164,10 +164,19 @@ Fit forward planning models
 uv run python model/fit_forward_planning.py
 ```
 
-Use forward planning parameters to fit inverse planning models and generate predictions
+Use forward planning parameters to fit inverse planning models and generate predictions. The alt-shown experiments freeze the Exp 1 actor weights and fit only α_observer; the no-alt experiment refits all actor weights jointly with α_observer because the padded observer reasons over a different (variable-length) action space where the Exp 1 weights don't transplant cleanly.
 ```bash
-uv run python model/fit_inverse_planning.py
+uv run python model/fit_inverse_planning.py           # alt-shown (intimacy + desire), α_obs only
 uv run python model/generate_inverse_planning_preds.py
+uv run python model/fit_inverse_planning_noalt.py     # no-alt, joint fit (all weights + α_obs)
+uv run python model/generate_inverse_planning_noalt_preds.py
+```
+
+Generate leave-one-scenario-out (LOSO) cross-validation predictions. All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 held-out folds. The forward-plan CV refits $w_v$, $w_d$, $w_e$, and $\beta$ on 15 scenarios per fold; the alt-shown inverse-plan CVs refit only $\alpha_{\mathrm{obs}}$ (actor frozen from the all-data Exp 1 fit); the no-alt CV refits all weights jointly per fold.
+```bash
+uv run python model/cv/loso_forward.py         # Exp 1 forward planning
+uv run python model/cv/loso_inverse_alt.py     # Exp 2a intimacy + 2b desire (alt-shown)
+uv run python model/cv/loso_inverse_noalt.py   # Exp 2c intimacy (no-alt, joint fit)
 ```
 
 Analyze data and generate plots
