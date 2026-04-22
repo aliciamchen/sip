@@ -62,15 +62,28 @@ uv run python analysis/json_to_csv.py <experiment_name>
 
 For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
 
+### LLM-derived scenario parameters (prerequisite for fits)
+
+Both scripts hit Together AI (Llama-3.3-70B, 10 runs each). Requires `TOGETHER_API_KEY` in `.env`.
+
+```bash
+uv run python model/lm_scenario_params.py   # access + effort per (scenario, action) → lm_scenario_params.csv
+uv run python model/lm_action_priors.py     # π(a|s) per (scenario, action) → lm_action_priors.csv
+```
+
+The `_prior` actor/observer variants require `lm_action_priors.csv`; without it they're silently skipped at fit/predict time.
+
 ### Model fitting
 
 **Forward planning**:
 ```bash
 uv run python model/fit_forward_planning.py
 ```
+Fits 6 variants — 3 ablations (Base model / Discomfort-only / Full model) × {uniform prior, β-tempered LM prior}. The `_prior` variants are the canonical models; the uniform-prior variants are kept for comparison.
+
 Outputs (in `model/outputs/`):
-- `forward_planning_fits.csv` - Predictions for each data point
-- `forward_planning_fit_results.csv` - Fitted parameters and NLL
+- `forward_planning_fits.csv` - Predictions for each data point (one `pred_*` column per variant)
+- `forward_planning_fit_results.csv` - Fitted parameters (including `param_beta_prior` for the `_prior` variants) and NLL
 
 **Alt-shown inverse planning (intimacy + desire inference)**:
 ```bash

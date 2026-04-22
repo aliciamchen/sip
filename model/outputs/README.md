@@ -6,7 +6,7 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 
 ## lm_scenario_params.csv
 
-LLM-generated per-scenario values for access and effort. Produced by `model/lm_scenario_params.py`. Reward is stipulated in `model_utils.py`, not in this file.
+LLM-generated per-scenario values for access and effort. Produced by `model/lm_scenario_params.py`. Reward (V) is stipulated in `model_utils.py`, not in this file.
 
 | Column | Description |
 |--------|-------------|
@@ -19,6 +19,18 @@ LLM-generated per-scenario values for access and effort. Produced by `model/lm_s
 | `n_runs_access`, `n_runs_effort` | Number of successful LLM runs |
 
 Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `model_utils.load_lm_scenario_params` and will be dropped the next time `lm_scenario_params.py` is run.
+
+## lm_action_priors.csv
+
+LLM-generated per-scenario action priors π(a|s) — how natural / expected each of the four actions is as a "default" in the scenario's setting, independent of the dyad's relationship or motivation. Produced by `model/lm_action_priors.py` (same Llama-3.3-70B pipeline as `lm_scenario_params.py`, 10 runs averaged). Consumed by the `_prior` variants of the actor/observer memos.
+
+| Column | Description |
+|--------|-------------|
+| `scenario_label` | Scenario identifier |
+| `action` | Action index (0-3) |
+| `prior_raw`, `prior_raw_std` | Mean and std of raw default-ness ratings (0-6 scale, 10 runs) |
+| `prior` | Per-scenario distribution over the 4 actions: `(prior_raw + 0.1) / sum` (sums to 1 per scenario) |
+| `n_runs` | Number of successful LLM runs |
 
 ## forward_planning_fits.csv
 
@@ -35,17 +47,20 @@ Per-trial model predictions for forward planning (`data/forw_plan/`). One row pe
 | `intimacy_scaled` | Intimacy normalized to 0-1 scale |
 | `reward_condition` | Binary reward condition (0 or 1) |
 | `scenario_idx` | Numeric scenario index |
-| `pred_access_full` | Predicted probability from the full access model |
-| `pred_access_only` | Predicted probability from the access-only ablation |
-| `pred_no_access` | Predicted probability from the no-access (base) ablation |
+| `pred_access_full` | Predicted probability from the full model (uniform prior) |
+| `pred_access_only` | Predicted probability from the discomfort-only ablation (uniform prior) |
+| `pred_no_access` | Predicted probability from the base ablation (uniform prior) |
+| `pred_access_full_prior` | Predicted probability from the full model with β-tempered LM prior (canonical Full model) |
+| `pred_access_only_prior` | Predicted probability from the discomfort-only ablation with LM prior (canonical Discomfort-only) |
+| `pred_no_access_prior` | Predicted probability from the base ablation with LM prior (canonical Base model) |
 
 ## forward_planning_fit_results.csv
 
-Summary of fitted forward planning models (3 rows — one per ablation).
+Summary of fitted forward planning models (6 rows — 3 ablations × 2 prior types).
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (`access_full`, `access_only`, `no_access`) |
+| `model` | Model name (`access_full`, `access_only`, `no_access`, and `_prior` variants) |
 | `nll` | Negative log-likelihood |
 | `n_params` | Number of free parameters |
 | `aic` | Akaike Information Criterion |
@@ -53,17 +68,18 @@ Summary of fitted forward planning models (3 rows — one per ablation).
 | `r` | Pearson correlation with human data |
 | `r_ci_lower`, `r_ci_upper` | 95% CI bounds for correlation |
 | `param_alpha` | Fitted softmax inverse temperature (fixed to 1 during fitting) |
-| `param_w_v` | Fitted food-reward weight (access_full, no_access) |
-| `param_w_d` | Fitted access-discomfort weight (access_full, access_only) |
-| `param_w_e` | Fitted effort weight (access_full, no_access) |
+| `param_w_v` | Fitted food-utility weight (Full + Base variants) |
+| `param_w_d` | Fitted access-discomfort weight (Full + Discomfort-only variants) |
+| `param_w_e` | Fitted effort weight (Full + Base variants) |
+| `param_beta_prior` | Fitted prior-tempering weight (LM-prior variants only) |
 
 ## inverse_planning_fit_results.csv
 
-Summary of fitted inverse planning (observer) models (6 rows — 3 ablations × 2 experiments).
+Summary of fitted inverse planning (observer) models (12 rows — 6 ablations × 2 experiments). Observer parameters (α_observer) are fit with frozen actor weights from `forward_planning_fit_results.csv`.
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (`access_full`, `access_only`, `no_access`) |
+| `model` | Model name (`access_full`, `access_only`, `no_access`, and `_prior` variants) |
 | `experiment` | Experiment (`intimacy` or `reward`) |
 | `alpha_observer` | Fitted observer inverse temperature |
 | `nll` | Negative log-likelihood |
