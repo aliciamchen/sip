@@ -63,7 +63,7 @@ df_intimacy_summary <- df_intimacy |>
 ### Model predictions
 
 ```{r}
-df_model_intimacy <- read_csv(here("model", "outputs", "inv_plan_intimacy_alt_preds_summary.csv")) |>
+df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimacy_alt_preds_summary.csv")) |>
   rename(motivation = reward_condition) |>
   mutate(
     action = as.character(action),
@@ -112,7 +112,7 @@ df_desire_summary <- df_desire |>
 ### Model predictions
 
 ```{r}
-df_model_desire <- read_csv(here("model", "outputs", "inv_plan_desire_alt_preds_summary.csv")) |>
+df_model_desire <- read_csv(here("model", "outputs", "cv_loso_inv_plan_desire_alt_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   mutate(
     action = as.character(action),
