@@ -36,7 +36,7 @@ rows = [
         vignette="Carissa and Josh are attending a basketball game together. During halftime, they go to the hot-dog stand in the arena. They are both very hungry. When they get to the stand, they realize that it's cash only, and that between them they only have enough cash to get one hot dog.",
         effort_low="Right next to the hot-dog stand is a condiment station with a stack of clean plastic knives set out for customers to use.",
         effort_high="There are no knives at the hot-dog stand or the nearby condiment area — the nearest knives are at a sit-down restaurant on the far side of the arena, which would take several minutes to walk to and back.",
-        action_1="They order a hot dog, cut it in half with a knife, and each eats from their own portion.",
+        action_1="They order a hot dog. They get a knife, cut the hot dog in half, and each eats from their own portion.",
         action_2="They order a hot dog and take bites from the same end of the hot dog until it is finished.",
     ),
     dict(
@@ -65,8 +65,8 @@ rows = [
         name_1="Elizabeth",
         vignette="Emily and Elizabeth are at a conference for work. After a long day of events, they get back to the conference hotel. It is late and all the nearby places are closed, so they decide to order chicken tenders delivered to the hotel. Both of them prefer honey mustard sauce to ketchup, and when they open the bag they see that the restaurant has only included one container of honey mustard (plus several ketchup packets).",
         effort_low="The takeout came in a sturdy cardboard box whose flat lid can easily hold a pool of sauce.",
-        effort_high="The takeout came in a flimsy styrofoam clamshell whose lid is curved and won't hold liquid, and there's no other clean flat surface in the hotel room to pour sauce onto.",
-        action_1="They pour half of the honey mustard out onto a flat surface so that each person has their own dipping portion, and each dips only into their own portion.",
+        effort_high="The takeout came in a flimsy styrofoam clamshell whose lid is curved and won't hold liquid, and finding a clean flat surface in the hotel room would take some hunting.",
+        action_1="They find a clean flat surface and pour half of the honey mustard out onto it so that each person has their own dipping portion, and each dips only into their own portion.",
         action_2="They both dip their own chicken tenders into the single honey mustard container, double-dipping the same tenders back into the sauce after each bite.",
     ),
     dict(
@@ -75,8 +75,8 @@ rows = [
         name_1="Serina",
         vignette="Liana and Serina are both major foodies who love cooking. They discover a new pasta recipe they're both excited to try, so they go to Serina's house in the evening to cook it together. They plan to enjoy their dinner while watching an episode of a TV show in the living room. By the time the pasta is done, it looks so good that they both want to dig in immediately.",
         effort_low="There are clean plates and a clean serving spoon sitting on the counter, ready to use.",
-        effort_high="But all the clean plates are trapped mid-cycle in the dishwasher, and every serving utensil in the drawer is dirty in the sink from cooking — washing any of them by hand would take a while.",
-        action_1="They use a serving spoon to transfer pasta from the pot onto their individual plates, and carry their plates to the living room to eat from their own plates with their own forks.",
+        effort_high="But all the clean plates are trapped mid-cycle in the dishwasher, and the serving spoon is dirty in the sink from cooking — washing plates and the spoon by hand would take a while.",
+        action_1="They get clean plates and a serving spoon, use the spoon to transfer pasta from the pot onto their individual plates, and carry their plates to the living room to eat with their own forks.",
         action_2="They bring the pot to the living room and eat the pasta directly from the pot, each using their own fork to go back and forth between their mouths and the shared pot.",
     ),
     dict(
@@ -96,7 +96,7 @@ rows = [
         vignette="Declan and Eric are preparing snacks for a house party. They get two kinds of chips — tortilla chips and pita chips — and prepare two kinds of dips: a buffalo chicken dip and a spinach and artichoke dip. They both want to try the chips with the different kinds of dips before serving them to their guests.",
         effort_low="There is a stack of clean small appetizer plates already unpacked and sitting on the snack table, ready to use.",
         effort_high="The appetizer plates are still packed away in a box of party supplies that hasn't been unboxed yet, buried in the garage under other party boxes — digging them out would take a while.",
-        action_1="They each put different kinds of chips and some of each dip on their own plate, and try the dips with the chips without double-dipping.",
+        action_1="They get two small appetizer plates, put different kinds of chips and some of each dip on their own plates, and try the dips with the chips without double-dipping.",
         action_2="They try the chips with the dips straight from the dip bowls, biting the chips and then dipping the bitten ends back into the dip — double-dipping the same chips repeatedly.",
     ),
     dict(
@@ -117,7 +117,7 @@ rows = [
         effort_low="Next to the coffee machine at this gas station is a stack of clean empty cups that customers are welcome to use.",
         effort_high="This gas station is out of extra cups, and the next gas station on the route is many miles ahead — getting a second cup would mean a long drive before they can drink any of the coffee.",
         action_1="They get another cup, pour half of the coffee into the other cup, and each drink from their own cup.",
-        action_2="They share the same cup by sipping through the same straw.",
+        action_2="They share the same cup, passing it back and forth to sip from the same spot on the rim.",
     ),
     dict(
         scenario_label="fair",
@@ -126,7 +126,7 @@ rows = [
         vignette="Marianne and Lisa are at the county fair. They've spent a day walking around. Around the time the fair is closing, the food trucks are giving out their leftover food. They both go to a food truck that sells fresh corn on the cob, and the food truck gives them a large skewer of corn. The corn looks especially appealing to both of them.",
         effort_low="The food trucks are still operating and there's a cutlery station nearby with knives, plates, and napkins for guests to use.",
         effort_high="The fair has essentially shut down — every food truck has packed up their cutlery stations, and there are no knives or extra plates left out anywhere on the fairgrounds.",
-        action_1="They find cutlery and a plate, and use the knife to cut half of the corn off the cob; Marianne eats the corn from the plate, and Lisa eats the rest directly off the cob.",
+        action_1="They find cutlery and a plate, and use the knife to cut the corn off the cob onto the plate. They each eat the corn from the plate with their own forks.",
         action_2="They switch off taking bites directly from the same part of the cob.",
     ),
     dict(
@@ -146,7 +146,7 @@ rows = [
         vignette="Tony and Alvin go on a day hike in New Hampshire. Alvin packs snacks and energy bars, while Tony brings peanut butter and jelly sandwiches. Halfway down the mountain, they take a snack break. Tony pulls out a sandwich and offers to share some of the sandwich with Alvin. At this time, Alvin has finished all of the food he brought and is tired and hungry.",
         effort_low="Tony's backpacking knife is in the top lid of his pack, easy to grab.",
         effort_high="Tony's backpacking knife is buried at the very bottom of his pack, under all of his gear — digging it out would mean unpacking and repacking everything.",
-        action_1="Tony uses his knife to cut the sandwich in half, and hands one half to Alvin.",
+        action_1="Tony digs out his knife, uses it to cut the sandwich in half, and hands one half to Alvin.",
         action_2="Tony takes a few bites of the sandwich, and then hands it to Alvin. They continue passing it back and forth, biting from the same spots, until it's gone.",
     ),
     dict(
@@ -154,9 +154,9 @@ rows = [
         name_0="Will",
         name_1="Jay",
         vignette="Will and Jay are at a seafood restaurant. They are interested in ordering the oyster platter. The server mentions that the restaurant has different types of oysters in stock, each type with unique flavors and notes. They decide to order one of each type of oyster, because they both really want to taste as many different oyster types as possible.",
-        effort_low="The restaurant is quiet tonight and the server is attentive — extra cocktail forks and small plates come immediately whenever they ask.",
-        effort_high="The restaurant is packed and the server is slammed — flagging her down for extra cocktail forks or small plates would take a long time.",
-        action_1="They use a knife to cut each oyster's meat in half, and use their own forks to eat half of each oyster's meat from their own small plates.",
+        effort_low="The restaurant is quiet tonight and the server is attentive — extra small plates come immediately whenever they ask.",
+        effort_high="The restaurant is packed and the server is slammed — flagging her down for extra small plates would take a long time.",
+        action_1="They ask the server for two extra small plates. Using their own cocktail forks, they split each oyster's meat between the plates, and each eats half of each oyster from their own plate.",
         action_2="They split each oyster directly from the shell, each biting off half of the meat with their teeth and drinking about half of the brine.",
     ),
     dict(
@@ -166,7 +166,7 @@ rows = [
         vignette="Sonia and Alan arrive late to an ice cream social hosted by their religious organization. Unfortunately, there is only one ice cream cone left. There are other kinds of desserts available, however, including many flavors of cookies. They both really want ice cream.",
         effort_low="There is a stack of clean spoons on the dessert table right next to the ice cream bowls.",
         effort_high="The dessert table has been mostly cleared and the spoons have been put away in the kitchen, which the hosts have locked while they finish other cleanup.",
-        action_1="They each take a spoon and use their spoons to eat the ice cream out of the cone. When they reach the cone itself, they break pieces off with their fingers.",
+        action_1="They get two spoons and each uses their own spoon to eat the ice cream out of the cone. When they reach the cone itself, they break pieces off with their fingers.",
         action_2="They pass the cone back and forth, taking turns licking the ice cream and biting into the cone from the same spot.",
     ),
     dict(
