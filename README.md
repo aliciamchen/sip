@@ -60,7 +60,11 @@ The fitting and prediction scripts index into these tables by `scenario_idx`; ru
 │   ├── inv_plan_intimacy_noalt/# Intimacy inference, no alternatives shown
 │   └── inv_plan_desire_alt/    # Desire inference, alternatives shown
 ├── experiments/       # jsPsych experiment code
-│   └── scenarios.csv  # Scenario definitions
+│   ├── scenarios.csv           # Food-sharing scenario definitions
+│   ├── scenarios_nonfood.csv   # Non-food-sharing scenarios
+│   ├── scenarios_effort.csv    # Effort-manipulation scenarios (2 actions, reward held high)
+│   ├── forw_plan_effort/       # Forward planning, intimacy × effort
+│   └── inv_plan_effort/        # Inverse planning, action × effort
 ├── model/             # Computational models
 │   ├── model_utils.py # Actor and observer model definitions
 │   ├── fit_*.py       # Model fitting scripts

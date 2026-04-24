@@ -13,6 +13,11 @@ The project comprises several experimental variants. Paper-level experiment numb
 - **Desire inference, alternatives shown** (`data/inv_plan_desire_alt/`) — observers see all four candidate actions, then infer the actor's desire from the one they took.
 - **Intimacy inference, no alternatives shown** (`data/inv_plan_intimacy_noalt/`) — observers see only the single action the actor took and infer relationship closeness; on the model side, counterfactual alternatives are LM-generated.
 
+A parallel pair of experiments manipulates **relative effort** instead of reward, using a different stimulus set (`experiments/scenarios_effort.csv`) in which each scenario has two actions and reward is held fixed at high. No data has been collected yet — only stimuli and jsPsych code exist. No `data/` directories, model fits, or analysis qmds have been added for these.
+
+- **Forward planning, effort** (`experiments/forw_plan_effort/`) — intimacy (4 levels) × relative effort (2 levels); 2-slider linked-probability response.
+- **Inverse planning, effort** (`experiments/inv_plan_effort/`) — observed action (2 levels) × relative effort (2 levels); prior/posterior intimacy sliders, both candidate actions shown.
+
 ## Intermediate conference submission
 
 We are currently deciding how to extend this project for submission to a journal. An early version of this project has been submitted to a conference; the paper is in the `cogsci-2026` folder. The reviews for this submission are in `cogsci-2026/cogsci-2026-reviews.md`. The model in this submission is an old version that we are not using for the journal version. 
