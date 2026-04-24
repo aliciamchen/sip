@@ -40,10 +40,42 @@ A parallel set of 18 scenarios covering non-food sharing situations, grouped by 
 uv run python experiments/scenarios_nonfood.py
 ```
 
-The schema matches `scenarios.csv` with one additional column, `scenario_type`, which takes one of `substance`, `space`, or `privacy`. 
+The schema matches `scenarios.csv` with one additional column, `scenario_type`, which takes one of `substance`, `space`, or `privacy`.
+
+## Effort-manipulation scenarios (`scenarios_effort.csv`)
+
+A parallel set of 16 food-sharing scenarios for an experiment that manipulates the relative effort of avoiding saliva sharing, rather than reward. Each scenario uses the same `scenario_label` and character names as `scenarios.csv`, but differs in three ways:
+
+- Reward is held fixed at high and integrated into the vignette narrative (no separate `reward_low`/`reward_high` columns).
+- The action space is collapsed to two actions: `action_1` is a non-saliva-sharing action (e.g., using an extra utensil, cutting a portion, using a second cup), and `action_2` is a plausible saliva-sharing action for the scenario.
+- Each scenario has one shared `vignette` followed by one of two effort-manipulation paragraphs, `effort_low` or `effort_high`. The low paragraph makes the resource that `action_1` relies on (knife, extra plate, second cup, etc.) easy to obtain; the high paragraph makes it costly. The action text is identical across conditions. In the experiments, the effort paragraph is rendered as a separate paragraph immediately after the shared vignette.
+
+Like the other two scenario CSVs, this one is generated from a Python source of truth — edit `scenarios_effort.py` and regenerate:
+
+```bash
+uv run python experiments/scenarios_effort.py
+```
+
+| Column | Description |
+|--------|-------------|
+| `scenario_label` | Scenario identifier (matches `scenarios.csv`) |
+| `name_0`, `name_1` | Character names in the vignette |
+| `vignette` | Shared scenario narrative (same across both effort conditions) |
+| `effort_low` | Trailing paragraph in which avoiding saliva sharing is easy |
+| `effort_high` | Trailing paragraph in which avoiding saliva sharing is costly |
+| `action_1` | Non-saliva-sharing action |
+| `action_2` | Saliva-sharing action |
+
 ## Main experiments
 
 - [forw_plan](forw_plan/README.md) — Forward planning: actors choose actions given intimacy and motivation
 - [inv_plan_intimacy_alt](inv_plan_intimacy_alt/README.md) — Inverse planning: infer intimacy from the observed action (four candidate actions shown to participants)
 - [inv_plan_intimacy_noalt](inv_plan_intimacy_noalt/README.md) — Same inference as `inv_plan_intimacy_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side
 - [inv_plan_desire_alt](inv_plan_desire_alt/README.md) — Inverse planning: infer desire from the observed action (four candidate actions shown)
+
+## Effort-manipulation experiments
+
+These use the `scenarios_effort.csv` stimulus set (two actions per scenario, reward held fixed at high) and vary relative effort as a second manipulation:
+
+- [forw_plan_effort](forw_plan_effort/README.md) — Forward planning: actors choose between two actions given intimacy (4 levels) × relative effort (2 levels)
+- [inv_plan_effort](inv_plan_effort/README.md) — Inverse planning: infer intimacy from the observed action (2 candidate actions shown) × relative effort (2 levels)
