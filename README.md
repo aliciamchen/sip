@@ -11,7 +11,7 @@ The project collects several experimental variants. The stable identifier for ea
 
 ### Scenarios
 
-See [scenarios here](experiments/scenarios.csv)
+The scenarios used in the experiments are in [`experiments/scenarios.csv`](experiments/scenarios.csv), which is generated from [`experiments/scenarios.py`](experiments/scenarios.py) (the source of truth — edit the Python file and regenerate the CSV with `uv run python experiments/scenarios.py`). A parallel set of non-food scenarios is in [`experiments/scenarios_nonfood.csv`](experiments/scenarios_nonfood.csv), generated from [`experiments/scenarios_nonfood.py`](experiments/scenarios_nonfood.py) in the same way. See the [experiments README](experiments/README.md) for the column schema.
 
 ## Utility model
 
