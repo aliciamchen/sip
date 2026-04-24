@@ -100,17 +100,36 @@ export function makeTimeline(
     }
 
     trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <div>
+          <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+          <div class="vignette-text">
+            <p>${stimulus.vignette}</p>
+            <p><strong>${
+              stimulus.reward_condition == "low"
+                ? stimulus.reward_low
+                : stimulus.reward_high
+            }</strong></p>
+          </div>
+          <p style="text-align: center;"><em>Press any key to continue.</em></p>
+        </div>
+      `,
+      choices: "ALL_KEYS",
+    });
+
+    trials.push({
       type: jsPsychHtmlSliderResponse,
       stimulus: `
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${
+            <p><strong>${
               stimulus.reward_condition == "low"
                 ? stimulus.reward_low
                 : stimulus.reward_high
-            }</p>
+            }</strong></p>
             <p><em>You expect that ${stimulus.name_0} and ${
         stimulus.name_1
       } will take one of the following actions:</em></p>
@@ -163,11 +182,11 @@ export function makeTimeline(
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${
+            <p><strong>${
               stimulus.reward_condition == "low"
                 ? stimulus.reward_low
                 : stimulus.reward_high
-            }</p>
+            }</strong></p>
             <p><em>You expect that ${stimulus.name_0} and ${
         stimulus.name_1
       } will take one of the following actions:</em></p>

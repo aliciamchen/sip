@@ -92,11 +92,11 @@ export function makeTimeline(
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${
+            <p><strong>${
               stimulus.reward_condition == "low"
                 ? stimulus.reward_low
                 : stimulus.reward_high
-            }</p>
+            }</strong></p>
           </div>
           <p><strong>Before observing what they decide to do, how do you think ${
             stimulus.name_0
@@ -140,11 +140,11 @@ export function makeTimeline(
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${
+            <p><strong>${
               stimulus.reward_condition == "low"
                 ? stimulus.reward_low
                 : stimulus.reward_high
-            }</p>
+            }</strong></p>
           </div>
           <div class="vignette-text vignette-observed">
             <p><em>They decide to take the following action:</em></p>
