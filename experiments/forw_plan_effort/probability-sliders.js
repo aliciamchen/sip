@@ -32,7 +32,7 @@ var jsPsychProbabilitySliders = (function (jspsych) {
       instruction_html: {
         type: jspsych.ParameterType.HTML_STRING,
         default:
-          '<p class="ps-muted">Distribute probability across the events. You can move sliders freely. When you release a slider, all values will be automatically adjusted to sum to 100%.</p>',
+          '<p class="ps-muted">Distribute probability across the events. The sliders are linked: moving one automatically adjusts the others so the probabilities always sum to 100%.</p>',
       },
       precision: {
         type: jspsych.ParameterType.INT,
@@ -93,38 +93,42 @@ var jsPsychProbabilitySliders = (function (jspsych) {
         return vals;
       };
 
-      const normalize = (
-        values,
-        min = trial.slider_min,
-        max = trial.slider_max
-      ) => {
-        const sum = values.reduce((a, b) => a + b, 0);
-        if (sum === 0) {
-          // If all values are 0, distribute equally
-          const equalValue = Math.floor(100 / values.length);
-          const remainder = 100 - equalValue * values.length;
-          const normalized = values.map(() => equalValue);
-          for (let i = 0; i < remainder; i++) {
-            normalized[i] += 1;
-          }
-          return normalized;
+      // Linked-slider redistribution: when one slider moves to newValue, give
+      // the remaining (100 - newValue) to the other sliders proportional to
+      // their current values so the sum stays at 100 continuously.
+      // For n = 2 this reduces to: other = 100 - this.
+      const redistribute = (values, changedIndex, newValueRaw) => {
+        const newValue = Math.max(0, Math.min(100, Math.round(newValueRaw)));
+        const nn = values.length;
+        const next = values.slice();
+        next[changedIndex] = newValue;
+        if (nn === 1) return [100];
+
+        const remaining = 100 - newValue;
+        const otherIndices = [];
+        for (let i = 0; i < nn; i++) if (i !== changedIndex) otherIndices.push(i);
+        const otherSum = otherIndices.reduce((s, i) => s + values[i], 0);
+
+        let raw;
+        if (otherSum === 0) {
+          // All others at 0 — distribute the remaining budget equally.
+          raw = otherIndices.map(() => remaining / otherIndices.length);
+        } else {
+          raw = otherIndices.map((idx) => (values[idx] / otherSum) * remaining);
         }
 
-        // Normalize to sum to 100
-        const normalized = values.map((v) => Math.round((v / sum) * 100));
-
-        // Adjust for rounding errors to ensure exact sum of 100
-        const actualSum = normalized.reduce((a, b) => a + b, 0);
-        const diff = 100 - actualSum;
-
-        if (diff !== 0) {
-          // Add/subtract the difference to the largest value
-          const maxIndex = normalized.indexOf(Math.max(...normalized));
-          normalized[maxIndex] += diff;
-        }
-
-        // Ensure all values are within bounds
-        return normalized.map((v) => Math.max(min, Math.min(max, v)));
+        // Snap to integers summing exactly to `remaining`, assigning leftover
+        // by largest fractional part.
+        const ints = raw.map((x) => Math.floor(x));
+        let rem = remaining - ints.reduce((a, b) => a + b, 0);
+        const fracs = raw
+          .map((x, k) => ({ k, frac: x - Math.floor(x) }))
+          .sort((a, b) => b.frac - a.frac);
+        for (let j = 0; j < rem; j++) ints[fracs[j].k] += 1;
+        otherIndices.forEach((idx, k) => {
+          next[idx] = ints[k];
+        });
+        return next;
       };
 
       const renderHTML = (labels, percents) => {
@@ -190,19 +194,11 @@ var jsPsychProbabilitySliders = (function (jspsych) {
         if (btnCont) btnCont.disabled = !hasSliderMoved;
       };
 
-      // Wire sliders
+      // Wire sliders: linked redistribution keeps the sum at 100 continuously.
       for (let i = 0; i < n; i++) {
         const s = display_element.querySelector(`#ps-slider-${i}`);
         s.addEventListener("input", (e) => {
-          // Allow free dragging - just update the specific slider value
-          percents[i] = Number(e.target.value);
-          hasSliderMoved = true;
-          updateUI();
-        });
-        s.addEventListener("change", (e) => {
-          // On release, normalize all values to sum to 100
-          percents[i] = Number(e.target.value);
-          percents = normalize(percents);
+          percents = redistribute(percents, i, Number(e.target.value));
           hasSliderMoved = true;
           updateUI();
         });
