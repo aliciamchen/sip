@@ -1,0 +1,524 @@
+---
+title: Inverse planning, effort inferred (data analysis)
+author: Alicia Chen
+date: 2026-04-25
+format:
+  html:
+    toc: true
+    code-fold: true
+    df-print: paged
+    page-layout: full
+    search: false
+knitr:
+  opts_chunk:
+    dev: "ragg_png"
+execute:
+  warning: false
+---
+
+```{r setup}
+source(here::here("analysis", "utils.R"))
+setup_analysis()
+
+ACTION_LEVELS <- c("No saliva", "Share saliva")
+ACTION_COLORS <- c("No saliva" = "#5B8DBA", "Share saliva" = "#D17A6E")
+INTIMACY_LEVELS <- c("0", "50", "75", "100")
+INTIMACY_COLORS <- c(
+  "0"   = "#D6E2EB",
+  "50"  = "#94B5C9",
+  "75"  = "#5B8DBA",
+  "100" = "#2C5985"
+)
+```
+
+## Demographics
+
+```{r}
+df_exit <- read_csv(here("data", "inv_plan_effort_inferred", "exit_survey.csv"),
+                    show_col_types = FALSE)
+
+n_total <- nrow(df_exit)
+n_passed <- df_exit |>
+  filter(attention_passed == TRUE, memory_correct_count > 0) |>
+  nrow()
+
+cat("Total participants recruited:", n_total, "\n")
+cat("Passed attention + memory checks:", n_passed, "\n")
+cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
+    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
+    "Min age:", min(df_exit$age, na.rm = TRUE),
+    "Max age:", max(df_exit$age, na.rm = TRUE))
+cat("\nGender:\n")
+print(table(df_exit$gender))
+```
+
+## Results
+
+This experiment flips the inference direction of `inv_plan_effort`. Participants observe one of two actions taken by one person toward another and are told the relationship's intimacy. They rate which of the two effort contexts (an effort-easy vs. effort-hard description of the same scenario) is more likely, before (prior) and after (posterior) seeing the action. Reward is held fixed at high. The slider response 0–100 encodes the participant's P(effort_high) × 100. The experiment manipulates:
+
+- **Observed action**: action_1 (non-saliva-sharing, requires the effort-constrained resource) or action_2 (saliva-sharing).
+- **Intimacy**: a 4-level descriptor of the relationship (0, 50, 75, 100 on a formal–intimate scale).
+
+## Load human data
+
+```{r}
+EXCLUDED_SUBJECTS <- c()
+
+df <- read_csv(here("data", "inv_plan_effort_inferred", "main_trials_long.csv"),
+               show_col_types = FALSE) |>
+  filter(!subject_id %in% EXCLUDED_SUBJECTS) |>
+  mutate(
+    action = factor(action_condition, levels = c("action_1", "action_2"),
+                    labels = ACTION_LEVELS),
+    intimacy = factor(intimacy, levels = c(0, 50, 75, 100),
+                      labels = INTIMACY_LEVELS),
+    stage = factor(stage, levels = c("prior", "posterior")),
+    p_effort_high = response / 100,
+    model = "Humans"
+  ) |>
+  select(-action_condition)
+
+df <- calculate_belief_update(df, "p_effort_high")
+```
+
+## Human data: Prior vs posterior ratings
+
+### Distribution of ratings
+
+```{r}
+ggplot(df, aes(x = p_effort_high, fill = action)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = ACTION_COLORS) +
+  labs(y = "Density", x = "P(effort high)", fill = "Observed action") +
+  theme(legend.position = "right") +
+  facet_grid(stage ~ intimacy,
+             labeller = labeller(intimacy = label_both))
+```
+
+```{r}
+df_summary <- df |>
+  group_by(intimacy, action, stage, model) |>
+  tidyboot_mean(p_effort_high)
+```
+
+### Prior vs posterior by action and intimacy
+
+```{r}
+#| fig-width: 14
+#| fig-asp: 0.45
+
+ggplot() +
+  geom_violin(
+    data = df,
+    aes(x = stage, y = p_effort_high, fill = action),
+    position = position_dodge(width = 0.8),
+    alpha = 0.5,
+    width = 0.7
+  ) +
+  geom_line(
+    data = df,
+    aes(x = stage, y = p_effort_high, color = action,
+        group = interaction(subject_id, scenario_label, action)),
+    position = position_dodge(width = 0.8),
+    alpha = 0.12,
+    linewidth = 0.3
+  ) +
+  geom_point(
+    data = df_summary,
+    aes(x = stage, y = empirical_stat, color = action, group = action),
+    position = position_dodge(width = 0.8),
+    size = 3,
+    alpha = PLOT_ALPHA
+  ) +
+  geom_errorbar(
+    data = df_summary,
+    aes(x = stage, ymin = ci_lower, ymax = ci_upper, color = action, group = action),
+    position = position_dodge(width = 0.8),
+    width = 0.1,
+    size = 1
+  ) +
+  geom_line(
+    data = df_summary,
+    aes(x = stage, y = empirical_stat, color = action, group = action),
+    position = position_dodge(width = 0.8),
+    size = 1
+  ) +
+  facet_grid(intimacy ~ action,
+             labeller = labeller(intimacy = label_both, action = label_both)) +
+  scale_fill_manual(values = ACTION_COLORS) +
+  scale_color_manual(values = ACTION_COLORS) +
+  labs(
+    title = "P(effort high) before and after observing action",
+    y = "P(effort high)",
+    x = "Stage",
+    fill = "Observed action",
+    color = "Observed action"
+  )
+```
+
+### Belief updates
+
+```{r}
+df_belief_update_summary <- df |>
+  filter(stage == "posterior") |>
+  group_by(intimacy, action, model) |>
+  tidyboot_mean(belief_update)
+```
+
+## Model comparison
+
+### Model description
+
+We invert the canonical access utility under three ablations to infer effort condition (low vs. high) from the observed action. The actor weights are frozen from the forward-planning effort fit (`forward_planning_effort_fit_results.csv`); only $\alpha_{\text{observer}}$ is fit, with binary cross-entropy loss on the slider response treating $\text{response}/100$ as the human's P(effort_high).
+
+**Full model**: inverts $U(a|s, I, e) = w_v \cdot V(a) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e \cdot \text{effort}(a)$.
+
+**Discomfort-only**: $-w_d \cdot \text{access}(a) \cdot (1 - I)$.
+
+**Base model**: $w_v \cdot V(a) - w_e \cdot \text{effort}(a)$ (no intimacy dependence; observer cannot meaningfully discriminate effort context from action alone).
+
+The observer assumes a uniform 0.5/0.5 prior over the two effort conditions and computes a Bayesian posterior; $\alpha_{\text{observer}}$ tempers that posterior before the participant samples.
+
+### Fitted parameters
+
+```{r}
+df_fit_results <- read_csv(here("model", "outputs",
+                                "inverse_planning_effort_inferred_fit_results.csv"),
+                           show_col_types = FALSE) |>
+  filter(experiment == "effort_inferred") |>
+  mutate(
+    model_label = case_when(
+      model == "access_full_prior" ~ "Full model",
+      model == "access_only_prior" ~ "Discomfort-only",
+      model == "no_access_prior" ~ "Base model"
+    )
+  ) |>
+  filter(!is.na(model_label)) |>
+  select(model_label, alpha_observer, nll, n_params)
+
+df_fit_results |>
+  knitr::kable(
+    digits = 3,
+    caption = "Fitted observer parameters (effort inference)",
+    col.names = c("Model", "α_observer", "NLL", "n_params")
+  )
+```
+
+### AIC comparison
+
+```{r}
+df_fit_results <- df_fit_results |>
+  mutate(AIC = 2 * n_params + 2 * nll)
+
+best_aic <- min(df_fit_results$AIC)
+
+df_fit_results |>
+  mutate(delta_AIC = AIC - best_aic) |>
+  select(model_label, nll, n_params, AIC, delta_AIC) |>
+  arrange(AIC) |>
+  knitr::kable(
+    digits = 2,
+    caption = "Model comparison (lower AIC is better)",
+    col.names = c("Model", "NLL", "n_params", "AIC", "ΔAIC")
+  )
+```
+
+### Load model predictions
+
+Out-of-sample LOSO predictions from `cv_loso_inv_plan_effort_inferred_preds_summary.csv`: each held-out scenario's posterior was generated by an observer fit on the other 15.
+
+```{r}
+df_model <- read_csv(here("model", "outputs",
+                          "cv_loso_inv_plan_effort_inferred_preds_summary.csv"),
+                     show_col_types = FALSE) |>
+  mutate(
+    action = factor(action, levels = c(1, 2), labels = ACTION_LEVELS),
+    intimacy = factor(intimacy, levels = c(0, 50, 75, 100),
+                      labels = INTIMACY_LEVELS),
+    model = case_when(
+      model == "access_full_prior" ~ "Full model",
+      model == "access_only_prior" ~ "Discomfort-only",
+      model == "no_access_prior" ~ "Base model"
+    )
+  ) |>
+  filter(!is.na(model))
+
+# Implied "belief update" for the model: assume a flat 0.5 prior over effort
+# conditions, so posterior - prior = p_effort_high - 0.5.
+df_model <- df_model |>
+  mutate(belief_update = p_effort_high - 0.5)
+
+MODEL_LEVELS <- c("Base model", "Discomfort-only", "Full model", "Humans")
+```
+
+### Combine human and model data
+
+```{r}
+df_combined <- bind_rows(
+  df_belief_update_summary |>
+    mutate(
+      belief_update = empirical_stat,
+      ci_lower = ci_lower,
+      ci_upper = ci_upper
+    ) |>
+    select(intimacy, action, model, belief_update, ci_lower, ci_upper),
+  df_model |>
+    group_by(intimacy, action, model) |>
+    summarize(belief_update = mean(belief_update), .groups = "drop") |>
+    mutate(ci_lower = NA_real_, ci_upper = NA_real_)
+) |>
+  mutate(
+    model = factor(model, levels = MODEL_LEVELS)
+  )
+```
+
+### Belief updates: model vs human comparison
+
+```{r}
+#| fig-width: 14
+#| fig-asp: 0.32
+
+df_belief_update_subj <- df |>
+  filter(stage == "posterior") |>
+  group_by(subject_id, intimacy, action) |>
+  summarise(belief_update = mean(belief_update), .groups = "drop") |>
+  mutate(model = factor("Humans", levels = MODEL_LEVELS))
+
+# Per-subject horizontal jitter applied uniformly across the 4 intimacy
+# columns of a given action, so lines stay aligned within action.
+set.seed(67)
+subj_jitter <- df_belief_update_subj |>
+  distinct(subject_id) |>
+  mutate(jitter = runif(n(), -0.08, 0.08))
+
+# Each (action, intimacy) cell is positioned in a 2x4 grid via dodge; we
+# precompute the x_pos so per-subject lines connect across intimacy levels
+# within an action.
+x_pos_for <- function(action, intimacy) {
+  action_x <- ifelse(action == "No saliva", 1, 2)
+  intim_off <- (as.numeric(intimacy) - 2.5) * 0.18  # 4 levels: -.27, -.09, .09, .27
+  action_x + intim_off
+}
+
+df_belief_update_subj <- df_belief_update_subj |>
+  left_join(subj_jitter, by = "subject_id") |>
+  mutate(x_pos = x_pos_for(action, intimacy) + jitter)
+
+df_combined |>
+  ggplot(aes(x = action, y = belief_update,
+             group = interaction(model, intimacy), fill = intimacy)) +
+  geom_crossbar(
+    aes(y = 0, ymin = -0.005, ymax = 0.005),
+    position = position_dodge(width = 0.8),
+    width = 0.8,
+    color = NA
+  ) +
+  geom_col(position = position_dodge(width = 0.8), alpha = PLOT_ALPHA) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.8), size = 1, width = 0.08,
+    color = "black", alpha = 0.8
+  ) +
+  geom_line(
+    data = df_belief_update_subj,
+    aes(x = x_pos, y = belief_update,
+        group = interaction(subject_id, action)),
+    inherit.aes = FALSE,
+    color = "black", alpha = 0.15, linewidth = 0.3
+  ) +
+  geom_point(
+    data = df_belief_update_subj,
+    aes(x = x_pos, y = belief_update),
+    inherit.aes = FALSE,
+    color = "black", alpha = 0.2, size = 0.7
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_manual(values = INTIMACY_COLORS) +
+  labs(y = "Belief update in P(effort high)", x = "Observed action",
+       fill = "Intimacy") +
+  theme(legend.position = "right") +
+  facet_wrap(~ model, nrow = 1)
+
+ggsave(here("figures", "inv_plan_effort_inferred_belief_main.pdf"),
+       device = cairo_pdf, width = 14, height = 4)
+```
+
+### Model–human correlation (action × intimacy cells)
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.38
+
+df_humans_cells <- df_belief_update_summary |>
+  ungroup() |>
+  mutate(
+    Humans = empirical_stat,
+    Humans_ci_lower = ci_lower,
+    Humans_ci_upper = ci_upper
+  ) |>
+  select(intimacy, action, Humans, Humans_ci_lower, Humans_ci_upper)
+
+df_model_cells <- df_model |>
+  group_by(intimacy, action, model) |>
+  summarize(model_pred = mean(belief_update), .groups = "drop") |>
+  mutate(model = factor(model, levels = setdiff(MODEL_LEVELS, "Humans")))
+
+df_corr <- df_model_cells |>
+  left_join(df_humans_cells, by = c("intimacy", "action")) |>
+  mutate(model = droplevels(model))
+
+correlations <- df_corr |>
+  group_by(model) |>
+  summarize(boot_result = list(boot_cor(model_pred, Humans)), .groups = "drop") |>
+  mutate(
+    r = sapply(boot_result, function(x) x$r),
+    ci_lower = sapply(boot_result, function(x) x$ci_lower),
+    ci_upper = sapply(boot_result, function(x) x$ci_upper),
+    label = paste0(
+      "r = ", round(r, 2),
+      " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")"
+    )
+  ) |>
+  select(-boot_result)
+
+ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+  geom_point(size = 3, alpha = PLOT_ALPHA) +
+  geom_label(
+    data = correlations,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.08, vjust = 1.5,
+    size = 4.5, fill = "white", alpha = 0.5, label.size = 0
+  ) +
+  scale_color_manual(values = INTIMACY_COLORS) +
+  scale_shape_manual(values = c(16, 17)) +
+  labs(x = "Model belief update", y = "Human belief update",
+       color = "Intimacy", shape = "Action") +
+  facet_wrap(~ model, nrow = 1) +
+  coord_fixed_symmetric(df_corr$model_pred, df_corr$Humans)
+
+ggsave(here("figures", "inv_plan_effort_inferred_correlation.pdf"),
+       device = cairo_pdf, width = 12, height = 4.5)
+```
+
+### Per-cell P(effort high): model vs humans (posterior, no subtraction)
+
+The plot above subtracts a flat-prior baseline (0.5) on the model side and the empirical prior on the human side. The plot below shows the raw posterior P(effort_high) per cell, side-by-side.
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.38
+
+df_humans_post <- df |>
+  filter(stage == "posterior") |>
+  group_by(intimacy, action) |>
+  tidyboot_mean(p_effort_high) |>
+  ungroup() |>
+  rename(Humans = empirical_stat,
+         Humans_ci_lower = ci_lower,
+         Humans_ci_upper = ci_upper) |>
+  select(intimacy, action, Humans, Humans_ci_lower, Humans_ci_upper)
+
+df_model_post <- df_model |>
+  group_by(intimacy, action, model) |>
+  summarize(model_pred = mean(p_effort_high), .groups = "drop") |>
+  mutate(model = factor(model, levels = setdiff(MODEL_LEVELS, "Humans")))
+
+df_post_corr <- df_model_post |>
+  left_join(df_humans_post, by = c("intimacy", "action")) |>
+  mutate(model = droplevels(model))
+
+post_correlations <- df_post_corr |>
+  group_by(model) |>
+  summarize(boot_result = list(boot_cor(model_pred, Humans)), .groups = "drop") |>
+  mutate(
+    r = sapply(boot_result, function(x) x$r),
+    ci_lower = sapply(boot_result, function(x) x$ci_lower),
+    ci_upper = sapply(boot_result, function(x) x$ci_upper),
+    label = paste0(
+      "r = ", round(r, 2),
+      " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")"
+    )
+  ) |>
+  select(-boot_result)
+
+ggplot(df_post_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+  geom_point(size = 3, alpha = PLOT_ALPHA) +
+  geom_label(
+    data = post_correlations,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.08, vjust = 1.5,
+    size = 4.5, fill = "white", alpha = 0.5, label.size = 0
+  ) +
+  scale_color_manual(values = INTIMACY_COLORS) +
+  scale_shape_manual(values = c(16, 17)) +
+  labs(x = "Model P(effort high)", y = "Human P(effort high)",
+       color = "Intimacy", shape = "Action") +
+  facet_wrap(~ model, nrow = 1) +
+  coord_fixed_symmetric(df_post_corr$model_pred, df_post_corr$Humans)
+```
+
+## Scenario-level
+
+### Per-scenario human posterior P(effort high)
+
+```{r}
+df_post_scenario <- df |>
+  filter(stage == "posterior") |>
+  group_by(scenario_label, intimacy, action, model) |>
+  tidyboot_mean(p_effort_high)
+```
+
+```{r}
+#| fig-width: 14
+#| fig-asp: 1.0
+
+ggplot(df_post_scenario, aes(x = action, y = empirical_stat, fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.8), alpha = PLOT_ALPHA) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.8), width = 0.08,
+    color = "black", alpha = 0.8
+  ) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
+  scale_fill_manual(values = INTIMACY_COLORS) +
+  labs(
+    title = "Posterior P(effort high) by scenario",
+    y = "P(effort high)",
+    x = "Observed action",
+    fill = "Intimacy"
+  ) +
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 30, hjust = 1)) +
+  facet_wrap(~ scenario_label, ncol = 4)
+```
+
+### Per-scenario model P(effort high)
+
+```{r}
+#| fig-width: 16
+#| fig-asp: 0.6
+
+df_model_scenario <- df_model |>
+  mutate(model = factor(model, levels = setdiff(MODEL_LEVELS, "Humans")))
+
+ggplot(df_model_scenario, aes(x = action, y = p_effort_high, fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.8), alpha = PLOT_ALPHA) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
+  scale_fill_manual(values = INTIMACY_COLORS) +
+  labs(
+    title = "Model-predicted P(effort high) by scenario",
+    y = "P(effort high)",
+    x = "Observed action",
+    fill = "Intimacy"
+  ) +
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 30, hjust = 1)) +
+  facet_grid(model ~ scenario_label,
+             labeller = labeller(scenario_label = label_wrap_gen(15)))
+```
