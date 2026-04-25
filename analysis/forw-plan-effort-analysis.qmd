@@ -1,0 +1,281 @@
+---
+title: Forward planning, effort manipulation (data analysis)
+author: Alicia Chen
+date: 2026-04-24
+format:
+  html:
+    toc: true
+    code-fold: true
+    df-print: paged
+    page-layout: full
+    search: false
+knitr:
+  opts_chunk:
+    dev: "ragg_png"
+execute:
+  warning: false
+---
+
+```{r setup}
+source(here::here("analysis", "utils.R"))
+setup_analysis()
+```
+
+## Demographics
+
+```{r}
+df_exit <- read_csv(here("data", "forw_plan_effort", "exit_survey.csv"), show_col_types = FALSE)
+
+n_total <- nrow(df_exit)
+n_passed <- df_exit |>
+  filter(attention_passed == TRUE, memory_correct_count > 0) |>
+  nrow()
+
+cat("Total participants recruited:", n_total, "\n")
+cat("Passed attention + memory checks:", n_passed, "\n")
+cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
+    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
+    "Min age:", min(df_exit$age, na.rm = TRUE),
+    "Max age:", max(df_exit$age, na.rm = TRUE))
+cat("\nGender:\n")
+print(table(df_exit$gender))
+```
+
+## Results
+
+This experiment manipulates the relationship between two people (intimacy: 0, 50, 75, 100 on a 100-point scale) and the relative effort of avoiding saliva-sharing (effort: `low` vs `high`). Reward is held fixed at high across all trials. Each scenario has two actions: action 1 is non-saliva-sharing (requires the effort-constrained resource) and action 2 is saliva-sharing.
+
+Load the data (produced by `analysis/json_to_csv.py forw_plan_effort`, with attention/memory-check exclusions already applied):
+
+```{r}
+df <- read_csv(here("data", "forw_plan_effort", "main_trials_long.csv"), show_col_types = FALSE) |>
+  mutate(
+    intimacy = factor(intimacy, levels = INTIMACY_LEVELS),
+    effort = factor(effort, levels = c("low", "high"), labels = c("Low effort", "High effort")),
+    action = factor(action)
+  )
+
+df_summary <- df |>
+  group_by(intimacy, effort, action) |>
+  tidyboot_mean(p_action) |>
+  ungroup()
+```
+
+### P(share saliva) by effort and intimacy
+
+Since the two actions are complementary (they sum to 1), P(action 2) = P(share saliva) is a sufficient summary. x-axis shows effort of the non-saliva-sharing action; hue shows the relationship's intimacy level.
+
+```{r}
+#| fig-width: 6
+#| fig-asp: 0.75
+
+df_summary |>
+  filter(action == 2) |>
+  ggplot(aes(x = effort, y = empirical_stat, color = intimacy, group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 4, alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.2), linewidth = 1.2, width = 0.4
+  ) +
+  geom_line(position = position_dodge(width = 0.2), linewidth = 1.2) +
+  scale_color_intimacy() +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(y = "P(share saliva)", x = "Effort of not sharing saliva", color = "Intimacy")
+
+ggsave(here("figures", "forw_plan_effort_paction.pdf"), device = cairo_pdf, width = 6, height = 4.5)
+```
+
+### Per-scenario breakdown
+
+```{r}
+#| fig-width: 22
+#| fig-asp: 0.25
+
+df_summary_scenario <- df |>
+  group_by(scenario_label, intimacy, effort, action) |>
+  tidyboot_mean(p_action) |>
+  ungroup()
+
+ggplot(df_summary_scenario, aes(x = action, y = empirical_stat, color = intimacy, group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 3, alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.2), width = 0.4
+  ) +
+  geom_line(position = position_dodge(width = 0.2), linewidth = 1) +
+  scale_color_intimacy() +
+  labs(y = "P(action)", x = "Action", color = "Intimacy") +
+  theme(legend.position = "right",
+        axis.text.x = element_text(angle = 0)) +
+  facet_grid(effort ~ scenario_label, labeller = labeller(scenario_label = label_wrap_gen(15)))
+```
+
+## Model comparison
+
+### Model description
+
+We fit three ablations of the canonical access utility to the human data. A joint actor chooses an action proportional to its total utility, following a softmax with inverse temperature $\alpha$. Per-(scenario, effort_condition, action) values of $\text{access}(a)$, $\text{effort}(a)$, and the action prior $\pi(a|s,e)$ are LLM-generated (Llama-3.3-70B; see `model/lm_scenario_params_effort.py` and `model/lm_action_priors_effort.py`). Reward is held fixed at high across all trials; both actions involve eating, so $V(a|s) = 1$ is stipulated for both. $w_v$ is therefore non-identified in the softmax and stays near its initialization during fitting.
+
+**Full model**:
+
+$$U(a|s, I, e) = w_v \cdot V(a) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e \cdot \text{effort}(a)$$
+
+**Discomfort-only**: drops the food-reward and effort terms, keeping only $-w_d \cdot \text{access}(a) \cdot (1 - I)$.
+
+**Base model**: drops the access term: $U = w_v \cdot V(a) - w_e \cdot \text{effort}(a)$.
+
+### Load model predictions
+
+Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/cv_loso_preds_effort.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios.
+
+```{r}
+df_cv <- read_csv(here("model", "outputs", "cv_loso_preds_effort.csv"),
+                  show_col_types = FALSE)
+
+df_humans_cv <- df_cv |>
+  filter(variant == "access_full_prior") |>
+  transmute(
+    subject_id, scenario_label = held_out_scenario,
+    intimacy, effort, action,
+    p_action, model = "Humans"
+  )
+
+df_model_cv <- df_cv |>
+  mutate(
+    model = case_when(
+      variant == "access_full_prior" ~ "Full model",
+      variant == "access_only_prior" ~ "Discomfort-only",
+      variant == "no_access_prior" ~ "Base model"
+    )
+  ) |>
+  transmute(
+    subject_id, scenario_label = held_out_scenario,
+    intimacy, effort, action,
+    p_action = p_action_pred, model
+  )
+
+df_preds <- bind_rows(df_humans_cv, df_model_cv) |>
+  mutate(
+    intimacy = factor(intimacy, levels = INTIMACY_LEVELS),
+    effort = factor(effort, levels = c("low", "high"),
+                    labels = c("Low effort", "High effort")),
+    model = factor(model, levels = c(
+      "Base model", "Discomfort-only", "Full model", "Humans"
+    ))
+  )
+
+df_preds_summary <- df_preds |>
+  group_by(intimacy, effort, action, model) |>
+  tidyboot_mean(p_action) |>
+  ungroup()
+```
+
+### Model predictions vs human data
+
+P(share saliva) = P(action 2) by effort × intimacy, one panel per model. Lines connect effort levels within an intimacy group; the model panels should reproduce the rise with intimacy and the rise with high effort visible in the Humans panel.
+
+```{r}
+#| fig-width: 14
+#| fig-asp: 0.32
+
+df_preds_summary |>
+  filter(action == 2) |>
+  ggplot(aes(x = effort, y = empirical_stat, color = intimacy, group = intimacy)) +
+  geom_point(position = position_dodge(width = 0.2), size = 4, alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.2), linewidth = 1.2, width = 0.4
+  ) +
+  geom_line(position = position_dodge(width = 0.2), linewidth = 1.2) +
+  scale_color_intimacy() +
+  scale_y_continuous(limits = c(0, 1)) +
+  labs(y = "P(share saliva)", x = "Effort of not sharing saliva", color = "Intimacy") +
+  facet_wrap(~ model, nrow = 1)
+
+ggsave(here("figures", "forw_plan_effort_comparison.pdf"),
+       device = cairo_pdf, width = 14, height = 4.5)
+```
+
+### Model-human correlation
+
+```{r}
+#| label: fig-forw-plan-effort-correlation
+#| fig-width: 12
+#| fig-asp: 0.4
+
+df_humans_cells <- df_preds_summary |>
+  filter(model == "Humans") |>
+  select(intimacy, effort, action,
+         Humans = empirical_stat,
+         Humans_ci_lower = ci_lower,
+         Humans_ci_upper = ci_upper)
+
+df_corr <- df_preds_summary |>
+  filter(model != "Humans") |>
+  select(intimacy, effort, action, model,
+         model_pred = empirical_stat,
+         model_ci_lower = ci_lower,
+         model_ci_upper = ci_upper) |>
+  left_join(df_humans_cells, by = c("intimacy", "effort", "action")) |>
+  filter(!is.na(model_pred), !is.na(Humans)) |>
+  mutate(
+    action = factor(action, levels = c(1, 2),
+                    labels = c("No saliva", "Share saliva")),
+    model = droplevels(model)
+  )
+
+correlations <- df_corr |>
+  group_by(model) |>
+  summarize(boot_result = list(boot_cor(model_pred, Humans)), .groups = "drop") |>
+  mutate(
+    r = sapply(boot_result, function(x) x$r),
+    ci_lower = sapply(boot_result, function(x) x$ci_lower),
+    ci_upper = sapply(boot_result, function(x) x$ci_upper),
+    label = paste0(
+      "r = ", round(r, 2),
+      " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")"
+    )
+  ) |>
+  select(-boot_result)
+
+ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  geom_errorbar(aes(ymin = Humans_ci_lower, ymax = Humans_ci_upper), width = 0.02) +
+  geom_errorbarh(aes(xmin = model_ci_lower, xmax = model_ci_upper), height = 0.02) +
+  geom_point(size = 3, alpha = PLOT_ALPHA) +
+  geom_label(
+    data = correlations,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE,
+    hjust = -0.08, vjust = 1.5,
+    size = 4.5, fill = "white", alpha = 0.5, label.size = 0
+  ) +
+  scale_color_intimacy() +
+  scale_shape_manual(values = c(16, 17)) +
+  labs(x = "Model", y = "Humans", color = "Intimacy", shape = "Action") +
+  facet_wrap(~ model, nrow = 1) +
+  coord_fixed_symmetric(df_corr$model_pred, df_corr$Humans)
+
+ggsave(here("figures", "forw_plan_effort_correlation.pdf"),
+       device = cairo_pdf, width = 12, height = 4.8)
+```
+
+### Model fit results
+
+```{r}
+fit_results <- read_csv(here("model", "outputs",
+                             "forward_planning_effort_fit_results.csv"),
+                        show_col_types = FALSE)
+
+fit_results |>
+  select(model, nll, n_params, aic, bic, r, r_ci_lower, r_ci_upper,
+         starts_with("param_")) |>
+  knitr::kable(digits = 3, caption = "Model fitting results (in-sample)")
+```
+
+```{r}
+n_obs <- nrow(df)
+
+fit_results |>
+  select(model, nll, n_params, aic, bic) |>
+  arrange(aic) |>
+  knitr::kable(digits = 2,
+               caption = "Model comparison (lower AIC/BIC is better)")
+```

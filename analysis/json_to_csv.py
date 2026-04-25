@@ -14,6 +14,8 @@ Available experiments:
     - inv_plan_intimacy_alt: Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
     - inv_plan_intimacy_noalt: Same as inv_plan_intimacy_alt but with action alternatives hidden from participants
     - inv_plan_desire_alt: Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
+    - forw_plan_effort: Forward planning, intimacy x relative effort manipulation (2-action space, reward held high)
+    - inv_plan_effort: Inverse planning intimacy inference, observed-action x relative effort manipulation (2-action space)
 """
 
 import argparse
@@ -110,6 +112,50 @@ EXPERIMENT_CONFIGS = {
             "intimacy_condition",
             "stage",
             "response",
+        ],
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+        ],
+        "has_closeness": False,
+        "has_attention_memory": True,
+    },
+    "forw_plan_effort": {
+        "description": "Forward planning with intimacy x effort manipulation (2 actions, reward fixed high)",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "intimacy_condition",
+            "effort_condition",
+            "action_1",
+            "action_2",
+        ],
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+        ],
+        "has_closeness": True,
+        "has_attention_memory": True,
+    },
+    "inv_plan_effort": {
+        "description": "Inverse planning intimacy inference with observed-action x effort manipulation (2 actions)",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "action_condition",
+            "effort_condition",
+            "stage",
+            "intimacy_rating",
         ],
         "exit_survey_fields": [
             "subject_id",
@@ -247,6 +293,29 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_condition": intimacy_condition,
                             "stage": stage,
                             "response": response,
+                        }
+
+                    elif experiment_name == "forw_plan_effort":
+                        # Two-action probability-slider response; probs[0]=action_1, probs[1]=action_2
+                        probs = trial.get("probs", [])
+                        trial_data = {
+                            "subject_id": subject_id,
+                            "scenario_label": scenario_label,
+                            "intimacy_condition": trial.get("intimacy_condition", ""),
+                            "effort_condition": trial.get("effort_condition", ""),
+                            "action_1": probs[0] if len(probs) > 0 else "",
+                            "action_2": probs[1] if len(probs) > 1 else "",
+                        }
+
+                    elif experiment_name == "inv_plan_effort":
+                        # Prior/posterior intimacy slider response
+                        trial_data = {
+                            "subject_id": subject_id,
+                            "scenario_label": scenario_label,
+                            "action_condition": trial.get("action_condition", ""),
+                            "effort_condition": trial.get("effort_condition", ""),
+                            "stage": trial.get("stage", ""),
+                            "intimacy_rating": trial.get("response", ""),
                         }
 
                     main_trials_data.append(trial_data)
@@ -430,6 +499,108 @@ def create_inv_plan_intimacy_long(output_dir):
     )
 
 
+def create_forw_plan_effort_long(output_dir):
+    """
+    Create main_trials_long.csv for forw_plan_effort experiment.
+
+    Pivots action_1 / action_2 columns to long format and filters out
+    participants who failed the attention check or got 0 correct on the
+    memory check. Renames intimacy_condition -> intimacy and
+    effort_condition -> effort for analysis consistency.
+    """
+    output_path = Path(output_dir)
+
+    main_trials = pd.read_csv(output_path / "main_trials.csv")
+    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
+
+    excluded_subjects = exit_survey[
+        (exit_survey["attention_passed"] != True)
+        | (exit_survey["memory_correct_count"] == 0)
+    ]["subject_id"].tolist()
+
+    n_excluded = len(excluded_subjects)
+    n_total = exit_survey["subject_id"].nunique()
+    print(
+        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
+    )
+
+    main_trials_filtered = main_trials[
+        ~main_trials["subject_id"].isin(excluded_subjects)
+    ]
+
+    main_trials_long = main_trials_filtered.melt(
+        id_vars=[
+            "subject_id",
+            "scenario_label",
+            "intimacy_condition",
+            "effort_condition",
+        ],
+        value_vars=["action_1", "action_2"],
+        var_name="action",
+        value_name="p_action",
+    )
+
+    main_trials_long["action"] = (
+        main_trials_long["action"].str.replace("action_", "").astype(int)
+    )
+
+    main_trials_long = main_trials_long.rename(
+        columns={"intimacy_condition": "intimacy", "effort_condition": "effort"}
+    )
+
+    main_trials_long = main_trials_long.sort_values(
+        ["subject_id", "scenario_label", "action"]
+    ).reset_index(drop=True)
+
+    output_file = output_path / "main_trials_long.csv"
+    main_trials_long.to_csv(output_file, index=False)
+    print(
+        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
+    )
+
+
+def create_inv_plan_effort_long(output_dir):
+    """
+    Create main_trials_long.csv for inv_plan_effort experiment.
+
+    Filters out participants who failed attention or got 0 correct on memory.
+    Renames effort_condition -> effort for analysis consistency.
+    """
+    output_path = Path(output_dir)
+
+    main_trials = pd.read_csv(output_path / "main_trials.csv")
+    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
+
+    excluded_subjects = exit_survey[
+        (exit_survey["attention_passed"] != True)
+        | (exit_survey["memory_correct_count"] == 0)
+    ]["subject_id"].tolist()
+
+    n_excluded = len(excluded_subjects)
+    n_total = exit_survey["subject_id"].nunique()
+    print(
+        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
+    )
+
+    main_trials_filtered = main_trials[
+        ~main_trials["subject_id"].isin(excluded_subjects)
+    ]
+
+    main_trials_long = main_trials_filtered.rename(
+        columns={"effort_condition": "effort"}
+    )
+
+    main_trials_long = main_trials_long.sort_values(
+        ["subject_id", "scenario_label", "action_condition", "stage"]
+    ).reset_index(drop=True)
+
+    output_file = output_path / "main_trials_long.csv"
+    main_trials_long.to_csv(output_file, index=False)
+    print(
+        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
+    )
+
+
 def create_inv_plan_desire_long(output_dir):
     """
     Create main_trials_long.csv for the inv_plan_desire_alt experiment.
@@ -493,12 +664,16 @@ Available experiments:
   inv_plan_intimacy_alt    Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
   inv_plan_intimacy_noalt  Same as inv_plan_intimacy_alt but with action alternatives hidden from participants
   inv_plan_desire_alt      Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
+  forw_plan_effort         Forward planning, intimacy x relative effort (2 actions, reward fixed high)
+  inv_plan_effort          Inverse planning intimacy inference, observed-action x relative effort (2 actions)
 
 Examples:
   python json_to_csv.py forw_plan
   python json_to_csv.py inv_plan_intimacy_alt
   python json_to_csv.py inv_plan_intimacy_noalt
   python json_to_csv.py inv_plan_desire_alt
+  python json_to_csv.py forw_plan_effort
+  python json_to_csv.py inv_plan_effort
         """,
     )
 
@@ -538,6 +713,12 @@ Examples:
     elif args.experiment == "inv_plan_desire_alt":
         print("\nCreating long format with exclusions...")
         create_inv_plan_desire_long(output_dir)
+    elif args.experiment == "forw_plan_effort":
+        print("\nCreating long format with exclusions...")
+        create_forw_plan_effort_long(output_dir)
+    elif args.experiment == "inv_plan_effort":
+        print("\nCreating long format with exclusions...")
+        create_inv_plan_effort_long(output_dir)
 
     print("\nConversion complete!")
 
