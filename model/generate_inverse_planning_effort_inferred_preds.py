@@ -42,8 +42,14 @@ INTIMACY_DISPLAY_LEVELS = [0, 50, 75, 100]
 
 
 def _table_kwargs_for(needs_prior):
+    # Effort-marginal access (vignette only) — observer in this experiment
+    # does not see the effort paragraph. See fit_inverse_planning_effort_inferred.py
+    # for the rationale.
+    access_table = LLM_TABLES_EFFORT.get(
+        "access_marg", LLM_TABLES_EFFORT["access"]
+    )
     tk = {
-        "access_table": LLM_TABLES_EFFORT["access"],
+        "access_table": access_table,
         "effort_table": LLM_TABLES_EFFORT["effort"],
     }
     if needs_prior:

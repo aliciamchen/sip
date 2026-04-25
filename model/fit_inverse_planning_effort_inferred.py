@@ -165,8 +165,15 @@ ACCESS_VARIANTS_EFFORT_INFERRED = {
 
 
 def _table_kwargs_for(needs_prior):
+    # The observer in this experiment does NOT see the effort paragraph, so
+    # the access values they use to reason about the actor must also not
+    # depend on effort_condition. We use the effort-marginal access table
+    # (vignette only) when available; the effort term itself is unaffected.
+    access_table = LLM_TABLES_EFFORT.get(
+        "access_marg", LLM_TABLES_EFFORT["access"]
+    )
     tk = {
-        "access_table": LLM_TABLES_EFFORT["access"],
+        "access_table": access_table,
         "effort_table": LLM_TABLES_EFFORT["effort"],
     }
     if needs_prior:

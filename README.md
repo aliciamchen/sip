@@ -173,10 +173,10 @@ uv run python model/lm_scenario_params.py   # access + effort per (scenario, act
 uv run python model/lm_action_priors.py     # π(a|s) per (scenario, action)
 ```
 
-The effort experiments have parallel scripts that consume `scenarios_effort.csv` and produce per (scenario, effort_condition, action) tables — the LM sees the full vignette plus the effort paragraph so the manipulation lands in the ratings:
+The effort experiments have parallel scripts that consume `scenarios_effort.csv` and produce per (scenario, effort_condition, action) tables — the LM sees the full vignette plus the effort paragraph so the manipulation lands in the ratings. The script also produces an effort-marginal access table (vignette only, no effort paragraph) for use in `inv_plan_effort_inferred`, where the observer does not see the effort paragraph and so cannot use effort-induced setting cues when reasoning about access.
 
 ```bash
-uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv
+uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv (effort-conditional access + effort) AND lm_scenario_params_effort_marginal.csv (effort-marginal access only)
 uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort.csv
 ```
 

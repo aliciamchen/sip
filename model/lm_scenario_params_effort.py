@@ -20,11 +20,20 @@ Reward is NOT elicited from the LLM — reward is fixed at HIGH for all effort
 scenarios and V(a|s) = 1 is stipulated uniformly for both actions.
 
 10 runs per parameter-type per (scenario, effort_condition), aggregated to
-mean/std. Output: model/outputs/lm_scenario_params_effort.csv with 64 rows
-(16 scenarios × 2 effort_conditions × 2 actions).
+mean/std. Outputs (model/outputs/):
+- lm_scenario_params_effort.csv (64 rows: 16 scenarios × 2 efforts × 2 actions)
+  Effort-conditional access + effort. Used by forw_plan_effort and
+  inv_plan_effort, where the actor / observer sees the effort paragraph.
+- lm_scenario_params_effort_marginal.csv (32 rows: 16 scenarios × 2 actions)
+  Effort-marginal access only (vignette without effort paragraph). Used by
+  inv_plan_effort_inferred, where the observer does not see the effort
+  paragraph and so must reason about access from the base vignette alone.
 
 Usage:
     uv run python model/lm_scenario_params_effort.py
+
+If the conditional CSV already exists the conditional pass is skipped (useful
+when only refreshing the marginal table).
 
 Requires TOGETHER_API_KEY in env or .env.
 """
@@ -126,6 +135,18 @@ Action 0: {row["action_1"]}
 Action 1: {row["action_2"]}"""
 
 
+def format_access_prompt_marginal(row):
+    """Access prompt that omits the effort paragraph. Used to estimate access
+    as it would be perceived by an observer who does not see the effort context
+    (specifically, the inv_plan_effort_inferred experiment)."""
+    return f"""Scenario: {row["vignette"]}
+
+Rate how much each action opens each person up to the other — physically, informationally, or both (0-6 scale):
+
+Action 0: {row["action_1"]}
+Action 1: {row["action_2"]}"""
+
+
 def format_effort_prompt(row, effort_condition):
     vignette = format_full_vignette(row, effort_condition)
     return f"""Scenario: {vignette}
@@ -187,24 +208,16 @@ def aggregate_action_ratings(ratings_list):
     return result
 
 
-def main():
-    api_key = _load_api_key()
-
-    print("Loading effort scenarios...")
-    scenarios_df = load_scenarios()
-    print(f"Loaded {len(scenarios_df)} scenarios")
-
-    print(f"\nInitializing Together AI client for {MODEL_ID}...")
-    client = Together(api_key=api_key)
-
+def run_effort_conditional(client, scenarios_df, output_path):
+    """Effort-conditional access + effort ratings (existing behaviour).
+    One row per (scenario, effort_condition, action) — 64 rows total."""
     results = []
-
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         for effort_condition in EFFORT_CONDITIONS:
             print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort={effort_condition})")
 
-            print("  Getting access ratings...")
+            print("  Getting access ratings (effort-conditional)...")
             access_ratings = get_ratings(
                 client,
                 ACCESS_SYSTEM_PROMPT,
@@ -247,13 +260,10 @@ def main():
             print(f"  Effort (raw, action_1/action_2): {eff_str}")
 
     results_df = pd.DataFrame(results)
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / "lm_scenario_params_effort.csv"
     results_df.to_csv(output_path, index=False)
-    print(f"\nSaved results to {output_path}")
+    print(f"\nSaved effort-conditional results to {output_path}")
 
-    print("\n=== Summary ===")
+    print("\n=== Conditional summary ===")
     print(f"Total rows: {len(results_df)} (expected 64 = 16 scenarios × 2 effort × 2 actions)")
     for col, target in [("access", "[0, 2]"), ("effort", "[0, 1]")]:
         print(
@@ -262,7 +272,6 @@ def main():
             f"\n  Range: [{results_df[col].min():.2f}, {results_df[col].max():.2f}]"
         )
 
-    # Sanity: check that action=1 effort increases from low → high per scenario
     print("\n=== Effort manipulation sanity (action_1 effort: low vs high) ===")
     act1 = results_df[results_df["action"] == 1]
     wide = act1.pivot(index="scenario_label", columns="effort_condition", values="effort")
@@ -270,6 +279,74 @@ def main():
     print(wide.round(3).to_string())
     print(f"\nMean Δ effort(action_1): {wide['delta'].mean():+.3f} "
           f"(positive = manipulation worked)")
+
+
+def run_marginal_access(client, scenarios_df, output_path):
+    """Effort-marginal access ratings — vignette without effort paragraph.
+    One row per (scenario, action) — 32 rows total."""
+    results = []
+    for idx, row in scenarios_df.iterrows():
+        scenario = row["scenario_label"]
+        print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort-marginal access)")
+
+        access_ratings = get_ratings(
+            client,
+            ACCESS_SYSTEM_PROMPT,
+            format_access_prompt_marginal(row),
+        )
+        access_agg = aggregate_action_ratings(access_ratings)
+
+        for lm_idx, csv_action in enumerate([1, 2]):
+            key = f"action_{lm_idx}"
+            a_mean, a_std = access_agg[key]
+            results.append(
+                {
+                    "scenario_label": scenario,
+                    "action": csv_action,
+                    "access_raw": a_mean,
+                    "access_raw_std": a_std,
+                    "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                    "n_runs_access": len(access_ratings),
+                }
+            )
+
+        acc_str = [f"{access_agg[f'action_{i}'][0]:.1f}" for i in range(2)]
+        print(f"  Access (raw, action_1/action_2): {acc_str}")
+
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(output_path, index=False)
+    print(f"\nSaved effort-marginal access to {output_path}")
+    print(f"Total rows: {len(results_df)} (expected 32 = 16 scenarios × 2 actions)")
+    print(
+        f"\nAccess (normalized, target [0, 2]):"
+        f"\n  Mean: {results_df['access'].mean():.2f}, Std: {results_df['access'].std():.2f}"
+        f"\n  Range: [{results_df['access'].min():.2f}, {results_df['access'].max():.2f}]"
+    )
+
+
+def main():
+    api_key = _load_api_key()
+
+    print("Loading effort scenarios...")
+    scenarios_df = load_scenarios()
+    print(f"Loaded {len(scenarios_df)} scenarios")
+
+    print(f"\nInitializing Together AI client for {MODEL_ID}...")
+    client = Together(api_key=api_key)
+
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    cond_path = output_dir / "lm_scenario_params_effort.csv"
+    marg_path = output_dir / "lm_scenario_params_effort_marginal.csv"
+
+    if cond_path.exists():
+        print(f"\nSkipping effort-conditional pass — {cond_path.name} already exists.")
+    else:
+        print("\n=== Effort-conditional pass ===")
+        run_effort_conditional(client, scenarios_df, cond_path)
+
+    print("\n=== Effort-marginal access pass ===")
+    run_marginal_access(client, scenarios_df, marg_path)
 
     print("\nDone!")
 

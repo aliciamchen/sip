@@ -82,7 +82,7 @@ The `_prior` actor/observer variants (non-canonical, kept for comparison) requir
 The effort experiments have their own parallel scripts that consume `scenarios_effort.csv` and emit per (scenario, effort_condition, action) tables (the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings):
 
 ```bash
-uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv (64 rows: 16 × 2 × 2)
+uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv (64 rows: 16 × 2 × 2) AND lm_scenario_params_effort_marginal.csv (32 rows: 16 × 2) — the marginal pass queries access without the effort paragraph for use in inv_plan_effort_inferred, where the observer doesn't see effort
 uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort.csv  (64 rows)
 ```
 
@@ -130,7 +130,7 @@ uv run python model/generate_inverse_planning_effort_preds.py
 uv run python model/fit_inverse_planning_effort_inferred.py            # inv_plan_effort_inferred observer; α only
 uv run python model/generate_inverse_planning_effort_inferred_preds.py
 ```
-Mirrors the canonical alt-shown pipeline but on a 2-action space with an `effort_condition` covariate and reward held fixed at HIGH (so V is constant across actions and `w_v` is non-identified — kept in the utility for parallelism with the canonical fits but stays near initialization). The two inverse-direction variants share the same forward fit but flip the inference target: `inv_plan_effort` infers intimacy given (action, effort), while `inv_plan_effort_inferred` infers effort given (action, intimacy) using binary cross-entropy on a P(effort_high) slider. Both fit only α_observer with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit). Outputs (in `model/outputs/`): `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`, `inverse_planning_effort_fit_results.csv`, `inv_plan_effort_preds_{full,summary}.csv`, `inverse_planning_effort_inferred_fit_results.csv`, `inv_plan_effort_inferred_preds_{full,summary}.csv`.
+Mirrors the canonical alt-shown pipeline but on a 2-action space with an `effort_condition` covariate and reward held fixed at HIGH (so V is constant across actions and `w_v` is non-identified — kept in the utility for parallelism with the canonical fits but stays near initialization). The two inverse-direction variants share the same forward fit but flip the inference target: `inv_plan_effort` infers intimacy given (action, effort), while `inv_plan_effort_inferred` infers effort given (action, intimacy) using binary cross-entropy on a P(effort_high) slider. Both fit only α_observer with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit). The two inverse experiments use **different access tables**, matching the observer's information state: `inv_plan_effort` uses effort-conditional access (the observer sees the effort paragraph), while `inv_plan_effort_inferred` uses effort-marginal access from `lm_scenario_params_effort_marginal.csv` (the observer does not see the effort paragraph, so the access values cannot depend on effort_condition). Outputs (in `model/outputs/`): `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`, `inverse_planning_effort_fit_results.csv`, `inv_plan_effort_preds_{full,summary}.csv`, `inverse_planning_effort_inferred_fit_results.csv`, `inv_plan_effort_inferred_preds_{full,summary}.csv`.
 
 ### Cross-validation
 

@@ -88,6 +88,46 @@ def load_lm_scenario_params_effort(filepath=None):
 LLM_TABLES_EFFORT = load_lm_scenario_params_effort()
 
 
+def load_lm_scenario_params_effort_marginal(filepath=None):
+    """Load effort-marginal access ratings (vignette without effort paragraph).
+
+    Used by the inv_plan_effort_inferred experiment, where the observer does
+    not see the effort paragraph and so cannot perceive any effort-induced
+    setting differences when reasoning about action access.
+
+    Returns a jnp.array of shape (16, 2, 2) with the marginal access value
+    broadcast across the effort_condition dimension — so it slots into the
+    same indexing pattern as the conditional table without changing any
+    downstream code. Returns None if the CSV is missing (the conditional
+    table is then used everywhere as a fallback).
+    """
+    if filepath is None:
+        filepath = (
+            Path(__file__).resolve().parent
+            / "outputs"
+            / "lm_scenario_params_effort_marginal.csv"
+        )
+    if not Path(filepath).exists():
+        return None
+    df = pd.read_csv(filepath)
+    n_scen, n_act = len(SCENARIO_LABELS), N_ACTIONS_EFFORT
+    flat = np.zeros((n_scen, n_act), dtype=np.float32)
+    for _, row in df.iterrows():
+        s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
+        a_idx = int(row["action"]) - 1
+        flat[s_idx, a_idx] = row["access"]
+    # Broadcast across effort_condition so the actor utility's existing
+    # indexing access_table[scenario, effort, action] returns the same
+    # value for both effort conditions.
+    broadcast = np.broadcast_to(flat[:, None, :], (n_scen, N_EFFORT_CONDITIONS, n_act))
+    return jnp.array(broadcast)
+
+
+_access_marg = load_lm_scenario_params_effort_marginal()
+if _access_marg is not None:
+    LLM_TABLES_EFFORT["access_marg"] = _access_marg
+
+
 def load_lm_action_priors_effort(filepath=None):
     """Load π(a|s,e) from lm_action_priors_effort.csv.
 
