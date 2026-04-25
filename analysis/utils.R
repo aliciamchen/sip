@@ -53,6 +53,19 @@ scale_color_motivation <- function() {
   scale_color_manual(values = MOTIVATION_COLORS)
 }
 
+# Effort color scales (discrete) - sage green, distinct from motivation (pink)
+# and intimacy (cividis blue→yellow)
+EFFORT_LEVELS <- c("Low effort", "High effort")
+EFFORT_COLORS <- c("Low effort" = "#B5C9A8", "High effort" = "#4A7A4A")
+
+scale_fill_effort <- function() {
+  scale_fill_manual(values = EFFORT_COLORS)
+}
+
+scale_color_effort <- function() {
+  scale_color_manual(values = EFFORT_COLORS)
+}
+
 # Combined condition colors for inv-plan-combined-correlation (motivation + intimacy)
 .intimacy_levels <- c(0, 50, 75, 100)
 .intimacy_colors <- viridisLite::viridis(

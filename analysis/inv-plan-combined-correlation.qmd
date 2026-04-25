@@ -257,3 +257,374 @@ correlations_combined |>
     col.names = c("Model", "r", "CI lower", "CI upper")
   )
 ```
+
+# Effort experiments combined
+
+This section aggregates model-human correlations across both effort-manipulation inverse planning experiments:
+- **`inv_plan_effort`**: Intimacy inference under an effort manipulation (infer relationship closeness from observed action × effort).
+- **`inv_plan_effort_inferred`**: Effort inference (infer effort context from observed action × intimacy).
+
+```{r}
+# EFFORT_LEVELS and EFFORT_COLORS come from utils.R
+EFFORT_ACTION_LEVELS <- c("No saliva", "Share saliva")
+
+# Excluded from inv_plan_effort human-side analysis only (mirrors the
+# per-experiment analysis); model CV predictions are unaffected.
+EXCLUDED_SUBJECTS_EFFORT <- c("daeeb393-ddef-5529-804a-36dbdd257d5c")
+```
+
+## Load `inv_plan_effort` (Intimacy inference, effort) data
+
+### Human data
+
+```{r}
+df_intimacy_effort <- read_csv(here("data", "inv_plan_effort", "main_trials_long.csv")) |>
+  filter(!subject_id %in% EXCLUDED_SUBJECTS_EFFORT) |>
+  mutate(
+    action = factor(action_condition, levels = c("action_1", "action_2"),
+                    labels = EFFORT_ACTION_LEVELS),
+    effort = factor(effort, levels = c("low", "high"), labels = EFFORT_LEVELS),
+    stage = factor(stage, levels = c("prior", "posterior"))
+  ) |>
+  group_by(subject_id, scenario_label) |>
+  mutate(
+    belief_update = ifelse(
+      stage == "posterior",
+      intimacy_rating[stage == "posterior"] - intimacy_rating[stage == "prior"],
+      NA
+    )
+  ) |>
+  ungroup()
+
+df_intimacy_effort_summary <- df_intimacy_effort |>
+  filter(stage == "posterior") |>
+  group_by(effort, action) |>
+  tidyboot_mean(belief_update) |>
+  rename(human_belief_update = empirical_stat)
+```
+
+### Model predictions
+
+```{r}
+df_model_intimacy_effort <- read_csv(here("model", "outputs",
+                                          "cv_loso_inv_plan_effort_preds_summary.csv")) |>
+  rename(effort = effort_condition) |>
+  mutate(
+    action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
+    effort = factor(effort, levels = c("low", "high"), labels = EFFORT_LEVELS),
+    model_belief_update = expected_intimacy - 50,
+    model = case_when(
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
+    )
+  ) |>
+  filter(!is.na(model)) |>
+  group_by(effort, action, model) |>
+  summarize(model_belief_update = mean(model_belief_update), .groups = "drop")
+```
+
+## Load `inv_plan_effort_inferred` (Effort inference) data
+
+### Human data
+
+```{r}
+df_effort_inferred <- read_csv(here("data", "inv_plan_effort_inferred", "main_trials_long.csv")) |>
+  mutate(
+    action = factor(action_condition, levels = c("action_1", "action_2"),
+                    labels = EFFORT_ACTION_LEVELS),
+    intimacy = factor(intimacy, levels = c(0, 50, 75, 100)),
+    p_effort_high = response / 100,
+    stage = factor(stage, levels = c("prior", "posterior"))
+  ) |>
+  group_by(subject_id, scenario_label) |>
+  mutate(
+    belief_update = ifelse(
+      stage == "posterior",
+      p_effort_high[stage == "posterior"] - p_effort_high[stage == "prior"],
+      NA
+    )
+  ) |>
+  ungroup()
+
+df_effort_inferred_summary <- df_effort_inferred |>
+  filter(stage == "posterior") |>
+  group_by(intimacy, action) |>
+  tidyboot_mean(belief_update) |>
+  rename(human_belief_update = empirical_stat)
+```
+
+### Model predictions
+
+```{r}
+df_model_effort_inferred <- read_csv(here("model", "outputs",
+                                          "cv_loso_inv_plan_effort_inferred_preds_summary.csv")) |>
+  mutate(
+    action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
+    intimacy = factor(intimacy, levels = c(0, 50, 75, 100)),
+    model_belief_update = p_effort_high - 0.5,
+    model = case_when(
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
+    )
+  ) |>
+  filter(!is.na(model)) |>
+  group_by(intimacy, action, model) |>
+  summarize(model_belief_update = mean(model_belief_update), .groups = "drop")
+```
+
+## Combine and rescale
+
+`inv_plan_effort` belief updates are on the 0–100 intimacy scale (so −100 to +100 for posterior − prior); we divide by 100 to put them on the same −1 to +1 scale as `inv_plan_effort_inferred`, where P(effort_high) is already on a 0–1 scale.
+
+```{r}
+df_corr_intimacy_effort <- df_intimacy_effort_summary |>
+  left_join(df_model_intimacy_effort, by = c("effort", "action")) |>
+  mutate(
+    experiment = "Inv plan effort",
+    human_belief_update = human_belief_update / 100,
+    ci_lower = ci_lower / 100,
+    ci_upper = ci_upper / 100,
+    model_belief_update = model_belief_update / 100
+  )
+
+df_corr_effort_inferred <- df_effort_inferred_summary |>
+  left_join(df_model_effort_inferred, by = c("intimacy", "action")) |>
+  mutate(experiment = "Inv plan effort inferred")
+
+df_combined_effort <- bind_rows(
+  df_corr_intimacy_effort |>
+    mutate(condition = as.character(effort)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
+  df_corr_effort_inferred |>
+    mutate(condition = paste0("Intimacy: ", intimacy)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update)
+) |>
+  mutate(
+    model = factor(model, levels = c("Base model", "Discomfort-only", "Full model")),
+    action = factor(action, levels = EFFORT_ACTION_LEVELS),
+    condition = factor(condition, levels = c(
+      "Low effort", "High effort",
+      "Intimacy: 0", "Intimacy: 50", "Intimacy: 75", "Intimacy: 100"
+    ))
+  )
+```
+
+## Compute correlations
+
+```{r}
+correlations_combined_effort <- df_combined_effort |>
+  group_by(model) |>
+  summarize(
+    boot_result = list(boot_cor(model_belief_update, human_belief_update)),
+    .groups = "drop"
+  ) |>
+  mutate(
+    r = sapply(boot_result, function(x) x$r),
+    ci_lower = sapply(boot_result, function(x) x$ci_lower),
+    ci_upper = sapply(boot_result, function(x) x$ci_upper),
+    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
+  ) |>
+  select(-boot_result)
+```
+
+## Aggregated correlation plot
+
+```{r}
+#| fig-width: 11
+#| fig-asp: 0.4
+
+df_plot_effort <- df_combined_effort
+
+ggplot(df_plot_effort, aes(x = model_belief_update, y = human_belief_update, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  # inv_plan_effort points (effort condition)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% EFFORT_LEVELS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% EFFORT_LEVELS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(name = "Effort intimacy inference", values = EFFORT_COLORS,
+                     guide = guide_legend(order = 2)) +
+  new_scale_color() +
+  # inv_plan_effort_inferred points (intimacy)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% DESIRE_INFERENCE_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% DESIRE_INFERENCE_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(
+    name = "Effort inference",
+    values = DESIRE_INFERENCE_COLORS,
+    labels = \(x) gsub("Intimacy: (\\d+)", "\\1 intimacy", x),
+    guide = guide_legend(order = 3)
+  ) +
+  geom_label(
+    data = correlations_combined_effort,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 5,
+    fill = "white", alpha = 0.5, label.size = 0
+  ) +
+  scale_shape_manual(values = c(16, 17), guide = guide_legend(order = 1)) +
+  labs(x = "Model belief update", y = "Human belief update", shape = "Action") +
+  theme(
+    legend.position = "right",
+    legend.spacing.y = unit(0, "lines"),
+  ) +
+  facet_wrap(~model, nrow = 1) +
+  coord_fixed_symmetric(df_plot_effort$model_belief_update, df_plot_effort$human_belief_update)
+
+ggsave(here("figures", "inv_plan_effort_combined_correlation_main.pdf"), device = cairo_pdf)
+```
+
+## Summary table
+
+```{r}
+correlations_combined_effort |>
+  select(model, r, ci_lower, ci_upper) |>
+  knitr::kable(
+    digits = 3,
+    caption = "Aggregated model-human correlations (both effort experiments combined)",
+    col.names = c("Model", "r", "CI lower", "CI upper")
+  )
+```
+
+# All inverse planning experiments combined
+
+This section aggregates model-human correlations across all four inverse planning experiments: `inv_plan_intimacy_alt`, `inv_plan_desire_alt`, `inv_plan_effort`, `inv_plan_effort_inferred`. The canonical and effort experiments use disjoint stimulus sets (4-action vs. 2-action), so we encode action with 6 distinct shapes and use intimacy color shared across `inv_plan_desire_alt` and `inv_plan_effort_inferred` (since both manipulate intimacy as a 4-level covariate).
+
+## Combine all four experiments
+
+```{r}
+df_combined_all <- bind_rows(
+  df_corr_intimacy |>
+    mutate(condition = as.character(motivation), action = as.character(action)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
+  df_corr_desire |>
+    mutate(condition = paste0("Intimacy: ", intimacy), action = as.character(action)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
+  df_corr_intimacy_effort |>
+    mutate(condition = as.character(effort), action = as.character(action)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
+  df_corr_effort_inferred |>
+    mutate(condition = paste0("Intimacy: ", intimacy), action = as.character(action)) |>
+    select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update)
+) |>
+  mutate(
+    model = factor(model, levels = c("Base model", "Discomfort-only", "Full model")),
+    action = factor(action, levels = c("0", "1", "2", "3", "No saliva", "Share saliva")),
+    condition = factor(condition, levels = c(
+      "Low", "High",
+      "Intimacy: 0", "Intimacy: 50", "Intimacy: 75", "Intimacy: 100",
+      "Low effort", "High effort"
+    ))
+  )
+```
+
+## Compute correlations
+
+```{r}
+correlations_combined_all <- df_combined_all |>
+  group_by(model) |>
+  summarize(
+    boot_result = list(boot_cor(model_belief_update, human_belief_update)),
+    .groups = "drop"
+  ) |>
+  mutate(
+    r = sapply(boot_result, function(x) x$r),
+    ci_lower = sapply(boot_result, function(x) x$ci_lower),
+    ci_upper = sapply(boot_result, function(x) x$ci_upper),
+    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
+  ) |>
+  select(-boot_result)
+```
+
+## Aggregated correlation plot
+
+```{r}
+#| fig-width: 13
+#| fig-asp: 0.45
+
+df_plot_all <- df_combined_all
+
+ggplot(df_plot_all, aes(x = model_belief_update, y = human_belief_update, shape = action)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
+  # Intimacy inference (motivation)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% INTIMACY_INFERENCE_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% INTIMACY_INFERENCE_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(name = "Intimacy inference", values = MOTIVATION_COLORS,
+                     guide = guide_legend(order = 2)) +
+  new_scale_color() +
+  # Desire inference + effort inference (intimacy levels — shared scale)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% DESIRE_INFERENCE_CONDITIONS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% DESIRE_INFERENCE_CONDITIONS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(
+    name = "Desire / effort inference",
+    values = DESIRE_INFERENCE_COLORS,
+    labels = \(x) gsub("Intimacy: (\\d+)", "\\1 intimacy", x),
+    guide = guide_legend(order = 3)
+  ) +
+  new_scale_color() +
+  # Effort intimacy inference (effort condition)
+  geom_errorbar(
+    data = \(d) filter(d, condition %in% EFFORT_LEVELS),
+    aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
+  ) +
+  geom_point(
+    data = \(d) filter(d, condition %in% EFFORT_LEVELS),
+    aes(color = condition), size = 3, alpha = PLOT_ALPHA
+  ) +
+  scale_color_manual(name = "Effort intimacy inference", values = EFFORT_COLORS,
+                     guide = guide_legend(order = 4)) +
+  geom_label(
+    data = correlations_combined_all,
+    aes(x = -Inf, y = Inf, label = label),
+    inherit.aes = FALSE, hjust = -0.08, vjust = 1.5, size = 5,
+    fill = "white", alpha = 0.5, label.size = 0
+  ) +
+  scale_shape_manual(
+    values = c("0" = 16, "1" = 17, "2" = 15, "3" = 18,
+               "No saliva" = 4, "Share saliva" = 8),
+    guide = guide_legend(order = 1)
+  ) +
+  labs(x = "Model belief update", y = "Human belief update", shape = "Action") +
+  theme(
+    legend.position = "right",
+    legend.spacing.y = unit(0, "lines"),
+  ) +
+  facet_wrap(~model, nrow = 1) +
+  coord_fixed_symmetric(df_plot_all$model_belief_update, df_plot_all$human_belief_update)
+
+ggsave(here("figures", "inv_plan_all_combined_correlation_main.pdf"), device = cairo_pdf)
+```
+
+## Summary table
+
+```{r}
+correlations_combined_all |>
+  select(model, r, ci_lower, ci_upper) |>
+  knitr::kable(
+    digits = 3,
+    caption = "Aggregated model-human correlations (all four inverse planning experiments)",
+    col.names = c("Model", "r", "CI lower", "CI upper")
+  )
+```

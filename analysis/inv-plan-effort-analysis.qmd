@@ -20,8 +20,7 @@ execute:
 source(here::here("analysis", "utils.R"))
 setup_analysis()
 
-EFFORT_LEVELS <- c("Low effort", "High effort")
-EFFORT_COLORS <- c("Low effort" = "#C9A8B0", "High effort" = "#7A4A5A")
+# EFFORT_LEVELS and EFFORT_COLORS come from utils.R
 ACTION_LEVELS <- c("No saliva", "Share saliva")
 ```
 
