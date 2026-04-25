@@ -11,6 +11,8 @@ The project collects several experimental variants. The stable identifier for ea
 
 A parallel pair of experiments (`forw_plan_effort/`, `inv_plan_effort/`) uses the same 16 scenarios but manipulates **relative effort** instead of desire. Each scenario has two actions (a non-saliva-sharing alternative and a saliva-sharing one) rather than four, reward is held fixed at high (integrated into the vignette), and a separate effort paragraph makes the resource that the non-saliva action relies on either easy or costly to obtain. The forward-planning variant crosses intimacy (4 levels) × effort (2 levels); the inverse-planning variant crosses observed action (2 levels) × effort (2 levels) and asks observers to infer intimacy. The full pipeline (LM scenario params, model fits, LOSO CV, analysis qmds) parallels the canonical pipeline.
 
+A third effort experiment (`inv_plan_effort_inferred/`) flips the inverse direction: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context. The vignette no longer reveals the effort paragraph; instead the two effort paragraphs become the slider endpoints, and participants give prior and posterior probability ratings for which effort situation is more likely. Same 16 scenarios.
+
 ### Scenarios
 
 The scenarios used in the experiments are in [`experiments/scenarios.csv`](experiments/scenarios.csv), which is generated from [`experiments/scenarios.py`](experiments/scenarios.py) (the source of truth — edit the Python file and regenerate the CSV with `uv run python experiments/scenarios.py`). A parallel set of non-food scenarios is in [`experiments/scenarios_nonfood.csv`](experiments/scenarios_nonfood.csv), generated from [`experiments/scenarios_nonfood.py`](experiments/scenarios_nonfood.py) in the same way. A third parallel set — the same 16 food-sharing scenarios rewritten for a follow-up experiment that manipulates effort (rather than reward) across two vignette variants — is in [`experiments/scenarios_effort.csv`](experiments/scenarios_effort.csv), generated from [`experiments/scenarios_effort.py`](experiments/scenarios_effort.py). See the [experiments README](experiments/README.md) for the column schema.
@@ -62,13 +64,15 @@ The fitting and prediction scripts index into these tables by `scenario_idx`; ru
 │   ├── inv_plan_intimacy_noalt/# Intimacy inference, no alternatives shown
 │   ├── inv_plan_desire_alt/    # Desire inference, alternatives shown
 │   ├── forw_plan_effort/       # Forward planning, intimacy × effort (2 actions)
-│   └── inv_plan_effort/        # Inverse planning, action × effort (intimacy inference)
+│   ├── inv_plan_effort/        # Inverse planning, action × effort (intimacy inference)
+│   └── inv_plan_effort_inferred/ # Inverse planning, action × intimacy (effort inference)
 ├── experiments/       # jsPsych experiment code
 │   ├── scenarios.csv           # Food-sharing scenario definitions
 │   ├── scenarios_nonfood.csv   # Non-food-sharing scenarios
 │   ├── scenarios_effort.csv    # Effort-manipulation scenarios (2 actions, reward held high)
 │   ├── forw_plan_effort/       # Forward planning, intimacy × effort
-│   └── inv_plan_effort/        # Inverse planning, action × effort
+│   ├── inv_plan_effort/        # Inverse planning, action × effort
+│   └── inv_plan_effort_inferred/ # Inverse planning, action × intimacy (effort inference)
 ├── model/             # Computational models
 │   ├── model_utils.py # Actor and observer model definitions
 │   ├── fit_*.py       # Model fitting scripts

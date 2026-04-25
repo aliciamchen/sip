@@ -17,6 +17,7 @@ A parallel pair of experiments manipulates **relative effort** instead of reward
 
 - **Forward planning, effort** (`data/forw_plan_effort/`) — actors choose between two actions given intimacy (4 levels) × relative effort (2 levels); 2-slider linked-probability response.
 - **Inverse planning, effort** (`data/inv_plan_effort/`) — observers infer intimacy from the observed action (2 levels) × relative effort (2 levels); both candidate actions shown, prior/posterior intimacy sliders.
+- **Inverse planning, effort inferred** (`data/inv_plan_effort_inferred/`) — flips the inference direction of the previous experiment: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context from a slider whose endpoints are the scenario's `effort_low` / `effort_high` paragraphs. Effort is the latent (no effort paragraph in the vignette). Prior/posterior structure.
 
 ## Intermediate conference submission
 
@@ -62,7 +63,7 @@ A `Makefile` at the repo root wraps the most common commands. Run `make help` fo
 Convert experiment JSON output to CSV:
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
-# Available experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt, forw_plan_effort, inv_plan_effort
+# Available experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt, forw_plan_effort, inv_plan_effort, inv_plan_effort_inferred
 ```
 
 For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
