@@ -1,7 +1,7 @@
 model,experiment,alpha_observer,nll,n_params
-access_full,effort_inferred,1.1621633768081665,118.44902801513672,1
-access_only,effort_inferred,0.009999999776482582,121.99436950683594,1
-no_access,effort_inferred,10.0,121.99384307861328,1
-access_full_prior,effort_inferred,0.8169875741004944,118.17108154296875,1
-access_only_prior,effort_inferred,2.355189561843872,120.7310791015625,1
-no_access_prior,effort_inferred,1.042292594909668,119.680908203125,1
+access_full,effort_inferred,1.848721981048584,166.38597106933594,1
+access_only,effort_inferred,1.7590361833572388,177.38937377929688,1
+no_access,effort_inferred,10.0,177.445556640625,1
+access_full_prior,effort_inferred,1.498796820640564,166.06179809570312,1
+access_only_prior,effort_inferred,3.7391600608825684,173.17652893066406,1
+no_access_prior,effort_inferred,1.6606428623199463,171.14610290527344,1

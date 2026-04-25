@@ -4,10 +4,15 @@ subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
 299655a6-5ca4-5c16-b99f-5cd019cc785c,female,38,yes,,True,2
 4236795e-8837-5a46-9cb9-e21feeb0ba40,male,37,yes,none,True,0
 0d4ed27a-7529-533b-a88a-6dd16772a354,male,36,yes,No comments.,True,3
+df38c7c6-74be-53b5-bb67-15835042e504,male,35,yes,NO,True,3
 49ee1d29-7a33-5302-9827-da210c809882,female,31,yes,,True,2
 8133da5c-b840-530e-a36c-46dd73f4ce16,female,32,yes,,True,2
+2de84244-3956-56db-850a-da26b1f1ecef,male,39,yes,,True,1
+128d61a2-9e54-5c77-99be-21d66f58407b,male,36,yes,The survey was clear and easy to follow. Overall it was straightforward and well structured.  ,True,3
 4b020849-0757-596f-a2e0-a69462ee1c50,female,47,yes,,True,2
 5c7f71cd-a838-534d-bcab-f333a81039cc,male,28,yes,n/a,True,3
 f9ba987e-f42d-5d91-b80b-f05f4ea24027,male,35,yes,,True,2
 fe8634ae-2ed6-5de3-a8bc-ebe9cea350f7,female,33,yes,,True,2
+2a86faee-cc94-59aa-a966-e4192579a99b,female,30,yes,,True,3
+57b254d8-c9ce-551a-80d1-d06eb19fb070,male,24,yes,,True,2
 8c4ca840-75c9-5650-ab52-460cf83d4646,male,29,yes,N/A,True,3
