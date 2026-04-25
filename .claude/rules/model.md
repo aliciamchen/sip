@@ -61,6 +61,8 @@ A second, parallel pipeline mirrors the canonical scripts on the effort stimulus
 - `fit_forward_planning_effort.py` — fits all six actor variants to `data/forw_plan_effort/`. Outputs: `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`.
 - `fit_inverse_planning_effort.py` — fits only `alpha_observer` for `inv_plan_effort`, with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit, because the effort actor's 2-action softmax doesn't transplant).
 - `generate_inverse_planning_effort_preds.py` — emits `inv_plan_effort_preds_{full,summary}.csv`.
+- `fit_inverse_planning_effort_inferred.py` — flips the inference target: observer infers effort condition (latent) given observed action × intimacy. Uses `observer_effort_inferred_*` from `model_utils_effort.py` and binary cross-entropy NLL (slider 0–100 = P(effort_high)·100). Actor weights frozen from `forward_planning_effort_fit_results.csv`. Output: `inverse_planning_effort_inferred_fit_results.csv`.
+- `generate_inverse_planning_effort_inferred_preds.py` — emits `inv_plan_effort_inferred_preds_{full,summary}.csv`. The `summary` CSV's column `p_effort_high` is what the slider response 0-100 encodes.
 
 ## Cross-validation
 
@@ -71,6 +73,7 @@ All model-vs-human correlations reported in the analysis qmds are out-of-sample,
 - `cv/loso_inverse_noalt.py` — Exp 2c no-alt; joint LOSO refit of all actor weights + $\alpha_{\mathrm{obs}}$ per fold. Outputs: `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv`, `cv_loso_inverse_noalt_folds.csv`
 - `cv/loso_forward_effort.py` — `forw_plan_effort`; refits $w_v, w_d, w_e, \beta$ per fold (note `w_v` is non-identified). Outputs: `cv_loso_forward_effort.csv`, `cv_loso_preds_effort.csv`
 - `cv/loso_inverse_effort.py` — `inv_plan_effort`; refits only $\alpha_{\mathrm{obs}}$ per fold (actor frozen from the effort all-data forward fit). Outputs: `cv_loso_inv_plan_effort_preds_summary.csv`, `cv_loso_inverse_effort_folds.csv`
+- `cv/loso_inverse_effort_inferred.py` — `inv_plan_effort_inferred`; refits only $\alpha_{\mathrm{obs}}$ per fold (actor frozen from the effort all-data forward fit). Outputs: `cv_loso_inv_plan_effort_inferred_preds_summary.csv`, `cv_loso_inverse_effort_inferred_folds.csv`
 
 The non-CV `fit_*` / `generate_*` pipelines still produce all-data fits; AIC and fitted-parameter tables in the qmds use the all-data fit, but all model-vs-human displays use the CV predictions.
 

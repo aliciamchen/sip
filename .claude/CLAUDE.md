@@ -127,8 +127,10 @@ Outputs: `inverse_planning_noalt_fit_results.csv` (with per-variant `param_w_v`/
 uv run python model/fit_forward_planning_effort.py            # forw_plan_effort actor; 6 variants
 uv run python model/fit_inverse_planning_effort.py            # inv_plan_effort observer; α only
 uv run python model/generate_inverse_planning_effort_preds.py
+uv run python model/fit_inverse_planning_effort_inferred.py            # inv_plan_effort_inferred observer; α only
+uv run python model/generate_inverse_planning_effort_inferred_preds.py
 ```
-Mirrors the canonical alt-shown pipeline but on a 2-action space with an `effort_condition` covariate and reward held fixed at HIGH (so V is constant across actions and `w_v` is non-identified — kept in the utility for parallelism with the canonical fits but stays near initialization). Observer α is fit with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit). Outputs (in `model/outputs/`): `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`, `inverse_planning_effort_fit_results.csv`, `inv_plan_effort_preds_full.csv`, `inv_plan_effort_preds_summary.csv`.
+Mirrors the canonical alt-shown pipeline but on a 2-action space with an `effort_condition` covariate and reward held fixed at HIGH (so V is constant across actions and `w_v` is non-identified — kept in the utility for parallelism with the canonical fits but stays near initialization). The two inverse-direction variants share the same forward fit but flip the inference target: `inv_plan_effort` infers intimacy given (action, effort), while `inv_plan_effort_inferred` infers effort given (action, intimacy) using binary cross-entropy on a P(effort_high) slider. Both fit only α_observer with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit). Outputs (in `model/outputs/`): `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`, `inverse_planning_effort_fit_results.csv`, `inv_plan_effort_preds_{full,summary}.csv`, `inverse_planning_effort_inferred_fit_results.csv`, `inv_plan_effort_inferred_preds_{full,summary}.csv`.
 
 ### Cross-validation
 
@@ -140,6 +142,7 @@ uv run python model/cv/loso_inverse_alt.py      # Exp 2a intimacy + 2b desire (r
 uv run python model/cv/loso_inverse_noalt.py    # Exp 2c intimacy (joint fit — refits all weights per fold)
 uv run python model/cv/loso_forward_effort.py   # forw_plan_effort (refits w_d, w_e, β; w_v non-identified)
 uv run python model/cv/loso_inverse_effort.py   # inv_plan_effort (refits only α_observer; actor frozen from effort forward fit)
+uv run python model/cv/loso_inverse_effort_inferred.py   # inv_plan_effort_inferred (refits only α_observer; actor frozen from effort forward fit)
 ```
 
 Outputs (in `model/outputs/`):
@@ -148,6 +151,7 @@ Outputs (in `model/outputs/`):
 - `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv` / `cv_loso_inverse_noalt_folds.csv` — held-out per-cell predictions + per-fold joint-fit weights
 - `cv_loso_forward_effort.csv` / `cv_loso_preds_effort.csv` — per-fold fits + per-trial held-out forward predictions for the effort experiment
 - `cv_loso_inv_plan_effort_preds_summary.csv` / `cv_loso_inverse_effort_folds.csv` — held-out per-cell predictions + per-fold α_observer for the effort experiment
+- `cv_loso_inv_plan_effort_inferred_preds_summary.csv` / `cv_loso_inverse_effort_inferred_folds.csv` — held-out per-cell predictions + per-fold α_observer for the effort-inference experiment
 
 The main analysis qmds load these CV CSVs as the source for all model plots; the non-CV `generate_inverse_planning_*_preds.py` CSVs are still generated (for anyone wanting the all-data fit) but are not what's displayed.
 

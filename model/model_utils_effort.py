@@ -670,3 +670,185 @@ def observer_intimacy_effort_no_access_prior[
         wpp=E[actor.relationship == relationship] ** alpha_observer,
     )
     return Pr[observer.relationship == relationship]
+
+
+# ==============================================================================
+# Observer inferring effort condition (effort experiment, 2-action space)
+# ==============================================================================
+# Observed: (action, intimacy, scenario). Latent: effort_condition (low/high).
+# Uniform prior over the two effort conditions; α_observer applies the usual
+# inverse-planning softmax sharpness to the implied posterior.
+
+
+@memo
+def observer_effort_inferred_access_full[
+    action: actions_effort,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(intimacy)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(intimacy),
+        actor : chooses(effort_condition in EffortConditions, wpp=1),
+        actor : chooses(
+            action in actions_effort,
+            wpp=actor_forw_effort_access_full[
+                action, scenario_idx, intimacy, effort_condition
+            ](alpha, w_v, w_d, w_e, access_table, effort_table),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        effort_condition in EffortConditions,
+        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
+    )
+    return Pr[observer.effort_condition == effort_condition]
+
+
+@memo
+def observer_effort_inferred_access_full_prior[
+    action: actions_effort,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_d, w_e, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(intimacy)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(intimacy),
+        actor : chooses(effort_condition in EffortConditions, wpp=1),
+        actor : chooses(
+            action in actions_effort,
+            wpp=actor_forw_effort_access_full_prior[
+                action, scenario_idx, intimacy, effort_condition
+            ](alpha, w_v, w_d, w_e, beta_prior, access_table, effort_table, prior_table),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        effort_condition in EffortConditions,
+        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
+    )
+    return Pr[observer.effort_condition == effort_condition]
+
+
+@memo
+def observer_effort_inferred_access_only[
+    action: actions_effort,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    effort_condition: EffortConditions,
+](alpha, w_d, alpha_observer, access_table: ..., effort_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(intimacy)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(intimacy),
+        actor : chooses(effort_condition in EffortConditions, wpp=1),
+        actor : chooses(
+            action in actions_effort,
+            wpp=actor_forw_effort_access_only[
+                action, scenario_idx, intimacy, effort_condition
+            ](alpha, w_d, access_table, effort_table),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        effort_condition in EffortConditions,
+        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
+    )
+    return Pr[observer.effort_condition == effort_condition]
+
+
+@memo
+def observer_effort_inferred_access_only_prior[
+    action: actions_effort,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    effort_condition: EffortConditions,
+](alpha, w_d, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(intimacy)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(intimacy),
+        actor : chooses(effort_condition in EffortConditions, wpp=1),
+        actor : chooses(
+            action in actions_effort,
+            wpp=actor_forw_effort_access_only_prior[
+                action, scenario_idx, intimacy, effort_condition
+            ](alpha, w_d, beta_prior, access_table, effort_table, prior_table),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        effort_condition in EffortConditions,
+        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
+    )
+    return Pr[observer.effort_condition == effort_condition]
+
+
+@memo
+def observer_effort_inferred_no_access[
+    action: actions_effort,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(intimacy)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(intimacy),
+        actor : chooses(effort_condition in EffortConditions, wpp=1),
+        actor : chooses(
+            action in actions_effort,
+            wpp=actor_forw_effort_no_access[
+                action, scenario_idx, intimacy, effort_condition
+            ](alpha, w_v, w_e, access_table, effort_table),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        effort_condition in EffortConditions,
+        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
+    )
+    return Pr[observer.effort_condition == effort_condition]
+
+
+@memo
+def observer_effort_inferred_no_access_prior[
+    action: actions_effort,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_e, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(intimacy)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(intimacy),
+        actor : chooses(effort_condition in EffortConditions, wpp=1),
+        actor : chooses(
+            action in actions_effort,
+            wpp=actor_forw_effort_no_access_prior[
+                action, scenario_idx, intimacy, effort_condition
+            ](alpha, w_v, w_e, beta_prior, access_table, effort_table, prior_table),
+        ),
+    ]
+    observer: observes[actor.action] is action
+    observer: chooses(
+        effort_condition in EffortConditions,
+        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
+    )
+    return Pr[observer.effort_condition == effort_condition]

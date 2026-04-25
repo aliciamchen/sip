@@ -199,7 +199,11 @@ Fit the effort-experiment forward planning actor and inverse planning observer. 
 uv run python model/fit_forward_planning_effort.py            # forw_plan_effort actor
 uv run python model/fit_inverse_planning_effort.py            # inv_plan_effort observer; α_obs only
 uv run python model/generate_inverse_planning_effort_preds.py
+uv run python model/fit_inverse_planning_effort_inferred.py            # inv_plan_effort_inferred observer; α_obs only
+uv run python model/generate_inverse_planning_effort_inferred_preds.py
 ```
+
+The two effort observers share the forward fit but flip the inference target. `inv_plan_effort` infers intimacy from observed (action, effort) using a continuous-intimacy posterior, while `inv_plan_effort_inferred` infers effort from observed (action, intimacy) using binary cross-entropy on a P(effort_high) slider response.
 
 Generate leave-one-scenario-out (LOSO) cross-validation predictions. All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 held-out folds. The forward-plan CV refits $w_v$, $w_d$, $w_e$, and $\beta$ on 15 scenarios per fold; the alt-shown inverse-plan CVs refit only $\alpha_{\mathrm{obs}}$ (actor frozen from the all-data Exp 1 fit); the no-alt CV refits all weights jointly per fold.
 ```bash
@@ -207,7 +211,8 @@ uv run python model/cv/loso_forward.py          # Exp 1 forward planning
 uv run python model/cv/loso_inverse_alt.py      # Exp 2a intimacy + 2b desire (alt-shown)
 uv run python model/cv/loso_inverse_noalt.py    # Exp 2c intimacy (no-alt, joint fit)
 uv run python model/cv/loso_forward_effort.py   # Effort forward planning
-uv run python model/cv/loso_inverse_effort.py   # Effort inverse planning (α_obs only)
+uv run python model/cv/loso_inverse_effort.py   # Effort inverse planning, intimacy inference (α_obs only)
+uv run python model/cv/loso_inverse_effort_inferred.py   # Effort inverse planning, effort inference (α_obs only)
 ```
 
 Analyze data and generate plots
