@@ -13,10 +13,10 @@ The project comprises several experimental variants. Paper-level experiment numb
 - **Desire inference, alternatives shown** (`data/inv_plan_desire_alt/`) — observers see all four candidate actions, then infer the actor's desire from the one they took.
 - **Intimacy inference, no alternatives shown** (`data/inv_plan_intimacy_noalt/`) — observers see only the single action the actor took and infer relationship closeness; on the model side, counterfactual alternatives are LM-generated.
 
-A parallel pair of experiments manipulates **relative effort** instead of reward, using a different stimulus set (`experiments/scenarios_effort.csv`) in which each scenario has two actions and reward is held fixed at high. No data has been collected yet — only stimuli and jsPsych code exist. No `data/` directories, model fits, or analysis qmds have been added for these.
+A parallel pair of experiments manipulates **relative effort** instead of reward, using a different stimulus set (`experiments/scenarios_effort.csv`) in which each scenario has two actions and reward is held fixed at high. Data has been collected for both, and the full pipeline (LM scenario params, model fits, LOSO CV, analysis qmds) parallels the canonical pipeline.
 
-- **Forward planning, effort** (`experiments/forw_plan_effort/`) — intimacy (4 levels) × relative effort (2 levels); 2-slider linked-probability response.
-- **Inverse planning, effort** (`experiments/inv_plan_effort/`) — observed action (2 levels) × relative effort (2 levels); prior/posterior intimacy sliders, both candidate actions shown.
+- **Forward planning, effort** (`data/forw_plan_effort/`) — actors choose between two actions given intimacy (4 levels) × relative effort (2 levels); 2-slider linked-probability response.
+- **Inverse planning, effort** (`data/inv_plan_effort/`) — observers infer intimacy from the observed action (2 levels) × relative effort (2 levels); both candidate actions shown, prior/posterior intimacy sliders.
 
 ## Intermediate conference submission
 
@@ -62,7 +62,7 @@ A `Makefile` at the repo root wraps the most common commands. Run `make help` fo
 Convert experiment JSON output to CSV:
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
-# Available experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt
+# Available experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt, forw_plan_effort, inv_plan_effort
 ```
 
 For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
@@ -77,6 +77,13 @@ uv run python model/lm_action_priors.py     # π(a|s) per (scenario, action) →
 ```
 
 The `_prior` actor/observer variants require `lm_action_priors.csv`; without it they're silently skipped at fit/predict time.
+
+The effort experiments have their own parallel scripts that consume `scenarios_effort.csv` and emit per (scenario, effort_condition, action) tables (the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings):
+
+```bash
+uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv (64 rows: 16 × 2 × 2)
+uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort.csv  (64 rows)
+```
 
 ### Model fitting
 
@@ -114,20 +121,32 @@ uv run python model/generate_inverse_planning_noalt_preds.py
 Unlike alt-shown, this pipeline jointly fits **all** actor weights + α_observer on the no-alt data. Actor weights are not frozen from Exp 1 because the padded observer reasons over a variable-length action set (different softmax competition structure than Exp 1's fixed 4 actions).
 Outputs: `inverse_planning_noalt_fit_results.csv` (with per-variant `param_w_v`/`param_w_d`/`param_w_e`/`alpha_observer`), `inv_plan_intimacy_noalt_preds_full.csv`, `inv_plan_intimacy_noalt_preds_summary.csv`.
 
+**Effort experiments**:
+```bash
+uv run python model/fit_forward_planning_effort.py            # forw_plan_effort actor; 6 variants
+uv run python model/fit_inverse_planning_effort.py            # inv_plan_effort observer; α only
+uv run python model/generate_inverse_planning_effort_preds.py
+```
+Mirrors the canonical alt-shown pipeline but on a 2-action space with an `effort_condition` covariate and reward held fixed at HIGH (so V is constant across actions and `w_v` is non-identified — kept in the utility for parallelism with the canonical fits but stays near initialization). Observer α is fit with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit). Outputs (in `model/outputs/`): `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`, `inverse_planning_effort_fit_results.csv`, `inv_plan_effort_preds_full.csv`, `inv_plan_effort_preds_summary.csv`.
+
 ### Cross-validation
 
 All model-vs-human correlations reported in the analysis qmds are **out-of-sample**, pooled from leave-one-scenario-out (LOSO) cross-validation. 16 folds × 3 variants per experiment.
 
 ```bash
-uv run python model/cv/loso_forward.py         # Exp 1 forward planning (refits w_v, w_d, w_e, β per fold)
-uv run python model/cv/loso_inverse_alt.py     # Exp 2a intimacy + 2b desire (refits only α_observer per fold)
-uv run python model/cv/loso_inverse_noalt.py   # Exp 2c intimacy (joint fit — refits all weights per fold)
+uv run python model/cv/loso_forward.py          # Exp 1 forward planning (refits w_v, w_d, w_e, β per fold)
+uv run python model/cv/loso_inverse_alt.py      # Exp 2a intimacy + 2b desire (refits only α_observer per fold)
+uv run python model/cv/loso_inverse_noalt.py    # Exp 2c intimacy (joint fit — refits all weights per fold)
+uv run python model/cv/loso_forward_effort.py   # forw_plan_effort (refits w_d, w_e, β; w_v non-identified)
+uv run python model/cv/loso_inverse_effort.py   # inv_plan_effort (refits only α_observer; actor frozen from effort forward fit)
 ```
 
 Outputs (in `model/outputs/`):
 - `cv_loso_forward.csv` / `cv_loso_preds.csv` — per-fold fits + per-trial held-out forward predictions
 - `cv_loso_inv_plan_intimacy_alt_preds_summary.csv` / `cv_loso_inv_plan_desire_alt_preds_summary.csv` — held-out per-cell predictions; `cv_loso_inverse_alt_folds.csv` for fitted α_observer per fold
 - `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv` / `cv_loso_inverse_noalt_folds.csv` — held-out per-cell predictions + per-fold joint-fit weights
+- `cv_loso_forward_effort.csv` / `cv_loso_preds_effort.csv` — per-fold fits + per-trial held-out forward predictions for the effort experiment
+- `cv_loso_inv_plan_effort_preds_summary.csv` / `cv_loso_inverse_effort_folds.csv` — held-out per-cell predictions + per-fold α_observer for the effort experiment
 
 The main analysis qmds load these CV CSVs as the source for all model plots; the non-CV `generate_inverse_planning_*_preds.py` CSVs are still generated (for anyone wanting the all-data fit) but are not what's displayed.
 
@@ -140,6 +159,8 @@ quarto render analysis/inv-plan-intimacy-alt-analysis.qmd
 quarto render analysis/inv-plan-desire-alt-analysis.qmd
 quarto render analysis/inv-plan-intimacy-noalt-analysis.qmd
 quarto render analysis/inv-plan-combined-correlation.qmd
+quarto render analysis/forw-plan-effort-analysis.qmd
+quarto render analysis/inv-plan-effort-analysis.qmd
 ```
 
 ### Model tests

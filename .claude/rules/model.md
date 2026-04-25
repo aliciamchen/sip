@@ -51,6 +51,17 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 - `generate_inverse_planning_noalt_preds.py` — same for no-alt, using the joint-fit weights from `inverse_planning_noalt_fit_results.csv`
 - `test_model_compliance.py` — validation tests
 
+### Effort-experiment parallel pipeline
+
+A second, parallel pipeline mirrors the canonical scripts on the effort stimulus set (`scenarios_effort.csv`): 16 scenarios × 2 actions × 2 effort conditions (low / high), with reward held fixed at HIGH so V is constant across actions and `w_v` is non-identified under the softmax (it's kept in the utility for parallelism with the canonical pipeline but stays near initialization). Scenario labels are shared with the canonical 16, so `Scenarios` / `SCENARIO_TO_IDX` are reused; effort adds a separate `EffortConditions` IntEnum and `EFFORT_CONDITION_TO_IDX` map.
+
+- `model_utils_effort.py` — effort-experiment utility functions and memo models (2-action actors and intimacy observers, with an `effort_condition` covariate). Loads `LLM_TABLES_EFFORT` (`access`, `effort`, `action_prior`, all shape 16×2×2) at import.
+- `lm_scenario_params_effort.py` — LM-prompts the full vignette + effort paragraph so the manipulation lands in the ratings. Output: `lm_scenario_params_effort.csv` (64 rows).
+- `lm_action_priors_effort.py` — same idea for π(a|s,e). Output: `lm_action_priors_effort.csv` (64 rows).
+- `fit_forward_planning_effort.py` — fits all six actor variants to `data/forw_plan_effort/`. Outputs: `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`.
+- `fit_inverse_planning_effort.py` — fits only `alpha_observer` for `inv_plan_effort`, with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit, because the effort actor's 2-action softmax doesn't transplant).
+- `generate_inverse_planning_effort_preds.py` — emits `inv_plan_effort_preds_{full,summary}.csv`.
+
 ## Cross-validation
 
 All model-vs-human correlations reported in the analysis qmds are out-of-sample, from leave-one-scenario-out (LOSO) CV. The analysis qmds load CV-prediction CSVs (`cv_loso_*`) as the source for all plots.
@@ -58,6 +69,8 @@ All model-vs-human correlations reported in the analysis qmds are out-of-sample,
 - `cv/loso_forward.py` — Exp 1; refits $w_v, w_d, w_e, \beta$ per fold. Outputs: `cv_loso_forward.csv`, `cv_loso_preds.csv`
 - `cv/loso_inverse_alt.py` — Exp 2a intimacy + 2b desire; refits only $\alpha_{\mathrm{obs}}$ per fold (actor frozen from all-data Exp 1 fit, same 4-action space). Outputs: `cv_loso_inv_plan_{intimacy,desire}_alt_preds_summary.csv`, `cv_loso_inverse_alt_folds.csv`
 - `cv/loso_inverse_noalt.py` — Exp 2c no-alt; joint LOSO refit of all actor weights + $\alpha_{\mathrm{obs}}$ per fold. Outputs: `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv`, `cv_loso_inverse_noalt_folds.csv`
+- `cv/loso_forward_effort.py` — `forw_plan_effort`; refits $w_v, w_d, w_e, \beta$ per fold (note `w_v` is non-identified). Outputs: `cv_loso_forward_effort.csv`, `cv_loso_preds_effort.csv`
+- `cv/loso_inverse_effort.py` — `inv_plan_effort`; refits only $\alpha_{\mathrm{obs}}$ per fold (actor frozen from the effort all-data forward fit). Outputs: `cv_loso_inv_plan_effort_preds_summary.csv`, `cv_loso_inverse_effort_folds.csv`
 
 The non-CV `fit_*` / `generate_*` pipelines still produce all-data fits; AIC and fitted-parameter tables in the qmds use the all-data fit, but all model-vs-human displays use the CV predictions.
 

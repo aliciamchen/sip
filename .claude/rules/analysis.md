@@ -12,6 +12,8 @@ Core analysis files (named after their data folder, not paper experiment number)
 - `inv-plan-intimacy-noalt-analysis.qmd` — Intimacy inference, no alternatives shown (LM-generated counterfactuals on the model side)
 - `inv-plan-desire-alt-analysis.qmd` — Desire inference, alternatives shown
 - `inv-plan-combined-correlation.qmd` — Combined correlation across the alt-shown inverse planning experiments
+- `forw-plan-effort-analysis.qmd` — Forward planning, effort manipulation (parallels `forw-plan-analysis.qmd` on the 2-action effort stimulus set)
+- `inv-plan-effort-analysis.qmd` — Inverse planning, effort manipulation (parallels `inv-plan-intimacy-alt-analysis.qmd`)
 - `json_to_csv.py` — Data processing pipeline
 
 Legacy pilot analysis files are in `analysis/legacy/`.

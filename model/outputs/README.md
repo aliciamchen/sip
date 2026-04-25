@@ -209,3 +209,35 @@ Per-fold fitted parameters for the inverse-planning CVs.
 `cv_loso_inverse_alt_folds.csv` columns: `experiment` (intimacy or desire), `variant`, `fold`, `held_out_scenario`, `alpha_observer`, `train_nll`, `test_nll`, `n_train`, `n_test`.
 
 `cv_loso_inverse_noalt_folds.csv` adds `param_w_v`, `param_w_d`, `param_w_e` columns (NaN where not applicable per ablation) — these are the jointly-refit utility weights per fold.
+
+## Effort-experiment outputs
+
+A parallel set of CSVs covers the effort-manipulation experiments (`forw_plan_effort/`, `inv_plan_effort/`). The schemas mirror the canonical pipeline above, with two action indices (1 = non-saliva, 2 = saliva) instead of four and an `effort_condition` column ("low" or "high") in place of `reward_condition` / `motivation`. Reward is held fixed at high so V is constant across actions and `param_w_v` is non-identified — it appears in the fit-result tables for parallelism but stays near its initialization.
+
+### lm_scenario_params_effort.csv
+
+LLM-generated access and effort per (scenario, effort_condition, action). 64 rows (16 × 2 × 2). The LM is prompted with the full vignette plus the matching effort paragraph, so the manipulation lands in the ratings (the non-saliva action's effort rating should rise from `low` to `high`). Same column schema as `lm_scenario_params.csv`, with `effort_condition` added.
+
+### lm_action_priors_effort.csv
+
+LLM-generated π(a|s,e) per (scenario, effort_condition, action). 64 rows. Normalized within each (scenario, effort_condition) cell so the two actions sum to 1. Same column schema as `lm_action_priors.csv`, with `effort_condition` added.
+
+### forward_planning_effort_fits.csv / forward_planning_effort_fit_results.csv
+
+Per-trial predictions and per-variant fit summaries for `data/forw_plan_effort/`. Same columns as `forward_planning_fits.csv` / `forward_planning_fit_results.csv`, with `effort` / `effort_condition` in place of `motivation` / `reward_condition` and only two action indices. `param_w_v` is non-identified and may print as the initial value.
+
+### inverse_planning_effort_fit_results.csv
+
+Per-variant α_observer for `data/inv_plan_effort/`. Same columns as `inverse_planning_fit_results.csv`; the `experiment` column is `intimacy_effort`. Actor weights are frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit).
+
+### inv_plan_effort_preds_summary.csv / inv_plan_effort_preds_full.csv
+
+Posterior predictions for `inv_plan_effort`. `_summary.csv` has one row per (scenario, action, effort_condition, model) with `expected_intimacy` (0-100). `_full.csv` adds the `intimacy` axis with the posterior `density` at each level.
+
+### cv_loso_forward_effort.csv / cv_loso_preds_effort.csv
+
+LOSO CV outputs for the effort forward planning. Same schema as `cv_loso_forward.csv` / `cv_loso_preds.csv`, with `effort` / `effort_condition` in place of `motivation`.
+
+### cv_loso_inv_plan_effort_preds_summary.csv / cv_loso_inverse_effort_folds.csv
+
+LOSO CV outputs for the effort inverse planning. `_preds_summary.csv` has the same schema as `inv_plan_effort_preds_summary.csv` but populated by pooling held-out predictions across 16 folds. `_folds.csv` has per-fold α_observer and NLL — same schema as `cv_loso_inverse_alt_folds.csv` with `experiment = intimacy_effort`.

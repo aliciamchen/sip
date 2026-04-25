@@ -115,7 +115,7 @@ export function makeTimeline(
                           intimacy_texts[stimulus.intimacy_condition]
                         }</strong>.</p>
                             <p>${stimulus.vignette}</p>
-                            <p>${getEffortText(stimulus)}</p>
+                            <p><strong>${getEffortText(stimulus)}</strong></p>
                         </div>
                         <p style="text-align: center;"><em>Press any key to see the actions.</em></p>
                     </div>
@@ -143,7 +143,7 @@ export function makeTimeline(
             intimacy_texts[stimulus.intimacy_condition]
           }</strong>.</p>
           <p>${stimulus.vignette}</p>
-          <p>${getEffortText(stimulus)}</p>
+          <p><strong>${getEffortText(stimulus)}</strong></p>
         </div>
         <p><strong>Please indicate the probability that the two people will choose each action.</strong></p>
       `,

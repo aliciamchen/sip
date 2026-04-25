@@ -77,6 +77,47 @@ Same columns as `inv_plan_intimacy_alt/` above. The experimental procedure diffe
 | `stage` | Measurement timing ("prior" or "posterior") |
 | `response` | Participant's desire/motivation estimate (0-100 scale) |
 
+## Forward planning, effort manipulation (`forw_plan_effort/`)
+
+Parallel to `forw_plan/` but on the `scenarios_effort.csv` stimulus set: 16 scenarios × 2 actions × intimacy (4 levels) × effort (2 levels), with reward held fixed at high.
+
+**main_trials.csv** (wide format - one row per trial):
+
+| Column | Description |
+|--------|-------------|
+| `subject_id` | Anonymized participant UUID |
+| `scenario_label` | Scenario identifier (matches `scenarios.csv`) |
+| `intimacy_condition` | Relationship closeness level (0, 50, 75, or 100) |
+| `effort_condition` | Effort condition ("low" or "high") |
+| `action_1` | Probability allocated to action 1 (non-saliva-sharing) |
+| `action_2` | Probability allocated to action 2 (saliva-sharing) |
+
+**main_trials_long.csv** (long format - one row per action):
+
+| Column | Description |
+|--------|-------------|
+| `subject_id` | Anonymized participant UUID |
+| `scenario_label` | Scenario identifier |
+| `intimacy` | Relationship closeness level |
+| `effort` | Effort condition ("low" or "high") |
+| `action` | Action index (1 = non-saliva, 2 = saliva) |
+| `p_action` | Probability allocated to this action |
+
+## Intimacy inference, effort manipulation (`inv_plan_effort/`)
+
+Parallel to `inv_plan_intimacy_alt/` but on the `scenarios_effort.csv` stimulus set: observers see both candidate actions and the one the actors took, and infer intimacy. 2 actions × 2 effort conditions, with prior/posterior measurement at each cell.
+
+**main_trials.csv** and **main_trials_long.csv**:
+
+| Column | Description |
+|--------|-------------|
+| `subject_id` | Anonymized participant UUID |
+| `scenario_label` | Scenario identifier |
+| `action_condition` | Observed action ("action_1" or "action_2") |
+| `effort_condition` / `effort` | Effort condition ("low" or "high"); long format uses `effort` |
+| `stage` | Measurement timing ("prior" = before seeing action, "posterior" = after) |
+| `intimacy_rating` | Participant's intimacy estimate (0-100 scale) |
+
 ## Exclusion Criteria
 
 Participants are excluded from analysis if:

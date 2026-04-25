@@ -37,7 +37,7 @@ rows = [
         effort_low="Right next to the hot-dog stand is a condiment station with a stack of clean plastic knives set out for customers to use.",
         effort_high="There are no knives at the hot-dog stand or the nearby condiment area — the nearest knives are at a sit-down restaurant on the far side of the arena, which would take several minutes to walk to and back.",
         action_1="They order a hot dog. They get a knife, cut the hot dog in half, and each eats from their own portion.",
-        action_2="They order a hot dog and take bites from the same end of the hot dog until it is finished.",
+        action_2="They order a hot dog and trade off taking bites from it until it is finished.",
     ),
     dict(
         scenario_label="birthday",

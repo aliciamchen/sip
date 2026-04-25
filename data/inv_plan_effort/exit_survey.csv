@@ -1,0 +1,16 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+2ded350e-f17f-57b0-b066-0d178bb5a7f8,male,53,yes,NA,True,3
+51bdb945-f4dd-5692-a9c2-ef90fa584a36,female,28,yes,,True,2
+46911f92-3bda-5bd3-972e-e6cd1539b8ce,female,42,yes,none.,True,3
+2df72a5b-a9e4-5bfc-bf79-17ac73a811ad,female,32,yes,,True,2
+c81f3dcd-d86b-566f-b516-d75fc2f58107,female,26,yes,,True,2
+dd5de63e-19f6-5db2-9532-3231384d8e2d,male,33,yes,,True,2
+4aff041d-26dd-54bf-ad8f-f4e03a164917,male,59,yes,,True,2
+308306c8-e5d4-5b6e-a73d-afead1345cc6,female,29,yes,,True,2
+e5745996-561c-5eaf-b14a-ba7e4bd48136,male,37,yes,,True,3
+59a9dfa3-ccba-5ce6-b488-581b5ee407d4,female,41,yes,"No comments, thank for the survey!",True,1
+6dca74bb-c513-5f5f-a2fb-22ffeb6377b0,female,60,yes,na,True,3
+4da7fbb0-802c-50e1-b592-7a3863961d42,female,29,yes,N/A,True,2
+f4a79782-92b9-5a88-bdfc-c062f9899a2a,male,56,yes,Great study! I hope my answers help with your work. Thank you!,True,1
+a85b5d54-1116-5287-b257-e3e36fb3f021,male,45,yes,,True,1
+f4697fe0-df28-5c8e-b832-2de8b1af4143,female,38,yes,,True,1

@@ -1,0 +1,7 @@
+model,experiment,alpha_observer,nll,n_params
+access_full,intimacy_effort,2.3825888633728027,1037.545166015625,1
+access_only,intimacy_effort,3.401733160018921,1034.78173828125,1
+no_access,intimacy_effort,0.3079584836959839,1107.629150390625,1
+access_full_prior,intimacy_effort,2.3906548023223877,1038.814208984375,1
+access_only_prior,intimacy_effort,3.6498360633850098,1035.444091796875,1
+no_access_prior,intimacy_effort,0.4106318950653076,1107.629150390625,1

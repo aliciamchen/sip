@@ -98,7 +98,7 @@ export function makeTimeline(
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${getEffortText(stimulus)}</p>
+            <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>
           <p style="text-align: center;"><em>Press any key to continue.</em></p>
         </div>
@@ -113,7 +113,7 @@ export function makeTimeline(
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${getEffortText(stimulus)}</p>
+            <p><strong>${getEffortText(stimulus)}</strong></p>
             <p><em>You expect that ${stimulus.name_0} and ${
               stimulus.name_1
             } will take one of the following actions:</em></p>
@@ -164,7 +164,7 @@ export function makeTimeline(
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p>${getEffortText(stimulus)}</p>
+            <p><strong>${getEffortText(stimulus)}</strong></p>
             <p><em>You expect that ${stimulus.name_0} and ${
               stimulus.name_1
             } will take one of the following actions:</em></p>
