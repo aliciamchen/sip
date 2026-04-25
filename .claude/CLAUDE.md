@@ -77,7 +77,7 @@ uv run python model/lm_scenario_params.py   # access + effort per (scenario, act
 uv run python model/lm_action_priors.py     # π(a|s) per (scenario, action) → lm_action_priors.csv
 ```
 
-The `_prior` actor/observer variants require `lm_action_priors.csv`; without it they're silently skipped at fit/predict time.
+The `_prior` actor/observer variants (non-canonical, kept for comparison) require `lm_action_priors.csv`; without it they're silently skipped at fit/predict time. The canonical uniform-prior variants do not need it.
 
 The effort experiments have their own parallel scripts that consume `scenarios_effort.csv` and emit per (scenario, effort_condition, action) tables (the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings):
 
@@ -92,7 +92,7 @@ uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort
 ```bash
 uv run python model/fit_forward_planning.py
 ```
-Fits 6 variants — 3 ablations (Base model / Discomfort-only / Full model) × {uniform prior, β-tempered LM prior}. The `_prior` variants are the canonical models; the uniform-prior variants are kept for comparison.
+Fits 6 variants — 3 ablations (Base model / Discomfort-only / Full model) × {uniform prior, β-tempered LM prior}. The uniform-prior variants (`access_full`, `access_only`, `no_access`) are the canonical models; the `_prior` variants are kept for comparison.
 
 Outputs (in `model/outputs/`):
 - `forward_planning_fits.csv` - Predictions for each data point (one `pred_*` column per variant)

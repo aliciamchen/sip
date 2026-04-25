@@ -41,7 +41,7 @@ from utils import get_project_root
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
-VARIANTS = ["access_full_prior", "access_only_prior", "no_access_prior"]
+VARIANTS = ["access_full", "access_only", "no_access"]
 INTIMACY_DISPLAY_LEVELS = [0, 50, 75, 100]
 
 
@@ -133,10 +133,6 @@ def main():
 
     print("\nLoading frozen actor parameters (forw_plan_effort all-data fit)...")
     actor_params_by_model = load_forw_plan_effort_actor_params()
-
-    if "action_prior" not in LLM_TABLES_EFFORT:
-        print("ERROR: lm_action_priors_effort.csv missing — can't run prior variants.")
-        sys.exit(1)
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)

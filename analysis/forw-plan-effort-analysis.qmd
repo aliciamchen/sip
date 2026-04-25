@@ -112,7 +112,7 @@ ggplot(df_summary_scenario, aes(x = action, y = empirical_stat, color = intimacy
 
 ### Model description
 
-We fit three ablations of the canonical access utility to the human data. A joint actor chooses an action proportional to its total utility, following a softmax with inverse temperature $\alpha$. Per-(scenario, effort_condition, action) values of $\text{access}(a)$, $\text{effort}(a)$, and the action prior $\pi(a|s,e)$ are LLM-generated (Llama-3.3-70B; see `model/lm_scenario_params_effort.py` and `model/lm_action_priors_effort.py`). Reward is held fixed at high across all trials; both actions involve eating, so $V(a|s) = 1$ is stipulated for both. $w_v$ is therefore non-identified in the softmax and stays near its initialization during fitting.
+We fit three ablations of the canonical access utility to the human data. A joint actor chooses an action proportional to its total utility, following a softmax with inverse temperature $\alpha$. Per-(scenario, effort_condition, action) values of $\text{access}(a)$ and $\text{effort}(a)$ are LLM-generated (Llama-3.3-70B; see `model/lm_scenario_params_effort.py`). Reward is held fixed at high across all trials; both actions involve eating, so $V(a|s) = 1$ is stipulated for both. $w_v$ is therefore non-identified in the softmax and stays near its initialization during fitting.
 
 **Full model**:
 
@@ -121,6 +121,8 @@ $$U(a|s, I, e) = w_v \cdot V(a) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e
 **Discomfort-only**: drops the food-reward and effort terms, keeping only $-w_d \cdot \text{access}(a) \cdot (1 - I)$.
 
 **Base model**: drops the access term: $U = w_v \cdot V(a) - w_e \cdot \text{effort}(a)$.
+
+**Why the Base model is flat across effort conditions.** In this experiment $V(a) = 1$ for both actions, so $w_v \cdot V$ is constant in the softmax and the only differentiator is $-w_e \cdot \text{effort}(a)$. The fitted $w_e$ lands at the optimizer's lower clip ($\approx 10^{-6}$) on every LOSO fold, which makes the utility effectively constant and the predictions $\approx 0.5$ in every cell — independent of effort condition or intimacy. The reason $w_e$ collapses to zero is that effort and access are negatively correlated in the stimuli (the higher-access action is usually the lower-effort one). With only an effort term to work with, a positive $w_e$ would predict a uniform preference for the lower-effort = higher-access action across all intimacy levels, which contradicts the low-intimacy human data; setting $w_e \approx 0$ gives uniform predictions, which is a less-bad fit. This also explains the negative pooled $r$ for the Base model: the access $\times$ intimacy interaction is what drives behavior, and effort alone cannot substitute for it.
 
 ### Load model predictions
 
@@ -131,7 +133,7 @@ df_cv <- read_csv(here("model", "outputs", "cv_loso_preds_effort.csv"),
                   show_col_types = FALSE)
 
 df_humans_cv <- df_cv |>
-  filter(variant == "access_full_prior") |>
+  filter(variant == "access_full") |>
   transmute(
     subject_id, scenario_label = held_out_scenario,
     intimacy, effort, action,
@@ -141,9 +143,9 @@ df_humans_cv <- df_cv |>
 df_model_cv <- df_cv |>
   mutate(
     model = case_when(
-      variant == "access_full_prior" ~ "Full model",
-      variant == "access_only_prior" ~ "Discomfort-only",
-      variant == "no_access_prior" ~ "Base model"
+      variant == "access_full" ~ "Full model",
+      variant == "access_only" ~ "Discomfort-only",
+      variant == "no_access" ~ "Base model"
     )
   ) |>
   transmute(

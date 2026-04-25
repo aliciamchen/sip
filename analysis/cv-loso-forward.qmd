@@ -20,7 +20,7 @@ setup_analysis()
 
 ## Motivation
 
-The forward-planning model has four free actor parameters (`w_v`, `w_d`, `w_e`, `beta_prior`) fit on Experiment 1. In-sample Pearson r at the (intimacy, motivation, action) cell-mean level is 0.957 for the Full + LM prior variant. This metric doesn't distinguish "model captures the shared utility structure" from "model memorizes scenario-level quirks in the LLM-derived access/effort/prior values."
+The forward-planning model has three free actor parameters (`w_v`, `w_d`, `w_e`) fit on Experiment 1. In-sample Pearson r at the (intimacy, motivation, action) cell-mean level is high for the Full variant. This metric doesn't distinguish "model captures the shared utility structure" from "model memorizes scenario-level quirks in the LLM-derived access/effort values."
 
 Leave-one-scenario-out (LOSO) addresses this: for each of the 16 scenarios, hold it out, fit on the other 15, predict the held-out scenario, and aggregate.
 
@@ -30,9 +30,9 @@ Leave-one-scenario-out (LOSO) addresses this: for each of the 16 scenarios, hold
 df_fold <- read_csv(here("model", "outputs", "cv_loso_forward.csv"), show_col_types = FALSE) |>
   mutate(
     variant_label = case_when(
-      variant == "access_full_prior" ~ "Full model",
-      variant == "access_only_prior" ~ "Discomfort-only",
-      variant == "no_access_prior" ~ "Base model"
+      variant == "access_full" ~ "Full model",
+      variant == "access_only" ~ "Discomfort-only",
+      variant == "no_access" ~ "Base model"
     ),
     variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
   )
@@ -41,9 +41,9 @@ df_pred <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_type
   mutate(
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     variant_label = case_when(
-      variant == "access_full_prior" ~ "Full model",
-      variant == "access_only_prior" ~ "Discomfort-only",
-      variant == "no_access_prior" ~ "Base model"
+      variant == "access_full" ~ "Full model",
+      variant == "access_only" ~ "Discomfort-only",
+      variant == "no_access" ~ "Base model"
     ),
     variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
   )
@@ -67,7 +67,7 @@ df_pooled <- df_pred |>
 
 df_full_r <- df_full |>
   select(variant = model, r_in_sample = r) |>
-  filter(variant %in% c("access_full_prior", "access_only_prior", "no_access_prior"))
+  filter(variant %in% c("access_full", "access_only", "no_access"))
 
 df_headline <- df_pooled |>
   left_join(df_full_r, by = "variant") |>
@@ -97,7 +97,7 @@ For each held-out scenario, the Pearson r between model predictions and human `p
 #| fig-asp: 0.55
 
 scenario_order <- df_fold |>
-  filter(variant == "access_full_prior") |>
+  filter(variant == "access_full") |>
   arrange(desc(test_cell_r)) |>
   pull(held_out_scenario)
 
@@ -141,38 +141,36 @@ ggplot(df_cell_pts, aes(x = model, y = humans, color = held_out_scenario, shape 
   coord_fixed(xlim = c(0, 1), ylim = c(0, 1))
 ```
 
-## Fitted-parameter stability (Full + LM prior)
+## Fitted-parameter stability (Full model)
 
-Each LOSO fold refits the four parameters on 15 scenarios. If fitted weights captured a scenario-general utility, they should cluster around the full-data fit values (dashed horizontal line). Large variance across folds would flag parameter instability — e.g., a single scenario disproportionately driving a weight.
+Each LOSO fold refits the three parameters on 15 scenarios. If fitted weights captured a scenario-general utility, they should cluster around the full-data fit values (dashed horizontal line). Large variance across folds would flag parameter instability — e.g., a single scenario disproportionately driving a weight.
 
 ```{r}
 #| fig-width: 11
 #| fig-asp: 0.32
 
 df_params <- df_fold |>
-  filter(variant == "access_full_prior") |>
-  select(held_out_scenario, param_w_v, param_w_d, param_w_e, param_beta_prior) |>
+  filter(variant == "access_full") |>
+  select(held_out_scenario, param_w_v, param_w_d, param_w_e) |>
   pivot_longer(starts_with("param_"), names_to = "parameter", values_to = "value") |>
   mutate(
     parameter = recode(parameter,
                        "param_w_v" = "w_v",
                        "param_w_d" = "w_d",
-                       "param_w_e" = "w_e",
-                       "param_beta_prior" = "beta_prior"),
-    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e", "beta_prior"))
+                       "param_w_e" = "w_e"),
+    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e"))
   )
 
 df_full_params <- df_full |>
-  filter(model == "access_full_prior") |>
-  select(param_w_v, param_w_d, param_w_e, param_beta_prior) |>
+  filter(model == "access_full") |>
+  select(param_w_v, param_w_d, param_w_e) |>
   pivot_longer(everything(), names_to = "parameter", values_to = "full_value") |>
   mutate(
     parameter = recode(parameter,
                        "param_w_v" = "w_v",
                        "param_w_d" = "w_d",
-                       "param_w_e" = "w_e",
-                       "param_beta_prior" = "beta_prior"),
-    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e", "beta_prior"))
+                       "param_w_e" = "w_e"),
+    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e"))
   )
 
 ggplot(df_params, aes(x = reorder(held_out_scenario, value), y = value)) +
@@ -188,9 +186,9 @@ ggplot(df_params, aes(x = reorder(held_out_scenario, value), y = value)) +
 
 ```{r}
 #| echo: false
-full_out <- df_pooled |> filter(variant == "access_full_prior") |> pull(r_out_of_sample)
-full_in <- df_full_r |> filter(variant == "access_full_prior") |> pull(r_in_sample)
-per_fold <- df_fold |> filter(variant == "access_full_prior") |> pull(test_cell_r)
+full_out <- df_pooled |> filter(variant == "access_full") |> pull(r_out_of_sample)
+full_in <- df_full_r |> filter(variant == "access_full") |> pull(r_in_sample)
+per_fold <- df_fold |> filter(variant == "access_full") |> pull(test_cell_r)
 ```
 
-For the Full + LM prior model, held-out Pearson r pooled across the 16 LOSO folds is `r round(full_out, 3)`, compared to an in-sample r of `r round(full_in, 3)`. Per-fold held-out r (32 cells each) is `r sprintf("%.2f ± %.2f", mean(per_fold), sd(per_fold))`. Fitted weights cluster tightly around the full-data values, confirming that the model captures scenario-general utility structure rather than scenario-specific patterns.
+For the Full model, held-out Pearson r pooled across the 16 LOSO folds is `r round(full_out, 3)`, compared to an in-sample r of `r round(full_in, 3)`. Per-fold held-out r (32 cells each) is `r sprintf("%.2f ± %.2f", mean(per_fold), sd(per_fold))`. Fitted weights cluster tightly around the full-data values, confirming that the model captures scenario-general utility structure rather than scenario-specific patterns.

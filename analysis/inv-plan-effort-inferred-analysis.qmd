@@ -182,9 +182,9 @@ df_fit_results <- read_csv(here("model", "outputs",
   filter(experiment == "effort_inferred") |>
   mutate(
     model_label = case_when(
-      model == "access_full_prior" ~ "Full model",
-      model == "access_only_prior" ~ "Discomfort-only",
-      model == "no_access_prior" ~ "Base model"
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
     )
   ) |>
   filter(!is.na(model_label)) |>
@@ -230,9 +230,9 @@ df_model <- read_csv(here("model", "outputs",
     intimacy = factor(intimacy, levels = c(0, 50, 75, 100),
                       labels = INTIMACY_LEVELS),
     model = case_when(
-      model == "access_full_prior" ~ "Full model",
-      model == "access_only_prior" ~ "Discomfort-only",
-      model == "no_access_prior" ~ "Base model"
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
     )
   ) |>
   filter(!is.na(model))
@@ -313,19 +313,19 @@ df_combined |>
     position = position_dodge(width = 0.8), size = 1, width = 0.08,
     color = "black", alpha = 0.8
   ) +
-  geom_line(
-    data = df_belief_update_subj,
-    aes(x = x_pos, y = belief_update,
-        group = interaction(subject_id, action)),
-    inherit.aes = FALSE,
-    color = "black", alpha = 0.15, linewidth = 0.3
-  ) +
-  geom_point(
-    data = df_belief_update_subj,
-    aes(x = x_pos, y = belief_update),
-    inherit.aes = FALSE,
-    color = "black", alpha = 0.2, size = 0.7
-  ) +
+  # geom_line(
+  #   data = df_belief_update_subj,
+  #   aes(x = x_pos, y = belief_update,
+  #       group = interaction(subject_id, action)),
+  #   inherit.aes = FALSE,
+  #   color = "black", alpha = 0.15, linewidth = 0.3
+  # ) +
+  # geom_point(
+  #   data = df_belief_update_subj,
+  #   aes(x = x_pos, y = belief_update),
+  #   inherit.aes = FALSE,
+  #   color = "black", alpha = 0.2, size = 0.7
+  # ) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_intimacy() +
   labs(y = "Belief update in P(effort high)", x = "Observed action",

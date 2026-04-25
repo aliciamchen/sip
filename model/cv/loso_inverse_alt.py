@@ -6,8 +6,8 @@ For each of the 16 scenarios, hold it out, refit α_observer on the remaining
 15 scenarios (actor weights frozen at the all-data Exp 1 fit, as always), and
 generate predictions for the held-out scenario using the refit α_observer.
 
-Runs over the three prior variants that are canonical after the LM-prior promo
-(access_full_prior, access_only_prior, no_access_prior).
+Runs over the three canonical uniform-prior variants
+(access_full, access_only, no_access).
 
 Outputs (in model/outputs/):
   - cv_loso_inv_plan_intimacy_alt_preds_summary.csv
@@ -49,12 +49,12 @@ from utils import get_project_root
 
 N_SCENARIOS = len(SCENARIO_LABELS)
 
-# Only the three prior variants (canonical after the LM-prior promotion).
-VARIANTS = ["access_full_prior", "access_only_prior", "no_access_prior"]
+# Canonical uniform-prior variants.
+VARIANTS = ["access_full", "access_only", "no_access"]
 VARIANT_LABEL = {
-    "access_full_prior": "Full model",
-    "access_only_prior": "Discomfort-only",
-    "no_access_prior": "Base model",
+    "access_full": "Full model",
+    "access_only": "Discomfort-only",
+    "no_access": "Base model",
 }
 
 
@@ -229,10 +229,6 @@ def main():
 
     print("\nLoading frozen actor parameters (all-data Exp 1 fit)...")
     actor_params_by_model = load_fitted_params()
-
-    if "action_prior" not in LLM_TABLES:
-        print("ERROR: lm_action_priors.csv missing — can't run prior variants.")
-        sys.exit(1)
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)

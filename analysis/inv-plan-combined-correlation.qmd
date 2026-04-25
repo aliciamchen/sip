@@ -70,9 +70,9 @@ df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimac
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     model_belief_update = expected_intimacy - 50,
     model = case_when(
-      model == "access_full_prior" ~ "Full model",
-      model == "access_only_prior" ~ "Discomfort-only",
-      model == "no_access_prior" ~ "Base model"
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
     )
   ) |>
   filter(!is.na(model)) |>
@@ -119,9 +119,9 @@ df_model_desire <- read_csv(here("model", "outputs", "cv_loso_inv_plan_desire_al
     intimacy = factor(intimacy),
     model_belief_update = (p_high_reward / 100) - 0.5,
     model = case_when(
-      model == "access_full_prior" ~ "Full model",
-      model == "access_only_prior" ~ "Discomfort-only",
-      model == "no_access_prior" ~ "Base model"
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
     )
   ) |>
   filter(!is.na(model)) |>

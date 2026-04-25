@@ -19,37 +19,38 @@ The scenarios used in the experiments are in [`experiments/scenarios.csv`](exper
 
 ## Utility model
 
-A joint actor chooses an action by combining a scenario-specific prior over actions with a softmax over the utility:
+A joint actor chooses an action by softmaxing over the utility:
 
 ```
-P(a | s, I) ∝ π(a | s)^β · exp( U(a | s, I) )
+P(a | s, I) ∝ exp( U(a | s, I) )
 
 U(a | s, I) = w_v · V(a|s)
             − w_d · access(a) · (1 − I)
             − w_e · effort(a)
 ```
 
-Here `π(a|s)` is a scenario-specific prior over the four actions (how "default" each action feels in the scenario's setting), `β` tempers the prior's weight, `V(a|s)` is the food-utility (positive when the food is wanted, negative when unwanted, 0 when the action does not involve eating), `access(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space — and `effort(a)` is the physical effort of executing the action. Intimacy `I` scales the access-discomfort term: at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. At low intimacy the penalty is at full strength, so higher-access actions are costly.
+Here `V(a|s)` is the food-utility (positive when the food is wanted, negative when unwanted, 0 when the action does not involve eating), `access(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space — and `effort(a)` is the physical effort of executing the action. Intimacy `I` scales the access-discomfort term: at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. At low intimacy the penalty is at full strength, so higher-access actions are costly.
 
-Three ablations of this utility are fit and compared for both the forward-planning (actor) and inverse-planning (observer) models. All three share the same softmax-with-prior structure, so each also fits `β`:
+Three ablations of this utility are fit and compared for both the forward-planning (actor) and inverse-planning (observer) models:
 
-- **Full model** (`access_full_prior`) — the full utility above: food utility, the access-discomfort term, and effort (the main model)
-- **Discomfort-only** (`access_only_prior`) — only the access-discomfort term `−w_d · access · (1 − I)`; drops food utility and effort to ask whether the access signal alone can account for behavior
-- **Base model** (`no_access_prior`) — `w_v · V − w_e · effort`; no relational structure
+- **Full model** (`access_full`) — the full utility above: food utility, the access-discomfort term, and effort (the main model)
+- **Discomfort-only** (`access_only`) — only the access-discomfort term `−w_d · access · (1 − I)`; drops food utility and effort to ask whether the access signal alone can account for behavior
+- **Base model** (`no_access`) — `w_v · V − w_e · effort`; no relational structure
 
-(The older uniform-prior variants `access_full`, `access_only`, `no_access` are still fit for comparison but no longer displayed as the main models.)
+(LM-prior variants `access_full_prior`, `access_only_prior`, `no_access_prior` — which add a tempered LLM-generated action prior `π(a|s)^β` to the softmax — are still fit on the all-data side for comparison but are not the canonical display models.)
 
 ### Where the utility values come from
 
 `V(a|s)` is **stipulated**: under HIGH motivation the food is wanted, so `V = +1` for actions that involve eating (action ≠ 0) and `V = 0` for action 0; under LOW motivation the food is unwanted, so `V = −1` for eating actions and `V = 0` for action 0. This sign-flip across motivational states lets a single value function capture both the achievement goal of eating under high motivation and the maintenance goal of not-eating under low motivation.
 
-`access(a)`, `effort(a)`, and `π(a|s)` are **LLM-generated per scenario** because they genuinely vary by scenario (a wedding meal differs from a basketball hot dog in both bodily exposure and logistical effort; "cut the cake into portions" is a more typical default at a birthday party than at a conference). The LLM is Llama-3.3-70B via Together AI (10 runs averaged, mean ± std saved). The prompts ask the LLM to rate, on a 0–6 scale:
+`access(a)` and `effort(a)` are **LLM-generated per scenario** because they genuinely vary by scenario (a wedding meal differs from a basketball hot dog in both bodily exposure and logistical effort). The LLM is Llama-3.3-70B via Together AI (10 runs averaged, mean ± std saved). The prompts ask the LLM to rate, on a 0–6 scale:
 
 - `access`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both. Produced by `model/lm_scenario_params.py` → `model/outputs/lm_scenario_params.csv`.
 - `effort`: physical/logistical effort of executing the action. Produced by the same script.
-- `π(a|s)`: how natural or expected each action is as a "default" in the scenario's setting, independent of the dyad's relationship or motivation. Sum-normalized (with small additive smoothing) to yield a proper distribution. Produced by `model/lm_action_priors.py` → `model/outputs/lm_action_priors.csv`.
 
-The fitting and prediction scripts index into these tables by `scenario_idx`; running them requires both `lm_scenario_params.csv` and `lm_action_priors.csv` to exist. Generating the CSVs requires `TOGETHER_API_KEY` in `.env` and costs a few Together API calls.
+The non-canonical LM-prior variants additionally use `π(a|s)`, an LLM-generated scenario-specific action prior produced by `model/lm_action_priors.py` → `model/outputs/lm_action_priors.csv`. The canonical uniform-prior variants do not need this file.
+
+The fitting and prediction scripts index into these tables by `scenario_idx`; running them requires `lm_scenario_params.csv` to exist. Generating the CSV requires `TOGETHER_API_KEY` in `.env` and costs a few Together API calls.
 
 ## Directory structure
 

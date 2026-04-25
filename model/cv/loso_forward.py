@@ -1,14 +1,14 @@
 """
-Leave-one-scenario-out CV for the forward-planning prior variants.
+Leave-one-scenario-out CV for the forward-planning canonical variants.
 
-For each of the 16 scenarios, hold it out, fit the three prior variants
-(access_full_prior, access_only_prior, no_access_prior) on the remaining 15
+For each of the 16 scenarios, hold it out, fit the three uniform-prior
+variants (access_full, access_only, no_access) on the remaining 15
 scenarios, and predict the held-out scenario's human action probabilities.
 
 Reports per-fold fitted parameters, train/test NLL, and Pearson r at the
 (intimacy, motivation, action) cell-mean level — both per held-out scenario
 and pooled across folds. The pooled metric is directly comparable to the
-in-sample r = 0.957 reported in forward_planning_fit_results.csv.
+in-sample r reported in forward_planning_fit_results.csv.
 
 Outputs (in model/outputs/):
   - cv_loso_forward.csv — one row per (fold, variant) with fitted params + metrics
@@ -28,13 +28,13 @@ from scipy import stats
 
 from fit_forward_planning import (
     compute_nll,
-    fit_access_full_prior_model,
-    fit_access_only_prior_model,
-    fit_no_access_prior_model,
+    fit_access_full_model,
+    fit_access_only_model,
+    fit_no_access_model,
     load_data,
-    predict_access_full_prior,
-    predict_access_only_prior,
-    predict_no_access_prior,
+    predict_access_full,
+    predict_access_only,
+    predict_no_access,
 )
 from model_utils import LLM_TABLES, SCENARIO_LABELS
 
@@ -45,20 +45,20 @@ N_SCENARIOS = len(SCENARIO_LABELS)
 
 # variant_name -> (fit_fn, predict_fn, utility_param_names)
 VARIANTS = {
-    "access_full_prior": (
-        fit_access_full_prior_model,
-        predict_access_full_prior,
-        ["w_v", "w_d", "w_e", "beta_prior"],
+    "access_full": (
+        fit_access_full_model,
+        predict_access_full,
+        ["w_v", "w_d", "w_e"],
     ),
-    "access_only_prior": (
-        fit_access_only_prior_model,
-        predict_access_only_prior,
-        ["w_d", "beta_prior"],
+    "access_only": (
+        fit_access_only_model,
+        predict_access_only,
+        ["w_d"],
     ),
-    "no_access_prior": (
-        fit_no_access_prior_model,
-        predict_no_access_prior,
-        ["w_v", "w_e", "beta_prior"],
+    "no_access": (
+        fit_no_access_model,
+        predict_no_access,
+        ["w_v", "w_e"],
     ),
 }
 
@@ -86,7 +86,6 @@ def run_loso():
     tables = (
         LLM_TABLES["access"],
         LLM_TABLES["effort"],
-        LLM_TABLES["action_prior"],
     )
     scenario_idx_np = np.asarray(scenario_idx)
 
@@ -176,7 +175,7 @@ def attach_per_scenario_r(fold_df, pred_df):
 
 def main():
     print("=" * 60)
-    print("LOSO cross-validation: forward planning (prior variants)")
+    print("LOSO cross-validation: forward planning")
     print("=" * 60)
 
     fold_df, pred_df = run_loso()

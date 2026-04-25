@@ -162,9 +162,9 @@ df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_fit_result
   filter(experiment == "intimacy") |>
   mutate(
     model_label = case_when(
-      model == "access_full_prior" ~ "Full model",
-      model == "access_only_prior" ~ "Discomfort-only",
-      model == "no_access_prior" ~ "Base model"
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
     )
   ) |>
   filter(!is.na(model_label)) |>
@@ -212,9 +212,9 @@ df_model <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimacy_alt_pre
     # Belief update from uniform prior (mean = 50), scaled to proportion
     belief_update = (expected_intimacy - 50) / 100,
     model = case_when(
-      model == "access_full_prior" ~ "Full model",
-      model == "access_only_prior" ~ "Discomfort-only",
-      model == "no_access_prior" ~ "Base model"
+      model == "access_full" ~ "Full model",
+      model == "access_only" ~ "Discomfort-only",
+      model == "no_access" ~ "Base model"
     )
   ) |>
   filter(!is.na(model))
