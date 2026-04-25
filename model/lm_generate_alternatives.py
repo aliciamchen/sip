@@ -48,33 +48,8 @@ ACTION_COLS = ["action_0", "action_1", "action_2", "action_3"]
 MOTIVATIONS = ["low", "high"]
 
 
-SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read a vignette about two people in a food-sharing situation. You will be told what action they took in the situation.
-
-Your job is to list the set of plausible alternative actions the two people could have taken instead. Focus specifically on different WAYS the two people could handle and consume the food together — the mechanics of sharing. The alternatives should span a range of physical closeness / saliva-transfer risk: from not consuming the food at all or one person consuming it alone, to cutting or dividing separate portions, to ways that include increasing saliva-transfer risk (e.g., double dipping or biting from the same part of the food)
-
-Generate however many alternatives you think are plausible, but no more than 10. Only include alternatives that are plausible in the specific situation; do not pad the list with implausible options. Do not include the action they actually took.
-
-For each alternative, tag it with is_share ∈ {0, 1}:
-- is_share = 1 if both people end up consuming the same food (whether from divided portions of the same dish, shared utensils, or the same piece of food)
-- is_share = 0 if only one person consumes the food, or neither does (e.g. refusing, throwing it away, one person giving it all to the other)
-
-Respond ONLY with a JSON array in this exact format, no explanation:
-[
-  {"action": "short description of alternative 1", "is_share": 0 or 1},
-  {"action": "short description of alternative 2", "is_share": 0 or 1}
-]"""
-
-
-def format_user_prompt(vignette, reward_text, observed_action_text):
-    return f"""Scenario: {vignette}
-{reward_text}
-
-The two people took the following action:
-{observed_action_text}
-
-List the set of plausible alternative ways the two people could have handled and consumed the food instead. Vary across physical closeness / saliva-transfer risk. Tag each with is_share ∈ {{0, 1}}. Do not include the action they actually took."""
+from lm_prompts import ALTERNATIVES_SYSTEM_PROMPT as SYSTEM_PROMPT
+from lm_prompts import alternatives_user_prompt as format_user_prompt
 
 
 _JSON_ARRAY_RE = re.compile(r"\[[\s\S]*\]")

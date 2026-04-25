@@ -46,51 +46,13 @@ TEMPERATURE = 0.2
 
 
 # ==============================================================================
-# System prompts
+# Prompt builders (centralized in model/lm_prompts.py)
 # ==============================================================================
 
-ACCESS_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read vignettes about two people sharing food in different situations. For each scenario, you will read about four different actions the two people can take.
-
-For each action, evaluate: how much does this action create a direct bodily channel between the two people — a pathway for substances from one person's body to reach the other, or for their bodies to physically contact each other?
-
-Consider concrete things like:
-- Does any substance from one person's body (saliva, breath, skin oils) reach the other person or their food?
-- Does the action involve direct physical contact between the two people's bodies?
-- Does the action involve one person handling food that will then enter the other person's mouth?
-
-Simply eating in the same physical space — for example, two people at the same table with fully separate portions — does NOT by itself create such a channel, and should be rated near zero.
-
-Rate only what the action DOES in this physical sense — not how intimate or awkward it would feel in any particular relationship.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = No bodily channel between the two people (complete physical separation)
-3 = Indirect bodily channel (e.g. eating from the same shared container with separate utensils)
-6 = Direct transfer of bodily substances (e.g. sharing the same piece of food that both bite)
-
-Respond with your numerical ratings in this JSON format only, no explanation needed:
-{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8, "action_3": 5.5}"""
-
-
-EFFORT_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read vignettes about two people in a food-sharing situation. For each scenario, you will read about four different actions the two people can take.
-
-For each action, evaluate the PHYSICAL AND LOGISTICAL COST of executing the action. Consider:
-- How much physical work does the action require (preparing, serving, cutting, pouring, handing over)?
-- Does the action need extra items or utensils (plates, napkins, cutlery, containers)?
-- Does the action add practical steps beyond simply eating?
-
-Do NOT rate social awkwardness or interpersonal discomfort — only the physical and logistical cost.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = No effort (acting independently, eating what you already have)
-3 = Moderate effort (a few steps, some preparation)
-6 = High effort (many steps, substantial setup)
-
-Respond with your numerical ratings in this JSON format only, no explanation needed:
-{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1, "action_3": 1.5}"""
+# Imported with aliases so the function names don't collide with the
+# `system_prompt` / `user_prompt` parameters of get_ratings below.
+from lm_prompts import system_prompt as build_system_prompt
+from lm_prompts import user_prompt as build_user_prompt
 
 
 # Reward is stipulated in model/model_utils.py as a binary goal-satisfaction
@@ -108,26 +70,16 @@ def load_scenarios():
     return pd.read_csv(scenarios_path)
 
 
+def _action_texts_4(row):
+    return [row[f"action_{i}"] for i in range(4)]
+
+
 def format_access_prompt(row):
-    return f"""Scenario: {row["vignette"]}
-
-Rate how much each action opens each person up to the other — physically, informationally, or both (0-6 scale):
-
-Action 0: {row["action_0"]}
-Action 1: {row["action_1"]}
-Action 2: {row["action_2"]}
-Action 3: {row["action_3"]}"""
+    return build_user_prompt("access", row["vignette"], _action_texts_4(row))
 
 
 def format_effort_prompt(row):
-    return f"""Scenario: {row["vignette"]}
-
-Rate the physical and logistical cost of executing each action — how much physical work, preparation, or extra equipment is required (0-6 scale):
-
-Action 0: {row["action_0"]}
-Action 1: {row["action_1"]}
-Action 2: {row["action_2"]}
-Action 3: {row["action_3"]}"""
+    return build_user_prompt("effort", row["vignette"], _action_texts_4(row))
 
 
 # ==============================================================================
@@ -246,7 +198,7 @@ def main():
         print("  Getting access ratings...")
         access_ratings = get_ratings(
             client,
-            ACCESS_SYSTEM_PROMPT,
+            build_system_prompt("access", n_actions=4),
             format_access_prompt(row),
             parse_action_response,
         )
@@ -255,7 +207,7 @@ def main():
         print("  Getting effort ratings...")
         effort_ratings = get_ratings(
             client,
-            EFFORT_SYSTEM_PROMPT,
+            build_system_prompt("effort", n_actions=4),
             format_effort_prompt(row),
             parse_action_response,
         )
@@ -310,38 +262,15 @@ def main():
 
 
 def format_access_prompt_variable(vignette, action_texts):
-    lines = [f"Action {i}: {txt}" for i, txt in enumerate(action_texts)]
-    return f"""Scenario: {vignette}
-
-Rate how much each action opens each person up to the other — physically, informationally, or both (0-6 scale):
-
-""" + "\n".join(lines)
+    return build_user_prompt("access", vignette, action_texts)
 
 
 def format_effort_prompt_variable(vignette, action_texts):
-    lines = [f"Action {i}: {txt}" for i, txt in enumerate(action_texts)]
-    return f"""Scenario: {vignette}
-
-Rate the physical and logistical cost of executing each action — how much physical work, preparation, or extra equipment is required (0-6 scale):
-
-""" + "\n".join(lines)
+    return build_user_prompt("effort", vignette, action_texts)
 
 
-VARIABLE_ACCESS_SYSTEM_PROMPT = ACCESS_SYSTEM_PROMPT.replace(
-    "For each scenario, you will read about four different actions the two people can take.",
-    "For each scenario, you will read about a set of alternative actions the two people could take. The number of actions varies.",
-).replace(
-    'Respond with your numerical ratings in this JSON format only, no explanation needed:\n{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8, "action_3": 5.5}',
-    'Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Example for 3 actions:\n{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8}',
-)
-
-VARIABLE_EFFORT_SYSTEM_PROMPT = EFFORT_SYSTEM_PROMPT.replace(
-    "For each scenario, you will read about four different actions the two people can take.",
-    "For each scenario, you will read about a set of alternative actions the two people could take. The number of actions varies.",
-).replace(
-    'Respond with your numerical ratings in this JSON format only, no explanation needed:\n{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1, "action_3": 1.5}',
-    'Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Example for 3 actions:\n{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1}',
-)
+VARIABLE_ACCESS_SYSTEM_PROMPT = build_system_prompt("access", n_actions=None)
+VARIABLE_EFFORT_SYSTEM_PROMPT = build_system_prompt("effort", n_actions=None)
 
 
 def parse_action_response_variable(response_text, n_actions):

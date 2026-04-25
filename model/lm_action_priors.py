@@ -51,36 +51,16 @@ from lm_scenario_params import (
 )
 
 
-ACTION_PRIOR_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, going off of your intuition.
+from lm_prompts import system_prompt as build_system_prompt
+from lm_prompts import user_prompt as build_user_prompt
 
-In this survey, you will read vignettes about two people in a food-sharing situation. For each scenario, you will read about four different actions the two people can take.
 
-For each action, evaluate how NATURAL or EXPECTED the action is as a "default" behavior in this setting — what you'd imagine typically happening given the food, the place, and the social occasion, independent of any specific information about the two people's relationship or how much they want the food.
-
-Consider:
-- Does the action fit the social conventions of this kind of setting?
-- Is it a typical way people behave here, in general?
-
-Do NOT factor in the specific relationship closeness between the two people, or how much they individually want the food. Just rate whether the action is a natural default for the setting itself.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = Very unusual or out of place in this setting
-3 = Plausible — could happen, neither default nor unusual
-6 = Very natural — the typical default behavior in this setting
-
-Respond with your numerical ratings in this JSON format only, no explanation needed:
-{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8, "action_3": 5.5}"""
+ACTION_PRIOR_SYSTEM_PROMPT = build_system_prompt("prior", n_actions=4)
 
 
 def format_prior_prompt(row):
-    return f"""Scenario: {row["vignette"]}
-
-Rate how natural / default each action is in this setting (0-6 scale):
-
-Action 0: {row["action_0"]}
-Action 1: {row["action_1"]}
-Action 2: {row["action_2"]}
-Action 3: {row["action_3"]}"""
+    action_texts = [row[f"action_{i}"] for i in range(4)]
+    return build_user_prompt("prior", row["vignette"], action_texts)
 
 
 def parse_action_response(response_text):

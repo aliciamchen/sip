@@ -62,56 +62,19 @@ from lm_scenario_params import (
     normalize_access,
     normalize_effort,
 )
+# Imported with aliases so they don't collide with get_ratings's parameters.
+from lm_prompts import system_prompt as build_system_prompt
+from lm_prompts import user_prompt as build_user_prompt
 
 
 EFFORT_CONDITIONS = ["low", "high"]
 
 
-# System prompts — same rating scale as the canonical 4-action prompts but
-# worded for 2 actions instead of 4.
-
-ACCESS_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read vignettes about two people sharing food in different situations. For each scenario, you will read about two different actions the two people can take.
-
-For each action, evaluate: how much does this action create a direct bodily channel between the two people — a pathway for substances from one person's body to reach the other, or for their bodies to physically contact each other?
-
-Consider concrete things like:
-- Does any substance from one person's body (saliva, breath, skin oils) reach the other person or their food?
-- Does the action involve direct physical contact between the two people's bodies?
-- Does the action involve one person handling food that will then enter the other person's mouth?
-
-Simply eating in the same physical space — for example, two people at the same table with fully separate portions — does NOT by itself create such a channel, and should be rated near zero.
-
-Rate only what the action DOES in this physical sense — not how intimate or awkward it would feel in any particular relationship.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = No bodily channel between the two people (complete physical separation)
-3 = Indirect bodily channel (e.g. eating from the same shared container with separate utensils)
-6 = Direct transfer of bodily substances (e.g. sharing the same piece of food that both bite)
-
-Respond with your numerical ratings in this JSON format only, no explanation needed:
-{"action_0": 0.5, "action_1": 3.8}"""
-
-
-EFFORT_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read vignettes about two people in a food-sharing situation. For each scenario, you will read about two different actions the two people can take.
-
-For each action, evaluate the PHYSICAL AND LOGISTICAL COST of executing the action. Consider:
-- How much physical work does the action require (preparing, serving, cutting, pouring, handing over)?
-- Does the action need extra items or utensils (plates, napkins, cutlery, containers)?
-- Does the action add practical steps beyond simply eating?
-
-Do NOT rate social awkwardness or interpersonal discomfort — only the physical and logistical cost.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = No effort (acting independently, eating what you already have)
-3 = Moderate effort (a few steps, some preparation)
-6 = High effort (many steps, substantial setup)
-
-Respond with your numerical ratings in this JSON format only, no explanation needed:
-{"action_0": 0.5, "action_1": 3.2}"""
+# Module-level system-prompt constants (kept for backwards compatibility with
+# any external callers; the script itself uses the build_system_prompt helper
+# directly at the call site).
+ACCESS_SYSTEM_PROMPT = build_system_prompt("access", n_actions=2)
+EFFORT_SYSTEM_PROMPT = build_system_prompt("effort", n_actions=2)
 
 
 def load_scenarios():
@@ -125,36 +88,27 @@ def format_full_vignette(row, effort_condition):
     return f"{row['vignette']} {effort_paragraph}"
 
 
+def _action_texts_2(row):
+    return [row["action_1"], row["action_2"]]
+
+
 def format_access_prompt(row, effort_condition):
-    vignette = format_full_vignette(row, effort_condition)
-    return f"""Scenario: {vignette}
-
-Rate how much each action opens each person up to the other — physically, informationally, or both (0-6 scale):
-
-Action 0: {row["action_1"]}
-Action 1: {row["action_2"]}"""
+    return build_user_prompt(
+        "access", format_full_vignette(row, effort_condition), _action_texts_2(row)
+    )
 
 
 def format_access_prompt_marginal(row):
     """Access prompt that omits the effort paragraph. Used to estimate access
     as it would be perceived by an observer who does not see the effort context
     (specifically, the inv_plan_effort_inferred experiment)."""
-    return f"""Scenario: {row["vignette"]}
-
-Rate how much each action opens each person up to the other — physically, informationally, or both (0-6 scale):
-
-Action 0: {row["action_1"]}
-Action 1: {row["action_2"]}"""
+    return build_user_prompt("access", row["vignette"], _action_texts_2(row))
 
 
 def format_effort_prompt(row, effort_condition):
-    vignette = format_full_vignette(row, effort_condition)
-    return f"""Scenario: {vignette}
-
-Rate the physical and logistical cost of executing each action — how much physical work, preparation, or extra equipment is required (0-6 scale):
-
-Action 0: {row["action_1"]}
-Action 1: {row["action_2"]}"""
+    return build_user_prompt(
+        "effort", format_full_vignette(row, effort_condition), _action_texts_2(row)
+    )
 
 
 def parse_action_response(response_text):
