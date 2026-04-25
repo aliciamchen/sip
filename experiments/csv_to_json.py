@@ -25,6 +25,7 @@ SOURCES = [
         [
             "forw_plan_effort",
             "inv_plan_effort",
+            "inv_plan_effort_inferred",
         ],
     ),
 ]
