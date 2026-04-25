@@ -22,13 +22,7 @@ setup_analysis()
 
 ACTION_LEVELS <- c("No saliva", "Share saliva")
 ACTION_COLORS <- c("No saliva" = "#5B8DBA", "Share saliva" = "#D17A6E")
-INTIMACY_LEVELS <- c("0", "50", "75", "100")
-INTIMACY_COLORS <- c(
-  "0"   = "#D6E2EB",
-  "50"  = "#94B5C9",
-  "75"  = "#5B8DBA",
-  "100" = "#2C5985"
-)
+# INTIMACY_COLORS / INTIMACY_LEVELS / scale_*_intimacy come from utils.R (cividis palette)
 ```
 
 ## Demographics
@@ -333,7 +327,7 @@ df_combined |>
     color = "black", alpha = 0.2, size = 0.7
   ) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
-  scale_fill_manual(values = INTIMACY_COLORS) +
+  scale_fill_intimacy() +
   labs(y = "Belief update in P(effort high)", x = "Observed action",
        fill = "Intimacy") +
   theme(legend.position = "right") +
@@ -392,7 +386,7 @@ ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action
     hjust = -0.08, vjust = 1.5,
     size = 4.5, fill = "white", alpha = 0.5, label.size = 0
   ) +
-  scale_color_manual(values = INTIMACY_COLORS) +
+  scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17)) +
   labs(x = "Model belief update", y = "Human belief update",
        color = "Intimacy", shape = "Action") +
@@ -455,7 +449,7 @@ ggplot(df_post_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = a
     hjust = -0.08, vjust = 1.5,
     size = 4.5, fill = "white", alpha = 0.5, label.size = 0
   ) +
-  scale_color_manual(values = INTIMACY_COLORS) +
+  scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17)) +
   labs(x = "Model P(effort high)", y = "Human P(effort high)",
        color = "Intimacy", shape = "Action") +
@@ -486,7 +480,7 @@ ggplot(df_post_scenario, aes(x = action, y = empirical_stat, fill = intimacy)) +
     color = "black", alpha = 0.8
   ) +
   geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
-  scale_fill_manual(values = INTIMACY_COLORS) +
+  scale_fill_intimacy() +
   labs(
     title = "Posterior P(effort high) by scenario",
     y = "P(effort high)",
@@ -510,7 +504,7 @@ df_model_scenario <- df_model |>
 ggplot(df_model_scenario, aes(x = action, y = p_effort_high, fill = intimacy)) +
   geom_col(position = position_dodge(width = 0.8), alpha = PLOT_ALPHA) +
   geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
-  scale_fill_manual(values = INTIMACY_COLORS) +
+  scale_fill_intimacy() +
   labs(
     title = "Model-predicted P(effort high) by scenario",
     y = "P(effort high)",
