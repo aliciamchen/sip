@@ -122,8 +122,6 @@ $$U(a|s, I, e) = w_v \cdot V(a) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e
 
 **Base model**: drops the access term: $U = w_v \cdot V(a) - w_e \cdot \text{effort}(a)$.
 
-**Why the Base model is flat across effort conditions.** In this experiment $V(a) = 1$ for both actions, so $w_v \cdot V$ is constant in the softmax and the only differentiator is $-w_e \cdot \text{effort}(a)$. The fitted $w_e$ lands at the optimizer's lower clip ($\approx 10^{-6}$) on every LOSO fold, which makes the utility effectively constant and the predictions $\approx 0.5$ in every cell — independent of effort condition or intimacy. The reason $w_e$ collapses to zero is that effort and access are negatively correlated in the stimuli (the higher-access action is usually the lower-effort one). With only an effort term to work with, a positive $w_e$ would predict a uniform preference for the lower-effort = higher-access action across all intimacy levels, which contradicts the low-intimacy human data; setting $w_e \approx 0$ gives uniform predictions, which is a less-bad fit. This also explains the negative pooled $r$ for the Base model: the access $\times$ intimacy interaction is what drives behavior, and effort alone cannot substitute for it.
-
 ### Load model predictions
 
 Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/cv_loso_preds_effort.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios.
@@ -194,6 +192,82 @@ df_preds_summary |>
 ggsave(here("figures", "forw_plan_effort_comparison.pdf"),
        device = cairo_pdf, width = 14, height = 4.5)
 ```
+
+### Why the Base model is flat: a geometric view
+
+The Base model has *one effective free parameter* in this experiment ($w_e$; $w_v$ is non-identified because $V$ is constant across actions). Sweeping $w_e$ traces out a 1D curve in $(P(\text{share} \mid \text{low effort}), P(\text{share} \mid \text{high effort}))$ space — that's the entire universe of predictions the Base model can produce. The human marginal sits in a region this curve cannot reach, no matter how $w_e$ is tuned.
+
+Concretely: action 2 (share) has lower LM-rated effort than action 1 (not-share) in *both* effort conditions (the manipulation acts on action 1's effort). So:
+
+- $w_e > 0 \Rightarrow$ predictions in the upper-right (above 0.5, with positive slope — curve is above the diagonal).
+- $w_e < 0 \Rightarrow$ predictions in the lower-left (below 0.5, but with **negative** slope — curve is below the diagonal).
+- $w_e = 0 \Rightarrow$ exactly $(0.5, 0.5)$.
+
+Humans are in the lower-left *with positive slope* — above the diagonal but below 0.5 in both axes. The Base model cannot represent that combination because slope direction and intercept sign are coupled through the same parameter.
+
+```{r}
+#| fig-width: 6.5
+#| fig-asp: 1
+#| label: fig-base-model-achievable
+
+# Base model achievable curve: sweep w_e and compute marginal P(share) per condition,
+# averaged across the 16 scenarios using the LM-rated effort tables.
+df_eff <- read_csv(here("model", "outputs", "lm_scenario_params_effort.csv"),
+                   show_col_types = FALSE) |>
+  select(scenario_label, effort_condition, action, effort) |>
+  pivot_wider(names_from = action, values_from = effort, names_prefix = "a") |>
+  mutate(gap = a1 - a2)  # effort(not_share) - effort(share); positive in both conditions
+
+df_curve <- tidyr::expand_grid(
+  w_e = seq(-5, 6, by = 0.05),
+  df_eff |> select(scenario_label, effort_condition, gap)
+) |>
+  mutate(p_share = plogis(w_e * gap)) |>
+  group_by(w_e, effort_condition) |>
+  summarize(p_share = mean(p_share), .groups = "drop") |>
+  pivot_wider(names_from = effort_condition, values_from = p_share) |>
+  mutate(region = ifelse(w_e >= 0, "Allowed (w_e >= 0)", "Forbidden (w_e < 0)"))
+
+# Marginal P(share) per condition for Humans + each fitted model
+df_points <- df_preds |>
+  filter(action == 2) |>
+  mutate(effort_short = ifelse(effort == "Low effort", "low", "high")) |>
+  group_by(model, effort_short) |>
+  summarize(p_share = mean(p_action), .groups = "drop") |>
+  pivot_wider(names_from = effort_short, values_from = p_share)
+
+ggplot() +
+  geom_abline(slope = 1, intercept = 0, linetype = "dotted", color = "grey60") +
+  geom_path(data = df_curve, aes(x = low, y = high, color = region),
+            linewidth = 1.3) +
+  scale_color_manual(values = c("Allowed (w_e >= 0)" = "#7A4A5A",
+                                "Forbidden (w_e < 0)" = "#cccccc")) +
+  geom_point(data = df_points, aes(x = low, y = high, fill = model),
+             shape = 21, size = 5, color = "black", stroke = 0.5) +
+  scale_fill_manual(values = c("Humans" = "white",
+                               "Full model" = "#2C5F8D",
+                               "Discomfort-only" = "#7BA7C7",
+                               "Base model" = "#D17A6E")) +
+  ggrepel::geom_text_repel(
+    data = df_points, aes(x = low, y = high, label = model),
+    size = 3.5, point.padding = 0.5, box.padding = 0.5, seed = 1
+  ) +
+  coord_fixed(xlim = c(0, 1), ylim = c(0, 1)) +
+  labs(
+    x = "P(share saliva) | low effort",
+    y = "P(share saliva) | high effort",
+    color = "Base model curve",
+    fill = NULL,
+    title = "Base model's achievable predictions (one curve, one parameter)",
+    subtitle = "Humans live in a region the curve cannot reach"
+  ) +
+  theme(legend.position = "bottom", legend.box = "vertical")
+
+ggsave(here("figures", "forw_plan_effort_base_geometric.pdf"),
+       device = cairo_pdf, width = 6.5, height = 6.5)
+```
+
+The curve passes through $(0.5, 0.5)$ at $w_e = 0$ — that's the closest point to the human marginal, and it's the optimum the optimizer settles on. The Full model breaks out of this 1D constraint because the access × intimacy term provides a second free dimension that decouples the slope from the intercept.
 
 ### Model-human correlation
 
