@@ -281,6 +281,17 @@ df_belief_update_subj <- df |>
     x_pos = as.numeric(action) + ifelse(effort == "Low effort", -0.225, 0.225)
   )
 
+# Per-subject jitter applied uniformly across the two effort conditions, so
+# lines stay vertical (each subject's pair is jittered together).
+set.seed(67)
+subj_jitter <- df_belief_update_subj |>
+  distinct(subject_id) |>
+  mutate(jitter = runif(n(), -0.05, 0.05))
+
+df_belief_update_subj <- df_belief_update_subj |>
+  left_join(subj_jitter, by = "subject_id") |>
+  mutate(x_pos = x_pos + jitter)
+
 df_combined |>
   ggplot(aes(x = action, y = belief_update,
              group = interaction(model, effort), fill = effort)) +
@@ -301,13 +312,13 @@ df_combined |>
     aes(x = x_pos, y = belief_update,
         group = interaction(subject_id, action)),
     inherit.aes = FALSE,
-    color = "black", alpha = 0.25, linewidth = 0.3
+    color = "black", alpha = 0.15, linewidth = 0.3
   ) +
   geom_point(
     data = df_belief_update_subj,
     aes(x = x_pos, y = belief_update),
     inherit.aes = FALSE,
-    color = "black", alpha = 0.5, size = 0.8
+    color = "black", alpha = 0.2, size = 0.8
   ) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   scale_fill_manual(values = EFFORT_COLORS) +
