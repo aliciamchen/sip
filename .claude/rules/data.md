@@ -17,6 +17,7 @@ data/
   inv_plan_desire_alt/     # Desire inference, alternatives shown
   forw_plan_effort/        # Forward planning, effort manipulation (2 actions, intimacy × effort, reward fixed at high)
   inv_plan_effort/         # Inverse planning, effort manipulation (2 candidate actions × effort, intimacy inference)
+  inv_plan_effort_inferred/ # Inverse planning, effort inference (2 candidate actions × intimacy, effort inference)
   inv_plan_reward/         # Earlier "reward inference" predecessor of inv_plan_desire_alt (raw only)
   planning_comm/           # Communication experiment
   pilots/                  # Pilot experiments

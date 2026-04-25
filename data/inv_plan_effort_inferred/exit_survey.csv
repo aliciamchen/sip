@@ -1,0 +1,5 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+3b9d8180-82b4-5f32-977c-97382c8b689b,female,35,yes,,True,2
+4b020849-0757-596f-a2e0-a69462ee1c50,female,47,yes,,True,2
+fe8634ae-2ed6-5de3-a8bc-ebe9cea350f7,female,33,yes,,True,2
+8c4ca840-75c9-5650-ab52-460cf83d4646,male,29,yes,N/A,True,3
