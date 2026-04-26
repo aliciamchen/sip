@@ -11,6 +11,7 @@ Core analysis files (named after their data folder, not paper experiment number)
 - `inv-plan-intimacy-alt-analysis.qmd` — Intimacy inference, alternatives shown
 - `inv-plan-intimacy-noalt-analysis.qmd` — Intimacy inference, no alternatives shown (LM-generated counterfactuals on the model side)
 - `inv-plan-desire-alt-analysis.qmd` — Desire inference, alternatives shown
+- `inv-plan-desire-noalt-analysis.qmd` — Desire inference, no alternatives shown (data-only viz; no model yet)
 - `inv-plan-combined-correlation.qmd` — Combined correlation across the alt-shown inverse planning experiments
 - `forw-plan-effort-analysis.qmd` — Forward planning, effort manipulation (parallels `forw-plan-analysis.qmd` on the 2-action effort stimulus set)
 - `inv-plan-effort-analysis.qmd` — Inverse planning, effort manipulation (parallels `inv-plan-intimacy-alt-analysis.qmd`)
@@ -25,7 +26,7 @@ Convert experiment JSON output to CSV:
 
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
-# experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt, forw_plan_effort, inv_plan_effort, inv_plan_effort_inferred
+# experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt, inv_plan_desire_noalt, forw_plan_effort, inv_plan_effort, inv_plan_effort_inferred
 ```
 
 For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
@@ -36,6 +37,7 @@ Render analysis qmds (or open them in RStudio):
 quarto render analysis/forw-plan-analysis.qmd
 quarto render analysis/inv-plan-intimacy-alt-analysis.qmd
 quarto render analysis/inv-plan-desire-alt-analysis.qmd
+quarto render analysis/inv-plan-desire-noalt-analysis.qmd
 quarto render analysis/inv-plan-intimacy-noalt-analysis.qmd
 quarto render analysis/inv-plan-combined-correlation.qmd
 quarto render analysis/forw-plan-effort-analysis.qmd

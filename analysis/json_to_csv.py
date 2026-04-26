@@ -59,6 +59,30 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": True,
         "has_attention_memory": True,
     },
+    "nonfood_forw_plan": {
+        "description": "Non-food forward planning, same schema as forw_plan",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "intimacy_condition",
+            "reward_condition",
+            "action_0",
+            "action_1",
+            "action_2",
+            "action_3",
+        ],
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+        ],
+        "has_closeness": True,
+        "has_attention_memory": True,
+    },
     "inv_plan_intimacy_alt": {
         "description": "Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)",
         "main_trial_fields": [
@@ -105,6 +129,28 @@ EXPERIMENT_CONFIGS = {
     },
     "inv_plan_desire_alt": {
         "description": "Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "action_condition",
+            "intimacy_condition",
+            "stage",
+            "response",
+        ],
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+        ],
+        "has_closeness": False,
+        "has_attention_memory": True,
+    },
+    "inv_plan_desire_noalt": {
+        "description": "Inverse planning desire inference where action alternatives are hidden from participants",
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -256,7 +302,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                     scenario_label = trial.get("scenario_label", "")
 
                     # Handle different experiment types
-                    if experiment_name == "forw_plan":
+                    if experiment_name in ("forw_plan", "nonfood_forw_plan"):
                         # Extract action probabilities from probs field
                         probs = trial.get("probs", [])
                         action_0 = probs[0] if len(probs) > 0 else ""
@@ -300,7 +346,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_rating": intimacy_rating,
                         }
 
-                    elif experiment_name == "inv_plan_desire_alt":
+                    elif experiment_name in ("inv_plan_desire_alt", "inv_plan_desire_noalt"):
                         # Extract reward likelihood rating and stage information
                         response = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -679,7 +725,7 @@ def create_inv_plan_effort_inferred_long(output_dir):
 
 def create_inv_plan_desire_long(output_dir):
     """
-    Create main_trials_long.csv for the inv_plan_desire_alt experiment.
+    Create main_trials_long.csv for the inv_plan_desire_alt / inv_plan_desire_noalt experiments.
 
     Filters out participants who failed attention check or got 0 correct on memory check.
 
@@ -740,6 +786,7 @@ Available experiments:
   inv_plan_intimacy_alt    Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
   inv_plan_intimacy_noalt  Same as inv_plan_intimacy_alt but with action alternatives hidden from participants
   inv_plan_desire_alt      Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
+  inv_plan_desire_noalt    Same as inv_plan_desire_alt but with action alternatives hidden from participants
   forw_plan_effort         Forward planning, intimacy x relative effort (2 actions, reward fixed high)
   inv_plan_effort          Inverse planning intimacy inference, observed-action x relative effort (2 actions)
   inv_plan_effort_inferred Inverse planning effort inference, observed-action x intimacy (2 actions)
@@ -749,6 +796,7 @@ Examples:
   python json_to_csv.py inv_plan_intimacy_alt
   python json_to_csv.py inv_plan_intimacy_noalt
   python json_to_csv.py inv_plan_desire_alt
+  python json_to_csv.py inv_plan_desire_noalt
   python json_to_csv.py forw_plan_effort
   python json_to_csv.py inv_plan_effort
   python json_to_csv.py inv_plan_effort_inferred
@@ -782,13 +830,13 @@ Examples:
     process_json_files(input_dir, output_dir, config, args.experiment)
 
     # Create long format with exclusions
-    if args.experiment == "forw_plan":
+    if args.experiment in ("forw_plan", "nonfood_forw_plan"):
         print("\nCreating long format with exclusions...")
         create_forw_plan_long(output_dir)
     elif args.experiment in ("inv_plan_intimacy_alt", "inv_plan_intimacy_noalt"):
         print("\nCreating long format with exclusions...")
         create_inv_plan_intimacy_long(output_dir)
-    elif args.experiment == "inv_plan_desire_alt":
+    elif args.experiment in ("inv_plan_desire_alt", "inv_plan_desire_noalt"):
         print("\nCreating long format with exclusions...")
         create_inv_plan_desire_long(output_dir)
     elif args.experiment == "forw_plan_effort":

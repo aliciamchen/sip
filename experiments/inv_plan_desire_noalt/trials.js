@@ -9,7 +9,7 @@ export const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
-  PIPE_EXPERIMENT_ID: "TBD_DESIRE_NOALT",
+  PIPE_EXPERIMENT_ID: "fp4qqsrKmneQ",
   PROLIFIC_COMPLETION_URL:
     "https://app.prolific.com/submissions/complete?cc=C1A889GX",
 };
