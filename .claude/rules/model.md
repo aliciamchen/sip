@@ -72,3 +72,59 @@ All model-vs-human correlations reported in the analysis qmds are out-of-sample,
 The non-CV `fit_*` / `generate_*` pipelines still produce all-data fits; AIC and fitted-parameter tables in the qmds use the all-data fit, but all model-vs-human displays use the CV predictions.
 
 Model outputs are saved to `model/outputs/`. Preregistration documents are in `model/preregs/`. Legacy/experimental code is in `model/sandbox/`.
+
+## Commands
+
+LLM-derived scenario parameters (prerequisite for all fits; requires `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged):
+
+```bash
+uv run python model/lm_scenario_params.py            # canonical: 16×4 access + effort → lm_scenario_params.csv
+uv run python model/lm_scenario_params_effort.py     # effort: 64-row conditional (lm_scenario_params_effort.csv) + 32-row marginal (lm_scenario_params_effort_marginal.csv)
+```
+
+Forward-planning fits (3 ablations: Base / Discomfort-only / Full):
+
+```bash
+uv run python model/fit_forward_planning.py          # canonical
+uv run python model/fit_forward_planning_effort.py   # effort
+```
+
+Inverse-planning fits + prediction generators:
+
+```bash
+uv run python model/fit_inverse_planning.py                            # alt-shown (intimacy + desire), α_observer only
+uv run python model/generate_inverse_planning_preds.py
+uv run python model/fit_inverse_planning_noalt.py                      # no-alt, joint fit (all weights + α_observer)
+uv run python model/generate_inverse_planning_noalt_preds.py
+uv run python model/fit_inverse_planning_effort.py                     # inv_plan_effort, α_observer only
+uv run python model/generate_inverse_planning_effort_preds.py
+uv run python model/fit_inverse_planning_effort_inferred.py            # inv_plan_effort_inferred, α_observer only
+uv run python model/generate_inverse_planning_effort_inferred_preds.py
+```
+
+LOSO cross-validation (16 folds × 3 variants per experiment; the analysis qmds plot from these CSVs):
+
+```bash
+uv run python model/cv/loso_forward.py                     # refits w_v, w_d, w_e, β per fold
+uv run python model/cv/loso_inverse_alt.py                 # refits only α_observer per fold
+uv run python model/cv/loso_inverse_noalt.py               # joint fit per fold
+uv run python model/cv/loso_forward_effort.py              # refits w_d, w_e, β per fold (w_v non-identified)
+uv run python model/cv/loso_inverse_effort.py              # refits only α_observer per fold
+uv run python model/cv/loso_inverse_effort_inferred.py     # refits only α_observer per fold
+```
+
+CV outputs (in `model/outputs/`):
+- `cv_loso_forward.csv` / `cv_loso_preds.csv` — per-fold fits + per-trial held-out forward predictions
+- `cv_loso_inv_plan_intimacy_alt_preds_summary.csv` / `cv_loso_inv_plan_desire_alt_preds_summary.csv` / `cv_loso_inverse_alt_folds.csv`
+- `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv` / `cv_loso_inverse_noalt_folds.csv`
+- `cv_loso_forward_effort.csv` / `cv_loso_preds_effort.csv`
+- `cv_loso_inv_plan_effort_preds_summary.csv` / `cv_loso_inverse_effort_folds.csv`
+- `cv_loso_inv_plan_effort_inferred_preds_summary.csv` / `cv_loso_inverse_effort_inferred_folds.csv`
+
+The non-CV `fit_*` / `generate_*` pipelines still produce all-data fits — AIC and fitted-parameter tables in the qmds use the all-data fit, but all model-vs-human displays use the CV predictions.
+
+Tests:
+
+```bash
+uv run python model/test_model_compliance.py
+```

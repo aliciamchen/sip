@@ -18,3 +18,26 @@ Core analysis files (named after their data folder, not paper experiment number)
 - `json_to_csv.py` — Data processing pipeline
 
 Legacy pilot analysis files are in `analysis/legacy/`.
+
+## Commands
+
+Convert experiment JSON output to CSV:
+
+```bash
+uv run python analysis/json_to_csv.py <experiment_name>
+# experiments: forw_plan, inv_plan_intimacy_alt, inv_plan_intimacy_noalt, inv_plan_desire_alt, forw_plan_effort, inv_plan_effort, inv_plan_effort_inferred
+```
+
+For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
+
+Render analysis qmds (or open them in RStudio):
+
+```bash
+quarto render analysis/forw-plan-analysis.qmd
+quarto render analysis/inv-plan-intimacy-alt-analysis.qmd
+quarto render analysis/inv-plan-desire-alt-analysis.qmd
+quarto render analysis/inv-plan-intimacy-noalt-analysis.qmd
+quarto render analysis/inv-plan-combined-correlation.qmd
+quarto render analysis/forw-plan-effort-analysis.qmd
+quarto render analysis/inv-plan-effort-analysis.qmd
+```
