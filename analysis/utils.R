@@ -154,3 +154,98 @@ save_figure <- function(plot, filename, width = 12, height = 5, ...) {
   ggsave(here("figures", filename), plot = plot, width = width, height = height,
          device = cairo_pdf, ...)
 }
+
+# Reusable jitter+dodge for risk/access scatter panels
+POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
+                                          dodge.width = 0.06, seed = 67)
+
+# Print standardized demographics block from an experiment's exit_survey.csv
+report_demographics <- function(data_dir) {
+  df_exit <- read_csv(here("data", data_dir, "exit_survey.csv"),
+                      show_col_types = FALSE)
+  n_total <- nrow(df_exit)
+  n_passed <- df_exit |>
+    filter(attention_passed == TRUE, memory_correct_count > 0) |>
+    nrow()
+  cat("Total participants recruited:", n_total, "\n")
+  cat("Passed attention + memory checks:", n_passed, "\n")
+  cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
+      "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
+      "Min age:", min(df_exit$age, na.rm = TRUE),
+      "Max age:", max(df_exit$age, na.rm = TRUE))
+  cat("\nGender:\n")
+  print(table(df_exit$gender))
+  invisible(df_exit)
+}
+
+# Build a per-group correlation tibble with bootstrap CI and a formatted label
+# column ready for geom_label / geom_text. group_vars is a character vector of
+# columns to group by; pass NULL or omit for an overall correlation.
+format_correlation_labels <- function(df, x, y, group_vars = NULL) {
+  x <- rlang::enquo(x)
+  y <- rlang::enquo(y)
+  grouped <- if (length(group_vars)) {
+    df |> group_by(across(all_of(group_vars)))
+  } else {
+    df
+  }
+  grouped |>
+    summarize(
+      boot_result = list(boot_cor(!!x, !!y)),
+      .groups = "drop"
+    ) |>
+    mutate(
+      r = sapply(boot_result, function(b) b$r),
+      ci_lower = sapply(boot_result, function(b) b$ci_lower),
+      ci_upper = sapply(boot_result, function(b) b$ci_upper),
+      label = paste0(
+        "r = ", round(r, 2),
+        " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")"
+      )
+    ) |>
+    select(-boot_result)
+}
+
+# Add AIC and (optionally) BIC columns to a fit-results table.
+# n_obs: required for BIC; if NULL, only AIC is added.
+add_aic_bic <- function(fit_results, n_obs = NULL) {
+  out <- fit_results |>
+    mutate(AIC = 2 * n_params + 2 * nll)
+  if (!is.null(n_obs)) {
+    out <- out |> mutate(BIC = n_params * log(n_obs) + 2 * nll)
+  }
+  out
+}
+
+# One-shot model-comparison kable for the inverse-planning notebooks.
+# Computes AIC (if absent), delta_AIC from the min, and renders a kable
+# with the standard column ordering and labels.
+kable_aic_table <- function(fit_results,
+                            caption = "Model comparison (lower AIC is better)",
+                            model_col = "model_label",
+                            model_col_label = "Model") {
+  if (!"AIC" %in% names(fit_results)) {
+    fit_results <- add_aic_bic(fit_results)
+  }
+  fit_results |>
+    mutate(delta_AIC = AIC - min(AIC)) |>
+    select(all_of(model_col), nll, n_params, AIC, delta_AIC) |>
+    arrange(AIC) |>
+    knitr::kable(
+      digits = 2,
+      caption = caption,
+      col.names = c(model_col_label, "NLL", "n_params", "AIC", "ΔAIC")
+    )
+}
+
+# Rescale a tidyboot summary (empirical_stat, ci_lower, ci_upper) by `scale`
+# and rename empirical_stat to belief_update. Default scale = 100 maps
+# 0-100 ratings to 0-1 belief updates.
+rescale_belief_update <- function(df, scale = 100) {
+  df |>
+    mutate(
+      belief_update = empirical_stat / scale,
+      ci_lower = ci_lower / scale,
+      ci_upper = ci_upper / scale
+    )
+}

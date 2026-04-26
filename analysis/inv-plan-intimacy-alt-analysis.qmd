@@ -21,21 +21,7 @@ setup_analysis()
 ## Demographics
 
 ```{r}
-df_exit <- read_csv(here("data", "inv_plan_intimacy_alt", "exit_survey.csv"), show_col_types = FALSE)
-
-n_total <- nrow(df_exit)
-n_passed <- df_exit |>
-  filter(attention_passed == TRUE, memory_correct_count > 0) |>
-  nrow()
-
-cat("Total participants recruited:", n_total, "\n")
-cat("Passed attention checks:", n_passed, "\n")
-cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
-    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
-    "Min age:", min(df_exit$age, na.rm = TRUE),
-    "Max age:", max(df_exit$age, na.rm = TRUE))
-cat("\nGender:\n")
-print(table(df_exit$gender))
+report_demographics("inv_plan_intimacy_alt")
 ```
 
 ## Results
@@ -183,22 +169,7 @@ df_fit_results |>
 Following Burnham and Anderson (2002), ΔAIC values of 0–2 indicate essentially equivalent models, 4–7 indicate considerably less support for the higher-AIC model, and values greater than 10 indicate essentially no support for the higher-AIC model.
 
 ```{r}
-# Calculate AIC
-df_fit_results <- df_fit_results |>
-  mutate(AIC = 2 * n_params + 2 * nll)
-
-# Find best model
-best_aic <- min(df_fit_results$AIC)
-
-df_fit_results |>
-  mutate(delta_AIC = AIC - best_aic) |>
-  select(model_label, nll, n_params, AIC, delta_AIC) |>
-  arrange(AIC) |>
-  knitr::kable(
-    digits = 2,
-    caption = "Model comparison (lower AIC is better)",
-    col.names = c("Model", "NLL", "n_params", "AIC", "ΔAIC")
-  )
+kable_aic_table(df_fit_results)
 ```
 
 ### Load model predictions
@@ -227,12 +198,7 @@ MODEL_LEVELS <- c("Base model", "Discomfort-only", "Full model", "Humans")
 ```{r}
 df_combined <- bind_rows(
   df_belief_update_summary |>
-    mutate(
-      # Scale to proportion (-0.5 to 0.5 range)
-      belief_update = empirical_stat / 100,
-      ci_lower = ci_lower / 100,
-      ci_upper = ci_upper / 100
-    ) |>
+    rescale_belief_update() |>
     select(motivation, action, model, belief_update, ci_lower, ci_upper),
   df_model |>
     group_by(motivation, action, model) |>
@@ -291,12 +257,8 @@ df_human_scenario_pts <- df |>
   group_by(scenario_label, motivation, action) |>
   tidyboot_mean(belief_update) |>
   ungroup() |>
-  mutate(
-    belief_update = empirical_stat / 100,
-    ci_lower = ci_lower / 100,
-    ci_upper = ci_upper / 100,
-    model = "Humans"
-  ) |>
+  rescale_belief_update() |>
+  mutate(model = "Humans") |>
   select(scenario_label, motivation, action, model, belief_update, ci_lower, ci_upper)
 
 df_model_scenario_pts <- df_model |>
@@ -307,19 +269,16 @@ df_risk_combined <- bind_rows(df_human_scenario_pts, df_model_scenario_pts) |>
   inner_join(df_canonical_risk, by = c("scenario_label", "action")) |>
   mutate(model = factor(model, levels = MODEL_LEVELS))
 
-pos <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
-                            dodge.width = 0.06, seed = 67)
-
 p_belief_risk <- df_risk_combined |>
   ggplot(aes(x = risk, y = belief_update, color = motivation, shape = factor(action), group = motivation)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   geom_errorbar(
     data = df_risk_combined |> filter(model == "Humans"),
     aes(ymin = ci_lower, ymax = ci_upper),
-    position = pos,
+    position = POS_JITTER_DODGE,
     width = 0.05, alpha = 0.4, linewidth = 0.4
   ) +
-  geom_point(position = pos, alpha = 0.5, size = 2) +
+  geom_point(position = POS_JITTER_DODGE, alpha = 0.5, size = 2) +
   geom_smooth(se = FALSE, linewidth = 1) +
   scale_color_motivation() +
   scale_shape_manual(values = c(16, 17, 15, 18)) +

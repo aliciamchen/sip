@@ -24,21 +24,7 @@ setup_analysis()
 ## Demographics
 
 ```{r}
-df_exit <- read_csv(here("data", "forw_plan_effort", "exit_survey.csv"), show_col_types = FALSE)
-
-n_total <- nrow(df_exit)
-n_passed <- df_exit |>
-  filter(attention_passed == TRUE, memory_correct_count > 0) |>
-  nrow()
-
-cat("Total participants recruited:", n_total, "\n")
-cat("Passed attention + memory checks:", n_passed, "\n")
-cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
-    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
-    "Min age:", min(df_exit$age, na.rm = TRUE),
-    "Max age:", max(df_exit$age, na.rm = TRUE))
-cat("\nGender:\n")
-print(table(df_exit$gender))
+report_demographics("forw_plan_effort")
 ```
 
 ## Results
@@ -297,19 +283,7 @@ df_corr <- df_preds_summary |>
     model = droplevels(model)
   )
 
-correlations <- df_corr |>
-  group_by(model) |>
-  summarize(boot_result = list(boot_cor(model_pred, Humans)), .groups = "drop") |>
-  mutate(
-    r = sapply(boot_result, function(x) x$r),
-    ci_lower = sapply(boot_result, function(x) x$ci_lower),
-    ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0(
-      "r = ", round(r, 2),
-      " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")"
-    )
-  ) |>
-  select(-boot_result)
+correlations <- format_correlation_labels(df_corr, model_pred, Humans, group_vars = "model")
 
 ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +

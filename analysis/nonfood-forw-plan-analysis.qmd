@@ -24,21 +24,7 @@ setup_analysis()
 ## Demographics
 
 ```{r}
-df_exit <- read_csv(here("data", "nonfood_forw_plan", "exit_survey.csv"), show_col_types = FALSE)
-
-n_total <- nrow(df_exit)
-n_passed <- df_exit |>
-  filter(attention_passed == TRUE, memory_correct_count > 0) |>
-  nrow()
-
-cat("Total participants recruited:", n_total, "\n")
-cat("Passed attention checks:", n_passed, "\n")
-cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
-    "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
-    "Min age:", min(df_exit$age, na.rm = TRUE),
-    "Max age:", max(df_exit$age, na.rm = TRUE))
-cat("\nGender:\n")
-print(table(df_exit$gender))
+df_exit <- report_demographics("nonfood_forw_plan")
 ```
 
 ## Results
@@ -241,18 +227,15 @@ df_access_combined <- bind_rows(df_human_pts, df_model_pts) |>
   inner_join(df_canonical_access, by = c("scenario_label", "action")) |>
   mutate(model = factor(model, levels = c("Base model", "Discomfort-only", "Full model", "Humans")))
 
-pos <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
-                            dodge.width = 0.06, seed = 67)
-
 p_paction_access <- df_access_combined |>
   ggplot(aes(x = access, y = p_action, color = intimacy, shape = factor(action), group = intimacy)) +
   geom_errorbar(
     data = df_access_combined |> filter(model == "Humans"),
     aes(ymin = ci_lower, ymax = ci_upper),
-    position = pos,
+    position = POS_JITTER_DODGE,
     width = 0.05, alpha = 0.4, linewidth = 0.4
   ) +
-  geom_point(position = pos, alpha = 0.5, size = 1.8) +
+  geom_point(position = POS_JITTER_DODGE, alpha = 0.5, size = 1.8) +
   geom_smooth(se = FALSE, linewidth = 1) +
   scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
@@ -305,16 +288,7 @@ df_corr <- df_preds_summary |>
 #| fig-width: 10
 #| fig-asp: 0.4
 
-correlations <- df_corr |>
-  group_by(model) |>
-  summarize(boot_result = list(boot_cor(model_pred, Humans)), .groups = "drop") |>
-  mutate(
-    r = as.numeric(sapply(boot_result, function(x) x$r)),
-    ci_lower = as.numeric(sapply(boot_result, function(x) x$ci_lower)),
-    ci_upper = as.numeric(sapply(boot_result, function(x) x$ci_upper)),
-    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
-  ) |>
-  select(-boot_result)
+correlations <- format_correlation_labels(df_corr, model_pred, Humans, group_vars = "model")
 
 ggplot(df_corr, aes(x = model_pred, y = Humans, color = intimacy, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
@@ -348,13 +322,7 @@ fit_results |>
 ```
 
 ```{r}
-n_obs <- nrow(df)
-
-fit_results <- fit_results |>
-  mutate(
-    AIC = 2 * n_params + 2 * nll,
-    BIC = n_params * log(n_obs) + 2 * nll
-  )
+fit_results <- add_aic_bic(fit_results, n_obs = nrow(df))
 
 fit_results |>
   select(model, nll, n_params, AIC, BIC) |>

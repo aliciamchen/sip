@@ -175,19 +175,9 @@ df_combined <- bind_rows(
 ## Compute Correlations
 
 ```{r}
-correlations_combined <- df_combined |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_belief_update, human_belief_update)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, function(x) x$r),
-    ci_lower = sapply(boot_result, function(x) x$ci_lower),
-    ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
-  ) |>
-  select(-boot_result)
+correlations_combined <- format_correlation_labels(
+  df_combined, model_belief_update, human_belief_update, group_vars = "model"
+)
 ```
 
 ## Aggregated Correlation Plot
@@ -414,19 +404,9 @@ df_combined_effort <- bind_rows(
 ## Compute correlations
 
 ```{r}
-correlations_combined_effort <- df_combined_effort |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_belief_update, human_belief_update)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, function(x) x$r),
-    ci_lower = sapply(boot_result, function(x) x$ci_lower),
-    ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
-  ) |>
-  select(-boot_result)
+correlations_combined_effort <- format_correlation_labels(
+  df_combined_effort, model_belief_update, human_belief_update, group_vars = "model"
+)
 ```
 
 ## Aggregated correlation plot
@@ -531,19 +511,9 @@ df_combined_all <- bind_rows(
 ## Compute correlations
 
 ```{r}
-correlations_combined_all <- df_combined_all |>
-  group_by(model) |>
-  summarize(
-    boot_result = list(boot_cor(model_belief_update, human_belief_update)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot_result, function(x) x$r),
-    ci_lower = sapply(boot_result, function(x) x$ci_lower),
-    ci_upper = sapply(boot_result, function(x) x$ci_upper),
-    label = paste0("r = ", round(r, 2), " (", round(ci_lower, 2), ", ", round(ci_upper, 2), ")")
-  ) |>
-  select(-boot_result)
+correlations_combined_all <- format_correlation_labels(
+  df_combined_all, model_belief_update, human_belief_update, group_vars = "model"
+)
 ```
 
 ## Aggregated correlation plot
