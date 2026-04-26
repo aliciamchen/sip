@@ -580,3 +580,66 @@ ggplot(df_cell, aes(x = risk, y = residual, color = scenario_label, shape = fact
   theme(legend.position = "right")
 ```
 
+## LM-V regression check
+
+The food forward-planning fit above uses the binary stipulated V from `model_utils.get_stipulated_reward`. We re-fit the same three ablations using LM-elicited signed valence (`model/outputs/lm_scenario_v.csv`, also Llama-3.3-70B, 10-run averaged, signed [-1, +1]) as a regression check. For food, where any sharing roughly equally satisfies the eat / not-eat goal, binary V should be approximately right and LM-V should match or under-perform — if LM-V wins decisively here, that's a flag that the prompt or pipeline has a bug.
+
+```{r}
+fit_binary_food <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"),
+                            show_col_types = FALSE) |>
+  mutate(v_source = "binary")
+fit_lmv_food <- read_csv(here("model", "outputs", "forward_planning_fit_results_lmv.csv"),
+                         show_col_types = FALSE) |>
+  mutate(v_source = "LM-V")
+
+n_obs <- nrow(df)
+fit_combined_food <- bind_rows(fit_binary_food, fit_lmv_food) |>
+  mutate(
+    AIC = 2 * n_params + 2 * nll,
+    BIC = n_params * log(n_obs) + 2 * nll
+  ) |>
+  select(v_source, model, nll, n_params, AIC, BIC, r, r_ci_lower, r_ci_upper) |>
+  arrange(model, v_source)
+
+fit_combined_food |>
+  knitr::kable(digits = 2, caption = "Food forward planning: binary V vs LM-V (all-data fit)")
+
+fit_combined_food |>
+  select(v_source, model, AIC) |>
+  pivot_wider(names_from = v_source, values_from = AIC) |>
+  mutate(delta_AIC = `LM-V` - binary) |>
+  knitr::kable(digits = 2, caption = "ΔAIC = LM-V − binary (negative means LM-V wins)")
+```
+
+```{r}
+df_cv_food_binary <- read_csv(here("model", "outputs", "cv_loso_preds.csv"),
+                              show_col_types = FALSE) |>
+  mutate(v_source = "binary")
+df_cv_food_lmv <- read_csv(here("model", "outputs", "cv_loso_preds_lmv.csv"),
+                           show_col_types = FALSE) |>
+  mutate(v_source = "LM-V")
+
+df_cv_food_combined <- bind_rows(df_cv_food_binary, df_cv_food_lmv)
+
+df_pooled_r_food <- df_cv_food_combined |>
+  group_by(variant, v_source, intimacy, motivation, action) |>
+  summarize(
+    p_action_human = mean(p_action),
+    p_action_pred = mean(p_action_pred),
+    .groups = "drop"
+  ) |>
+  group_by(variant, v_source) |>
+  summarize(
+    boot = list(boot_cor(p_action_pred, p_action_human)),
+    .groups = "drop"
+  ) |>
+  mutate(
+    r = sapply(boot, function(x) x$r),
+    ci_lower = sapply(boot, function(x) x$ci_lower),
+    ci_upper = sapply(boot, function(x) x$ci_upper)
+  ) |>
+  select(-boot)
+
+df_pooled_r_food |>
+  knitr::kable(digits = 3, caption = "Food LOSO out-of-sample r (cell means, bootstrap 95% CI)")
+```

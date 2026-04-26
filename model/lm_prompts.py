@@ -4,12 +4,17 @@ All system prompts and user-prompt formatters live here so they're easy to
 compare and edit together. This module has no LM-call logic — see
 `lm_scenario_params*.py` and `lm_generate_alternatives.py` for that.
 
-Two rating types share the same overall structure (preamble + intro line +
+Three rating types share the same overall structure (preamble + intro line +
 rating-specific body + JSON format block):
 
   - **access**: bodily, physical-contact, or informational exposure of an
     action between the two people in the scenario.
   - **effort**: physical, logistical, and time cost of executing an action.
+  - **v**: signed valence of an action with respect to the actor's
+    motivational state — strongly counterproductive (-3) to strongly
+    serving the state (+3). Requires a `state` paragraph (the scenario's
+    `reward_high` or `reward_low` text) at call time, since the same
+    action receives different valences under different states.
 
 Each rating type can be requested with a fixed action count (4 for the
 canonical experiments, 2 for the effort experiments) or with a variable
@@ -58,6 +63,7 @@ _NUMBER_WORD = {
 _JSON_EXAMPLE_VALUES = {
     "access": [0.5, 1.2, 3.8, 5.5],
     "effort": [0.5, 3.2, 2.1, 1.5],
+    "v":      [-1.5, 0.5, 2.0, 2.8],
 }
 
 # 2-action JSON examples differ from the first 2 entries of the 4-action
@@ -65,6 +71,7 @@ _JSON_EXAMPLE_VALUES = {
 _JSON_EXAMPLE_VALUES_2 = {
     "access": [0.5, 3.8],
     "effort": [0.5, 3.2],
+    "v":      [-1.5, 2.0],
 }
 
 
@@ -161,12 +168,36 @@ _USER_INSTRUCTIONS = {
         "how much physical work, preparation, or extra equipment is required "
         "(0-6 scale):"
     ),
+    "v": (
+        "Rate how each action affects the actor in their motivational state "
+        "— from -3 (strongly counterproductive for the state) through 0 "
+        "(neutral) to +3 (strongly serves the state):"
+    ),
 }
+
+
+_V_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+
+For each scenario, one of the two people is in a particular motivational state — for example, wanting something (hungry, in pain, in urgent need) or wanting to avoid something (full, comfortable, wanting privacy). The state will be given to you explicitly.
+
+For each action, evaluate how that action affects the actor with respect to their motivational state. Does the action serve what the actor wants? Or does it actively work against it?
+
+Use this scale from -3 to +3 (continuous values allowed):
++3 = Strongly serves the state (the action straightforwardly fulfills what the actor needs or wants)
++1 = Mildly helps (the action partially satisfies the state)
+ 0 = Neutral (the action neither helps nor harms — it's irrelevant to the active state, or it neither achieves nor violates the goal)
+-1 = Mildly counterproductive (the action partially works against the state, e.g. eating a small bite when full, declining a small amount of needed help)
+-3 = Strongly counterproductive (the action actively makes the state worse — e.g. eating heartily when already painfully full, refusing urgently needed information when the actor is in distress)
+
+Important: "doesn't help" and "actively harms" are different. An action that simply fails to address the state should be near 0; only use negative ratings when the action actively makes the state worse.
+
+Rate each action only on this state-fit dimension — not on whether it would feel intimate or awkward, and not on physical effort. Those are separate dimensions."""
 
 
 _BODIES = {
     "access": _ACCESS_BODY,
     "effort": _EFFORT_BODY,
+    "v":      _V_BODY,
 }
 
 
@@ -190,7 +221,7 @@ def system_prompt(rating_type, n_actions=None):
     return f"{_PREAMBLE_RATING}\n\n{body}\n\n{json_block}"
 
 
-def user_prompt(rating_type, vignette, action_texts):
+def user_prompt(rating_type, vignette, action_texts, state=None):
     """Build the user prompt for a rating call.
 
     vignette is whatever scene-description text the LM should see (the caller
@@ -198,11 +229,22 @@ def user_prompt(rating_type, vignette, action_texts):
     `effort_low` / `effort_high`).
     action_texts is an ordered list of action descriptions; they're rendered
     as "Action 0: ...", "Action 1: ...", etc.
+    state is the actor's motivational-state paragraph (e.g. `reward_high` or
+    `reward_low`). Required for rating_type="v"; ignored for access/effort.
     """
     if rating_type not in _USER_INSTRUCTIONS:
         raise ValueError(f"unknown rating_type: {rating_type}")
+    if rating_type == "v" and state is None:
+        raise ValueError("rating_type='v' requires a `state` paragraph")
     instr = _USER_INSTRUCTIONS[rating_type]
     actions_block = "\n".join(f"Action {i}: {txt}" for i, txt in enumerate(action_texts))
+    if rating_type == "v":
+        return (
+            f"Scenario: {vignette}\n\n"
+            f"State: {state}\n\n"
+            f"{instr}\n\n"
+            f"{actions_block}"
+        )
     return f"Scenario: {vignette}\n\n{instr}\n\n{actions_block}"
 
 

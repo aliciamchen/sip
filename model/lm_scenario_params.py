@@ -52,12 +52,14 @@ _DOMAIN_PATHS = {
     "food": {
         "scenarios":           "scenarios.csv",
         "params_output":       "lm_scenario_params.csv",
+        "v_output":            "lm_scenario_v.csv",
         "alternatives_input":  "lm_alternatives.csv",
         "alternatives_output": "lm_alternatives_features.csv",
     },
     "nonfood": {
         "scenarios":           "scenarios_nonfood.csv",
         "params_output":       "lm_scenario_params_nonfood.csv",
+        "v_output":            "lm_scenario_v_nonfood.csv",
         "alternatives_input":  "lm_alternatives_nonfood.csv",
         "alternatives_output": "lm_alternatives_features_nonfood.csv",
     },
@@ -101,6 +103,18 @@ def format_effort_prompt(row):
     return build_user_prompt("effort", row["vignette"], _action_texts_4(row))
 
 
+def format_v_prompt(row, motivation):
+    """Build the V prompt for a (scenario, motivation) pair.
+
+    motivation: 'low' or 'high'. Selects which reward_* paragraph is used
+    as the actor's state.
+    """
+    state_col = f"reward_{motivation}"
+    return build_user_prompt(
+        "v", row["vignette"], _action_texts_4(row), state=row[state_col],
+    )
+
+
 # ==============================================================================
 # Parsers + aggregators
 # ==============================================================================
@@ -113,12 +127,19 @@ def _find_json(text):
 
 
 def parse_action_response(response_text):
-    """Parse JSON ratings with action_0..action_3 keys."""
+    """Parse JSON ratings with action_0..action_3 keys.
+
+    Tolerates a quirk of the V prompt's signed -3..+3 scale: some LM
+    outputs use a leading `+` sign (e.g. `"action_1": +3`), which is
+    invalid JSON. We strip leading `+` from numeric values before parsing.
+    """
     if response_text is None:
         return None
     js = _find_json(response_text.strip())
     if js is None:
         return None
+    # Strip leading + signs from numeric values (e.g. ': +3' -> ': 3').
+    js = re.sub(r":\s*\+(\d)", r": \1", js)
     try:
         ratings = json.loads(js)
         expected = {"action_0", "action_1", "action_2", "action_3"}
@@ -175,6 +196,11 @@ def normalize_access(value, target_max=2.0):
 
 def normalize_effort(value, target_max=1.0):
     return value * (target_max / 6.0)
+
+
+def normalize_v(value):
+    """[-3, +3] -> [-1, +1]. Signed valence rating."""
+    return value / 3.0
 
 
 # ==============================================================================
@@ -492,12 +518,95 @@ def score_alternatives_main(domain="food"):
     print(f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}", flush=True)
 
 
+def score_v_main(domain="food"):
+    """Generate signed-valence (V) ratings for each (scenario, action, motivation).
+
+    Two LM passes per scenario — once with the scenario's reward_high paragraph
+    as the actor's state, once with reward_low. Same 10-run averaging as
+    access/effort. Output schema: scenario_label, action, motivation, v_raw,
+    v_raw_std, v (normalized to [-1,+1]), n_runs.
+    """
+    api_key = _load_api_key()
+
+    print(f"Loading scenarios (domain={domain})...")
+    scenarios_df = load_scenarios(domain)
+    print(f"Loaded {len(scenarios_df)} scenarios")
+
+    print(f"\nInitializing Together AI client for {MODEL_ID}...")
+    client = Together(api_key=api_key)
+
+    results = []
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / _DOMAIN_PATHS[domain]["v_output"]
+
+    for idx, row in scenarios_df.iterrows():
+        scenario = row["scenario_label"]
+        print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
+
+        for motivation in ("low", "high"):
+            print(f"  Getting V ratings (motivation={motivation})...", flush=True)
+            v_ratings = get_ratings(
+                client,
+                build_system_prompt("v", n_actions=4),
+                format_v_prompt(row, motivation),
+                parse_action_response,
+            )
+            v_agg = aggregate_action_ratings(v_ratings)
+
+            for action in range(4):
+                key = f"action_{action}"
+                v_mean, v_std = v_agg[key]
+                results.append(
+                    {
+                        "scenario_label": scenario,
+                        "action": action,
+                        "motivation": motivation,
+                        "v_raw": v_mean,
+                        "v_raw_std": v_std,
+                        "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
+                        "n_runs": len(v_ratings),
+                    }
+                )
+
+            v_str = [f"{v_agg[f'action_{i}'][0]:+.1f}" for i in range(4)]
+            print(f"  V {motivation} (raw): {v_str}", flush=True)
+
+        # Checkpoint after each scenario
+        pd.DataFrame(results).to_csv(output_path, index=False)
+
+    print(f"\nSaved results to {output_path}", flush=True)
+
+    print("\n=== Summary ===")
+    results_df = pd.DataFrame(results)
+    print(f"Total rows: {len(results_df)}")
+    for mot in ("low", "high"):
+        sub = results_df[results_df["motivation"] == mot]
+        print(
+            f"\nV (normalized, motivation={mot}, target [-1, +1]):"
+            f"\n  Mean: {sub['v'].mean():+.2f}, Std: {sub['v'].std():.2f}"
+            f"\n  Range: [{sub['v'].min():+.2f}, {sub['v'].max():+.2f}]"
+        )
+    print("\nDone!")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--score-alternatives",
         action="store_true",
         help="Score access/effort for LM-generated alternatives in lm_alternatives.csv",
+    )
+    parser.add_argument(
+        "--feature",
+        choices=("access_effort", "v"),
+        default="access_effort",
+        help=(
+            "Which feature(s) to elicit. 'access_effort' (default) generates "
+            "the canonical access+effort tables. 'v' generates signed-valence "
+            "ratings per (scenario, action, motivation). Mutually exclusive "
+            "with --score-alternatives."
+        ),
     )
     parser.add_argument(
         "--domain",
@@ -511,7 +620,11 @@ if __name__ == "__main__":
         ),
     )
     args = parser.parse_args()
+    if args.score_alternatives and args.feature == "v":
+        parser.error("--score-alternatives is incompatible with --feature v")
     if args.score_alternatives:
         score_alternatives_main(args.domain)
+    elif args.feature == "v":
+        score_v_main(args.domain)
     else:
         main(args.domain)

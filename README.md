@@ -183,9 +183,13 @@ uv run python analysis/json_to_csv.py nonfood_forw_plan
 Generate LLM-derived scenario parameters (prerequisite for all model fits). The script writes to `model/outputs/lm_scenario_params.csv` and requires a `TOGETHER_API_KEY`:
 
 ```bash
-uv run python model/lm_scenario_params.py                     # food: access + effort per (scenario, action)
-uv run python model/lm_scenario_params.py --domain nonfood    # non-food: same script, scenarios_nonfood.csv → lm_scenario_params_nonfood.csv
+uv run python model/lm_scenario_params.py                                 # food: access + effort per (scenario, action)
+uv run python model/lm_scenario_params.py --domain nonfood                # non-food: same script, scenarios_nonfood.csv → lm_scenario_params_nonfood.csv
+uv run python model/lm_scenario_params.py --feature v                     # food signed-valence V: per (scenario, action, motivation), values in [-1, +1]
+uv run python model/lm_scenario_params.py --feature v --domain nonfood    # non-food signed-valence V
 ```
+
+The `--feature v` mode is an alternative to the binary stipulated V baked into `model_utils.get_stipulated_reward`. It elicits a goal-attainment rating from the LM under each motivational state, capturing graded action-by-state alignment that the binary spec misses (e.g., partial vs. full sharing differing in goal-satisfaction; counter-state actions being actively bad rather than just zero). Pair with `--v-source lm` on the fit/CV scripts.
 
 The effort experiments have a parallel script that consumes `scenarios_effort.csv` and produces per (scenario, effort_condition, action) tables — the LM sees the full vignette plus the effort paragraph so the manipulation lands in the ratings. The script also produces an effort-marginal access table (vignette only, no effort paragraph) for use in `inv_plan_effort_inferred`, where the observer does not see the effort paragraph and so cannot use effort-induced setting cues when reasoning about access.
 
@@ -196,8 +200,10 @@ uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effo
 Fit forward planning models
 
 ```bash
-uv run python model/fit_forward_planning.py                   # food
-uv run python model/fit_forward_planning.py --domain nonfood  # non-food (writes *_nonfood.csv outputs)
+uv run python model/fit_forward_planning.py                                 # food, binary V (default)
+uv run python model/fit_forward_planning.py --domain nonfood                # non-food (writes *_nonfood.csv outputs)
+uv run python model/fit_forward_planning.py --v-source lm                   # food, LM-elicited signed V (writes *_lmv.csv outputs)
+uv run python model/fit_forward_planning.py --domain nonfood --v-source lm  # non-food + LM-V
 ```
 
 Use forward planning parameters to fit inverse planning models and generate predictions. The alt-shown experiments freeze the Exp 1 actor weights and fit only α_observer; the no-alt experiment refits all actor weights jointly with α_observer because the padded observer reasons over a different (variable-length) action space where the Exp 1 weights don't transplant cleanly.

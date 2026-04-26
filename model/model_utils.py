@@ -186,6 +186,36 @@ def load_domain_assets(domain="food"):
     raise ValueError(f"Unknown domain: {domain!r} (expected 'food' or 'nonfood')")
 
 
+def load_lm_v(domain="food"):
+    """Load signed-valence (V) table from lm_scenario_v{,_nonfood}.csv.
+
+    Returns a jnp.array of shape (16, 4, 2) indexed by
+    (scenario_idx, action, reward_condition), where reward_condition
+    matches RewardConditions (LOW=0, HIGH=1). Values normalized to [-1, +1].
+
+    Raises FileNotFoundError if the CSV is missing — run
+    `uv run python model/lm_scenario_params.py --feature v --domain {domain}` first.
+    """
+    if domain == "food":
+        scenario_to_idx = SCENARIO_TO_IDX
+        filename = "lm_scenario_v.csv"
+    elif domain == "nonfood":
+        scenario_to_idx = NONFOOD_SCENARIO_TO_IDX
+        filename = "lm_scenario_v_nonfood.csv"
+    else:
+        raise ValueError(f"Unknown domain: {domain!r}")
+    path = Path(__file__).resolve().parent / "outputs" / filename
+    df = pd.read_csv(path)
+    motivation_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
+    v = np.zeros((16, 4, 2), dtype=np.float32)
+    for _, row in df.iterrows():
+        s = scenario_to_idx[row["scenario_label"]]
+        a = int(row["action"])
+        m = motivation_to_idx[row["motivation"]]
+        v[s, a, m] = row["v"]
+    return jnp.array(v)
+
+
 # Canonical is_share mapping for the 4 experimenter-authored actions.
 # Slot 0 of the padded tables always holds the observed canonical action, so
 # its is_share is determined by this vector. Matches get_stipulated_reward.
@@ -440,6 +470,47 @@ def get_utility_no_access_disc(
 
 
 # ==============================================================================
+# LM-V utility variants
+# ==============================================================================
+# Same shape as the binary-V utilities above, but V is read from an LM-elicited
+# (16, 4, 2) table indexed by (scenario, action, reward_condition) instead of
+# the closed-form get_stipulated_reward(). access_only doesn't depend on V, so
+# only access_full and no_access have LM-V variants.
+
+
+@jax.jit
+def get_lm_v(action, scenario_idx, reward_condition, v_table):
+    return v_table[scenario_idx, action, reward_condition]
+
+
+@jax.jit
+def get_utility_access_full_lmv(
+    action, scenario_idx, intimacy, reward_condition,
+    alpha, w_v, w_d, w_e,
+    access_table, effort_table, v_table,
+):
+    access = access_table[scenario_idx, action]
+    effort = effort_table[scenario_idx, action]
+    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
+    return alpha * (
+        w_v * V
+        - w_d * access * (1 - intimacy)
+        - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_no_access_lmv(
+    action, scenario_idx, intimacy, reward_condition,
+    alpha, w_v, w_e,
+    access_table, effort_table, v_table,
+):
+    effort = effort_table[scenario_idx, action]
+    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
+    return alpha * (w_v * V - w_e * effort)
+
+
+# ==============================================================================
 # Forward-planning actor models
 # ==============================================================================
 
@@ -510,6 +581,59 @@ def actor_forw_no_access[
                 action, scenario_idx, intimacy, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ------------------------------------------------------------------------------
+# LM-V variants (same memos, but V is looked up from a (16,4,2) table)
+# ------------------------------------------------------------------------------
+
+
+@memo
+def actor_forw_access_full_lmv[
+    action: actions,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_access_full_lmv(
+                action, scenario_idx, intimacy, reward_condition,
+                alpha, w_v, w_d, w_e,
+                access_table, effort_table, v_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_forw_no_access_lmv[
+    action: actions,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: chooses(
+        action in actions,
+        wpp=exp(
+            get_utility_no_access_lmv(
+                action, scenario_idx, intimacy, reward_condition,
+                alpha, w_v, w_e,
+                access_table, effort_table, v_table,
             )
         ),
     )

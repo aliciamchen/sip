@@ -6,6 +6,8 @@
 .PHONY: all help clean test data data-forw data-intimacy-alt data-intimacy-noalt data-desire-alt \
         data-nonfood-forw \
         fit fit-forward fit-inverse fit-forward-nonfood predictions cv-forward-nonfood \
+        lm-v lm-v-food lm-v-nonfood fit-forward-lmv fit-forward-nonfood-lmv \
+        cv-forward-lmv cv-forward-nonfood-lmv \
         analysis analysis-forw-plan analysis-inv-plan-intimacy-alt analysis-inv-plan-desire-alt \
         analysis-inv-plan-intimacy-noalt analysis-inv-plan-combined analysis-nonfood-forw-plan
 
@@ -35,6 +37,14 @@ help:
 	@echo "    data-nonfood-forw       - Process non-food forward planning raw JSON"
 	@echo "    fit-forward-nonfood     - Fit non-food forward planning models"
 	@echo "    cv-forward-nonfood      - LOSO CV for non-food forward planning"
+	@echo ""
+	@echo "  LM-V variants (signed-valence V from LM, alternative to binary stipulated V):"
+	@echo "    lm-v                    - Generate LM-V tables for both food and non-food"
+	@echo "    lm-v-food / lm-v-nonfood - Generate LM-V table for one domain"
+	@echo "    fit-forward-lmv         - Fit food forward planning with LM-V"
+	@echo "    fit-forward-nonfood-lmv - Fit non-food forward planning with LM-V"
+	@echo "    cv-forward-lmv          - LOSO CV for food with LM-V"
+	@echo "    cv-forward-nonfood-lmv  - LOSO CV for non-food with LM-V"
 	@echo ""
 	@echo "  Data Processing (requires raw JSON - for internal use):"
 	@echo "    data                   - Process all raw JSON to CSV"
@@ -109,6 +119,51 @@ model/outputs/cv_loso_preds_nonfood.csv model/outputs/cv_loso_forward_nonfood.cs
 	uv run python model/cv/loso_forward.py --domain nonfood
 
 cv-forward-nonfood: model/outputs/cv_loso_preds_nonfood.csv
+
+# LM-V tables (signed-valence V from LM)
+model/outputs/lm_scenario_v.csv: experiments/scenarios.csv model/lm_scenario_params.py model/lm_prompts.py
+	uv run python model/lm_scenario_params.py --feature v --domain food
+
+model/outputs/lm_scenario_v_nonfood.csv: experiments/scenarios_nonfood.csv model/lm_scenario_params.py model/lm_prompts.py
+	uv run python model/lm_scenario_params.py --feature v --domain nonfood
+
+lm-v-food: model/outputs/lm_scenario_v.csv
+lm-v-nonfood: model/outputs/lm_scenario_v_nonfood.csv
+lm-v: lm-v-food lm-v-nonfood
+
+# Forward planning fits with LM-V
+model/outputs/forward_planning_fit_results_lmv.csv model/outputs/forward_planning_fits_lmv.csv: \
+        data/forw_plan/main_trials_long.csv \
+        model/outputs/lm_scenario_params.csv \
+        model/outputs/lm_scenario_v.csv \
+        model/fit_forward_planning.py model/model_utils.py
+	uv run python model/fit_forward_planning.py --v-source lm
+
+fit-forward-lmv: model/outputs/forward_planning_fit_results_lmv.csv
+
+model/outputs/forward_planning_fit_results_nonfood_lmv.csv model/outputs/forward_planning_fits_nonfood_lmv.csv: \
+        data/nonfood_forw_plan/main_trials_long.csv \
+        model/outputs/lm_scenario_params_nonfood.csv \
+        model/outputs/lm_scenario_v_nonfood.csv \
+        model/fit_forward_planning.py model/model_utils.py
+	uv run python model/fit_forward_planning.py --domain nonfood --v-source lm
+
+fit-forward-nonfood-lmv: model/outputs/forward_planning_fit_results_nonfood_lmv.csv
+
+# LOSO CV with LM-V
+model/outputs/cv_loso_preds_lmv.csv model/outputs/cv_loso_forward_lmv.csv: \
+        model/outputs/forward_planning_fit_results_lmv.csv \
+        model/cv/loso_forward.py model/model_utils.py
+	uv run python model/cv/loso_forward.py --v-source lm
+
+cv-forward-lmv: model/outputs/cv_loso_preds_lmv.csv
+
+model/outputs/cv_loso_preds_nonfood_lmv.csv model/outputs/cv_loso_forward_nonfood_lmv.csv: \
+        model/outputs/forward_planning_fit_results_nonfood_lmv.csv \
+        model/cv/loso_forward.py model/model_utils.py
+	uv run python model/cv/loso_forward.py --domain nonfood --v-source lm
+
+cv-forward-nonfood-lmv: model/outputs/cv_loso_preds_nonfood_lmv.csv
 
 # =============================================================================
 # Model Predictions
