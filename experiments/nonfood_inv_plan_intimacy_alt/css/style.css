@@ -1,0 +1,196 @@
+/* =========================
+   Base typography
+   ========================= */
+p {
+  width: 60%;
+  margin: auto;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+h3 {
+  width: 80%;
+  text-align: center;
+  margin: auto;
+  margin-bottom: 15px;
+}
+
+/* Utility */
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.consent-container p {
+  width: 50% !important;
+}
+
+.instructions-container p {
+  width: 50% !important;
+}
+
+.vignette-text {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  padding: 20px 30px;
+  margin: 20px auto 30px auto;
+  max-width: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.vignette-text.vignette-text-wide {
+  max-width: 55%;
+}
+
+.vignette-text.vignette-observed {
+  margin-top: 15px;
+  margin-bottom: 30px;
+  background-color: #e8f4e8;
+}
+
+.vignette-text p {
+  width: 100% !important;
+  margin-bottom: 12px;
+}
+
+.vignette-text ul {
+  width: auto !important;
+  margin: 0 0 12px 20px;
+  padding-right: 10px;
+  text-align: left;
+}
+
+.vignette-text li {
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+/* =========================
+   Vignette/action text
+   ========================= */
+.action-text {
+  width: 60%;
+  margin: auto;
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+/* =========================
+   Likert survey sizing
+   ========================= */
+.jspsych-survey-likert-table {
+  width: 50% !important;
+  margin: auto !important;
+}
+
+.jspsych-survey-likert-row {
+  width: 100% !important;
+}
+
+.jspsych-survey-likert-question {
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.jspsych-survey-likert-options {
+  width: 100% !important;
+}
+
+.jspsych-survey-likert-option {
+  width: auto !important;
+  min-width: 40px !important;
+}
+
+/* =========================
+   Attention check (multi-choice)
+   ========================= */
+.jspsych-survey-multi-choice-preamble p {
+  width: 100% !important;
+}
+
+#jspsych-content {
+  padding: 0 100px;
+}
+
+p.jspsych-survey-multi-choice-text.survey-multi-choice {
+  width: 100%;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  text-align: left;
+}
+
+.jspsych-survey-multi-choice-question {
+  width: 100% !important;
+  margin-bottom: 24px !important;
+}
+
+.jspsych-survey-multi-choice-option {
+  width: 100% !important;
+}
+
+/* =========================
+   Closeness emphasis
+   ========================= */
+.closeness-info {
+  background-color: #f0f8ff;
+  border: 2px solid #4a90e2;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px auto;
+  font-weight: 600;
+  color: #2c3e50;
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.1);
+  width: auto !important;
+  max-width: 60%;
+  display: inline-block;
+}
+
+.closeness-info strong {
+  color: #1a5490;
+}
+
+/* =========================
+   Exit survey styles (migrated from inline)
+   ========================= */
+.survey-container {
+  width: 55%;
+  margin: auto;
+  text-align: left;
+}
+
+.question {
+  margin-bottom: 20px;
+}
+
+.question-label {
+  font-weight: bold;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.question-option {
+  margin-bottom: 5px;
+}
+
+.question-option input {
+  margin-right: 8px;
+}
+
+.question-option label {
+  cursor: pointer;
+}
+
+.question input[type="text"],
+.question textarea {
+  width: 100%;
+  max-width: 350px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.question textarea {
+  height: 80px;
+  resize: vertical;
+}

@@ -1,0 +1,58 @@
+<div class="survey-container">
+  <div class="question">
+    <div class="question-label">Which gender do you most identify with?</div>
+    <div class="question-option">
+      <input type="radio" id="genderChoice1" name="gender" value="male" />
+      <label for="genderChoice1">Male</label>
+    </div>
+    <div class="question-option">
+      <input type="radio" id="genderChoice2" name="gender" value="female" />
+      <label for="genderChoice2">Female</label>
+    </div>
+    <div class="question-option">
+      <input
+        type="radio"
+        id="genderChoice3"
+        name="gender"
+        value="nonconforming"
+      />
+      <label for="genderChoice3">Gender Variant/Non-Conforming</label>
+    </div>
+    <div class="question-option">
+      <input type="radio" id="genderChoice4" name="gender" value="abstain" />
+      <label for="genderChoice4">Prefer not to answer</label>
+    </div>
+  </div>
+
+  <div class="question">
+    <label for="age" class="question-label">Enter your age:</label>
+    <input type="text" id="age" name="age" required />
+  </div>
+
+  <div class="question">
+    <div class="question-label">
+      Did you understand the instructions and read the scenarios and actions carefully?
+    </div>
+    <div class="question-option">
+      <input
+        type="radio"
+        id="understoodChoice1"
+        name="understood"
+        value="yes"
+        required
+      />
+      <label for="understoodChoice1">Yes</label>
+    </div>
+    <div class="question-option">
+      <input type="radio" id="understoodChoice2" name="understood" value="no" />
+      <label for="understoodChoice2">No</label>
+    </div>
+  </div>
+
+  <div class="question">
+    <label for="comments" class="question-label"
+      >Other comments or suggestions?</label
+    >
+    <textarea id="comments" name="comments" rows="5" cols="50"></textarea>
+  </div>
+</div>

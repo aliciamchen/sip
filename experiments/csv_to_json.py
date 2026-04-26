@@ -3,7 +3,8 @@
 
 Each stimulus CSV maps to a set of experiment directories that consume it:
 - scenarios.csv → forw_plan, inv_plan_intimacy_alt, inv_plan_desire_alt, inv_plan_intimacy_noalt
-- scenarios_effort.csv → forw_plan_effort, inv_plan_effort
+- scenarios_effort.csv → forw_plan_effort, inv_plan_effort, inv_plan_effort_inferred
+- scenarios_nonfood.csv → nonfood_forw_plan, nonfood_inv_plan_intimacy_alt, nonfood_inv_plan_desire_alt
 """
 
 import csv
@@ -26,6 +27,14 @@ SOURCES = [
             "forw_plan_effort",
             "inv_plan_effort",
             "inv_plan_effort_inferred",
+        ],
+    ),
+    (
+        "scenarios_nonfood.csv",
+        [
+            "nonfood_forw_plan",
+            "nonfood_inv_plan_intimacy_alt",
+            "nonfood_inv_plan_desire_alt",
         ],
     ),
 ]
