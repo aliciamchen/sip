@@ -49,7 +49,7 @@ Three ablations of this utility are fit and compared for both the forward-planni
 - `access`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both. Produced by `model/lm_scenario_params.py` → `model/outputs/lm_scenario_params.csv`.
 - `effort`: physical, logistical, and time cost of executing the action. Produced by the same script.
 
-A single domain-general prompt set in `model/lm_prompts.py` is used for both the food and non-food pipelines. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios. The original food-specific prompts are retained in `lm_prompts.py` for reproducibility of pre-unification fits, but they are no longer the default.
+A single prompt set in `model/lm_prompts.py` is used for both the food and non-food pipelines. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios.
 
 The fitting and prediction scripts index into these tables by `scenario_idx`; running them requires `lm_scenario_params.csv` to exist. Generating the CSV requires `TOGETHER_API_KEY` in `.env` and costs a few Together API calls.
 

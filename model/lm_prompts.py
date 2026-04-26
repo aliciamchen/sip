@@ -7,8 +7,9 @@ compare and edit together. This module has no LM-call logic — see
 Two rating types share the same overall structure (preamble + intro line +
 rating-specific body + JSON format block):
 
-  - **access**: bodily-channel and/or informational exposure of an action
-  - **effort**: physical / logistical cost of executing an action
+  - **access**: bodily, physical-contact, or informational exposure of an
+    action between the two people in the scenario.
+  - **effort**: physical, logistical, and time cost of executing an action.
 
 Each rating type can be requested with a fixed action count (4 for the
 canonical experiments, 2 for the effort experiments) or with a variable
@@ -18,27 +19,20 @@ sees a different number of LM-generated alternatives per cell).
 A third call type, **alternatives generation**, has its own system prompt
 and user-prompt formatter at the bottom of the file.
 
-## Domain parameter
+The prompts are domain-general: they cover food sharing as well as the
+three non-food sub-types in `scenarios_nonfood.csv` — *substance*
+(chapstick, towel, hairbrush, harmonica, sunscreen), *space* (blanket,
+sleeping-bag, bed, locker-room, sauna), and *privacy* (breakup, payment,
+gossip, home, navigation). The access rubric covers three channel types
+(bodily-substance, direct physical-contact, informational/private-resource);
+the effort rubric covers physical work, equipment/setup, time cost, and
+coordination/bookkeeping. The original food-only prompts were retired in
+favor of this single set after a side-by-side comparison showed the
+unified prompts produced equal or slightly better fits on the food data.
 
-The access prompt and the alternatives prompts both accept a `domain`
-parameter:
-
-  - `domain="general"` (default) is the cross-domain version covering food
-    sharing AND the three non-food sub-types in `scenarios_nonfood.csv`:
-    *substance* (chapstick, towel, hairbrush, harmonica, sunscreen),
-    *space* (blanket, sleeping-bag, bed, locker-room, sauna), and
-    *privacy* (breakup, payment, gossip, home, navigation). The access
-    rubric is generalized from "bodily channel" to "exposure between the
-    two people — bodily, physical-contact, or informational." The effort
-    rubric is generalized from food-handling examples (cutting, pouring,
-    plates) to domain-spanning ones (preparing, cleaning, arranging,
-    extra items / equipment / setup). Note that privacy-type scenarios
-    tend to involve little physical/logistical cost variation, so effort
-    ratings on those scenarios will cluster near zero by construction.
-  - `domain="food"` is a legacy option preserved for reproducibility — it
-    reproduces the original food/saliva-specific prompts byte-identical
-    to what the project sent before unification. Used only to re-run
-    historical food-only fits if needed.
+Note that privacy-type scenarios tend to involve little physical or
+logistical cost variation, so effort ratings on those scenarios cluster
+near zero by construction.
 
 Editing any prompt here will change all callers — re-run the relevant LM
 script and downstream fits.
@@ -119,35 +113,8 @@ def _json_format_block(rating_type, n_actions):
 # ==============================================================================
 # Rating-type-specific bodies
 # ==============================================================================
-#
-# Each body follows the canonical prompt verbatim. They're stored as constants
-# so a careful reader can see exactly what the LM is being told to do for
-# each rating type.
 
-# --- access: food-specific (original prompt, preserved byte-identical) -------
-
-_ACCESS_BODY_FOOD = """In this survey, you will read vignettes about two people sharing food in different situations. {INTRO}
-
-For each action, evaluate: how much does this action create a direct bodily channel between the two people — a pathway for substances from one person's body to reach the other, or for their bodies to physically contact each other?
-
-Consider concrete things like:
-- Does any substance from one person's body (saliva, breath, skin oils) reach the other person or their food?
-- Does the action involve direct physical contact between the two people's bodies?
-- Does the action involve one person handling food that will then enter the other person's mouth?
-
-Simply eating in the same physical space — for example, two people at the same table with fully separate portions — does NOT by itself create such a channel, and should be rated near zero.
-
-Rate only what the action DOES in this physical sense — not how intimate or awkward it would feel in any particular relationship.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = No bodily channel between the two people (complete physical separation)
-3 = Indirect bodily channel (e.g. eating from the same shared container with separate utensils)
-6 = Direct transfer of bodily substances (e.g. sharing the same piece of food that both bite)"""
-
-
-# --- access: domain-general (covers food + substance + space + privacy) ------
-
-_ACCESS_BODY_GENERAL = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+_ACCESS_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
 For each action, evaluate: how much does this action create a channel between the two people — a pathway for something to move from one person's side to the other, in a way that exposes one person to the other.
 
@@ -166,32 +133,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 6 = Direct channel (e.g. direct bodily-substance transfer, skin-to-skin contact, sharing private or sensitive personal details)"""
 
 
-_ACCESS_BODIES = {
-    "food": _ACCESS_BODY_FOOD,
-    "general": _ACCESS_BODY_GENERAL,
-}
-
-
-# --- effort: food-specific (original prompt, preserved byte-identical) -------
-
-_EFFORT_BODY_FOOD = """In this survey, you will read vignettes about two people in a food-sharing situation. {INTRO}
-
-For each action, evaluate the PHYSICAL AND LOGISTICAL COST of executing the action. Consider:
-- How much physical work does the action require (preparing, serving, cutting, pouring, handing over)?
-- Does the action need extra items or utensils (plates, napkins, cutlery, containers)?
-- Does the action add practical steps beyond simply eating?
-
-Do NOT rate social awkwardness or interpersonal discomfort — only the physical and logistical cost.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = No effort (acting independently, eating what you already have)
-3 = Moderate effort (a few steps, some preparation)
-6 = High effort (many steps, substantial setup)"""
-
-
-# --- effort: domain-general (covers food + substance + space + privacy) ------
-
-_EFFORT_BODY_GENERAL = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+_EFFORT_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
 For each action, evaluate the PHYSICAL, LOGISTICAL, AND TIME COST of executing the action. Consider:
 - How much physical work does the action require (preparing, serving, cutting, pouring, handing over, cleaning, wiping, drying, tidying, rearranging, applying)?
@@ -207,16 +149,8 @@ Use this scale from 0 to 6 (continuous values allowed):
 6 = High effort (many steps, substantial setup, significant time, or repeated coordination)"""
 
 
-_EFFORT_BODIES = {
-    "food": _EFFORT_BODY_FOOD,
-    "general": _EFFORT_BODY_GENERAL,
-}
-
-
 # Per-rating-type instructions used in the user prompt (the line just above
-# the numbered actions). The access instruction was already domain-neutral
-# in the original ("physically, informationally, or both") and is shared
-# across both food and general domains.
+# the numbered actions).
 _USER_INSTRUCTIONS = {
     "access": (
         "Rate how much each action opens each person up to the other — "
@@ -230,33 +164,28 @@ _USER_INSTRUCTIONS = {
 }
 
 
+_BODIES = {
+    "access": _ACCESS_BODY,
+    "effort": _EFFORT_BODY,
+}
+
+
 # ==============================================================================
 # Public API: rating prompts (access / effort)
 # ==============================================================================
 
 
-def system_prompt(rating_type, n_actions=None, domain="general"):
+def system_prompt(rating_type, n_actions=None):
     """Build the system prompt for a rating call.
 
     rating_type: one of "access", "effort".
     n_actions: 2 or 4 for fixed-length rating, or None for the variable-length
         case used by no-alt alternative scoring.
-    domain: "general" (default, cross-domain version covering food + non-food
-        scenarios) or "food" (legacy option that reproduces the original
-        food-specific prompt byte-identical, preserved for reproducibility of
-        pre-unification fits). Affects both access and effort prompts.
     """
-    if rating_type not in ("access", "effort"):
+    if rating_type not in _BODIES:
         raise ValueError(f"unknown rating_type: {rating_type}")
-    if domain not in ("food", "general"):
-        raise ValueError(f"unknown domain: {domain}")
-
     intro = _intro_line(n_actions)
-    if rating_type == "access":
-        body = _ACCESS_BODIES[domain].format(INTRO=intro)
-    else:  # effort
-        body = _EFFORT_BODIES[domain].format(INTRO=intro)
-
+    body = _BODIES[rating_type].format(INTRO=intro)
     json_block = _json_format_block(rating_type, n_actions)
     return f"{_PREAMBLE_RATING}\n\n{body}\n\n{json_block}"
 
@@ -269,11 +198,8 @@ def user_prompt(rating_type, vignette, action_texts):
     `effort_low` / `effort_high`).
     action_texts is an ordered list of action descriptions; they're rendered
     as "Action 0: ...", "Action 1: ...", etc.
-
-    The user-prompt instruction line is domain-neutral, so no `domain`
-    parameter is needed here.
     """
-    if rating_type not in ("access", "effort"):
+    if rating_type not in _USER_INSTRUCTIONS:
         raise ValueError(f"unknown rating_type: {rating_type}")
     instr = _USER_INSTRUCTIONS[rating_type]
     actions_block = "\n".join(f"Action {i}: {txt}" for i, txt in enumerate(action_texts))
@@ -285,26 +211,7 @@ def user_prompt(rating_type, vignette, action_texts):
 # ==============================================================================
 
 
-_ALTERNATIVES_SYSTEM_PROMPT_FOOD = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read a vignette about two people in a food-sharing situation. You will be told what action they took in the situation.
-
-Your job is to list the set of plausible alternative actions the two people could have taken instead. Focus specifically on different WAYS the two people could handle and consume the food together — the mechanics of sharing. The alternatives should span a range of physical closeness / saliva-transfer risk: from not consuming the food at all or one person consuming it alone, to cutting or dividing separate portions, to ways that include increasing saliva-transfer risk (e.g., double dipping or biting from the same part of the food)
-
-Generate however many alternatives you think are plausible, but no more than 10. Only include alternatives that are plausible in the specific situation; do not pad the list with implausible options. Do not include the action they actually took.
-
-For each alternative, tag it with is_share ∈ {0, 1}:
-- is_share = 1 if both people end up consuming the same food (whether from divided portions of the same dish, shared utensils, or the same piece of food)
-- is_share = 0 if only one person consumes the food, or neither does (e.g. refusing, throwing it away, one person giving it all to the other)
-
-Respond ONLY with a JSON array in this exact format, no explanation:
-[
-  {"action": "short description of alternative 1", "is_share": 0 or 1},
-  {"action": "short description of alternative 2", "is_share": 0 or 1}
-]"""
-
-
-_ALTERNATIVES_SYSTEM_PROMPT_GENERAL = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
+ALTERNATIVES_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
 
 In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
@@ -323,53 +230,16 @@ Respond ONLY with a JSON array in this exact format, no explanation:
 ]"""
 
 
-_ALTERNATIVES_SYSTEM_PROMPTS = {
-    "food": _ALTERNATIVES_SYSTEM_PROMPT_FOOD,
-    "general": _ALTERNATIVES_SYSTEM_PROMPT_GENERAL,
-}
-
-
-def alternatives_system_prompt(domain="general"):
-    """Return the system prompt for the alternative-generation call.
-
-    domain: "general" (default, cross-domain version covering food + non-food
-        scenarios) or "food" (legacy option that reproduces the original
-        food-specific prompt byte-identical, preserved for reproducibility).
-    """
-    if domain not in ("food", "general"):
-        raise ValueError(f"unknown domain: {domain}")
-    return _ALTERNATIVES_SYSTEM_PROMPTS[domain]
-
-
-_ALTERNATIVES_USER_TAIL = {
-    "food": (
-        "List the set of plausible alternative ways the two people could "
-        "have handled and consumed the food instead. Vary across physical "
-        "closeness / saliva-transfer risk. Tag each with is_share ∈ {0, 1}. "
-        "Do not include the action they actually took."
-    ),
-    "general": (
-        "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Vary across exposure between "
-        "them — bodily, physical, or informational. Tag each with "
-        "is_share ∈ {0, 1}. Do not include the action they actually took."
-    ),
-}
-
-
-def alternatives_user_prompt(vignette, reward_text, observed_action_text, domain="general"):
+def alternatives_user_prompt(vignette, reward_text, observed_action_text):
     """Build the user prompt for the alternative-generation call (used by
-    the no-alt experiment to generate counterfactuals).
-
-    domain: "general" (default) or "food" (legacy).
-    """
-    if domain not in ("food", "general"):
-        raise ValueError(f"unknown domain: {domain}")
-    tail = _ALTERNATIVES_USER_TAIL[domain]
+    the no-alt experiment to generate counterfactuals)."""
     return (
         f"Scenario: {vignette}\n"
         f"{reward_text}\n\n"
         f"The two people took the following action:\n"
         f"{observed_action_text}\n\n"
-        f"{tail}"
+        "List the set of plausible alternative ways the two people could "
+        "have handled the situation instead. Vary across exposure between "
+        "them — bodily, physical, or informational. Tag each with "
+        "is_share ∈ {0, 1}. Do not include the action they actually took."
     )

@@ -20,10 +20,6 @@ Usage:
     uv run python model/lm_scenario_params.py --domain nonfood                       # nonfood scenarios canonical-4
     uv run python model/lm_scenario_params.py --domain nonfood --score-alternatives  # nonfood alternatives features
 
-All runs use the domain-general prompt set. To reproduce a pre-unification
-fit with the old food-specific prompts, modify lm_prompts.py callers
-(no CLI flag is exposed for this).
-
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
     - `together` Python package (add to pyproject.toml)
@@ -511,8 +507,7 @@ if __name__ == "__main__":
             "Which scenario set to score. 'food' (default) uses scenarios.csv "
             "and writes to lm_scenario_params{,_alternatives_features}.csv; "
             "'nonfood' uses scenarios_nonfood.csv and writes to "
-            "lm_scenario_params_nonfood{,_alternatives_features_nonfood}.csv. "
-            "Both use the domain-general LM prompt set."
+            "lm_scenario_params_nonfood{,_alternatives_features_nonfood}.csv."
         ),
     )
     args = parser.parse_args()

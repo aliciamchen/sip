@@ -20,8 +20,6 @@ Output:
     --domain food (default) → model/outputs/lm_alternatives.csv
     --domain nonfood        → model/outputs/lm_alternatives_nonfood.csv
 
-Both runs use the domain-general LM prompt set.
-
 Usage:
     uv run python model/lm_generate_alternatives.py
     uv run python model/lm_generate_alternatives.py --domain nonfood
@@ -61,7 +59,7 @@ _DOMAIN_PATHS = {
 }
 
 
-from lm_prompts import alternatives_system_prompt
+from lm_prompts import ALTERNATIVES_SYSTEM_PROMPT
 from lm_prompts import alternatives_user_prompt as format_user_prompt
 
 
@@ -111,7 +109,7 @@ def _dedup_alternatives(alts):
 
 def elicit_alternatives(client, vignette, reward_text, observed_action_text):
     messages = [
-        {"role": "system", "content": alternatives_system_prompt()},
+        {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
         {
             "role": "user",
             "content": format_user_prompt(vignette, reward_text, observed_action_text),
@@ -226,8 +224,7 @@ if __name__ == "__main__":
         help=(
             "Which scenario set to elicit alternatives for. 'food' (default) "
             "uses scenarios.csv → lm_alternatives.csv; 'nonfood' uses "
-            "scenarios_nonfood.csv → lm_alternatives_nonfood.csv. Both use "
-            "the domain-general LM prompt set."
+            "scenarios_nonfood.csv → lm_alternatives_nonfood.csv."
         ),
     )
     args = parser.parse_args()
