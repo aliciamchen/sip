@@ -146,6 +146,46 @@ def load_lm_scenario_params(filepath=None):
 LLM_TABLES = load_lm_scenario_params()
 
 
+# ==============================================================================
+# Domain-aware asset loading (food vs nonfood)
+# ==============================================================================
+# The memo models in this module use `Scenarios: Scenarios` as a memo dimension,
+# but only the cardinality (16) is load-bearing — the IntEnum names (APPLES,
+# BASKETBALL, ...) are not. So food and nonfood reuse the same memo models with
+# different scenario-label↔index maps and different LLM tables.
+
+NONFOOD_SCENARIO_LABELS = [
+    "bed", "blanket", "breakup", "chapstick", "gossip", "hairbrush",
+    "harmonica", "hat", "home", "locker-room", "navigation", "payment",
+    "sauna", "sleeping-bag", "sunscreen", "towel",
+]
+NONFOOD_SCENARIO_TO_IDX = {label: idx for idx, label in enumerate(NONFOOD_SCENARIO_LABELS)}
+
+
+def _load_nonfood_lm_tables():
+    path = (
+        Path(__file__).resolve().parent / "outputs" / "lm_scenario_params_nonfood.csv"
+    )
+    df = pd.read_csv(path)
+    access = np.zeros((len(NONFOOD_SCENARIO_LABELS), 4), dtype=np.float32)
+    effort = np.zeros((len(NONFOOD_SCENARIO_LABELS), 4), dtype=np.float32)
+    for _, row in df.iterrows():
+        i = NONFOOD_SCENARIO_TO_IDX[row["scenario_label"]]
+        a = int(row["action"])
+        access[i, a] = row["access"]
+        effort[i, a] = row["effort"]
+    return {"access": jnp.array(access), "effort": jnp.array(effort)}
+
+
+def load_domain_assets(domain="food"):
+    """Return (scenario_labels, scenario_to_idx, llm_tables) for a domain."""
+    if domain == "food":
+        return SCENARIO_LABELS, SCENARIO_TO_IDX, LLM_TABLES
+    if domain == "nonfood":
+        return NONFOOD_SCENARIO_LABELS, NONFOOD_SCENARIO_TO_IDX, _load_nonfood_lm_tables()
+    raise ValueError(f"Unknown domain: {domain!r} (expected 'food' or 'nonfood')")
+
+
 # Canonical is_share mapping for the 4 experimenter-authored actions.
 # Slot 0 of the padded tables always holds the observed canonical action, so
 # its is_share is determined by this vector. Matches get_stipulated_reward.

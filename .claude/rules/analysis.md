@@ -16,6 +16,7 @@ Core analysis files (named after their data folder, not paper experiment number)
 - `forw-plan-effort-analysis.qmd` — Forward planning, effort manipulation (parallels `forw-plan-analysis.qmd` on the 2-action effort stimulus set)
 - `inv-plan-effort-analysis.qmd` — Inverse planning, effort manipulation (parallels `inv-plan-intimacy-alt-analysis.qmd`)
 - `inv-plan-effort-inferred-analysis.qmd` — Inverse planning, effort inferred (parallels `inv-plan-effort-analysis.qmd` but flips the latent: action × intimacy → P(effort_high))
+- `nonfood-forw-plan-analysis.qmd` — Non-food forward planning (parallels `forw-plan-analysis.qmd`; reads `cv_loso_preds_nonfood.csv` etc.)
 - `json_to_csv.py` — Data processing pipeline
 
 Legacy pilot analysis files are in `analysis/legacy/`.
@@ -42,4 +43,5 @@ quarto render analysis/inv-plan-intimacy-noalt-analysis.qmd
 quarto render analysis/inv-plan-combined-correlation.qmd
 quarto render analysis/forw-plan-effort-analysis.qmd
 quarto render analysis/inv-plan-effort-analysis.qmd
+quarto render analysis/nonfood-forw-plan-analysis.qmd
 ```

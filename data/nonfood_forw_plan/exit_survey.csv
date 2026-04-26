@@ -1,0 +1,18 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+66a3a06d-558b-5a29-8ca4-509d5a6a72f6,female,43,yes,,True,2
+61123e76-0a91-5ece-9403-c4e0f1b45b87,female,30,yes,I enjoyed this hypothetical evaluation. Thank you,True,3
+40bd5b02-b879-5f02-8ba6-1776564b4b04,female,28,yes,,True,3
+be4e7694-2ba4-5f8e-8520-ccad5ed396c7,male,19,yes,,True,3
+62300955-42a5-5d2d-914c-9d1d01f9a0a1,male,56,yes,none,True,3
+d696d64e-5490-5cb2-97b1-454e69f9fcb8,male,61,yes,None,True,3
+65cee937-8ec0-521f-ac2d-7d8f08423bad,male,21,yes,,True,3
+df3fecb8-9f26-5077-b1c8-554912d103c9,female,50,yes,,True,3
+6389b091-156f-5161-b52d-cf810f06fe43,female,66,yes,,True,3
+5f70cbd5-2cc1-521e-9464-87016bc694c8,female,44,yes,,True,3
+367dcae5-5607-5a12-a236-2b4a06b8efef,female,33,yes,,True,3
+e7625797-0ff1-538c-ba19-4e74b90e962a,female,27,yes,,True,3
+d2da222a-c4b1-55f3-aff3-17816acf30c4,female,23,yes,,True,3
+8f3ed398-3a66-5497-9967-5e3d1a46068d,male,21,yes,There has to be a better way to identify if a person is a bot or not besides a memory test.,True,3
+ad0329d1-8f33-559a-9f00-9c08bf0f8aab,female,29,yes,nothing!,True,3
+fd63c71e-7a9e-528a-88d0-0176756077e0,male,26,yes,,True,3
+15e4b468-56da-5152-a637-1f11b624f2e9,male,28,yes,"I kind of wish you had more then just 0, 50, 75, 100 ranges. There's a pretty big difference between ""These guys do not know or like each other""(0) and ""these guys are either long time friends or actively having sex""(100)",True,3

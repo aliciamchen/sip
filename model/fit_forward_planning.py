@@ -27,6 +27,7 @@ from model_utils import (
     actor_forw_access_full,
     actor_forw_access_only,
     actor_forw_no_access,
+    load_domain_assets,
 )
 from scipy import stats
 
@@ -35,13 +36,16 @@ from utils import get_project_root
 # Data loading and preprocessing
 
 
-def load_data(filepath: str = None):
+def load_data(filepath: str = None, scenario_to_idx: dict = None):
     """Load and preprocess forward planning data.
 
     Converts:
     - intimacy: 0/50/75/100 -> 0.0/0.5/0.75/1.0
     - motivation: low/high -> 0/1 (RewardConditions enum)
     - scenario_label: alphabetical index (0-15)
+
+    `scenario_to_idx` defaults to the food mapping; pass the nonfood map
+    when loading nonfood data.
 
     Returns:
         data: pandas DataFrame
@@ -53,6 +57,8 @@ def load_data(filepath: str = None):
     """
     if filepath is None:
         filepath = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
+    if scenario_to_idx is None:
+        scenario_to_idx = SCENARIO_TO_IDX
     print("Loading forward planning data...")
     data = pd.read_csv(filepath)
 
@@ -62,7 +68,7 @@ def load_data(filepath: str = None):
     motivation_map = {"low": 0, "high": 1}
     data["reward_condition"] = data["motivation"].map(motivation_map)
 
-    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
+    data["scenario_idx"] = data["scenario_label"].map(scenario_to_idx)
 
     intimacy = jnp.array(data["intimacy_scaled"].values)
     reward_condition = jnp.array(data["reward_condition"].values)
@@ -285,14 +291,29 @@ def fit_no_access_model(
 # Main script
 
 
-def main():
+def main(domain: str = "food"):
     print("=" * 60)
-    print("Forward Planning Model Fitting")
+    print(f"Forward Planning Model Fitting (domain={domain})")
     print("=" * 60)
 
-    data, intimacy, reward_condition, action, p_action, scenario_idx = load_data()
+    _, scenario_to_idx, llm_tables = load_domain_assets(domain)
 
-    tables = (LLM_TABLES["access"], LLM_TABLES["effort"])
+    if domain == "food":
+        data_path = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
+        fits_filename = "forward_planning_fits.csv"
+        results_filename = "forward_planning_fit_results.csv"
+    elif domain == "nonfood":
+        data_path = get_project_root() / "data" / "nonfood_forw_plan" / "main_trials_long.csv"
+        fits_filename = "forward_planning_fits_nonfood.csv"
+        results_filename = "forward_planning_fit_results_nonfood.csv"
+    else:
+        raise ValueError(f"Unknown domain: {domain!r}")
+
+    data, intimacy, reward_condition, action, p_action, scenario_idx = load_data(
+        filepath=data_path, scenario_to_idx=scenario_to_idx,
+    )
+
+    tables = (llm_tables["access"], llm_tables["effort"])
 
     fits = {
         "access_full": (
@@ -359,7 +380,7 @@ def main():
 
     output_dir = Path(__file__).parent / "outputs"
     output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / "forward_planning_fits.csv"
+    output_path = output_dir / fits_filename
     data.to_csv(output_path, index=False)
     print(f"Saved predictions to {output_path}")
 
@@ -414,7 +435,7 @@ def main():
         results_rows.append(row)
 
     results_df = pd.DataFrame(results_rows)
-    results_path = output_dir / "forward_planning_fit_results.csv"
+    results_path = output_dir / results_filename
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
 
@@ -426,4 +447,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="Fit forward planning models.")
+    parser.add_argument(
+        "--domain", choices=("food", "nonfood"), default="food",
+        help="Which experiment to fit: 'food' (default, uses data/forw_plan/) "
+             "or 'nonfood' (uses data/nonfood_forw_plan/).",
+    )
+    args = parser.parse_args()
+    main(domain=args.domain)

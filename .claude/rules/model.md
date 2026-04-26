@@ -78,15 +78,17 @@ Model outputs are saved to `model/outputs/`. Preregistration documents are in `m
 LLM-derived scenario parameters (prerequisite for all fits; requires `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged):
 
 ```bash
-uv run python model/lm_scenario_params.py            # canonical: 16×4 access + effort → lm_scenario_params.csv
-uv run python model/lm_scenario_params_effort.py     # effort: 64-row conditional (lm_scenario_params_effort.csv) + 32-row marginal (lm_scenario_params_effort_marginal.csv)
+uv run python model/lm_scenario_params.py                     # canonical food: 16×4 access + effort → lm_scenario_params.csv
+uv run python model/lm_scenario_params.py --domain nonfood    # nonfood: → lm_scenario_params_nonfood.csv (uses scenarios_nonfood.csv)
+uv run python model/lm_scenario_params_effort.py              # effort: 64-row conditional (lm_scenario_params_effort.csv) + 32-row marginal (lm_scenario_params_effort_marginal.csv)
 ```
 
 Forward-planning fits (3 ablations: Base / Discomfort-only / Full):
 
 ```bash
-uv run python model/fit_forward_planning.py          # canonical
-uv run python model/fit_forward_planning_effort.py   # effort
+uv run python model/fit_forward_planning.py                   # canonical food
+uv run python model/fit_forward_planning.py --domain nonfood  # nonfood (writes *_nonfood.csv outputs)
+uv run python model/fit_forward_planning_effort.py            # effort
 ```
 
 Inverse-planning fits + prediction generators:
@@ -105,7 +107,8 @@ uv run python model/generate_inverse_planning_effort_inferred_preds.py
 LOSO cross-validation (16 folds × 3 variants per experiment; the analysis qmds plot from these CSVs):
 
 ```bash
-uv run python model/cv/loso_forward.py                     # refits w_v, w_d, w_e, β per fold
+uv run python model/cv/loso_forward.py                     # refits w_v, w_d, w_e, β per fold (food)
+uv run python model/cv/loso_forward.py --domain nonfood    # nonfood (writes *_nonfood.csv outputs)
 uv run python model/cv/loso_inverse_alt.py                 # refits only α_observer per fold
 uv run python model/cv/loso_inverse_noalt.py               # joint fit per fold
 uv run python model/cv/loso_forward_effort.py              # refits w_d, w_e, β per fold (w_v non-identified)
@@ -113,8 +116,11 @@ uv run python model/cv/loso_inverse_effort.py              # refits only α_obse
 uv run python model/cv/loso_inverse_effort_inferred.py     # refits only α_observer per fold
 ```
 
+`fit_forward_planning.py` and `cv/loso_forward.py` accept `--domain food|nonfood`. Food is the default and writes the canonical filenames (`forward_planning_*.csv`, `cv_loso_forward.csv`, `cv_loso_preds.csv`); nonfood writes `*_nonfood.csv` siblings. Both branches share the same memo models in `model_utils.py` — only the scenario-label↔index map and the LLM tables differ (see `load_domain_assets`).
+
 CV outputs (in `model/outputs/`):
 - `cv_loso_forward.csv` / `cv_loso_preds.csv` — per-fold fits + per-trial held-out forward predictions
+- `cv_loso_forward_nonfood.csv` / `cv_loso_preds_nonfood.csv` — same, nonfood
 - `cv_loso_inv_plan_intimacy_alt_preds_summary.csv` / `cv_loso_inv_plan_desire_alt_preds_summary.csv` / `cv_loso_inverse_alt_folds.csv`
 - `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv` / `cv_loso_inverse_noalt_folds.csv`
 - `cv_loso_forward_effort.csv` / `cv_loso_preds_effort.csv`

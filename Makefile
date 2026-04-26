@@ -4,9 +4,10 @@
 # Data processing targets (data-*) are optional and require raw JSON files.
 
 .PHONY: all help clean test data data-forw data-intimacy-alt data-intimacy-noalt data-desire-alt \
-        fit fit-forward fit-inverse predictions \
+        data-nonfood-forw \
+        fit fit-forward fit-inverse fit-forward-nonfood predictions cv-forward-nonfood \
         analysis analysis-forw-plan analysis-inv-plan-intimacy-alt analysis-inv-plan-desire-alt \
-        analysis-inv-plan-intimacy-noalt analysis-inv-plan-combined
+        analysis-inv-plan-intimacy-noalt analysis-inv-plan-combined analysis-nonfood-forw-plan
 
 # Default target
 all: fit predictions analysis
@@ -28,6 +29,12 @@ help:
 	@echo "    analysis-inv-plan-desire-alt     - Render alt-shown desire inference analysis"
 	@echo "    analysis-inv-plan-intimacy-noalt - Render no-alt intimacy inference analysis"
 	@echo "    analysis-inv-plan-combined       - Render combined correlation analysis"
+	@echo "    analysis-nonfood-forw-plan       - Render non-food forward planning analysis"
+	@echo ""
+	@echo "  Non-food pipeline (parallels canonical food pipeline):"
+	@echo "    data-nonfood-forw       - Process non-food forward planning raw JSON"
+	@echo "    fit-forward-nonfood     - Fit non-food forward planning models"
+	@echo "    cv-forward-nonfood      - LOSO CV for non-food forward planning"
 	@echo ""
 	@echo "  Data Processing (requires raw JSON - for internal use):"
 	@echo "    data                   - Process all raw JSON to CSV"
@@ -58,6 +65,9 @@ data-intimacy-noalt:
 data-desire-alt:
 	uv run python analysis/json_to_csv.py inv_plan_desire_alt
 
+data-nonfood-forw:
+	uv run python analysis/json_to_csv.py nonfood_forw_plan
+
 # =============================================================================
 # Model Fitting
 # =============================================================================
@@ -81,6 +91,24 @@ model/outputs/inverse_planning_fit_results.csv: model/outputs/forward_planning_f
 	uv run python model/fit_inverse_planning.py
 
 fit-inverse: model/outputs/inverse_planning_fit_results.csv
+
+# Non-food forward planning fit
+# Requires lm_scenario_params_nonfood.csv (run lm_scenario_params.py --domain nonfood first)
+model/outputs/forward_planning_fit_results_nonfood.csv model/outputs/forward_planning_fits_nonfood.csv: \
+        data/nonfood_forw_plan/main_trials_long.csv \
+        model/outputs/lm_scenario_params_nonfood.csv \
+        model/fit_forward_planning.py model/model_utils.py
+	uv run python model/fit_forward_planning.py --domain nonfood
+
+fit-forward-nonfood: model/outputs/forward_planning_fit_results_nonfood.csv
+
+# Non-food LOSO CV
+model/outputs/cv_loso_preds_nonfood.csv model/outputs/cv_loso_forward_nonfood.csv: \
+        model/outputs/forward_planning_fit_results_nonfood.csv \
+        model/cv/loso_forward.py model/model_utils.py
+	uv run python model/cv/loso_forward.py --domain nonfood
+
+cv-forward-nonfood: model/outputs/cv_loso_preds_nonfood.csv
 
 # =============================================================================
 # Model Predictions
@@ -115,6 +143,9 @@ analysis-inv-plan-intimacy-noalt: model/outputs/inv_plan_intimacy_noalt_preds_su
 
 analysis-inv-plan-combined: model/outputs/inv_plan_intimacy_alt_preds_summary.csv model/outputs/inv_plan_desire_alt_preds_summary.csv
 	quarto render analysis/inv-plan-combined-correlation.qmd
+
+analysis-nonfood-forw-plan: model/outputs/cv_loso_preds_nonfood.csv
+	quarto render analysis/nonfood-forw-plan-analysis.qmd
 
 # =============================================================================
 # Utilities

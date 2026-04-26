@@ -36,7 +36,7 @@ from fit_forward_planning import (
     predict_access_only,
     predict_no_access,
 )
-from model_utils import LLM_TABLES, SCENARIO_LABELS
+from model_utils import LLM_TABLES, SCENARIO_LABELS, load_domain_assets
 
 from utils import get_project_root
 
@@ -81,25 +81,37 @@ def _cell_mean_r(pred_df, variant, scenario=None):
     return float(r)
 
 
-def run_loso():
-    data, intimacy, reward_condition, action, p_action, scenario_idx = load_data()
+def run_loso(domain: str = "food"):
+    scenario_labels, scenario_to_idx, llm_tables = load_domain_assets(domain)
+    n_scenarios = len(scenario_labels)
+
+    if domain == "food":
+        data_path = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
+    elif domain == "nonfood":
+        data_path = get_project_root() / "data" / "nonfood_forw_plan" / "main_trials_long.csv"
+    else:
+        raise ValueError(f"Unknown domain: {domain!r}")
+
+    data, intimacy, reward_condition, action, p_action, scenario_idx = load_data(
+        filepath=data_path, scenario_to_idx=scenario_to_idx,
+    )
     tables = (
-        LLM_TABLES["access"],
-        LLM_TABLES["effort"],
+        llm_tables["access"],
+        llm_tables["effort"],
     )
     scenario_idx_np = np.asarray(scenario_idx)
 
     fold_rows = []
     pred_rows = []
 
-    for fold in range(N_SCENARIOS):
-        scenario_label = SCENARIO_LABELS[fold]
+    for fold in range(n_scenarios):
+        scenario_label = scenario_labels[fold]
         train_mask = scenario_idx_np != fold
         test_mask = scenario_idx_np == fold
         n_train = int(train_mask.sum())
         n_test = int(test_mask.sum())
         print(
-            f"\n=== Fold {fold + 1}/{N_SCENARIOS} (holding out '{scenario_label}') ==="
+            f"\n=== Fold {fold + 1}/{n_scenarios} (holding out '{scenario_label}') ==="
         )
         print(f"  train trials: {n_train}, test trials: {n_test}")
 
@@ -173,18 +185,24 @@ def attach_per_scenario_r(fold_df, pred_df):
     return fold_df
 
 
-def main():
+def main(domain: str = "food"):
     print("=" * 60)
-    print("LOSO cross-validation: forward planning")
+    print(f"LOSO cross-validation: forward planning (domain={domain})")
     print("=" * 60)
 
-    fold_df, pred_df = run_loso()
+    fold_df, pred_df = run_loso(domain=domain)
     fold_df = attach_per_scenario_r(fold_df, pred_df)
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    fold_path = output_dir / "cv_loso_forward.csv"
-    pred_path = output_dir / "cv_loso_preds.csv"
+    if domain == "food":
+        fold_filename = "cv_loso_forward.csv"
+        pred_filename = "cv_loso_preds.csv"
+    else:
+        fold_filename = f"cv_loso_forward_{domain}.csv"
+        pred_filename = f"cv_loso_preds_{domain}.csv"
+    fold_path = output_dir / fold_filename
+    pred_path = output_dir / pred_filename
     fold_df.to_csv(fold_path, index=False)
     pred_df.to_csv(pred_path, index=False)
     print(f"\nSaved fold-level results to {fold_path}")
@@ -203,4 +221,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    parser = argparse.ArgumentParser(description="LOSO CV for forward planning.")
+    parser.add_argument(
+        "--domain", choices=("food", "nonfood"), default="food",
+        help="Which experiment to CV: 'food' (default) or 'nonfood'.",
+    )
+    args = parser.parse_args()
+    main(domain=args.domain)

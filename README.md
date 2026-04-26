@@ -14,7 +14,7 @@ A parallel pair of experiments (`forw_plan_effort/`, `inv_plan_effort/`) uses th
 
 A third effort experiment (`inv_plan_effort_inferred/`) flips the inverse direction: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context. The vignette no longer reveals the effort paragraph; instead the two effort paragraphs become the slider endpoints, and participants give prior and posterior probability ratings for which effort situation is more likely. Same 16 scenarios.
 
-A second parallel pipeline tests **generalization beyond food sharing** using a 16-scenario non-food stimulus set (substance sharing like chapstick or hairbrush, shared space like a blanket or bed, and informational/situational privacy like a breakup conversation or a phone passcode). The five non-food experiments mirror the canonical food set one-to-one and live alongside them under `experiments/`: `nonfood_forw_plan/`, `nonfood_inv_plan_intimacy_alt/`, `nonfood_inv_plan_desire_alt/`, `nonfood_inv_plan_intimacy_noalt/`, and `nonfood_inv_plan_desire_noalt/`. No data has been collected yet for any of them.
+A second parallel pipeline tests **generalization beyond food sharing** using a 16-scenario non-food stimulus set (substance sharing like chapstick or hairbrush, shared space like a blanket or bed, and informational/situational privacy like a breakup conversation or a phone passcode). The five non-food experiments mirror the canonical food set one-to-one and live alongside them under `experiments/`: `nonfood_forw_plan/`, `nonfood_inv_plan_intimacy_alt/`, `nonfood_inv_plan_desire_alt/`, `nonfood_inv_plan_intimacy_noalt/`, and `nonfood_inv_plan_desire_noalt/`. Data has been collected only for `nonfood_forw_plan` so far (`data/nonfood_forw_plan/`); the modeling pipeline reuses the canonical scripts via a `--domain food|nonfood` flag (see below).
 
 ### Scenarios
 
@@ -67,7 +67,8 @@ The fitting and prediction scripts index into these tables by `scenario_idx`; ru
 │   ├── inv_plan_desire_alt/    # Desire inference, alternatives shown
 │   ├── forw_plan_effort/       # Forward planning, intimacy × effort (2 actions)
 │   ├── inv_plan_effort/        # Inverse planning, action × effort (intimacy inference)
-│   └── inv_plan_effort_inferred/ # Inverse planning, action × intimacy (effort inference)
+│   ├── inv_plan_effort_inferred/ # Inverse planning, action × intimacy (effort inference)
+│   └── nonfood_forw_plan/      # Non-food forward planning
 ├── experiments/       # jsPsych experiment code
 │   ├── scenarios.csv           # Food-sharing scenario definitions
 │   ├── scenarios_nonfood.csv   # Non-food-sharing scenarios
@@ -176,12 +177,14 @@ uv run python analysis/json_to_csv.py inv_plan_intimacy_noalt
 uv run python analysis/json_to_csv.py inv_plan_desire_alt
 uv run python analysis/json_to_csv.py forw_plan_effort
 uv run python analysis/json_to_csv.py inv_plan_effort
+uv run python analysis/json_to_csv.py nonfood_forw_plan
 ```
 
 Generate LLM-derived scenario parameters (prerequisite for all model fits). The script writes to `model/outputs/lm_scenario_params.csv` and requires a `TOGETHER_API_KEY`:
 
 ```bash
-uv run python model/lm_scenario_params.py   # access + effort per (scenario, action)
+uv run python model/lm_scenario_params.py                     # food: access + effort per (scenario, action)
+uv run python model/lm_scenario_params.py --domain nonfood    # non-food: same script, scenarios_nonfood.csv → lm_scenario_params_nonfood.csv
 ```
 
 The effort experiments have a parallel script that consumes `scenarios_effort.csv` and produces per (scenario, effort_condition, action) tables — the LM sees the full vignette plus the effort paragraph so the manipulation lands in the ratings. The script also produces an effort-marginal access table (vignette only, no effort paragraph) for use in `inv_plan_effort_inferred`, where the observer does not see the effort paragraph and so cannot use effort-induced setting cues when reasoning about access.
@@ -193,7 +196,8 @@ uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effo
 Fit forward planning models
 
 ```bash
-uv run python model/fit_forward_planning.py
+uv run python model/fit_forward_planning.py                   # food
+uv run python model/fit_forward_planning.py --domain nonfood  # non-food (writes *_nonfood.csv outputs)
 ```
 
 Use forward planning parameters to fit inverse planning models and generate predictions. The alt-shown experiments freeze the Exp 1 actor weights and fit only α_observer; the no-alt experiment refits all actor weights jointly with α_observer because the padded observer reasons over a different (variable-length) action space where the Exp 1 weights don't transplant cleanly.
@@ -218,12 +222,13 @@ The two effort observers share the forward fit but flip the inference target. `i
 
 Generate leave-one-scenario-out (LOSO) cross-validation predictions. All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 held-out folds. The forward-plan CV refits $w_v$, $w_d$, $w_e$, and $\beta$ on 15 scenarios per fold; the alt-shown inverse-plan CVs refit only $\alpha_{\mathrm{obs}}$ (actor frozen from the all-data Exp 1 fit); the no-alt CV refits all weights jointly per fold.
 ```bash
-uv run python model/cv/loso_forward.py          # Exp 1 forward planning
-uv run python model/cv/loso_inverse_alt.py      # Exp 2a intimacy + 2b desire (alt-shown)
-uv run python model/cv/loso_inverse_noalt.py    # Exp 2c intimacy (no-alt, joint fit)
-uv run python model/cv/loso_forward_effort.py   # Effort forward planning
-uv run python model/cv/loso_inverse_effort.py   # Effort inverse planning, intimacy inference (α_obs only)
-uv run python model/cv/loso_inverse_effort_inferred.py   # Effort inverse planning, effort inference (α_obs only)
+uv run python model/cv/loso_forward.py                       # Exp 1 forward planning (food)
+uv run python model/cv/loso_forward.py --domain nonfood      # Non-food forward planning
+uv run python model/cv/loso_inverse_alt.py                   # Exp 2a intimacy + 2b desire (alt-shown)
+uv run python model/cv/loso_inverse_noalt.py                 # Exp 2c intimacy (no-alt, joint fit)
+uv run python model/cv/loso_forward_effort.py                # Effort forward planning
+uv run python model/cv/loso_inverse_effort.py                # Effort inverse planning, intimacy inference (α_obs only)
+uv run python model/cv/loso_inverse_effort_inferred.py       # Effort inverse planning, effort inference (α_obs only)
 ```
 
 Analyze data and generate plots
@@ -237,6 +242,7 @@ quarto render inv-plan-intimacy-noalt-analysis.qmd
 quarto render inv-plan-combined-correlation.qmd
 quarto render forw-plan-effort-analysis.qmd
 quarto render inv-plan-effort-analysis.qmd
+quarto render nonfood-forw-plan-analysis.qmd
 ```
 
 The plots are saved in the `figures/` directory.
