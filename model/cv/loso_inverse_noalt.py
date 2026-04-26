@@ -60,19 +60,23 @@ def _held_out_test_nll(result, observed_action, scenario_idx, reward_condition, 
     return total
 
 
-def _build_observer_table(observer_fn, utility_names, params, padded):
+def _build_observer_table(observer_fn, utility_names, uses_v, params, padded):
     """Reconstruct the observer table from fitted joint params
     (utility weights then α_observer, matching fit_padded_joint_model)."""
     actor_kwargs = {"alpha": 1.0}
     for i, name in enumerate(utility_names):
         actor_kwargs[name] = float(params[i])
+    table_kwargs = dict(
+        access_table=padded["access"],
+        effort_table=padded["effort"],
+        prior_table=padded["prior"],
+    )
+    if uses_v:
+        table_kwargs["v_padded_table"] = padded["v"]
     return observer_fn(
         **actor_kwargs,
         alpha_observer=float(params[-1]),
-        access_table=padded["access"],
-        effort_table=padded["effort"],
-        is_share_table=padded["is_share"],
-        prior_table=padded["prior"],
+        **table_kwargs,
     )
 
 
@@ -86,7 +90,7 @@ def run_loso_noalt_joint(padded):
     fold_rows = []
     intimacy_grid = np.asarray(IntimacyLevels) * 100.0
 
-    for variant, (observer_fn, _kw_names, utility_names) in PADDED_VARIANTS.items():
+    for variant, (observer_fn, _kw_names, utility_names, uses_v) in PADDED_VARIANTS.items():
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -109,12 +113,12 @@ def run_loso_noalt_joint(padded):
                 response=response[train_mask],
                 access_table=padded["access"],
                 effort_table=padded["effort"],
-                is_share_table=padded["is_share"],
                 prior_table=padded["prior"],
+                v_padded_table=padded["v"] if uses_v else None,
                 verbose=False,
             )
 
-            result = _build_observer_table(observer_fn, utility_names, params, padded)
+            result = _build_observer_table(observer_fn, utility_names, uses_v, params, padded)
             # Shape: (padded_slot, scenario, observed_action, intimacy, reward)
             held_out = np.asarray(result[0, fold, :, :, :])  # (observed_action, intimacy, reward)
 

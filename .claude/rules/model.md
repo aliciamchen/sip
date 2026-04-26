@@ -17,23 +17,25 @@ U(a|s, I) = w_v · V(a|s)
           − w_e · effort(a)
 ```
 
-Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exposure): at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. `V(a|s)` is the signed food-utility (not scaled by intimacy). Three ablations are fit and compared:
+Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exposure): at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. `V(a|s, m)` is the signed valence of the action with respect to the actor's motivational state (in [-1, +1]; positive = serves the state, negative = actively counterproductive). Three ablations are fit and compared:
 
 - **access_full** — the full utility above (the main Full model)
-- **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)`); drops food utility and effort (Discomfort-only)
+- **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)`); drops V and effort (Discomfort-only)
 - **no_access** — `w_v · V − w_e · effort`; no relational structure (Base model)
 
-Parameters: `w_v` (food-utility weight), `w_d` (access-discomfort weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires.
+Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires.
 
 ## Where the utility values come from
 
-`V(a|s)` is **stipulated** in `model_utils.py` as a signed food-utility via `get_stipulated_reward(action, reward_condition)`. Under HIGH motivation the food is wanted, so `V = +1` for actions that involve eating (`action != 0`) and `V = 0` for action 0. Under LOW motivation the food is unwanted, so `V = −1` for eating actions and `V = 0` for action 0. No LLM call; V is a closed-form function of motivation × action. Mathematically equivalent under softmax to the older binary goal-satisfaction gate (V ∈ {0, 1}); the signed form is just a cleaner framing.
+All three components — V, access, effort — are LLM-elicited per scenario by `model/lm_scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged):
 
-`access(a)` and `effort(a)` are **LLM-generated per scenario** by `model/lm_scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged), saved to `model/outputs/lm_scenario_params.csv`.
+- **V**: `--feature v` mode produces `lm_scenario_v.csv` (16 × 4 × 2 — scenario × action × motivation, signed [-1, +1]).
+- **access**, **effort**: default mode produces `lm_scenario_params.csv` (16 × 4 each, normalized [0, 2] and [0, 1]).
+- **alternatives V** (no-alt observers only): `--feature v_alternatives` mode produces `lm_alternatives_v.csv`, scoring V for each LM-generated alternative under both motivation states.
 
-On import, `model_utils.py` loads these into `LLM_TABLES` — a dict of JAX arrays: `access` (16×4) and `effort` (16×4). If `lm_scenario_params.csv` is missing, import fails with `FileNotFoundError`.
+`model_utils.py` loads these into `LLM_TABLES` (access/effort canonical) at import; `load_lm_v(domain)` lazily loads the V table; `load_padded_lm_tables()` builds the (16, 4, 2, MAX_ACTIONS) padded tables (access, effort, v, prior) used by the no-alt observers. If any required CSV is missing, the loader raises FileNotFoundError or returns None.
 
-Every memo model takes the scenario tables as arguments (`access_table: ...`, `effort_table: ...`) and has `scenario_idx: Scenarios` as a dimension, so predictions vary by scenario. Reward is computed inline inside the utility functions; no `reward_table` argument.
+Every memo model takes the scenario tables as arguments (`access_table: ...`, `effort_table: ...`, and `v_table: ...` for the access_full and no_access variants) and has `scenario_idx: Scenarios` as a dimension, so predictions vary by scenario. The `access_only` ablation is V-independent and doesn't take `v_table`.
 
 ## Core files
 
@@ -41,9 +43,11 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 - `lm_scenario_params.py` — LLM-calls Together AI to generate per-scenario access and effort
 - `fit_forward_planning.py` — fits the three actor ablations to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
 - `fit_inverse_planning.py` — alt-shown observers; fits only `alpha_observer` with frozen actor params (output: `inverse_planning_fit_results.csv`)
-- `fit_inverse_planning_noalt.py` — no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_noalt_fit_results.csv`
+- `fit_inverse_planning_noalt.py` — intimacy no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_noalt_fit_results.csv`
+- `fit_inverse_planning_desire_noalt.py` — desire no-alt observer; same joint-fit structure as the intimacy no-alt fit but uses the padded reward observers (`observer_reward_*_padded`) and BCE NLL on P(reward=HIGH). Output: `inverse_planning_desire_noalt_fit_results.csv`
 - `generate_inverse_planning_preds.py` — emits per-scenario posterior predictions for alt-shown (`inv_plan_{intimacy,desire}_preds_{full,summary}.csv`)
-- `generate_inverse_planning_noalt_preds.py` — same for no-alt, using the joint-fit weights from `inverse_planning_noalt_fit_results.csv`
+- `generate_inverse_planning_noalt_preds.py` — same for intimacy no-alt, using the joint-fit weights from `inverse_planning_noalt_fit_results.csv`
+- `generate_inverse_planning_desire_noalt_preds.py` — same for desire no-alt; emits `inv_plan_desire_noalt_preds_{full,summary}.csv` (`p_high` is what the slider response 0-100 encodes)
 - `test_model_compliance.py` — validation tests
 
 ### Effort-experiment parallel pipeline
@@ -78,21 +82,20 @@ Model outputs are saved to `model/outputs/`. Preregistration documents are in `m
 LLM-derived scenario parameters (prerequisite for all fits; requires `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged):
 
 ```bash
-uv run python model/lm_scenario_params.py                                   # canonical food: 16×4 access + effort → lm_scenario_params.csv
-uv run python model/lm_scenario_params.py --domain nonfood                  # nonfood: → lm_scenario_params_nonfood.csv (uses scenarios_nonfood.csv)
+uv run python model/lm_scenario_params.py                                   # canonical food access+effort: 16×4 → lm_scenario_params.csv
+uv run python model/lm_scenario_params.py --domain nonfood                  # nonfood access+effort: → lm_scenario_params_nonfood.csv
 uv run python model/lm_scenario_params.py --feature v                       # food signed-valence V: → lm_scenario_v.csv (16×4×2: scenario × action × motivation, values in [-1, +1])
 uv run python model/lm_scenario_params.py --feature v --domain nonfood      # nonfood signed-valence V: → lm_scenario_v_nonfood.csv
-uv run python model/lm_scenario_params_effort.py                            # effort: 64-row conditional (lm_scenario_params_effort.csv) + 32-row marginal (lm_scenario_params_effort_marginal.csv)
+uv run python model/lm_scenario_params.py --feature v_alternatives          # food V for LM-generated alternatives: → lm_alternatives_v.csv (each alt scored under both motivation states; required for no-alt fits)
+uv run python model/lm_scenario_params_effort.py                            # effort: 64-row conditional + 32-row marginal
 ```
 
-Forward-planning fits (3 ablations: Base / Discomfort-only / Full):
+Forward-planning fits (3 ablations: Base / Discomfort-only / Full). All variants now use LM-elicited V; `access_only` is V-independent.
 
 ```bash
-uv run python model/fit_forward_planning.py                                 # canonical food, binary V (default)
-uv run python model/fit_forward_planning.py --domain nonfood                # nonfood, binary V (writes *_nonfood.csv outputs)
-uv run python model/fit_forward_planning.py --v-source lm                   # food, LM-elicited signed V (writes *_lmv.csv outputs)
-uv run python model/fit_forward_planning.py --domain nonfood --v-source lm  # nonfood + LM-V (writes *_nonfood_lmv.csv outputs)
-uv run python model/fit_forward_planning_effort.py                          # effort
+uv run python model/fit_forward_planning.py                                 # food
+uv run python model/fit_forward_planning.py --domain nonfood                # nonfood (writes *_nonfood.csv outputs)
+uv run python model/fit_forward_planning_effort.py                          # effort (V hardcoded constant, since reward fixed HIGH)
 ```
 
 Inverse-planning fits + prediction generators:
@@ -100,8 +103,10 @@ Inverse-planning fits + prediction generators:
 ```bash
 uv run python model/fit_inverse_planning.py                            # alt-shown (intimacy + desire), α_observer only
 uv run python model/generate_inverse_planning_preds.py
-uv run python model/fit_inverse_planning_noalt.py                      # no-alt, joint fit (all weights + α_observer)
+uv run python model/fit_inverse_planning_noalt.py                      # intimacy no-alt, joint fit (all weights + α_observer)
 uv run python model/generate_inverse_planning_noalt_preds.py
+uv run python model/fit_inverse_planning_desire_noalt.py               # desire no-alt, joint fit (all weights + α_observer)
+uv run python model/generate_inverse_planning_desire_noalt_preds.py
 uv run python model/fit_inverse_planning_effort.py                     # inv_plan_effort, α_observer only
 uv run python model/generate_inverse_planning_effort_preds.py
 uv run python model/fit_inverse_planning_effort_inferred.py            # inv_plan_effort_inferred, α_observer only
@@ -121,8 +126,6 @@ uv run python model/cv/loso_inverse_effort_inferred.py     # refits only α_obse
 ```
 
 `fit_forward_planning.py` and `cv/loso_forward.py` accept `--domain food|nonfood`. Food is the default and writes the canonical filenames (`forward_planning_*.csv`, `cv_loso_forward.csv`, `cv_loso_preds.csv`); nonfood writes `*_nonfood.csv` siblings. Both branches share the same memo models in `model_utils.py` — only the scenario-label↔index map and the LLM tables differ (see `load_domain_assets`).
-
-Both scripts also accept `--v-source binary|lm` (default `binary`). With `--v-source lm`, the actor utility's V term is read from `lm_scenario_v[_nonfood].csv` instead of computed inline by `get_stipulated_reward`. LM-V outputs append `_lmv` to the filename (`forward_planning_fits_lmv.csv`, `cv_loso_preds_nonfood_lmv.csv`, etc.). access_only is V-independent and behaves identically under both v-sources. The two flags are orthogonal — all four combinations work.
 
 CV outputs (in `model/outputs/`):
 - `cv_loso_forward.csv` / `cv_loso_preds.csv` — per-fold fits + per-trial held-out forward predictions

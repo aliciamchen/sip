@@ -99,6 +99,8 @@ def _json_format_block(rating_type, n_actions):
         example = '{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8}'
         if rating_type == "effort":
             example = '{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1}'
+        elif rating_type == "v":
+            example = '{"action_0": -1.5, "action_1": 0.5, "action_2": 2.8}'
         return (
             "Respond with your numerical ratings as a JSON object whose keys "
             'are "action_0", "action_1", ... matching the number of actions '

@@ -28,17 +28,13 @@ from scipy import stats
 
 from fit_forward_planning import (
     compute_nll,
-    fit_access_full_lmv_model,
     fit_access_full_model,
     fit_access_only_model,
-    fit_no_access_lmv_model,
     fit_no_access_model,
     load_data,
     predict_access_full,
-    predict_access_full_lmv,
     predict_access_only,
     predict_no_access,
-    predict_no_access_lmv,
 )
 from model_utils import LLM_TABLES, SCENARIO_LABELS, load_domain_assets, load_lm_v
 
@@ -47,7 +43,9 @@ from utils import get_project_root
 
 N_SCENARIOS = len(SCENARIO_LABELS)
 
-# variant_name -> (fit_fn, predict_fn, utility_param_names)
+# variant_name -> (fit_fn, predict_fn, utility_param_names). All three variants
+# now take LM-V as canonical V; access_only is V-independent and uses only
+# (access, effort) but the dispatcher still gives it the trimmed tables tuple.
 VARIANTS = {
     "access_full": (
         fit_access_full_model,
@@ -65,39 +63,6 @@ VARIANTS = {
         ["w_v", "w_e"],
     ),
 }
-
-
-def _build_variants(v_source: str, binary_tables, lmv_tables):
-    """Return (variants_dict, tables_per_variant). access_only is V-independent
-    so it always uses binary_tables. access_full and no_access use the LM-V
-    siblings + lmv_tables when v_source='lm'."""
-    if v_source == "binary":
-        return VARIANTS, {name: binary_tables for name in VARIANTS}
-    if v_source == "lm":
-        variants = {
-            "access_full": (
-                fit_access_full_lmv_model,
-                predict_access_full_lmv,
-                ["w_v", "w_d", "w_e"],
-            ),
-            "access_only": (
-                fit_access_only_model,
-                predict_access_only,
-                ["w_d"],
-            ),
-            "no_access": (
-                fit_no_access_lmv_model,
-                predict_no_access_lmv,
-                ["w_v", "w_e"],
-            ),
-        }
-        tables_per_variant = {
-            "access_full": lmv_tables,
-            "access_only": binary_tables,
-            "no_access":   lmv_tables,
-        }
-        return variants, tables_per_variant
-    raise ValueError(f"Unknown v_source: {v_source!r}")
 
 
 def _cell_mean_r(pred_df, variant, scenario=None):
@@ -118,9 +83,10 @@ def _cell_mean_r(pred_df, variant, scenario=None):
     return float(r)
 
 
-def run_loso(domain: str = "food", v_source: str = "binary"):
+def run_loso(domain: str = "food"):
     scenario_labels, scenario_to_idx, llm_tables = load_domain_assets(domain)
     n_scenarios = len(scenario_labels)
+    v_table = load_lm_v(domain)
 
     if domain == "food":
         data_path = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
@@ -132,16 +98,13 @@ def run_loso(domain: str = "food", v_source: str = "binary"):
     data, intimacy, reward_condition, action, p_action, scenario_idx = load_data(
         filepath=data_path, scenario_to_idx=scenario_to_idx,
     )
-    binary_tables = (
-        llm_tables["access"],
-        llm_tables["effort"],
-    )
-    if v_source == "lm":
-        v_table = load_lm_v(domain)
-        lmv_tables = (llm_tables["access"], llm_tables["effort"], v_table)
-    else:
-        lmv_tables = None
-    variants, tables_per_variant = _build_variants(v_source, binary_tables, lmv_tables)
+    tables = (llm_tables["access"], llm_tables["effort"], v_table)
+    # access_only is V-independent; the rest take the full 3-tuple.
+    tables_per_variant = {
+        "access_full": tables,
+        "access_only": tables[:2],
+        "no_access":   tables,
+    }
     scenario_idx_np = np.asarray(scenario_idx)
 
     fold_rows = []
@@ -172,7 +135,7 @@ def run_loso(domain: str = "food", v_source: str = "binary"):
             scenario_idx[test_mask],
         )
 
-        for variant, (fit_fn, pred_fn, param_names) in variants.items():
+        for variant, (fit_fn, pred_fn, param_names) in VARIANTS.items():
             print(f"  Fitting {variant}...")
             tab = tables_per_variant[variant]
             params, train_nll = fit_fn(*train_args, tab, verbose=False)
@@ -229,23 +192,22 @@ def attach_per_scenario_r(fold_df, pred_df):
     return fold_df
 
 
-def main(domain: str = "food", v_source: str = "binary"):
+def main(domain: str = "food"):
     print("=" * 60)
-    print(f"LOSO cross-validation: forward planning (domain={domain}, v_source={v_source})")
+    print(f"LOSO cross-validation: forward planning (domain={domain})")
     print("=" * 60)
 
-    fold_df, pred_df = run_loso(domain=domain, v_source=v_source)
+    fold_df, pred_df = run_loso(domain=domain)
     fold_df = attach_per_scenario_r(fold_df, pred_df)
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    suffix = "" if v_source == "binary" else "_lmv"
     if domain == "food":
-        fold_filename = f"cv_loso_forward{suffix}.csv"
-        pred_filename = f"cv_loso_preds{suffix}.csv"
+        fold_filename = "cv_loso_forward.csv"
+        pred_filename = "cv_loso_preds.csv"
     else:
-        fold_filename = f"cv_loso_forward_{domain}{suffix}.csv"
-        pred_filename = f"cv_loso_preds_{domain}{suffix}.csv"
+        fold_filename = f"cv_loso_forward_{domain}.csv"
+        pred_filename = f"cv_loso_preds_{domain}.csv"
     fold_path = output_dir / fold_filename
     pred_path = output_dir / pred_filename
     fold_df.to_csv(fold_path, index=False)
@@ -272,10 +234,5 @@ if __name__ == "__main__":
         "--domain", choices=("food", "nonfood"), default="food",
         help="Which experiment to CV: 'food' (default) or 'nonfood'.",
     )
-    parser.add_argument(
-        "--v-source", choices=("binary", "lm"), default="binary",
-        help="V source: 'binary' (default) or 'lm' (use LM-elicited V table). "
-             "LM-V outputs use a _lmv suffix.",
-    )
     args = parser.parse_args()
-    main(domain=args.domain, v_source=args.v_source)
+    main(domain=args.domain)

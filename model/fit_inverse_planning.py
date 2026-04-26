@@ -26,6 +26,7 @@ import pandas as pd
 from model_utils import (
     LLM_TABLES,
     SCENARIO_TO_IDX,
+    load_lm_v,
     observer_intimacy_access_full,
     observer_intimacy_access_only,
     observer_intimacy_no_access,
@@ -286,28 +287,36 @@ def fit_reward_observer(
     )
 
 
-# Variant registry: name -> (intimacy_observer, reward_observer, actor_kwarg_names).
+# Variant registry: name -> (intimacy_observer, reward_observer, actor_kwarg_names,
+# uses_v). access_only is V-independent and doesn't take v_table.
 ACCESS_VARIANTS = {
     "access_full": (
         observer_intimacy_access_full,
         observer_reward_access_full,
         ["alpha", "w_v", "w_d", "w_e"],
+        True,
     ),
     "access_only": (
         observer_intimacy_access_only,
         observer_reward_access_only,
         ["alpha", "w_d"],
+        False,
     ),
     "no_access": (
         observer_intimacy_no_access,
         observer_reward_no_access,
         ["alpha", "w_v", "w_e"],
+        True,
     ),
 }
 
 
-def _table_kwargs():
-    return {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
+def _table_kwargs(uses_v: bool):
+    """access_full and no_access need v_table; access_only is V-independent."""
+    kw = {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
+    if uses_v:
+        kw["v_table"] = load_lm_v("food")
+    return kw
 
 
 # ==============================================================================
@@ -340,7 +349,7 @@ def main():
         load_intimacy_data()
     )
 
-    for variant_name, (int_obs, _rew_obs, kw_names) in ACCESS_VARIANTS.items():
+    for variant_name, (int_obs, _rew_obs, kw_names, uses_v) in ACCESS_VARIANTS.items():
         if variant_name not in actor_params:
             print(f"  (skipping {variant_name}: no forward fit available)")
             continue
@@ -355,7 +364,7 @@ def main():
             scenario_idx=int_scenario_idx,
             reward_condition=int_reward_condition,
             response=int_response,
-            table_kwargs=_table_kwargs(),
+            table_kwargs=_table_kwargs(uses_v),
         )
         results.append(
             {
@@ -378,7 +387,7 @@ def main():
         load_reward_data()
     )
 
-    for variant_name, (_int_obs, rew_obs, kw_names) in ACCESS_VARIANTS.items():
+    for variant_name, (_int_obs, rew_obs, kw_names, uses_v) in ACCESS_VARIANTS.items():
         if variant_name not in actor_params:
             print(f"  (skipping {variant_name}: no forward fit available)")
             continue
@@ -393,7 +402,7 @@ def main():
             scenario_idx=rew_scenario_idx,
             intimacy_condition=rew_intimacy_condition,
             response=rew_response,
-            table_kwargs=_table_kwargs(),
+            table_kwargs=_table_kwargs(uses_v),
         )
         results.append(
             {

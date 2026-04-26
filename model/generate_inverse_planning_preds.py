@@ -27,6 +27,7 @@ from model_utils import (
     SCENARIO_LABELS,
     IntimacyLevels,
     actions,
+    load_lm_v,
     observer_intimacy_access_full,
     observer_intimacy_access_only,
     observer_intimacy_no_access,
@@ -84,22 +85,25 @@ def load_fitted_alpha_observer(filepath: str = None) -> dict:
 # reward_condition). We unroll the table into a long-format DataFrame with one
 # row per (scenario, action, conditioning, reward_condition).
 
-# Tuple values: (observer_fn, actor_kwarg_names)
+# Tuple values: (observer_fn, actor_kwarg_names, uses_v).
 INTIMACY_OBSERVERS = {
-    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_d", "w_e"]),
-    "access_only": (observer_intimacy_access_only, ["alpha", "w_d"]),
-    "no_access":   (observer_intimacy_no_access,   ["alpha", "w_v", "w_e"]),
+    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_d", "w_e"], True),
+    "access_only": (observer_intimacy_access_only, ["alpha", "w_d"], False),
+    "no_access":   (observer_intimacy_no_access,   ["alpha", "w_v", "w_e"], True),
 }
 
 REWARD_OBSERVERS = {
-    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_d", "w_e"]),
-    "access_only": (observer_reward_access_only, ["alpha", "w_d"]),
-    "no_access":   (observer_reward_no_access,   ["alpha", "w_v", "w_e"]),
+    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_d", "w_e"], True),
+    "access_only": (observer_reward_access_only, ["alpha", "w_d"], False),
+    "no_access":   (observer_reward_no_access,   ["alpha", "w_v", "w_e"], True),
 }
 
 
-def _table_kwargs():
-    return {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
+def _table_kwargs(uses_v: bool):
+    kw = {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
+    if uses_v:
+        kw["v_table"] = load_lm_v("food")
+    return kw
 
 
 def generate_intimacy_preds(
@@ -109,10 +113,10 @@ def generate_intimacy_preds(
 
     Returns one row per (scenario, action, reward_condition, intimacy_level).
     """
-    observer_fn, kw_names = INTIMACY_OBSERVERS[variant_name]
+    observer_fn, kw_names, uses_v = INTIMACY_OBSERVERS[variant_name]
     kwargs = {k: params[k] for k in kw_names}
     kwargs["alpha_observer"] = alpha_observer
-    result = observer_fn(**kwargs, **_table_kwargs())
+    result = observer_fn(**kwargs, **_table_kwargs(uses_v))
     # result shape: (actions, scenarios, intimacy_levels, reward_conditions)
     data = []
     for s_idx, scenario_label in enumerate(SCENARIO_LABELS):
@@ -135,10 +139,10 @@ def generate_reward_preds(
     params: dict, variant_name: str, alpha_observer
 ) -> pd.DataFrame:
     """Reward-inference predictions for one access variant (per scenario)."""
-    observer_fn, kw_names = REWARD_OBSERVERS[variant_name]
+    observer_fn, kw_names, uses_v = REWARD_OBSERVERS[variant_name]
     kwargs = {k: params[k] for k in kw_names}
     kwargs["alpha_observer"] = alpha_observer
-    result = observer_fn(**kwargs, **_table_kwargs())
+    result = observer_fn(**kwargs, **_table_kwargs(uses_v))
     # result shape: (actions, scenarios, relationship_conditions, reward_conditions)
     intimacy_map = {0: 0, 1: 50, 2: 75, 3: 100}
     data = []
@@ -224,7 +228,7 @@ def main():
     print("-" * 40)
 
     intimacy_dfs = []
-    for variant_name, (_obs, _kw) in INTIMACY_OBSERVERS.items():
+    for variant_name, (_obs, _kw, _uv) in INTIMACY_OBSERVERS.items():
         if variant_name not in params:
             print(f"  (skipping {variant_name}: no forward fit available)")
             continue
@@ -255,7 +259,7 @@ def main():
     print("-" * 40)
 
     reward_dfs = []
-    for variant_name, (_obs, _kw) in REWARD_OBSERVERS.items():
+    for variant_name, (_obs, _kw, _uv) in REWARD_OBSERVERS.items():
         if variant_name not in params:
             print(f"  (skipping {variant_name}: no forward fit available)")
             continue

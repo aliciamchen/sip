@@ -487,47 +487,41 @@ ggplot(df_cell, aes(x = access, y = residual, color = scenario_label, shape = fa
   facet_wrap(~ scenario_type)
 ```
 
-## LM-V comparison
+## LM-elicited V — validity
 
-The canonical model uses a binary stipulated V (V = +1 for sharing under HIGH motivation, V = -1 for sharing under LOW, V = 0 for refrain). This collapses all sharing actions onto the same V value, which is approximately right for food (any sharing equally satisfies "eat"), but ignores graded goal-attainment in non-food (action_3 may share the resource more fully than action_1; counter-state actions like eating when full are actively bad rather than zero).
-
-The LM-V variant elicits a signed valence rating `V(s, a, m) ∈ [-1, +1]` per scenario × action × motivation (`model/outputs/lm_scenario_v_nonfood.csv`). Below: validity checks on the elicited V, then a head-to-head against binary V on AIC and out-of-sample r.
-
-### LM-V table validity
+V is now LM-elicited rather than stipulated. Two quick sanity checks below before reading the model fit. (Validity is at the LM-table level, not at the fit level — these don't depend on the fit at all.)
 
 ```{r}
 df_lmv <- read_csv(here("model", "outputs", "lm_scenario_v_nonfood.csv"), show_col_types = FALSE) |>
   left_join(df_scenario_types, by = "scenario_label")
 ```
 
+### Sign reversal: refrain should be ≥ 0 under LOW motivation, ≤ 0 under HIGH
+
 ```{r}
 #| fig-width: 9
 #| fig-asp: 0.45
 
-# (1) Sign reversal across motivation: refrain (action 0) should shift from
-# negative under high motivation to positive under low motivation.
 df_refrain <- df_lmv |> filter(action == 0)
 
 ggplot(df_refrain, aes(x = scenario_label, y = v, fill = motivation)) +
   geom_col(position = "dodge", alpha = 0.85) +
   geom_hline(yintercept = 0, color = "grey40") +
   scale_fill_manual(values = c(high = "#b4584d", low = "#6b8cae")) +
-  labs(x = NULL, y = "V (refrain, action 0)",
-       title = "Sign reversal check: refrain should be ≥ 0 under low, ≤ 0 under high") +
+  labs(x = NULL, y = "V (refrain, action 0)") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   facet_grid(~ scenario_type, scales = "free_x", space = "free_x")
 ```
+
+### V vs access collinearity (w_v vs w_d identifiability)
+
+If V and access correlate strongly (|r| > 0.85), w_v and w_d won't be cleanly separable in the fit.
 
 ```{r}
 #| fig-width: 8
 #| fig-asp: 0.45
 
-# (2) V vs access collinearity check.
-df_canonical_access <- read_csv(here("model", "outputs", "lm_scenario_params_nonfood.csv"),
-                                show_col_types = FALSE) |>
-  select(scenario_label, action, access)
-
-df_v_vs_access <- df_lmv |>
+cor_v_acc <- df_v_vs_access <- df_lmv |>
   inner_join(df_canonical_access, by = c("scenario_label", "action"))
 
 cor_v_acc <- df_v_vs_access |>
@@ -542,147 +536,6 @@ ggplot(df_v_vs_access, aes(x = access, y = v, color = scenario_type, shape = fac
              inherit.aes = FALSE,
              hjust = -0.1, vjust = 1.4, size = 4) +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(x = "LM-derived access", y = "LM-V (signed valence)",
-       title = "V vs access collinearity (high values = w_v / w_d harder to disentangle)") +
+  labs(x = "LM-derived access", y = "LM-V (signed valence)") +
   facet_wrap(~ motivation)
-```
-
-```{r}
-# (3) Magnitude on extreme scenarios: payment-HIGH-refrain should be near -1.
-df_lmv |>
-  filter(scenario_type == "privacy", action == 0) |>
-  select(scenario_label, motivation, v) |>
-  arrange(scenario_label, motivation) |>
-  knitr::kable(digits = 2, caption = "V for refrain (action 0) on privacy scenarios — expected: very negative under HIGH (urgent need), positive under LOW (no need to share)")
-```
-
-### Side-by-side AIC: binary V vs LM-V (all-data fits)
-
-```{r}
-fit_binary <- read_csv(here("model", "outputs", "forward_planning_fit_results_nonfood.csv"),
-                       show_col_types = FALSE) |>
-  mutate(v_source = "binary")
-fit_lmv <- read_csv(here("model", "outputs", "forward_planning_fit_results_nonfood_lmv.csv"),
-                    show_col_types = FALSE) |>
-  mutate(v_source = "LM-V")
-
-n_obs <- nrow(df)
-fit_combined <- bind_rows(fit_binary, fit_lmv) |>
-  mutate(
-    AIC = 2 * n_params + 2 * nll,
-    BIC = n_params * log(n_obs) + 2 * nll
-  ) |>
-  select(v_source, model, nll, n_params, AIC, BIC, r, r_ci_lower, r_ci_upper) |>
-  arrange(model, v_source)
-
-fit_combined |>
-  knitr::kable(digits = 2, caption = "All-data fit comparison (binary V vs LM-V, non-food)")
-```
-
-```{r}
-# Delta AIC: how much LM-V helps (negative = LM-V better) per ablation.
-fit_combined |>
-  select(v_source, model, AIC) |>
-  pivot_wider(names_from = v_source, values_from = AIC) |>
-  mutate(delta_AIC = `LM-V` - binary) |>
-  knitr::kable(digits = 2, caption = "ΔAIC = LM-V − binary (negative means LM-V wins)")
-```
-
-### LOSO out-of-sample r: binary V vs LM-V
-
-```{r}
-df_cv_binary <- read_csv(here("model", "outputs", "cv_loso_preds_nonfood.csv"),
-                         show_col_types = FALSE) |>
-  mutate(v_source = "binary")
-df_cv_lmv <- read_csv(here("model", "outputs", "cv_loso_preds_nonfood_lmv.csv"),
-                      show_col_types = FALSE) |>
-  mutate(v_source = "LM-V")
-
-df_cv_combined <- bind_rows(df_cv_binary, df_cv_lmv)
-
-# Pooled cell-mean r per (variant, v_source).
-df_pooled_r <- df_cv_combined |>
-  group_by(variant, v_source, intimacy, motivation, action) |>
-  summarize(
-    p_action_human = mean(p_action),
-    p_action_pred = mean(p_action_pred),
-    .groups = "drop"
-  ) |>
-  group_by(variant, v_source) |>
-  summarize(
-    boot = list(boot_cor(p_action_pred, p_action_human)),
-    .groups = "drop"
-  ) |>
-  mutate(
-    r = sapply(boot, function(x) x$r),
-    ci_lower = sapply(boot, function(x) x$ci_lower),
-    ci_upper = sapply(boot, function(x) x$ci_upper)
-  ) |>
-  select(-boot)
-
-df_pooled_r |>
-  knitr::kable(digits = 3, caption = "Pooled out-of-sample r (cell means, bootstrap 95% CI)")
-```
-
-```{r}
-#| fig-width: 8
-#| fig-asp: 0.45
-
-ggplot(df_pooled_r, aes(x = variant, y = r, fill = v_source)) +
-  geom_col(position = position_dodge(width = 0.8), alpha = 0.85, width = 0.7) +
-  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
-                position = position_dodge(width = 0.8), width = 0.2) +
-  scale_fill_manual(values = c(binary = "#6b8cae", `LM-V` = "#7A4A5A")) +
-  labs(x = NULL, y = "Pooled out-of-sample Pearson r", fill = "V source",
-       title = "LOSO CV: LM-V vs binary V")
-```
-
-### Residual delta: where does LM-V actually help?
-
-For each (scenario, action) cell, residual_lmv − residual_binary. Positive means binary V was further off (LM-V improves), negative means LM-V drifts more.
-
-```{r}
-#| fig-width: 7
-#| fig-asp: 1.1
-
-df_cell_lmv <- df_cv_combined |>
-  filter(variant == "access_full") |>
-  group_by(held_out_scenario, intimacy, motivation, action, v_source) |>
-  summarize(
-    humans = mean(p_action),
-    model_pred = mean(p_action_pred),
-    .groups = "drop"
-  ) |>
-  mutate(residual = humans - model_pred) |>
-  pivot_wider(id_cols = c(held_out_scenario, intimacy, motivation, action),
-              names_from = v_source,
-              values_from = residual,
-              names_prefix = "resid_") |>
-  mutate(
-    abs_improvement = abs(resid_binary) - abs(`resid_LM-V`),
-    scenario_label = held_out_scenario
-  ) |>
-  group_by(scenario_label, action) |>
-  summarize(mean_improvement = mean(abs_improvement), .groups = "drop") |>
-  left_join(df_scenario_types, by = "scenario_label")
-
-scenario_order <- df_cell_lmv |>
-  group_by(scenario_label, scenario_type) |>
-  summarize(m = mean(mean_improvement), .groups = "drop") |>
-  arrange(scenario_type, m) |>
-  pull(scenario_label)
-
-df_cell_lmv |>
-  mutate(scenario_label = factor(scenario_label, levels = scenario_order),
-         action = factor(action)) |>
-  ggplot(aes(x = action, y = scenario_label, fill = mean_improvement)) +
-  geom_tile(color = "white") +
-  geom_text(aes(label = sprintf("%+.2f", mean_improvement)), size = 3) +
-  scale_fill_gradient2(low = "#3b4cc0", mid = "white", high = "#b40426",
-                       midpoint = 0,
-                       limits = c(-1, 1) * max(abs(df_cell_lmv$mean_improvement))) +
-  labs(x = "Action", y = "Scenario",
-       fill = "|residual| reduction\n(positive = LM-V helps)") +
-  facet_grid(scenario_type ~ ., scales = "free_y", space = "free_y") +
-  theme(panel.grid = element_blank())
 ```

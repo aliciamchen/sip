@@ -33,12 +33,13 @@ from model_utils import (
 )
 
 
-# Variant registry: name -> (observer_fn, utility_param_names)
+# Variant registry: name -> (observer_fn, utility_param_names, uses_v).
 # α_actor is fixed at 1; utility names are what we pull from the fit-results CSV.
+# access_only is V-independent and doesn't take v_padded_table.
 PADDED_VARIANTS = {
-    "access_full": (observer_intimacy_access_full_padded, ["w_v", "w_d", "w_e"]),
-    "access_only": (observer_intimacy_access_only_padded, ["w_d"]),
-    "no_access":   (observer_intimacy_no_access_padded,   ["w_v", "w_e"]),
+    "access_full": (observer_intimacy_access_full_padded, ["w_v", "w_d", "w_e"], True),
+    "access_only": (observer_intimacy_access_only_padded, ["w_d"], False),
+    "no_access":   (observer_intimacy_no_access_padded,   ["w_v", "w_e"], True),
 }
 
 
@@ -72,18 +73,19 @@ def load_noalt_fit_results(filepath=None):
 
 
 def generate_noalt_preds(params, variant_name, padded):
-    observer_fn, utility_names = PADDED_VARIANTS[variant_name]
+    observer_fn, utility_names, uses_v = PADDED_VARIANTS[variant_name]
     kwargs = {"alpha": params["alpha"]}
     for name in utility_names:
         kwargs[name] = params[name]
     kwargs["alpha_observer"] = params["alpha_observer"]
-    result = observer_fn(
-        **kwargs,
+    table_kwargs = dict(
         access_table=padded["access"],
         effort_table=padded["effort"],
-        is_share_table=padded["is_share"],
         prior_table=padded["prior"],
     )
+    if uses_v:
+        table_kwargs["v_padded_table"] = padded["v"]
+    result = observer_fn(**kwargs, **table_kwargs)
     # result shape: (padded_slot, scenario, observed_action, intimacy, reward_condition)
     # Slot 0 always holds the observed canonical action.
     data = []

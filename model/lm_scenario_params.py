@@ -50,18 +50,20 @@ TEMPERATURE = 0.2
 # the --domain flag selects which scenario CSV (and output filenames) to use.
 _DOMAIN_PATHS = {
     "food": {
-        "scenarios":           "scenarios.csv",
-        "params_output":       "lm_scenario_params.csv",
-        "v_output":            "lm_scenario_v.csv",
-        "alternatives_input":  "lm_alternatives.csv",
-        "alternatives_output": "lm_alternatives_features.csv",
+        "scenarios":             "scenarios.csv",
+        "params_output":         "lm_scenario_params.csv",
+        "v_output":              "lm_scenario_v.csv",
+        "alternatives_input":    "lm_alternatives.csv",
+        "alternatives_output":   "lm_alternatives_features.csv",
+        "alternatives_v_output": "lm_alternatives_v.csv",
     },
     "nonfood": {
-        "scenarios":           "scenarios_nonfood.csv",
-        "params_output":       "lm_scenario_params_nonfood.csv",
-        "v_output":            "lm_scenario_v_nonfood.csv",
-        "alternatives_input":  "lm_alternatives_nonfood.csv",
-        "alternatives_output": "lm_alternatives_features_nonfood.csv",
+        "scenarios":             "scenarios_nonfood.csv",
+        "params_output":         "lm_scenario_params_nonfood.csv",
+        "v_output":              "lm_scenario_v_nonfood.csv",
+        "alternatives_input":    "lm_alternatives_nonfood.csv",
+        "alternatives_output":   "lm_alternatives_features_nonfood.csv",
+        "alternatives_v_output": "lm_alternatives_v_nonfood.csv",
     },
 }
 
@@ -314,6 +316,10 @@ def format_effort_prompt_variable(vignette, action_texts):
     return build_user_prompt("effort", vignette, action_texts)
 
 
+def format_v_prompt_variable(vignette, state, action_texts):
+    return build_user_prompt("v", vignette, action_texts, state=state)
+
+
 # Variable-length system prompts are domain-specific; constructed at runtime
 # inside score_alternatives_main once the --domain flag is known. The two
 # constants below remain (food-domain) for any external caller that may have
@@ -329,6 +335,8 @@ def parse_action_response_variable(response_text, n_actions):
     js = _find_json(response_text.strip())
     if js is None:
         return None
+    # Strip leading + signs from numeric values (V uses signed -3..+3 scale).
+    js = re.sub(r":\s*\+(\d)", r": \1", js)
     try:
         ratings = json.loads(js)
     except (json.JSONDecodeError, ValueError) as e:
@@ -518,6 +526,122 @@ def score_alternatives_main(domain="food"):
     print(f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}", flush=True)
 
 
+def score_v_alternatives_main(domain="food"):
+    """Score signed-valence V for LM-generated alternatives, per scenario.
+
+    For each scenario, dedupes alternative-action texts (case-insensitive),
+    then asks the LM for V under each motivation state (`reward_high`,
+    `reward_low`). 10 runs per (scenario, motivation_state). Output schema:
+        scenario_label, observed_action, motivation, alt_idx, motivation_query,
+        v_raw, v_raw_std, v, n_runs
+
+    `motivation` is the motivation context the alternative was generated under
+    (matches lm_alternatives.csv); `motivation_query` is the state we ask V
+    against. We compute V for both motivation_query values for every alt so
+    the desire-noalt observer (which infers motivation as latent) has both.
+
+    Checkpoints to disk after each scenario; resumes from existing file.
+    """
+    api_key = _load_api_key()
+
+    v_system_prompt = build_system_prompt("v", n_actions=None)
+
+    print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
+    scenarios_df = load_scenarios(domain)
+    alt_path = get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_input"]
+    if not alt_path.exists():
+        print(f"Error: {alt_path} not found. Run lm_generate_alternatives.py first.", flush=True)
+        sys.exit(1)
+    alt_df = pd.read_csv(alt_path)
+    alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
+
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_v_output"]
+
+    results = []
+    already_done_scenarios = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done_scenarios = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done_scenarios)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
+    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
+    client = Together(api_key=api_key)
+
+    scenario_lookup = scenarios_df.set_index("scenario_label").to_dict("index")
+
+    scenarios_in_data = sorted(alt_df["scenario_label"].unique())
+    for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
+        if scenario in already_done_scenarios:
+            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            continue
+
+        sc_group = alt_df[alt_df["scenario_label"] == scenario]
+        unique_df = sc_group.drop_duplicates("action_norm").reset_index(drop=True)
+        unique_actions = unique_df["action_text"].tolist()
+        unique_norms = unique_df["action_norm"].tolist()
+        n_unique = len(unique_actions)
+        sc_meta = scenario_lookup[scenario]
+        vignette = sc_meta["vignette"]
+
+        print(
+            f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} | "
+            f"{len(sc_group)} rows | {n_unique} unique actions",
+            flush=True,
+        )
+        if n_unique == 0:
+            continue
+
+        v_by_norm_by_query = {}
+        for motivation_query in ("low", "high"):
+            print(f"  scoring V (motivation_query={motivation_query})...", flush=True)
+            state = sc_meta[f"reward_{motivation_query}"]
+            ratings = get_ratings_variable(
+                client,
+                v_system_prompt,
+                format_v_prompt_variable(vignette, state, unique_actions),
+                n_unique,
+            )
+            agg = aggregate_action_ratings_variable(ratings, n_unique)
+            for i, norm in enumerate(unique_norms):
+                key = f"action_{i}"
+                v_mean, v_std = agg[key]
+                v_by_norm_by_query.setdefault(norm, {})[motivation_query] = {
+                    "v_raw": v_mean,
+                    "v_raw_std": v_std,
+                    "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
+                    "n_runs": len(ratings),
+                }
+
+        # Emit one row per (scenario, observed, motivation, alt_idx, motivation_query).
+        new_rows = 0
+        for _, row in sc_group.iterrows():
+            for motivation_query in ("low", "high"):
+                f = v_by_norm_by_query.get(row["action_norm"], {}).get(motivation_query)
+                if f is None:
+                    continue
+                results.append({
+                    "scenario_label": scenario,
+                    "observed_action": row["observed_action"],
+                    "motivation": row["motivation"],
+                    "alt_idx": int(row["alt_idx"]),
+                    "motivation_query": motivation_query,
+                    **f,
+                })
+                new_rows += 1
+
+        pd.DataFrame(results).to_csv(output_path, index=False)
+        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+
+    print(f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True)
+
+
 def score_v_main(domain="food"):
     """Generate signed-valence (V) ratings for each (scenario, action, motivation).
 
@@ -599,13 +723,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--feature",
-        choices=("access_effort", "v"),
+        choices=("access_effort", "v", "v_alternatives"),
         default="access_effort",
         help=(
             "Which feature(s) to elicit. 'access_effort' (default) generates "
             "the canonical access+effort tables. 'v' generates signed-valence "
-            "ratings per (scenario, action, motivation). Mutually exclusive "
-            "with --score-alternatives."
+            "ratings per (scenario, action, motivation). 'v_alternatives' "
+            "generates V for LM-generated alternatives (requires "
+            "lm_alternatives.csv, output to lm_alternatives_v.csv). The "
+            "feature flags are mutually exclusive with --score-alternatives."
         ),
     )
     parser.add_argument(
@@ -620,11 +746,13 @@ if __name__ == "__main__":
         ),
     )
     args = parser.parse_args()
-    if args.score_alternatives and args.feature == "v":
-        parser.error("--score-alternatives is incompatible with --feature v")
+    if args.score_alternatives and args.feature != "access_effort":
+        parser.error(f"--score-alternatives is incompatible with --feature {args.feature}")
     if args.score_alternatives:
         score_alternatives_main(args.domain)
     elif args.feature == "v":
         score_v_main(args.domain)
+    elif args.feature == "v_alternatives":
+        score_v_alternatives_main(args.domain)
     else:
         main(args.domain)

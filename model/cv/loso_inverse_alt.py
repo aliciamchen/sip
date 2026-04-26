@@ -69,8 +69,8 @@ def _loso_intimacy(actor_params_by_model):
         if variant not in actor_params_by_model:
             print(f"  (skipping {variant}: no forward fit)")
             continue
-        obs_fn, _rew_fn, kw_names = ACCESS_VARIANTS[variant]
-        tk = _table_kwargs()
+        obs_fn, _rew_fn, kw_names, uses_v = ACCESS_VARIANTS[variant]
+        tk = _table_kwargs(uses_v)
         actor_params = actor_params_by_model[variant]
         actor_kwargs = {k: actor_params[k] for k in kw_names}
 
@@ -153,8 +153,8 @@ def _loso_desire(actor_params_by_model):
         if variant not in actor_params_by_model:
             print(f"  (skipping {variant}: no forward fit)")
             continue
-        _int_fn, obs_fn, kw_names = ACCESS_VARIANTS[variant]
-        tk = _table_kwargs()
+        _int_fn, obs_fn, kw_names, uses_v = ACCESS_VARIANTS[variant]
+        tk = _table_kwargs(uses_v)
         actor_params = actor_params_by_model[variant]
         actor_kwargs = {k: actor_params[k] for k in kw_names}
 

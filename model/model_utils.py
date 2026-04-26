@@ -216,45 +216,51 @@ def load_lm_v(domain="food"):
     return jnp.array(v)
 
 
-# Canonical is_share mapping for the 4 experimenter-authored actions.
-# Slot 0 of the padded tables always holds the observed canonical action, so
-# its is_share is determined by this vector. Matches get_stipulated_reward.
-CANONICAL_IS_SHARE = jnp.array([0.0, 1.0, 1.0, 1.0])
-
-
 def load_padded_lm_tables(
     canonical_path=None,
+    canonical_v_path=None,
     alternatives_path=None,
     alternatives_features_path=None,
+    alternatives_v_path=None,
 ):
-    """Build padded (16, 4, 2, MAX_ACTIONS) tables for access, effort, is_share,
-    and prior.
+    """Build padded (16, 4, 2, MAX_ACTIONS) tables for access, effort, v
+    (signed valence), and prior.
 
     Slot 0 of every (scenario, observed_action, motivation) cell holds the
-    observed canonical action's features (from lm_scenario_params.csv).
-    Slots 1..k hold the LM-generated alternatives for that cell (from
-    lm_alternatives.csv + lm_alternatives_features.csv). Remaining slots are
-    null-padded with access=0, effort=0, is_share=0. The prior is uniform over
-    valid (non-null) slots; null slots get a tiny epsilon (1e-8) rather than
-    exactly 0 to keep `E[...] ** alpha_observer` differentiable in the observer
-    memo, while still contributing <1e-6 of softmax mass.
+    observed canonical action's features (access + effort from
+    lm_scenario_params.csv; V from lm_scenario_v.csv).
 
-    Returns a dict {access, effort, is_share, prior} (each jnp.array of shape
-    (16, 4, 2, MAX_ACTIONS)), or None if the alternative CSVs are missing.
+    Slots 1..k hold the LM-generated alternatives for that cell (access + effort
+    from lm_alternatives_features.csv; V from lm_alternatives_v.csv with
+    motivation_query == motivation, since the actor reasoning under a given
+    motivation evaluates V under that same motivation).
+
+    Remaining slots are null-padded with access=0, effort=0, v=0. The prior
+    is uniform over valid (non-null) slots; null slots get a tiny epsilon
+    (1e-8) rather than exactly 0 to keep `E[...] ** alpha_observer`
+    differentiable in the observer memo, while still contributing <1e-6 of
+    softmax mass.
+
+    Returns a dict {access, effort, v, prior} (each jnp.array of shape
+    (16, 4, 2, MAX_ACTIONS)), or None if any required CSV is missing.
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
+    canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
     alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
     alternatives_features_path = (
         alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
+    alternatives_v_path = alternatives_v_path or outputs_dir / "lm_alternatives_v.csv"
 
-    if not alternatives_path.exists() or not alternatives_features_path.exists():
+    required = [alternatives_path, alternatives_features_path, canonical_v_path, alternatives_v_path]
+    if any(not p.exists() for p in required):
         return None
 
     canonical_df = pd.read_csv(canonical_path)
-    alts_df = pd.read_csv(alternatives_path)
+    canonical_v_df = pd.read_csv(canonical_v_path)
     feats_df = pd.read_csv(alternatives_features_path)
+    alts_v_df = pd.read_csv(alternatives_v_path)
 
     n_scenarios = len(SCENARIO_LABELS)
     n_observed = 4
@@ -262,38 +268,43 @@ def load_padded_lm_tables(
     shape = (n_scenarios, n_observed, n_motivations, MAX_ACTIONS)
     access = np.zeros(shape, dtype=np.float32)
     effort = np.zeros(shape, dtype=np.float32)
-    is_share = np.zeros(shape, dtype=np.float32)
-    # valid_mask[s, o, m, slot] = True if the slot holds a real action (not null pad)
+    v = np.zeros(shape, dtype=np.float32)
     valid_mask = np.zeros(shape, dtype=bool)
 
-    # Canonical (slot 0) per cell
-    canon_lookup = {}
+    motivation_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
+    observed_str_to_idx = {f"action_{i}": i for i in range(n_observed)}
+
+    # Canonical (slot 0) per cell — access/effort from lm_scenario_params,
+    # V from lm_scenario_v indexed by (scenario, action, motivation).
+    canon_ae_lookup = {}
     for _, row in canonical_df.iterrows():
-        canon_lookup[(row["scenario_label"], int(row["action"]))] = (
+        canon_ae_lookup[(row["scenario_label"], int(row["action"]))] = (
             float(row["access"]),
             float(row["effort"]),
+        )
+    canon_v_lookup = {}
+    for _, row in canonical_v_df.iterrows():
+        canon_v_lookup[(row["scenario_label"], int(row["action"]), row["motivation"])] = (
+            float(row["v"])
         )
     for scenario in SCENARIO_LABELS:
         s_idx = SCENARIO_TO_IDX[scenario]
         for observed in range(n_observed):
-            a_access, a_effort = canon_lookup[(scenario, observed)]
-            for motivation in range(n_motivations):
-                access[s_idx, observed, motivation, 0] = a_access
-                effort[s_idx, observed, motivation, 0] = a_effort
-                is_share[s_idx, observed, motivation, 0] = float(
-                    CANONICAL_IS_SHARE[observed]
-                )
-                valid_mask[s_idx, observed, motivation, 0] = True
+            a_access, a_effort = canon_ae_lookup[(scenario, observed)]
+            for motivation_str, m_idx in motivation_to_idx.items():
+                access[s_idx, observed, m_idx, 0] = a_access
+                effort[s_idx, observed, m_idx, 0] = a_effort
+                v[s_idx, observed, m_idx, 0] = canon_v_lookup[(scenario, observed, motivation_str)]
+                valid_mask[s_idx, observed, m_idx, 0] = True
 
-    # LM-generated alternatives (slots 1..k) per cell
-    is_share_lookup = {
-        (r["scenario_label"], r["observed_action"], r["motivation"], int(r["alt_idx"])): int(
-            r["is_share"]
-        )
-        for _, r in alts_df.iterrows()
+    # LM-generated alternatives (slots 1..k) per cell. V uses the diagonal
+    # of (motivation context, motivation_query) — under reward_condition=m,
+    # the actor evaluates the m-context alternative's V under m.
+    alt_v_lookup = {
+        (r["scenario_label"], r["observed_action"], r["motivation"], int(r["alt_idx"])): float(r["v"])
+        for _, r in alts_v_df.iterrows()
+        if r["motivation"] == r["motivation_query"]
     }
-    motivation_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
-    observed_str_to_idx = {f"action_{i}": i for i in range(n_observed)}
 
     for _, row in feats_df.iterrows():
         s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
@@ -305,11 +316,9 @@ def load_padded_lm_tables(
             continue  # truncate silently; warn below
         access[s_idx, o_idx, m_idx, slot] = float(row["access"])
         effort[s_idx, o_idx, m_idx, slot] = float(row["effort"])
-        is_share[s_idx, o_idx, m_idx, slot] = float(
-            is_share_lookup.get(
-                (row["scenario_label"], row["observed_action"], row["motivation"], alt_idx),
-                0,
-            )
+        v[s_idx, o_idx, m_idx, slot] = alt_v_lookup.get(
+            (row["scenario_label"], row["observed_action"], row["motivation"], alt_idx),
+            0.0,
         )
         valid_mask[s_idx, o_idx, m_idx, slot] = True
 
@@ -334,7 +343,7 @@ def load_padded_lm_tables(
     return {
         "access": jnp.array(access),
         "effort": jnp.array(effort),
-        "is_share": jnp.array(is_share),
+        "v": jnp.array(v),
         "prior": jnp.array(prior_table),
     }
 
@@ -354,18 +363,16 @@ def get_intimacy(relationship_condition):
 # Access-model utility functions
 # ==============================================================================
 # Canonical utility:
-#   U(a|s, I, scen) =  w_v * V(a|s)
-#                    - w_d * access[scen, a] * (1 - I)
-#                    - w_e * effort[scen, a]
+#   U(a|s, I, scen, m) =  w_v * V(a|s, m)
+#                       - w_d * access[scen, a] * (1 - I)
+#                       - w_e * effort[scen, a]
 #
-# Reward V(a|s) is stipulated as a binary goal-satisfaction gate: V=1 iff the
-# action satisfies the active goal. Under HIGH motivation the goal is to eat/
-# share, so V=1 for sharing actions (action != 0); under LOW motivation the
-# goal is to not eat, so V=1 for action 0. V=0 otherwise.
-#
-# Access and effort are LLM-derived per-scenario (access_table, effort_table)
-# and passed as memo parameters so memo can JIT-compile without baking them
-# into the compiled graph.
+# All three components — V, access, effort — are LLM-elicited per scenario.
+# V is signed in [-1, +1]: positive when an action serves the active state,
+# negative when it actively works against it. access and effort use the
+# canonical (16, 4) tables; V uses a (16, 4, 2) table indexed by motivation.
+# Tables are passed as memo parameters so memo can JIT-compile without baking
+# them into the compiled graph.
 #
 # Three ablations:
 #   - access_full : full utility above (main model)
@@ -374,31 +381,24 @@ def get_intimacy(relationship_condition):
 
 
 @jax.jit
-def get_stipulated_reward(action, reward_condition):
-    """Stipulated food-utility: positive when the food is desired, negative
-    when it is unwanted, zero when the action doesn't involve eating.
+def get_lm_v(action, scenario_idx, reward_condition, v_table):
+    """LM-elicited signed valence: v_table[scenario_idx, action, reward_condition].
 
-      - HIGH motivation (food wanted): V=+1 for eating (actions 1-3), V=0 for a_0
-      - LOW  motivation (food unwanted): V=-1 for eating, V=0 for a_0
-
-    Mathematically equivalent under softmax to the binary goal-satisfaction
-    gate (V=1 iff the active goal is met), which differs only by an additive
-    constant per motivation state that the softmax normalizes out.
+    v_table has shape (16, 4, 2). Values in [-1, +1]. Positive = action serves
+    the active state; negative = action actively counterproductive.
     """
-    motivation = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
-    action_is_share = jnp.array([0.0, 1.0, 1.0, 1.0])[action]
-    return action_is_share * (2.0 * motivation - 1.0)
+    return v_table[scenario_idx, action, reward_condition]
 
 
 @jax.jit
 def get_utility_access_full(
     action, scenario_idx, intimacy, reward_condition,
     alpha, w_v, w_d, w_e,
-    access_table, effort_table,
+    access_table, effort_table, v_table,
 ):
     access = access_table[scenario_idx, action]
     effort = effort_table[scenario_idx, action]
-    V = get_stipulated_reward(action, reward_condition)
+    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
     return alpha * (
         w_v * V
         - w_d * access * (1 - intimacy)
@@ -410,13 +410,13 @@ def get_utility_access_full(
 def get_utility_access_full_disc(
     action, scenario_idx, relationship_condition, reward_condition,
     alpha, w_v, w_d, w_e,
-    access_table, effort_table,
+    access_table, effort_table, v_table,
 ):
     intimacy = get_intimacy(relationship_condition)
     return get_utility_access_full(
         action, scenario_idx, intimacy, reward_condition,
         alpha, w_v, w_d, w_e,
-        access_table, effort_table,
+        access_table, effort_table, v_table,
     )
 
 
@@ -448,10 +448,10 @@ def get_utility_access_only_disc(
 def get_utility_no_access(
     action, scenario_idx, intimacy, reward_condition,
     alpha, w_v, w_e,
-    access_table, effort_table,
+    access_table, effort_table, v_table,
 ):
     effort = effort_table[scenario_idx, action]
-    V = get_stipulated_reward(action, reward_condition)
+    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
     return alpha * (w_v * V - w_e * effort)
 
 
@@ -459,55 +459,14 @@ def get_utility_no_access(
 def get_utility_no_access_disc(
     action, scenario_idx, relationship_condition, reward_condition,
     alpha, w_v, w_e,
-    access_table, effort_table,
+    access_table, effort_table, v_table,
 ):
     intimacy = get_intimacy(relationship_condition)
     return get_utility_no_access(
         action, scenario_idx, intimacy, reward_condition,
         alpha, w_v, w_e,
-        access_table, effort_table,
+        access_table, effort_table, v_table,
     )
-
-
-# ==============================================================================
-# LM-V utility variants
-# ==============================================================================
-# Same shape as the binary-V utilities above, but V is read from an LM-elicited
-# (16, 4, 2) table indexed by (scenario, action, reward_condition) instead of
-# the closed-form get_stipulated_reward(). access_only doesn't depend on V, so
-# only access_full and no_access have LM-V variants.
-
-
-@jax.jit
-def get_lm_v(action, scenario_idx, reward_condition, v_table):
-    return v_table[scenario_idx, action, reward_condition]
-
-
-@jax.jit
-def get_utility_access_full_lmv(
-    action, scenario_idx, intimacy, reward_condition,
-    alpha, w_v, w_d, w_e,
-    access_table, effort_table, v_table,
-):
-    access = access_table[scenario_idx, action]
-    effort = effort_table[scenario_idx, action]
-    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
-    return alpha * (
-        w_v * V
-        - w_d * access * (1 - intimacy)
-        - w_e * effort
-    )
-
-
-@jax.jit
-def get_utility_no_access_lmv(
-    action, scenario_idx, intimacy, reward_condition,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_table,
-):
-    effort = effort_table[scenario_idx, action]
-    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
-    return alpha * (w_v * V - w_e * effort)
 
 
 # ==============================================================================
@@ -521,7 +480,7 @@ def actor_forw_access_full[
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(intimacy)
@@ -532,7 +491,7 @@ def actor_forw_access_full[
             get_utility_access_full(
                 action, scenario_idx, intimacy, reward_condition,
                 alpha, w_v, w_d, w_e,
-                access_table, effort_table,
+                access_table, effort_table, v_table,
             )
         ),
     )
@@ -569,59 +528,6 @@ def actor_forw_no_access[
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, access_table: ..., effort_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(intimacy)
-    actor: knows(reward_condition)
-    actor: chooses(
-        action in actions,
-        wpp=exp(
-            get_utility_no_access(
-                action, scenario_idx, intimacy, reward_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-# ------------------------------------------------------------------------------
-# LM-V variants (same memos, but V is looked up from a (16,4,2) table)
-# ------------------------------------------------------------------------------
-
-
-@memo
-def actor_forw_access_full_lmv[
-    action: actions,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., v_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(intimacy)
-    actor: knows(reward_condition)
-    actor: chooses(
-        action in actions,
-        wpp=exp(
-            get_utility_access_full_lmv(
-                action, scenario_idx, intimacy, reward_condition,
-                alpha, w_v, w_d, w_e,
-                access_table, effort_table, v_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
-def actor_forw_no_access_lmv[
-    action: actions,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    reward_condition: RewardConditions,
 ](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -630,7 +536,7 @@ def actor_forw_no_access_lmv[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_no_access_lmv(
+            get_utility_no_access(
                 action, scenario_idx, intimacy, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table, v_table,
@@ -651,7 +557,7 @@ def actor_discrete_access_full[
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(relationship_condition)
@@ -662,7 +568,7 @@ def actor_discrete_access_full[
             get_utility_access_full_disc(
                 action, scenario_idx, relationship_condition, reward_condition,
                 alpha, w_v, w_d, w_e,
-                access_table, effort_table,
+                access_table, effort_table, v_table,
             )
         ),
     )
@@ -699,7 +605,7 @@ def actor_discrete_no_access[
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(relationship_condition)
@@ -710,7 +616,7 @@ def actor_discrete_no_access[
             get_utility_no_access_disc(
                 action, scenario_idx, relationship_condition, reward_condition,
                 alpha, w_v, w_e,
-                access_table, effort_table,
+                access_table, effort_table, v_table,
             )
         ),
     )
@@ -728,7 +634,7 @@ def actor_continuous_access_full[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(relationship)
@@ -739,7 +645,7 @@ def actor_continuous_access_full[
             get_utility_access_full(
                 action, scenario_idx, relationship, reward_condition,
                 alpha, w_v, w_d, w_e,
-                access_table, effort_table,
+                access_table, effort_table, v_table,
             )
         ),
     )
@@ -776,7 +682,7 @@ def actor_continuous_no_access[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(relationship)
@@ -787,7 +693,7 @@ def actor_continuous_no_access[
             get_utility_no_access(
                 action, scenario_idx, relationship, reward_condition,
                 alpha, w_v, w_e,
-                access_table, effort_table,
+                access_table, effort_table, v_table,
             )
         ),
     )
@@ -805,7 +711,7 @@ def observer_intimacy_access_full[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(reward_condition)
@@ -817,7 +723,7 @@ def observer_intimacy_access_full[
             action in actions,
             wpp=actor_continuous_access_full[
                 action, scenario_idx, relationship, reward_condition
-            ](alpha, w_v, w_d, w_e, access_table, effort_table),
+            ](alpha, w_v, w_d, w_e, access_table, effort_table, v_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -863,7 +769,7 @@ def observer_intimacy_no_access[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(reward_condition)
@@ -875,7 +781,7 @@ def observer_intimacy_no_access[
             action in actions,
             wpp=actor_continuous_no_access[
                 action, scenario_idx, relationship, reward_condition
-            ](alpha, w_v, w_e, access_table, effort_table),
+            ](alpha, w_v, w_e, access_table, effort_table, v_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -897,7 +803,7 @@ def observer_reward_access_full[
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(relationship_condition)
@@ -909,7 +815,7 @@ def observer_reward_access_full[
             action in actions,
             wpp=actor_discrete_access_full[
                 action, scenario_idx, relationship_condition, reward_condition
-            ](alpha, w_v, w_d, w_e, access_table, effort_table),
+            ](alpha, w_v, w_d, w_e, access_table, effort_table, v_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -955,7 +861,7 @@ def observer_reward_no_access[
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ..., v_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(relationship_condition)
@@ -967,7 +873,7 @@ def observer_reward_no_access[
             action in actions,
             wpp=actor_discrete_no_access[
                 action, scenario_idx, relationship_condition, reward_condition
-            ](alpha, w_v, w_e, access_table, effort_table),
+            ](alpha, w_v, w_e, access_table, effort_table, v_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -996,33 +902,31 @@ def get_prior_padded(
 
 
 @jax.jit
-def get_stipulated_reward_padded(
-    padded_slot, scenario_idx, observed_action, reward_condition, is_share_table,
+def get_lm_v_padded(
+    padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table,
 ):
-    """Food-utility for arbitrary actions using the is_share tag. Positive when
-    the food is desired, negative when unwanted, zero when the action does not
-    involve eating (is_share=0).
+    """LM-elicited signed valence for an arbitrary action in the padded action
+    space.
 
-    is_share_table has shape (16, 4, 2, MAX_ACTIONS) — indexed by
-    (scenario, observed_action, motivation, padded_slot). Under HIGH motivation
-    V=+1 iff is_share==1, else 0. Under LOW motivation V=-1 iff is_share==1,
-    else 0. Equivalent under softmax to the binary goal-satisfaction gate.
+    v_padded_table has shape (16, 4, 2, MAX_ACTIONS) — indexed by
+    (scenario, observed_action, motivation, padded_slot). Slot 0 is the
+    canonical action (V from lm_scenario_v.csv); slots 1..k are LM-generated
+    alternatives (V from lm_alternatives_v.csv); remaining slots are
+    null-padded with V=0 (no contribution after multiplying by zero prior).
     """
-    motivation = jnp.where(reward_condition == RewardConditions.HIGH, 1.0, 0.0)
-    action_is_share = is_share_table[scenario_idx, observed_action, reward_condition, padded_slot]
-    return action_is_share * (2.0 * motivation - 1.0)
+    return v_padded_table[scenario_idx, observed_action, reward_condition, padded_slot]
 
 
 @jax.jit
 def get_utility_access_full_padded(
     padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
     alpha, w_v, w_d, w_e,
-    access_table, effort_table, is_share_table,
+    access_table, effort_table, v_padded_table,
 ):
     access = access_table[scenario_idx, observed_action, reward_condition, padded_slot]
     effort = effort_table[scenario_idx, observed_action, reward_condition, padded_slot]
-    V = get_stipulated_reward_padded(
-        padded_slot, scenario_idx, observed_action, reward_condition, is_share_table,
+    V = get_lm_v_padded(
+        padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table,
     )
     return alpha * (
         w_v * V
@@ -1038,7 +942,7 @@ def actor_continuous_access_full_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., is_share_table: ..., prior_table: ...):
+](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -1050,7 +954,7 @@ def actor_continuous_access_full_padded[
             get_utility_access_full_padded(
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition,
                 alpha, w_v, w_d, w_e,
-                access_table, effort_table, is_share_table,
+                access_table, effort_table, v_padded_table,
             )
         ),
     )
@@ -1064,7 +968,7 @@ def observer_intimacy_access_full_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ..., is_share_table: ..., prior_table: ...):
+](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
     # The memo returns a posterior on relationship indexed by padded_slot as
     # the observation. Callers should evaluate at padded_slot=0, since slot 0
     # always holds the observed canonical action (see load_padded_lm_tables).
@@ -1083,7 +987,7 @@ def observer_intimacy_access_full_padded[
             padded_slot in PaddedActionSlots,
             wpp=actor_continuous_access_full_padded[
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition
-            ](alpha, w_v, w_d, w_e, access_table, effort_table, is_share_table, prior_table),
+            ](alpha, w_v, w_d, w_e, access_table, effort_table, v_padded_table, prior_table),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
@@ -1094,14 +998,14 @@ def observer_intimacy_access_full_padded[
     return Pr[observer.relationship == relationship]
 
 
-# --- access_only padded variant: drops w_v*V and w_e*effort ---
+# --- access_only padded variant: V-independent (drops w_v*V and w_e*effort) ---
 
 
 @jax.jit
 def get_utility_access_only_padded(
     padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
     alpha, w_d,
-    access_table, effort_table, is_share_table,
+    access_table, effort_table,
 ):
     access = access_table[scenario_idx, observed_action, reward_condition, padded_slot]
     return alpha * (-w_d * access * (1 - intimacy))
@@ -1114,7 +1018,7 @@ def actor_continuous_access_only_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_d, access_table: ..., effort_table: ..., is_share_table: ..., prior_table: ...):
+](alpha, w_d, access_table: ..., effort_table: ..., prior_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -1126,7 +1030,7 @@ def actor_continuous_access_only_padded[
             get_utility_access_only_padded(
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition,
                 alpha, w_d,
-                access_table, effort_table, is_share_table,
+                access_table, effort_table,
             )
         ),
     )
@@ -1140,7 +1044,7 @@ def observer_intimacy_access_only_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_d, alpha_observer, access_table: ..., effort_table: ..., is_share_table: ..., prior_table: ...):
+](alpha, w_d, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(observed_action)
@@ -1154,7 +1058,7 @@ def observer_intimacy_access_only_padded[
             padded_slot in PaddedActionSlots,
             wpp=actor_continuous_access_only_padded[
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition
-            ](alpha, w_d, access_table, effort_table, is_share_table, prior_table),
+            ](alpha, w_d, access_table, effort_table, prior_table),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
@@ -1172,11 +1076,11 @@ def observer_intimacy_access_only_padded[
 def get_utility_no_access_padded(
     padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
     alpha, w_v, w_e,
-    access_table, effort_table, is_share_table,
+    access_table, effort_table, v_padded_table,
 ):
     effort = effort_table[scenario_idx, observed_action, reward_condition, padded_slot]
-    V = get_stipulated_reward_padded(
-        padded_slot, scenario_idx, observed_action, reward_condition, is_share_table,
+    V = get_lm_v_padded(
+        padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table,
     )
     return alpha * (w_v * V - w_e * effort)
 
@@ -1188,7 +1092,7 @@ def actor_continuous_no_access_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, access_table: ..., effort_table: ..., is_share_table: ..., prior_table: ...):
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -1200,7 +1104,7 @@ def actor_continuous_no_access_padded[
             get_utility_no_access_padded(
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition,
                 alpha, w_v, w_e,
-                access_table, effort_table, is_share_table,
+                access_table, effort_table, v_padded_table,
             )
         ),
     )
@@ -1214,7 +1118,7 @@ def observer_intimacy_no_access_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ..., is_share_table: ..., prior_table: ...):
+](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(observed_action)
@@ -1228,7 +1132,7 @@ def observer_intimacy_no_access_padded[
             padded_slot in PaddedActionSlots,
             wpp=actor_continuous_no_access_padded[
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition
-            ](alpha, w_v, w_e, access_table, effort_table, is_share_table, prior_table),
+            ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
@@ -1237,3 +1141,110 @@ def observer_intimacy_no_access_padded[
         wpp=E[actor.relationship == relationship] ** alpha_observer,
     )
     return Pr[observer.relationship == relationship]
+
+
+# ==============================================================================
+# Observer inferring reward (padded action space — no-alternatives-shown variant)
+# ==============================================================================
+# Mirrors the padded intimacy observer but flips the inference target. The
+# observer knows scenario, observed_action, and the actor's relationship; the
+# latent is reward_condition. Same trial-specific action space (slot 0 =
+# observed canonical action; slots 1..k = LM-generated alternatives; null
+# padding elsewhere). All three actor utility ablations reuse the same
+# actor_continuous_*_padded memos.
+
+
+@memo
+def observer_reward_access_full_padded[
+    padded_slot: PaddedActionSlots,
+    scenario_idx: Scenarios,
+    observed_action: ObservedActions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(observed_action)
+    observer: knows(relationship)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(observed_action),
+        actor : knows(relationship),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            padded_slot in PaddedActionSlots,
+            wpp=actor_continuous_access_full_padded[
+                padded_slot, scenario_idx, observed_action, relationship, reward_condition
+            ](alpha, w_v, w_d, w_e, access_table, effort_table, v_padded_table, prior_table),
+        ),
+    ]
+    observer: observes[actor.padded_slot] is padded_slot
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_access_only_padded[
+    padded_slot: PaddedActionSlots,
+    scenario_idx: Scenarios,
+    observed_action: ObservedActions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_d, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(observed_action)
+    observer: knows(relationship)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(observed_action),
+        actor : knows(relationship),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            padded_slot in PaddedActionSlots,
+            wpp=actor_continuous_access_only_padded[
+                padded_slot, scenario_idx, observed_action, relationship, reward_condition
+            ](alpha, w_d, access_table, effort_table, prior_table),
+        ),
+    ]
+    observer: observes[actor.padded_slot] is padded_slot
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]
+
+
+@memo
+def observer_reward_no_access_padded[
+    padded_slot: PaddedActionSlots,
+    scenario_idx: Scenarios,
+    observed_action: ObservedActions,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+](alpha, w_v, w_e, alpha_observer, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
+    cast: [actor, observer]
+    observer: knows(scenario_idx)
+    observer: knows(observed_action)
+    observer: knows(relationship)
+    observer: thinks[
+        actor : knows(scenario_idx),
+        actor : knows(observed_action),
+        actor : knows(relationship),
+        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(
+            padded_slot in PaddedActionSlots,
+            wpp=actor_continuous_no_access_padded[
+                padded_slot, scenario_idx, observed_action, relationship, reward_condition
+            ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
+        ),
+    ]
+    observer: observes[actor.padded_slot] is padded_slot
+    observer: chooses(
+        reward_condition in RewardConditions,
+        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+    )
+    return Pr[observer.reward_condition == reward_condition]

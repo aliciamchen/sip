@@ -45,7 +45,7 @@ This experiment is a variant of `inv_plan_intimacy_alt` in which participants ob
 - **Action**: Which action was taken (action 0-3, varying in saliva-transfer risk)
 - **Motivation (desire)**: Whether both people want the food (high vs low)
 
-The cognitive model for this variant uses an LM-generated counterfactual alternative set (conditioned on the observed action and motivation) as the actor's action space, padded to a fixed size so the memo program can enumerate a static slot dimension. Slot 0 holds the observed canonical action; slots 1..k hold the LM-generated alternatives; remaining slots are null-padded (access=effort=is_share=0).
+The cognitive model for this variant uses an LM-generated counterfactual alternative set (conditioned on the observed action and motivation) as the actor's action space, padded to a fixed size so the memo program can enumerate a static slot dimension. Slot 0 holds the observed canonical action; slots 1..k hold the LM-generated alternatives; remaining slots are null-padded (access=effort=v=0).
 
 ## Load human data
 
@@ -147,7 +147,7 @@ df_belief_update_summary <- df |>
 
 ### Model description
 
-We compare three ablations of the canonical risk utility (Base model, Discomfort-only, Full model). The action space for each (scenario, observed action, motivation) cell is the union of the observed canonical action and an LM-generated set of plausible counterfactual alternatives. Risk and effort for each alternative are scored by an LLM (batched per scenario, 10 runs each); $V(a|s)$ uses an `is_share` tag elicited at generation time.
+We compare three ablations of the canonical risk utility (Base model, Discomfort-only, Full model). The action space for each (scenario, observed action, motivation) cell is the union of the observed canonical action and an LM-generated set of plausible counterfactual alternatives. Risk, effort, and $V(a|s, m)$ for each alternative are all LM-scored (batched per scenario, 10 runs each).
 
 **Full model**: Inverts the full risk utility $U(a|s, I) = w_v \cdot V(a|s) - w_d \cdot \text{risk}(a) \cdot (1 - I) - w_e \cdot \text{effort}(a)$.
 

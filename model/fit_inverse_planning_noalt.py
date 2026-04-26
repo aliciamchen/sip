@@ -44,21 +44,26 @@ from fit_inverse_planning import compute_intimacy_nll, load_fitted_params
 # `alpha` for the actor softmax, which is fixed at 1). `utility_param_names` is
 # the subset that is actually fitted jointly with α_observer in the no-alt
 # pipeline (α_actor is not fitted).
+# Tuple values: (observer_fn, full_kw_names, utility_names, uses_v).
+# access_only is V-independent and doesn't take v_padded_table.
 PADDED_VARIANTS = {
     "access_full": (
         observer_intimacy_access_full_padded,
         ["alpha", "w_v", "w_d", "w_e"],
         ["w_v", "w_d", "w_e"],
+        True,
     ),
     "access_only": (
         observer_intimacy_access_only_padded,
         ["alpha", "w_d"],
         ["w_d"],
+        False,
     ),
     "no_access": (
         observer_intimacy_no_access_padded,
         ["alpha", "w_v", "w_e"],
         ["w_v", "w_e"],
+        True,
     ),
 }
 
@@ -107,22 +112,24 @@ def fit_padded_alpha_observer(
     response,
     access_table,
     effort_table,
-    is_share_table,
     prior_table,
+    v_padded_table=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
 ):
     actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
+    table_kwargs = dict(
+        access_table=access_table, effort_table=effort_table, prior_table=prior_table,
+    )
+    if v_padded_table is not None:
+        table_kwargs["v_padded_table"] = v_padded_table
 
     def observer_table(alpha_observer):
         return observer_fn(
             **actor_kwargs,
             alpha_observer=alpha_observer,
-            access_table=access_table,
-            effort_table=effort_table,
-            is_share_table=is_share_table,
-            prior_table=prior_table,
+            **table_kwargs,
         )
 
     def get_nll(alpha_observer, obs_a, s, r, resp):
@@ -194,8 +201,8 @@ def fit_padded_joint_model(
     response,
     access_table,
     effort_table,
-    is_share_table,
     prior_table,
+    v_padded_table=None,
     lr=0.05,
     max_steps=2000,
     verbose=True,
@@ -208,6 +215,11 @@ def fit_padded_joint_model(
     """
     ALPHA_ACTOR = 1.0
     n_utility = len(utility_param_names)
+    table_kwargs = dict(
+        access_table=access_table, effort_table=effort_table, prior_table=prior_table,
+    )
+    if v_padded_table is not None:
+        table_kwargs["v_padded_table"] = v_padded_table
 
     def build_observer_table(params):
         actor_kwargs = {"alpha": ALPHA_ACTOR}
@@ -216,10 +228,7 @@ def fit_padded_joint_model(
         return observer_fn(
             **actor_kwargs,
             alpha_observer=params[-1],
-            access_table=access_table,
-            effort_table=effort_table,
-            is_share_table=is_share_table,
-            prior_table=prior_table,
+            **table_kwargs,
         )
 
     def nll_trial(table, obs_a, s, r, resp):
@@ -253,13 +262,17 @@ def main():
 
     padded = load_padded_lm_tables()
     if padded is None:
-        print("  Error: lm_alternatives.csv or lm_alternatives_features.csv not found.")
+        print(
+            "  Error: missing one of lm_alternatives.csv, lm_alternatives_features.csv, "
+            "lm_scenario_v.csv, lm_alternatives_v.csv. Run lm_generate_alternatives.py "
+            "and lm_scenario_params.py --feature {v,v_alternatives} first."
+        )
         sys.exit(1)
     print(f"  access shape: {padded['access'].shape}")
     print(f"  prior shape: {padded['prior'].shape}")
 
     results = []
-    for variant, (observer_fn, _kw_names, utility_names) in PADDED_VARIANTS.items():
+    for variant, (observer_fn, _kw_names, utility_names, uses_v) in PADDED_VARIANTS.items():
         print(f"\n{'-' * 40}")
         print(f"Jointly fitting {variant}_padded ({len(utility_names)} utility weights + α_observer)...")
         print(f"{'-' * 40}")
@@ -272,8 +285,8 @@ def main():
             response=response,
             access_table=padded["access"],
             effort_table=padded["effort"],
-            is_share_table=padded["is_share"],
             prior_table=padded["prior"],
+            v_padded_table=padded["v"] if uses_v else None,
         )
         row = {
             "model": f"{variant}_padded",

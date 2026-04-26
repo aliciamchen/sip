@@ -25,10 +25,8 @@ from model_utils import (
     LLM_TABLES,
     SCENARIO_TO_IDX,
     actor_forw_access_full,
-    actor_forw_access_full_lmv,
     actor_forw_access_only,
     actor_forw_no_access,
-    actor_forw_no_access_lmv,
     load_domain_assets,
     load_lm_v,
 )
@@ -156,11 +154,11 @@ def get_intimacy_index(intimacy_value):
 def predict_access_full(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_d, w_e,
-    access_table, effort_table,
+    access_table, effort_table, v_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_access_full(
-        alpha, w_v, w_d, w_e, access_table, effort_table
+        alpha, w_v, w_d, w_e, access_table, effort_table, v_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
         intimacy_idx, reward_condition, action, scenario_idx
@@ -186,43 +184,10 @@ def predict_access_only(
 def predict_no_access(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_e,
-    access_table, effort_table,
+    access_table, effort_table, v_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_no_access(
-        alpha, w_v, w_e, access_table, effort_table
-    )
-    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
-        intimacy_idx, reward_condition, action, scenario_idx
-    )
-
-
-# LM-V variants — same signature as above but with a v_table arg appended.
-
-
-@jax.jit
-def predict_access_full_lmv(
-    intimacy, reward_condition, action, scenario_idx,
-    alpha, w_v, w_d, w_e,
-    access_table, effort_table, v_table,
-):
-    intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_access_full_lmv(
-        alpha, w_v, w_d, w_e, access_table, effort_table, v_table
-    )
-    return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
-        intimacy_idx, reward_condition, action, scenario_idx
-    )
-
-
-@jax.jit
-def predict_no_access_lmv(
-    intimacy, reward_condition, action, scenario_idx,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_table,
-):
-    intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_no_access_lmv(
         alpha, w_v, w_e, access_table, effort_table, v_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
@@ -267,14 +232,15 @@ def _fit_with_adam(
 def fit_access_full_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
+    """tables = (access, effort, v)."""
     ALPHA = 1.0
-    a_tab, e_tab = tables
+    a_tab, e_tab, v_tab = tables
 
     def loss_fn(params):
         w_v, w_d, w_e = params
         preds = predict_access_full(
             intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_v, w_d, w_e, a_tab, e_tab,
+            ALPHA, w_v, w_d, w_e, a_tab, e_tab, v_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -287,8 +253,9 @@ def fit_access_full_model(
 def fit_access_only_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
+    """tables = (access, effort) — V-independent ablation."""
     ALPHA = 1.0
-    a_tab, e_tab = tables
+    a_tab, e_tab = tables[:2]
 
     def loss_fn(params):
         (w_d,) = params
@@ -307,14 +274,15 @@ def fit_access_only_model(
 def fit_no_access_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
+    """tables = (access, effort, v)."""
     ALPHA = 1.0
-    a_tab, e_tab = tables
+    a_tab, e_tab, v_tab = tables
 
     def loss_fn(params):
         w_v, w_e = params
         preds = predict_no_access(
             intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_v, w_e, a_tab, e_tab,
+            ALPHA, w_v, w_e, a_tab, e_tab, v_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -324,68 +292,25 @@ def fit_no_access_model(
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
-# LM-V variants. tables must be a 3-tuple (access, effort, v).
-
-
-def fit_access_full_lmv_model(
-    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
-):
-    ALPHA = 1.0
-    a_tab, e_tab, v_tab = tables
-
-    def loss_fn(params):
-        w_v, w_d, w_e = params
-        preds = predict_access_full_lmv(
-            intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_v, w_d, w_e, a_tab, e_tab, v_tab,
-        )
-        return compute_nll(preds, p_action)
-
-    params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0, 1.0], label="access_full_lmv", **kwargs
-    )
-    return jnp.array([ALPHA, params[0], params[1], params[2]]), nll
-
-
-def fit_no_access_lmv_model(
-    intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
-):
-    ALPHA = 1.0
-    a_tab, e_tab, v_tab = tables
-
-    def loss_fn(params):
-        w_v, w_e = params
-        preds = predict_no_access_lmv(
-            intimacy, reward_condition, action, scenario_idx,
-            ALPHA, w_v, w_e, a_tab, e_tab, v_tab,
-        )
-        return compute_nll(preds, p_action)
-
-    params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0], label="no_access_lmv", **kwargs
-    )
-    return jnp.array([ALPHA, params[0], params[1]]), nll
-
-
 # Main script
 
 
-def main(domain: str = "food", v_source: str = "binary"):
+def main(domain: str = "food"):
     print("=" * 60)
-    print(f"Forward Planning Model Fitting (domain={domain}, v_source={v_source})")
+    print(f"Forward Planning Model Fitting (domain={domain})")
     print("=" * 60)
 
     _, scenario_to_idx, llm_tables = load_domain_assets(domain)
+    v_table = load_lm_v(domain)
 
-    suffix = "" if v_source == "binary" else "_lmv"
     if domain == "food":
         data_path = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
-        fits_filename = f"forward_planning_fits{suffix}.csv"
-        results_filename = f"forward_planning_fit_results{suffix}.csv"
+        fits_filename = "forward_planning_fits.csv"
+        results_filename = "forward_planning_fit_results.csv"
     elif domain == "nonfood":
         data_path = get_project_root() / "data" / "nonfood_forw_plan" / "main_trials_long.csv"
-        fits_filename = f"forward_planning_fits_nonfood{suffix}.csv"
-        results_filename = f"forward_planning_fit_results_nonfood{suffix}.csv"
+        fits_filename = "forward_planning_fits_nonfood.csv"
+        results_filename = "forward_planning_fit_results_nonfood.csv"
     else:
         raise ValueError(f"Unknown domain: {domain!r}")
 
@@ -393,66 +318,42 @@ def main(domain: str = "food", v_source: str = "binary"):
         filepath=data_path, scenario_to_idx=scenario_to_idx,
     )
 
-    binary_tables = (llm_tables["access"], llm_tables["effort"])
+    tables = (llm_tables["access"], llm_tables["effort"], v_table)
 
-    if v_source == "binary":
-        # Same as before: access_full / access_only / no_access with stipulated V.
-        fits = {
-            "access_full": (
-                fit_access_full_model,
-                predict_access_full,
-                ["w_v", "w_d", "w_e"],
-                binary_tables,
-            ),
-            "access_only": (
-                fit_access_only_model,
-                predict_access_only,
-                ["w_d"],
-                binary_tables,
-            ),
-            "no_access": (
-                fit_no_access_model,
-                predict_no_access,
-                ["w_v", "w_e"],
-                binary_tables,
-            ),
-        }
-    elif v_source == "lm":
-        v_table = load_lm_v(domain)
-        lmv_tables = (llm_tables["access"], llm_tables["effort"], v_table)
-        # access_full and no_access swap to LM-V variants. access_only is V-
-        # independent, so it stays on the binary path with binary_tables.
-        fits = {
-            "access_full": (
-                fit_access_full_lmv_model,
-                predict_access_full_lmv,
-                ["w_v", "w_d", "w_e"],
-                lmv_tables,
-            ),
-            "access_only": (
-                fit_access_only_model,
-                predict_access_only,
-                ["w_d"],
-                binary_tables,
-            ),
-            "no_access": (
-                fit_no_access_lmv_model,
-                predict_no_access_lmv,
-                ["w_v", "w_e"],
-                lmv_tables,
-            ),
-        }
-    else:
-        raise ValueError(f"Unknown v_source: {v_source!r}")
+    fits = {
+        "access_full": (
+            fit_access_full_model,
+            predict_access_full,
+            ["w_v", "w_d", "w_e"],
+        ),
+        "access_only": (
+            fit_access_only_model,
+            predict_access_only,
+            ["w_d"],
+        ),
+        "no_access": (
+            fit_no_access_model,
+            predict_no_access,
+            ["w_v", "w_e"],
+        ),
+    }
+
+    # access_only is V-independent, so it takes only (access, effort).
+    tables_by_variant = {
+        "access_full": tables,
+        "access_only": tables[:2],
+        "no_access":   tables,
+    }
 
     results = {}
     param_arrays = {}
-    for name, (fit_fn, _pred_fn, param_names, tab) in fits.items():
+    for name, (fit_fn, _pred_fn, param_names) in fits.items():
         print("\n" + "-" * 40)
         print(f"Fitting {name.upper()} model (alpha=1 fixed)...")
         print("-" * 40)
         params, nll = fit_fn(
-            intimacy, reward_condition, action, scenario_idx, p_action, tab
+            intimacy, reward_condition, action, scenario_idx, p_action,
+            tables_by_variant[name],
         )
         param_arrays[name] = params
         results[name] = {
@@ -478,12 +379,12 @@ def main(domain: str = "food", v_source: str = "binary"):
     print("Saving predictions...")
     print("-" * 40)
 
-    for name, (_fit_fn, pred_fn, _param_names, tab) in fits.items():
+    for name, (_fit_fn, pred_fn, _param_names) in fits.items():
         params = param_arrays[name]
         data[f"pred_{name}"] = np.array(
             pred_fn(
                 intimacy, reward_condition, action, scenario_idx,
-                *params, *tab,
+                *params, *tables_by_variant[name],
             )
         )
 
@@ -563,11 +464,5 @@ if __name__ == "__main__":
         help="Which experiment to fit: 'food' (default, uses data/forw_plan/) "
              "or 'nonfood' (uses data/nonfood_forw_plan/).",
     )
-    parser.add_argument(
-        "--v-source", choices=("binary", "lm"), default="binary",
-        help="Source of V (goal-attainment) values. 'binary' (default) uses "
-             "the closed-form stipulated V. 'lm' uses signed-valence ratings "
-             "from lm_scenario_v[_nonfood].csv. LM-V outputs use a _lmv suffix.",
-    )
     args = parser.parse_args()
-    main(domain=args.domain, v_source=args.v_source)
+    main(domain=args.domain)
