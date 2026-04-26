@@ -34,22 +34,22 @@ export function makeTimeline(
       `
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
-                <p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding how to eat different kinds of food in different situations.</p>
+                <p>In this survey, you will read vignettes about two people in different kinds of social relationships, sharing different kinds of food in different situations.</p>
                 <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p>
             </div>
             `,
       `
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
-                <p>Before observing what action the two people decide to take, we will ask you to evaluate how likely you think two possible situations are, for the two people in the scenario.</p>
+                <p>Before observing what action they decide to take, we will ask you to evaluate how likely you think two possible situations are, for the two people in the scenario.</p>
                 <p>You will use a slider to evaluate the likelihood of the two situations. The slider will be labeled with the two situations. The farther you move it toward one side, the more likely you think that situation is, compared to the other.</p>
-                <p>Then, we will show you what they decide to do, and ask you to re-evaluate how likely you think the two possible situations are.</p>
+                <p>Then, we will show you what action they take, and ask you to re-evaluate how likely you think the two possible situations are.</p>
             </div>
             `,
       `
             <div class="instructions-container">
               <h2>Social interactions survey</h2>
-                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of eating food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
+                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of sharing food carefully! 🙂 You will receive $5 if you successfully complete the survey. </p>
                 <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
                 <p>Press next to begin the survey.</p>
             </div>
@@ -87,6 +87,26 @@ export function makeTimeline(
         },
       });
     }
+
+    trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <div>
+          <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+          <div class="vignette-text">
+            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+              stimulus.name_0
+            } and ${
+              stimulus.name_1
+            } are in a relationship they would describe as <strong>${
+              intimacy_texts[stimulus.intimacy_condition]
+            }</strong>.</p>
+          </div>
+          <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
+        </div>
+      `,
+      choices: "ALL_KEYS",
+    });
 
     trials.push({
       type: jsPsychHtmlSliderResponse,

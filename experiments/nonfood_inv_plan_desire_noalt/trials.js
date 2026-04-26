@@ -9,7 +9,7 @@ export const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
-  PIPE_EXPERIMENT_ID: "TBD_NONFOOD_DESIRE_NOALT",
+  PIPE_EXPERIMENT_ID: "a7j6p583yI06",
   PROLIFIC_COMPLETION_URL:
     "https://app.prolific.com/submissions/complete?cc=C1A889GX",
 };
@@ -41,9 +41,9 @@ export function makeTimeline(
       `
             <div class="instructions-container">
                 <h2>Social interactions survey</h2>
-                <p>Before observing what action the two people decide to take, we will ask you to evaluate how likely you think two possible situations are, for the two people in the scenario.</p>
+                <p>Before observing what action they decide to take, we will ask you to evaluate how likely you think two possible situations are, for the two people in the scenario.</p>
                 <p>You will use a slider to evaluate the likelihood of the two situations. The slider will be labeled with the two situations. The farther you move it toward one side, the more likely you think that situation is, compared to the other.</p>
-                <p>Then, we will show you what they decide to do, and ask you to re-evaluate how likely you think the two possible situations are.</p>
+                <p>Then, we will show you what action they take, and ask you to re-evaluate how likely you think the two possible situations are.</p>
             </div>
             `,
       `
@@ -87,6 +87,26 @@ export function makeTimeline(
         },
       });
     }
+
+    trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <div>
+          <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
+          <div class="vignette-text">
+            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${
+              stimulus.name_0
+            } and ${
+              stimulus.name_1
+            } are in a relationship they would describe as <strong>${
+              intimacy_texts[stimulus.intimacy_condition]
+            }</strong>.</p>
+          </div>
+          <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
+        </div>
+      `,
+      choices: "ALL_KEYS",
+    });
 
     trials.push({
       type: jsPsychHtmlSliderResponse,

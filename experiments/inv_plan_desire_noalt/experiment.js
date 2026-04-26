@@ -60,7 +60,7 @@ async function createExperiment() {
     return {
       ...stimulus,
       action_condition: sequenceItem ? sequenceItem.action : "",
-      reward_condition: sequenceItem ? sequenceItem.reward : "",
+      intimacy_condition: sequenceItem ? sequenceItem.intimacy : "",
     };
   });
 
