@@ -19,6 +19,7 @@ SOURCES = [
             "inv_plan_intimacy_alt",
             "inv_plan_desire_alt",
             "inv_plan_intimacy_noalt",
+            "inv_plan_desire_noalt",
         ],
     ),
     (
@@ -35,6 +36,8 @@ SOURCES = [
             "nonfood_forw_plan",
             "nonfood_inv_plan_intimacy_alt",
             "nonfood_inv_plan_desire_alt",
+            "nonfood_inv_plan_intimacy_noalt",
+            "nonfood_inv_plan_desire_noalt",
         ],
     ),
 ]

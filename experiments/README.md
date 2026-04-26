@@ -34,7 +34,7 @@ Actions are ordered by degree of saliva-sharing risk:
 
 ## Non-food scenarios (`scenarios_nonfood.csv`)
 
-A parallel set of 18 scenarios covering non-food sharing situations, grouped by what is being shared: substance (e.g., chapstick, sunscreen), space (e.g., blanket, bed), and privacy (e.g., diary, phone). Like `scenarios.csv`, the CSV is generated from a Python source of truth — edit `scenarios_nonfood.py` and regenerate:
+A parallel set of 16 scenarios covering non-food sharing situations, grouped by what is being shared: substance (e.g., chapstick, sunscreen, hairbrush), space (e.g., blanket, bed, sauna), and privacy (e.g., breakup conversation, payment, phone passcode). Like `scenarios.csv`, the CSV is generated from a Python source of truth — edit `scenarios_nonfood.py` and regenerate:
 
 ```bash
 uv run python experiments/scenarios_nonfood.py
@@ -72,6 +72,7 @@ uv run python experiments/scenarios_effort.py
 - [inv_plan_intimacy_alt](inv_plan_intimacy_alt/README.md) — Inverse planning: infer intimacy from the observed action (four candidate actions shown to participants)
 - [inv_plan_intimacy_noalt](inv_plan_intimacy_noalt/README.md) — Same inference as `inv_plan_intimacy_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side
 - [inv_plan_desire_alt](inv_plan_desire_alt/README.md) — Inverse planning: infer desire from the observed action (four candidate actions shown)
+- [inv_plan_desire_noalt](inv_plan_desire_noalt/README.md) — Same inference as `inv_plan_desire_alt` but with the candidate actions hidden; LM-generated counterfactual alternatives on the model side (no data collected yet)
 
 ## Effort-manipulation experiments
 
@@ -79,3 +80,14 @@ These use the `scenarios_effort.csv` stimulus set (two actions per scenario, rew
 
 - [forw_plan_effort](forw_plan_effort/README.md) — Forward planning: actors choose between two actions given intimacy (4 levels) × relative effort (2 levels)
 - [inv_plan_effort](inv_plan_effort/README.md) — Inverse planning: infer intimacy from the observed action (2 candidate actions shown) × relative effort (2 levels)
+- [inv_plan_effort_inferred](inv_plan_effort_inferred/README.md) — Inverse planning: infer effort from the observed action (2 candidate actions shown) × intimacy (4 levels), with the two effort paragraphs as slider endpoints
+
+## Non-food experiments
+
+A second parallel pipeline that uses the `scenarios_nonfood.csv` stimulus set (substance sharing, shared space, and privacy) instead of food sharing. The five experiments mirror the canonical food set one-to-one in structure and counterbalancing, with the participant-facing copy generalized away from food. No data has been collected yet for any of them.
+
+- [nonfood_forw_plan](nonfood_forw_plan/README.md)
+- [nonfood_inv_plan_intimacy_alt](nonfood_inv_plan_intimacy_alt/README.md)
+- [nonfood_inv_plan_desire_alt](nonfood_inv_plan_desire_alt/README.md)
+- [nonfood_inv_plan_intimacy_noalt](nonfood_inv_plan_intimacy_noalt/README.md)
+- [nonfood_inv_plan_desire_noalt](nonfood_inv_plan_desire_noalt/README.md)
