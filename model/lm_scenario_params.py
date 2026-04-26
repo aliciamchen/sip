@@ -15,8 +15,14 @@ goal: sharing under HIGH motivation, not-sharing under LOW motivation).
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
 Usage:
-    uv run python model/lm_scenario_params.py                    # canonical-4 features
-    uv run python model/lm_scenario_params.py --score-alternatives  # features for LM-generated alternatives
+    uv run python model/lm_scenario_params.py                          # food scenarios canonical-4 (default)
+    uv run python model/lm_scenario_params.py --score-alternatives     # features for LM-generated food alternatives
+    uv run python model/lm_scenario_params.py --domain nonfood                       # nonfood scenarios canonical-4
+    uv run python model/lm_scenario_params.py --domain nonfood --score-alternatives  # nonfood alternatives features
+
+All runs use the domain-general prompt set. To reproduce a pre-unification
+fit with the old food-specific prompts, modify lm_prompts.py callers
+(no CLI flag is exposed for this).
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
@@ -44,6 +50,23 @@ MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
 NUM_RUNS = 10
 TEMPERATURE = 0.2
 
+# Per-domain input CSV and output CSVs. All runs use the general LM prompt set;
+# the --domain flag selects which scenario CSV (and output filenames) to use.
+_DOMAIN_PATHS = {
+    "food": {
+        "scenarios":           "scenarios.csv",
+        "params_output":       "lm_scenario_params.csv",
+        "alternatives_input":  "lm_alternatives.csv",
+        "alternatives_output": "lm_alternatives_features.csv",
+    },
+    "nonfood": {
+        "scenarios":           "scenarios_nonfood.csv",
+        "params_output":       "lm_scenario_params_nonfood.csv",
+        "alternatives_input":  "lm_alternatives_nonfood.csv",
+        "alternatives_output": "lm_alternatives_features_nonfood.csv",
+    },
+}
+
 
 # ==============================================================================
 # Prompt builders (centralized in model/lm_prompts.py)
@@ -65,8 +88,8 @@ from lm_prompts import user_prompt as build_user_prompt
 # ==============================================================================
 
 
-def load_scenarios():
-    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
+def load_scenarios(domain="food"):
+    scenarios_path = get_project_root() / "experiments" / _DOMAIN_PATHS[domain]["scenarios"]
     return pd.read_csv(scenarios_path)
 
 
@@ -179,11 +202,11 @@ def _load_api_key():
     return api_key
 
 
-def main():
+def main(domain="food"):
     api_key = _load_api_key()
 
-    print("Loading scenarios...")
-    scenarios_df = load_scenarios()
+    print(f"Loading scenarios (domain={domain})...")
+    scenarios_df = load_scenarios(domain)
     print(f"Loaded {len(scenarios_df)} scenarios")
 
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
@@ -240,7 +263,7 @@ def main():
     results_df = pd.DataFrame(results)
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / "lm_scenario_params.csv"
+    output_path = output_dir / _DOMAIN_PATHS[domain]["params_output"]
     results_df.to_csv(output_path, index=False)
     print(f"\nSaved results to {output_path}")
 
@@ -269,6 +292,10 @@ def format_effort_prompt_variable(vignette, action_texts):
     return build_user_prompt("effort", vignette, action_texts)
 
 
+# Variable-length system prompts are domain-specific; constructed at runtime
+# inside score_alternatives_main once the --domain flag is known. The two
+# constants below remain (food-domain) for any external caller that may have
+# imported them — they are not used internally.
 VARIABLE_ACCESS_SYSTEM_PROMPT = build_system_prompt("access", n_actions=None)
 VARIABLE_EFFORT_SYSTEM_PROMPT = build_system_prompt("effort", n_actions=None)
 
@@ -333,7 +360,7 @@ def aggregate_action_ratings_variable(ratings_list, n_actions):
     return result
 
 
-def score_alternatives_main():
+def score_alternatives_main(domain="food"):
     """Score access/effort for LM-generated alternatives, batched by scenario.
 
     Within each scenario, unique action strings (case-insensitive) are scored
@@ -344,15 +371,18 @@ def score_alternatives_main():
     rather than the cell-level subset, which is more internally consistent.
 
     Checkpoint behavior: after each scenario finishes, the accumulated results
-    are flushed to lm_alternatives_features.csv. If that file already exists
-    on startup, scenarios already present are skipped — so the script resumes
-    from where it left off.
+    are flushed to the per-domain alternatives-features CSV. If that file
+    already exists on startup, scenarios already present are skipped — so the
+    script resumes from where it left off.
     """
     api_key = _load_api_key()
 
-    print("Loading scenarios and LM alternatives...", flush=True)
-    scenarios_df = load_scenarios()
-    alt_path = get_project_root() / "model" / "outputs" / "lm_alternatives.csv"
+    access_system_prompt = build_system_prompt("access", n_actions=None)
+    effort_system_prompt = build_system_prompt("effort", n_actions=None)
+
+    print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
+    scenarios_df = load_scenarios(domain)
+    alt_path = get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
         print(f"Error: {alt_path} not found. Run lm_generate_alternatives.py first.", flush=True)
         sys.exit(1)
@@ -367,7 +397,7 @@ def score_alternatives_main():
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / "lm_alternatives_features.csv"
+    output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_output"]
 
     # Resume: load any scenarios already written in a prior run
     results = []
@@ -412,7 +442,7 @@ def score_alternatives_main():
         print("  scoring access...", flush=True)
         access_ratings = get_ratings_variable(
             client,
-            VARIABLE_ACCESS_SYSTEM_PROMPT,
+            access_system_prompt,
             format_access_prompt_variable(vignette, unique_actions),
             n_unique,
         )
@@ -421,7 +451,7 @@ def score_alternatives_main():
         print("  scoring effort...", flush=True)
         effort_ratings = get_ratings_variable(
             client,
-            VARIABLE_EFFORT_SYSTEM_PROMPT,
+            effort_system_prompt,
             format_effort_prompt_variable(vignette, unique_actions),
             n_unique,
         )
@@ -473,8 +503,20 @@ if __name__ == "__main__":
         action="store_true",
         help="Score access/effort for LM-generated alternatives in lm_alternatives.csv",
     )
+    parser.add_argument(
+        "--domain",
+        choices=("food", "nonfood"),
+        default="food",
+        help=(
+            "Which scenario set to score. 'food' (default) uses scenarios.csv "
+            "and writes to lm_scenario_params{,_alternatives_features}.csv; "
+            "'nonfood' uses scenarios_nonfood.csv and writes to "
+            "lm_scenario_params_nonfood{,_alternatives_features_nonfood}.csv. "
+            "Both use the domain-general LM prompt set."
+        ),
+    )
     args = parser.parse_args()
     if args.score_alternatives:
-        score_alternatives_main()
+        score_alternatives_main(args.domain)
     else:
-        main()
+        main(args.domain)

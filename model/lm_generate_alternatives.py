@@ -16,16 +16,22 @@ high/low motivation, what else could they have done?" Motivation is stipulated
 in the vignette and is observable to the participant, so conditioning on it
 doesn't leak information about the latent (intimacy).
 
-Output: model/outputs/lm_alternatives.csv
+Output:
+    --domain food (default) → model/outputs/lm_alternatives.csv
+    --domain nonfood        → model/outputs/lm_alternatives_nonfood.csv
+
+Both runs use the domain-general LM prompt set.
 
 Usage:
     uv run python model/lm_generate_alternatives.py
+    uv run python model/lm_generate_alternatives.py --domain nonfood
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
     - `together` Python package
 """
 
+import argparse
 import json
 import os
 import re
@@ -47,8 +53,15 @@ MAX_PARSE_RETRIES = 5
 ACTION_COLS = ["action_0", "action_1", "action_2", "action_3"]
 MOTIVATIONS = ["low", "high"]
 
+# Per-domain input CSV and output CSV. All runs use the general LM prompt set;
+# the --domain flag selects which scenario CSV (and output filenames) to use.
+_DOMAIN_PATHS = {
+    "food":    {"scenarios": "scenarios.csv",         "output": "lm_alternatives.csv"},
+    "nonfood": {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_nonfood.csv"},
+}
 
-from lm_prompts import ALTERNATIVES_SYSTEM_PROMPT as SYSTEM_PROMPT
+
+from lm_prompts import alternatives_system_prompt
 from lm_prompts import alternatives_user_prompt as format_user_prompt
 
 
@@ -98,7 +111,7 @@ def _dedup_alternatives(alts):
 
 def elicit_alternatives(client, vignette, reward_text, observed_action_text):
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": alternatives_system_prompt()},
         {
             "role": "user",
             "content": format_user_prompt(vignette, reward_text, observed_action_text),
@@ -140,16 +153,16 @@ def _load_api_key():
     return api_key
 
 
-def load_scenarios():
-    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
+def load_scenarios(domain):
+    scenarios_path = get_project_root() / "experiments" / _DOMAIN_PATHS[domain]["scenarios"]
     return pd.read_csv(scenarios_path)
 
 
-def main():
+def main(domain):
     api_key = _load_api_key()
 
-    print("Loading scenarios...")
-    scenarios_df = load_scenarios()
+    print(f"Loading scenarios (domain={domain})...")
+    scenarios_df = load_scenarios(domain)
     print(f"Loaded {len(scenarios_df)} scenarios")
 
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
@@ -189,7 +202,7 @@ def main():
     results_df = pd.DataFrame(results)
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / "lm_alternatives.csv"
+    output_path = output_dir / _DOMAIN_PATHS[domain]["output"]
     results_df.to_csv(output_path, index=False)
     print(f"\nSaved {len(results_df)} alternatives to {output_path}")
 
@@ -205,4 +218,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--domain",
+        choices=("food", "nonfood"),
+        default="food",
+        help=(
+            "Which scenario set to elicit alternatives for. 'food' (default) "
+            "uses scenarios.csv → lm_alternatives.csv; 'nonfood' uses "
+            "scenarios_nonfood.csv → lm_alternatives_nonfood.csv. Both use "
+            "the domain-general LM prompt set."
+        ),
+    )
+    args = parser.parse_args()
+    main(args.domain)

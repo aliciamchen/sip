@@ -28,6 +28,12 @@ A second parallel pipeline tests **generalization beyond food sharing** using `e
 - **`experiments/nonfood_inv_plan_intimacy_noalt/`** — non-food intimacy inference, no alternatives shown.
 - **`experiments/nonfood_inv_plan_desire_noalt/`** — non-food desire inference, no alternatives shown.
 
+## LM prompts
+
+Both the food and non-food pipelines use a single domain-general prompt set defined in `model/lm_prompts.py`. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy/information-disclosure scenarios. The original food-specific prompts are retained in `lm_prompts.py` (selectable via `domain="food"` in the prompt builders) for reproducibility of pre-unification fits, but they are not the default and are not exposed via any CLI flag.
+
+`lm_scenario_params.py` and `lm_generate_alternatives.py` accept a `--domain food|nonfood` flag that selects which scenario CSV to score and which output filename to write to. Both branches use the general prompt set.
+
 ## Intermediate conference submission
 
 We are currently deciding how to extend this project for submission to a journal. An early version of this project has been submitted to a conference; the paper is in the `cogsci-2026` folder. The reviews for this submission are in `cogsci-2026/cogsci-2026-reviews.md`. The model in this submission is an old version that we are not using for the journal version. 

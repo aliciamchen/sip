@@ -47,7 +47,9 @@ Three ablations of this utility are fit and compared for both the forward-planni
 `access(a)` and `effort(a)` are **LLM-generated per scenario** because they genuinely vary by scenario (a wedding meal differs from a basketball hot dog in both bodily exposure and logistical effort). The LLM is Llama-3.3-70B via Together AI (10 runs averaged, mean ± std saved). The prompts ask the LLM to rate, on a 0–6 scale:
 
 - `access`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both. Produced by `model/lm_scenario_params.py` → `model/outputs/lm_scenario_params.csv`.
-- `effort`: physical/logistical effort of executing the action. Produced by the same script.
+- `effort`: physical, logistical, and time cost of executing the action. Produced by the same script.
+
+A single domain-general prompt set in `model/lm_prompts.py` is used for both the food and non-food pipelines. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios. The original food-specific prompts are retained in `lm_prompts.py` for reproducibility of pre-unification fits, but they are no longer the default.
 
 The fitting and prediction scripts index into these tables by `scenario_idx`; running them requires `lm_scenario_params.csv` to exist. Generating the CSV requires `TOGETHER_API_KEY` in `.env` and costs a few Together API calls.
 
