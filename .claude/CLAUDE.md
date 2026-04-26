@@ -70,20 +70,16 @@ For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
 
 ### LLM-derived scenario parameters (prerequisite for fits)
 
-Both scripts hit Together AI (Llama-3.3-70B, 10 runs each). Requires `TOGETHER_API_KEY` in `.env`.
+The script hits Together AI (Llama-3.3-70B, 10 runs averaged). Requires `TOGETHER_API_KEY` in `.env`.
 
 ```bash
 uv run python model/lm_scenario_params.py   # access + effort per (scenario, action) → lm_scenario_params.csv
-uv run python model/lm_action_priors.py     # π(a|s) per (scenario, action) → lm_action_priors.csv
 ```
 
-The `_prior` actor/observer variants (non-canonical, kept for comparison) require `lm_action_priors.csv`; without it they're silently skipped at fit/predict time. The canonical uniform-prior variants do not need it.
-
-The effort experiments have their own parallel scripts that consume `scenarios_effort.csv` and emit per (scenario, effort_condition, action) tables (the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings):
+The effort experiments have their own parallel script that consumes `scenarios_effort.csv` and emits per (scenario, effort_condition, action) tables (the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings):
 
 ```bash
 uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv (64 rows: 16 × 2 × 2) AND lm_scenario_params_effort_marginal.csv (32 rows: 16 × 2) — the marginal pass queries access without the effort paragraph for use in inv_plan_effort_inferred, where the observer doesn't see effort
-uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort.csv  (64 rows)
 ```
 
 ### Model fitting
@@ -92,11 +88,11 @@ uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort
 ```bash
 uv run python model/fit_forward_planning.py
 ```
-Fits 6 variants — 3 ablations (Base model / Discomfort-only / Full model) × {uniform prior, β-tempered LM prior}. The uniform-prior variants (`access_full`, `access_only`, `no_access`) are the canonical models; the `_prior` variants are kept for comparison.
+Fits 3 ablations (Base model / Discomfort-only / Full model) under a uniform action prior.
 
 Outputs (in `model/outputs/`):
 - `forward_planning_fits.csv` - Predictions for each data point (one `pred_*` column per variant)
-- `forward_planning_fit_results.csv` - Fitted parameters (including `param_beta_prior` for the `_prior` variants) and NLL
+- `forward_planning_fit_results.csv` - Fitted parameters and NLL
 
 **Alt-shown inverse planning (intimacy + desire inference)**:
 ```bash
@@ -124,7 +120,7 @@ Outputs: `inverse_planning_noalt_fit_results.csv` (with per-variant `param_w_v`/
 
 **Effort experiments**:
 ```bash
-uv run python model/fit_forward_planning_effort.py            # forw_plan_effort actor; 6 variants
+uv run python model/fit_forward_planning_effort.py            # forw_plan_effort actor; 3 ablations
 uv run python model/fit_inverse_planning_effort.py            # inv_plan_effort observer; α only
 uv run python model/generate_inverse_planning_effort_preds.py
 uv run python model/fit_inverse_planning_effort_inferred.py            # inv_plan_effort_inferred observer; α only

@@ -32,11 +32,8 @@ from model_utils_effort import (
     EFFORT_CONDITION_TO_IDX,
     LLM_TABLES_EFFORT,
     observer_intimacy_effort_access_full,
-    observer_intimacy_effort_access_full_prior,
     observer_intimacy_effort_access_only,
-    observer_intimacy_effort_access_only_prior,
     observer_intimacy_effort_no_access,
-    observer_intimacy_effort_no_access_prior,
 )
 
 from utils import get_project_root
@@ -115,49 +112,28 @@ def fit_intimacy_effort_observer(
     )
 
 
-# Variant registry: name -> (observer_fn, actor_kwarg_names, needs_prior_table)
+# Variant registry: name -> (observer_fn, actor_kwarg_names)
 ACCESS_VARIANTS_EFFORT = {
     "access_full": (
         observer_intimacy_effort_access_full,
         ["alpha", "w_v", "w_d", "w_e"],
-        False,
     ),
     "access_only": (
         observer_intimacy_effort_access_only,
         ["alpha", "w_d"],
-        False,
     ),
     "no_access": (
         observer_intimacy_effort_no_access,
         ["alpha", "w_v", "w_e"],
-        False,
-    ),
-    "access_full_prior": (
-        observer_intimacy_effort_access_full_prior,
-        ["alpha", "w_v", "w_d", "w_e", "beta_prior"],
-        True,
-    ),
-    "access_only_prior": (
-        observer_intimacy_effort_access_only_prior,
-        ["alpha", "w_d", "beta_prior"],
-        True,
-    ),
-    "no_access_prior": (
-        observer_intimacy_effort_no_access_prior,
-        ["alpha", "w_v", "w_e", "beta_prior"],
-        True,
     ),
 }
 
 
-def _table_kwargs_for(needs_prior):
-    tk = {
+def _table_kwargs():
+    return {
         "access_table": LLM_TABLES_EFFORT["access"],
         "effort_table": LLM_TABLES_EFFORT["effort"],
     }
-    if needs_prior:
-        tk["prior_table"] = LLM_TABLES_EFFORT["action_prior"]
-    return tk
 
 
 # ==============================================================================
@@ -180,12 +156,9 @@ def main():
     data, action, effort_condition, response, scenario_idx = load_intimacy_effort_data()
 
     results = []
-    for variant_name, (obs_fn, kw_names, needs_prior) in ACCESS_VARIANTS_EFFORT.items():
+    for variant_name, (obs_fn, kw_names) in ACCESS_VARIANTS_EFFORT.items():
         if variant_name not in actor_params:
             print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        if needs_prior and "action_prior" not in LLM_TABLES_EFFORT:
-            print(f"  (skipping {variant_name}: lm_action_priors_effort.csv missing)")
             continue
         print(f"\n{'-' * 40}")
         print(f"Fitting {variant_name}...")
@@ -198,7 +171,7 @@ def main():
             scenario_idx=scenario_idx,
             effort_condition=effort_condition,
             response=response,
-            table_kwargs=_table_kwargs_for(needs_prior),
+            table_kwargs=_table_kwargs(),
         )
         results.append({
             "model": variant_name,

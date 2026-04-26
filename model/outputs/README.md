@@ -20,18 +20,6 @@ LLM-generated per-scenario values for access and effort. Produced by `model/lm_s
 
 Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `model_utils.load_lm_scenario_params` and will be dropped the next time `lm_scenario_params.py` is run.
 
-## lm_action_priors.csv
-
-LLM-generated per-scenario action priors π(a|s) — how natural / expected each of the four actions is as a "default" in the scenario's setting, independent of the dyad's relationship or motivation. Produced by `model/lm_action_priors.py` (same Llama-3.3-70B pipeline as `lm_scenario_params.py`, 10 runs averaged). Consumed by the `_prior` variants of the actor/observer memos.
-
-| Column | Description |
-|--------|-------------|
-| `scenario_label` | Scenario identifier |
-| `action` | Action index (0-3) |
-| `prior_raw`, `prior_raw_std` | Mean and std of raw default-ness ratings (0-6 scale, 10 runs) |
-| `prior` | Per-scenario distribution over the 4 actions: `(prior_raw + 0.1) / sum` (sums to 1 per scenario) |
-| `n_runs` | Number of successful LLM runs |
-
 ## forward_planning_fits.csv
 
 Per-trial model predictions for forward planning (`data/forw_plan/`). One row per subject × scenario × condition × action.
@@ -47,20 +35,17 @@ Per-trial model predictions for forward planning (`data/forw_plan/`). One row pe
 | `intimacy_scaled` | Intimacy normalized to 0-1 scale |
 | `reward_condition` | Binary reward condition (0 or 1) |
 | `scenario_idx` | Numeric scenario index |
-| `pred_access_full` | Predicted probability from the full model (uniform prior) |
-| `pred_access_only` | Predicted probability from the discomfort-only ablation (uniform prior) |
-| `pred_no_access` | Predicted probability from the base ablation (uniform prior) |
-| `pred_access_full_prior` | Predicted probability from the full model with β-tempered LM prior (canonical Full model) |
-| `pred_access_only_prior` | Predicted probability from the discomfort-only ablation with LM prior (canonical Discomfort-only) |
-| `pred_no_access_prior` | Predicted probability from the base ablation with LM prior (canonical Base model) |
+| `pred_access_full` | Predicted probability from the full model |
+| `pred_access_only` | Predicted probability from the discomfort-only ablation |
+| `pred_no_access` | Predicted probability from the base ablation |
 
 ## forward_planning_fit_results.csv
 
-Summary of fitted forward planning models (6 rows — 3 ablations × 2 prior types).
+Summary of fitted forward planning models (3 rows — one per ablation).
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (`access_full`, `access_only`, `no_access`, and `_prior` variants) |
+| `model` | Model name (`access_full`, `access_only`, `no_access`) |
 | `nll` | Negative log-likelihood |
 | `n_params` | Number of free parameters |
 | `aic` | Akaike Information Criterion |
@@ -71,15 +56,14 @@ Summary of fitted forward planning models (6 rows — 3 ablations × 2 prior typ
 | `param_w_v` | Fitted food-utility weight (Full + Base variants) |
 | `param_w_d` | Fitted access-discomfort weight (Full + Discomfort-only variants) |
 | `param_w_e` | Fitted effort weight (Full + Base variants) |
-| `param_beta_prior` | Fitted prior-tempering weight (LM-prior variants only) |
 
 ## inverse_planning_fit_results.csv
 
-Summary of fitted inverse planning (observer) models (12 rows — 6 ablations × 2 experiments). Observer parameters (α_observer) are fit with frozen actor weights from `forward_planning_fit_results.csv`.
+Summary of fitted inverse planning (observer) models (6 rows — 3 ablations × 2 experiments). Observer parameters (α_observer) are fit with frozen actor weights from `forward_planning_fit_results.csv`.
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (`access_full`, `access_only`, `no_access`, and `_prior` variants) |
+| `model` | Model name (`access_full`, `access_only`, `no_access`) |
 | `experiment` | Experiment (`intimacy` or `reward`) |
 | `alpha_observer` | Fitted observer inverse temperature |
 | `nll` | Negative log-likelihood |
@@ -176,15 +160,15 @@ All model-vs-human correlations reported in the analysis qmds are **out-of-sampl
 
 ### cv_loso_forward.csv
 
-Per-fold forward-planning LOSO results. 48 rows (16 folds × 3 prior variants).
+Per-fold forward-planning LOSO results. 48 rows (16 folds × 3 ablations).
 
 | Column | Description |
 |--------|-------------|
 | `fold` | Held-out scenario index (0–15) |
 | `held_out_scenario` | Held-out scenario label |
-| `variant` | `access_full_prior`, `access_only_prior`, `no_access_prior` |
+| `variant` | `access_full`, `access_only`, `no_access` |
 | `train_nll`, `test_nll`, `train_nll_per_trial`, `test_nll_per_trial`, `n_train`, `n_test` | Fit diagnostics |
-| `param_alpha`, `param_w_v`, `param_w_d`, `param_w_e`, `param_beta_prior` | Per-fold fitted params (NaN where not applicable) |
+| `param_alpha`, `param_w_v`, `param_w_d`, `param_w_e` | Per-fold fitted params (NaN where not applicable) |
 | `test_cell_r` | Pearson r at (intimacy, motivation, action) cell-means on the held-out scenario |
 
 ### cv_loso_preds.csv
@@ -217,10 +201,6 @@ A parallel set of CSVs covers the effort-manipulation experiments (`forw_plan_ef
 ### lm_scenario_params_effort.csv
 
 LLM-generated access and effort per (scenario, effort_condition, action). 64 rows (16 × 2 × 2). The LM is prompted with the full vignette plus the matching effort paragraph, so the manipulation lands in the ratings (the non-saliva action's effort rating should rise from `low` to `high`). Same column schema as `lm_scenario_params.csv`, with `effort_condition` added.
-
-### lm_action_priors_effort.csv
-
-LLM-generated π(a|s,e) per (scenario, effort_condition, action). 64 rows. Normalized within each (scenario, effort_condition) cell so the two actions sum to 1. Same column schema as `lm_action_priors.csv`, with `effort_condition` added.
 
 ### forward_planning_effort_fits.csv / forward_planning_effort_fit_results.csv
 

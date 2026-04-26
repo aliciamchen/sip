@@ -2,24 +2,21 @@
 
 All system prompts and user-prompt formatters live here so they're easy to
 compare and edit together. This module has no LM-call logic — see
-`lm_scenario_params*.py`, `lm_action_priors*.py`, and `lm_generate_alternatives.py`
-for that.
+`lm_scenario_params*.py` and `lm_generate_alternatives.py` for that.
 
-Three rating types share the same overall structure (preamble + intro line +
+Two rating types share the same overall structure (preamble + intro line +
 rating-specific body + JSON format block):
 
   - **access**: bodily-channel exposure of an action (used by all access
     tables; food / saliva / contact)
   - **effort**: physical / logistical cost of executing an action
-  - **prior**: how natural / default an action is in the setting (used by
-    the `_prior` actor variants)
 
 Each rating type can be requested with a fixed action count (4 for the
 canonical experiments, 2 for the effort experiments) or with a variable
 action count (used by the no-alt alternative-scoring path, where the LM
 sees a different number of LM-generated alternatives per cell).
 
-A fourth call type, **alternatives generation**, has its own system prompt
+A third call type, **alternatives generation**, has its own system prompt
 and user-prompt formatter at the bottom of the file.
 
 The prompts here are byte-identical to the strings the project has been
@@ -37,13 +34,6 @@ _PREAMBLE_RATING = (
     "regular adult, just going off of your intuition."
 )
 
-# Action priors use a slightly shorter preamble (no "just"). Preserved
-# byte-identical to the existing prompt rather than unifying.
-_PREAMBLE_PRIOR = (
-    "You are a participant in a human study. Respond as if you were a "
-    "regular adult, going off of your intuition."
-)
-
 _NUMBER_WORD = {
     2: "two",
     3: "three",
@@ -55,7 +45,6 @@ _NUMBER_WORD = {
 _JSON_EXAMPLE_VALUES = {
     "access": [0.5, 1.2, 3.8, 5.5],
     "effort": [0.5, 3.2, 2.1, 1.5],
-    "prior": [0.5, 1.2, 3.8, 5.5],
 }
 
 # 2-action JSON examples differ from the first 2 entries of the 4-action
@@ -63,7 +52,6 @@ _JSON_EXAMPLE_VALUES = {
 _JSON_EXAMPLE_VALUES_2 = {
     "access": [0.5, 3.8],
     "effort": [0.5, 3.2],
-    "prior": [0.5, 3.8],
 }
 
 
@@ -151,40 +139,6 @@ Use this scale from 0 to 6 (continuous values allowed):
 6 = High effort (many steps, substantial setup)"""
 
 
-_PRIOR_BODY_4 = """In this survey, you will read vignettes about two people in a food-sharing situation. {INTRO}
-
-For each action, evaluate how NATURAL or EXPECTED the action is as a "default" behavior in this setting — what you'd imagine typically happening given the food, the place, and the social occasion, independent of any specific information about the two people's relationship or how much they want the food.
-
-Consider:
-- Does the action fit the social conventions of this kind of setting?
-- Is it a typical way people behave here, in general?
-
-Do NOT factor in the specific relationship closeness between the two people, or how much they individually want the food. Just rate whether the action is a natural default for the setting itself.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = Very unusual or out of place in this setting
-3 = Plausible — could happen, neither default nor unusual
-6 = Very natural — the typical default behavior in this setting"""
-
-
-# 2-action prior body drops the "or how much they want the food" qualifiers
-# (preserved verbatim from the existing 2-action prompt).
-_PRIOR_BODY_2 = """In this survey, you will read vignettes about two people in a food-sharing situation. {INTRO}
-
-For each action, evaluate how NATURAL or EXPECTED the action is as a "default" behavior in this setting — what you'd imagine typically happening given the food, the place, and the social occasion, independent of any specific information about the two people's relationship.
-
-Consider:
-- Does the action fit the social conventions of this kind of setting?
-- Is it a typical way people behave here, in general?
-
-Do NOT factor in the specific relationship closeness between the two people. Just rate whether the action is a natural default for the setting itself.
-
-Use this scale from 0 to 6 (continuous values allowed):
-0 = Very unusual or out of place in this setting
-3 = Plausible — could happen, neither default nor unusual
-6 = Very natural — the typical default behavior in this setting"""
-
-
 # Per-rating-type instructions used in the user prompt (the line just above
 # the numbered actions).
 _USER_INSTRUCTIONS = {
@@ -197,40 +151,32 @@ _USER_INSTRUCTIONS = {
         "how much physical work, preparation, or extra equipment is required "
         "(0-6 scale):"
     ),
-    "prior": "Rate how natural / default each action is in this setting (0-6 scale):",
 }
 
 
 # ==============================================================================
-# Public API: rating prompts (access / effort / prior)
+# Public API: rating prompts (access / effort)
 # ==============================================================================
 
 
 def system_prompt(rating_type, n_actions=None):
     """Build the system prompt for a rating call.
 
-    rating_type: one of "access", "effort", "prior".
+    rating_type: one of "access", "effort".
     n_actions: 2 or 4 for fixed-length rating, or None for the variable-length
-        case used by no-alt alternative scoring. Note that "prior" doesn't have
-        a variable-length variant (the prior is only ever asked for the
-        canonical 2- or 4-action set).
+        case used by no-alt alternative scoring.
     """
-    if rating_type not in ("access", "effort", "prior"):
+    if rating_type not in ("access", "effort"):
         raise ValueError(f"unknown rating_type: {rating_type}")
-    if rating_type == "prior" and n_actions is None:
-        raise ValueError("prior does not have a variable-length variant")
 
     intro = _intro_line(n_actions)
     if rating_type == "access":
         body = _ACCESS_BODY.format(INTRO=intro)
-    elif rating_type == "effort":
+    else:  # effort
         body = _EFFORT_BODY.format(INTRO=intro)
-    else:  # prior
-        body = (_PRIOR_BODY_2 if n_actions == 2 else _PRIOR_BODY_4).format(INTRO=intro)
 
-    preamble = _PREAMBLE_PRIOR if rating_type == "prior" else _PREAMBLE_RATING
     json_block = _json_format_block(rating_type, n_actions)
-    return f"{preamble}\n\n{body}\n\n{json_block}"
+    return f"{_PREAMBLE_RATING}\n\n{body}\n\n{json_block}"
 
 
 def user_prompt(rating_type, vignette, action_texts):
@@ -242,7 +188,7 @@ def user_prompt(rating_type, vignette, action_texts):
     action_texts is an ordered list of action descriptions; they're rendered
     as "Action 0: ...", "Action 1: ...", etc.
     """
-    if rating_type not in ("access", "effort", "prior"):
+    if rating_type not in ("access", "effort"):
         raise ValueError(f"unknown rating_type: {rating_type}")
     instr = _USER_INSTRUCTIONS[rating_type]
     actions_block = "\n".join(f"Action {i}: {txt}" for i, txt in enumerate(action_texts))

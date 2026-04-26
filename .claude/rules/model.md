@@ -23,9 +23,7 @@ Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exp
 - **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)`); drops food utility and effort (Discomfort-only)
 - **no_access** — `w_v · V − w_e · effort`; no relational structure (Base model)
 
-LM-prior variants (`access_full_prior`, `access_only_prior`, `no_access_prior`) — which add an `π(a|s)^β` LM-generated action prior to the softmax — are still fit for internal comparison but are not the canonical display models. The CV pipeline (`model/cv/loso_*.py`) only refits the uniform-prior canonical variants.
-
-Parameters: `w_v` (food-utility weight), `w_d` (access-discomfort weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires. The LM-prior variants additionally fit `beta_prior` (prior-tempering weight).
+Parameters: `w_v` (food-utility weight), `w_d` (access-discomfort weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires.
 
 ## Where the utility values come from
 
@@ -33,18 +31,15 @@ Parameters: `w_v` (food-utility weight), `w_d` (access-discomfort weight), `w_e`
 
 `access(a)` and `effort(a)` are **LLM-generated per scenario** by `model/lm_scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged), saved to `model/outputs/lm_scenario_params.csv`.
 
-`π(a|s)` is only used by the non-canonical LM-prior variants. It is **LLM-generated per scenario** by `model/lm_action_priors.py` (same LLM, same 10-run averaging) and saved to `model/outputs/lm_action_priors.csv`.
+On import, `model_utils.py` loads these into `LLM_TABLES` — a dict of JAX arrays: `access` (16×4) and `effort` (16×4). If `lm_scenario_params.csv` is missing, import fails with `FileNotFoundError`.
 
-On import, `model_utils.py` loads these into `LLM_TABLES` — a dict of JAX arrays: `access` (16×4), `effort` (16×4), and (when `lm_action_priors.csv` exists) `action_prior` (16×4). If `lm_scenario_params.csv` is missing, import fails with `FileNotFoundError`. If `lm_action_priors.csv` is missing, only the LM-prior variants are skipped at fit/predict time; the canonical uniform-prior variants still run.
-
-Every memo model takes the scenario tables as arguments (`access_table: ...`, `effort_table: ...`, and for prior variants `prior_table: ...`) and has `scenario_idx: Scenarios` as a dimension, so predictions vary by scenario. Reward is computed inline inside the utility functions; no `reward_table` argument.
+Every memo model takes the scenario tables as arguments (`access_table: ...`, `effort_table: ...`) and has `scenario_idx: Scenarios` as a dimension, so predictions vary by scenario. Reward is computed inline inside the utility functions; no `reward_table` argument.
 
 ## Core files
 
-- `model_utils.py` — utility functions, `Scenarios` enum, `LLM_TABLES`, and memo models (forward actors, discrete/continuous inverse-planning actors, intimacy/reward observers; both uniform-prior and LM-prior variants)
+- `model_utils.py` — utility functions, `Scenarios` enum, `LLM_TABLES`, and memo models (forward actors, discrete/continuous inverse-planning actors, intimacy/reward observers)
 - `lm_scenario_params.py` — LLM-calls Together AI to generate per-scenario access and effort
-- `lm_action_priors.py` — LLM-calls Together AI to generate per-scenario action priors π(a|s)
-- `fit_forward_planning.py` — fits all six actor variants to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
+- `fit_forward_planning.py` — fits the three actor ablations to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
 - `fit_inverse_planning.py` — alt-shown observers; fits only `alpha_observer` with frozen actor params (output: `inverse_planning_fit_results.csv`)
 - `fit_inverse_planning_noalt.py` — no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_noalt_fit_results.csv`
 - `generate_inverse_planning_preds.py` — emits per-scenario posterior predictions for alt-shown (`inv_plan_{intimacy,desire}_preds_{full,summary}.csv`)
@@ -55,10 +50,9 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 
 A second, parallel pipeline mirrors the canonical scripts on the effort stimulus set (`scenarios_effort.csv`): 16 scenarios × 2 actions × 2 effort conditions (low / high), with reward held fixed at HIGH so V is constant across actions and `w_v` is non-identified under the softmax (it's kept in the utility for parallelism with the canonical pipeline but stays near initialization). Scenario labels are shared with the canonical 16, so `Scenarios` / `SCENARIO_TO_IDX` are reused; effort adds a separate `EffortConditions` IntEnum and `EFFORT_CONDITION_TO_IDX` map.
 
-- `model_utils_effort.py` — effort-experiment utility functions and memo models (2-action actors and intimacy observers, with an `effort_condition` covariate). Loads `LLM_TABLES_EFFORT` (`access`, `effort`, `action_prior`, all shape 16×2×2; plus `access_marg` shape 16×2×2 — the effort-marginal access broadcast across the effort_condition dimension) at import.
+- `model_utils_effort.py` — effort-experiment utility functions and memo models (2-action actors and intimacy observers, with an `effort_condition` covariate). Loads `LLM_TABLES_EFFORT` (`access`, `effort`, both shape 16×2×2; plus `access_marg` shape 16×2×2 — the effort-marginal access broadcast across the effort_condition dimension) at import.
 - `lm_scenario_params_effort.py` — produces two CSVs: (1) `lm_scenario_params_effort.csv` (64 rows: 16 scenarios × 2 effort × 2 actions) — effort-conditional access + effort, where the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings; (2) `lm_scenario_params_effort_marginal.csv` (32 rows: 16 scenarios × 2 actions) — effort-marginal access only, where the LM is prompted with just the base vignette. The marginal pass is needed because the inv_plan_effort_inferred observer does not see the effort paragraph and so must reason about access from the base vignette alone.
-- `lm_action_priors_effort.py` — same idea for π(a|s,e). Output: `lm_action_priors_effort.csv` (64 rows).
-- `fit_forward_planning_effort.py` — fits all six actor variants to `data/forw_plan_effort/`. Outputs: `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`.
+- `fit_forward_planning_effort.py` — fits the three actor ablations to `data/forw_plan_effort/`. Outputs: `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`.
 - `fit_inverse_planning_effort.py` — fits only `alpha_observer` for `inv_plan_effort`, with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `forw_plan` fit, because the effort actor's 2-action softmax doesn't transplant).
 - `generate_inverse_planning_effort_preds.py` — emits `inv_plan_effort_preds_{full,summary}.csv`.
 - `fit_inverse_planning_effort_inferred.py` — flips the inference target: observer infers effort condition (latent) given observed action × intimacy. Uses `observer_effort_inferred_*` from `model_utils_effort.py` and binary cross-entropy NLL (slider 0–100 = P(effort_high)·100). Actor weights frozen from `forward_planning_effort_fit_results.csv`, but the actor's utility is evaluated with **effort-marginal access** (`LLM_TABLES_EFFORT['access_marg']`) instead of the effort-conditional table — because the observer in this experiment does not see the effort paragraph and so cannot perceive any effort-induced setting differences in the access of an action. The effort term itself remains effort-conditional (the observer does compute likelihoods under each candidate effort condition). Output: `inverse_planning_effort_inferred_fit_results.csv`.

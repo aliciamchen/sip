@@ -35,14 +35,14 @@ import pandas as pd
 from fit_inverse_planning import (
     ACCESS_VARIANTS,
     _fit_alpha_observer,
-    _table_kwargs_for,
+    _table_kwargs,
     compute_intimacy_nll,
     compute_reward_nll,
     load_fitted_params,
     load_intimacy_data,
     load_reward_data,
 )
-from model_utils import IntimacyLevels, LLM_TABLES, SCENARIO_LABELS, actions
+from model_utils import IntimacyLevels, SCENARIO_LABELS, actions
 
 from utils import get_project_root
 
@@ -69,8 +69,8 @@ def _loso_intimacy(actor_params_by_model):
         if variant not in actor_params_by_model:
             print(f"  (skipping {variant}: no forward fit)")
             continue
-        obs_fn, _rew_fn, kw_names, needs_prior = ACCESS_VARIANTS[variant]
-        tk = _table_kwargs_for(needs_prior)
+        obs_fn, _rew_fn, kw_names = ACCESS_VARIANTS[variant]
+        tk = _table_kwargs()
         actor_params = actor_params_by_model[variant]
         actor_kwargs = {k: actor_params[k] for k in kw_names}
 
@@ -153,8 +153,8 @@ def _loso_desire(actor_params_by_model):
         if variant not in actor_params_by_model:
             print(f"  (skipping {variant}: no forward fit)")
             continue
-        _int_fn, obs_fn, kw_names, needs_prior = ACCESS_VARIANTS[variant]
-        tk = _table_kwargs_for(needs_prior)
+        _int_fn, obs_fn, kw_names = ACCESS_VARIANTS[variant]
+        tk = _table_kwargs()
         actor_params = actor_params_by_model[variant]
         actor_kwargs = {k: actor_params[k] for k in kw_names}
 

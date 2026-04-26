@@ -27,17 +27,11 @@ from model_utils import (
     LLM_TABLES,
     SCENARIO_TO_IDX,
     observer_intimacy_access_full,
-    observer_intimacy_access_full_prior,
     observer_intimacy_access_only,
-    observer_intimacy_access_only_prior,
     observer_intimacy_no_access,
-    observer_intimacy_no_access_prior,
     observer_reward_access_full,
-    observer_reward_access_full_prior,
     observer_reward_access_only,
-    observer_reward_access_only_prior,
     observer_reward_no_access,
-    observer_reward_no_access_prior,
 )
 
 from utils import get_project_root
@@ -187,10 +181,8 @@ def _fit_alpha_observer(
     """Fit alpha_observer by dict-keyed actor params.
 
     posterior_slicer: (table, action_i, scenario_i, cond_i) -> slice to pass to nll_fn.
-    table_kwargs: dict of table-argument kwargs threaded into observer_fn (e.g.
-      {"access_table": ..., "effort_table": ...} for the standard observers,
-      {"access_table": ..., "effort_table": ..., "prior_table": ...} for the
-      β-tempered LM-prior variants).
+    table_kwargs: dict of table-argument kwargs threaded into observer_fn
+      (e.g. {"access_table": ..., "effort_table": ...}).
     """
     actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
 
@@ -294,53 +286,28 @@ def fit_reward_observer(
     )
 
 
-# Variant registry: name -> (intimacy_observer, reward_observer, actor_kwarg_names,
-# needs_prior_table). needs_prior_table adds prior_table to table_kwargs.
+# Variant registry: name -> (intimacy_observer, reward_observer, actor_kwarg_names).
 ACCESS_VARIANTS = {
     "access_full": (
         observer_intimacy_access_full,
         observer_reward_access_full,
         ["alpha", "w_v", "w_d", "w_e"],
-        False,
     ),
     "access_only": (
         observer_intimacy_access_only,
         observer_reward_access_only,
         ["alpha", "w_d"],
-        False,
     ),
     "no_access": (
         observer_intimacy_no_access,
         observer_reward_no_access,
         ["alpha", "w_v", "w_e"],
-        False,
-    ),
-    "access_full_prior": (
-        observer_intimacy_access_full_prior,
-        observer_reward_access_full_prior,
-        ["alpha", "w_v", "w_d", "w_e", "beta_prior"],
-        True,
-    ),
-    "access_only_prior": (
-        observer_intimacy_access_only_prior,
-        observer_reward_access_only_prior,
-        ["alpha", "w_d", "beta_prior"],
-        True,
-    ),
-    "no_access_prior": (
-        observer_intimacy_no_access_prior,
-        observer_reward_no_access_prior,
-        ["alpha", "w_v", "w_e", "beta_prior"],
-        True,
     ),
 }
 
 
-def _table_kwargs_for(needs_prior):
-    tk = {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
-    if needs_prior:
-        tk["prior_table"] = LLM_TABLES["action_prior"]
-    return tk
+def _table_kwargs():
+    return {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
 
 
 # ==============================================================================
@@ -373,12 +340,9 @@ def main():
         load_intimacy_data()
     )
 
-    for variant_name, (int_obs, _rew_obs, kw_names, needs_prior) in ACCESS_VARIANTS.items():
+    for variant_name, (int_obs, _rew_obs, kw_names) in ACCESS_VARIANTS.items():
         if variant_name not in actor_params:
             print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        if needs_prior and "action_prior" not in LLM_TABLES:
-            print(f"  (skipping {variant_name}: lm_action_priors.csv missing)")
             continue
         print(f"\n{'-' * 40}")
         print(f"Fitting {variant_name} (intimacy inference)...")
@@ -391,7 +355,7 @@ def main():
             scenario_idx=int_scenario_idx,
             reward_condition=int_reward_condition,
             response=int_response,
-            table_kwargs=_table_kwargs_for(needs_prior),
+            table_kwargs=_table_kwargs(),
         )
         results.append(
             {
@@ -414,12 +378,9 @@ def main():
         load_reward_data()
     )
 
-    for variant_name, (_int_obs, rew_obs, kw_names, needs_prior) in ACCESS_VARIANTS.items():
+    for variant_name, (_int_obs, rew_obs, kw_names) in ACCESS_VARIANTS.items():
         if variant_name not in actor_params:
             print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        if needs_prior and "action_prior" not in LLM_TABLES:
-            print(f"  (skipping {variant_name}: lm_action_priors.csv missing)")
             continue
         print(f"\n{'-' * 40}")
         print(f"Fitting {variant_name} (reward inference)...")
@@ -432,7 +393,7 @@ def main():
             scenario_idx=rew_scenario_idx,
             intimacy_condition=rew_intimacy_condition,
             response=rew_response,
-            table_kwargs=_table_kwargs_for(needs_prior),
+            table_kwargs=_table_kwargs(),
         )
         results.append(
             {

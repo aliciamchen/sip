@@ -37,8 +37,6 @@ Three ablations of this utility are fit and compared for both the forward-planni
 - **Discomfort-only** (`access_only`) — only the access-discomfort term `−w_d · access · (1 − I)`; drops food utility and effort to ask whether the access signal alone can account for behavior
 - **Base model** (`no_access`) — `w_v · V − w_e · effort`; no relational structure
 
-(LM-prior variants `access_full_prior`, `access_only_prior`, `no_access_prior` — which add a tempered LLM-generated action prior `π(a|s)^β` to the softmax — are still fit on the all-data side for comparison but are not the canonical display models.)
-
 ### Where the utility values come from
 
 `V(a|s)` is **stipulated**: under HIGH motivation the food is wanted, so `V = +1` for actions that involve eating (action ≠ 0) and `V = 0` for action 0; under LOW motivation the food is unwanted, so `V = −1` for eating actions and `V = 0` for action 0. This sign-flip across motivational states lets a single value function capture both the achievement goal of eating under high motivation and the maintenance goal of not-eating under low motivation.
@@ -47,8 +45,6 @@ Three ablations of this utility are fit and compared for both the forward-planni
 
 - `access`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both. Produced by `model/lm_scenario_params.py` → `model/outputs/lm_scenario_params.csv`.
 - `effort`: physical/logistical effort of executing the action. Produced by the same script.
-
-The non-canonical LM-prior variants additionally use `π(a|s)`, an LLM-generated scenario-specific action prior produced by `model/lm_action_priors.py` → `model/outputs/lm_action_priors.csv`. The canonical uniform-prior variants do not need this file.
 
 The fitting and prediction scripts index into these tables by `scenario_idx`; running them requires `lm_scenario_params.csv` to exist. Generating the CSV requires `TOGETHER_API_KEY` in `.env` and costs a few Together API calls.
 
@@ -166,18 +162,16 @@ uv run python analysis/json_to_csv.py forw_plan_effort
 uv run python analysis/json_to_csv.py inv_plan_effort
 ```
 
-Generate LLM-derived scenario parameters (prerequisite for all model fits). These write to `model/outputs/lm_scenario_params.csv` and `model/outputs/lm_action_priors.csv`, and each requires a `TOGETHER_API_KEY`:
+Generate LLM-derived scenario parameters (prerequisite for all model fits). The script writes to `model/outputs/lm_scenario_params.csv` and requires a `TOGETHER_API_KEY`:
 
 ```bash
 uv run python model/lm_scenario_params.py   # access + effort per (scenario, action)
-uv run python model/lm_action_priors.py     # π(a|s) per (scenario, action)
 ```
 
-The effort experiments have parallel scripts that consume `scenarios_effort.csv` and produce per (scenario, effort_condition, action) tables — the LM sees the full vignette plus the effort paragraph so the manipulation lands in the ratings. The script also produces an effort-marginal access table (vignette only, no effort paragraph) for use in `inv_plan_effort_inferred`, where the observer does not see the effort paragraph and so cannot use effort-induced setting cues when reasoning about access.
+The effort experiments have a parallel script that consumes `scenarios_effort.csv` and produces per (scenario, effort_condition, action) tables — the LM sees the full vignette plus the effort paragraph so the manipulation lands in the ratings. The script also produces an effort-marginal access table (vignette only, no effort paragraph) for use in `inv_plan_effort_inferred`, where the observer does not see the effort paragraph and so cannot use effort-induced setting cues when reasoning about access.
 
 ```bash
 uv run python model/lm_scenario_params_effort.py   # → lm_scenario_params_effort.csv (effort-conditional access + effort) AND lm_scenario_params_effort_marginal.csv (effort-marginal access only)
-uv run python model/lm_action_priors_effort.py     # → lm_action_priors_effort.csv
 ```
 
 Fit forward planning models

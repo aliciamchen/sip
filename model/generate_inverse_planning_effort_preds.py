@@ -33,14 +33,11 @@ from utils import get_project_root
 EFFORT_LABELS = {0: "low", 1: "high"}
 
 
-def _table_kwargs_for(needs_prior):
-    tk = {
+def _table_kwargs():
+    return {
         "access_table": LLM_TABLES_EFFORT["access"],
         "effort_table": LLM_TABLES_EFFORT["effort"],
     }
-    if needs_prior:
-        tk["prior_table"] = LLM_TABLES_EFFORT["action_prior"]
-    return tk
 
 
 def generate_intimacy_effort_preds(
@@ -52,10 +49,10 @@ def generate_intimacy_effort_preds(
     effort_condition, intimacy_level). The observer table shape is
     (actions, scenarios, intimacy_levels, effort_conditions).
     """
-    obs_fn, kw_names, needs_prior = ACCESS_VARIANTS_EFFORT[variant_name]
+    obs_fn, kw_names = ACCESS_VARIANTS_EFFORT[variant_name]
     kwargs = {k: params[k] for k in kw_names}
     kwargs["alpha_observer"] = alpha_observer
-    result = obs_fn(**kwargs, **_table_kwargs_for(needs_prior))
+    result = obs_fn(**kwargs, **_table_kwargs())
 
     rows = []
     for s_idx, scenario_label in enumerate(SCENARIO_LABELS):
@@ -114,12 +111,9 @@ def main():
     print("-" * 40)
 
     dfs = []
-    for variant_name, (_obs, _kw, needs_prior) in ACCESS_VARIANTS_EFFORT.items():
+    for variant_name, (_obs, _kw) in ACCESS_VARIANTS_EFFORT.items():
         if variant_name not in params:
             print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        if needs_prior and "action_prior" not in LLM_TABLES_EFFORT:
-            print(f"  (skipping {variant_name}: lm_action_priors_effort.csv missing)")
             continue
         alpha_observer = alpha_obs.get((variant_name, "intimacy_effort"), 1.0)
         print(f"  {variant_name} (alpha_observer={alpha_observer:.3f})...")

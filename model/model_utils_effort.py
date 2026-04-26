@@ -128,36 +128,6 @@ if _access_marg is not None:
     LLM_TABLES_EFFORT["access_marg"] = _access_marg
 
 
-def load_lm_action_priors_effort(filepath=None):
-    """Load π(a|s,e) from lm_action_priors_effort.csv.
-
-    Returns a jnp.array of shape (16, 2, 2) with rows summing to 1 within each
-    (scenario, effort_condition) pair, or None if the CSV is missing.
-    """
-    if filepath is None:
-        filepath = (
-            Path(__file__).resolve().parent
-            / "outputs"
-            / "lm_action_priors_effort.csv"
-        )
-    if not filepath.exists():
-        return None
-    df = pd.read_csv(filepath)
-    shape = (len(SCENARIO_LABELS), N_EFFORT_CONDITIONS, N_ACTIONS_EFFORT)
-    priors = np.zeros(shape, dtype=np.float32)
-    for _, row in df.iterrows():
-        s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
-        e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        a_idx = int(row["action"]) - 1
-        priors[s_idx, e_idx, a_idx] = row["prior"]
-    return jnp.array(priors)
-
-
-ACTION_PRIOR_EFFORT = load_lm_action_priors_effort()
-if ACTION_PRIOR_EFFORT is not None:
-    LLM_TABLES_EFFORT["action_prior"] = ACTION_PRIOR_EFFORT
-
-
 # ==============================================================================
 # Utility functions
 # ==============================================================================
@@ -209,13 +179,8 @@ def get_utility_effort_no_access(
     return alpha * (w_v * V - w_e * effort)
 
 
-@jax.jit
-def get_action_prior_effort(scenario_idx, effort_condition, action, prior_table):
-    return prior_table[scenario_idx, effort_condition, action]
-
-
 # ==============================================================================
-# Forward-planning actor models (6 variants)
+# Forward-planning actor models
 # ==============================================================================
 
 
@@ -233,33 +198,6 @@ def actor_forw_effort_access_full[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_access_full(
-                action, scenario_idx, intimacy, effort_condition,
-                alpha, w_v, w_d, w_e,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
-def actor_forw_effort_access_full_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, beta_prior, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(intimacy)
-    actor: knows(effort_condition)
-    actor: chooses(
-        action in actions_effort,
-        wpp=(
-            get_action_prior_effort(scenario_idx, effort_condition, action, prior_table)
-            ** beta_prior
-        ) * exp(
             get_utility_effort_access_full(
                 action, scenario_idx, intimacy, effort_condition,
                 alpha, w_v, w_d, w_e,
@@ -295,33 +233,6 @@ def actor_forw_effort_access_only[
 
 
 @memo
-def actor_forw_effort_access_only_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_d, beta_prior, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(intimacy)
-    actor: knows(effort_condition)
-    actor: chooses(
-        action in actions_effort,
-        wpp=(
-            get_action_prior_effort(scenario_idx, effort_condition, action, prior_table)
-            ** beta_prior
-        ) * exp(
-            get_utility_effort_access_only(
-                action, scenario_idx, intimacy, effort_condition,
-                alpha, w_d,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
 def actor_forw_effort_no_access[
     action: actions_effort,
     scenario_idx: Scenarios,
@@ -335,33 +246,6 @@ def actor_forw_effort_no_access[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_no_access(
-                action, scenario_idx, intimacy, effort_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
-def actor_forw_effort_no_access_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_e, beta_prior, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(intimacy)
-    actor: knows(effort_condition)
-    actor: chooses(
-        action in actions_effort,
-        wpp=(
-            get_action_prior_effort(scenario_idx, effort_condition, action, prior_table)
-            ** beta_prior
-        ) * exp(
             get_utility_effort_no_access(
                 action, scenario_idx, intimacy, effort_condition,
                 alpha, w_v, w_e,
@@ -405,33 +289,6 @@ def actor_continuous_effort_access_full[
 
 
 @memo
-def actor_continuous_effort_access_full_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    relationship: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, beta_prior, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(relationship)
-    actor: knows(effort_condition)
-    actor: chooses(
-        action in actions_effort,
-        wpp=(
-            get_action_prior_effort(scenario_idx, effort_condition, action, prior_table)
-            ** beta_prior
-        ) * exp(
-            get_utility_effort_access_full(
-                action, scenario_idx, relationship, effort_condition,
-                alpha, w_v, w_d, w_e,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
 def actor_continuous_effort_access_only[
     action: actions_effort,
     scenario_idx: Scenarios,
@@ -456,33 +313,6 @@ def actor_continuous_effort_access_only[
 
 
 @memo
-def actor_continuous_effort_access_only_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    relationship: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_d, beta_prior, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(relationship)
-    actor: knows(effort_condition)
-    actor: chooses(
-        action in actions_effort,
-        wpp=(
-            get_action_prior_effort(scenario_idx, effort_condition, action, prior_table)
-            ** beta_prior
-        ) * exp(
-            get_utility_effort_access_only(
-                action, scenario_idx, relationship, effort_condition,
-                alpha, w_d,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
 def actor_continuous_effort_no_access[
     action: actions_effort,
     scenario_idx: Scenarios,
@@ -496,33 +326,6 @@ def actor_continuous_effort_no_access[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_no_access(
-                action, scenario_idx, relationship, effort_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table,
-            )
-        ),
-    )
-    return Pr[actor.action == action]
-
-
-@memo
-def actor_continuous_effort_no_access_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    relationship: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_e, beta_prior, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor]
-    actor: knows(scenario_idx)
-    actor: knows(relationship)
-    actor: knows(effort_condition)
-    actor: chooses(
-        action in actions_effort,
-        wpp=(
-            get_action_prior_effort(scenario_idx, effort_condition, action, prior_table)
-            ** beta_prior
-        ) * exp(
             get_utility_effort_no_access(
                 action, scenario_idx, relationship, effort_condition,
                 alpha, w_v, w_e,
@@ -568,35 +371,6 @@ def observer_intimacy_effort_access_full[
 
 
 @memo
-def observer_intimacy_effort_access_full_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    relationship: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor, observer]
-    observer: knows(scenario_idx)
-    observer: knows(effort_condition)
-    observer: thinks[
-        actor : knows(scenario_idx),
-        actor : knows(effort_condition),
-        actor : chooses(relationship in IntimacyLevels, wpp=1),
-        actor : chooses(
-            action in actions_effort,
-            wpp=actor_continuous_effort_access_full_prior[
-                action, scenario_idx, relationship, effort_condition
-            ](alpha, w_v, w_d, w_e, beta_prior, access_table, effort_table, prior_table),
-        ),
-    ]
-    observer: observes[actor.action] is action
-    observer: chooses(
-        relationship in IntimacyLevels,
-        wpp=E[actor.relationship == relationship] ** alpha_observer,
-    )
-    return Pr[observer.relationship == relationship]
-
-
-@memo
 def observer_intimacy_effort_access_only[
     action: actions_effort,
     scenario_idx: Scenarios,
@@ -626,35 +400,6 @@ def observer_intimacy_effort_access_only[
 
 
 @memo
-def observer_intimacy_effort_access_only_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    relationship: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_d, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor, observer]
-    observer: knows(scenario_idx)
-    observer: knows(effort_condition)
-    observer: thinks[
-        actor : knows(scenario_idx),
-        actor : knows(effort_condition),
-        actor : chooses(relationship in IntimacyLevels, wpp=1),
-        actor : chooses(
-            action in actions_effort,
-            wpp=actor_continuous_effort_access_only_prior[
-                action, scenario_idx, relationship, effort_condition
-            ](alpha, w_d, beta_prior, access_table, effort_table, prior_table),
-        ),
-    ]
-    observer: observes[actor.action] is action
-    observer: chooses(
-        relationship in IntimacyLevels,
-        wpp=E[actor.relationship == relationship] ** alpha_observer,
-    )
-    return Pr[observer.relationship == relationship]
-
-
-@memo
 def observer_intimacy_effort_no_access[
     action: actions_effort,
     scenario_idx: Scenarios,
@@ -673,35 +418,6 @@ def observer_intimacy_effort_no_access[
             wpp=actor_continuous_effort_no_access[
                 action, scenario_idx, relationship, effort_condition
             ](alpha, w_v, w_e, access_table, effort_table),
-        ),
-    ]
-    observer: observes[actor.action] is action
-    observer: chooses(
-        relationship in IntimacyLevels,
-        wpp=E[actor.relationship == relationship] ** alpha_observer,
-    )
-    return Pr[observer.relationship == relationship]
-
-
-@memo
-def observer_intimacy_effort_no_access_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    relationship: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_e, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor, observer]
-    observer: knows(scenario_idx)
-    observer: knows(effort_condition)
-    observer: thinks[
-        actor : knows(scenario_idx),
-        actor : knows(effort_condition),
-        actor : chooses(relationship in IntimacyLevels, wpp=1),
-        actor : chooses(
-            action in actions_effort,
-            wpp=actor_continuous_effort_no_access_prior[
-                action, scenario_idx, relationship, effort_condition
-            ](alpha, w_v, w_e, beta_prior, access_table, effort_table, prior_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -750,35 +466,6 @@ def observer_effort_inferred_access_full[
 
 
 @memo
-def observer_effort_inferred_access_full_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor, observer]
-    observer: knows(scenario_idx)
-    observer: knows(intimacy)
-    observer: thinks[
-        actor : knows(scenario_idx),
-        actor : knows(intimacy),
-        actor : chooses(effort_condition in EffortConditions, wpp=1),
-        actor : chooses(
-            action in actions_effort,
-            wpp=actor_forw_effort_access_full_prior[
-                action, scenario_idx, intimacy, effort_condition
-            ](alpha, w_v, w_d, w_e, beta_prior, access_table, effort_table, prior_table),
-        ),
-    ]
-    observer: observes[actor.action] is action
-    observer: chooses(
-        effort_condition in EffortConditions,
-        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
-    )
-    return Pr[observer.effort_condition == effort_condition]
-
-
-@memo
 def observer_effort_inferred_access_only[
     action: actions_effort,
     scenario_idx: Scenarios,
@@ -797,35 +484,6 @@ def observer_effort_inferred_access_only[
             wpp=actor_forw_effort_access_only[
                 action, scenario_idx, intimacy, effort_condition
             ](alpha, w_d, access_table, effort_table),
-        ),
-    ]
-    observer: observes[actor.action] is action
-    observer: chooses(
-        effort_condition in EffortConditions,
-        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
-    )
-    return Pr[observer.effort_condition == effort_condition]
-
-
-@memo
-def observer_effort_inferred_access_only_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_d, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor, observer]
-    observer: knows(scenario_idx)
-    observer: knows(intimacy)
-    observer: thinks[
-        actor : knows(scenario_idx),
-        actor : knows(intimacy),
-        actor : chooses(effort_condition in EffortConditions, wpp=1),
-        actor : chooses(
-            action in actions_effort,
-            wpp=actor_forw_effort_access_only_prior[
-                action, scenario_idx, intimacy, effort_condition
-            ](alpha, w_d, beta_prior, access_table, effort_table, prior_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -865,30 +523,3 @@ def observer_effort_inferred_no_access[
     return Pr[observer.effort_condition == effort_condition]
 
 
-@memo
-def observer_effort_inferred_no_access_prior[
-    action: actions_effort,
-    scenario_idx: Scenarios,
-    intimacy: IntimacyLevels,
-    effort_condition: EffortConditions,
-](alpha, w_v, w_e, beta_prior, alpha_observer, access_table: ..., effort_table: ..., prior_table: ...):
-    cast: [actor, observer]
-    observer: knows(scenario_idx)
-    observer: knows(intimacy)
-    observer: thinks[
-        actor : knows(scenario_idx),
-        actor : knows(intimacy),
-        actor : chooses(effort_condition in EffortConditions, wpp=1),
-        actor : chooses(
-            action in actions_effort,
-            wpp=actor_forw_effort_no_access_prior[
-                action, scenario_idx, intimacy, effort_condition
-            ](alpha, w_v, w_e, beta_prior, access_table, effort_table, prior_table),
-        ),
-    ]
-    observer: observes[actor.action] is action
-    observer: chooses(
-        effort_condition in EffortConditions,
-        wpp=E[actor.effort_condition == effort_condition] ** alpha_observer,
-    )
-    return Pr[observer.effort_condition == effort_condition]

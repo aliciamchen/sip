@@ -30,12 +30,12 @@ import pandas as pd
 from fit_inverse_planning import _fit_alpha_observer, compute_reward_nll
 from fit_inverse_planning_effort_inferred import (
     ACCESS_VARIANTS_EFFORT_INFERRED,
-    _table_kwargs_for,
+    _table_kwargs,
     load_effort_inferred_data,
     load_forw_plan_effort_actor_params,
 )
 from model_utils import SCENARIO_LABELS
-from model_utils_effort import LLM_TABLES_EFFORT, actions_effort
+from model_utils_effort import actions_effort
 
 from utils import get_project_root
 
@@ -56,8 +56,8 @@ def _loso_effort_inferred(actor_params_by_model):
         if variant not in actor_params_by_model:
             print(f"  (skipping {variant}: no forward fit)")
             continue
-        obs_fn, kw_names, needs_prior = ACCESS_VARIANTS_EFFORT_INFERRED[variant]
-        tk = _table_kwargs_for(needs_prior)
+        obs_fn, kw_names = ACCESS_VARIANTS_EFFORT_INFERRED[variant]
+        tk = _table_kwargs()
         actor_params = actor_params_by_model[variant]
         actor_kwargs = {k: actor_params[k] for k in kw_names}
 

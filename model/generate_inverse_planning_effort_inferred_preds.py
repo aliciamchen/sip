@@ -41,20 +41,17 @@ EFFORT_LABELS = {0: "low", 1: "high"}
 INTIMACY_DISPLAY_LEVELS = [0, 50, 75, 100]
 
 
-def _table_kwargs_for(needs_prior):
+def _table_kwargs():
     # Effort-marginal access (vignette only) — observer in this experiment
     # does not see the effort paragraph. See fit_inverse_planning_effort_inferred.py
     # for the rationale.
     access_table = LLM_TABLES_EFFORT.get(
         "access_marg", LLM_TABLES_EFFORT["access"]
     )
-    tk = {
+    return {
         "access_table": access_table,
         "effort_table": LLM_TABLES_EFFORT["effort"],
     }
-    if needs_prior:
-        tk["prior_table"] = LLM_TABLES_EFFORT["action_prior"]
-    return tk
 
 
 def generate_effort_inferred_preds(
@@ -66,10 +63,10 @@ def generate_effort_inferred_preds(
     intimacy ∈ {0, 50, 75, 100}, effort_condition). The observer table shape
     is (actions, scenarios, intimacy_levels [101], effort_conditions).
     """
-    obs_fn, kw_names, needs_prior = ACCESS_VARIANTS_EFFORT_INFERRED[variant_name]
+    obs_fn, kw_names = ACCESS_VARIANTS_EFFORT_INFERRED[variant_name]
     kwargs = {k: params[k] for k in kw_names}
     kwargs["alpha_observer"] = alpha_observer
-    result = obs_fn(**kwargs, **_table_kwargs_for(needs_prior))
+    result = obs_fn(**kwargs, **_table_kwargs())
 
     rows = []
     for s_idx, scenario_label in enumerate(SCENARIO_LABELS):
@@ -131,12 +128,9 @@ def main():
     print("-" * 40)
 
     dfs = []
-    for variant_name, (_obs, _kw, needs_prior) in ACCESS_VARIANTS_EFFORT_INFERRED.items():
+    for variant_name, (_obs, _kw) in ACCESS_VARIANTS_EFFORT_INFERRED.items():
         if variant_name not in params:
             print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        if needs_prior and "action_prior" not in LLM_TABLES_EFFORT:
-            print(f"  (skipping {variant_name}: lm_action_priors_effort.csv missing)")
             continue
         alpha_observer = alpha_obs.get((variant_name, "effort_inferred"), 1.0)
         print(f"  {variant_name} (alpha_observer={alpha_observer:.3f})...")

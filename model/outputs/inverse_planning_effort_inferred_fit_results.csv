@@ -2,6 +2,3 @@ model,experiment,alpha_observer,nll,n_params
 access_full,effort_inferred,1.843005895614624,166.62721252441406,1
 access_only,effort_inferred,0.009999999776482582,177.44577026367188,1
 no_access,effort_inferred,10.0,177.445556640625,1
-access_full_prior,effort_inferred,1.4890618324279785,166.34014892578125,1
-access_only_prior,effort_inferred,3.572202682495117,173.50376892089844,1
-no_access_prior,effort_inferred,1.6606428623199463,171.14610290527344,1

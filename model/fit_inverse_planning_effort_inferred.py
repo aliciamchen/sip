@@ -30,11 +30,8 @@ from model_utils import SCENARIO_TO_IDX
 from model_utils_effort import (
     LLM_TABLES_EFFORT,
     observer_effort_inferred_access_full,
-    observer_effort_inferred_access_full_prior,
     observer_effort_inferred_access_only,
-    observer_effort_inferred_access_only_prior,
     observer_effort_inferred_no_access,
-    observer_effort_inferred_no_access_prior,
 )
 
 from utils import get_project_root
@@ -129,42 +126,24 @@ def fit_effort_inferred_observer(
     )
 
 
-# Variant registry: name -> (observer_fn, actor_kwarg_names, needs_prior_table)
+# Variant registry: name -> (observer_fn, actor_kwarg_names)
 ACCESS_VARIANTS_EFFORT_INFERRED = {
     "access_full": (
         observer_effort_inferred_access_full,
         ["alpha", "w_v", "w_d", "w_e"],
-        False,
     ),
     "access_only": (
         observer_effort_inferred_access_only,
         ["alpha", "w_d"],
-        False,
     ),
     "no_access": (
         observer_effort_inferred_no_access,
         ["alpha", "w_v", "w_e"],
-        False,
-    ),
-    "access_full_prior": (
-        observer_effort_inferred_access_full_prior,
-        ["alpha", "w_v", "w_d", "w_e", "beta_prior"],
-        True,
-    ),
-    "access_only_prior": (
-        observer_effort_inferred_access_only_prior,
-        ["alpha", "w_d", "beta_prior"],
-        True,
-    ),
-    "no_access_prior": (
-        observer_effort_inferred_no_access_prior,
-        ["alpha", "w_v", "w_e", "beta_prior"],
-        True,
     ),
 }
 
 
-def _table_kwargs_for(needs_prior):
+def _table_kwargs():
     # The observer in this experiment does NOT see the effort paragraph, so
     # the access values they use to reason about the actor must also not
     # depend on effort_condition. We use the effort-marginal access table
@@ -172,13 +151,10 @@ def _table_kwargs_for(needs_prior):
     access_table = LLM_TABLES_EFFORT.get(
         "access_marg", LLM_TABLES_EFFORT["access"]
     )
-    tk = {
+    return {
         "access_table": access_table,
         "effort_table": LLM_TABLES_EFFORT["effort"],
     }
-    if needs_prior:
-        tk["prior_table"] = LLM_TABLES_EFFORT["action_prior"]
-    return tk
 
 
 # ==============================================================================
@@ -201,12 +177,9 @@ def main():
     data, action, intimacy_idx, response, scenario_idx = load_effort_inferred_data()
 
     results = []
-    for variant_name, (obs_fn, kw_names, needs_prior) in ACCESS_VARIANTS_EFFORT_INFERRED.items():
+    for variant_name, (obs_fn, kw_names) in ACCESS_VARIANTS_EFFORT_INFERRED.items():
         if variant_name not in actor_params:
             print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        if needs_prior and "action_prior" not in LLM_TABLES_EFFORT:
-            print(f"  (skipping {variant_name}: lm_action_priors_effort.csv missing)")
             continue
         print(f"\n{'-' * 40}")
         print(f"Fitting {variant_name}...")
@@ -219,7 +192,7 @@ def main():
             scenario_idx=scenario_idx,
             intimacy_idx=intimacy_idx,
             response=response,
-            table_kwargs=_table_kwargs_for(needs_prior),
+            table_kwargs=_table_kwargs(),
         )
         results.append({
             "model": variant_name,
