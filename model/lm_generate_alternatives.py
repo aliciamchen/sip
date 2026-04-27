@@ -1,28 +1,37 @@
 #!/usr/bin/env python3
 """
 Generate LM counterfactual alternative action sets for the no-alternatives-shown
-inverse-planning variant (`inv_plan_intimacy_noalt`).
+inverse-planning variants.
 
-For each (scenario, observed_action, motivation) cell — 16 scenarios × 4
-canonical observed actions × 2 motivation levels = 128 cells — prompt
-Llama-3.3-70B-Instruct-Turbo to list the set of plausible alternative actions
-the actor could have taken instead of the observed action. The LM decides set
-size; no fixed quota. Each alternative is tagged with a binary is_share flag so
-the stipulated goal-satisfaction gate V can be applied to arbitrary actions.
+Two conditioning modes are supported via `--conditioning`:
 
-Alternatives are conditioned on (observed_action, motivation) because that's
-how a human observer constructs counterfactuals — "given they did this under
-high/low motivation, what else could they have done?" Motivation is stipulated
-in the vignette and is observable to the participant, so conditioning on it
-doesn't leak information about the latent (intimacy).
+  * `motivation` (default): conditions alternatives on (observed_action,
+    motivation). Used by `inv_plan_intimacy_noalt` (observer sees motivation,
+    infers intimacy). 16 scenarios × 4 actions × 2 motivations = 128 cells.
+
+  * `relationship`: conditions alternatives on (observed_action,
+    relationship_condition). Used by `inv_plan_desire_noalt` (observer sees
+    relationship, infers motivation). 16 scenarios × 4 actions × 4 relationship
+    levels = 256 cells.
+
+The general design rule: alternatives are conditioned on what the observer
+observes (not on the latent), so the LM-elicited counterfactual action space
+matches what a human observer would entertain.
+
+For each cell, prompt Llama-3.3-70B-Instruct-Turbo to list the set of plausible
+alternative actions the actor could have taken instead of the observed action.
+The LM decides set size; no fixed quota. Each alternative is tagged with a
+binary is_share flag so the V/access/effort scoring downstream can be applied.
 
 Output:
-    --domain food (default) → model/outputs/lm_alternatives.csv
-    --domain nonfood        → model/outputs/lm_alternatives_nonfood.csv
+    --conditioning motivation, --domain food   → model/outputs/lm_alternatives.csv
+    --conditioning motivation, --domain nonfood → model/outputs/lm_alternatives_nonfood.csv
+    --conditioning relationship, --domain food → model/outputs/lm_alternatives_relationship.csv
+    --conditioning relationship, --domain nonfood → model/outputs/lm_alternatives_relationship_nonfood.csv
 
 Usage:
     uv run python model/lm_generate_alternatives.py
-    uv run python model/lm_generate_alternatives.py --domain nonfood
+    uv run python model/lm_generate_alternatives.py --conditioning relationship
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
@@ -50,17 +59,23 @@ MAX_TOKENS = 800
 MAX_PARSE_RETRIES = 5
 ACTION_COLS = ["action_0", "action_1", "action_2", "action_3"]
 MOTIVATIONS = ["low", "high"]
+RELATIONSHIPS = [0, 50, 75, 100]
 
-# Per-domain input CSV and output CSV. All runs use the general LM prompt set;
-# the --domain flag selects which scenario CSV (and output filenames) to use.
+# Per-(domain, conditioning) input CSV and output CSV. All runs use the general
+# LM prompt set; the --domain flag selects which scenario CSV (and output
+# filenames) to use; --conditioning selects which axis the alternatives are
+# split along.
 _DOMAIN_PATHS = {
-    "food":    {"scenarios": "scenarios.csv",         "output": "lm_alternatives.csv"},
-    "nonfood": {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_nonfood.csv"},
+    ("food", "motivation"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives.csv"},
+    ("nonfood", "motivation"): {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_nonfood.csv"},
+    ("food", "relationship"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_relationship.csv"},
+    ("nonfood", "relationship"): {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_relationship_nonfood.csv"},
 }
 
 
 from lm_prompts import ALTERNATIVES_SYSTEM_PROMPT
-from lm_prompts import alternatives_user_prompt as format_user_prompt
+from lm_prompts import alternatives_user_prompt as format_motivation_user_prompt
+from lm_prompts import alternatives_user_prompt_relationship as format_relationship_user_prompt
 
 
 _JSON_ARRAY_RE = re.compile(r"\[[\s\S]*\]")
@@ -107,13 +122,10 @@ def _dedup_alternatives(alts):
     return out
 
 
-def elicit_alternatives(client, vignette, reward_text, observed_action_text):
+def elicit_alternatives(client, user_prompt):
     messages = [
         {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
-        {
-            "role": "user",
-            "content": format_user_prompt(vignette, reward_text, observed_action_text),
-        },
+        {"role": "user", "content": user_prompt},
     ]
     for attempt in range(MAX_PARSE_RETRIES):
         try:
@@ -151,23 +163,31 @@ def _load_api_key():
     return api_key
 
 
-def load_scenarios(domain):
-    scenarios_path = get_project_root() / "experiments" / _DOMAIN_PATHS[domain]["scenarios"]
+def load_scenarios(domain, conditioning):
+    scenarios_path = (
+        get_project_root() / "experiments" / _DOMAIN_PATHS[(domain, conditioning)]["scenarios"]
+    )
     return pd.read_csv(scenarios_path)
 
 
-def main(domain):
+def main(domain, conditioning):
     api_key = _load_api_key()
 
-    print(f"Loading scenarios (domain={domain})...")
-    scenarios_df = load_scenarios(domain)
+    print(f"Loading scenarios (domain={domain}, conditioning={conditioning})...")
+    scenarios_df = load_scenarios(domain, conditioning)
     print(f"Loaded {len(scenarios_df)} scenarios")
 
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
     client = Together(api_key=api_key)
 
     results = []
-    total_cells = len(scenarios_df) * len(ACTION_COLS) * len(MOTIVATIONS)
+    if conditioning == "motivation":
+        levels = MOTIVATIONS
+        level_label = "motivation"
+    else:
+        levels = RELATIONSHIPS
+        level_label = "relationship_condition"
+    total_cells = len(scenarios_df) * len(ACTION_COLS) * len(levels)
     cell_idx = 0
 
     for _, row in scenarios_df.iterrows():
@@ -175,38 +195,44 @@ def main(domain):
         vignette = row["vignette"]
         for observed_col in ACTION_COLS:
             observed_action_text = row[observed_col]
-            for motivation in MOTIVATIONS:
+            for level in levels:
                 cell_idx += 1
-                reward_text = row[f"reward_{motivation}"]
+                if conditioning == "motivation":
+                    reward_text = row[f"reward_{level}"]
+                    user_prompt = format_motivation_user_prompt(
+                        vignette, reward_text, observed_action_text
+                    )
+                else:
+                    user_prompt = format_relationship_user_prompt(
+                        vignette, level, observed_action_text
+                    )
                 print(
-                    f"\n[{cell_idx}/{total_cells}] {scenario} | observed={observed_col} | motivation={motivation}"
+                    f"\n[{cell_idx}/{total_cells}] {scenario} | observed={observed_col} | "
+                    f"{level_label}={level}"
                 )
-                alts = elicit_alternatives(
-                    client, vignette, reward_text, observed_action_text
-                )
+                alts = elicit_alternatives(client, user_prompt)
                 print(f"  Elicited {len(alts)} alternatives")
                 for alt_idx, alt in enumerate(alts):
-                    results.append(
-                        {
-                            "scenario_label": scenario,
-                            "observed_action": observed_col,
-                            "motivation": motivation,
-                            "alt_idx": alt_idx,
-                            "action_text": alt["action"],
-                            "is_share": alt["is_share"],
-                        }
-                    )
+                    record = {
+                        "scenario_label": scenario,
+                        "observed_action": observed_col,
+                        level_label: level,
+                        "alt_idx": alt_idx,
+                        "action_text": alt["action"],
+                        "is_share": alt["is_share"],
+                    }
+                    results.append(record)
 
     results_df = pd.DataFrame(results)
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / _DOMAIN_PATHS[domain]["output"]
+    output_path = output_dir / _DOMAIN_PATHS[(domain, conditioning)]["output"]
     results_df.to_csv(output_path, index=False)
     print(f"\nSaved {len(results_df)} alternatives to {output_path}")
 
     print("\n=== Summary ===")
     per_cell = results_df.groupby(
-        ["scenario_label", "observed_action", "motivation"]
+        ["scenario_label", "observed_action", level_label]
     ).size()
     print(f"Total cells: {len(per_cell)} (expected {total_cells})")
     print(
@@ -223,9 +249,19 @@ if __name__ == "__main__":
         default="food",
         help=(
             "Which scenario set to elicit alternatives for. 'food' (default) "
-            "uses scenarios.csv → lm_alternatives.csv; 'nonfood' uses "
-            "scenarios_nonfood.csv → lm_alternatives_nonfood.csv."
+            "uses scenarios.csv; 'nonfood' uses scenarios_nonfood.csv."
+        ),
+    )
+    parser.add_argument(
+        "--conditioning",
+        choices=("motivation", "relationship"),
+        default="motivation",
+        help=(
+            "Which axis to condition alternatives on. 'motivation' (default) "
+            "is used by inv_plan_intimacy_noalt (observer sees motivation, "
+            "infers intimacy); 'relationship' is used by inv_plan_desire_noalt "
+            "(observer sees relationship, infers motivation)."
         ),
     )
     args = parser.parse_args()
-    main(args.domain)
+    main(args.domain, args.conditioning)

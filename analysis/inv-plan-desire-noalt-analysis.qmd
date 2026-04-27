@@ -34,7 +34,7 @@ This experiment is a variant of `inv_plan_desire_alt` in which participants obse
 - **Action**: Which action was taken (action 0–3, varying in saliva-transfer risk)
 - **Intimacy**: The relationship closeness between the actors (0, 50, 75, or 100)
 
-This notebook reports the raw human data only — modeling is not included.
+The cognitive model for this variant uses an LM-generated counterfactual alternative set as the actor's action space, padded to a fixed size so the memo program can enumerate a static slot dimension. Crucially, alternatives are conditioned on **(scenario, observed action, relationship_condition)** — *not* on motivation — because the desire-noalt observer sees relationship and infers motivation. Conditioning the action space on what the observer sees (rather than on the latent) keeps the counterfactual reasoning consistent with what a human observer entertains. Slot 0 holds the observed canonical action; slots 1..k hold the LM-generated alternatives for that (scenario, observed, relationship) cell; remaining slots are null-padded.
 
 ## Load human data
 
@@ -158,13 +158,133 @@ df_belief_update_summary |>
   theme(legend.position = "right")
 ```
 
-## Belief updates vs LM-derived risk
+## Model comparison
 
-X-axis is the LM-derived risk score for the observed action (from `lm_scenario_params.csv`). One point per (scenario, action, intimacy), with a linear smoother per intimacy level.
+### Model description
+
+We compare three ablations of the canonical risk utility (Base model, Discomfort-only, Full model). The action space for each (scenario, observed action, relationship_condition) cell is the union of the observed canonical action (slot 0) and an LM-generated set of plausible counterfactual alternatives (slots 1..k). Risk, effort, and $V(a|s, m)$ for each alternative are all LM-scored (batched per scenario, 10 runs each). Because relationship is the conditioning axis (not motivation), V for each alternative is scored under both motivation states so the observer can integrate over motivation as the latent.
+
+**Full model**: Inverts the full risk utility $U(a|s, I) = w_v \cdot V(a|s, m) - w_d \cdot \text{risk}(a) \cdot (1 - I) - w_e \cdot \text{effort}(a)$.
+
+**Discomfort-only**: Drops V and effort, keeping only the risk-discomfort term $-w_d \cdot \text{risk}(a) \cdot (1 - I)$. Note: this ablation drops the only term that varies with motivation, so it is structurally incapable of inferring motivation from action — its predictions stay at the uniform prior P(high) = 0.5.
+
+**Base model**: Drops the risk term: $U = w_v \cdot V(a|s, m) - w_e \cdot \text{effort}(a)$.
+
+The actor's softmax is $P(a | I, m, s) \propto \pi(a|s, I) \cdot \exp(U(a|I, m, s))$, where $\pi$ is uniform over the valid slots in each padded cell. The observer assumes a uniform motivation prior P(high) = 0.5 and computes the posterior via Bayesian inference over the padded action space.
+
+**Fitting strategy.** All actor weights are jointly fit with $\alpha_{\text{observer}}$ on no-alt desire data — the padded observer reasons over a variable-length LM-generated action set, so weights from the alt-shown experiments don't transplant cleanly. Per variant the free parameters are: Full = $\{w_v, w_d, w_e, \alpha_{\text{observer}}\}$, Discomfort-only = $\{w_d, \alpha_{\text{observer}}\}$, Base model = $\{w_v, w_e, \alpha_{\text{observer}}\}$. Actor's softmax temperature $\alpha$ is fixed at 1 for identifiability. Loss is binary cross-entropy between the human slider/100 and model P(high motivation). The fitted-parameters table below uses the all-data fit; predictions reported in the model-vs-human comparison plots are out-of-sample, from leave-one-scenario-out CV (`cv_loso_inv_plan_desire_noalt_preds_summary.csv`).
+
+### Fitted parameters
 
 ```{r}
-#| fig-width: 9
-#| fig-asp: 0.55
+df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_desire_noalt_fit_results.csv")) |>
+  mutate(
+    utility = str_remove(model, "_padded$"),
+    model_label = case_when(
+      utility == "access_full" ~ "Full model",
+      utility == "access_only" ~ "Discomfort-only",
+      utility == "no_access" ~ "Base model"
+    )
+  ) |>
+  select(model_label, param_w_v, param_w_d, param_w_e, alpha_observer, nll, n_params) |>
+  arrange(model_label)
+
+df_fit_results |>
+  knitr::kable(
+    digits = 3,
+    caption = "Joint-fit parameters for no-alt desire inference (relationship-keyed action space).",
+    col.names = c("Utility", "w_v", "w_d", "w_e", "α_observer", "NLL", "n_params")
+  )
+```
+
+### AIC comparison
+
+Following Burnham and Anderson (2002), ΔAIC values of 0–2 indicate essentially equivalent models, 4–7 indicate considerably less support for the higher-AIC model, and values greater than 10 indicate essentially no support for the higher-AIC model.
+
+```{r}
+kable_aic_table(
+  df_fit_results,
+  caption = "Model comparison (3 utility variants; lower AIC is better)",
+  model_col_label = "Utility"
+)
+```
+
+### Load model predictions
+
+```{r}
+df_model <- read_csv(here("model", "outputs", "cv_loso_inv_plan_desire_noalt_preds_summary.csv")) |>
+  mutate(
+    action = as.character(observed_action),
+    intimacy = factor(intimacy),
+    p_high_reward = p_high,
+    belief_update = p_high - 0.5,
+    utility = str_remove(model, "_padded$"),
+    model_label = case_when(
+      utility == "access_full" ~ "Full model",
+      utility == "access_only" ~ "Discomfort-only",
+      utility == "no_access" ~ "Base model"
+    )
+  )
+
+MODEL_LEVELS <- c("Base model", "Discomfort-only", "Full model", "Humans")
+```
+
+### Combine human and model data
+
+```{r}
+df_human_long <- df_belief_update_summary |>
+  mutate(belief_update = empirical_stat, model_label = "Humans") |>
+  select(intimacy, action, model_label, belief_update, ci_lower, ci_upper)
+
+df_model_long <- df_model |>
+  group_by(intimacy, action, model_label) |>
+  summarize(belief_update = mean(belief_update), .groups = "drop") |>
+  mutate(ci_lower = NA_real_, ci_upper = NA_real_)
+```
+
+### Belief updates: Model vs human comparison
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.3
+
+df_combined <- bind_rows(df_human_long, df_model_long) |>
+  mutate(
+    model_label = factor(model_label, levels = MODEL_LEVELS),
+    action = factor(action)
+  )
+
+p_belief <- df_combined |>
+  ggplot(aes(x = action, y = belief_update, group = interaction(model_label, intimacy), fill = intimacy)) +
+  geom_crossbar(
+    aes(y = 0, ymin = -0.01, ymax = 0.01),
+    position = position_dodge(width = 0.9),
+    width = 0.9,
+    color = NA
+  ) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9), size = 1, width = 0.1, color = "black", alpha = 0.8
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_intimacy() +
+  labs(y = "Belief update", x = "Observed action", fill = "Intimacy") +
+  theme(legend.position = "right") +
+  facet_wrap(~model_label, nrow = 1)
+
+print(p_belief)
+
+ggsave(here("figures", "inv_plan_desire_noalt_belief_main.pdf"), plot = p_belief, device = cairo_pdf)
+```
+
+### Belief updates vs LM-derived risk (continuous x)
+
+X-axis is the LM-derived risk score for the observed canonical action (from `lm_scenario_params.csv`). One point per (scenario, action, intimacy), with a linear smoother per intimacy level.
+
+```{r}
+#| fig-width: 14
+#| fig-asp: 0.3
 
 df_canonical_risk <- read_csv(here("model", "outputs", "lm_scenario_params.csv"), show_col_types = FALSE) |>
   mutate(action = as.character(action)) |>
@@ -176,25 +296,38 @@ df_human_scenario_pts <- df |>
   group_by(scenario_label, intimacy, action) |>
   tidyboot_mean(belief_update) |>
   ungroup() |>
-  mutate(belief_update = empirical_stat) |>
-  select(scenario_label, intimacy, action, belief_update, ci_lower, ci_upper) |>
-  inner_join(df_canonical_risk, by = c("scenario_label", "action"))
+  mutate(belief_update = empirical_stat, model_label = "Humans") |>
+  select(scenario_label, intimacy, action, model_label, belief_update, ci_lower, ci_upper)
 
-df_human_scenario_pts |>
+df_model_scenario_pts <- df_model |>
+  select(scenario_label, intimacy, action, model_label, belief_update) |>
+  mutate(ci_lower = NA_real_, ci_upper = NA_real_)
+
+df_risk_combined <- bind_rows(df_human_scenario_pts, df_model_scenario_pts) |>
+  inner_join(df_canonical_risk, by = c("scenario_label", "action")) |>
+  mutate(model_label = factor(model_label, levels = MODEL_LEVELS))
+
+p_belief_risk <- df_risk_combined |>
   ggplot(aes(x = risk, y = belief_update, color = intimacy, shape = factor(action), group = intimacy)) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
   geom_errorbar(
+    data = df_risk_combined |> filter(model_label == "Humans"),
     aes(ymin = ci_lower, ymax = ci_upper),
     position = POS_JITTER_DODGE,
     width = 0.05, alpha = 0.4, linewidth = 0.4
   ) +
-  geom_point(position = POS_JITTER_DODGE, alpha = 0.7, size = 2) +
+  geom_point(position = POS_JITTER_DODGE, alpha = 0.5, size = 2) +
   geom_smooth(se = FALSE, linewidth = 1) +
   scale_color_intimacy() +
   scale_shape_manual(values = c(16, 17, 15, 18)) +
-  labs(y = "Belief update", x = "LM-derived risk of observed action",
-       color = "Intimacy", shape = "Action") +
-  theme(legend.position = "right")
+  labs(y = "Belief update", x = "LM-derived risk of observed action", color = "Intimacy", shape = "Action") +
+  theme(legend.position = "right") +
+  facet_wrap(~model_label, nrow = 1)
+
+print(p_belief_risk)
+
+ggsave(here("figures", "inv_plan_desire_noalt_belief_risk.pdf"),
+       plot = p_belief_risk, device = cairo_pdf, width = 14, height = 4)
 ```
 
 ## Scenario-level
@@ -259,4 +392,28 @@ ggplot(df_posterior_scenario, aes(x = action, y = empirical_stat, fill = intimac
   ) +
   theme(legend.position = "right") +
   facet_wrap(~scenario_label, ncol = 4)
+```
+
+### Model belief updates by scenario
+
+```{r}
+#| fig-width: 14
+#| fig-asp: 0.9
+
+df_model_scenario <- df_model |>
+  mutate(model_label = factor(model_label, levels = c("Base model", "Discomfort-only", "Full model")))
+
+ggplot(df_model_scenario, aes(x = action, y = belief_update, fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_intimacy() +
+  labs(
+    title = "Model-predicted belief updates by scenario",
+    y = "Belief update",
+    x = "Observed action",
+    fill = "Intimacy"
+  ) +
+  theme(legend.position = "right") +
+  facet_grid(model_label ~ scenario_label,
+             labeller = labeller(scenario_label = label_wrap_gen(15)))
 ```

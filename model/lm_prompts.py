@@ -287,3 +287,37 @@ def alternatives_user_prompt(vignette, reward_text, observed_action_text):
         "them — bodily, physical, or informational. Tag each with "
         "is_share ∈ {0, 1}. Do not include the action they actually took."
     )
+
+
+# Relationship-condition descriptors used by the desire-noalt observer's
+# alternative-generation pass. Mirrors the slider labels shown to participants
+# in `experiments/inv_plan_desire_noalt/trials.js` and conveys the relationship
+# context to the LM the same way it's conveyed to humans (numeric label +
+# short qualitative descriptor).
+RELATIONSHIP_DESCRIPTORS = {
+    0: "0 out of 100 (maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader)",
+    50: "50 out of 100 (neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker)",
+    75: "75 out of 100 (somewhat intimate — e.g., the kind of relationship one might have with a close friend)",
+    100: "100 out of 100 (maximally intimate — e.g., the kind of relationship one might have with a romantic partner, sibling, or best friend)",
+}
+
+
+def alternatives_user_prompt_relationship(vignette, relationship_level, observed_action_text):
+    """Build the user prompt for the alternative-generation call when
+    conditioning on relationship instead of motivation (desire-noalt observer).
+
+    `relationship_level` is one of {0, 50, 75, 100}, matching the experiment's
+    intimacy slider conditions.
+    """
+    descriptor = RELATIONSHIP_DESCRIPTORS[relationship_level]
+    return (
+        f"Scenario: {vignette}\n"
+        f"The two people are in a relationship they would describe as "
+        f"{descriptor}.\n\n"
+        f"The two people took the following action:\n"
+        f"{observed_action_text}\n\n"
+        "List the set of plausible alternative ways the two people could "
+        "have handled the situation instead. Vary across exposure between "
+        "them — bodily, physical, or informational. Tag each with "
+        "is_share ∈ {0, 1}. Do not include the action they actually took."
+    )

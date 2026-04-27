@@ -50,20 +50,26 @@ TEMPERATURE = 0.2
 # the --domain flag selects which scenario CSV (and output filenames) to use.
 _DOMAIN_PATHS = {
     "food": {
-        "scenarios":             "scenarios.csv",
-        "params_output":         "lm_scenario_params.csv",
-        "v_output":              "lm_scenario_v.csv",
-        "alternatives_input":    "lm_alternatives.csv",
-        "alternatives_output":   "lm_alternatives_features.csv",
-        "alternatives_v_output": "lm_alternatives_v.csv",
+        "scenarios":                          "scenarios.csv",
+        "params_output":                      "lm_scenario_params.csv",
+        "v_output":                           "lm_scenario_v.csv",
+        "alternatives_input":                 "lm_alternatives.csv",
+        "alternatives_output":                "lm_alternatives_features.csv",
+        "alternatives_v_output":              "lm_alternatives_v.csv",
+        "alternatives_rel_input":             "lm_alternatives_relationship.csv",
+        "alternatives_rel_output":            "lm_alternatives_relationship_features.csv",
+        "alternatives_rel_v_output":          "lm_alternatives_relationship_v.csv",
     },
     "nonfood": {
-        "scenarios":             "scenarios_nonfood.csv",
-        "params_output":         "lm_scenario_params_nonfood.csv",
-        "v_output":              "lm_scenario_v_nonfood.csv",
-        "alternatives_input":    "lm_alternatives_nonfood.csv",
-        "alternatives_output":   "lm_alternatives_features_nonfood.csv",
-        "alternatives_v_output": "lm_alternatives_v_nonfood.csv",
+        "scenarios":                          "scenarios_nonfood.csv",
+        "params_output":                      "lm_scenario_params_nonfood.csv",
+        "v_output":                           "lm_scenario_v_nonfood.csv",
+        "alternatives_input":                 "lm_alternatives_nonfood.csv",
+        "alternatives_output":                "lm_alternatives_features_nonfood.csv",
+        "alternatives_v_output":              "lm_alternatives_v_nonfood.csv",
+        "alternatives_rel_input":             "lm_alternatives_relationship_nonfood.csv",
+        "alternatives_rel_output":            "lm_alternatives_relationship_features_nonfood.csv",
+        "alternatives_rel_v_output":          "lm_alternatives_relationship_v_nonfood.csv",
     },
 }
 
@@ -642,6 +648,253 @@ def score_v_alternatives_main(domain="food"):
     print(f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True)
 
 
+def score_alternatives_relationship_main(domain="food"):
+    """Score access/effort for relationship-conditioned LM-generated alternatives.
+
+    Mirrors score_alternatives_main but reads from lm_alternatives_relationship.csv
+    (keyed by relationship_condition instead of motivation) and writes to
+    lm_alternatives_relationship_features.csv. Dedupe is per scenario across all
+    (observed_action, relationship_condition, alt_idx) cells, identical to the
+    motivation-keyed pass — access and effort are properties of the action and
+    don't depend on the conditioning axis.
+    """
+    api_key = _load_api_key()
+
+    access_system_prompt = build_system_prompt("access", n_actions=None)
+    effort_system_prompt = build_system_prompt("effort", n_actions=None)
+
+    print(f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...", flush=True)
+    scenarios_df = load_scenarios(domain)
+    alt_path = (
+        get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
+    )
+    if not alt_path.exists():
+        print(
+            f"Error: {alt_path} not found. Run "
+            "lm_generate_alternatives.py --conditioning relationship first.",
+            flush=True,
+        )
+        sys.exit(1)
+    alt_df = pd.read_csv(alt_path)
+    alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
+    n_cells = alt_df.groupby(["scenario_label", "observed_action", "relationship_condition"]).ngroups
+    print(
+        f"Loaded {len(alt_df)} alternatives across {n_cells} cells "
+        f"({alt_df['action_norm'].nunique()} unique action strings)",
+        flush=True,
+    )
+
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_rel_output"]
+
+    results = []
+    already_done_scenarios = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done_scenarios = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done_scenarios)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
+    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
+    client = Together(api_key=api_key)
+
+    scenario_lookup = scenarios_df.set_index("scenario_label")["vignette"].to_dict()
+
+    scenarios_in_data = sorted(alt_df["scenario_label"].unique())
+    for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
+        if scenario in already_done_scenarios:
+            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            continue
+
+        sc_group = alt_df[alt_df["scenario_label"] == scenario]
+        unique_df = sc_group.drop_duplicates("action_norm").reset_index(drop=True)
+        unique_actions = unique_df["action_text"].tolist()
+        unique_norms = unique_df["action_norm"].tolist()
+        n_unique = len(unique_actions)
+        vignette = scenario_lookup[scenario]
+
+        print(
+            f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} | "
+            f"{len(sc_group)} rows | {n_unique} unique actions",
+            flush=True,
+        )
+        if n_unique == 0:
+            continue
+
+        print("  scoring access...", flush=True)
+        access_ratings = get_ratings_variable(
+            client,
+            access_system_prompt,
+            format_access_prompt_variable(vignette, unique_actions),
+            n_unique,
+        )
+        access_agg = aggregate_action_ratings_variable(access_ratings, n_unique)
+
+        print("  scoring effort...", flush=True)
+        effort_ratings = get_ratings_variable(
+            client,
+            effort_system_prompt,
+            format_effort_prompt_variable(vignette, unique_actions),
+            n_unique,
+        )
+        effort_agg = aggregate_action_ratings_variable(effort_ratings, n_unique)
+
+        feats_by_norm = {}
+        for i, norm in enumerate(unique_norms):
+            key = f"action_{i}"
+            a_mean, a_std = access_agg[key]
+            e_mean, e_std = effort_agg[key]
+            feats_by_norm[norm] = {
+                "access_raw": a_mean,
+                "access_raw_std": a_std,
+                "effort_raw": e_mean,
+                "effort_raw_std": e_std,
+                "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
+                "n_runs_access": len(access_ratings),
+                "n_runs_effort": len(effort_ratings),
+            }
+
+        new_rows = 0
+        for _, row in sc_group.iterrows():
+            f = feats_by_norm.get(row["action_norm"])
+            if f is None:
+                continue
+            results.append({
+                "scenario_label": scenario,
+                "observed_action": row["observed_action"],
+                "relationship_condition": int(row["relationship_condition"]),
+                "alt_idx": int(row["alt_idx"]),
+                **f,
+            })
+            new_rows += 1
+
+        pd.DataFrame(results).to_csv(output_path, index=False)
+        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+
+    print(f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}", flush=True)
+
+
+def score_v_alternatives_relationship_main(domain="food"):
+    """Score signed-valence V for relationship-conditioned LM-generated alternatives.
+
+    Mirrors score_v_alternatives_main but reads from lm_alternatives_relationship.csv
+    (keyed by relationship_condition) and writes to lm_alternatives_relationship_v.csv.
+    Each unique action is still scored under both motivation_query ∈ {low, high}
+    because V depends on motivation regardless of the conditioning axis. Output:
+        scenario_label, observed_action, relationship_condition, alt_idx,
+        motivation_query, v_raw, v_raw_std, v, n_runs
+    """
+    api_key = _load_api_key()
+
+    v_system_prompt = build_system_prompt("v", n_actions=None)
+
+    print(f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...", flush=True)
+    scenarios_df = load_scenarios(domain)
+    alt_path = (
+        get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
+    )
+    if not alt_path.exists():
+        print(
+            f"Error: {alt_path} not found. Run "
+            "lm_generate_alternatives.py --conditioning relationship first.",
+            flush=True,
+        )
+        sys.exit(1)
+    alt_df = pd.read_csv(alt_path)
+    alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
+
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_rel_v_output"]
+
+    results = []
+    already_done_scenarios = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done_scenarios = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done_scenarios)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
+    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
+    client = Together(api_key=api_key)
+
+    scenario_lookup = scenarios_df.set_index("scenario_label").to_dict("index")
+
+    scenarios_in_data = sorted(alt_df["scenario_label"].unique())
+    for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
+        if scenario in already_done_scenarios:
+            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            continue
+
+        sc_group = alt_df[alt_df["scenario_label"] == scenario]
+        unique_df = sc_group.drop_duplicates("action_norm").reset_index(drop=True)
+        unique_actions = unique_df["action_text"].tolist()
+        unique_norms = unique_df["action_norm"].tolist()
+        n_unique = len(unique_actions)
+        sc_meta = scenario_lookup[scenario]
+        vignette = sc_meta["vignette"]
+
+        print(
+            f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} | "
+            f"{len(sc_group)} rows | {n_unique} unique actions",
+            flush=True,
+        )
+        if n_unique == 0:
+            continue
+
+        v_by_norm_by_query = {}
+        for motivation_query in ("low", "high"):
+            print(f"  scoring V (motivation_query={motivation_query})...", flush=True)
+            state = sc_meta[f"reward_{motivation_query}"]
+            ratings = get_ratings_variable(
+                client,
+                v_system_prompt,
+                format_v_prompt_variable(vignette, state, unique_actions),
+                n_unique,
+            )
+            agg = aggregate_action_ratings_variable(ratings, n_unique)
+            for i, norm in enumerate(unique_norms):
+                key = f"action_{i}"
+                v_mean, v_std = agg[key]
+                v_by_norm_by_query.setdefault(norm, {})[motivation_query] = {
+                    "v_raw": v_mean,
+                    "v_raw_std": v_std,
+                    "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
+                    "n_runs": len(ratings),
+                }
+
+        new_rows = 0
+        for _, row in sc_group.iterrows():
+            for motivation_query in ("low", "high"):
+                f = v_by_norm_by_query.get(row["action_norm"], {}).get(motivation_query)
+                if f is None:
+                    continue
+                results.append({
+                    "scenario_label": scenario,
+                    "observed_action": row["observed_action"],
+                    "relationship_condition": int(row["relationship_condition"]),
+                    "alt_idx": int(row["alt_idx"]),
+                    "motivation_query": motivation_query,
+                    **f,
+                })
+                new_rows += 1
+
+        pd.DataFrame(results).to_csv(output_path, index=False)
+        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+
+    print(f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True)
+
+
 def score_v_main(domain="food"):
     """Generate signed-valence (V) ratings for each (scenario, action, motivation).
 
@@ -723,15 +976,24 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--feature",
-        choices=("access_effort", "v", "v_alternatives"),
+        choices=(
+            "access_effort",
+            "v",
+            "v_alternatives",
+            "access_effort_alternatives_relationship",
+            "v_alternatives_relationship",
+        ),
         default="access_effort",
         help=(
             "Which feature(s) to elicit. 'access_effort' (default) generates "
             "the canonical access+effort tables. 'v' generates signed-valence "
             "ratings per (scenario, action, motivation). 'v_alternatives' "
-            "generates V for LM-generated alternatives (requires "
-            "lm_alternatives.csv, output to lm_alternatives_v.csv). The "
-            "feature flags are mutually exclusive with --score-alternatives."
+            "generates V for motivation-conditioned LM-generated alternatives. "
+            "'access_effort_alternatives_relationship' and "
+            "'v_alternatives_relationship' do the equivalent for "
+            "relationship-conditioned alternatives (requires "
+            "lm_alternatives_relationship.csv). The feature flags are mutually "
+            "exclusive with --score-alternatives."
         ),
     )
     parser.add_argument(
@@ -754,5 +1016,9 @@ if __name__ == "__main__":
         score_v_main(args.domain)
     elif args.feature == "v_alternatives":
         score_v_alternatives_main(args.domain)
+    elif args.feature == "access_effort_alternatives_relationship":
+        score_alternatives_relationship_main(args.domain)
+    elif args.feature == "v_alternatives_relationship":
+        score_v_alternatives_relationship_main(args.domain)
     else:
         main(args.domain)

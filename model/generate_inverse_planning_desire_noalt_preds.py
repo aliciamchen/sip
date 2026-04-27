@@ -6,7 +6,10 @@ For each (scenario, observed_action, relationship_condition) cell, emits the
 posterior P(reward = HIGH) under all three padded reward observer ablations.
 The summary CSV's `p_high` column is what the slider response 0-100 encodes.
 
-All actor weights and α_observer come from the JOINT fit on no-alt desire data
+The action space is **relationship-keyed** — alternatives elicited per
+(scenario, observed_action, relationship_condition) cell. Tables come from
+`load_padded_lm_tables_relationship`. All actor weights and α_observer come
+from the JOINT fit on no-alt desire data
 (`inverse_planning_desire_noalt_fit_results.csv`).
 """
 
@@ -22,29 +25,29 @@ from utils import get_project_root
 from model_utils import (
     SCENARIO_LABELS,
     RelationshipConditions,
-    load_padded_lm_tables,
-    observer_reward_access_full_padded,
-    observer_reward_access_only_padded,
-    observer_reward_no_access_padded,
+    load_padded_lm_tables_relationship,
+    observer_reward_access_full_padded_rel,
+    observer_reward_access_only_padded_rel,
+    observer_reward_no_access_padded_rel,
 )
 
 
 # Variant registry: name -> (observer_fn, utility_param_names, uses_v).
 # access_only is V-independent.
 PADDED_VARIANTS = {
-    "access_full": (observer_reward_access_full_padded, ["w_v", "w_d", "w_e"], True),
-    "access_only": (observer_reward_access_only_padded, ["w_d"], False),
-    "no_access":   (observer_reward_no_access_padded,   ["w_v", "w_e"], True),
+    "access_full": (observer_reward_access_full_padded_rel, ["w_v", "w_d", "w_e"], True),
+    "access_only": (observer_reward_access_only_padded_rel, ["w_d"], False),
+    "no_access":   (observer_reward_no_access_padded_rel,   ["w_v", "w_e"], True),
 }
 
 
-# Map RelationshipConditions enum to (label, IntimacyLevels index).
-# IntimacyLevels = arange(0, 1.01, 0.01), so intimacy=50 -> index 50, etc.
+# Map RelationshipConditions enum index → human-readable intimacy label
+# (matches the experiment's intimacy slider values).
 RELATIONSHIP_LEVELS = [
-    (RelationshipConditions.ZERO, 0, 0),
-    (RelationshipConditions.FIFTY, 50, 50),
-    (RelationshipConditions.SEVENTY_FIVE, 75, 75),
-    (RelationshipConditions.ONE_HUNDRED, 100, 100),
+    (RelationshipConditions.ZERO,         0,   0),
+    (RelationshipConditions.FIFTY,        50,  1),
+    (RelationshipConditions.SEVENTY_FIVE, 75,  2),
+    (RelationshipConditions.ONE_HUNDRED,  100, 3),
 ]
 
 
@@ -119,9 +122,13 @@ def main():
         param_str = ", ".join(f"{k}={v:.3f}" for k, v in params.items())
         print(f"  {variant}: {param_str}")
 
-    padded = load_padded_lm_tables()
+    padded = load_padded_lm_tables_relationship()
     if padded is None:
-        print("  Error: padded tables unavailable (missing LM alternatives CSVs).")
+        print(
+            "  Error: relationship-keyed padded tables unavailable. Run the "
+            "relationship-conditioned LM elicitation first (see "
+            "fit_inverse_planning_desire_noalt.py for the command list)."
+        )
         return
 
     print("\nGenerating predictions per variant...")

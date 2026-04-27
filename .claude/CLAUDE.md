@@ -12,7 +12,7 @@ The project comprises several experimental variants. Paper-level experiment numb
 - **Intimacy inference, alternatives shown** (`data/inv_plan_intimacy_alt/`) — observers see the scenario plus all four candidate actions, then infer relationship closeness from the one the actor took.
 - **Desire inference, alternatives shown** (`data/inv_plan_desire_alt/`) — observers see all four candidate actions, then infer the actor's desire from the one they took.
 - **Intimacy inference, no alternatives shown** (`data/inv_plan_intimacy_noalt/`) — observers see only the single action the actor took and infer relationship closeness; on the model side, counterfactual alternatives are LM-generated.
-- **Desire inference, no alternatives shown** (`experiments/inv_plan_desire_noalt/`, no data yet) — same noalt structure as above but flips the inference target: observers see only the chosen action and infer the actor's desire (slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs).
+- **Desire inference, no alternatives shown** (`data/inv_plan_desire_noalt/`) — same noalt structure as above but flips the inference target: observers see only the chosen action and infer the actor's desire (slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs).
 
 A parallel pair of experiments manipulates **relative effort** instead of reward, using a different stimulus set (`experiments/scenarios_effort.csv`) in which each scenario has two actions and reward is held fixed at high. Data has been collected for both, and the full pipeline (LM scenario params, model fits, LOSO CV, analysis qmds) parallels the canonical pipeline.
 

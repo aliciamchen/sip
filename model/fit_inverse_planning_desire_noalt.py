@@ -10,10 +10,15 @@ ablations are jointly fit:
   - access_only  : -w_d * access * (1-I)
   - no_access    : w_v * V - w_e * effort
 
-All variants use the padded reward observer with a trial-specific action
-space (observed canonical action at slot 0, LM-generated alternatives at
-slots 1..k, null padding at remaining slots). Loss is binary cross-entropy
-between human slider/100 and the model's P(reward = HIGH).
+The action space is **relationship-keyed** — the LM-generated counterfactual
+alternatives are conditioned on (scenario, observed_action, relationship)
+rather than on motivation, since motivation is the latent and relationship is
+what the observer sees. Tables come from `load_padded_lm_tables_relationship`
+and have shapes (16, 4, 4, MAX_ACTIONS) for access/effort/prior and
+(16, 4, 4, MAX_ACTIONS, 2) for V (extra motivation_query axis).
+
+Loss is binary cross-entropy between human slider/100 and the model's
+P(reward = HIGH).
 
 Output: model/outputs/inverse_planning_desire_noalt_fit_results.csv
 """
@@ -30,10 +35,10 @@ import optax
 import pandas as pd
 from model_utils import (
     SCENARIO_TO_IDX,
-    load_padded_lm_tables,
-    observer_reward_access_full_padded,
-    observer_reward_access_only_padded,
-    observer_reward_no_access_padded,
+    load_padded_lm_tables_relationship,
+    observer_reward_access_full_padded_rel,
+    observer_reward_access_only_padded_rel,
+    observer_reward_no_access_padded_rel,
 )
 
 from utils import get_project_root
@@ -41,36 +46,40 @@ from utils import get_project_root
 from fit_inverse_planning import compute_reward_nll
 
 
-# Variant registry: name -> (observer_fn, utility_param_names_jointly_fit).
+# Variant registry: name -> (observer_fn, utility_param_names, uses_v).
 # alpha_actor is fixed at 1; alpha_observer is appended to the fit params.
-# Tuple values: (observer_fn, utility_names, uses_v).
 # access_only is V-independent.
 PADDED_VARIANTS = {
     "access_full": (
-        observer_reward_access_full_padded,
+        observer_reward_access_full_padded_rel,
         ["w_v", "w_d", "w_e"],
         True,
     ),
     "access_only": (
-        observer_reward_access_only_padded,
+        observer_reward_access_only_padded_rel,
         ["w_d"],
         False,
     ),
     "no_access": (
-        observer_reward_no_access_padded,
+        observer_reward_no_access_padded_rel,
         ["w_v", "w_e"],
         True,
     ),
 }
 
 
+# Map intimacy column value (0, 50, 75, 100) → RelationshipConditions enum
+# index (0..3) used by the relationship-keyed memos.
+_INTIMACY_TO_RELATIONSHIP_IDX = {0: 0, 50: 1, 75: 2, 100: 3}
+
+
 def load_desire_noalt_data(filepath=None):
     """Load and preprocess the no-alt desire data (posterior stage only).
 
     Returns observed_action, relationship_idx, response, scenario_idx as
-    jnp arrays. relationship_idx is the index into IntimacyLevels (0..100),
-    which for this experiment is just the integer value of the intimacy
-    column (0, 50, 75, 100) since IntimacyLevels = arange(0, 1.01, 0.01).
+    jnp arrays. `relationship_idx` is the `RelationshipConditions` enum index
+    (0..3) for the relationship-keyed memo dim, mapped from the intimacy
+    column values {0, 50, 75, 100}.
     """
     if filepath is None:
         filepath = (
@@ -86,7 +95,9 @@ def load_desire_noalt_data(filepath=None):
     data["observed_action"] = (
         data["action_condition"].str.replace("action_", "").astype(int)
     )
-    data["relationship_idx"] = data["intimacy"].astype(int)
+    data["relationship_idx"] = data["intimacy"].astype(int).map(
+        _INTIMACY_TO_RELATIONSHIP_IDX
+    )
     data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
 
     observed_action = jnp.array(data["observed_action"].values)
@@ -213,15 +224,19 @@ def main():
         load_desire_noalt_data()
     )
 
-    padded = load_padded_lm_tables()
+    padded = load_padded_lm_tables_relationship()
     if padded is None:
         print(
-            "  Error: missing one of lm_alternatives.csv, lm_alternatives_features.csv, "
-            "lm_scenario_v.csv, lm_alternatives_v.csv. Run lm_generate_alternatives.py "
-            "and lm_scenario_params.py --feature {v,v_alternatives} first."
+            "  Error: missing one of lm_alternatives_relationship.csv, "
+            "lm_alternatives_relationship_features.csv, lm_scenario_v.csv, "
+            "lm_alternatives_relationship_v.csv. Run "
+            "`lm_generate_alternatives.py --conditioning relationship`, "
+            "`lm_scenario_params.py --feature access_effort_alternatives_relationship`, "
+            "and `lm_scenario_params.py --feature v_alternatives_relationship` first."
         )
         sys.exit(1)
     print(f"  access shape: {padded['access'].shape}")
+    print(f"  v shape: {padded['v'].shape}")
     print(f"  prior shape: {padded['prior'].shape}")
 
     results = []

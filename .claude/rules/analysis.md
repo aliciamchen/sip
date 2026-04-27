@@ -11,7 +11,7 @@ Core analysis files (named after their data folder, not paper experiment number)
 - `inv-plan-intimacy-alt-analysis.qmd` — Intimacy inference, alternatives shown
 - `inv-plan-intimacy-noalt-analysis.qmd` — Intimacy inference, no alternatives shown (LM-generated counterfactuals on the model side)
 - `inv-plan-desire-alt-analysis.qmd` — Desire inference, alternatives shown
-- `inv-plan-desire-noalt-analysis.qmd` — Desire inference, no alternatives shown (currently data-only viz; model predictions are available in `inv_plan_desire_noalt_preds_summary.csv` but not yet wired into the qmd)
+- `inv-plan-desire-noalt-analysis.qmd` — Desire inference, no alternatives shown (relationship-keyed action space; predictions from LOSO CV)
 - `inv-plan-combined-correlation.qmd` — Combined correlation across the alt-shown inverse planning experiments
 - `forw-plan-effort-analysis.qmd` — Forward planning, effort manipulation (parallels `forw-plan-analysis.qmd` on the 2-action effort stimulus set)
 - `inv-plan-effort-analysis.qmd` — Inverse planning, effort manipulation (parallels `inv-plan-intimacy-alt-analysis.qmd`)

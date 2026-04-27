@@ -44,7 +44,7 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 - `fit_forward_planning.py` — fits the three actor ablations to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
 - `fit_inverse_planning.py` — alt-shown observers; fits only `alpha_observer` with frozen actor params (output: `inverse_planning_fit_results.csv`)
 - `fit_inverse_planning_noalt.py` — intimacy no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_noalt_fit_results.csv`
-- `fit_inverse_planning_desire_noalt.py` — desire no-alt observer; same joint-fit structure as the intimacy no-alt fit but uses the padded reward observers (`observer_reward_*_padded`) and BCE NLL on P(reward=HIGH). Output: `inverse_planning_desire_noalt_fit_results.csv`
+- `fit_inverse_planning_desire_noalt.py` — desire no-alt observer; same joint-fit structure as the intimacy no-alt fit but uses the **relationship-keyed** padded reward observers (`observer_reward_*_padded_rel`) and BCE NLL on P(reward=HIGH). Action space is keyed on relationship (not motivation) since the observer sees relationship and infers motivation. Loads tables via `load_padded_lm_tables_relationship`, which expects `lm_alternatives_relationship{,_features,_v}.csv`. Output: `inverse_planning_desire_noalt_fit_results.csv`
 - `generate_inverse_planning_preds.py` — emits per-scenario posterior predictions for alt-shown (`inv_plan_{intimacy,desire}_preds_{full,summary}.csv`)
 - `generate_inverse_planning_noalt_preds.py` — same for intimacy no-alt, using the joint-fit weights from `inverse_planning_noalt_fit_results.csv`
 - `generate_inverse_planning_desire_noalt_preds.py` — same for desire no-alt; emits `inv_plan_desire_noalt_preds_{full,summary}.csv` (`p_high` is what the slider response 0-100 encodes)
@@ -86,7 +86,10 @@ uv run python model/lm_scenario_params.py                                   # ca
 uv run python model/lm_scenario_params.py --domain nonfood                  # nonfood access+effort: → lm_scenario_params_nonfood.csv
 uv run python model/lm_scenario_params.py --feature v                       # food signed-valence V: → lm_scenario_v.csv (16×4×2: scenario × action × motivation, values in [-1, +1])
 uv run python model/lm_scenario_params.py --feature v --domain nonfood      # nonfood signed-valence V: → lm_scenario_v_nonfood.csv
-uv run python model/lm_scenario_params.py --feature v_alternatives          # food V for LM-generated alternatives: → lm_alternatives_v.csv (each alt scored under both motivation states; required for no-alt fits)
+uv run python model/lm_scenario_params.py --feature v_alternatives          # food V for motivation-conditioned LM alternatives: → lm_alternatives_v.csv
+uv run python model/lm_generate_alternatives.py --conditioning relationship                     # food relationship-conditioned alternatives: → lm_alternatives_relationship.csv (256 cells: 16 × 4 × 4)
+uv run python model/lm_scenario_params.py --feature access_effort_alternatives_relationship     # access/effort for those alternatives: → lm_alternatives_relationship_features.csv
+uv run python model/lm_scenario_params.py --feature v_alternatives_relationship                 # V for those alternatives (under both motivation states): → lm_alternatives_relationship_v.csv
 uv run python model/lm_scenario_params_effort.py                            # effort: 64-row conditional + 32-row marginal
 ```
 
@@ -119,7 +122,8 @@ LOSO cross-validation (16 folds × 3 variants per experiment; the analysis qmds 
 uv run python model/cv/loso_forward.py                     # refits w_v, w_d, w_e, β per fold (food)
 uv run python model/cv/loso_forward.py --domain nonfood    # nonfood (writes *_nonfood.csv outputs)
 uv run python model/cv/loso_inverse_alt.py                 # refits only α_observer per fold
-uv run python model/cv/loso_inverse_noalt.py               # joint fit per fold
+uv run python model/cv/loso_inverse_noalt.py               # intimacy no-alt, joint fit per fold
+uv run python model/cv/loso_inverse_desire_noalt.py        # desire no-alt, joint fit per fold (relationship-keyed)
 uv run python model/cv/loso_forward_effort.py              # refits w_d, w_e, β per fold (w_v non-identified)
 uv run python model/cv/loso_inverse_effort.py              # refits only α_observer per fold
 uv run python model/cv/loso_inverse_effort_inferred.py     # refits only α_observer per fold
@@ -132,6 +136,7 @@ CV outputs (in `model/outputs/`):
 - `cv_loso_forward_nonfood.csv` / `cv_loso_preds_nonfood.csv` — same, nonfood
 - `cv_loso_inv_plan_intimacy_alt_preds_summary.csv` / `cv_loso_inv_plan_desire_alt_preds_summary.csv` / `cv_loso_inverse_alt_folds.csv`
 - `cv_loso_inv_plan_intimacy_noalt_preds_summary.csv` / `cv_loso_inverse_noalt_folds.csv`
+- `cv_loso_inv_plan_desire_noalt_preds_summary.csv` / `cv_loso_inverse_desire_noalt_folds.csv`
 - `cv_loso_forward_effort.csv` / `cv_loso_preds_effort.csv`
 - `cv_loso_inv_plan_effort_preds_summary.csv` / `cv_loso_inverse_effort_folds.csv`
 - `cv_loso_inv_plan_effort_inferred_preds_summary.csv` / `cv_loso_inverse_effort_inferred_folds.csv`
