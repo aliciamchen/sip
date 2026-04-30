@@ -130,11 +130,11 @@ def fit_effort_inferred_observer(
 ACCESS_VARIANTS_EFFORT_INFERRED = {
     "access_full": (
         observer_effort_inferred_access_full,
-        ["alpha", "w_v", "w_d", "w_e"],
+        ["alpha", "w_v", "w_d", "w_e", "gamma"],
     ),
     "access_only": (
         observer_effort_inferred_access_only,
-        ["alpha", "w_d"],
+        ["alpha", "w_d", "gamma"],
     ),
     "no_access": (
         observer_effort_inferred_no_access,

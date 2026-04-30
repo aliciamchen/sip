@@ -49,14 +49,14 @@ from fit_inverse_planning import compute_intimacy_nll, load_fitted_params
 PADDED_VARIANTS = {
     "access_full": (
         observer_intimacy_access_full_padded,
-        ["alpha", "w_v", "w_d", "w_e"],
-        ["w_v", "w_d", "w_e"],
+        ["alpha", "w_v", "w_d", "w_e", "gamma"],
+        ["w_v", "w_d", "w_e", "gamma"],
         True,
     ),
     "access_only": (
         observer_intimacy_access_only_padded,
-        ["alpha", "w_d"],
-        ["w_d"],
+        ["alpha", "w_d", "gamma"],
+        ["w_d", "gamma"],
         False,
     ),
     "no_access": (

@@ -52,12 +52,12 @@ from fit_inverse_planning import compute_reward_nll
 PADDED_VARIANTS = {
     "access_full": (
         observer_reward_access_full_padded_rel,
-        ["w_v", "w_d", "w_e"],
+        ["w_v", "w_d", "w_e", "gamma"],
         True,
     ),
     "access_only": (
         observer_reward_access_only_padded_rel,
-        ["w_d"],
+        ["w_d", "gamma"],
         False,
     ),
     "no_access": (

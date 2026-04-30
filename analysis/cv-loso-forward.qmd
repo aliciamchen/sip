@@ -151,26 +151,28 @@ Each LOSO fold refits the three parameters on 15 scenarios. If fitted weights ca
 
 df_params <- df_fold |>
   filter(variant == "access_full") |>
-  select(held_out_scenario, param_w_v, param_w_d, param_w_e) |>
+  select(held_out_scenario, param_w_v, param_w_d, param_w_e, param_gamma) |>
   pivot_longer(starts_with("param_"), names_to = "parameter", values_to = "value") |>
   mutate(
     parameter = recode(parameter,
                        "param_w_v" = "w_v",
                        "param_w_d" = "w_d",
-                       "param_w_e" = "w_e"),
-    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e"))
+                       "param_w_e" = "w_e",
+                       "param_gamma" = "γ"),
+    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e", "γ"))
   )
 
 df_full_params <- df_full |>
   filter(model == "access_full") |>
-  select(param_w_v, param_w_d, param_w_e) |>
+  select(param_w_v, param_w_d, param_w_e, param_gamma) |>
   pivot_longer(everything(), names_to = "parameter", values_to = "full_value") |>
   mutate(
     parameter = recode(parameter,
                        "param_w_v" = "w_v",
                        "param_w_d" = "w_d",
-                       "param_w_e" = "w_e"),
-    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e"))
+                       "param_w_e" = "w_e",
+                       "param_gamma" = "γ"),
+    parameter = factor(parameter, levels = c("w_v", "w_d", "w_e", "γ"))
   )
 
 ggplot(df_params, aes(x = reorder(held_out_scenario, value), y = value)) +

@@ -35,8 +35,8 @@ from model_utils import (
 # Variant registry: name -> (observer_fn, utility_param_names, uses_v).
 # access_only is V-independent.
 PADDED_VARIANTS = {
-    "access_full": (observer_reward_access_full_padded_rel, ["w_v", "w_d", "w_e"], True),
-    "access_only": (observer_reward_access_only_padded_rel, ["w_d"], False),
+    "access_full": (observer_reward_access_full_padded_rel, ["w_v", "w_d", "w_e", "gamma"], True),
+    "access_only": (observer_reward_access_only_padded_rel, ["w_d", "gamma"], False),
     "no_access":   (observer_reward_no_access_padded_rel,   ["w_v", "w_e"], True),
 }
 
@@ -68,7 +68,7 @@ def load_desire_noalt_fit_results(filepath=None):
             "alpha": float(row["param_alpha"]) if pd.notna(row.get("param_alpha", None)) else 1.0,
             "alpha_observer": float(row["alpha_observer"]),
         }
-        for pn in ["w_v", "w_d", "w_e"]:
+        for pn in ["w_v", "w_d", "w_e", "gamma"]:
             col = f"param_{pn}"
             if col in row and pd.notna(row[col]):
                 params[pn] = float(row[col])

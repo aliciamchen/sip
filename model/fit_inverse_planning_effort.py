@@ -116,11 +116,11 @@ def fit_intimacy_effort_observer(
 ACCESS_VARIANTS_EFFORT = {
     "access_full": (
         observer_intimacy_effort_access_full,
-        ["alpha", "w_v", "w_d", "w_e"],
+        ["alpha", "w_v", "w_d", "w_e", "gamma"],
     ),
     "access_only": (
         observer_intimacy_effort_access_only,
-        ["alpha", "w_d"],
+        ["alpha", "w_d", "gamma"],
     ),
     "no_access": (
         observer_intimacy_effort_no_access,

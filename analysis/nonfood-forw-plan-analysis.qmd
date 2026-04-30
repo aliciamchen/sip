@@ -402,6 +402,57 @@ ggplot(df_scenario_fit, aes(x = reorder(scenario_label, r), y = r, fill = scenar
   labs(x = "Scenario", y = "Pearson r (Humans vs Full model)", fill = "Type")
 ```
 
+### Per-scenario_type fit decomposition
+
+Aggregate fit quality decomposed by `scenario_type`. If privacy is materially worse than substance/space, that's evidence that pooled weights mis-fit one type and a type-specific `w_d` is worth trying.
+
+- **r**: Pearson r between mean human and Full-model predictions, per type, with bootstrap CI.
+- **NLL**: per-cell mean of $-p_{\text{human}} \cdot \log(p_{\text{model}})$ from the LOSO predictions, per type. Lower = better.
+- **`%|res|>.10`**: fraction of (scenario, intimacy, motivation, action) cells where the absolute residual exceeds 0.10.
+
+```{r}
+#| label: tbl-nonfood-type-fit
+
+df_type_r <- df_cell |>
+  group_by(scenario_type) |>
+  summarize(
+    n_cells = n(),
+    boot = list(boot_cor(humans, full_model)),
+    frac_big_resid = mean(abs(residual) > 0.10),
+    .groups = "drop"
+  ) |>
+  mutate(
+    r = vapply(boot, \(b) b$r, numeric(1)),
+    r_lo = vapply(boot, \(b) b$ci_lower, numeric(1)),
+    r_hi = vapply(boot, \(b) b$ci_upper, numeric(1))
+  ) |>
+  select(-boot)
+
+df_type_nll <- df_cv |>
+  filter(variant == "access_full") |>
+  inner_join(df_scenario_types, by = c("held_out_scenario" = "scenario_label")) |>
+  mutate(
+    p_pred_safe = pmax(p_action_pred, 1e-6),
+    cell_nll = -p_action * log(p_pred_safe)
+  ) |>
+  group_by(scenario_type) |>
+  summarize(mean_nll = mean(cell_nll), total_nll = sum(cell_nll), .groups = "drop")
+
+df_type_r |>
+  left_join(df_type_nll, by = "scenario_type") |>
+  transmute(
+    scenario_type, n_cells,
+    r_label = sprintf("%.2f [%.2f, %.2f]", r, r_lo, r_hi),
+    mean_nll = sprintf("%.3f", mean_nll),
+    total_nll = sprintf("%.1f", total_nll),
+    frac_big_resid = sprintf("%.0f%%", 100 * frac_big_resid)
+  ) |>
+  knitr::kable(
+    col.names = c("Type", "n cells", "r [95% CI]", "Mean NLL", "Total NLL", "% |res|>.10"),
+    caption = "Full-model fit quality by scenario_type (LOSO predictions)"
+  )
+```
+
 ### Mean residual per (scenario, action), grouped by scenario type
 
 ```{r}
@@ -453,6 +504,71 @@ ggplot(df_cell, aes(x = access, y = residual, color = scenario_label, shape = fa
        color = "Scenario", shape = "Action") +
   theme(legend.position = "right") +
   facet_wrap(~ scenario_type)
+```
+
+### Residual vs (1 − I), by scenario type
+
+The model's intimacy enters utility only through the linear factor `(1 − I)`. If the residuals show a non-flat pattern in `(1 − I)` within an access bin, a nonlinear-in-intimacy term such as `(1 − I)^γ` would help. Access is binned into low / mid / high to keep the slice interpretable.
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.4
+
+df_resid_intim <- df_cell |>
+  mutate(
+    intimacy_num = as.numeric(as.character(intimacy)) / 100,
+    one_minus_I = 1 - intimacy_num,
+    access_bin = cut(access, breaks = c(-0.01, 0.5, 1.25, 2.0),
+                     labels = c("low (≤0.5)", "mid (0.5–1.25)", "high (>1.25)"))
+  )
+
+ggplot(df_resid_intim, aes(x = one_minus_I, y = residual, color = access_bin,
+                           shape = factor(action))) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  geom_jitter(alpha = 0.35, width = 0.02, size = 1.4) +
+  geom_smooth(aes(group = access_bin), se = FALSE, method = "loess", linewidth = 0.9) +
+  scale_shape_manual(values = c(16, 17, 15, 18)) +
+  labs(x = "(1 − I)", y = "Residual (Humans − Full model)",
+       color = "Access bin", shape = "Action") +
+  facet_wrap(~ scenario_type)
+```
+
+### Worst-fitting cells (LM rating audit)
+
+The 15 (scenario, intimacy, motivation, action) cells with the largest absolute residual under the Full model, joined to LM-elicited V / access / effort. Use this to spot-check whether large residuals are tracking obviously wrong LM ratings (re-elicit) versus correct LM ratings the model can't accommodate (functional-form fix).
+
+```{r}
+#| label: tbl-nonfood-worst-cells
+
+df_lmv_wide <- read_csv(here("model", "outputs", "lm_scenario_v_nonfood.csv"),
+                        show_col_types = FALSE) |>
+  select(scenario_label, action, motivation, v) |>
+  mutate(motivation = factor(motivation, levels = c("low", "high"),
+                             labels = MOTIVATION_LEVELS))
+
+df_lm_eff <- read_csv(here("model", "outputs", "lm_scenario_params_nonfood.csv"),
+                      show_col_types = FALSE) |>
+  select(scenario_label, action, access, effort)
+
+df_cell |>
+  arrange(desc(abs(residual))) |>
+  head(15) |>
+  left_join(df_lmv_wide, by = c("scenario_label", "action", "motivation")) |>
+  left_join(df_lm_eff, by = c("scenario_label", "action"), suffix = c("", "_dup")) |>
+  transmute(
+    scenario = scenario_label,
+    type = scenario_type,
+    I = intimacy,
+    mot = motivation,
+    a = action,
+    p_human = sprintf("%.2f", humans),
+    p_model = sprintf("%.2f", full_model),
+    residual = sprintf("%+.2f", residual),
+    V = sprintf("%+.2f", v),
+    access = sprintf("%.2f", access),
+    effort = sprintf("%.2f", effort)
+  ) |>
+  knitr::kable(caption = "Top 15 cells by |residual| with LM-elicited inputs")
 ```
 
 ## LM-elicited V — validity
@@ -507,3 +623,154 @@ ggplot(df_v_vs_access, aes(x = access, y = v, color = scenario_type, shape = fac
   labs(x = "LM-derived access", y = "LM-V (signed valence)") +
   facet_wrap(~ motivation)
 ```
+
+## LM-rating noise audit
+
+Before adding any extra parameters, check whether the largest residuals are tracking LM-rating *uncertainty* (in which case the right move is to re-elicit those cells, not to expand the model). Per-cell standard deviations come from the 10-run averaged LM elicitation in `model/lm_scenario_params.py`.
+
+```{r}
+df_lm_acc_full <- read_csv(here("model", "outputs", "lm_scenario_params_nonfood.csv"),
+                           show_col_types = FALSE) |>
+  select(scenario_label, action, access_raw_std, effort_raw_std)
+
+df_lm_v_full <- read_csv(here("model", "outputs", "lm_scenario_v_nonfood.csv"),
+                         show_col_types = FALSE) |>
+  select(scenario_label, action, motivation, v_raw_std) |>
+  mutate(motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS))
+
+df_resid_noise <- df_cell |>
+  inner_join(df_lm_acc_full, by = c("scenario_label", "action")) |>
+  inner_join(df_lm_v_full, by = c("scenario_label", "action", "motivation")) |>
+  mutate(abs_residual = abs(residual))
+```
+
+### |residual| vs LM-rating SD
+
+```{r}
+#| fig-width: 12
+#| fig-asp: 0.4
+
+df_resid_noise_long <- df_resid_noise |>
+  pivot_longer(c(access_raw_std, v_raw_std), names_to = "lm_quantity", values_to = "lm_std") |>
+  mutate(lm_quantity = recode(lm_quantity,
+                              access_raw_std = "Access SD",
+                              v_raw_std = "V SD"))
+
+ggplot(df_resid_noise_long, aes(x = lm_std, y = abs_residual, color = scenario_type)) +
+  geom_point(alpha = 0.4, size = 1.3) +
+  geom_smooth(aes(group = scenario_type), se = FALSE, method = "loess", linewidth = 0.7) +
+  labs(x = "LM-rating standard deviation (per cell)", y = "|residual| (Humans − Full model)") +
+  facet_grid(scenario_type ~ lm_quantity)
+```
+
+### Spearman ρ (|residual|, LM SD) by type
+
+If ρ ≥ ~0.4 for any type, the right move is to re-elicit those cells (additional LM runs, optionally tweaking the prompts in `model/lm_prompts.py`) before adding parameters.
+
+```{r}
+df_resid_noise |>
+  group_by(scenario_type) |>
+  summarize(
+    rho_access = cor(abs_residual, access_raw_std, method = "spearman"),
+    rho_v      = cor(abs_residual, v_raw_std, method = "spearman"),
+    n_cells = n(),
+    .groups = "drop"
+  ) |>
+  knitr::kable(digits = 3,
+               caption = "Spearman correlations between |residual| (Full model) and LM-rating SDs")
+```
+
+
+## Power-law intimacy: per-fold γ stability
+
+The canonical utility is
+
+$$U(a|s, I) = w_v \cdot V(a|s) - w_d \cdot \text{access}(a) \cdot (1 - I)^\gamma - w_e \cdot \text{effort}(a),$$
+
+with γ a free parameter (init 1.0). γ̂ should be stable across LOSO folds — wide spread = γ is overfitting to single scenarios; narrow spread = the nonlinearity is a feature of the data, not an artefact of any one held-out scenario.
+
+```{r}
+df_folds_nonfood <- read_csv(here("model", "outputs", "cv_loso_forward_nonfood.csv"),
+                             show_col_types = FALSE) |>
+  filter(variant == "access_full") |>
+  inner_join(df_scenario_types, by = c("held_out_scenario" = "scenario_label"))
+
+df_folds_nonfood |>
+  summarize(
+    mean_gamma = mean(param_gamma),
+    sd_gamma = sd(param_gamma),
+    min_gamma = min(param_gamma),
+    max_gamma = max(param_gamma)
+  ) |>
+  knitr::kable(digits = 3, caption = "Across-fold stability of γ (non-food)")
+
+ggplot(df_folds_nonfood,
+       aes(x = reorder(held_out_scenario, param_gamma),
+           y = param_gamma, fill = scenario_type)) +
+  geom_col(alpha = PLOT_ALPHA) +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40") +
+  coord_flip() +
+  labs(x = "Held-out scenario", y = "Fitted γ (per fold)", fill = "Type")
+```
+
+## Cross-domain comparison: food vs non-food γ
+
+Both food and non-food fit the same canonical utility with γ free; the question is whether their fitted γ̂ values agree. If both domains decisively reject γ = 1 (linear intimacy) in the same direction, that's a paper-level claim about the boundary-relaxation functional form. If they sit on opposite sides of γ = 1, the two channel types relax intimacy boundaries via genuinely different curves.
+
+```{r}
+#| label: tbl-gamma-cross-domain
+
+food_full <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"),
+                      show_col_types = FALSE) |>
+  filter(model == "access_full") |>
+  transmute(domain = "food", model, nll, n_params,
+            w_v = param_w_v, w_d = param_w_d, w_e = param_w_e, gamma = param_gamma)
+
+nonfood_full <- fit_results |>
+  filter(model == "access_full") |>
+  transmute(domain = "nonfood", model, nll, n_params,
+            w_v = param_w_v, w_d = param_w_d, w_e = param_w_e, gamma = param_gamma)
+
+bind_rows(food_full, nonfood_full) |>
+  knitr::kable(digits = 3,
+               caption = "Canonical access_full fits (all-data). γ is far from 1 in both domains, in opposite directions.")
+```
+
+### Per-fold γ stability — food vs non-food
+
+```{r}
+df_folds_food <- read_csv(here("model", "outputs", "cv_loso_forward.csv"),
+                          show_col_types = FALSE) |>
+  filter(variant == "access_full") |>
+  transmute(domain = "food", scenario = held_out_scenario, gamma = param_gamma)
+
+df_folds_nf <- df_folds_nonfood |>
+  transmute(domain = "nonfood", scenario = held_out_scenario, gamma = param_gamma)
+
+df_folds_xdom <- bind_rows(df_folds_food, df_folds_nf)
+
+df_folds_xdom |>
+  group_by(domain) |>
+  summarize(mean_gamma = mean(gamma),
+            sd_gamma = sd(gamma),
+            min_gamma = min(gamma),
+            max_gamma = max(gamma),
+            n_folds = n(),
+            .groups = "drop") |>
+  knitr::kable(digits = 3,
+               caption = "Across-fold γ̂ in each domain.")
+```
+
+```{r}
+#| fig-width: 8
+#| fig-asp: 0.45
+
+ggplot(df_folds_xdom, aes(x = gamma, fill = domain)) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_histogram(binwidth = 0.025, alpha = 0.7, position = "identity") +
+  scale_fill_manual(values = c(food = "#b4584d", nonfood = "#6b8cae")) +
+  labs(x = "Fitted γ (per LOSO fold)", y = "# folds", fill = "Domain") +
+  theme(legend.position = "top")
+```
+
+**Reading the cross-domain result.** Both domains have γ̂ tightly bounded away from 1 across LOSO folds, but the *direction* differs. Food prefers γ < 1 (late relaxation; saliva-sharing barriers stay rigid through low/moderate intimacy and collapse only at high intimacy). Non-food prefers γ > 1 (early relaxation; substance/space/privacy barriers collapse rapidly with even modest intimacy increases). Linear scaling in `(1 − I)` is the wrong functional form, and saliva is a special enough channel to sit on the opposite side of γ = 1 from the broader sharing categories — consistent with bodily-substance transfer carrying high-disgust / purity-coded boundaries that relax later in intimacy than informational or proximity-based ones.

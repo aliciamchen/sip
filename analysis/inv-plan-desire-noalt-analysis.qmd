@@ -186,14 +186,14 @@ df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_desire_noa
       utility == "no_access" ~ "Base model"
     )
   ) |>
-  select(model_label, param_w_v, param_w_d, param_w_e, alpha_observer, nll, n_params) |>
+  select(model_label, param_w_v, param_w_d, param_w_e, param_gamma, alpha_observer, nll, n_params) |>
   arrange(model_label)
 
 df_fit_results |>
   knitr::kable(
     digits = 3,
     caption = "Joint-fit parameters for no-alt desire inference (relationship-keyed action space).",
-    col.names = c("Utility", "w_v", "w_d", "w_e", "α_observer", "NLL", "n_params")
+    col.names = c("Utility", "w_v", "w_d", "w_e", "γ", "α_observer", "NLL", "n_params")
   )
 ```
 

@@ -293,13 +293,13 @@ ACCESS_VARIANTS = {
     "access_full": (
         observer_intimacy_access_full,
         observer_reward_access_full,
-        ["alpha", "w_v", "w_d", "w_e"],
+        ["alpha", "w_v", "w_d", "w_e", "gamma"],
         True,
     ),
     "access_only": (
         observer_intimacy_access_only,
         observer_reward_access_only,
-        ["alpha", "w_d"],
+        ["alpha", "w_d", "gamma"],
         False,
     ),
     "no_access": (

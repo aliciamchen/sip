@@ -13,17 +13,17 @@ Models are built using the `memo` DSL with JAX backend. Both actor (forward plan
 P(a | s, I) ∝ exp( U(a|s, I) )
 
 U(a|s, I) = w_v · V(a|s)
-          − w_d · access(a) · (1 − I)
+          − w_d · access(a) · (1 − I)^γ
           − w_e · effort(a)
 ```
 
-Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exposure): at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. `V(a|s, m)` is the signed valence of the action with respect to the actor's motivational state (in [-1, +1]; positive = serves the state, negative = actively counterproductive). Three ablations are fit and compared:
+Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exposure) through a power-law modulator `(1 − I)^γ`: at high intimacy the penalty shrinks toward zero, so higher-access actions become relatively more attractive. The exponent γ is a free parameter (initialized at 1.0; γ = 1 reproduces the linear-intimacy special case). Empirically food prefers γ < 1 (late relaxation) and non-food prefers γ > 1 (early relaxation). `V(a|s, m)` is the signed valence of the action with respect to the actor's motivational state (in [-1, +1]; positive = serves the state, negative = actively counterproductive). Three ablations are fit and compared:
 
 - **access_full** — the full utility above (the main Full model)
-- **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)`); drops V and effort (Discomfort-only)
-- **no_access** — `w_v · V − w_e · effort`; no relational structure (Base model)
+- **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)^γ`); drops V and effort (Discomfort-only)
+- **no_access** — `w_v · V − w_e · effort`; no relational structure (Base model). Has no intimacy term, so γ does not apply.
 
-Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort weight), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires.
+Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires; access_full and access_only fit γ, no_access does not.
 
 ## Where the utility values come from
 

@@ -87,14 +87,14 @@ def load_fitted_alpha_observer(filepath: str = None) -> dict:
 
 # Tuple values: (observer_fn, actor_kwarg_names, uses_v).
 INTIMACY_OBSERVERS = {
-    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_d", "w_e"], True),
-    "access_only": (observer_intimacy_access_only, ["alpha", "w_d"], False),
+    "access_full": (observer_intimacy_access_full, ["alpha", "w_v", "w_d", "w_e", "gamma"], True),
+    "access_only": (observer_intimacy_access_only, ["alpha", "w_d", "gamma"], False),
     "no_access":   (observer_intimacy_no_access,   ["alpha", "w_v", "w_e"], True),
 }
 
 REWARD_OBSERVERS = {
-    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_d", "w_e"], True),
-    "access_only": (observer_reward_access_only, ["alpha", "w_d"], False),
+    "access_full": (observer_reward_access_full, ["alpha", "w_v", "w_d", "w_e", "gamma"], True),
+    "access_only": (observer_reward_access_only, ["alpha", "w_d", "gamma"], False),
     "no_access":   (observer_reward_no_access,   ["alpha", "w_v", "w_e"], True),
 }
 

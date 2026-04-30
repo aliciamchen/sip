@@ -65,6 +65,8 @@ df <- calculate_belief_update(df, "p_effort_high")
 ### Distribution of ratings
 
 ```{r}
+#| fig-width: 14
+#| fig-asp: 0.4
 ggplot(df, aes(x = p_effort_high, fill = action)) +
   geom_density(alpha = 0.5) +
   scale_fill_manual(values = ACTION_COLORS) +

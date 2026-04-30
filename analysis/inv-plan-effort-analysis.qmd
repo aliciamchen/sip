@@ -67,6 +67,8 @@ df <- calculate_belief_update(df, "intimacy_rating")
 ### Distribution of ratings
 
 ```{r}
+#| fig-width: 10
+#| fig-asp: 0.5
 ggplot(df, aes(x = intimacy_rating, fill = action)) +
   geom_density(alpha = 0.5) +
   scale_fill_manual(values = c("No saliva" = "#5B8DBA",

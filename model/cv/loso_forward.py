@@ -50,12 +50,12 @@ VARIANTS = {
     "access_full": (
         fit_access_full_model,
         predict_access_full,
-        ["w_v", "w_d", "w_e"],
+        ["w_v", "w_d", "w_e", "gamma"],
     ),
     "access_only": (
         fit_access_only_model,
         predict_access_only,
-        ["w_d"],
+        ["w_d", "gamma"],
     ),
     "no_access": (
         fit_no_access_model,

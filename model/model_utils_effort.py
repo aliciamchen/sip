@@ -145,15 +145,16 @@ def get_stipulated_reward_effort(action):
 @jax.jit
 def get_utility_effort_access_full(
     action, scenario_idx, intimacy, effort_condition,
-    alpha, w_v, w_d, w_e,
+    alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table,
 ):
     access = access_table[scenario_idx, effort_condition, action]
     effort = effort_table[scenario_idx, effort_condition, action]
     V = get_stipulated_reward_effort(action)
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
     return alpha * (
         w_v * V
-        - w_d * access * (1 - intimacy)
+        - w_d * access * jnp.power(one_minus_I, gamma)
         - w_e * effort
     )
 
@@ -161,11 +162,12 @@ def get_utility_effort_access_full(
 @jax.jit
 def get_utility_effort_access_only(
     action, scenario_idx, intimacy, effort_condition,
-    alpha, w_d,
+    alpha, w_d, gamma,
     access_table, effort_table,
 ):
     access = access_table[scenario_idx, effort_condition, action]
-    return alpha * (-w_d * access * (1 - intimacy))
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
 
 
 @jax.jit
@@ -190,7 +192,7 @@ def actor_forw_effort_access_full[
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(intimacy)
@@ -200,7 +202,7 @@ def actor_forw_effort_access_full[
         wpp=exp(
             get_utility_effort_access_full(
                 action, scenario_idx, intimacy, effort_condition,
-                alpha, w_v, w_d, w_e,
+                alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table,
             )
         ),
@@ -214,7 +216,7 @@ def actor_forw_effort_access_only[
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_d, access_table: ..., effort_table: ...):
+](alpha, w_d, gamma, access_table: ..., effort_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(intimacy)
@@ -224,7 +226,7 @@ def actor_forw_effort_access_only[
         wpp=exp(
             get_utility_effort_access_only(
                 action, scenario_idx, intimacy, effort_condition,
-                alpha, w_d,
+                alpha, w_d, gamma,
                 access_table, effort_table,
             )
         ),
@@ -270,7 +272,7 @@ def actor_continuous_effort_access_full[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(relationship)
@@ -280,7 +282,7 @@ def actor_continuous_effort_access_full[
         wpp=exp(
             get_utility_effort_access_full(
                 action, scenario_idx, relationship, effort_condition,
-                alpha, w_v, w_d, w_e,
+                alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table,
             )
         ),
@@ -294,7 +296,7 @@ def actor_continuous_effort_access_only[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_d, access_table: ..., effort_table: ...):
+](alpha, w_d, gamma, access_table: ..., effort_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(relationship)
@@ -304,7 +306,7 @@ def actor_continuous_effort_access_only[
         wpp=exp(
             get_utility_effort_access_only(
                 action, scenario_idx, relationship, effort_condition,
-                alpha, w_d,
+                alpha, w_d, gamma,
                 access_table, effort_table,
             )
         ),
@@ -347,7 +349,7 @@ def observer_intimacy_effort_access_full[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, gamma, alpha_observer, access_table: ..., effort_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(effort_condition)
@@ -359,7 +361,7 @@ def observer_intimacy_effort_access_full[
             action in actions_effort,
             wpp=actor_continuous_effort_access_full[
                 action, scenario_idx, relationship, effort_condition
-            ](alpha, w_v, w_d, w_e, access_table, effort_table),
+            ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -376,7 +378,7 @@ def observer_intimacy_effort_access_only[
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_d, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_d, gamma, alpha_observer, access_table: ..., effort_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(effort_condition)
@@ -388,7 +390,7 @@ def observer_intimacy_effort_access_only[
             action in actions_effort,
             wpp=actor_continuous_effort_access_only[
                 action, scenario_idx, relationship, effort_condition
-            ](alpha, w_d, access_table, effort_table),
+            ](alpha, w_d, gamma, access_table, effort_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -442,7 +444,7 @@ def observer_effort_inferred_access_full[
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_v, w_d, w_e, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_v, w_d, w_e, gamma, alpha_observer, access_table: ..., effort_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(intimacy)
@@ -454,7 +456,7 @@ def observer_effort_inferred_access_full[
             action in actions_effort,
             wpp=actor_forw_effort_access_full[
                 action, scenario_idx, intimacy, effort_condition
-            ](alpha, w_v, w_d, w_e, access_table, effort_table),
+            ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table),
         ),
     ]
     observer: observes[actor.action] is action
@@ -471,7 +473,7 @@ def observer_effort_inferred_access_only[
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
     effort_condition: EffortConditions,
-](alpha, w_d, alpha_observer, access_table: ..., effort_table: ...):
+](alpha, w_d, gamma, alpha_observer, access_table: ..., effort_table: ...):
     cast: [actor, observer]
     observer: knows(scenario_idx)
     observer: knows(intimacy)
@@ -483,7 +485,7 @@ def observer_effort_inferred_access_only[
             action in actions_effort,
             wpp=actor_forw_effort_access_only[
                 action, scenario_idx, intimacy, effort_condition
-            ](alpha, w_d, access_table, effort_table),
+            ](alpha, w_d, gamma, access_table, effort_table),
         ),
     ]
     observer: observes[actor.action] is action

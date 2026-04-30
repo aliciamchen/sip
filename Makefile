@@ -5,7 +5,8 @@
 
 .PHONY: all help clean test data data-forw data-intimacy-alt data-intimacy-noalt data-desire-alt \
         data-nonfood-forw \
-        fit fit-forward fit-inverse fit-forward-nonfood predictions cv-forward-nonfood \
+        fit fit-forward fit-inverse fit-forward-nonfood fit-forward-nonfood-ext fit-forward-food-ext predictions \
+        cv-forward-nonfood cv-forward-nonfood-ext cv-forward-food-ext \
         lm-v lm-v-food lm-v-nonfood lm-v-alternatives \
         analysis analysis-forw-plan analysis-inv-plan-intimacy-alt analysis-inv-plan-desire-alt \
         analysis-inv-plan-intimacy-noalt analysis-inv-plan-combined analysis-nonfood-forw-plan
@@ -33,9 +34,13 @@ help:
 	@echo "    analysis-nonfood-forw-plan       - Render non-food forward planning analysis"
 	@echo ""
 	@echo "  Non-food pipeline (parallels canonical food pipeline):"
-	@echo "    data-nonfood-forw       - Process non-food forward planning raw JSON"
-	@echo "    fit-forward-nonfood     - Fit non-food forward planning models"
-	@echo "    cv-forward-nonfood      - LOSO CV for non-food forward planning"
+	@echo "    data-nonfood-forw         - Process non-food forward planning raw JSON"
+	@echo "    fit-forward-nonfood       - Fit non-food forward planning models"
+	@echo "    cv-forward-nonfood        - LOSO CV for non-food forward planning"
+	@echo "    fit-forward-nonfood-ext   - Fit non-food extensions (Full + power-law gamma)"
+	@echo "    cv-forward-nonfood-ext    - LOSO CV for non-food extensions"
+	@echo "    fit-forward-food-ext      - Fit food gamma extension (cross-domain comparison)"
+	@echo "    cv-forward-food-ext       - LOSO CV for food gamma extension"
 	@echo ""
 	@echo "  LM-V tables (signed-valence V is the canonical V; required for forward + alt-shown fits):"
 	@echo "    lm-v                    - Generate LM-V tables for both food and non-food"
@@ -116,6 +121,52 @@ model/outputs/cv_loso_preds_nonfood.csv model/outputs/cv_loso_forward_nonfood.cs
 	uv run python model/cv/loso_forward.py --domain nonfood
 
 cv-forward-nonfood: model/outputs/cv_loso_preds_nonfood.csv
+
+# Non-food extensions: Full + power-law intimacy ((1 - I)^gamma).
+# Lives in nonfood_ext files so the canonical food pipeline is not touched.
+model/outputs/forward_planning_fit_results_nonfood_ext.csv model/outputs/forward_planning_fits_nonfood_ext.csv: \
+        data/nonfood_forw_plan/main_trials_long.csv \
+        model/outputs/lm_scenario_params_nonfood.csv \
+        model/outputs/lm_scenario_v_nonfood.csv \
+        model/fit_forward_planning_nonfood_ext.py \
+        model/model_utils_nonfood_ext.py \
+        model/model_utils.py
+	uv run python model/fit_forward_planning_nonfood_ext.py
+
+fit-forward-nonfood-ext: model/outputs/forward_planning_fit_results_nonfood_ext.csv
+
+model/outputs/cv_loso_preds_nonfood_ext.csv model/outputs/cv_loso_forward_nonfood_ext.csv: \
+        model/outputs/forward_planning_fit_results_nonfood_ext.csv \
+        model/cv/loso_forward_nonfood_ext.py \
+        model/fit_forward_planning_nonfood_ext.py \
+        model/model_utils_nonfood_ext.py \
+        model/model_utils.py
+	uv run python model/cv/loso_forward_nonfood_ext.py
+
+cv-forward-nonfood-ext: model/outputs/cv_loso_preds_nonfood_ext.csv
+
+# Food gamma extension (cross-domain comparison; canonical food fits in
+# fit_forward_planning.py are NOT touched).
+model/outputs/forward_planning_fit_results_ext.csv model/outputs/forward_planning_fits_ext.csv: \
+        data/forw_plan/main_trials_long.csv \
+        model/outputs/lm_scenario_params.csv \
+        model/outputs/lm_scenario_v.csv \
+        model/fit_forward_planning_nonfood_ext.py \
+        model/model_utils_nonfood_ext.py \
+        model/model_utils.py
+	uv run python model/fit_forward_planning_nonfood_ext.py --domain food
+
+fit-forward-food-ext: model/outputs/forward_planning_fit_results_ext.csv
+
+model/outputs/cv_loso_preds_ext.csv model/outputs/cv_loso_forward_ext.csv: \
+        model/outputs/forward_planning_fit_results_ext.csv \
+        model/cv/loso_forward_nonfood_ext.py \
+        model/fit_forward_planning_nonfood_ext.py \
+        model/model_utils_nonfood_ext.py \
+        model/model_utils.py
+	uv run python model/cv/loso_forward_nonfood_ext.py --domain food
+
+cv-forward-food-ext: model/outputs/cv_loso_preds_ext.csv
 
 # LM-V tables (canonical signed-valence V — required for all forward + alt-shown fits)
 model/outputs/lm_scenario_v.csv: experiments/scenarios.csv model/lm_scenario_params.py model/lm_prompts.py
