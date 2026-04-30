@@ -107,23 +107,33 @@ def strip_leading_plus(text):
 # ==============================================================================
 
 
-def _one_call(client, system_prompt, user_prompt, model_id, max_tokens, temperature, max_retries):
+def _one_call(
+    client, system_prompt, user_prompt, model_id, max_tokens, temperature, max_retries,
+    response_format=None,
+):
     """Issue one chat-completion call. Returns response text or None on failure.
 
     Transient errors (network, 429, 5xx) are retried by the SDK via
     ``max_retries``. Anything still failing after that is caught and translated
-    to ``None`` so the surrounding batch can continue."""
+    to ``None`` so the surrounding batch can continue.
+
+    ``response_format`` is forwarded to Together's structured-output API. Pass
+    e.g. ``{"type": "json_schema", "json_schema": {"name": "ratings", "schema": ...}}``
+    to constrain the output to a JSON schema."""
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
+    kwargs = dict(
+        model=model_id,
+        messages=messages,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )
+    if response_format is not None:
+        kwargs["response_format"] = response_format
     try:
-        resp = client.with_options(max_retries=max_retries).chat.completions.create(
-            model=model_id,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        resp = client.with_options(max_retries=max_retries).chat.completions.create(**kwargs)
         return resp.choices[0].message.content
     except Exception as e:
         print(f"  call error: {e}", flush=True)
@@ -144,6 +154,7 @@ def get_ratings_concurrent(
     max_retries=MAX_RETRIES,
     min_success_ratio=0.7,
     label=None,
+    response_format=None,
 ):
     """Fan out ``num_runs`` calls across a thread pool. Returns
     ``(successful_parses, n_failures)``.
@@ -167,6 +178,7 @@ def get_ratings_concurrent(
                 max_tokens,
                 temperature,
                 max_retries,
+                response_format,
             )
             for _ in range(num_runs)
         ]
@@ -185,6 +197,61 @@ def get_ratings_concurrent(
             flush=True,
         )
     return successes, failures
+
+
+# ==============================================================================
+# Schema builders for Together's structured-output mode
+# ==============================================================================
+
+
+def numeric_action_schema(n_actions, name="ratings"):
+    """Build a response_format object that constrains the LM to emit
+    ``{"action_0": <number>, ..., "action_{n-1}": <number>}``.
+
+    Used by access/effort/V rating calls in both the canonical 4-action and
+    variable-length paths. Note that Together's response_format does not accept
+    OpenAI's ``strict: true`` flag — schema enforcement is governed by the
+    server. Llama-3.3-70B-Turbo is one of the supported models per the
+    Together AI JSON-mode docs."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": name,
+            "schema": {
+                "type": "object",
+                "properties": {
+                    f"action_{i}": {"type": "number"} for i in range(n_actions)
+                },
+                "required": [f"action_{i}" for i in range(n_actions)],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+
+def alternatives_array_schema(name="alternatives"):
+    """response_format for the alternative-generation calls.
+
+    Constrains the LM to emit a JSON array of objects with ``action`` (string)
+    and ``is_share`` (0 or 1)."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": name,
+            "schema": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "action": {"type": "string"},
+                        "is_share": {"type": "integer", "minimum": 0, "maximum": 1},
+                    },
+                    "required": ["action", "is_share"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+    }
 
 
 # ==============================================================================

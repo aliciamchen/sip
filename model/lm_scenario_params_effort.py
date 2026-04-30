@@ -58,6 +58,7 @@ from lm_client import (
     find_json,
     get_ratings_concurrent,
     load_api_key,
+    numeric_action_schema,
 )
 from lm_scenario_params import normalize_access, normalize_effort
 # Imported with aliases so they don't collide with parameters below.
@@ -152,22 +153,24 @@ def run_effort_conditional(client, scenarios_df, output_path):
         for effort_condition in EFFORT_CONDITIONS:
             print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort={effort_condition})", flush=True)
 
-            print("  Getting access ratings (concurrent, effort-conditional)...", flush=True)
+            print("  Getting access ratings (concurrent, structured, effort-conditional)...", flush=True)
             access_ratings, access_failures = get_ratings_concurrent(
                 client,
                 ACCESS_SYSTEM_PROMPT,
                 format_access_prompt(row, effort_condition),
                 parse_action_response,
+                response_format=numeric_action_schema(2),
                 label=f"{scenario}/effort={effort_condition}/access",
             )
             access_agg = aggregate_action_ratings(access_ratings, n_actions=2)
 
-            print("  Getting effort ratings (concurrent)...", flush=True)
+            print("  Getting effort ratings (concurrent, structured)...", flush=True)
             effort_ratings, effort_failures = get_ratings_concurrent(
                 client,
                 EFFORT_SYSTEM_PROMPT,
                 format_effort_prompt(row, effort_condition),
                 parse_action_response,
+                response_format=numeric_action_schema(2),
                 label=f"{scenario}/effort={effort_condition}/effort",
             )
             effort_agg = aggregate_action_ratings(effort_ratings, n_actions=2)
@@ -252,6 +255,7 @@ def run_marginal_access(client, scenarios_df, output_path):
             ACCESS_SYSTEM_PROMPT,
             format_access_prompt_marginal(row),
             parse_action_response,
+            response_format=numeric_action_schema(2),
             label=f"{scenario}/marginal/access",
         )
         access_agg = aggregate_action_ratings(access_ratings, n_actions=2)

@@ -56,9 +56,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from lm_client import (
     MAX_RETRIES,
     MODEL_ID,
+    alternatives_array_schema,
     find_json_array,
     load_api_key,
 )
+
+# Built once and reused — schema construction is pure.
+_ALTERNATIVES_RESPONSE_FORMAT = alternatives_array_schema()
 
 TEMPERATURE = 1.0
 MAX_TOKENS = 800
@@ -142,6 +146,7 @@ def elicit_alternatives(client, user_prompt):
                 messages=messages,
                 max_tokens=MAX_TOKENS,
                 temperature=TEMPERATURE,
+                response_format=_ALTERNATIVES_RESPONSE_FORMAT,
             )
             parsed = parse_alternatives(response.choices[0].message.content)
             if parsed:

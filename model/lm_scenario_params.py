@@ -46,6 +46,7 @@ from lm_client import (
     find_json,
     get_ratings_concurrent,
     load_api_key,
+    numeric_action_schema,
     strip_leading_plus,
 )
 
@@ -213,22 +214,24 @@ def main(domain="food"):
 
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
 
-        print("  Getting access ratings (concurrent)...", flush=True)
+        print("  Getting access ratings (concurrent, structured)...", flush=True)
         access_ratings, access_failures = get_ratings_concurrent(
             client,
             build_system_prompt("access", n_actions=4),
             format_access_prompt(row),
             parse_action_response,
+            response_format=numeric_action_schema(4),
             label=f"{scenario}/access",
         )
         access_agg = aggregate_action_ratings(access_ratings, n_actions=4)
 
-        print("  Getting effort ratings (concurrent)...", flush=True)
+        print("  Getting effort ratings (concurrent, structured)...", flush=True)
         effort_ratings, effort_failures = get_ratings_concurrent(
             client,
             build_system_prompt("effort", n_actions=4),
             format_effort_prompt(row),
             parse_action_response,
+            response_format=numeric_action_schema(4),
             label=f"{scenario}/effort",
         )
         effort_agg = aggregate_action_ratings(effort_ratings, n_actions=4)
@@ -411,24 +414,26 @@ def score_alternatives_main(domain="food"):
         if n_unique == 0:
             continue
 
-        print("  scoring access (concurrent)...", flush=True)
+        print("  scoring access (concurrent, structured)...", flush=True)
         access_ratings, access_failures = get_ratings_concurrent(
             client,
             access_system_prompt,
             format_access_prompt_variable(vignette, unique_actions),
             lambda t: parse_action_response_variable(t, n_unique),
             max_tokens=_max_tokens_for(n_unique),
+            response_format=numeric_action_schema(n_unique),
             label=f"{scenario}/alts/access",
         )
         access_agg = aggregate_action_ratings(access_ratings, n_unique)
 
-        print("  scoring effort (concurrent)...", flush=True)
+        print("  scoring effort (concurrent, structured)...", flush=True)
         effort_ratings, effort_failures = get_ratings_concurrent(
             client,
             effort_system_prompt,
             format_effort_prompt_variable(vignette, unique_actions),
             lambda t: parse_action_response_variable(t, n_unique),
             max_tokens=_max_tokens_for(n_unique),
+            response_format=numeric_action_schema(n_unique),
             label=f"{scenario}/alts/effort",
         )
         effort_agg = aggregate_action_ratings(effort_ratings, n_unique)
@@ -548,7 +553,7 @@ def score_v_alternatives_main(domain="food"):
 
         v_by_norm_by_query = {}
         for motivation_query in ("low", "high"):
-            print(f"  scoring V (motivation_query={motivation_query}, concurrent)...", flush=True)
+            print(f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...", flush=True)
             state = sc_meta[f"reward_{motivation_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
@@ -556,6 +561,7 @@ def score_v_alternatives_main(domain="food"):
                 format_v_prompt_variable(vignette, state, unique_actions),
                 lambda t: parse_action_response_variable(t, n_unique),
                 max_tokens=_max_tokens_for(n_unique),
+                response_format=numeric_action_schema(n_unique),
                 label=f"{scenario}/alts/V[{motivation_query}]",
             )
             agg = aggregate_action_ratings(ratings, n_unique)
@@ -671,24 +677,26 @@ def score_alternatives_relationship_main(domain="food"):
         if n_unique == 0:
             continue
 
-        print("  scoring access (concurrent)...", flush=True)
+        print("  scoring access (concurrent, structured)...", flush=True)
         access_ratings, access_failures = get_ratings_concurrent(
             client,
             access_system_prompt,
             format_access_prompt_variable(vignette, unique_actions),
             lambda t: parse_action_response_variable(t, n_unique),
             max_tokens=_max_tokens_for(n_unique),
+            response_format=numeric_action_schema(n_unique),
             label=f"{scenario}/alts_rel/access",
         )
         access_agg = aggregate_action_ratings(access_ratings, n_unique)
 
-        print("  scoring effort (concurrent)...", flush=True)
+        print("  scoring effort (concurrent, structured)...", flush=True)
         effort_ratings, effort_failures = get_ratings_concurrent(
             client,
             effort_system_prompt,
             format_effort_prompt_variable(vignette, unique_actions),
             lambda t: parse_action_response_variable(t, n_unique),
             max_tokens=_max_tokens_for(n_unique),
+            response_format=numeric_action_schema(n_unique),
             label=f"{scenario}/alts_rel/effort",
         )
         effort_agg = aggregate_action_ratings(effort_ratings, n_unique)
@@ -805,7 +813,7 @@ def score_v_alternatives_relationship_main(domain="food"):
 
         v_by_norm_by_query = {}
         for motivation_query in ("low", "high"):
-            print(f"  scoring V (motivation_query={motivation_query}, concurrent)...", flush=True)
+            print(f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...", flush=True)
             state = sc_meta[f"reward_{motivation_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
@@ -813,6 +821,7 @@ def score_v_alternatives_relationship_main(domain="food"):
                 format_v_prompt_variable(vignette, state, unique_actions),
                 lambda t: parse_action_response_variable(t, n_unique),
                 max_tokens=_max_tokens_for(n_unique),
+                response_format=numeric_action_schema(n_unique),
                 label=f"{scenario}/alts_rel/V[{motivation_query}]",
             )
             agg = aggregate_action_ratings(ratings, n_unique)
@@ -892,12 +901,13 @@ def score_v_main(domain="food"):
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
 
         for motivation in ("low", "high"):
-            print(f"  Getting V ratings (motivation={motivation}, concurrent)...", flush=True)
+            print(f"  Getting V ratings (motivation={motivation}, concurrent, structured)...", flush=True)
             v_ratings, n_failures = get_ratings_concurrent(
                 client,
                 build_system_prompt("v", n_actions=4),
                 format_v_prompt(row, motivation),
                 parse_action_response,
+                response_format=numeric_action_schema(4),
                 label=f"{scenario}/V[{motivation}]",
             )
             v_agg = aggregate_action_ratings(v_ratings, n_actions=4)
