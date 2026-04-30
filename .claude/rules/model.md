@@ -27,7 +27,7 @@ Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort we
 
 ## Where the utility values come from
 
-All three components — V, access, effort — are LLM-elicited per scenario by `model/lm_scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged):
+All three components — V, access, effort — are LLM-elicited per scenario by `model/lm_scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged). The Together calls themselves go through `model/lm_client.py`, which fans NUM_RUNS calls across a thread pool, constrains output to a JSON schema via `response_format`, retries transient errors at the SDK layer, and checkpoints per-scenario; new LM call sites should reuse `get_ratings_concurrent` + the schema helpers (`numeric_action_schema`, `alternatives_array_schema`) rather than calling Together directly. CSV outputs include both `n_runs_*` and `n_failures_*` columns.
 
 - **V**: `--feature v` mode produces `lm_scenario_v.csv` (16 × 4 × 2 — scenario × action × motivation, signed [-1, +1]).
 - **access**, **effort**: default mode produces `lm_scenario_params.csv` (16 × 4 each, normalized [0, 2] and [0, 1]).
@@ -41,6 +41,7 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 
 - `model_utils.py` — utility functions, `Scenarios` enum, `LLM_TABLES`, and memo models (forward actors, discrete/continuous inverse-planning actors, intimacy/reward observers)
 - `lm_scenario_params.py` — LLM-calls Together AI to generate per-scenario access and effort
+- `lm_client.py` — shared LM-call infrastructure: `get_ratings_concurrent` (thread-pooled fan-out + SDK retries), schema helpers (`numeric_action_schema`, `alternatives_array_schema`), JSON parsing helpers, and `load_api_key`. Used by `lm_scenario_params{,_effort}.py` and `lm_generate_alternatives.py`.
 - `fit_forward_planning.py` — fits the three actor ablations to `data/forw_plan/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
 - `fit_inverse_planning.py` — alt-shown observers; fits only `alpha_observer` with frozen actor params (output: `inverse_planning_fit_results.csv`)
 - `fit_inverse_planning_noalt.py` — intimacy no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_noalt_fit_results.csv`
