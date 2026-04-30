@@ -27,10 +27,7 @@ Requires:
 
 import argparse
 import json
-import os
-import re
 import sys
-import time
 from pathlib import Path
 
 import numpy as np
@@ -41,10 +38,16 @@ _project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
-# Configuration
-MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-NUM_RUNS = 10
-TEMPERATURE = 0.2
+# Shared LM-call infrastructure (concurrency, retries, JSON helpers, key loading).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lm_client import (
+    MODEL_ID,
+    aggregate_action_ratings,
+    find_json,
+    get_ratings_concurrent,
+    load_api_key,
+    strip_leading_plus,
+)
 
 # Per-domain input CSV and output CSVs. All runs use the general LM prompt set;
 # the --domain flag selects which scenario CSV (and output filenames) to use.
@@ -124,30 +127,22 @@ def format_v_prompt(row, motivation):
 
 
 # ==============================================================================
-# Parsers + aggregators
+# Parsers
 # ==============================================================================
-
-
-def _find_json(text):
-    start = text.find("{")
-    end = text.rfind("}") + 1
-    return text[start:end] if start != -1 and end > start else None
 
 
 def parse_action_response(response_text):
     """Parse JSON ratings with action_0..action_3 keys.
 
-    Tolerates a quirk of the V prompt's signed -3..+3 scale: some LM
-    outputs use a leading `+` sign (e.g. `"action_1": +3`), which is
-    invalid JSON. We strip leading `+` from numeric values before parsing.
-    """
+    Tolerates a quirk of the V prompt's signed -3..+3 scale: some LM outputs
+    use a leading `+` sign (e.g. `"action_1": +3`), which is invalid JSON. We
+    strip leading `+` from numeric values before parsing."""
     if response_text is None:
         return None
-    js = _find_json(response_text.strip())
+    js = find_json(response_text)
     if js is None:
         return None
-    # Strip leading + signs from numeric values (e.g. ': +3' -> ': 3').
-    js = re.sub(r":\s*\+(\d)", r": \1", js)
+    js = strip_leading_plus(js)
     try:
         ratings = json.loads(js)
         expected = {"action_0", "action_1", "action_2", "action_3"}
@@ -156,40 +151,6 @@ def parse_action_response(response_text):
     except (json.JSONDecodeError, ValueError) as e:
         print(f"  Failed to parse JSON: {e}")
     return None
-
-
-def get_ratings(client, system_prompt, user_prompt, parse_fn, num_runs=NUM_RUNS):
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
-    all_ratings = []
-    for run in range(num_runs):
-        try:
-            response = client.chat.completions.create(
-                model=MODEL_ID,
-                messages=messages,
-                max_tokens=200,
-                temperature=TEMPERATURE,
-            )
-            ratings = parse_fn(response.choices[0].message.content)
-            if ratings is not None:
-                all_ratings.append(ratings)
-        except Exception as e:
-            print(f"  Run {run + 1} error: {e}")
-        time.sleep(0.5)
-    return all_ratings
-
-
-def aggregate_action_ratings(ratings_list):
-    if not ratings_list:
-        return {f"action_{i}": (np.nan, np.nan) for i in range(4)}
-    result = {}
-    for i in range(4):
-        key = f"action_{i}"
-        values = [r[key] for r in ratings_list if key in r]
-        result[key] = (np.mean(values), np.std(values)) if values else (np.nan, np.nan)
-    return result
 
 
 # ==============================================================================
@@ -216,24 +177,8 @@ def normalize_v(value):
 # ==============================================================================
 
 
-def _load_api_key():
-    api_key = os.environ.get("TOGETHER_API_KEY")
-    if not api_key:
-        env_path = get_project_root() / ".env"
-        if env_path.exists():
-            with open(env_path) as f:
-                for line in f:
-                    if line.startswith("TOGETHER_API_KEY="):
-                        api_key = line.strip().split("=", 1)[1].strip('"').strip("'")
-                        break
-    if not api_key:
-        print("Error: set TOGETHER_API_KEY in env or .env")
-        sys.exit(1)
-    return api_key
-
-
 def main(domain="food"):
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     print(f"Loading scenarios (domain={domain})...")
     scenarios_df = load_scenarios(domain)
@@ -242,29 +187,51 @@ def main(domain="food"):
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
     client = Together(api_key=api_key)
 
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / _DOMAIN_PATHS[domain]["params_output"]
+
+    # Resume: pick up scenarios already in the output CSV (mirrors the pattern
+    # used in score_alternatives_main).
     results = []
+    already_done_scenarios = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done_scenarios = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done_scenarios)} scenarios already scored — resuming.",
+            flush=True,
+        )
 
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
-        print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}")
+        if scenario in already_done_scenarios:
+            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            continue
 
-        print("  Getting access ratings...")
-        access_ratings = get_ratings(
+        print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
+
+        print("  Getting access ratings (concurrent)...", flush=True)
+        access_ratings, access_failures = get_ratings_concurrent(
             client,
             build_system_prompt("access", n_actions=4),
             format_access_prompt(row),
             parse_action_response,
+            label=f"{scenario}/access",
         )
-        access_agg = aggregate_action_ratings(access_ratings)
+        access_agg = aggregate_action_ratings(access_ratings, n_actions=4)
 
-        print("  Getting effort ratings...")
-        effort_ratings = get_ratings(
+        print("  Getting effort ratings (concurrent)...", flush=True)
+        effort_ratings, effort_failures = get_ratings_concurrent(
             client,
             build_system_prompt("effort", n_actions=4),
             format_effort_prompt(row),
             parse_action_response,
+            label=f"{scenario}/effort",
         )
-        effort_agg = aggregate_action_ratings(effort_ratings)
+        effort_agg = aggregate_action_ratings(effort_ratings, n_actions=4)
 
         for action in range(4):
             key = f"action_{action}"
@@ -282,19 +249,20 @@ def main(domain="food"):
                     "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
                     "n_runs_access": len(access_ratings),
                     "n_runs_effort": len(effort_ratings),
+                    "n_failures_access": access_failures,
+                    "n_failures_effort": effort_failures,
                 }
             )
 
         acc_str = [f"{access_agg[f'action_{i}'][0]:.1f}" for i in range(4)]
         eff_str = [f"{effort_agg[f'action_{i}'][0]:.1f}" for i in range(4)]
-        print(f"  Access (raw): {acc_str}")
-        print(f"  Effort (raw): {eff_str}")
+        print(f"  Access (raw): {acc_str}", flush=True)
+        print(f"  Effort (raw): {eff_str}", flush=True)
+
+        # Checkpoint after each scenario.
+        pd.DataFrame(results).to_csv(output_path, index=False)
 
     results_df = pd.DataFrame(results)
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / _DOMAIN_PATHS[domain]["params_output"]
-    results_df.to_csv(output_path, index=False)
     print(f"\nSaved results to {output_path}")
 
     print("\n=== Summary ===")
@@ -338,11 +306,10 @@ def parse_action_response_variable(response_text, n_actions):
     """Parse JSON with action_0..action_{n-1} keys."""
     if response_text is None:
         return None
-    js = _find_json(response_text.strip())
+    js = find_json(response_text)
     if js is None:
         return None
-    # Strip leading + signs from numeric values (V uses signed -3..+3 scale).
-    js = re.sub(r":\s*\+(\d)", r": \1", js)
+    js = strip_leading_plus(js)
     try:
         ratings = json.loads(js)
     except (json.JSONDecodeError, ValueError) as e:
@@ -360,40 +327,9 @@ def parse_action_response_variable(response_text, n_actions):
     return out
 
 
-def get_ratings_variable(client, system_prompt, user_prompt, n_actions, num_runs=NUM_RUNS):
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
-    all_ratings = []
-    for run in range(num_runs):
-        try:
-            response = client.chat.completions.create(
-                model=MODEL_ID,
-                messages=messages,
-                max_tokens=max(200, 40 * n_actions),
-                temperature=TEMPERATURE,
-            )
-            ratings = parse_action_response_variable(
-                response.choices[0].message.content, n_actions
-            )
-            if ratings is not None:
-                all_ratings.append(ratings)
-        except Exception as e:
-            print(f"  Run {run + 1} error: {e}")
-        time.sleep(0.5)
-    return all_ratings
-
-
-def aggregate_action_ratings_variable(ratings_list, n_actions):
-    if not ratings_list:
-        return {f"action_{i}": (np.nan, np.nan) for i in range(n_actions)}
-    result = {}
-    for i in range(n_actions):
-        key = f"action_{i}"
-        values = [r[key] for r in ratings_list if key in r]
-        result[key] = (np.mean(values), np.std(values)) if values else (np.nan, np.nan)
-    return result
+def _max_tokens_for(n_actions):
+    """Token budget that scales with the number of actions in a variable-length call."""
+    return max(200, 40 * n_actions)
 
 
 def score_alternatives_main(domain="food"):
@@ -411,7 +347,7 @@ def score_alternatives_main(domain="food"):
     already exists on startup, scenarios already present are skipped — so the
     script resumes from where it left off.
     """
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     access_system_prompt = build_system_prompt("access", n_actions=None)
     effort_system_prompt = build_system_prompt("effort", n_actions=None)
@@ -475,23 +411,27 @@ def score_alternatives_main(domain="food"):
         if n_unique == 0:
             continue
 
-        print("  scoring access...", flush=True)
-        access_ratings = get_ratings_variable(
+        print("  scoring access (concurrent)...", flush=True)
+        access_ratings, access_failures = get_ratings_concurrent(
             client,
             access_system_prompt,
             format_access_prompt_variable(vignette, unique_actions),
-            n_unique,
+            lambda t: parse_action_response_variable(t, n_unique),
+            max_tokens=_max_tokens_for(n_unique),
+            label=f"{scenario}/alts/access",
         )
-        access_agg = aggregate_action_ratings_variable(access_ratings, n_unique)
+        access_agg = aggregate_action_ratings(access_ratings, n_unique)
 
-        print("  scoring effort...", flush=True)
-        effort_ratings = get_ratings_variable(
+        print("  scoring effort (concurrent)...", flush=True)
+        effort_ratings, effort_failures = get_ratings_concurrent(
             client,
             effort_system_prompt,
             format_effort_prompt_variable(vignette, unique_actions),
-            n_unique,
+            lambda t: parse_action_response_variable(t, n_unique),
+            max_tokens=_max_tokens_for(n_unique),
+            label=f"{scenario}/alts/effort",
         )
-        effort_agg = aggregate_action_ratings_variable(effort_ratings, n_unique)
+        effort_agg = aggregate_action_ratings(effort_ratings, n_unique)
 
         # Build lookup from action_norm → (access, effort, ...)
         feats_by_norm = {}
@@ -508,6 +448,8 @@ def score_alternatives_main(domain="food"):
                 "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
                 "n_runs_access": len(access_ratings),
                 "n_runs_effort": len(effort_ratings),
+                "n_failures_access": access_failures,
+                "n_failures_effort": effort_failures,
             }
 
         # Emit one row per original (scenario, observed, motivation, alt_idx)
@@ -548,7 +490,7 @@ def score_v_alternatives_main(domain="food"):
 
     Checkpoints to disk after each scenario; resumes from existing file.
     """
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     v_system_prompt = build_system_prompt("v", n_actions=None)
 
@@ -606,15 +548,17 @@ def score_v_alternatives_main(domain="food"):
 
         v_by_norm_by_query = {}
         for motivation_query in ("low", "high"):
-            print(f"  scoring V (motivation_query={motivation_query})...", flush=True)
+            print(f"  scoring V (motivation_query={motivation_query}, concurrent)...", flush=True)
             state = sc_meta[f"reward_{motivation_query}"]
-            ratings = get_ratings_variable(
+            ratings, n_failures = get_ratings_concurrent(
                 client,
                 v_system_prompt,
                 format_v_prompt_variable(vignette, state, unique_actions),
-                n_unique,
+                lambda t: parse_action_response_variable(t, n_unique),
+                max_tokens=_max_tokens_for(n_unique),
+                label=f"{scenario}/alts/V[{motivation_query}]",
             )
-            agg = aggregate_action_ratings_variable(ratings, n_unique)
+            agg = aggregate_action_ratings(ratings, n_unique)
             for i, norm in enumerate(unique_norms):
                 key = f"action_{i}"
                 v_mean, v_std = agg[key]
@@ -623,6 +567,7 @@ def score_v_alternatives_main(domain="food"):
                     "v_raw_std": v_std,
                     "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
                     "n_runs": len(ratings),
+                    "n_failures": n_failures,
                 }
 
         # Emit one row per (scenario, observed, motivation, alt_idx, motivation_query).
@@ -658,7 +603,7 @@ def score_alternatives_relationship_main(domain="food"):
     motivation-keyed pass — access and effort are properties of the action and
     don't depend on the conditioning axis.
     """
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     access_system_prompt = build_system_prompt("access", n_actions=None)
     effort_system_prompt = build_system_prompt("effort", n_actions=None)
@@ -726,23 +671,27 @@ def score_alternatives_relationship_main(domain="food"):
         if n_unique == 0:
             continue
 
-        print("  scoring access...", flush=True)
-        access_ratings = get_ratings_variable(
+        print("  scoring access (concurrent)...", flush=True)
+        access_ratings, access_failures = get_ratings_concurrent(
             client,
             access_system_prompt,
             format_access_prompt_variable(vignette, unique_actions),
-            n_unique,
+            lambda t: parse_action_response_variable(t, n_unique),
+            max_tokens=_max_tokens_for(n_unique),
+            label=f"{scenario}/alts_rel/access",
         )
-        access_agg = aggregate_action_ratings_variable(access_ratings, n_unique)
+        access_agg = aggregate_action_ratings(access_ratings, n_unique)
 
-        print("  scoring effort...", flush=True)
-        effort_ratings = get_ratings_variable(
+        print("  scoring effort (concurrent)...", flush=True)
+        effort_ratings, effort_failures = get_ratings_concurrent(
             client,
             effort_system_prompt,
             format_effort_prompt_variable(vignette, unique_actions),
-            n_unique,
+            lambda t: parse_action_response_variable(t, n_unique),
+            max_tokens=_max_tokens_for(n_unique),
+            label=f"{scenario}/alts_rel/effort",
         )
-        effort_agg = aggregate_action_ratings_variable(effort_ratings, n_unique)
+        effort_agg = aggregate_action_ratings(effort_ratings, n_unique)
 
         feats_by_norm = {}
         for i, norm in enumerate(unique_norms):
@@ -758,6 +707,8 @@ def score_alternatives_relationship_main(domain="food"):
                 "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
                 "n_runs_access": len(access_ratings),
                 "n_runs_effort": len(effort_ratings),
+                "n_failures_access": access_failures,
+                "n_failures_effort": effort_failures,
             }
 
         new_rows = 0
@@ -790,7 +741,7 @@ def score_v_alternatives_relationship_main(domain="food"):
         scenario_label, observed_action, relationship_condition, alt_idx,
         motivation_query, v_raw, v_raw_std, v, n_runs
     """
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     v_system_prompt = build_system_prompt("v", n_actions=None)
 
@@ -854,15 +805,17 @@ def score_v_alternatives_relationship_main(domain="food"):
 
         v_by_norm_by_query = {}
         for motivation_query in ("low", "high"):
-            print(f"  scoring V (motivation_query={motivation_query})...", flush=True)
+            print(f"  scoring V (motivation_query={motivation_query}, concurrent)...", flush=True)
             state = sc_meta[f"reward_{motivation_query}"]
-            ratings = get_ratings_variable(
+            ratings, n_failures = get_ratings_concurrent(
                 client,
                 v_system_prompt,
                 format_v_prompt_variable(vignette, state, unique_actions),
-                n_unique,
+                lambda t: parse_action_response_variable(t, n_unique),
+                max_tokens=_max_tokens_for(n_unique),
+                label=f"{scenario}/alts_rel/V[{motivation_query}]",
             )
-            agg = aggregate_action_ratings_variable(ratings, n_unique)
+            agg = aggregate_action_ratings(ratings, n_unique)
             for i, norm in enumerate(unique_norms):
                 key = f"action_{i}"
                 v_mean, v_std = agg[key]
@@ -871,6 +824,7 @@ def score_v_alternatives_relationship_main(domain="food"):
                     "v_raw_std": v_std,
                     "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
                     "n_runs": len(ratings),
+                    "n_failures": n_failures,
                 }
 
         new_rows = 0
@@ -901,9 +855,9 @@ def score_v_main(domain="food"):
     Two LM passes per scenario — once with the scenario's reward_high paragraph
     as the actor's state, once with reward_low. Same 10-run averaging as
     access/effort. Output schema: scenario_label, action, motivation, v_raw,
-    v_raw_std, v (normalized to [-1,+1]), n_runs.
+    v_raw_std, v (normalized to [-1,+1]), n_runs, n_failures.
     """
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     print(f"Loading scenarios (domain={domain})...")
     scenarios_df = load_scenarios(domain)
@@ -912,24 +866,41 @@ def score_v_main(domain="food"):
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
     client = Together(api_key=api_key)
 
-    results = []
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["v_output"]
 
+    # Resume from existing CSV if present.
+    results = []
+    already_done_scenarios = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done_scenarios = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done_scenarios)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
+        if scenario in already_done_scenarios:
+            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            continue
+
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
 
         for motivation in ("low", "high"):
-            print(f"  Getting V ratings (motivation={motivation})...", flush=True)
-            v_ratings = get_ratings(
+            print(f"  Getting V ratings (motivation={motivation}, concurrent)...", flush=True)
+            v_ratings, n_failures = get_ratings_concurrent(
                 client,
                 build_system_prompt("v", n_actions=4),
                 format_v_prompt(row, motivation),
                 parse_action_response,
+                label=f"{scenario}/V[{motivation}]",
             )
-            v_agg = aggregate_action_ratings(v_ratings)
+            v_agg = aggregate_action_ratings(v_ratings, n_actions=4)
 
             for action in range(4):
                 key = f"action_{action}"
@@ -943,6 +914,7 @@ def score_v_main(domain="food"):
                         "v_raw_std": v_std,
                         "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
                         "n_runs": len(v_ratings),
+                        "n_failures": n_failures,
                     }
                 )
 

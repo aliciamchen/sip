@@ -40,10 +40,8 @@ Requires:
 
 import argparse
 import json
-import os
-import re
 import sys
-import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
@@ -53,13 +51,28 @@ _project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
-MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+# Shared LM-call infrastructure (key loading, JSON helpers, retries).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lm_client import (
+    MAX_RETRIES,
+    MODEL_ID,
+    find_json_array,
+    load_api_key,
+)
+
 TEMPERATURE = 1.0
 MAX_TOKENS = 800
 MAX_PARSE_RETRIES = 5
 ACTION_COLS = ["action_0", "action_1", "action_2", "action_3"]
 MOTIVATIONS = ["low", "high"]
 RELATIONSHIPS = [0, 50, 75, 100]
+
+# How many cells to elicit concurrently. One LM call per cell (with up to
+# MAX_PARSE_RETRIES parse-retries inside), so this is the per-call concurrency.
+MAX_CELL_WORKERS = 8
+
+# How often to flush partial results to disk while the thread pool runs.
+CHECKPOINT_EVERY = 16
 
 # Per-(domain, conditioning) input CSV and output CSV. All runs use the general
 # LM prompt set; the --domain flag selects which scenario CSV (and output
@@ -78,18 +91,8 @@ from lm_prompts import alternatives_user_prompt as format_motivation_user_prompt
 from lm_prompts import alternatives_user_prompt_relationship as format_relationship_user_prompt
 
 
-_JSON_ARRAY_RE = re.compile(r"\[[\s\S]*\]")
-
-
-def _extract_json_array(text):
-    if text is None:
-        return None
-    match = _JSON_ARRAY_RE.search(text)
-    return match.group(0) if match else None
-
-
 def parse_alternatives(response_text):
-    js = _extract_json_array(response_text)
+    js = find_json_array(response_text)
     if js is None:
         return None
     try:
@@ -123,13 +126,18 @@ def _dedup_alternatives(alts):
 
 
 def elicit_alternatives(client, user_prompt):
+    """Elicit alternatives for one cell. Up to MAX_PARSE_RETRIES tries to land
+    a parseable response; transient errors inside each call are retried by the
+    SDK via ``max_retries=MAX_RETRIES``. Returns [] when all parse retries are
+    exhausted (rather than raising) so a thread-pool batch can continue."""
     messages = [
         {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt},
     ]
+    retrying_client = client.with_options(max_retries=MAX_RETRIES)
     for attempt in range(MAX_PARSE_RETRIES):
         try:
-            response = client.chat.completions.create(
+            response = retrying_client.chat.completions.create(
                 model=MODEL_ID,
                 messages=messages,
                 max_tokens=MAX_TOKENS,
@@ -139,28 +147,12 @@ def elicit_alternatives(client, user_prompt):
             if parsed:
                 return _dedup_alternatives(parsed)
         except Exception as e:
-            print(f"  Attempt {attempt + 1} error: {e}")
-        time.sleep(0.5)
+            print(f"  Attempt {attempt + 1} error: {e}", flush=True)
     print(
-        "  All parse retries exhausted; returning empty alternative set for this cell."
+        "  All parse retries exhausted; returning empty alternative set for this cell.",
+        flush=True,
     )
     return []
-
-
-def _load_api_key():
-    api_key = os.environ.get("TOGETHER_API_KEY")
-    if not api_key:
-        env_path = get_project_root() / ".env"
-        if env_path.exists():
-            with open(env_path) as f:
-                for line in f:
-                    if line.startswith("TOGETHER_API_KEY="):
-                        api_key = line.strip().split("=", 1)[1].strip('"').strip("'")
-                        break
-    if not api_key:
-        print("Error: set TOGETHER_API_KEY in env or .env")
-        sys.exit(1)
-    return api_key
 
 
 def load_scenarios(domain, conditioning):
@@ -171,32 +163,53 @@ def load_scenarios(domain, conditioning):
 
 
 def main(domain, conditioning):
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
-    print(f"Loading scenarios (domain={domain}, conditioning={conditioning})...")
+    print(f"Loading scenarios (domain={domain}, conditioning={conditioning})...", flush=True)
     scenarios_df = load_scenarios(domain, conditioning)
-    print(f"Loaded {len(scenarios_df)} scenarios")
+    print(f"Loaded {len(scenarios_df)} scenarios", flush=True)
 
-    print(f"\nInitializing Together AI client for {MODEL_ID}...")
+    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
     client = Together(api_key=api_key)
 
-    results = []
     if conditioning == "motivation":
         levels = MOTIVATIONS
         level_label = "motivation"
     else:
         levels = RELATIONSHIPS
         level_label = "relationship_condition"
-    total_cells = len(scenarios_df) * len(ACTION_COLS) * len(levels)
-    cell_idx = 0
 
+    output_dir = get_project_root() / "model" / "outputs"
+    output_dir.mkdir(exist_ok=True)
+    output_path = output_dir / _DOMAIN_PATHS[(domain, conditioning)]["output"]
+
+    # Resume: skip cells whose (scenario, observed_action, level) tuple already
+    # appears in the output CSV.
+    results = []
+    done_cells = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        done_cells = set(
+            (r["scenario_label"], r["observed_action"], r[level_label])
+            for _, r in existing.iterrows()
+        )
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with {len(done_cells)} cells "
+            f"already elicited — resuming.",
+            flush=True,
+        )
+
+    # Build the full work list, then drop already-done cells.
+    all_cells = []
     for _, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         vignette = row["vignette"]
         for observed_col in ACTION_COLS:
             observed_action_text = row[observed_col]
             for level in levels:
-                cell_idx += 1
+                if (scenario, observed_col, level) in done_cells:
+                    continue
                 if conditioning == "motivation":
                     reward_text = row[f"reward_{level}"]
                     user_prompt = format_motivation_user_prompt(
@@ -206,29 +219,56 @@ def main(domain, conditioning):
                     user_prompt = format_relationship_user_prompt(
                         vignette, level, observed_action_text
                     )
-                print(
-                    f"\n[{cell_idx}/{total_cells}] {scenario} | observed={observed_col} | "
-                    f"{level_label}={level}"
-                )
-                alts = elicit_alternatives(client, user_prompt)
-                print(f"  Elicited {len(alts)} alternatives")
-                for alt_idx, alt in enumerate(alts):
-                    record = {
+                all_cells.append(
+                    {
                         "scenario_label": scenario,
                         "observed_action": observed_col,
-                        level_label: level,
+                        "level": level,
+                        "user_prompt": user_prompt,
+                    }
+                )
+    total_cells = len(scenarios_df) * len(ACTION_COLS) * len(levels)
+    print(
+        f"\n{len(all_cells)} cells to elicit "
+        f"(total expected: {total_cells}; {len(done_cells)} already done).",
+        flush=True,
+    )
+
+    # Thread across cells. Each future returns (cell_meta, list-of-alts).
+    completed = 0
+    with ThreadPoolExecutor(max_workers=MAX_CELL_WORKERS) as ex:
+        future_to_cell = {
+            ex.submit(elicit_alternatives, client, c["user_prompt"]): c
+            for c in all_cells
+        }
+        for fut in as_completed(future_to_cell):
+            cell = future_to_cell[fut]
+            alts = fut.result()
+            completed += 1
+            print(
+                f"[{completed}/{len(all_cells)}] {cell['scenario_label']} | "
+                f"observed={cell['observed_action']} | "
+                f"{level_label}={cell['level']} | elicited {len(alts)}",
+                flush=True,
+            )
+            for alt_idx, alt in enumerate(alts):
+                results.append(
+                    {
+                        "scenario_label": cell["scenario_label"],
+                        "observed_action": cell["observed_action"],
+                        level_label: cell["level"],
                         "alt_idx": alt_idx,
                         "action_text": alt["action"],
                         "is_share": alt["is_share"],
                     }
-                    results.append(record)
+                )
+            if completed % CHECKPOINT_EVERY == 0:
+                pd.DataFrame(results).to_csv(output_path, index=False)
+                print(f"  checkpoint written ({len(results)} rows total)", flush=True)
 
     results_df = pd.DataFrame(results)
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    output_path = output_dir / _DOMAIN_PATHS[(domain, conditioning)]["output"]
     results_df.to_csv(output_path, index=False)
-    print(f"\nSaved {len(results_df)} alternatives to {output_path}")
+    print(f"\nSaved {len(results_df)} alternatives to {output_path}", flush=True)
 
     print("\n=== Summary ===")
     per_cell = results_df.groupby(

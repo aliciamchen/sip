@@ -40,7 +40,6 @@ Requires TOGETHER_API_KEY in env or .env.
 
 import json
 import sys
-import time
 from pathlib import Path
 
 import numpy as np
@@ -51,18 +50,17 @@ _project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
-# Reuse helpers from the canonical 4-action script
+# Shared LM-call infrastructure + canonical-script helpers.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lm_scenario_params import (
+from lm_client import (
     MODEL_ID,
-    NUM_RUNS,
-    TEMPERATURE,
-    _find_json,
-    _load_api_key,
-    normalize_access,
-    normalize_effort,
+    aggregate_action_ratings,
+    find_json,
+    get_ratings_concurrent,
+    load_api_key,
 )
-# Imported with aliases so they don't collide with get_ratings's parameters.
+from lm_scenario_params import normalize_access, normalize_effort
+# Imported with aliases so they don't collide with parameters below.
 from lm_prompts import system_prompt as build_system_prompt
 from lm_prompts import user_prompt as build_user_prompt
 
@@ -115,7 +113,7 @@ def parse_action_response(response_text):
     """Parse JSON ratings with action_0 / action_1 keys (2 actions)."""
     if response_text is None:
         return None
-    js = _find_json(response_text.strip())
+    js = find_json(response_text)
     if js is None:
         return None
     try:
@@ -128,64 +126,51 @@ def parse_action_response(response_text):
     return None
 
 
-def get_ratings(client, system_prompt, user_prompt, num_runs=NUM_RUNS):
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt},
-    ]
-    all_ratings = []
-    for run in range(num_runs):
-        try:
-            response = client.chat.completions.create(
-                model=MODEL_ID,
-                messages=messages,
-                max_tokens=200,
-                temperature=TEMPERATURE,
-            )
-            ratings = parse_action_response(response.choices[0].message.content)
-            if ratings is not None:
-                all_ratings.append(ratings)
-        except Exception as e:
-            print(f"  Run {run + 1} error: {e}")
-        time.sleep(0.5)
-    return all_ratings
-
-
-def aggregate_action_ratings(ratings_list):
-    if not ratings_list:
-        return {f"action_{i}": (np.nan, np.nan) for i in range(2)}
-    result = {}
-    for i in range(2):
-        key = f"action_{i}"
-        values = [r[key] for r in ratings_list if key in r]
-        result[key] = (np.mean(values), np.std(values)) if values else (np.nan, np.nan)
-    return result
-
-
 def run_effort_conditional(client, scenarios_df, output_path):
-    """Effort-conditional access + effort ratings (existing behaviour).
-    One row per (scenario, effort_condition, action) — 64 rows total."""
+    """Effort-conditional access + effort ratings.
+    One row per (scenario, effort_condition, action) — 64 rows total.
+
+    Resumes from output_path if it exists; flushes after each scenario."""
     results = []
+    already_done = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
-        for effort_condition in EFFORT_CONDITIONS:
-            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort={effort_condition})")
+        if scenario in already_done:
+            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            continue
 
-            print("  Getting access ratings (effort-conditional)...")
-            access_ratings = get_ratings(
+        for effort_condition in EFFORT_CONDITIONS:
+            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort={effort_condition})", flush=True)
+
+            print("  Getting access ratings (concurrent, effort-conditional)...", flush=True)
+            access_ratings, access_failures = get_ratings_concurrent(
                 client,
                 ACCESS_SYSTEM_PROMPT,
                 format_access_prompt(row, effort_condition),
+                parse_action_response,
+                label=f"{scenario}/effort={effort_condition}/access",
             )
-            access_agg = aggregate_action_ratings(access_ratings)
+            access_agg = aggregate_action_ratings(access_ratings, n_actions=2)
 
-            print("  Getting effort ratings...")
-            effort_ratings = get_ratings(
+            print("  Getting effort ratings (concurrent)...", flush=True)
+            effort_ratings, effort_failures = get_ratings_concurrent(
                 client,
                 EFFORT_SYSTEM_PROMPT,
                 format_effort_prompt(row, effort_condition),
+                parse_action_response,
+                label=f"{scenario}/effort={effort_condition}/effort",
             )
-            effort_agg = aggregate_action_ratings(effort_ratings)
+            effort_agg = aggregate_action_ratings(effort_ratings, n_actions=2)
 
             # LM's action_0 = CSV action_1, LM's action_1 = CSV action_2
             for lm_idx, csv_action in enumerate([1, 2]):
@@ -205,16 +190,20 @@ def run_effort_conditional(client, scenarios_df, output_path):
                         "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
                         "n_runs_access": len(access_ratings),
                         "n_runs_effort": len(effort_ratings),
+                        "n_failures_access": access_failures,
+                        "n_failures_effort": effort_failures,
                     }
                 )
 
             acc_str = [f"{access_agg[f'action_{i}'][0]:.1f}" for i in range(2)]
             eff_str = [f"{effort_agg[f'action_{i}'][0]:.1f}" for i in range(2)]
-            print(f"  Access (raw, action_1/action_2): {acc_str}")
-            print(f"  Effort (raw, action_1/action_2): {eff_str}")
+            print(f"  Access (raw, action_1/action_2): {acc_str}", flush=True)
+            print(f"  Effort (raw, action_1/action_2): {eff_str}", flush=True)
+
+        # Checkpoint after each scenario.
+        pd.DataFrame(results).to_csv(output_path, index=False)
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False)
     print(f"\nSaved effort-conditional results to {output_path}")
 
     print("\n=== Conditional summary ===")
@@ -237,18 +226,35 @@ def run_effort_conditional(client, scenarios_df, output_path):
 
 def run_marginal_access(client, scenarios_df, output_path):
     """Effort-marginal access ratings — vignette without effort paragraph.
-    One row per (scenario, action) — 32 rows total."""
+    One row per (scenario, action) — 32 rows total. Resumes per scenario."""
     results = []
+    already_done = set()
+    if output_path.exists():
+        existing = pd.read_csv(output_path)
+        already_done = set(existing["scenario_label"].unique())
+        results = existing.to_dict("records")
+        print(
+            f"Found existing {output_path.name} with "
+            f"{len(already_done)} scenarios already scored — resuming.",
+            flush=True,
+        )
+
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
-        print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort-marginal access)")
+        if scenario in already_done:
+            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            continue
 
-        access_ratings = get_ratings(
+        print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort-marginal access, concurrent)", flush=True)
+
+        access_ratings, access_failures = get_ratings_concurrent(
             client,
             ACCESS_SYSTEM_PROMPT,
             format_access_prompt_marginal(row),
+            parse_action_response,
+            label=f"{scenario}/marginal/access",
         )
-        access_agg = aggregate_action_ratings(access_ratings)
+        access_agg = aggregate_action_ratings(access_ratings, n_actions=2)
 
         for lm_idx, csv_action in enumerate([1, 2]):
             key = f"action_{lm_idx}"
@@ -261,14 +267,17 @@ def run_marginal_access(client, scenarios_df, output_path):
                     "access_raw_std": a_std,
                     "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
                     "n_runs_access": len(access_ratings),
+                    "n_failures_access": access_failures,
                 }
             )
 
         acc_str = [f"{access_agg[f'action_{i}'][0]:.1f}" for i in range(2)]
-        print(f"  Access (raw, action_1/action_2): {acc_str}")
+        print(f"  Access (raw, action_1/action_2): {acc_str}", flush=True)
+
+        # Checkpoint after each scenario.
+        pd.DataFrame(results).to_csv(output_path, index=False)
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False)
     print(f"\nSaved effort-marginal access to {output_path}")
     print(f"Total rows: {len(results_df)} (expected 32 = 16 scenarios × 2 actions)")
     print(
@@ -279,7 +288,7 @@ def run_marginal_access(client, scenarios_df, output_path):
 
 
 def main():
-    api_key = _load_api_key()
+    api_key = load_api_key()
 
     print("Loading effort scenarios...")
     scenarios_df = load_scenarios()
@@ -293,11 +302,10 @@ def main():
     cond_path = output_dir / "lm_scenario_params_effort.csv"
     marg_path = output_dir / "lm_scenario_params_effort_marginal.csv"
 
-    if cond_path.exists():
-        print(f"\nSkipping effort-conditional pass — {cond_path.name} already exists.")
-    else:
-        print("\n=== Effort-conditional pass ===")
-        run_effort_conditional(client, scenarios_df, cond_path)
+    # Both passes resume per-scenario from their respective CSVs, so an
+    # already-complete file becomes a no-op (each scenario is logged-and-skipped).
+    print("\n=== Effort-conditional pass ===")
+    run_effort_conditional(client, scenarios_df, cond_path)
 
     print("\n=== Effort-marginal access pass ===")
     run_marginal_access(client, scenarios_df, marg_path)
