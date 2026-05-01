@@ -1,7 +1,8 @@
-"""Generate per-trial predictions for food_forw_intimacy_desire.
+"""Generate per-cell predictions for food_forw_intimacy_desire.
 
-Reads fit_results.csv, recomputes per-trial p_action under each variant's
-fitted params, writes outputs/<slug>/fits.csv (data + pred_<variant> columns).
+Reads fit_results.csv, computes the model's predicted action probability for
+each (scenario, action, intimacy, motivation) cell, writes
+outputs/<slug>/preds.csv (one row per cell, with pred_<variant> columns).
 """
 
 import sys
@@ -13,23 +14,19 @@ sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "forward"))
 
 from _shared import (  # noqa: E402
-    load_data_canonical,
+    build_canonical_cells,
     predict_canonical_base,
     predict_canonical_discomfort_only,
     predict_canonical_full,
-    run_predict_and_save_fits,
+    run_predict_and_save_preds,
 )
-from tables import LLM_TABLES, SCENARIO_TO_IDX, load_lm_v  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from tables import LLM_TABLES, SCENARIO_LABELS, load_lm_v  # noqa: E402
 
 EXPERIMENT_SLUG = "food_forw_intimacy_desire"
 
 
 def main():
-    data_path = get_project_root() / "data" / EXPERIMENT_SLUG / "main_trials_long.csv"
-    data, intimacy, condition_iv, action, p_action, scenario_idx = load_data_canonical(
-        data_path, SCENARIO_TO_IDX,
-    )
+    cells = build_canonical_cells(SCENARIO_LABELS)
 
     v_table = load_lm_v("food")
     tables_full = (LLM_TABLES["access"], LLM_TABLES["effort"], v_table)
@@ -51,14 +48,13 @@ def main():
         "base": ["w_v", "w_e"],
     }
 
-    run_predict_and_save_fits(
+    run_predict_and_save_preds(
         experiment_slug=EXPERIMENT_SLUG,
-        intimacy=intimacy, condition_iv=condition_iv, action=action,
-        scenario_idx=scenario_idx,
+        cells_df=cells,
+        iv_idx_col="motivation_idx",
         tables_by_variant=tables_by_variant,
         predict_funcs=predict_funcs,
         fit_param_names=fit_param_names,
-        data=data,
     )
 
 

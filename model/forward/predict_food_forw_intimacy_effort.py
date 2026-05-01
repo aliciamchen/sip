@@ -1,6 +1,8 @@
-"""Generate per-trial predictions for food_forw_intimacy_effort.
+"""Generate per-cell predictions for food_forw_intimacy_effort.
 
-Reads fit_results.csv, recomputes predictions, writes fits.csv.
+Reads fit_results.csv, computes the model's predicted action probability for
+each (scenario, action, intimacy, effort_condition) cell, writes
+outputs/<slug>/preds.csv.
 """
 
 import sys
@@ -12,21 +14,19 @@ sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "forward"))
 
 from _shared import (  # noqa: E402
-    load_data_effort,
+    build_effort_cells,
     predict_effort_base,
     predict_effort_discomfort_only,
     predict_effort_full,
-    run_predict_and_save_fits,
+    run_predict_and_save_preds,
 )
-from tables import LLM_TABLES_EFFORT  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from tables import LLM_TABLES_EFFORT, SCENARIO_LABELS  # noqa: E402
 
 EXPERIMENT_SLUG = "food_forw_intimacy_effort"
 
 
 def main():
-    data_path = get_project_root() / "data" / EXPERIMENT_SLUG / "main_trials_long.csv"
-    data, intimacy, condition_iv, action, p_action, scenario_idx = load_data_effort(data_path)
+    cells = build_effort_cells(SCENARIO_LABELS)
 
     tables = (LLM_TABLES_EFFORT["access"], LLM_TABLES_EFFORT["effort"])
     predict_funcs = {
@@ -41,14 +41,13 @@ def main():
         "base": ["w_v", "w_e"],
     }
 
-    run_predict_and_save_fits(
+    run_predict_and_save_preds(
         experiment_slug=EXPERIMENT_SLUG,
-        intimacy=intimacy, condition_iv=condition_iv, action=action,
-        scenario_idx=scenario_idx,
+        cells_df=cells,
+        iv_idx_col="effort_idx",
         tables_by_variant=tables_by_variant,
         predict_funcs=predict_funcs,
         fit_param_names=fit_param_names,
-        data=data,
     )
 
 

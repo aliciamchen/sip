@@ -7,7 +7,7 @@ outputs/
 ├── lm/                                # LM-elicited tables (lm_*.csv)
 └── <experiment_slug>/                 # one folder per experiment
     ├── fit_results.csv
-    ├── fits.csv                       # forward only — per-trial predictions
+    ├── preds.csv                      # forward only — per-cell predictions (one row per (scenario, action, intimacy, IV) cell)
     ├── preds_full.csv, preds_summary.csv  # inverse only — per-condition posteriors
     ├── cv_folds.csv                   # per-fold fit results from LOSO CV
     ├── cv_preds.csv                   # forward only — per-trial held-out predictions
@@ -38,24 +38,22 @@ LLM-generated per-scenario values for access and effort. Produced by `model/lm/s
 
 Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `tables.load_lm_scenario_params` and will be dropped the next time `lm/score_canonical_features.py` is run.
 
-## <forward_slug>/fits.csv
+## <forward_slug>/preds.csv
 
-Per-trial model predictions for forward planning (`data/food_forw_intimacy_desire/`). One row per subject × scenario × condition × action.
+Per-cell model predictions for forward planning. One row per `(scenario, action, intimacy, IV)` cell — predictions are identical across subjects in the same cell, so the per-cell format is the natural granularity. Cell counts: 16 × 4 × 4 × 2 = 512 for canonical 4-action; 16 × 2 × 4 × 2 = 256 for effort 2-action.
 
 | Column | Description |
 |--------|-------------|
-| `subject_id` | Participant UUID |
 | `scenario_label` | Scenario identifier |
-| `intimacy` | Intimacy condition (0, 50, 75, 100) |
-| `motivation` | Motivation condition ("low" or "high") |
-| `action` | Action index (0-3) |
-| `p_action` | Observed probability for this action |
-| `intimacy_scaled` | Intimacy normalized to 0-1 scale |
-| `reward_condition` | Binary reward condition (0 or 1) |
-| `scenario_idx` | Numeric scenario index |
-| `pred_full` | Predicted probability from the full model |
-| `pred_discomfort_only` | Predicted probability from the discomfort-only ablation |
-| `pred_base` | Predicted probability from the base ablation |
+| `scenario_idx` | Numeric scenario index (0-15) |
+| `action` | Action index (0-3 for canonical; 0-1 for effort, with `action_csv` giving the 1-2 label that matches the data CSV) |
+| `intimacy` | Intimacy level (0, 50, 75, 100) |
+| `intimacy_scaled` | Intimacy normalized to [0, 1] |
+| `motivation` (canonical) or `effort` (effort) | The contextual IV ("low" or "high") |
+| `motivation_idx` (canonical) or `effort_idx` (effort) | Integer index for the IV |
+| `pred_full` | Predicted probability from the Full model |
+| `pred_discomfort_only` | Predicted probability from the Discomfort-only ablation |
+| `pred_base` | Predicted probability from the Base ablation |
 
 ## <forward_slug>/fit_results.csv
 

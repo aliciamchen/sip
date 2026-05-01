@@ -463,20 +463,39 @@ def run_fit_and_save_results(
     return results
 
 
-def run_predict_and_save_fits(
+def run_predict_and_save_preds(
     *,
     experiment_slug,
-    intimacy, condition_iv, action, scenario_idx,
+    cells_df,
+    iv_idx_col,
     tables_by_variant,
     predict_funcs,
     fit_param_names,
-    data,
 ):
-    """Read outputs/<slug>/fit_results.csv, recompute per-trial preds, write fits.csv.
+    """Read outputs/<slug>/fit_results.csv, generate per-cell predictions, write preds.csv.
 
-    `predict_funcs` is a dict mapping variant_name -> predict_fn.
-    `fit_param_names` is a dict mapping variant_name -> ordered list of param names
-    after `alpha` (matching the columns `param_<name>` in fit_results.csv).
+    Forward predictions are inherently per-cell: for any (scenario, action, intimacy,
+    IV) cell, the model's prediction is the same regardless of which subject was
+    observed in that cell. So `preds.csv` enumerates the unique cells (one row per
+    cell, with `pred_<variant>` columns), not the per-trial human data. The
+    per-trial data lives in `data/<slug>/main_trials_long.csv`; analysis qmds can
+    join the two on the cell columns if needed.
+
+    `cells_df` is a DataFrame with one row per (scenario, action, intimacy, IV)
+    cell, including:
+      - `scenario_label` (str), `scenario_idx` (int)
+      - `action` (int — internal index for prediction; effort scripts pass 0/1
+        even though the human-facing label is 1/2)
+      - `intimacy_scaled` (float in [0, 1] — what predict_fn consumes)
+      - `<iv_idx_col>` (int — the condition IV index, e.g. motivation_idx or effort_idx)
+      - any additional human-readable columns to preserve in the output (e.g.
+        `intimacy` as 0/50/75/100, `motivation` as "low"/"high")
+
+    `iv_idx_col` is the name of the integer-IV column in cells_df (e.g.
+    `"motivation_idx"` for canonical, `"effort_idx"` for effort).
+
+    `predict_funcs` maps variant_name → predict_fn. `fit_param_names` maps
+    variant_name → ordered list of param names after `alpha`.
     """
     output_dir = Path(__file__).resolve().parent.parent / "outputs" / experiment_slug
     fit_results_path = output_dir / "fit_results.csv"
@@ -485,19 +504,66 @@ def run_predict_and_save_fits(
     print(f"Loading fit results from {fit_results_path}...")
     print(fit_results.to_string(index=False))
 
+    intimacy_arr = jnp.array(cells_df["intimacy_scaled"].values)
+    condition_iv_arr = jnp.array(cells_df[iv_idx_col].values)
+    action_arr = jnp.array(cells_df["action"].values)
+    scenario_idx_arr = jnp.array(cells_df["scenario_idx"].values)
+
+    out_df = cells_df.copy()
     for name, pred_fn in predict_funcs.items():
         row = fit_results[fit_results["model"] == name].iloc[0]
         param_names = fit_param_names[name]
         params = jnp.array(
             [row["param_alpha"]] + [row[f"param_{pn}"] for pn in param_names]
         )
-        data[f"pred_{name}"] = np.array(
+        out_df[f"pred_{name}"] = np.array(
             pred_fn(
-                intimacy, condition_iv, action, scenario_idx,
+                intimacy_arr, condition_iv_arr, action_arr, scenario_idx_arr,
                 *params, *tables_by_variant[name],
             )
         )
 
-    fits_path = output_dir / "fits.csv"
-    data.to_csv(fits_path, index=False)
-    print(f"\nSaved per-trial predictions to {fits_path}")
+    preds_path = output_dir / "preds.csv"
+    out_df.to_csv(preds_path, index=False)
+    print(f"\nSaved per-cell predictions ({len(out_df)} rows) to {preds_path}")
+
+
+def build_canonical_cells(scenario_labels):
+    """Enumerate (scenario, action, intimacy, motivation) cells for canonical 4-action."""
+    intimacy_levels = [0, 50, 75, 100]  # human-facing
+    rows = []
+    for s_idx, scenario_label in enumerate(scenario_labels):
+        for action_int in range(4):
+            for intimacy_int in intimacy_levels:
+                for motivation_str, motivation_idx in (("low", 0), ("high", 1)):
+                    rows.append({
+                        "scenario_label": scenario_label,
+                        "scenario_idx": s_idx,
+                        "action": action_int,
+                        "intimacy": intimacy_int,
+                        "intimacy_scaled": INTIMACY_MAP[intimacy_int],
+                        "motivation": motivation_str,
+                        "motivation_idx": motivation_idx,
+                    })
+    return pd.DataFrame(rows)
+
+
+def build_effort_cells(scenario_labels):
+    """Enumerate (scenario, action, intimacy, effort_condition) cells for effort 2-action."""
+    intimacy_levels = [0, 50, 75, 100]
+    rows = []
+    for s_idx, scenario_label in enumerate(scenario_labels):
+        for action_int in range(2):  # internal 0/1 (CSV label 1/2)
+            for intimacy_int in intimacy_levels:
+                for effort_str, effort_idx in (("low", 0), ("high", 1)):
+                    rows.append({
+                        "scenario_label": scenario_label,
+                        "scenario_idx": s_idx,
+                        "action": action_int,
+                        "action_csv": action_int + 1,  # 1/2 (matches data CSV)
+                        "intimacy": intimacy_int,
+                        "intimacy_scaled": INTIMACY_MAP[intimacy_int],
+                        "effort": effort_str,
+                        "effort_idx": effort_idx,
+                    })
+    return pd.DataFrame(rows)

@@ -66,7 +66,7 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 
 - `_shared.py` — NLL/AIC/BIC, `_fit_with_adam`, `predict_canonical_*` / `fit_canonical_*` / `predict_effort_*` / `fit_effort_*`, data loaders, `run_fit_and_save_results` / `run_predict_and_save_fits` orchestration helpers.
 - `fit_<slug>.py` — fits the three actor ablations for that experiment; writes `outputs/<slug>/fit_results.csv`. One per forward experiment: `food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`.
-- `predict_<slug>.py` — reads `outputs/<slug>/fit_results.csv`, recomputes per-trial p_action, writes `outputs/<slug>/fits.csv`.
+- `predict_<slug>.py` — reads `outputs/<slug>/fit_results.csv`, computes per-cell p_action for each `(scenario, action, intimacy, IV)` cell, writes `outputs/<slug>/preds.csv`. Predictions are per-cell because the model's prediction for a given cell is identical across subjects in that cell.
 
 ### Inverse planning (`model/inverse/`)
 
@@ -92,7 +92,7 @@ The non-CV `fit_*` / `predict_*` pipelines still produce all-data fits; AIC and 
 
 Grouped by experiment slug. For every experiment, look in `outputs/<slug>/` for:
 - `fit_results.csv` — fitted parameters + AIC/BIC/r per ablation.
-- `fits.csv` — forward only — per-trial predictions.
+- `preds.csv` — forward only — per-cell predictions (one row per `(scenario, action, intimacy, IV)` cell).
 - `preds_full.csv`, `preds_summary.csv` — inverse only — per-(scenario, condition) posteriors and summary scalars.
 - `cv_folds.csv` — per-fold fit results from LOSO CV.
 - `cv_preds.csv` — forward only — per-trial held-out predictions.
