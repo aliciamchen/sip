@@ -19,7 +19,7 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 | `attention_passed` | Whether participant passed attention check (True/False) |
 | `memory_correct_count` | Number of correct responses on memory check (0-3) |
 
-## Forward planning (`forw_plan/`)
+## Forward planning (`food_forw_intimacy_desire/`)
 
 **main_trials.csv** (wide format - one row per trial):
 
@@ -45,7 +45,7 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 | `action` | Action index (0-3) |
 | `p_action` | Probability allocated to this action |
 
-## Intimacy inference, alternatives shown (`inv_plan_intimacy_alt/`)
+## Intimacy inference, alternatives shown (`food_inv-intimacy_desire_alt/`)
 
 **main_trials.csv** and **main_trials_long.csv**:
 
@@ -60,11 +60,11 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 
 Note: `main_trials_long.csv` uses `motivation` instead of `reward_condition`.
 
-## Intimacy inference, no alternatives shown (`inv_plan_intimacy_noalt/`)
+## Intimacy inference, no alternatives shown (`food_inv-intimacy_desire_noalt/`)
 
-Same columns as `inv_plan_intimacy_alt/` above. The experimental procedure differs only in that participants see a single observed action at the posterior stage rather than the full four-action list; on the model side, counterfactual alternatives are supplied by a language model.
+Same columns as `food_inv-intimacy_desire_alt/` above. The experimental procedure differs only in that participants see a single observed action at the posterior stage rather than the full four-action list; on the model side, counterfactual alternatives are supplied by a language model.
 
-## Desire inference, alternatives shown (`inv_plan_desire_alt/`)
+## Desire inference, alternatives shown (`food_inv-desire_intimacy_alt/`)
 
 **main_trials.csv** and **main_trials_long.csv**:
 
@@ -77,9 +77,9 @@ Same columns as `inv_plan_intimacy_alt/` above. The experimental procedure diffe
 | `stage` | Measurement timing ("prior" or "posterior") |
 | `response` | Participant's desire/motivation estimate (0-100 scale) |
 
-## Forward planning, effort manipulation (`forw_plan_effort/`)
+## Forward planning, effort manipulation (`food_forw_intimacy_effort/`)
 
-Parallel to `forw_plan/` but on the `scenarios_effort.csv` stimulus set: 16 scenarios × 2 actions × intimacy (4 levels) × effort (2 levels), with reward held fixed at high.
+Parallel to `food_forw_intimacy_desire/` but on the `scenarios_effort.csv` stimulus set: 16 scenarios × 2 actions × intimacy (4 levels) × effort (2 levels), with reward held fixed at high.
 
 **main_trials.csv** (wide format - one row per trial):
 
@@ -103,9 +103,9 @@ Parallel to `forw_plan/` but on the `scenarios_effort.csv` stimulus set: 16 scen
 | `action` | Action index (1 = non-saliva, 2 = saliva) |
 | `p_action` | Probability allocated to this action |
 
-## Intimacy inference, effort manipulation (`inv_plan_effort/`)
+## Intimacy inference, effort manipulation (`food_inv-intimacy_effort_alt/`)
 
-Parallel to `inv_plan_intimacy_alt/` but on the `scenarios_effort.csv` stimulus set: observers see both candidate actions and the one the actors took, and infer intimacy. 2 actions × 2 effort conditions, with prior/posterior measurement at each cell.
+Parallel to `food_inv-intimacy_desire_alt/` but on the `scenarios_effort.csv` stimulus set: observers see both candidate actions and the one the actors took, and infer intimacy. 2 actions × 2 effort conditions, with prior/posterior measurement at each cell.
 
 **main_trials.csv** and **main_trials_long.csv**:
 

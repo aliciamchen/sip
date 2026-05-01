@@ -6,11 +6,11 @@ inverse-planning variants.
 Two conditioning modes are supported via `--conditioning`:
 
   * `motivation` (default): conditions alternatives on (observed_action,
-    motivation). Used by `inv_plan_intimacy_noalt` (observer sees motivation,
+    motivation). Used by `food_inv-intimacy_desire_noalt` (observer sees motivation,
     infers intimacy). 16 scenarios × 4 actions × 2 motivations = 128 cells.
 
   * `relationship`: conditions alternatives on (observed_action,
-    relationship_condition). Used by `inv_plan_desire_noalt` (observer sees
+    relationship_condition). Used by `food_inv-desire_intimacy_noalt` (observer sees
     relationship, infers motivation). 16 scenarios × 4 actions × 4 relationship
     levels = 256 cells.
 
@@ -303,8 +303,8 @@ if __name__ == "__main__":
         default="motivation",
         help=(
             "Which axis to condition alternatives on. 'motivation' (default) "
-            "is used by inv_plan_intimacy_noalt (observer sees motivation, "
-            "infers intimacy); 'relationship' is used by inv_plan_desire_noalt "
+            "is used by food_inv-intimacy_desire_noalt (observer sees motivation, "
+            "infers intimacy); 'relationship' is used by food_inv-desire_intimacy_noalt "
             "(observer sees relationship, infers motivation)."
         ),
     )

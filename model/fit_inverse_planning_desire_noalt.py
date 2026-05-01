@@ -2,7 +2,7 @@
 Fit actor utility weights + alpha_observer for the no-alternatives-shown
 desire (reward) inference variant.
 
-Mirrors fit_inverse_planning_noalt.py (intimacy variant) but flips the
+Mirrors fit_inverse_planning_intimacy_noalt.py (intimacy variant) but flips the
 inference target. The observer infers reward_condition (motivation) from a
 single observed action, conditioned on the actor's relationship. Three
 ablations are jointly fit:
@@ -43,7 +43,7 @@ from model_utils import (
 
 from utils import get_project_root
 
-from fit_inverse_planning import compute_reward_nll
+from fit_inverse_planning_alt import compute_reward_nll
 
 
 # Variant registry: name -> (observer_fn, utility_param_names, uses_v).
@@ -85,7 +85,7 @@ def load_desire_noalt_data(filepath=None):
         filepath = (
             get_project_root()
             / "data"
-            / "inv_plan_desire_noalt"
+            / "food_inv-desire_intimacy_noalt"
             / "main_trials_long.csv"
         )
     print("Loading no-alt desire inference data...")

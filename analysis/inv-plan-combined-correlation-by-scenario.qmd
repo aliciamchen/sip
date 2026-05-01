@@ -30,7 +30,7 @@ This notebook parallels `inv-plan-combined-correlation.qmd` (and adds forward pl
 
 # Forward planning
 
-## Canonical forward planning (`forw_plan`)
+## Canonical forward planning (`food_forw_intimacy_desire`)
 
 ```{r}
 df_fp_cv <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types = FALSE)
@@ -86,7 +86,7 @@ ggplot(df_fp_corr, aes(x = model_p_action, y = human_p_action,
   facet_wrap(~model, nrow = 1) +
   coord_fixed_symmetric(df_fp_corr$model_p_action, df_fp_corr$human_p_action)
 
-ggsave(here("figures", "forw_plan_correlation_by_scenario.pdf"), device = cairo_pdf)
+ggsave(here("figures", "food_forw_intimacy_desire_correlation_by_scenario.pdf"), device = cairo_pdf)
 ```
 
 ```{r}
@@ -99,7 +99,7 @@ correlations_fp |>
   )
 ```
 
-## Forward planning, effort (`forw_plan_effort`)
+## Forward planning, effort (`food_forw_intimacy_effort`)
 
 ```{r}
 df_fpe_cv <- read_csv(here("model", "outputs", "cv_loso_preds_effort.csv"), show_col_types = FALSE)
@@ -157,7 +157,7 @@ ggplot(df_fpe_corr, aes(x = model_p_action, y = human_p_action,
   facet_wrap(~model, nrow = 1) +
   coord_fixed_symmetric(df_fpe_corr$model_p_action, df_fpe_corr$human_p_action)
 
-ggsave(here("figures", "forw_plan_effort_correlation_by_scenario.pdf"), device = cairo_pdf)
+ggsave(here("figures", "food_forw_intimacy_effort_correlation_by_scenario.pdf"), device = cairo_pdf)
 ```
 
 ```{r}
@@ -172,12 +172,12 @@ correlations_fpe |>
 
 # Inverse planning
 
-## Load `inv_plan_intimacy_alt` (intimacy inference) data
+## Load `food_inv-intimacy_desire_alt` (intimacy inference) data
 
 ### Human data
 
 ```{r}
-df_intimacy <- read_csv(here("data", "inv_plan_intimacy_alt", "main_trials_long.csv")) |>
+df_intimacy <- read_csv(here("data", "food_inv-intimacy_desire_alt", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
@@ -202,7 +202,7 @@ df_intimacy_summary <- df_intimacy |>
 ### Model predictions
 
 ```{r}
-df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimacy_alt_preds_summary.csv")) |>
+df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv")) |>
   rename(motivation = reward_condition) |>
   mutate(
     action = as.character(action),
@@ -218,12 +218,12 @@ df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimac
   select(scenario_label, motivation, action, model, model_belief_update)
 ```
 
-## Load `inv_plan_desire_alt` (desire inference) data
+## Load `food_inv-desire_intimacy_alt` (desire inference) data
 
 ### Human data
 
 ```{r}
-df_desire <- read_csv(here("data", "inv_plan_desire_alt", "main_trials_long.csv")) |>
+df_desire <- read_csv(here("data", "food_inv-desire_intimacy_alt", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     intimacy = factor(intimacy),
@@ -249,7 +249,7 @@ df_desire_summary <- df_desire |>
 ### Model predictions
 
 ```{r}
-df_model_desire <- read_csv(here("model", "outputs", "cv_loso_inv_plan_desire_alt_preds_summary.csv")) |>
+df_model_desire <- read_csv(here("model", "outputs", "cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   mutate(
     action = as.character(action),
@@ -369,12 +369,12 @@ EFFORT_ACTION_LEVELS <- c("No saliva", "Share saliva")
 EXCLUDED_SUBJECTS_EFFORT <- c("daeeb393-ddef-5529-804a-36dbdd257d5c")
 ```
 
-## Load `inv_plan_effort` (intimacy inference, effort) data
+## Load `food_inv-intimacy_effort_alt` (intimacy inference, effort) data
 
 ### Human data
 
 ```{r}
-df_intimacy_effort <- read_csv(here("data", "inv_plan_effort", "main_trials_long.csv")) |>
+df_intimacy_effort <- read_csv(here("data", "food_inv-intimacy_effort_alt", "main_trials_long.csv")) |>
   filter(!subject_id %in% EXCLUDED_SUBJECTS_EFFORT) |>
   mutate(
     action = factor(action_condition, levels = c("action_1", "action_2"),
@@ -402,7 +402,7 @@ df_intimacy_effort_summary <- df_intimacy_effort |>
 
 ```{r}
 df_model_intimacy_effort <- read_csv(here("model", "outputs",
-                                          "cv_loso_inv_plan_effort_preds_summary.csv")) |>
+                                          "cv_loso_food_inv-intimacy_effort_alt_preds_summary.csv")) |>
   rename(effort = effort_condition) |>
   mutate(
     action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
@@ -418,12 +418,12 @@ df_model_intimacy_effort <- read_csv(here("model", "outputs",
   select(scenario_label, effort, action, model, model_belief_update)
 ```
 
-## Load `inv_plan_effort_inferred` (effort inference) data
+## Load `food_inv-effort_intimacy_alt` (effort inference) data
 
 ### Human data
 
 ```{r}
-df_effort_inferred <- read_csv(here("data", "inv_plan_effort_inferred", "main_trials_long.csv")) |>
+df_effort_intimacy <- read_csv(here("data", "food_inv-effort_intimacy_alt", "main_trials_long.csv")) |>
   mutate(
     action = factor(action_condition, levels = c("action_1", "action_2"),
                     labels = EFFORT_ACTION_LEVELS),
@@ -441,7 +441,7 @@ df_effort_inferred <- read_csv(here("data", "inv_plan_effort_inferred", "main_tr
   ) |>
   ungroup()
 
-df_effort_inferred_summary <- df_effort_inferred |>
+df_effort_intimacy_summary <- df_effort_intimacy |>
   filter(stage == "posterior") |>
   group_by(scenario_label, intimacy, action) |>
   summarize(human_belief_update = mean(belief_update, na.rm = TRUE), .groups = "drop")
@@ -450,8 +450,8 @@ df_effort_inferred_summary <- df_effort_inferred |>
 ### Model predictions
 
 ```{r}
-df_model_effort_inferred <- read_csv(here("model", "outputs",
-                                          "cv_loso_inv_plan_effort_inferred_preds_summary.csv")) |>
+df_model_effort_intimacy <- read_csv(here("model", "outputs",
+                                          "cv_loso_food_inv-effort_intimacy_alt_preds_summary.csv")) |>
   mutate(
     action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
     intimacy = factor(intimacy, levels = c(0, 50, 75, 100)),
@@ -477,15 +477,15 @@ df_corr_intimacy_effort <- df_intimacy_effort_summary |>
     model_belief_update = model_belief_update / 100
   )
 
-df_corr_effort_inferred <- df_effort_inferred_summary |>
-  left_join(df_model_effort_inferred, by = c("scenario_label", "intimacy", "action")) |>
+df_corr_effort_intimacy <- df_effort_intimacy_summary |>
+  left_join(df_model_effort_intimacy, by = c("scenario_label", "intimacy", "action")) |>
   mutate(experiment = "Inv plan effort inferred")
 
 df_combined_effort <- bind_rows(
   df_corr_intimacy_effort |>
     mutate(condition = as.character(effort)) |>
     select(scenario_label, action, model, experiment, condition, human_belief_update, model_belief_update),
-  df_corr_effort_inferred |>
+  df_corr_effort_intimacy |>
     mutate(condition = paste0("Intimacy: ", intimacy)) |>
     select(scenario_label, action, model, experiment, condition, human_belief_update, model_belief_update)
 ) |>
@@ -549,7 +549,7 @@ ggplot(df_plot_effort, aes(x = model_belief_update, y = human_belief_update, sha
   facet_wrap(~model, nrow = 1) +
   coord_fixed_symmetric(df_plot_effort$model_belief_update, df_plot_effort$human_belief_update)
 
-ggsave(here("figures", "inv_plan_effort_combined_correlation_by_scenario_main.pdf"), device = cairo_pdf)
+ggsave(here("figures", "food_inv-intimacy_effort_alt_combined_correlation_by_scenario_main.pdf"), device = cairo_pdf)
 ```
 
 ## Summary table
@@ -577,7 +577,7 @@ df_combined_all <- bind_rows(
   df_corr_intimacy_effort |>
     mutate(condition = as.character(effort), action = as.character(action)) |>
     select(scenario_label, action, model, experiment, condition, human_belief_update, model_belief_update),
-  df_corr_effort_inferred |>
+  df_corr_effort_intimacy |>
     mutate(condition = paste0("Intimacy: ", intimacy), action = as.character(action)) |>
     select(scenario_label, action, model, experiment, condition, human_belief_update, model_belief_update)
 ) |>

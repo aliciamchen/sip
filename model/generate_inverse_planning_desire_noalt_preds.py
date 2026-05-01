@@ -1,7 +1,7 @@
 """
 Generate predictions for the no-alternatives-shown desire (reward) inference variant.
 
-Mirrors generate_inverse_planning_noalt_preds.py but flips the inference target.
+Mirrors generate_inverse_planning_intimacy_noalt_preds.py but flips the inference target.
 For each (scenario, observed_action, relationship_condition) cell, emits the
 posterior P(reward = HIGH) under all three padded reward observer ablations.
 The summary CSV's `p_high` column is what the slider response 0-100 encodes.
@@ -149,8 +149,8 @@ def main():
         ["scenario_label", "observed_action", "intimacy", "model", "p_high"]
     ].copy()
 
-    full_path = output_dir / "inv_plan_desire_noalt_preds_full.csv"
-    summary_path = output_dir / "inv_plan_desire_noalt_preds_summary.csv"
+    full_path = output_dir / "food_inv-desire_intimacy_noalt_preds_full.csv"
+    summary_path = output_dir / "food_inv-desire_intimacy_noalt_preds_summary.csv"
     df_full.to_csv(full_path, index=False)
     df_summary.to_csv(summary_path, index=False)
     print(f"\nSaved {len(df_full)} rows to {full_path}")

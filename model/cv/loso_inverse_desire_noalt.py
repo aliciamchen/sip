@@ -2,7 +2,7 @@
 Leave-one-scenario-out CV for the no-alternatives-shown desire (reward) inference
 experiment, using the JOINT fit (all actor weights + α_observer refit per fold).
 
-Mirrors loso_inverse_noalt.py but for the relationship-keyed desire-noalt
+Mirrors loso_inverse_intimacy_noalt.py but for the relationship-keyed desire-noalt
 pipeline. For each of the 16 scenarios, hold it out, jointly fit all actor
 weights + α_observer on the remaining 15 scenarios, and emit predictions for
 the held-out scenario using the refit weights.
@@ -12,9 +12,9 @@ Runs over the three relationship-keyed padded-observer variants
 the PADDED_VARIANTS registry in fit_inverse_planning_desire_noalt.
 
 Output (in model/outputs/):
-  - cv_loso_inv_plan_desire_noalt_preds_summary.csv
+  - cv_loso_food_inv-desire_intimacy_noalt_preds_summary.csv
     One row per (scenario, observed_action, intimacy, model). Same shape as
-    inv_plan_desire_noalt_preds_summary.csv; `p_high` is what the slider
+    food_inv-desire_intimacy_noalt_preds_summary.csv; `p_high` is what the slider
     response 0-100 encodes (P(motivation = HIGH)).
   - cv_loso_inverse_desire_noalt_folds.csv
     Per-fold fitted weights + α_observer + train/test NLL, per variant.
@@ -183,7 +183,7 @@ def main():
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    preds_path = output_dir / "cv_loso_inv_plan_desire_noalt_preds_summary.csv"
+    preds_path = output_dir / "cv_loso_food_inv-desire_intimacy_noalt_preds_summary.csv"
     fold_path = output_dir / "cv_loso_inverse_desire_noalt_folds.csv"
     preds_df.to_csv(preds_path, index=False)
     fold_df.to_csv(fold_path, index=False)

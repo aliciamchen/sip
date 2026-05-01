@@ -1,6 +1,6 @@
 """
 Utility functions and memo actor models for the effort-manipulation forward-
-planning experiment (forw_plan_effort).
+planning experiment (food_forw_intimacy_effort).
 
 Parallel to model/model_utils.py, but adapted for:
   - 2 actions per scenario (action 0 = non-saliva-share, action 1 = saliva-share).
@@ -91,7 +91,7 @@ LLM_TABLES_EFFORT = load_lm_scenario_params_effort()
 def load_lm_scenario_params_effort_marginal(filepath=None):
     """Load effort-marginal access ratings (vignette without effort paragraph).
 
-    Used by the inv_plan_effort_inferred experiment, where the observer does
+    Used by the food_inv-effort_intimacy_alt experiment, where the observer does
     not see the effort paragraph and so cannot perceive any effort-induced
     setting differences when reasoning about action access.
 
@@ -439,7 +439,7 @@ def observer_intimacy_effort_base[
 
 
 @memo
-def observer_effort_inferred_full[
+def observer_effort_intimacy_full[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -468,7 +468,7 @@ def observer_effort_inferred_full[
 
 
 @memo
-def observer_effort_inferred_discomfort_only[
+def observer_effort_intimacy_discomfort_only[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -497,7 +497,7 @@ def observer_effort_inferred_discomfort_only[
 
 
 @memo
-def observer_effort_inferred_base[
+def observer_effort_intimacy_base[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,

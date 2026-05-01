@@ -22,11 +22,11 @@ scenarios and V(a|s) = 1 is stipulated uniformly for both actions.
 10 runs per parameter-type per (scenario, effort_condition), aggregated to
 mean/std. Outputs (model/outputs/):
 - lm_scenario_params_effort.csv (64 rows: 16 scenarios × 2 efforts × 2 actions)
-  Effort-conditional access + effort. Used by forw_plan_effort and
-  inv_plan_effort, where the actor / observer sees the effort paragraph.
+  Effort-conditional access + effort. Used by food_forw_intimacy_effort and
+  food_inv-intimacy_effort_alt, where the actor / observer sees the effort paragraph.
 - lm_scenario_params_effort_marginal.csv (32 rows: 16 scenarios × 2 actions)
   Effort-marginal access only (vignette without effort paragraph). Used by
-  inv_plan_effort_inferred, where the observer does not see the effort
+  food_inv-effort_intimacy_alt, where the observer does not see the effort
   paragraph and so must reason about access from the base vignette alone.
 
 Usage:
@@ -100,7 +100,7 @@ def format_access_prompt(row, effort_condition):
 def format_access_prompt_marginal(row):
     """Access prompt that omits the effort paragraph. Used to estimate access
     as it would be perceived by an observer who does not see the effort context
-    (specifically, the inv_plan_effort_inferred experiment)."""
+    (specifically, the food_inv-effort_intimacy_alt experiment)."""
     return build_user_prompt("access", row["vignette"], _action_texts_2(row))
 
 

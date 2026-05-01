@@ -89,9 +89,9 @@ def run_loso(domain: str = "food"):
     v_table = load_lm_v(domain)
 
     if domain == "food":
-        data_path = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
+        data_path = get_project_root() / "data" / "food_forw_intimacy_desire" / "main_trials_long.csv"
     elif domain == "nonfood":
-        data_path = get_project_root() / "data" / "nonfood_forw_plan" / "main_trials_long.csv"
+        data_path = get_project_root() / "data" / "nonfood_forw_intimacy_desire" / "main_trials_long.csv"
     else:
         raise ValueError(f"Unknown domain: {domain!r}")
 

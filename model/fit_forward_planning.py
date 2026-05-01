@@ -57,7 +57,7 @@ def load_data(filepath: str = None, scenario_to_idx: dict = None):
         scenario_idx: JAX array of scenario indices (0-15)
     """
     if filepath is None:
-        filepath = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
+        filepath = get_project_root() / "data" / "food_forw_intimacy_desire" / "main_trials_long.csv"
     if scenario_to_idx is None:
         scenario_to_idx = SCENARIO_TO_IDX
     print("Loading forward planning data...")
@@ -304,11 +304,11 @@ def main(domain: str = "food"):
     v_table = load_lm_v(domain)
 
     if domain == "food":
-        data_path = get_project_root() / "data" / "forw_plan" / "main_trials_long.csv"
+        data_path = get_project_root() / "data" / "food_forw_intimacy_desire" / "main_trials_long.csv"
         fits_filename = "forward_planning_fits.csv"
         results_filename = "forward_planning_fit_results.csv"
     elif domain == "nonfood":
-        data_path = get_project_root() / "data" / "nonfood_forw_plan" / "main_trials_long.csv"
+        data_path = get_project_root() / "data" / "nonfood_forw_intimacy_desire" / "main_trials_long.csv"
         fits_filename = "forward_planning_fits_nonfood.csv"
         results_filename = "forward_planning_fit_results_nonfood.csv"
     else:
@@ -461,8 +461,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fit forward planning models.")
     parser.add_argument(
         "--domain", choices=("food", "nonfood"), default="food",
-        help="Which experiment to fit: 'food' (default, uses data/forw_plan/) "
-             "or 'nonfood' (uses data/nonfood_forw_plan/).",
+        help="Which experiment to fit: 'food' (default, uses data/food_forw_intimacy_desire/) "
+             "or 'nonfood' (uses data/nonfood_forw_intimacy_desire/).",
     )
     args = parser.parse_args()
     main(domain=args.domain)

@@ -362,7 +362,7 @@ def load_padded_lm_tables_relationship(
     alternatives_v_path=None,
 ):
     """Build padded tables for the relationship-conditioned no-alt action space
-    used by `inv_plan_desire_noalt`.
+    used by `food_inv-desire_intimacy_noalt`.
 
     Shapes:
       - access: (16, 4, 4, MAX_ACTIONS) — (scenario, observed_action, relationship, slot)
@@ -1311,7 +1311,7 @@ def observer_intimacy_base_padded[
 # ==============================================================================
 # Observer inferring reward (padded action space, relationship-keyed)
 # ==============================================================================
-# Used by `inv_plan_desire_noalt`. The observer knows scenario, observed_action,
+# Used by `food_inv-desire_intimacy_noalt`. The observer knows scenario, observed_action,
 # and relationship_condition; the latent is reward_condition. Action space is
 # conditioned on (scenario, observed_action, relationship_condition) — i.e.,
 # the LM alternatives are elicited per relationship level so the counterfactual

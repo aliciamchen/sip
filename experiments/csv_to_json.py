@@ -2,9 +2,9 @@
 """Convert scenario CSVs to stimuli.json for each experiment.
 
 Each stimulus CSV maps to a set of experiment directories that consume it:
-- scenarios.csv → forw_plan, inv_plan_intimacy_alt, inv_plan_desire_alt, inv_plan_intimacy_noalt
-- scenarios_effort.csv → forw_plan_effort, inv_plan_effort, inv_plan_effort_inferred
-- scenarios_nonfood.csv → nonfood_forw_plan, nonfood_inv_plan_intimacy_alt, nonfood_inv_plan_desire_alt
+- scenarios.csv → food_forw_intimacy_desire, food_inv-intimacy_desire_alt, food_inv-desire_intimacy_alt, food_inv-intimacy_desire_noalt
+- scenarios_effort.csv → food_forw_intimacy_effort, food_inv-intimacy_effort_alt, food_inv-effort_intimacy_alt
+- scenarios_nonfood.csv → nonfood_forw_intimacy_desire, nonfood_inv-intimacy_desire_alt, nonfood_inv-desire_intimacy_alt
 """
 
 import csv
@@ -15,29 +15,29 @@ SOURCES = [
     (
         "scenarios.csv",
         [
-            "forw_plan",
-            "inv_plan_intimacy_alt",
-            "inv_plan_desire_alt",
-            "inv_plan_intimacy_noalt",
-            "inv_plan_desire_noalt",
+            "food_forw_intimacy_desire",
+            "food_inv-intimacy_desire_alt",
+            "food_inv-desire_intimacy_alt",
+            "food_inv-intimacy_desire_noalt",
+            "food_inv-desire_intimacy_noalt",
         ],
     ),
     (
         "scenarios_effort.csv",
         [
-            "forw_plan_effort",
-            "inv_plan_effort",
-            "inv_plan_effort_inferred",
+            "food_forw_intimacy_effort",
+            "food_inv-intimacy_effort_alt",
+            "food_inv-effort_intimacy_alt",
         ],
     ),
     (
         "scenarios_nonfood.csv",
         [
-            "nonfood_forw_plan",
-            "nonfood_inv_plan_intimacy_alt",
-            "nonfood_inv_plan_desire_alt",
-            "nonfood_inv_plan_intimacy_noalt",
-            "nonfood_inv_plan_desire_noalt",
+            "nonfood_forw_intimacy_desire",
+            "nonfood_inv-intimacy_desire_alt",
+            "nonfood_inv-desire_intimacy_alt",
+            "nonfood_inv-intimacy_desire_noalt",
+            "nonfood_inv-desire_intimacy_noalt",
         ],
     ),
 ]

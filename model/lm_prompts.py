@@ -291,7 +291,7 @@ def alternatives_user_prompt(vignette, reward_text, observed_action_text):
 
 # Relationship-condition descriptors used by the desire-noalt observer's
 # alternative-generation pass. Mirrors the slider labels shown to participants
-# in `experiments/inv_plan_desire_noalt/trials.js` and conveys the relationship
+# in `experiments/food_inv-desire_intimacy_noalt/trials.js` and conveys the relationship
 # context to the LM the same way it's conveyed to humans (numeric label +
 # short qualitative descriptor).
 RELATIONSHIP_DESCRIPTORS = {

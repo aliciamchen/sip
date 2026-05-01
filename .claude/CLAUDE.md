@@ -8,25 +8,25 @@ This is a cognitive science research project investigating inverse planning and 
 
 The project comprises several experimental variants. Paper-level experiment numbering shifts as the writeup evolves, so the stable identifier for each variant is its data directory in `data/`.
 
-- **Forward planning** (`data/forw_plan/`) — actors choose actions based on intimacy and motivation.
-- **Intimacy inference, alternatives shown** (`data/inv_plan_intimacy_alt/`) — observers see the scenario plus all four candidate actions, then infer relationship closeness from the one the actor took.
-- **Desire inference, alternatives shown** (`data/inv_plan_desire_alt/`) — observers see all four candidate actions, then infer the actor's desire from the one they took.
-- **Intimacy inference, no alternatives shown** (`data/inv_plan_intimacy_noalt/`) — observers see only the single action the actor took and infer relationship closeness; on the model side, counterfactual alternatives are LM-generated.
-- **Desire inference, no alternatives shown** (`data/inv_plan_desire_noalt/`) — same noalt structure as above but flips the inference target: observers see only the chosen action and infer the actor's desire (slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs).
+- **Forward planning** (`data/food_forw_intimacy_desire/`) — actors choose actions based on intimacy and motivation.
+- **Intimacy inference, alternatives shown** (`data/food_inv-intimacy_desire_alt/`) — observers see the scenario plus all four candidate actions, then infer relationship closeness from the one the actor took.
+- **Desire inference, alternatives shown** (`data/food_inv-desire_intimacy_alt/`) — observers see all four candidate actions, then infer the actor's desire from the one they took.
+- **Intimacy inference, no alternatives shown** (`data/food_inv-intimacy_desire_noalt/`) — observers see only the single action the actor took and infer relationship closeness; on the model side, counterfactual alternatives are LM-generated.
+- **Desire inference, no alternatives shown** (`data/food_inv-desire_intimacy_noalt/`) — same noalt structure as above but flips the inference target: observers see only the chosen action and infer the actor's desire (slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs).
 
 A parallel pair of experiments manipulates **relative effort** instead of reward, using a different stimulus set (`experiments/scenarios_effort.csv`) in which each scenario has two actions and reward is held fixed at high. Data has been collected for both, and the full pipeline (LM scenario params, model fits, LOSO CV, analysis qmds) parallels the canonical pipeline.
 
-- **Forward planning, effort** (`data/forw_plan_effort/`) — actors choose between two actions given intimacy (4 levels) × relative effort (2 levels); 2-slider linked-probability response.
-- **Inverse planning, effort** (`data/inv_plan_effort/`) — observers infer intimacy from the observed action (2 levels) × relative effort (2 levels); both candidate actions shown, prior/posterior intimacy sliders.
-- **Inverse planning, effort inferred** (`data/inv_plan_effort_inferred/`) — flips the inference direction of the previous experiment: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context from a slider whose endpoints are the scenario's `effort_low` / `effort_high` paragraphs. Effort is the latent (no effort paragraph in the vignette). Prior/posterior structure.
+- **Forward planning, effort** (`data/food_forw_intimacy_effort/`) — actors choose between two actions given intimacy (4 levels) × relative effort (2 levels); 2-slider linked-probability response.
+- **Inverse planning, effort** (`data/food_inv-intimacy_effort_alt/`) — observers infer intimacy from the observed action (2 levels) × relative effort (2 levels); both candidate actions shown, prior/posterior intimacy sliders.
+- **Inverse planning, effort inferred** (`data/food_inv-effort_intimacy_alt/`) — flips the inference direction of the previous experiment: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context from a slider whose endpoints are the scenario's `effort_low` / `effort_high` paragraphs. Effort is the latent (no effort paragraph in the vignette). Prior/posterior structure.
 
 A second parallel pipeline tests **generalization beyond food sharing** using `experiments/scenarios_nonfood.csv` — 16 scenarios covering substance sharing (chapstick, towel, hat, hairbrush, harmonica, sunscreen), shared physical space (blanket, sleeping-bag, bed, locker-room, sauna), and informational/situational privacy (breakup, payment, gossip, home, navigation). The schema matches the canonical `scenarios.csv` with one extra `scenario_type` column. The five jsPsych experiments parallel the canonical food set one-to-one (no data collected yet):
 
-- **`experiments/nonfood_forw_plan/`** — non-food forward planning.
-- **`experiments/nonfood_inv_plan_intimacy_alt/`** — non-food intimacy inference, alternatives shown.
-- **`experiments/nonfood_inv_plan_desire_alt/`** — non-food desire inference, alternatives shown.
-- **`experiments/nonfood_inv_plan_intimacy_noalt/`** — non-food intimacy inference, no alternatives shown.
-- **`experiments/nonfood_inv_plan_desire_noalt/`** — non-food desire inference, no alternatives shown.
+- **`experiments/nonfood_forw_intimacy_desire/`** — non-food forward planning.
+- **`experiments/nonfood_inv-intimacy_desire_alt/`** — non-food intimacy inference, alternatives shown.
+- **`experiments/nonfood_inv-desire_intimacy_alt/`** — non-food desire inference, alternatives shown.
+- **`experiments/nonfood_inv-intimacy_desire_noalt/`** — non-food intimacy inference, no alternatives shown.
+- **`experiments/nonfood_inv-desire_intimacy_noalt/`** — non-food desire inference, no alternatives shown.
 
 ## LM prompts
 

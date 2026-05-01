@@ -101,7 +101,7 @@ setup_analysis <- function() {
 }
 
 # Bootstrap correlation with 95% CI
-# Used in: inv-plan-intimacy-alt, inv-plan-desire-alt, inv-plan-combined-correlation
+# Used in: food-inv-intimacy-desire-alt, food-inv-desire-intimacy-alt, inv-plan-combined-correlation
 boot_cor <- function(x, y, n_boot = 1000) {
   complete <- complete.cases(x, y)
   x <- x[complete]

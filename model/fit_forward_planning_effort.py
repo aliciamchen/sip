@@ -1,5 +1,5 @@
 """
-Fit forward planning models to the effort-manipulation experiment (forw_plan_effort).
+Fit forward planning models to the effort-manipulation experiment (food_forw_intimacy_effort).
 
 Parallel to model/fit_forward_planning.py, adapted for:
   - 2 actions per scenario (non-saliva-share vs saliva-share; CSV action=1/2 -> 0/1).
@@ -53,7 +53,7 @@ INTIMACY_MAP = {0: 0.0, 50: 0.5, 75: 0.75, 100: 1.0}
 
 
 def load_data(filepath: str = None):
-    """Load and preprocess forw_plan_effort data.
+    """Load and preprocess food_forw_intimacy_effort data.
 
     Converts:
       - intimacy 0/50/75/100 -> 0.0/0.5/0.75/1.0
@@ -62,8 +62,8 @@ def load_data(filepath: str = None):
       - scenario_label -> idx (alphabetical 0-15, shared with canonical pipeline)
     """
     if filepath is None:
-        filepath = get_project_root() / "data" / "forw_plan_effort" / "main_trials_long.csv"
-    print("Loading forw_plan_effort data...")
+        filepath = get_project_root() / "data" / "food_forw_intimacy_effort" / "main_trials_long.csv"
+    print("Loading food_forw_intimacy_effort data...")
     data = pd.read_csv(filepath)
 
     data["intimacy_scaled"] = data["intimacy"].map(INTIMACY_MAP)

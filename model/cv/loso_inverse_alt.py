@@ -10,11 +10,11 @@ Runs over the three canonical uniform-prior variants
 (full, discomfort_only, base).
 
 Outputs (in model/outputs/):
-  - cv_loso_inv_plan_intimacy_alt_preds_summary.csv
+  - cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv
     One row per (scenario, action, motivation, model), same schema as
-    inv_plan_intimacy_alt_preds_summary.csv; `expected_intimacy` comes from
+    food_inv-intimacy_desire_alt_preds_summary.csv; `expected_intimacy` comes from
     the LOSO-refit observer for that scenario's held-out fold.
-  - cv_loso_inv_plan_desire_alt_preds_summary.csv
+  - cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv
     One row per (scenario, action, intimacy_condition, model); `p_high_reward`
     from LOSO-refit observer.
   - cv_loso_inverse_alt_folds.csv
@@ -32,7 +32,7 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
-from fit_inverse_planning import (
+from fit_inverse_planning_alt import (
     ACCESS_VARIANTS,
     _fit_alpha_observer,
     _table_kwargs,
@@ -235,13 +235,13 @@ def main():
 
     print("\n--- Intimacy inference ---")
     int_preds, int_folds = _loso_intimacy(actor_params_by_model)
-    int_path = output_dir / "cv_loso_inv_plan_intimacy_alt_preds_summary.csv"
+    int_path = output_dir / "cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv"
     int_preds.to_csv(int_path, index=False)
     print(f"Wrote {int_path}")
 
     print("\n--- Desire inference ---")
     des_preds, des_folds = _loso_desire(actor_params_by_model)
-    des_path = output_dir / "cv_loso_inv_plan_desire_alt_preds_summary.csv"
+    des_path = output_dir / "cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv"
     des_preds.to_csv(des_path, index=False)
     print(f"Wrote {des_path}")
 

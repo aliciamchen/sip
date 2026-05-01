@@ -29,15 +29,15 @@ names(DESIRE_INFERENCE_COLORS) <- paste0("Intimacy: ", names(INTIMACY_COLORS))
 ```
 
 This notebook aggregates model-human correlations across both alt-shown inverse planning experiments:
-- **`inv_plan_intimacy_alt`**: Intimacy inference (infer relationship closeness from observed action)
-- **`inv_plan_desire_alt`**: Desire inference (infer motivation from observed action)
+- **`food_inv-intimacy_desire_alt`**: Intimacy inference (infer relationship closeness from observed action)
+- **`food_inv-desire_intimacy_alt`**: Desire inference (infer motivation from observed action)
 
-## Load `inv_plan_intimacy_alt` (Intimacy Inference) Data
+## Load `food_inv-intimacy_desire_alt` (Intimacy Inference) Data
 
 ### Human data
 
 ```{r}
-df_intimacy <- read_csv(here("data", "inv_plan_intimacy_alt", "main_trials_long.csv")) |>
+df_intimacy <- read_csv(here("data", "food_inv-intimacy_desire_alt", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
@@ -63,7 +63,7 @@ df_intimacy_summary <- df_intimacy |>
 ### Model predictions
 
 ```{r}
-df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimacy_alt_preds_summary.csv")) |>
+df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv")) |>
   rename(motivation = reward_condition) |>
   mutate(
     action = as.character(action),
@@ -80,12 +80,12 @@ df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimac
   summarize(model_belief_update = mean(model_belief_update), .groups = "drop")
 ```
 
-## Load `inv_plan_desire_alt` (Desire Inference) Data
+## Load `food_inv-desire_intimacy_alt` (Desire Inference) Data
 
 ### Human data
 
 ```{r}
-df_desire <- read_csv(here("data", "inv_plan_desire_alt", "main_trials_long.csv")) |>
+df_desire <- read_csv(here("data", "food_inv-desire_intimacy_alt", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     intimacy = factor(intimacy),
@@ -112,7 +112,7 @@ df_desire_summary <- df_desire |>
 ### Model predictions
 
 ```{r}
-df_model_desire <- read_csv(here("model", "outputs", "cv_loso_inv_plan_desire_alt_preds_summary.csv")) |>
+df_model_desire <- read_csv(here("model", "outputs", "cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   mutate(
     action = as.character(action),
@@ -251,24 +251,24 @@ correlations_combined |>
 # Effort experiments combined
 
 This section aggregates model-human correlations across both effort-manipulation inverse planning experiments:
-- **`inv_plan_effort`**: Intimacy inference under an effort manipulation (infer relationship closeness from observed action × effort).
-- **`inv_plan_effort_inferred`**: Effort inference (infer effort context from observed action × intimacy).
+- **`food_inv-intimacy_effort_alt`**: Intimacy inference under an effort manipulation (infer relationship closeness from observed action × effort).
+- **`food_inv-effort_intimacy_alt`**: Effort inference (infer effort context from observed action × intimacy).
 
 ```{r}
 # EFFORT_LEVELS and EFFORT_COLORS come from utils.R
 EFFORT_ACTION_LEVELS <- c("No saliva", "Share saliva")
 
-# Excluded from inv_plan_effort human-side analysis only (mirrors the
+# Excluded from food_inv-intimacy_effort_alt human-side analysis only (mirrors the
 # per-experiment analysis); model CV predictions are unaffected.
 EXCLUDED_SUBJECTS_EFFORT <- c("daeeb393-ddef-5529-804a-36dbdd257d5c")
 ```
 
-## Load `inv_plan_effort` (Intimacy inference, effort) data
+## Load `food_inv-intimacy_effort_alt` (Intimacy inference, effort) data
 
 ### Human data
 
 ```{r}
-df_intimacy_effort <- read_csv(here("data", "inv_plan_effort", "main_trials_long.csv")) |>
+df_intimacy_effort <- read_csv(here("data", "food_inv-intimacy_effort_alt", "main_trials_long.csv")) |>
   filter(!subject_id %in% EXCLUDED_SUBJECTS_EFFORT) |>
   mutate(
     action = factor(action_condition, levels = c("action_1", "action_2"),
@@ -297,7 +297,7 @@ df_intimacy_effort_summary <- df_intimacy_effort |>
 
 ```{r}
 df_model_intimacy_effort <- read_csv(here("model", "outputs",
-                                          "cv_loso_inv_plan_effort_preds_summary.csv")) |>
+                                          "cv_loso_food_inv-intimacy_effort_alt_preds_summary.csv")) |>
   rename(effort = effort_condition) |>
   mutate(
     action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
@@ -314,12 +314,12 @@ df_model_intimacy_effort <- read_csv(here("model", "outputs",
   summarize(model_belief_update = mean(model_belief_update), .groups = "drop")
 ```
 
-## Load `inv_plan_effort_inferred` (Effort inference) data
+## Load `food_inv-effort_intimacy_alt` (Effort inference) data
 
 ### Human data
 
 ```{r}
-df_effort_inferred <- read_csv(here("data", "inv_plan_effort_inferred", "main_trials_long.csv")) |>
+df_effort_intimacy <- read_csv(here("data", "food_inv-effort_intimacy_alt", "main_trials_long.csv")) |>
   mutate(
     action = factor(action_condition, levels = c("action_1", "action_2"),
                     labels = EFFORT_ACTION_LEVELS),
@@ -337,7 +337,7 @@ df_effort_inferred <- read_csv(here("data", "inv_plan_effort_inferred", "main_tr
   ) |>
   ungroup()
 
-df_effort_inferred_summary <- df_effort_inferred |>
+df_effort_intimacy_summary <- df_effort_intimacy |>
   filter(stage == "posterior") |>
   group_by(intimacy, action) |>
   tidyboot_mean(belief_update) |>
@@ -347,8 +347,8 @@ df_effort_inferred_summary <- df_effort_inferred |>
 ### Model predictions
 
 ```{r}
-df_model_effort_inferred <- read_csv(here("model", "outputs",
-                                          "cv_loso_inv_plan_effort_inferred_preds_summary.csv")) |>
+df_model_effort_intimacy <- read_csv(here("model", "outputs",
+                                          "cv_loso_food_inv-effort_intimacy_alt_preds_summary.csv")) |>
   mutate(
     action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
     intimacy = factor(intimacy, levels = c(0, 50, 75, 100)),
@@ -366,7 +366,7 @@ df_model_effort_inferred <- read_csv(here("model", "outputs",
 
 ## Combine and rescale
 
-`inv_plan_effort` belief updates are on the 0–100 intimacy scale (so −100 to +100 for posterior − prior); we divide by 100 to put them on the same −1 to +1 scale as `inv_plan_effort_inferred`, where P(effort_high) is already on a 0–1 scale.
+`food_inv-intimacy_effort_alt` belief updates are on the 0–100 intimacy scale (so −100 to +100 for posterior − prior); we divide by 100 to put them on the same −1 to +1 scale as `food_inv-effort_intimacy_alt`, where P(effort_high) is already on a 0–1 scale.
 
 ```{r}
 df_corr_intimacy_effort <- df_intimacy_effort_summary |>
@@ -379,15 +379,15 @@ df_corr_intimacy_effort <- df_intimacy_effort_summary |>
     model_belief_update = model_belief_update / 100
   )
 
-df_corr_effort_inferred <- df_effort_inferred_summary |>
-  left_join(df_model_effort_inferred, by = c("intimacy", "action")) |>
+df_corr_effort_intimacy <- df_effort_intimacy_summary |>
+  left_join(df_model_effort_intimacy, by = c("intimacy", "action")) |>
   mutate(experiment = "Inv plan effort inferred")
 
 df_combined_effort <- bind_rows(
   df_corr_intimacy_effort |>
     mutate(condition = as.character(effort)) |>
     select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
-  df_corr_effort_inferred |>
+  df_corr_effort_intimacy |>
     mutate(condition = paste0("Intimacy: ", intimacy)) |>
     select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update)
 ) |>
@@ -419,7 +419,7 @@ df_plot_effort <- df_combined_effort
 
 ggplot(df_plot_effort, aes(x = model_belief_update, y = human_belief_update, shape = action)) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "lightgray") +
-  # inv_plan_effort points (effort condition)
+  # food_inv-intimacy_effort_alt points (effort condition)
   geom_errorbar(
     data = \(d) filter(d, condition %in% EFFORT_LEVELS),
     aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
@@ -431,7 +431,7 @@ ggplot(df_plot_effort, aes(x = model_belief_update, y = human_belief_update, sha
   scale_color_manual(name = "Effort intimacy inference", values = EFFORT_COLORS,
                      guide = guide_legend(order = 2)) +
   new_scale_color() +
-  # inv_plan_effort_inferred points (intimacy)
+  # food_inv-effort_intimacy_alt points (intimacy)
   geom_errorbar(
     data = \(d) filter(d, condition %in% DESIRE_INFERENCE_CONDITIONS),
     aes(ymin = ci_lower, ymax = ci_upper, color = condition), width = 0.02
@@ -461,7 +461,7 @@ ggplot(df_plot_effort, aes(x = model_belief_update, y = human_belief_update, sha
   facet_wrap(~model, nrow = 1) +
   coord_fixed_symmetric(df_plot_effort$model_belief_update, df_plot_effort$human_belief_update)
 
-ggsave(here("figures", "inv_plan_effort_combined_correlation_main.pdf"), device = cairo_pdf)
+ggsave(here("figures", "food_inv-intimacy_effort_alt_combined_correlation_main.pdf"), device = cairo_pdf)
 ```
 
 ## Summary table
@@ -478,7 +478,7 @@ correlations_combined_effort |>
 
 # All inverse planning experiments combined
 
-This section aggregates model-human correlations across all four inverse planning experiments: `inv_plan_intimacy_alt`, `inv_plan_desire_alt`, `inv_plan_effort`, `inv_plan_effort_inferred`. The canonical and effort experiments use disjoint stimulus sets (4-action vs. 2-action), so we encode action with 6 distinct shapes and use intimacy color shared across `inv_plan_desire_alt` and `inv_plan_effort_inferred` (since both manipulate intimacy as a 4-level covariate).
+This section aggregates model-human correlations across all four inverse planning experiments: `food_inv-intimacy_desire_alt`, `food_inv-desire_intimacy_alt`, `food_inv-intimacy_effort_alt`, `food_inv-effort_intimacy_alt`. The canonical and effort experiments use disjoint stimulus sets (4-action vs. 2-action), so we encode action with 6 distinct shapes and use intimacy color shared across `food_inv-desire_intimacy_alt` and `food_inv-effort_intimacy_alt` (since both manipulate intimacy as a 4-level covariate).
 
 ## Combine all four experiments
 
@@ -493,7 +493,7 @@ df_combined_all <- bind_rows(
   df_corr_intimacy_effort |>
     mutate(condition = as.character(effort), action = as.character(action)) |>
     select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update),
-  df_corr_effort_inferred |>
+  df_corr_effort_intimacy |>
     mutate(condition = paste0("Intimacy: ", intimacy), action = as.character(action)) |>
     select(action, model, experiment, condition, human_belief_update, ci_lower, ci_upper, model_belief_update)
 ) |>
