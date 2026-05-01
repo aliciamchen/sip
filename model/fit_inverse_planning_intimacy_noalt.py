@@ -34,7 +34,10 @@ from observers import (
 
 from utils import get_project_root
 
-from fit_forward import _fit_with_adam
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent / "forward"))
+from _shared import _fit_with_adam  # noqa: E402
 from fit_inverse_planning_alt import compute_intimacy_nll, load_fitted_params
 
 

@@ -30,7 +30,9 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from fit_forward import (
+sys.path.insert(0, str(_project_root / "model" / "forward"))
+
+from _shared import (  # noqa: E402
     compute_nll,
     fit_canonical_base,
     fit_canonical_discomfort_only,
