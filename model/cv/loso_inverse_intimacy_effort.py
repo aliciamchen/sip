@@ -32,8 +32,7 @@ from fit_inverse_planning_intimacy_effort import (
     load_food_forw_intimacy_effort_actor_params,
     load_intimacy_effort_data,
 )
-from model_utils import IntimacyLevels, SCENARIO_LABELS
-from model_utils_effort import actions_effort
+from tables import IntimacyLevels, SCENARIO_LABELS, actions_effort
 
 from utils import get_project_root
 

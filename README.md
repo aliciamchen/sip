@@ -94,7 +94,10 @@ The fitting and prediction scripts index into these tables by `scenario_idx`; ru
 │   ├── nonfood_inv-intimacy_desire_noalt/
 │   └── nonfood_inv-desire_intimacy_noalt/
 ├── model/             # Computational models
-│   ├── model_utils.py # Actor and observer model definitions
+│   ├── tables.py      # Enums, scenario maps, LM-elicited tables
+│   ├── utility.py     # Utility functions (Full / Discomfort-only / Base)
+│   ├── actors.py      # Actor memo models (forward + inverse + padded)
+│   ├── observers.py   # Observer memo models (intimacy / reward / effort)
 │   ├── fit_*.py       # Model fitting scripts
 │   └── outputs/       # Fitted parameters and predictions
 └── figures/           # Generated figures

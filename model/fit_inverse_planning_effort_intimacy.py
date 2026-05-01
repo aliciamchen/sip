@@ -26,12 +26,11 @@ from fit_inverse_planning_alt import (
     compute_reward_nll,
     load_fitted_params,
 )
-from model_utils import SCENARIO_TO_IDX
-from model_utils_effort import (
-    LLM_TABLES_EFFORT,
-    observer_effort_intimacy_full,
-    observer_effort_intimacy_discomfort_only,
+from tables import LLM_TABLES_EFFORT, SCENARIO_TO_IDX
+from observers import (
     observer_effort_intimacy_base,
+    observer_effort_intimacy_discomfort_only,
+    observer_effort_intimacy_full,
 )
 
 from utils import get_project_root

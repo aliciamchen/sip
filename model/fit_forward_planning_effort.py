@@ -5,7 +5,7 @@ Parallel to model/fit_forward_planning.py, adapted for:
   - 2 actions per scenario (non-saliva-share vs saliva-share; CSV action=1/2 -> 0/1).
   - An effort_condition covariate (low, high) carried by the vignette text.
   - Reward fixed at HIGH — V(a|s) = 1 for both actions is stipulated in
-    model_utils_effort.get_stipulated_reward_effort. w_v is retained in the
+    utility.get_stipulated_reward_effort. w_v is retained in the
     utility for ablation-parallelism with the canonical pipeline but is
     non-identified in the softmax and will stay near its initialization.
 
@@ -35,14 +35,12 @@ from fit_forward_planning import (
     compute_nll,
     compute_pearson_r_by_condition,
 )
-from model_utils_effort import (
-    EFFORT_CONDITION_TO_IDX,
-    LLM_TABLES_EFFORT,
-    actor_forw_effort_full,
-    actor_forw_effort_discomfort_only,
+from tables import EFFORT_CONDITION_TO_IDX, LLM_TABLES_EFFORT, SCENARIO_TO_IDX
+from actors import (
     actor_forw_effort_base,
+    actor_forw_effort_discomfort_only,
+    actor_forw_effort_full,
 )
-from model_utils import SCENARIO_TO_IDX
 
 from utils import get_project_root
 

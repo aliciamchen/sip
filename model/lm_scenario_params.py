@@ -8,7 +8,7 @@ scenarios in experiments/scenarios.csv:
 - access(a): physical / informational / spatial exposure per action  (0-6 -> [0, 2])
 - effort(a): physical / logistical cost per action                   (0-6 -> [0, 1])
 
-Reward is NOT elicited from the LLM — it's stipulated in `model/model_utils.py`
+Reward is NOT elicited from the LLM — it's stipulated in `model/utility.py`
 as a binary goal-satisfaction gate (V=1 iff the action satisfies the active
 goal: sharing under HIGH motivation, not-sharing under LOW motivation).
 
@@ -88,7 +88,7 @@ from lm_prompts import system_prompt as build_system_prompt
 from lm_prompts import user_prompt as build_user_prompt
 
 
-# Reward is stipulated in model/model_utils.py as a binary goal-satisfaction
+# Reward is stipulated in model/utility.py as a binary goal-satisfaction
 # gate (V=1 iff the action satisfies the active goal: sharing under HIGH
 # motivation, not-sharing under LOW motivation). Not elicited from the LLM.
 

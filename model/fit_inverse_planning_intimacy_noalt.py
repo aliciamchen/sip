@@ -25,12 +25,11 @@ import jax
 import jax.numpy as jnp
 import optax
 import pandas as pd
-from model_utils import (
-    SCENARIO_TO_IDX,
-    load_padded_lm_tables,
-    observer_intimacy_full_padded,
-    observer_intimacy_discomfort_only_padded,
+from tables import SCENARIO_TO_IDX, load_padded_lm_tables
+from observers import (
     observer_intimacy_base_padded,
+    observer_intimacy_discomfort_only_padded,
+    observer_intimacy_full_padded,
 )
 
 from utils import get_project_root

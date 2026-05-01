@@ -22,13 +22,15 @@ sys.path.insert(0, str(_project_root))
 import pandas as pd
 
 from utils import get_project_root
-from model_utils import (
+from tables import (
     SCENARIO_LABELS,
     RelationshipConditions,
     load_padded_lm_tables_relationship,
-    observer_reward_full_padded_rel,
-    observer_reward_discomfort_only_padded_rel,
+)
+from observers import (
     observer_reward_base_padded_rel,
+    observer_reward_discomfort_only_padded_rel,
+    observer_reward_full_padded_rel,
 )
 
 

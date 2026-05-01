@@ -22,18 +22,14 @@ import numpy as np
 import pandas as pd
 
 from utils import get_project_root
-from model_utils import (
-    LLM_TABLES,
-    SCENARIO_LABELS,
-    IntimacyLevels,
-    actions,
-    load_lm_v,
-    observer_intimacy_full,
-    observer_intimacy_discomfort_only,
+from tables import LLM_TABLES, SCENARIO_LABELS, IntimacyLevels, actions, load_lm_v
+from observers import (
     observer_intimacy_base,
-    observer_reward_full,
-    observer_reward_discomfort_only,
+    observer_intimacy_discomfort_only,
+    observer_intimacy_full,
     observer_reward_base,
+    observer_reward_discomfort_only,
+    observer_reward_full,
 )
 
 

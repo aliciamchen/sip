@@ -31,8 +31,7 @@ from fit_inverse_planning_intimacy_effort_intimacy import (
     load_food_forw_intimacy_effort_actor_params,
 )
 from generate_inverse_planning_alt_preds import load_fitted_alpha_observer
-from model_utils import SCENARIO_LABELS
-from model_utils_effort import LLM_TABLES_EFFORT, actions_effort
+from tables import LLM_TABLES_EFFORT, SCENARIO_LABELS, actions_effort
 
 from utils import get_project_root
 

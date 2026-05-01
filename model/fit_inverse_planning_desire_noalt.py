@@ -33,12 +33,11 @@ import jax
 import jax.numpy as jnp
 import optax
 import pandas as pd
-from model_utils import (
-    SCENARIO_TO_IDX,
-    load_padded_lm_tables_relationship,
-    observer_reward_full_padded_rel,
-    observer_reward_discomfort_only_padded_rel,
+from tables import SCENARIO_TO_IDX, load_padded_lm_tables_relationship
+from observers import (
     observer_reward_base_padded_rel,
+    observer_reward_discomfort_only_padded_rel,
+    observer_reward_full_padded_rel,
 )
 
 from utils import get_project_root

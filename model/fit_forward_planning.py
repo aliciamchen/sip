@@ -21,15 +21,8 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import pandas as pd
-from model_utils import (
-    LLM_TABLES,
-    SCENARIO_TO_IDX,
-    actor_forw_full,
-    actor_forw_discomfort_only,
-    actor_forw_base,
-    load_domain_assets,
-    load_lm_v,
-)
+from tables import LLM_TABLES, SCENARIO_TO_IDX, load_domain_assets, load_lm_v
+from actors import actor_forw_base, actor_forw_discomfort_only, actor_forw_full
 from scipy import stats
 
 from utils import get_project_root

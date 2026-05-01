@@ -36,7 +36,7 @@ from fit_forward_planning import (
     predict_discomfort_only,
     predict_base,
 )
-from model_utils import LLM_TABLES, SCENARIO_LABELS, load_domain_assets, load_lm_v
+from tables import LLM_TABLES, SCENARIO_LABELS, load_domain_assets, load_lm_v
 
 from utils import get_project_root
 

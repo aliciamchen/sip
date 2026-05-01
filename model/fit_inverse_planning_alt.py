@@ -23,16 +23,14 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import pandas as pd
-from model_utils import (
-    LLM_TABLES,
-    SCENARIO_TO_IDX,
-    load_lm_v,
-    observer_intimacy_full,
-    observer_intimacy_discomfort_only,
+from tables import LLM_TABLES, SCENARIO_TO_IDX, load_lm_v
+from observers import (
     observer_intimacy_base,
-    observer_reward_full,
-    observer_reward_discomfort_only,
+    observer_intimacy_discomfort_only,
+    observer_intimacy_full,
     observer_reward_base,
+    observer_reward_discomfort_only,
+    observer_reward_full,
 )
 
 from utils import get_project_root

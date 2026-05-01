@@ -39,7 +39,7 @@ from fit_inverse_planning_intimacy_noalt import (
     fit_padded_joint_model,
     load_intimacy_noalt_data,
 )
-from model_utils import IntimacyLevels, SCENARIO_LABELS, load_padded_lm_tables
+from tables import IntimacyLevels, SCENARIO_LABELS, load_padded_lm_tables
 
 from utils import get_project_root
 

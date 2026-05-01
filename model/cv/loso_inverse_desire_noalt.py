@@ -35,7 +35,7 @@ from fit_inverse_planning_desire_noalt import (
     fit_padded_joint_model,
     load_desire_noalt_data,
 )
-from model_utils import SCENARIO_LABELS, load_padded_lm_tables_relationship
+from tables import SCENARIO_LABELS, load_padded_lm_tables_relationship
 
 from utils import get_project_root
 

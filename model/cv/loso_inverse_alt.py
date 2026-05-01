@@ -42,7 +42,7 @@ from fit_inverse_planning_alt import (
     load_intimacy_data,
     load_reward_data,
 )
-from model_utils import IntimacyLevels, SCENARIO_LABELS, actions
+from tables import IntimacyLevels, SCENARIO_LABELS, actions
 
 from utils import get_project_root
 

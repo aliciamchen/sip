@@ -36,8 +36,7 @@ from fit_forward_planning_effort import (
     predict_base,
 )
 from fit_forward_planning import compute_nll
-from model_utils import SCENARIO_LABELS
-from model_utils_effort import LLM_TABLES_EFFORT
+from tables import LLM_TABLES_EFFORT, SCENARIO_LABELS
 
 from utils import get_project_root
 
