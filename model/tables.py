@@ -263,7 +263,7 @@ def load_padded_lm_tables(
     lm_scenario_params.csv; V from lm_scenario_v.csv).
 
     Slots 1..k hold the LM-generated alternatives for that cell (access + effort
-    from lm_alternatives_features.csv; V from lm_alternatives_v.csv with
+    from lm_alternatives_features_food_inv-intimacy_desire_noalt.csv; V from lm_alternatives_v_food_inv-intimacy_desire_noalt.csv with
     motivation_query == motivation, since the actor reasoning under a given
     motivation evaluates V under that same motivation).
 
@@ -402,7 +402,7 @@ def load_padded_lm_tables_relationship(
     relationship axis since the canonical action's V doesn't depend on
     relationship). Slots 1..k hold the LM-generated alternatives for that
     (scenario, observed, relationship) cell, from
-    lm_alternatives_relationship_features.csv and lm_alternatives_relationship_v.csv.
+    lm_alternatives_features_food_inv-desire_intimacy_noalt.csv and lm_alternatives_v_food_inv-desire_intimacy_noalt.csv.
 
     Returns a dict {access, effort, v, prior}, or None if any required CSV is
     missing.

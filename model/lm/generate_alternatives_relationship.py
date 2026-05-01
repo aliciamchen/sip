@@ -1,6 +1,6 @@
 """Generate relationship-conditioned LM alternatives.
 
-Produces lm_alternatives_relationship.csv (or _nonfood with --domain nonfood).
+Produces lm_alternatives_food_inv-desire_intimacy_noalt.csv (or _nonfood with --domain nonfood).
 """
 
 import argparse

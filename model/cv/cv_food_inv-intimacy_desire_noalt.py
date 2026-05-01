@@ -165,7 +165,7 @@ def main():
 
     padded = load_padded_lm_tables()
     if padded is None:
-        print("ERROR: lm_alternatives.csv or lm_alternatives_features.csv missing.")
+        print("ERROR: lm_alternatives_food_inv-intimacy_desire_noalt.csv or lm_alternatives_features_food_inv-intimacy_desire_noalt.csv missing.")
         sys.exit(1)
     print(f"  padded access shape: {padded['access'].shape}")
 
