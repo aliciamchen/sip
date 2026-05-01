@@ -31,7 +31,7 @@ All three components — V, access, effort — are LLM-elicited per scenario by 
 
 - **V**: `--feature v` mode produces `lm_scenario_v.csv` (16 × 4 × 2 — scenario × action × motivation, signed [-1, +1]).
 - **access**, **effort**: default mode produces `lm_scenario_params.csv` (16 × 4 each, normalized [0, 2] and [0, 1]).
-- **alternatives V** (no-alt observers only): `--feature v_alternatives` mode produces `lm_alternatives_v.csv`, scoring V for each LM-generated alternative under both motivation states.
+- **alternatives V** (no-alt observers only): `--feature v_alternatives` mode produces `lm_alternatives_v_food_inv-intimacy_desire_noalt.csv`, scoring V for each LM-generated alternative under both motivation states.
 
 `tables.py` loads these into `LLM_TABLES` (access/effort canonical) at import; `load_lm_v(domain)` lazily loads the V table; `load_padded_lm_tables()` builds the (16, 4, 2, MAX_ACTIONS) padded tables (access, effort, v, prior) used by the no-alt observers. If any required CSV is missing, the loader raises FileNotFoundError or returns None.
 
@@ -56,11 +56,11 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 - `_features_dispatcher.py`, `_alternatives_dispatcher.py` — internal multi-mode helpers that the per-output scripts below call into. Not run directly.
 - `score_canonical_features.py` (`--domain food|nonfood`) — access + effort per (scenario, action). → `outputs/lm/lm_scenario_params{,_nonfood}.csv`.
 - `score_canonical_v.py` (`--domain food|nonfood`) — signed-valence V per (scenario, action, motivation). → `outputs/lm/lm_scenario_v{,_nonfood}.csv`.
-- `score_alternative_features.py` (`--conditioning motivation|relationship`) — access + effort for LM-generated alternatives. → `outputs/lm/lm_alternatives_features.csv` or `lm_alternatives_relationship_features.csv`.
-- `score_alternative_v.py` (`--conditioning motivation|relationship`) — V for those alternatives. → `outputs/lm/lm_alternatives_v.csv` or `lm_alternatives_relationship_v.csv`.
+- `score_alternative_features.py` (`--conditioning motivation|relationship`) — access + effort for LM-generated alternatives. → `outputs/lm/lm_alternatives_features_food_inv-intimacy_desire_noalt.csv` or `lm_alternatives_features_food_inv-desire_intimacy_noalt.csv`.
+- `score_alternative_v.py` (`--conditioning motivation|relationship`) — V for those alternatives. → `outputs/lm/lm_alternatives_v_food_inv-intimacy_desire_noalt.csv` or `lm_alternatives_v_food_inv-desire_intimacy_noalt.csv`.
 - `score_effort_features.py` — produces both `lm_scenario_params_effort.csv` (effort-conditional access + effort) and `lm_scenario_params_effort_marginal.csv` (effort-marginal access only, used by `food_inv-effort_intimacy_alt`).
-- `generate_alternatives_motivation.py` — motivation-conditioned LM alternatives. → `outputs/lm/lm_alternatives.csv`.
-- `generate_alternatives_relationship.py` — relationship-conditioned LM alternatives. → `outputs/lm/lm_alternatives_relationship.csv`.
+- `generate_alternatives_motivation.py` — motivation-conditioned LM alternatives. → `outputs/lm/lm_alternatives_food_inv-intimacy_desire_noalt.csv`.
+- `generate_alternatives_relationship.py` — relationship-conditioned LM alternatives. → `outputs/lm/lm_alternatives_food_inv-desire_intimacy_noalt.csv`.
 
 ### Forward planning (`model/forward/`)
 
@@ -111,12 +111,12 @@ uv run python model/lm/score_canonical_features.py                              
 uv run python model/lm/score_canonical_features.py --domain nonfood                 # nonfood → lm_scenario_params_nonfood.csv
 uv run python model/lm/score_canonical_v.py                                         # food signed-valence V → lm_scenario_v.csv
 uv run python model/lm/score_canonical_v.py --domain nonfood                        # nonfood → lm_scenario_v_nonfood.csv
-uv run python model/lm/generate_alternatives_motivation.py                          # motivation-conditioned alternatives → lm_alternatives.csv
-uv run python model/lm/score_alternative_features.py                                # access+effort for motivation alts → lm_alternatives_features.csv
-uv run python model/lm/score_alternative_v.py                                       # V for motivation alts → lm_alternatives_v.csv
-uv run python model/lm/generate_alternatives_relationship.py                        # relationship-conditioned alternatives → lm_alternatives_relationship.csv
-uv run python model/lm/score_alternative_features.py --conditioning relationship    # → lm_alternatives_relationship_features.csv
-uv run python model/lm/score_alternative_v.py --conditioning relationship           # → lm_alternatives_relationship_v.csv
+uv run python model/lm/generate_alternatives_motivation.py                          # motivation-conditioned alternatives → lm_alternatives_food_inv-intimacy_desire_noalt.csv
+uv run python model/lm/score_alternative_features.py                                # access+effort for motivation alts → lm_alternatives_features_food_inv-intimacy_desire_noalt.csv
+uv run python model/lm/score_alternative_v.py                                       # V for motivation alts → lm_alternatives_v_food_inv-intimacy_desire_noalt.csv
+uv run python model/lm/generate_alternatives_relationship.py                        # relationship-conditioned alternatives → lm_alternatives_food_inv-desire_intimacy_noalt.csv
+uv run python model/lm/score_alternative_features.py --conditioning relationship    # → lm_alternatives_features_food_inv-desire_intimacy_noalt.csv
+uv run python model/lm/score_alternative_v.py --conditioning relationship           # → lm_alternatives_v_food_inv-desire_intimacy_noalt.csv
 uv run python model/lm/score_effort_features.py                                     # effort: 64-row conditional + 32-row marginal
 ```
 

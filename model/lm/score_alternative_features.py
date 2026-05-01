@@ -1,7 +1,7 @@
 """Score access + effort features for LM-generated alternatives.
 
---conditioning motivation (default): produces lm_alternatives_features.csv
---conditioning relationship: produces lm_alternatives_relationship_features.csv
+--conditioning motivation (default): produces lm_alternatives_features_food_inv-intimacy_desire_noalt.csv
+--conditioning relationship: produces lm_alternatives_features_food_inv-desire_intimacy_noalt.csv
 """
 
 import argparse

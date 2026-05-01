@@ -10,12 +10,12 @@ in script names; no `--feature` flags hiding what a script does.
 LM elicitation  (model/lm/)
     score_canonical_features.py   →  outputs/lm/lm_scenario_params{,_nonfood}.csv
     score_canonical_v.py          →  outputs/lm/lm_scenario_v{,_nonfood}.csv
-    score_alternative_features.py →  outputs/lm/lm_alternatives_features.csv (motivation)
-                                  →  outputs/lm/lm_alternatives_relationship_features.csv (relationship)
-    score_alternative_v.py        →  outputs/lm/lm_alternatives_v.csv / lm_alternatives_relationship_v.csv
+    score_alternative_features.py →  outputs/lm/lm_alternatives_features_food_inv-intimacy_desire_noalt.csv (motivation)
+                                  →  outputs/lm/lm_alternatives_features_food_inv-desire_intimacy_noalt.csv (relationship)
+    score_alternative_v.py        →  outputs/lm/lm_alternatives_v_food_inv-intimacy_desire_noalt.csv / lm_alternatives_v_food_inv-desire_intimacy_noalt.csv
     score_effort_features.py      →  outputs/lm/lm_scenario_params_effort{,_marginal}.csv
-    generate_alternatives_motivation.py    →  outputs/lm/lm_alternatives.csv
-    generate_alternatives_relationship.py  →  outputs/lm/lm_alternatives_relationship.csv
+    generate_alternatives_motivation.py    →  outputs/lm/lm_alternatives_food_inv-intimacy_desire_noalt.csv
+    generate_alternatives_relationship.py  →  outputs/lm/lm_alternatives_food_inv-desire_intimacy_noalt.csv
         ↓
 Forward planning  (model/forward/)
     fit_<slug>.py     → outputs/<slug>/fit_results.csv

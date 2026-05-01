@@ -46,9 +46,9 @@ def main():
     padded = load_padded_lm_tables_relationship()
     if padded is None:
         print(
-            "Error: missing one of lm_alternatives_relationship.csv, "
-            "lm_alternatives_relationship_features.csv, lm_scenario_v.csv, "
-            "lm_alternatives_relationship_v.csv. Run "
+            "Error: missing one of lm_alternatives_food_inv-desire_intimacy_noalt.csv, "
+            "lm_alternatives_features_food_inv-desire_intimacy_noalt.csv, lm_scenario_v.csv, "
+            "lm_alternatives_v_food_inv-desire_intimacy_noalt.csv. Run "
             "lm/generate_alternatives_relationship.py, "
             "lm/score_alternative_features.py --conditioning relationship, "
             "and lm/score_alternative_v.py --conditioning relationship first."

@@ -279,11 +279,11 @@ def load_padded_lm_tables(
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives_food_inv-intimacy_desire_noalt.csv"
     alternatives_features_path = (
-        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
+        alternatives_features_path or outputs_dir / "lm_alternatives_features_food_inv-intimacy_desire_noalt.csv"
     )
-    alternatives_v_path = alternatives_v_path or outputs_dir / "lm_alternatives_v.csv"
+    alternatives_v_path = alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv-intimacy_desire_noalt.csv"
 
     required = [alternatives_path, alternatives_features_path, canonical_v_path, alternatives_v_path]
     if any(not p.exists() for p in required):
@@ -411,14 +411,14 @@ def load_padded_lm_tables_relationship(
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
     alternatives_path = (
-        alternatives_path or outputs_dir / "lm_alternatives_relationship.csv"
+        alternatives_path or outputs_dir / "lm_alternatives_food_inv-desire_intimacy_noalt.csv"
     )
     alternatives_features_path = (
         alternatives_features_path
-        or outputs_dir / "lm_alternatives_relationship_features.csv"
+        or outputs_dir / "lm_alternatives_features_food_inv-desire_intimacy_noalt.csv"
     )
     alternatives_v_path = (
-        alternatives_v_path or outputs_dir / "lm_alternatives_relationship_v.csv"
+        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv-desire_intimacy_noalt.csv"
     )
 
     required = [alternatives_path, alternatives_features_path, canonical_v_path, alternatives_v_path]

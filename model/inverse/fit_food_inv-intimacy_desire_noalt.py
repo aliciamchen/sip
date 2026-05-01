@@ -47,8 +47,8 @@ def main():
     padded = load_padded_lm_tables()
     if padded is None:
         print(
-            "Error: missing one of lm_alternatives.csv, lm_alternatives_features.csv, "
-            "lm_scenario_v.csv, lm_alternatives_v.csv. Run lm/generate_alternatives_motivation.py "
+            "Error: missing one of lm_alternatives_food_inv-intimacy_desire_noalt.csv, lm_alternatives_features_food_inv-intimacy_desire_noalt.csv, "
+            "lm_scenario_v.csv, lm_alternatives_v_food_inv-intimacy_desire_noalt.csv. Run lm/generate_alternatives_motivation.py "
             "and lm/score_canonical_features.py --feature {v,v_alternatives} first."
         )
         sys.exit(1)

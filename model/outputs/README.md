@@ -153,7 +153,7 @@ Summary of jointly-fitted parameters for the no-alternatives-shown intimacy-infe
 
 No-alt intimacy-inference predictions. `_summary.csv` has one row per (scenario, observed_action, motivation, model) with `expected_intimacy` (0-100). `_full.csv` has one row per (scenario, observed_action, motivation, intimacy_level, model) with the posterior `density`.
 
-## lm_alternatives.csv
+## lm_alternatives_food_inv-intimacy_desire_noalt.csv
 
 LM-generated counterfactual action sets used by the no-alt padded observer. One row per (scenario, observed_action, motivation, alt_idx).
 
@@ -166,9 +166,9 @@ LM-generated counterfactual action sets used by the no-alt padded observer. One 
 | `action_text` | Text of the LM-generated alternative action |
 | `is_share` | Binary tag: 1 if the alternative involves both characters eating the shared food, else 0 |
 
-## lm_alternatives_features.csv
+## lm_alternatives_features_food_inv-intimacy_desire_noalt.csv
 
-Access and effort features scored by the LM for each alternative in `lm_alternatives.csv`. One row per (scenario, observed_action, motivation, alt_idx) with the same identifier columns plus `access` (normalized to [0, 2]) and `effort` (normalized to [0, 1]).
+Access and effort features scored by the LM for each alternative in `lm_alternatives_food_inv-intimacy_desire_noalt.csv`. One row per (scenario, observed_action, motivation, alt_idx) with the same identifier columns plus `access` (normalized to [0, 2]) and `effort` (normalized to [0, 1]).
 
 ## Cross-validation CSVs (cv_*)
 
