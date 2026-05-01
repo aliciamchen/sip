@@ -49,9 +49,9 @@ def main():
             "Error: missing one of lm_alternatives_relationship.csv, "
             "lm_alternatives_relationship_features.csv, lm_scenario_v.csv, "
             "lm_alternatives_relationship_v.csv. Run "
-            "lm/generate_alternatives.py --conditioning relationship, "
-            "lm/scenario_params.py --feature access_effort_alternatives_relationship, "
-            "and lm/scenario_params.py --feature v_alternatives_relationship first."
+            "lm/generate_alternatives_relationship.py, "
+            "lm/score_alternative_features.py --conditioning relationship, "
+            "and lm/score_alternative_v.py --conditioning relationship first."
         )
         sys.exit(1)
 

@@ -15,10 +15,10 @@ goal: sharing under HIGH motivation, not-sharing under LOW motivation).
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
 Usage:
-    uv run python model/lm/scenario_params.py                          # food scenarios canonical-4 (default)
-    uv run python model/lm/scenario_params.py --score-alternatives     # features for LM-generated food alternatives
-    uv run python model/lm/scenario_params.py --domain nonfood                       # nonfood scenarios canonical-4
-    uv run python model/lm/scenario_params.py --domain nonfood --score-alternatives  # nonfood alternatives features
+    uv run python model/lm/score_canonical_features.py                          # food scenarios canonical-4 (default)
+    uv run python model/lm/score_alternative_features.py     # features for LM-generated food alternatives
+    uv run python model/lm/score_canonical_features.py --domain nonfood                       # nonfood scenarios canonical-4
+    uv run python model/lm/score_canonical_features.py --domain nonfood --score-alternatives  # nonfood alternatives features
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
@@ -359,7 +359,7 @@ def score_alternatives_main(domain="food"):
     scenarios_df = load_scenarios(domain)
     alt_path = get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
-        print(f"Error: {alt_path} not found. Run lm/generate_alternatives.py first.", flush=True)
+        print(f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.", flush=True)
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
@@ -503,7 +503,7 @@ def score_v_alternatives_main(domain="food"):
     scenarios_df = load_scenarios(domain)
     alt_path = get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
-        print(f"Error: {alt_path} not found. Run lm/generate_alternatives.py first.", flush=True)
+        print(f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.", flush=True)
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
@@ -622,7 +622,7 @@ def score_alternatives_relationship_main(domain="food"):
     if not alt_path.exists():
         print(
             f"Error: {alt_path} not found. Run "
-            "lm/generate_alternatives.py --conditioning relationship first.",
+            "lm/generate_alternatives_relationship.py first.",
             flush=True,
         )
         sys.exit(1)
@@ -761,7 +761,7 @@ def score_v_alternatives_relationship_main(domain="food"):
     if not alt_path.exists():
         print(
             f"Error: {alt_path} not found. Run "
-            "lm/generate_alternatives.py --conditioning relationship first.",
+            "lm/generate_alternatives_relationship.py first.",
             flush=True,
         )
         sys.exit(1)

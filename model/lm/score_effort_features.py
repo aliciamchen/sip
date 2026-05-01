@@ -30,7 +30,7 @@ mean/std. Outputs (model/outputs/):
   paragraph and so must reason about access from the base vignette alone.
 
 Usage:
-    uv run python model/lm/scenario_params_effort.py
+    uv run python model/lm/score_effort_features.py
 
 If the conditional CSV already exists the conditional pass is skipped (useful
 when only refreshing the marginal table).
@@ -60,7 +60,7 @@ from client import (
     load_api_key,
     numeric_action_schema,
 )
-from scenario_params import normalize_access, normalize_effort
+from _features_dispatcher import normalize_access, normalize_effort
 # Imported with aliases so they don't collide with parameters below.
 from prompts import system_prompt as build_system_prompt
 from prompts import user_prompt as build_user_prompt

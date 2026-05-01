@@ -173,7 +173,7 @@ def main():
     if padded is None:
         print(
             "ERROR: relationship-keyed LM tables missing. Run "
-            "lm/generate_alternatives.py --conditioning relationship and the "
+            "lm/generate_alternatives_relationship.py and the "
             "two relationship feature/V passes first."
         )
         sys.exit(1)

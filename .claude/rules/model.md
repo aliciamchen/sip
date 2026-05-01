@@ -27,7 +27,7 @@ Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort we
 
 ## Where the utility values come from
 
-All three components — V, access, effort — are LLM-elicited per scenario by `model/lm/scenario_params.py` (Llama-3.3-70B via Together AI, 10 runs averaged). The Together calls themselves go through `model/lm/client.py`, which fans NUM_RUNS calls across a thread pool, constrains output to a JSON schema via `response_format`, retries transient errors at the SDK layer, and checkpoints per-scenario; new LM call sites should reuse `get_ratings_concurrent` + the schema helpers (`numeric_action_schema`, `alternatives_array_schema`) rather than calling Together directly. CSV outputs include both `n_runs_*` and `n_failures_*` columns.
+All three components — V, access, effort — are LLM-elicited per scenario by `model/lm/score_canonical_features.py` (Llama-3.3-70B via Together AI, 10 runs averaged). The Together calls themselves go through `model/lm/client.py`, which fans NUM_RUNS calls across a thread pool, constrains output to a JSON schema via `response_format`, retries transient errors at the SDK layer, and checkpoints per-scenario; new LM call sites should reuse `get_ratings_concurrent` + the schema helpers (`numeric_action_schema`, `alternatives_array_schema`) rather than calling Together directly. CSV outputs include both `n_runs_*` and `n_failures_*` columns.
 
 - **V**: `--feature v` mode produces `lm_scenario_v.csv` (16 × 4 × 2 — scenario × action × motivation, signed [-1, +1]).
 - **access**, **effort**: default mode produces `lm_scenario_params.csv` (16 × 4 each, normalized [0, 2] and [0, 1]).
@@ -43,8 +43,8 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 - `utility.py` — jit-compiled utility functions: `get_utility_full / discomfort_only / base` (with `_disc`, `_padded`, `_padded_rel` siblings) plus the effort-experiment counterparts. Dimension-agnostic — used by both canonical 4-action and effort 2-action actors.
 - `actors.py` — actor memo models: `actor_forw_*` (forward), `actor_discrete_*` and `actor_continuous_*` (inverse), `actor_continuous_*_padded` and `_padded_rel` (no-alt), plus `actor_forw_effort_*` and `actor_continuous_effort_*` (effort experiment).
 - `observers.py` — observer memo models: `observer_intimacy_*` and `observer_reward_*` (alt-shown), `observer_intimacy_*_padded` and `observer_reward_*_padded_rel` (no-alt), `observer_intimacy_effort_*` and `observer_effort_intimacy_*` (effort experiment).
-- `lm/scenario_params.py` — LLM-calls Together AI to generate per-scenario access and effort
-- `lm/client.py` — shared LM-call infrastructure: `get_ratings_concurrent` (thread-pooled fan-out + SDK retries), schema helpers (`numeric_action_schema`, `alternatives_array_schema`), JSON parsing helpers, and `load_api_key`. Used by `lm/scenario_params{,_effort}.py` and `lm/generate_alternatives.py`.
+- `lm/score_canonical_features.py` — LLM-calls Together AI to generate per-scenario access and effort
+- `lm/client.py` — shared LM-call infrastructure: `get_ratings_concurrent` (thread-pooled fan-out + SDK retries), schema helpers (`numeric_action_schema`, `alternatives_array_schema`), JSON parsing helpers, and `load_api_key`. Used by `lm/scenario_params{,_effort}.py` and `lm/generate_alternatives_motivation.py`.
 - `fit_forward_planning.py` — fits the three actor ablations to `data/food_forw_intimacy_desire/` (output: `forward_planning_fit_results.csv`, `forward_planning_fits.csv`)
 - `fit_inverse_planning_alt.py` — alt-shown observers; fits only `alpha_observer` with frozen actor params (output: `inverse_planning_fit_results.csv`)
 - `fit_inverse_planning_intimacy_noalt.py` — intimacy no-alt observer; **jointly fits all actor weights + α_observer** on no-alt data (not frozen from Exp 1, because the padded observer's variable-length action space differs from Exp 1's fixed 4-action space). Output: `inverse_planning_intimacy_noalt_fit_results.csv`
@@ -59,7 +59,7 @@ Every memo model takes the scenario tables as arguments (`access_table: ...`, `e
 A second, parallel pipeline mirrors the canonical scripts on the effort stimulus set (`scenarios_effort.csv`): 16 scenarios × 2 actions × 2 effort conditions (low / high), with reward held fixed at HIGH so V is constant across actions and `w_v` is non-identified under the softmax (it's kept in the utility for parallelism with the canonical pipeline but stays near initialization). Scenario labels are shared with the canonical 16, so `Scenarios` / `SCENARIO_TO_IDX` are reused; effort adds a separate `EffortConditions` IntEnum and `EFFORT_CONDITION_TO_IDX` map.
 
 - Effort utility functions and memo models live alongside the canonical ones in `utility.py`, `actors.py`, and `observers.py` (look for the `_effort` suffix). `tables.py` loads `LLM_TABLES_EFFORT` (`access`, `effort`, both shape 16×2×2; plus `access_marg` shape 16×2×2 — the effort-marginal access broadcast across the effort_condition dimension) at import.
-- `lm/scenario_params_effort.py` — produces two CSVs: (1) `lm_scenario_params_effort.csv` (64 rows: 16 scenarios × 2 effort × 2 actions) — effort-conditional access + effort, where the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings; (2) `lm_scenario_params_effort_marginal.csv` (32 rows: 16 scenarios × 2 actions) — effort-marginal access only, where the LM is prompted with just the base vignette. The marginal pass is needed because the food_inv-effort_intimacy_alt observer does not see the effort paragraph and so must reason about access from the base vignette alone.
+- `lm/score_effort_features.py` — produces two CSVs: (1) `lm_scenario_params_effort.csv` (64 rows: 16 scenarios × 2 effort × 2 actions) — effort-conditional access + effort, where the LM is prompted with the full vignette + effort paragraph so the manipulation lands in the ratings; (2) `lm_scenario_params_effort_marginal.csv` (32 rows: 16 scenarios × 2 actions) — effort-marginal access only, where the LM is prompted with just the base vignette. The marginal pass is needed because the food_inv-effort_intimacy_alt observer does not see the effort paragraph and so must reason about access from the base vignette alone.
 - `fit_forward_planning_effort.py` — fits the three actor ablations to `data/food_forw_intimacy_effort/`. Outputs: `forward_planning_effort_fit_results.csv`, `forward_planning_effort_fits.csv`.
 - `fit_inverse_planning_intimacy_effort.py` — fits only `alpha_observer` for `food_inv-intimacy_effort_alt`, with actor weights frozen from `forward_planning_effort_fit_results.csv` (NOT the canonical `food_forw_intimacy_desire` fit, because the effort actor's 2-action softmax doesn't transplant).
 - `generate_inverse_planning_intimacy_effort_preds.py` — emits `food_inv-intimacy_effort_alt_preds_{full,summary}.csv`.
@@ -86,15 +86,15 @@ Model outputs are saved to `model/outputs/`. Preregistration documents are in `m
 LLM-derived scenario parameters (prerequisite for all fits; requires `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged):
 
 ```bash
-uv run python model/lm/scenario_params.py                                   # canonical food access+effort: 16×4 → lm_scenario_params.csv
-uv run python model/lm/scenario_params.py --domain nonfood                  # nonfood access+effort: → lm_scenario_params_nonfood.csv
-uv run python model/lm/scenario_params.py --feature v                       # food signed-valence V: → lm_scenario_v.csv (16×4×2: scenario × action × motivation, values in [-1, +1])
-uv run python model/lm/scenario_params.py --feature v --domain nonfood      # nonfood signed-valence V: → lm_scenario_v_nonfood.csv
-uv run python model/lm/scenario_params.py --feature v_alternatives          # food V for motivation-conditioned LM alternatives: → lm_alternatives_v.csv
-uv run python model/lm/generate_alternatives.py --conditioning relationship                     # food relationship-conditioned alternatives: → lm_alternatives_relationship.csv (256 cells: 16 × 4 × 4)
-uv run python model/lm/scenario_params.py --feature access_effort_alternatives_relationship     # access/effort for those alternatives: → lm_alternatives_relationship_features.csv
-uv run python model/lm/scenario_params.py --feature v_alternatives_relationship                 # V for those alternatives (under both motivation states): → lm_alternatives_relationship_v.csv
-uv run python model/lm/scenario_params_effort.py                            # effort: 64-row conditional + 32-row marginal
+uv run python model/lm/score_canonical_features.py                                   # canonical food access+effort: 16×4 → lm_scenario_params.csv
+uv run python model/lm/score_canonical_features.py --domain nonfood                  # nonfood access+effort: → lm_scenario_params_nonfood.csv
+uv run python model/lm/score_canonical_v.py                       # food signed-valence V: → lm_scenario_v.csv (16×4×2: scenario × action × motivation, values in [-1, +1])
+uv run python model/lm/score_canonical_v.py --domain nonfood      # nonfood signed-valence V: → lm_scenario_v_nonfood.csv
+uv run python model/lm/score_alternative_v.py          # food V for motivation-conditioned LM alternatives: → lm_alternatives_v.csv
+uv run python model/lm/generate_alternatives_relationship.py                     # food relationship-conditioned alternatives: → lm_alternatives_relationship.csv (256 cells: 16 × 4 × 4)
+uv run python model/lm/score_alternative_features.py --conditioning relationship     # access/effort for those alternatives: → lm_alternatives_relationship_features.csv
+uv run python model/lm/score_alternative_v.py --conditioning relationship                 # V for those alternatives (under both motivation states): → lm_alternatives_relationship_v.csv
+uv run python model/lm/score_effort_features.py                            # effort: 64-row conditional + 32-row marginal
 ```
 
 Forward-planning fits (3 ablations: Base / Discomfort-only / Full). All variants now use LM-elicited V; `discomfort_only` is V-independent.

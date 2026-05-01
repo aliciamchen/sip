@@ -6,7 +6,7 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 
 ## lm_scenario_params.csv
 
-LLM-generated per-scenario values for access and effort. Produced by `model/lm/scenario_params.py`. Reward (V) is stipulated in `model/utility.py`, not in this file.
+LLM-generated per-scenario values for access and effort. Produced by `model/lm/score_canonical_features.py`. Reward (V) is stipulated in `model/utility.py`, not in this file.
 
 | Column | Description |
 |--------|-------------|
@@ -18,7 +18,7 @@ LLM-generated per-scenario values for access and effort. Produced by `model/lm/s
 | `effort` | Normalized effort ([0, 1]) |
 | `n_runs_access`, `n_runs_effort` | Number of successful LLM runs |
 
-Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `tables.load_lm_scenario_params` and will be dropped the next time `lm/scenario_params.py` is run.
+Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `tables.load_lm_scenario_params` and will be dropped the next time `lm/score_canonical_features.py` is run.
 
 ## forward_planning_fits.csv
 

@@ -98,7 +98,7 @@ ggplot(df_summary_scenario, aes(x = action, y = empirical_stat, color = intimacy
 
 ### Model description
 
-We fit three ablations of the canonical access utility to the human data. A joint actor chooses an action proportional to its total utility, following a softmax with inverse temperature $\alpha$. Per-(scenario, effort_condition, action) values of $\text{access}(a)$ and $\text{effort}(a)$ are LLM-generated (Llama-3.3-70B; see `model/lm/scenario_params_effort.py`). Reward is held fixed at high across all trials; both actions involve eating, so $V(a|s) = 1$ is stipulated for both. $w_v$ is therefore non-identified in the softmax and stays near its initialization during fitting.
+We fit three ablations of the canonical access utility to the human data. A joint actor chooses an action proportional to its total utility, following a softmax with inverse temperature $\alpha$. Per-(scenario, effort_condition, action) values of $\text{access}(a)$ and $\text{effort}(a)$ are LLM-generated (Llama-3.3-70B; see `model/lm/score_effort_features.py`). Reward is held fixed at high across all trials; both actions involve eating, so $V(a|s) = 1$ is stipulated for both. $w_v$ is therefore non-identified in the softmax and stays near its initialization during fitting.
 
 **Full model**:
 

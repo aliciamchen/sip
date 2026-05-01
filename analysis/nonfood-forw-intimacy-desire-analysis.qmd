@@ -626,7 +626,7 @@ ggplot(df_v_vs_access, aes(x = access, y = v, color = scenario_type, shape = fac
 
 ## LM-rating noise audit
 
-Before adding any extra parameters, check whether the largest residuals are tracking LM-rating *uncertainty* (in which case the right move is to re-elicit those cells, not to expand the model). Per-cell standard deviations come from the 10-run averaged LM elicitation in `model/lm/scenario_params.py`.
+Before adding any extra parameters, check whether the largest residuals are tracking LM-rating *uncertainty* (in which case the right move is to re-elicit those cells, not to expand the model). Per-cell standard deviations come from the 10-run averaged LM elicitation in `model/lm/score_canonical_features.py`.
 
 ```{r}
 df_lm_acc_full <- read_csv(here("model", "outputs", "lm", "lm_scenario_params_nonfood.csv"),

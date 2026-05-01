@@ -3,8 +3,8 @@
 elicitation pipelines.
 
 Centralizes what previously lived in three near-duplicate copies across
-``lm/scenario_params.py``, ``lm/scenario_params_effort.py``, and
-``lm/generate_alternatives.py``:
+``lm/score_canonical_features.py``, ``lm/score_effort_features.py``, and
+``lm/generate_alternatives_motivation.py``:
 
 - ``load_api_key`` — resolve ``TOGETHER_API_KEY`` from env or ``.env``.
 - ``find_json`` / ``find_json_array`` — best-effort JSON extraction.

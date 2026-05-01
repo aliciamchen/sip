@@ -30,8 +30,8 @@ Output:
     --conditioning relationship, --domain nonfood → model/outputs/lm_alternatives_relationship_nonfood.csv
 
 Usage:
-    uv run python model/lm/generate_alternatives.py
-    uv run python model/lm/generate_alternatives.py --conditioning relationship
+    uv run python model/lm/generate_alternatives_motivation.py
+    uv run python model/lm/generate_alternatives_relationship.py
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
