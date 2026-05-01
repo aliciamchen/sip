@@ -44,6 +44,7 @@ from utils import get_project_root
 N_SCENARIOS = len(SCENARIO_LABELS)
 N_RELATIONSHIPS = 4  # 0, 50, 75, 100 → enum indices 0..3
 RELATIONSHIP_LABELS = [0, 50, 75, 100]
+EXPERIMENT_SLUG = "food_inv-desire_intimacy_noalt"
 
 
 def _bce(p_high, response_pct):
@@ -115,7 +116,7 @@ def run_loso_desire_noalt_joint(padded):
                 utility_param_names=utility_names,
                 observed_action=observed_action[train_mask],
                 scenario_idx=scenario_idx[train_mask],
-                relationship_idx=relationship_idx[train_mask],
+                relationship_condition=relationship_idx[train_mask],
                 response=response[train_mask],
                 access_table=padded["access"],
                 effort_table=padded["effort"],

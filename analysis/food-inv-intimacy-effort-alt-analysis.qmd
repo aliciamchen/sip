@@ -305,7 +305,7 @@ Same four panels as above, but with the x-axis replaced by the LM-derived access
 #| fig-width: 14
 #| fig-asp: 0.32
 
-df_canonical_access <- read_csv(here("model", "outputs",
+df_canonical_access <- read_csv(here("model", "outputs", "lm",
                                      "lm_scenario_params_effort.csv"),
                                 show_col_types = FALSE) |>
   mutate(

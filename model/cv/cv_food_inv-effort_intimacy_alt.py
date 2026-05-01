@@ -44,6 +44,7 @@ from utils import get_project_root
 N_SCENARIOS = len(SCENARIO_LABELS)
 VARIANTS = ["full", "discomfort_only", "base"]
 INTIMACY_DISPLAY_LEVELS = [0, 50, 75, 100]
+EXPERIMENT_SLUG = "food_inv-effort_intimacy_alt"
 
 
 def _loso_effort_intimacy(actor_params_by_model):

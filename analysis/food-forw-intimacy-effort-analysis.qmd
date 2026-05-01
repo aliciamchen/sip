@@ -310,8 +310,8 @@ ggsave(here("figures", "food_forw_intimacy_effort_correlation.pdf"),
 ### Model fit results
 
 ```{r}
-fit_results <- read_csv(here("model", "outputs",
-                             "forward_planning_effort_fit_results.csv"),
+fit_results <- read_csv(here("model", "outputs", "food_forw_intimacy_effort",
+                             "fit_results.csv"),
                         show_col_types = FALSE)
 
 fit_results |>

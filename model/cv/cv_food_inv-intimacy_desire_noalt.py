@@ -46,6 +46,7 @@ from utils import get_project_root
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
+EXPERIMENT_SLUG = "food_inv-intimacy_desire_noalt"
 
 
 def _held_out_test_nll(result, observed_action, scenario_idx, reward_condition, response, test_idx):
@@ -91,7 +92,7 @@ def run_loso_noalt_joint(padded):
     fold_rows = []
     intimacy_grid = np.asarray(IntimacyLevels) * 100.0
 
-    for variant, (observer_fn, _kw_names, utility_names, uses_v) in PADDED_VARIANTS.items():
+    for variant, (observer_fn, utility_names, uses_v) in PADDED_VARIANTS.items():
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold

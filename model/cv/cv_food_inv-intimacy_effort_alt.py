@@ -42,6 +42,7 @@ from utils import get_project_root
 N_SCENARIOS = len(SCENARIO_LABELS)
 VARIANTS = ["full", "discomfort_only", "base"]
 EFFORT_LABELS = {0: "low", 1: "high"}
+EXPERIMENT_SLUG = "food_inv-intimacy_effort_alt"
 
 
 def _loso_intimacy_effort(actor_params_by_model):
