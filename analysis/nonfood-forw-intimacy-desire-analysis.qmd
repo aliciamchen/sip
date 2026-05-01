@@ -137,10 +137,10 @@ Three ablations of the canonical access utility, identical to the food forward-p
 
 ### Load LOSO predictions
 
-Out-of-sample predictions from `model/outputs/cv_loso_preds_nonfood.csv`: each trial's prediction is from a model fit on the other 15 scenarios.
+Out-of-sample predictions from `model/outputs/nonfood_forw_intimacy_desire/cv_preds.csv`: each trial's prediction is from a model fit on the other 15 scenarios.
 
 ```{r}
-df_cv <- read_csv(here("model", "outputs", "cv_loso_preds_nonfood.csv"), show_col_types = FALSE)
+df_cv <- read_csv(here("model", "outputs", "nonfood_forw_intimacy_desire", "cv_preds.csv"), show_col_types = FALSE)
 
 df_humans_cv <- df_cv |>
   filter(variant == "full") |>
@@ -206,7 +206,7 @@ ggsave(here("figures", "nonfood_forw_intimacy_desire_comparison.pdf"), device = 
 #| fig-width: 14
 #| fig-asp: 0.45
 
-df_canonical_access <- read_csv(here("model", "outputs", "lm_scenario_params_nonfood.csv"),
+df_canonical_access <- read_csv(here("model", "outputs", "lm", "lm_scenario_params_nonfood.csv"),
                                 show_col_types = FALSE) |>
   select(scenario_label, action, access)
 
@@ -313,7 +313,7 @@ ggsave(here("figures", "nonfood_forw_intimacy_desire_correlation.pdf"), device =
 ### All-data fit results (AIC / BIC)
 
 ```{r}
-fit_results <- read_csv(here("model", "outputs", "forward_planning_fit_results_nonfood.csv"),
+fit_results <- read_csv(here("model", "outputs", "nonfood_forw_intimacy_desire", "fit_results.csv"),
                         show_col_types = FALSE)
 
 fit_results |>
@@ -540,13 +540,13 @@ The 15 (scenario, intimacy, motivation, action) cells with the largest absolute 
 ```{r}
 #| label: tbl-nonfood-worst-cells
 
-df_lmv_wide <- read_csv(here("model", "outputs", "lm_scenario_v_nonfood.csv"),
+df_lmv_wide <- read_csv(here("model", "outputs", "lm", "lm_scenario_v_nonfood.csv"),
                         show_col_types = FALSE) |>
   select(scenario_label, action, motivation, v) |>
   mutate(motivation = factor(motivation, levels = c("low", "high"),
                              labels = MOTIVATION_LEVELS))
 
-df_lm_eff <- read_csv(here("model", "outputs", "lm_scenario_params_nonfood.csv"),
+df_lm_eff <- read_csv(here("model", "outputs", "lm", "lm_scenario_params_nonfood.csv"),
                       show_col_types = FALSE) |>
   select(scenario_label, action, access, effort)
 
@@ -576,7 +576,7 @@ df_cell |>
 V is now LM-elicited rather than stipulated. Two quick sanity checks below before reading the model fit. (Validity is at the LM-table level, not at the fit level — these don't depend on the fit at all.)
 
 ```{r}
-df_lmv <- read_csv(here("model", "outputs", "lm_scenario_v_nonfood.csv"), show_col_types = FALSE) |>
+df_lmv <- read_csv(here("model", "outputs", "lm", "lm_scenario_v_nonfood.csv"), show_col_types = FALSE) |>
   left_join(df_scenario_types, by = "scenario_label")
 ```
 
@@ -629,11 +629,11 @@ ggplot(df_v_vs_access, aes(x = access, y = v, color = scenario_type, shape = fac
 Before adding any extra parameters, check whether the largest residuals are tracking LM-rating *uncertainty* (in which case the right move is to re-elicit those cells, not to expand the model). Per-cell standard deviations come from the 10-run averaged LM elicitation in `model/lm/scenario_params.py`.
 
 ```{r}
-df_lm_acc_full <- read_csv(here("model", "outputs", "lm_scenario_params_nonfood.csv"),
+df_lm_acc_full <- read_csv(here("model", "outputs", "lm", "lm_scenario_params_nonfood.csv"),
                            show_col_types = FALSE) |>
   select(scenario_label, action, access_raw_std, effort_raw_std)
 
-df_lm_v_full <- read_csv(here("model", "outputs", "lm_scenario_v_nonfood.csv"),
+df_lm_v_full <- read_csv(here("model", "outputs", "lm", "lm_scenario_v_nonfood.csv"),
                          show_col_types = FALSE) |>
   select(scenario_label, action, motivation, v_raw_std) |>
   mutate(motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS))
@@ -690,7 +690,7 @@ $$U(a|s, I) = w_v \cdot V(a|s) - w_d \cdot \text{access}(a) \cdot (1 - I)^\gamma
 with γ a free parameter (init 1.0). γ̂ should be stable across LOSO folds — wide spread = γ is overfitting to single scenarios; narrow spread = the nonlinearity is a feature of the data, not an artefact of any one held-out scenario.
 
 ```{r}
-df_folds_nonfood <- read_csv(here("model", "outputs", "cv_loso_forward_nonfood.csv"),
+df_folds_nonfood <- read_csv(here("model", "outputs", "nonfood_forw_intimacy_desire", "cv_folds.csv"),
                              show_col_types = FALSE) |>
   filter(variant == "full") |>
   inner_join(df_scenario_types, by = c("held_out_scenario" = "scenario_label"))
@@ -720,7 +720,7 @@ Both food and non-food fit the same canonical utility with γ free; the question
 ```{r}
 #| label: tbl-gamma-cross-domain
 
-food_full <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"),
+food_full <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "fit_results.csv"),
                       show_col_types = FALSE) |>
   filter(model == "full") |>
   transmute(domain = "food", model, nll, n_params,
@@ -739,7 +739,7 @@ bind_rows(food_full, nonfood_full) |>
 ### Per-fold γ stability — food vs non-food
 
 ```{r}
-df_folds_food <- read_csv(here("model", "outputs", "cv_loso_forward.csv"),
+df_folds_food <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "cv_folds.csv"),
                           show_col_types = FALSE) |>
   filter(variant == "full") |>
   transmute(domain = "food", scenario = held_out_scenario, gamma = param_gamma)

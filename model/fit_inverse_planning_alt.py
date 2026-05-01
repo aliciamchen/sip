@@ -52,7 +52,8 @@ def load_fitted_params(filepath: str = None) -> dict:
             get_project_root()
             / "model"
             / "outputs"
-            / "forward_planning_fit_results.csv"
+            / "food_forw_intimacy_desire"
+            / "fit_results.csv"
         )
     df = pd.read_csv(filepath)
     params = {}
@@ -422,11 +423,20 @@ def main():
     results_df = pd.DataFrame(results)
     print(results_df.to_string(index=False))
 
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    results_path = output_dir / "inverse_planning_fit_results.csv"
-    results_df.to_csv(results_path, index=False)
-    print(f"\nSaved fit results to {results_path}")
+    # Split joint results by experiment: intimacy → food_inv-intimacy_desire_alt,
+    # reward → food_inv-desire_intimacy_alt. Each experiment dir gets its own
+    # fit_results.csv with only its rows.
+    outputs_root = Path(__file__).parent / "outputs"
+    intimacy_dir = outputs_root / "food_inv-intimacy_desire_alt"
+    reward_dir = outputs_root / "food_inv-desire_intimacy_alt"
+    intimacy_dir.mkdir(parents=True, exist_ok=True)
+    reward_dir.mkdir(parents=True, exist_ok=True)
+    intimacy_path = intimacy_dir / "fit_results.csv"
+    reward_path = reward_dir / "fit_results.csv"
+    results_df[results_df["experiment"] == "intimacy"].to_csv(intimacy_path, index=False)
+    results_df[results_df["experiment"] == "reward"].to_csv(reward_path, index=False)
+    print(f"\nSaved intimacy fit results to {intimacy_path}")
+    print(f"Saved reward fit results to {reward_path}")
 
     print("\n" + "=" * 60)
     print("Done!")

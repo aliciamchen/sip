@@ -160,7 +160,7 @@ def load_lm_scenario_params(filepath=None):
     """
     if filepath is None:
         filepath = (
-            Path(__file__).resolve().parent / "outputs" / "lm_scenario_params.csv"
+            Path(__file__).resolve().parent / "outputs" / "lm" / "lm_scenario_params.csv"
         )
     df = pd.read_csv(filepath)
     access = np.zeros((len(SCENARIO_LABELS), 4), dtype=np.float32)
@@ -191,7 +191,7 @@ LLM_TABLES = load_lm_scenario_params()
 
 def _load_nonfood_lm_tables():
     path = (
-        Path(__file__).resolve().parent / "outputs" / "lm_scenario_params_nonfood.csv"
+        Path(__file__).resolve().parent / "outputs" / "lm" / "lm_scenario_params_nonfood.csv"
     )
     df = pd.read_csv(path)
     access = np.zeros((len(NONFOOD_SCENARIO_LABELS), 4), dtype=np.float32)
@@ -231,7 +231,7 @@ def load_lm_v(domain="food"):
         filename = "lm_scenario_v_nonfood.csv"
     else:
         raise ValueError(f"Unknown domain: {domain!r}")
-    path = Path(__file__).resolve().parent / "outputs" / filename
+    path = Path(__file__).resolve().parent / "outputs" / "lm" / filename
     df = pd.read_csv(path)
     motivation_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
     v = np.zeros((16, 4, 2), dtype=np.float32)
@@ -276,7 +276,7 @@ def load_padded_lm_tables(
     Returns a dict {access, effort, v, prior} (each jnp.array of shape
     (16, 4, 2, MAX_ACTIONS)), or None if any required CSV is missing.
     """
-    outputs_dir = Path(__file__).resolve().parent / "outputs"
+    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
     alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
@@ -407,7 +407,7 @@ def load_padded_lm_tables_relationship(
     Returns a dict {access, effort, v, prior}, or None if any required CSV is
     missing.
     """
-    outputs_dir = Path(__file__).resolve().parent / "outputs"
+    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
     alternatives_path = (
@@ -557,6 +557,7 @@ def load_lm_scenario_params_effort(filepath=None):
         filepath = (
             Path(__file__).resolve().parent
             / "outputs"
+            / "lm"
             / "lm_scenario_params_effort.csv"
         )
     df = pd.read_csv(filepath)
@@ -593,6 +594,7 @@ def load_lm_scenario_params_effort_marginal(filepath=None):
         filepath = (
             Path(__file__).resolve().parent
             / "outputs"
+            / "lm"
             / "lm_scenario_params_effort_marginal.csv"
         )
     if not Path(filepath).exists():

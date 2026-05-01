@@ -1,0 +1,4 @@
+model,experiment,alpha_observer,nll,n_params
+full,intimacy,2.5393238067626953,7907.53125,1
+discomfort_only,intimacy,3.132020950317383,7873.689453125,1
+base,intimacy,0.4097103476524353,8417.98046875,1

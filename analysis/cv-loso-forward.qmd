@@ -27,7 +27,7 @@ Leave-one-scenario-out (LOSO) addresses this: for each of the 16 scenarios, hold
 ## Load results
 
 ```{r}
-df_fold <- read_csv(here("model", "outputs", "cv_loso_forward.csv"), show_col_types = FALSE) |>
+df_fold <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "cv_folds.csv"), show_col_types = FALSE) |>
   mutate(
     variant_label = case_when(
       variant == "full" ~ "Full model",
@@ -37,7 +37,7 @@ df_fold <- read_csv(here("model", "outputs", "cv_loso_forward.csv"), show_col_ty
     variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
   )
 
-df_pred <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types = FALSE) |>
+df_pred <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "cv_preds.csv"), show_col_types = FALSE) |>
   mutate(
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     variant_label = case_when(
@@ -48,7 +48,7 @@ df_pred <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_type
     variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
   )
 
-df_full <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"), show_col_types = FALSE)
+df_full <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "fit_results.csv"), show_col_types = FALSE)
 ```
 
 ## Headline: in-sample vs out-of-sample fit quality

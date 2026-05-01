@@ -301,7 +301,7 @@ def main():
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
     client = Together(api_key=api_key)
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     cond_path = output_dir / "lm_scenario_params_effort.csv"
     marg_path = output_dir / "lm_scenario_params_effort_marginal.csv"

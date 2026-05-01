@@ -268,9 +268,9 @@ def main():
         results.append(row)
 
     results_df = pd.DataFrame(results)
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    results_path = output_dir / "inverse_planning_desire_noalt_fit_results.csv"
+    output_dir = Path(__file__).parent / "outputs" / "food_inv-desire_intimacy_noalt"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    results_path = output_dir / "fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
     print(results_df.to_string(index=False))

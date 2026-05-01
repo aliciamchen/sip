@@ -89,12 +89,12 @@ def _canonical_config(domain: str):
     v_table = load_lm_v(domain)
     if domain == "food":
         data_path = get_project_root() / "data" / "food_forw_intimacy_desire" / "main_trials_long.csv"
-        fold_filename = "cv_loso_forward.csv"
-        pred_filename = "cv_loso_preds.csv"
+        slug = "food_forw_intimacy_desire"; fold_filename = "cv_folds.csv"
+        pred_filename = "cv_preds.csv"
     elif domain == "nonfood":
         data_path = get_project_root() / "data" / "nonfood_forw_intimacy_desire" / "main_trials_long.csv"
-        fold_filename = "cv_loso_forward_nonfood.csv"
-        pred_filename = "cv_loso_preds_nonfood.csv"
+        slug = "nonfood_forw_intimacy_desire"; fold_filename = "cv_folds.csv"
+        pred_filename = "cv_preds.csv"
     else:
         raise ValueError(f"Unknown domain: {domain!r}")
 
@@ -116,6 +116,7 @@ def _canonical_config(domain: str):
         "iv_column": "motivation",       # column name in human data CSV
         "iv_dtype": "object",            # leave as string ("low"/"high")
         "group_cols": ["intimacy", "motivation", "action"],
+        "slug": slug,
         "fold_filename": fold_filename,
         "pred_filename": pred_filename,
     }
@@ -140,8 +141,8 @@ def _effort_config():
         "iv_column": "effort",
         "iv_dtype": "object",            # "low" / "high"
         "group_cols": ["intimacy", "effort", "action"],
-        "fold_filename": "cv_loso_forward_effort.csv",
-        "pred_filename": "cv_loso_preds_effort.csv",
+        "slug": "food_forw_intimacy_effort", "fold_filename": "cv_folds.csv",
+        "pred_filename": "cv_preds.csv",
     }
 
 
@@ -256,8 +257,8 @@ def main(experiment: str):
     fold_df, pred_df = run_loso(config)
     fold_df = attach_per_scenario_r(fold_df, pred_df, config["group_cols"])
 
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = get_project_root() / "model" / "outputs" / config["slug"]
+    output_dir.mkdir(parents=True, exist_ok=True)
     fold_path = output_dir / config["fold_filename"]
     pred_path = output_dir / config["pred_filename"]
     fold_df.to_csv(fold_path, index=False)

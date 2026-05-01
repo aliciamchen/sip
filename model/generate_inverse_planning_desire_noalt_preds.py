@@ -60,7 +60,7 @@ def load_desire_noalt_fit_results(filepath=None):
             get_project_root()
             / "model"
             / "outputs"
-            / "inverse_planning_desire_noalt_fit_results.csv"
+            / "food_inv-desire_intimacy_noalt" / "fit_results.csv"
         )
     df = pd.read_csv(filepath)
     out = {}
@@ -115,8 +115,8 @@ def main():
     print("No-alt desire inference predictions (3 variants, joint fit)")
     print("=" * 60)
 
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path(__file__).parent / "outputs" / "food_inv-desire_intimacy_noalt"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     print("\nLoading joint-fit parameters (actor weights + α_observer)...")
     params_by_variant = load_desire_noalt_fit_results()
@@ -151,8 +151,8 @@ def main():
         ["scenario_label", "observed_action", "intimacy", "model", "p_high"]
     ].copy()
 
-    full_path = output_dir / "food_inv-desire_intimacy_noalt_preds_full.csv"
-    summary_path = output_dir / "food_inv-desire_intimacy_noalt_preds_summary.csv"
+    full_path = output_dir / "preds_full.csv"
+    summary_path = output_dir / "preds_summary.csv"
     df_full.to_csv(full_path, index=False)
     df_summary.to_csv(summary_path, index=False)
     print(f"\nSaved {len(df_full)} rows to {full_path}")

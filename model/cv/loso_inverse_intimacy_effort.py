@@ -133,12 +133,12 @@ def main():
     print("\nLoading frozen actor parameters (food_forw_intimacy_effort all-data fit)...")
     actor_params_by_model = load_food_forw_intimacy_effort_actor_params()
 
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = get_project_root() / "model" / "outputs" / "food_inv-intimacy_effort_alt"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     preds, folds = _loso_intimacy_effort(actor_params_by_model)
-    preds_path = output_dir / "cv_loso_food_inv-intimacy_effort_alt_preds_summary.csv"
-    folds_path = output_dir / "cv_loso_inverse_intimacy_effort_folds.csv"
+    preds_path = output_dir / "cv_preds_summary.csv"
+    folds_path = output_dir / "cv_folds.csv"
     preds.to_csv(preds_path, index=False)
     folds.to_csv(folds_path, index=False)
     print(f"\nWrote {preds_path}")

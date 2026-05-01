@@ -45,7 +45,13 @@ def load_fitted_params(filepath: str = None) -> dict:
     row (stripped of the `param_` prefix). Missing/NaN columns are omitted.
     """
     if filepath is None:
-        filepath = get_project_root() / "model" / "outputs" / "forward_planning_fit_results.csv"
+        filepath = (
+            get_project_root()
+            / "model"
+            / "outputs"
+            / "food_forw_intimacy_desire"
+            / "fit_results.csv"
+        )
     df = pd.read_csv(filepath)
     params = {}
     for _, row in df.iterrows():
@@ -61,16 +67,24 @@ def load_fitted_params(filepath: str = None) -> dict:
 def load_fitted_alpha_observer(filepath: str = None) -> dict:
     """Load fitted alpha_observer values from inverse planning fit results.
 
+    Reads from both alt-shown experiment dirs (intimacy + reward) and merges.
     Returns dict with (model, experiment) -> alpha_observer. Defaults to 1.0 if NaN.
+
+    `filepath` is ignored (kept for backward compatibility); always reads from
+    the per-experiment fit_results.csv files.
     """
-    if filepath is None:
-        filepath = get_project_root() / "model" / "outputs" / "inverse_planning_fit_results.csv"
-    df = pd.read_csv(filepath)
+    outputs_root = get_project_root() / "model" / "outputs"
+    paths = [
+        outputs_root / "food_inv-intimacy_desire_alt" / "fit_results.csv",
+        outputs_root / "food_inv-desire_intimacy_alt" / "fit_results.csv",
+    ]
     alpha_obs = {}
-    for _, row in df.iterrows():
-        key = (row["model"], row["experiment"])
-        alpha_val = row["alpha_observer"]
-        alpha_obs[key] = alpha_val if pd.notna(alpha_val) else 1.0
+    for path in paths:
+        df = pd.read_csv(path)
+        for _, row in df.iterrows():
+            key = (row["model"], row["experiment"])
+            alpha_val = row["alpha_observer"]
+            alpha_obs[key] = alpha_val if pd.notna(alpha_val) else 1.0
     return alpha_obs
 
 
@@ -201,8 +215,11 @@ def main():
     print("Frozen forward params + fitted alpha_observer")
     print("=" * 60)
 
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    outputs_root = Path(__file__).parent / "outputs"
+    intimacy_dir = outputs_root / "food_inv-intimacy_desire_alt"
+    reward_dir = outputs_root / "food_inv-desire_intimacy_alt"
+    intimacy_dir.mkdir(parents=True, exist_ok=True)
+    reward_dir.mkdir(parents=True, exist_ok=True)
 
     # Load fitted actor parameters
     print("\nLoading fitted actor parameters...")
@@ -240,8 +257,8 @@ def main():
     print("  Computing expected intimacy...")
     df_intimacy_summary = compute_expected_intimacy(df_intimacy_full)
 
-    full_path = output_dir / "food_inv-intimacy_desire_alt_preds_full.csv"
-    summary_path = output_dir / "food_inv-intimacy_desire_alt_preds_summary.csv"
+    full_path = intimacy_dir / "preds_full.csv"
+    summary_path = intimacy_dir / "preds_summary.csv"
     df_intimacy_full.to_csv(full_path, index=False)
     df_intimacy_summary.to_csv(summary_path, index=False)
     print(f"  Saved {len(df_intimacy_full)} rows to {full_path}")
@@ -271,8 +288,8 @@ def main():
     print("  Computing P(high reward)...")
     df_reward_summary = compute_p_high_reward(df_reward_full)
 
-    full_path = output_dir / "food_inv-desire_intimacy_alt_preds_full.csv"
-    summary_path = output_dir / "food_inv-desire_intimacy_alt_preds_summary.csv"
+    full_path = reward_dir / "preds_full.csv"
+    summary_path = reward_dir / "preds_summary.csv"
     df_reward_full.to_csv(full_path, index=False)
     df_reward_summary.to_csv(summary_path, index=False)
     print(f"  Saved {len(df_reward_full)} rows to {full_path}")

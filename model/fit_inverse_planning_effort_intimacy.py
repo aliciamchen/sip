@@ -89,7 +89,7 @@ def load_food_forw_intimacy_effort_actor_params(filepath: str = None) -> dict:
             get_project_root()
             / "model"
             / "outputs"
-            / "forward_planning_effort_fit_results.csv"
+            / "food_forw_intimacy_effort" / "fit_results.csv"
         )
     return load_fitted_params(filepath=filepath)
 
@@ -207,9 +207,9 @@ def main():
     results_df = pd.DataFrame(results)
     print(results_df.to_string(index=False))
 
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    results_path = output_dir / "inverse_planning_effort_intimacy_fit_results.csv"
+    output_dir = Path(__file__).parent / "outputs" / "food_inv-effort_intimacy_alt"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    results_path = output_dir / "fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
 

@@ -230,25 +230,31 @@ def main():
     print("\nLoading frozen actor parameters (all-data Exp 1 fit)...")
     actor_params_by_model = load_fitted_params()
 
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    outputs_root = get_project_root() / "model" / "outputs"
+    intimacy_dir = outputs_root / "food_inv-intimacy_desire_alt"
+    reward_dir = outputs_root / "food_inv-desire_intimacy_alt"
+    intimacy_dir.mkdir(parents=True, exist_ok=True)
+    reward_dir.mkdir(parents=True, exist_ok=True)
 
     print("\n--- Intimacy inference ---")
     int_preds, int_folds = _loso_intimacy(actor_params_by_model)
-    int_path = output_dir / "cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv"
+    int_path = intimacy_dir / "cv_preds_summary.csv"
     int_preds.to_csv(int_path, index=False)
     print(f"Wrote {int_path}")
 
     print("\n--- Desire inference ---")
     des_preds, des_folds = _loso_desire(actor_params_by_model)
-    des_path = output_dir / "cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv"
+    des_path = reward_dir / "cv_preds_summary.csv"
     des_preds.to_csv(des_path, index=False)
     print(f"Wrote {des_path}")
 
+    int_folds_path = intimacy_dir / "cv_folds.csv"
+    des_folds_path = reward_dir / "cv_folds.csv"
+    int_folds.to_csv(int_folds_path, index=False)
+    des_folds.to_csv(des_folds_path, index=False)
+    print(f"Wrote {int_folds_path}")
+    print(f"Wrote {des_folds_path}")
     fold_df = pd.concat([int_folds, des_folds], ignore_index=True)
-    fold_path = output_dir / "cv_loso_inverse_alt_folds.csv"
-    fold_df.to_csv(fold_path, index=False)
-    print(f"Wrote {fold_path}")
 
     print("\n=== Per-experiment × variant summary ===")
     for (exp, variant), sub in fold_df.groupby(["experiment", "variant"]):

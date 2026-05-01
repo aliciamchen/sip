@@ -181,10 +181,10 @@ def main():
 
     preds_df, fold_df = run_loso_desire_noalt_joint(padded)
 
-    output_dir = get_project_root() / "model" / "outputs"
-    output_dir.mkdir(exist_ok=True)
-    preds_path = output_dir / "cv_loso_food_inv-desire_intimacy_noalt_preds_summary.csv"
-    fold_path = output_dir / "cv_loso_inverse_desire_noalt_folds.csv"
+    output_dir = get_project_root() / "model" / "outputs" / "food_inv-desire_intimacy_noalt"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    preds_path = output_dir / "cv_preds_summary.csv"
+    fold_path = output_dir / "cv_folds.csv"
     preds_df.to_csv(preds_path, index=False)
     fold_df.to_csv(fold_path, index=False)
     print(f"\nWrote {preds_path}")

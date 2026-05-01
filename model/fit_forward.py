@@ -415,8 +415,8 @@ def _canonical_food_config():
             "base": (fit_canonical_base, predict_canonical_base, ["w_v", "w_e"]),
         },
         "group_cols": ["intimacy", "motivation", "action"],
-        "fits_filename": "forward_planning_fits.csv",
-        "results_filename": "forward_planning_fit_results.csv",
+        "slug": "food_forw_intimacy_desire", "fits_filename": "fits.csv",
+        "results_filename": "fit_results.csv",
     }
 
 
@@ -435,8 +435,8 @@ def _canonical_nonfood_config():
             "base": (fit_canonical_base, predict_canonical_base, ["w_v", "w_e"]),
         },
         "group_cols": ["intimacy", "motivation", "action"],
-        "fits_filename": "forward_planning_fits_nonfood.csv",
-        "results_filename": "forward_planning_fit_results_nonfood.csv",
+        "slug": "nonfood_forw_intimacy_desire", "fits_filename": "fits.csv",
+        "results_filename": "fit_results.csv",
     }
 
 
@@ -453,8 +453,8 @@ def _effort_config():
             "base": (fit_effort_base, predict_effort_base, ["w_v", "w_e"]),
         },
         "group_cols": ["intimacy", "effort", "action"],
-        "fits_filename": "forward_planning_effort_fits.csv",
-        "results_filename": "forward_planning_effort_fit_results.csv",
+        "slug": "food_forw_intimacy_effort", "fits_filename": "fits.csv",
+        "results_filename": "fit_results.csv",
     }
 
 
@@ -532,8 +532,8 @@ def main(experiment: str):
             )
         )
 
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path(__file__).parent / "outputs" / config["slug"]
+    output_dir.mkdir(parents=True, exist_ok=True)
     fits_path = output_dir / config["fits_filename"]
     data.to_csv(fits_path, index=False)
     print(f"Saved predictions to {fits_path}")

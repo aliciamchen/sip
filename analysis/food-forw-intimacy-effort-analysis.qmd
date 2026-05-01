@@ -110,10 +110,10 @@ $$U(a|s, I, e) = w_v \cdot V(a) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e
 
 ### Load model predictions
 
-Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/cv_loso_preds_effort.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios.
+Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/food_forw_intimacy_effort/cv_preds.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios.
 
 ```{r}
-df_cv <- read_csv(here("model", "outputs", "cv_loso_preds_effort.csv"),
+df_cv <- read_csv(here("model", "outputs", "food_forw_intimacy_effort", "cv_preds.csv"),
                   show_col_types = FALSE)
 
 df_humans_cv <- df_cv |>
@@ -198,7 +198,7 @@ Humans are in the lower-left *with positive slope* — above the diagonal but be
 
 # Base model achievable curve: sweep w_e and compute marginal P(share) per condition,
 # averaged across the 16 scenarios using the LM-rated effort tables.
-df_eff <- read_csv(here("model", "outputs", "lm_scenario_params_effort.csv"),
+df_eff <- read_csv(here("model", "outputs", "lm", "lm_scenario_params_effort.csv"),
                    show_col_types = FALSE) |>
   select(scenario_label, effort_condition, action, effort) |>
   pivot_wider(names_from = action, values_from = effort, names_prefix = "a") |>

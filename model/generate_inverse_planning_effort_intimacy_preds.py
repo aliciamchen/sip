@@ -100,8 +100,8 @@ def main():
     print("Generating food_inv-effort_intimacy_alt predictions")
     print("=" * 60)
 
-    output_dir = Path(__file__).parent / "outputs"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = Path(__file__).parent / "outputs" / "food_inv-effort_intimacy_alt"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     print("\nLoading frozen actor parameters from food_forw_intimacy_effort...")
     params = load_food_forw_intimacy_effort_actor_params()
@@ -117,7 +117,7 @@ def main():
         get_project_root()
         / "model"
         / "outputs"
-        / "inverse_planning_effort_intimacy_fit_results.csv"
+        / "food_inv-effort_intimacy_alt" / "fit_results.csv"
     )
     for (model, exp), alpha in alpha_obs.items():
         print(f"  {model} ({exp}): alpha_observer={alpha:.3f}")
@@ -140,8 +140,8 @@ def main():
     df_full = pd.concat(dfs, ignore_index=True)
     df_summary = compute_p_effort_high_summary(df_full)
 
-    full_path = output_dir / "food_inv-effort_intimacy_alt_preds_full.csv"
-    summary_path = output_dir / "food_inv-effort_intimacy_alt_preds_summary.csv"
+    full_path = output_dir / "preds_full.csv"
+    summary_path = output_dir / "preds_summary.csv"
     df_full.to_csv(full_path, index=False)
     df_summary.to_csv(summary_path, index=False)
     print(f"\n  Saved {len(df_full)} rows to {full_path}")

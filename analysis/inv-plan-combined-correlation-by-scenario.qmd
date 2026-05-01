@@ -33,7 +33,7 @@ This notebook parallels `inv-plan-combined-correlation.qmd` (and adds forward pl
 ## Canonical forward planning (`food_forw_intimacy_desire`)
 
 ```{r}
-df_fp_cv <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types = FALSE)
+df_fp_cv <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "cv_preds.csv"), show_col_types = FALSE)
 
 df_fp_human <- df_fp_cv |>
   filter(variant == "full") |>
@@ -102,7 +102,7 @@ correlations_fp |>
 ## Forward planning, effort (`food_forw_intimacy_effort`)
 
 ```{r}
-df_fpe_cv <- read_csv(here("model", "outputs", "cv_loso_preds_effort.csv"), show_col_types = FALSE)
+df_fpe_cv <- read_csv(here("model", "outputs", "food_forw_intimacy_effort", "cv_preds.csv"), show_col_types = FALSE)
 
 df_fpe_human <- df_fpe_cv |>
   filter(variant == "full") |>
@@ -202,7 +202,7 @@ df_intimacy_summary <- df_intimacy |>
 ### Model predictions
 
 ```{r}
-df_model_intimacy <- read_csv(here("model", "outputs", "cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv")) |>
+df_model_intimacy <- read_csv(here("model", "outputs", "food_inv-intimacy_desire_alt", "cv_preds_summary.csv")) |>
   rename(motivation = reward_condition) |>
   mutate(
     action = as.character(action),
@@ -249,7 +249,7 @@ df_desire_summary <- df_desire |>
 ### Model predictions
 
 ```{r}
-df_model_desire <- read_csv(here("model", "outputs", "cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv")) |>
+df_model_desire <- read_csv(here("model", "outputs", "food_inv-desire_intimacy_alt", "cv_preds_summary.csv")) |>
   rename(intimacy = intimacy_condition) |>
   mutate(
     action = as.character(action),
@@ -401,8 +401,7 @@ df_intimacy_effort_summary <- df_intimacy_effort |>
 ### Model predictions
 
 ```{r}
-df_model_intimacy_effort <- read_csv(here("model", "outputs",
-                                          "cv_loso_food_inv-intimacy_effort_alt_preds_summary.csv")) |>
+df_model_intimacy_effort <- read_csv(here("model", "outputs", "food_inv-intimacy_effort_alt", "cv_preds_summary.csv")) |>
   rename(effort = effort_condition) |>
   mutate(
     action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
@@ -450,8 +449,7 @@ df_effort_intimacy_summary <- df_effort_intimacy |>
 ### Model predictions
 
 ```{r}
-df_model_effort_intimacy <- read_csv(here("model", "outputs",
-                                          "cv_loso_food_inv-effort_intimacy_alt_preds_summary.csv")) |>
+df_model_effort_intimacy <- read_csv(here("model", "outputs", "food_inv-effort_intimacy_alt", "cv_preds_summary.csv")) |>
   mutate(
     action = factor(action, levels = c(1, 2), labels = EFFORT_ACTION_LEVELS),
     intimacy = factor(intimacy, levels = c(0, 50, 75, 100)),

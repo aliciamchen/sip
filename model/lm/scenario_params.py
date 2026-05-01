@@ -188,7 +188,7 @@ def main(domain="food"):
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
     client = Together(api_key=api_key)
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["params_output"]
 
@@ -357,7 +357,7 @@ def score_alternatives_main(domain="food"):
 
     print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
     scenarios_df = load_scenarios(domain)
-    alt_path = get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_input"]
+    alt_path = get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
         print(f"Error: {alt_path} not found. Run lm/generate_alternatives.py first.", flush=True)
         sys.exit(1)
@@ -370,7 +370,7 @@ def score_alternatives_main(domain="food"):
         flush=True,
     )
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_output"]
 
@@ -501,14 +501,14 @@ def score_v_alternatives_main(domain="food"):
 
     print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
     scenarios_df = load_scenarios(domain)
-    alt_path = get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_input"]
+    alt_path = get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
         print(f"Error: {alt_path} not found. Run lm/generate_alternatives.py first.", flush=True)
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_v_output"]
 
@@ -617,7 +617,7 @@ def score_alternatives_relationship_main(domain="food"):
     print(f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...", flush=True)
     scenarios_df = load_scenarios(domain)
     alt_path = (
-        get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
+        get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
     )
     if not alt_path.exists():
         print(
@@ -635,7 +635,7 @@ def score_alternatives_relationship_main(domain="food"):
         flush=True,
     )
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_rel_output"]
 
@@ -756,7 +756,7 @@ def score_v_alternatives_relationship_main(domain="food"):
     print(f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...", flush=True)
     scenarios_df = load_scenarios(domain)
     alt_path = (
-        get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
+        get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
     )
     if not alt_path.exists():
         print(
@@ -768,7 +768,7 @@ def score_v_alternatives_relationship_main(domain="food"):
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["alternatives_rel_v_output"]
 
@@ -875,7 +875,7 @@ def score_v_main(domain="food"):
     print(f"\nInitializing Together AI client for {MODEL_ID}...")
     client = Together(api_key=api_key)
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[domain]["v_output"]
 

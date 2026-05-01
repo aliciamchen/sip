@@ -184,7 +184,7 @@ def main(domain, conditioning):
         levels = RELATIONSHIPS
         level_label = "relationship_condition"
 
-    output_dir = get_project_root() / "model" / "outputs"
+    output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / _DOMAIN_PATHS[(domain, conditioning)]["output"]
 

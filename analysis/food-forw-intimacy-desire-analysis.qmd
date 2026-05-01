@@ -66,10 +66,10 @@ where $V(a|s)$ is the intrinsic food reward, $\text{risk}(a)$ captures graded bo
 
 ### Load model predictions
 
-Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/cv_loso_preds.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios, never seeing that trial's scenario during training. This is what we report in the paper.
+Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/food_forw_intimacy_desire/cv_preds.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios, never seeing that trial's scenario during training. This is what we report in the paper.
 
 ```{r}
-df_cv <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types = FALSE)
+df_cv <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "cv_preds.csv"), show_col_types = FALSE)
 
 # Humans (take from one variant — all three variants share the same p_action column)
 df_humans_cv <- df_cv |>
@@ -140,7 +140,7 @@ Same 8-panel grid as above, but with the x-axis replaced by the LM-derived risk 
 #| fig-width: 14
 #| fig-asp: 0.45
 
-df_canonical_risk <- read_csv(here("model", "outputs", "lm_scenario_params.csv"), show_col_types = FALSE) |>
+df_canonical_risk <- read_csv(here("model", "outputs", "lm", "lm_scenario_params.csv"), show_col_types = FALSE) |>
   select(scenario_label, action, access) |>
   rename(risk = access)
 
@@ -370,7 +370,7 @@ ggplot(df_preds_summary_scenario,
 ### Model fit results
 
 ```{r}
-fit_results <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"))
+fit_results <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "fit_results.csv"))
 fit_results |>
   select(model, nll, n_params, starts_with("param_")) |>
   knitr::kable(digits = 3, caption = "Model fitting results")
@@ -410,7 +410,7 @@ We claimed humans vary more across scenarios than the Full model does at a given
 ### Setup
 
 ```{r}
-df_canonical_risk <- read_csv(here("model", "outputs", "lm_scenario_params.csv"), show_col_types = FALSE) |>
+df_canonical_risk <- read_csv(here("model", "outputs", "lm", "lm_scenario_params.csv"), show_col_types = FALSE) |>
   select(scenario_label, action, access) |>
   rename(risk = access)
 
