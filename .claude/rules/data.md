@@ -20,10 +20,10 @@ data/
   food_inv-intimacy_effort_alt/     # Inverse planning, effort manipulation (2 candidate actions × effort, intimacy inference)
   food_inv-effort_intimacy_alt/     # Inverse planning, effort inference (2 candidate actions × intimacy, effort inference)
   nonfood_forw_intimacy_desire/     # Non-food forward planning (parallels food_forw_intimacy_desire on scenarios_nonfood.csv)
-  inv_plan_reward/                  # Earlier "reward inference" predecessor of food_inv-desire_intimacy_alt (raw only)
-  planning_comm/                    # Communication experiment
-  pilots/                           # Pilot experiments
+  legacy/                           # Earlier experiments not part of the current pipeline (planning_comm/, pilots/)
 ```
+
+`food_inv-desire_intimacy_alt/raw_data/` was originally collected under the URL slug `inv-plan-reward-final` (back when the experiment was called "reward inference"); the raw JSONs use Prolific PIDs which `analysis/json_to_csv.py` deterministically anonymizes to UUIDs in the processed CSVs.
 
 Each experiment folder contains:
 - `raw_data/` - JSON files from experiment

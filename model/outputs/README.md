@@ -35,8 +35,7 @@ LLM-generated per-scenario values for access and effort. Produced by `model/lm/s
 | `access` | Normalized access ([0, 2]) |
 | `effort` | Normalized effort ([0, 1]) |
 | `n_runs_access`, `n_runs_effort` | Number of successful LLM runs |
-
-Note: the CSV currently in the repo also has `reward_low_raw`, `reward_high_raw`, `reward_low`, `reward_high`, and `n_runs_reward_*` columns from a previous schema; these are ignored by `tables.load_lm_scenario_params` and will be dropped the next time `lm/score_canonical_features.py` is run.
+| `n_failures_access`, `n_failures_effort` | Number of LLM calls that did not parse |
 
 ## <forward_slug>/preds.csv
 

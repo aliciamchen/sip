@@ -445,6 +445,7 @@ def run_fit_and_save_results(
     for name in fit_funcs.keys():
         rows.append({
             "model": name,
+            "experiment": experiment_slug,
             "nll": results[name]["nll"],
             "n_params": results[name]["n_params"],
             "aic": model_metrics[name]["aic"],
