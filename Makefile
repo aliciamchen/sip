@@ -1,225 +1,160 @@
-# Makefile for Saliva Inverse Planning Project
+# Makefile for saliva-inverse-planning
 #
-# This pipeline works without raw JSON data - processed CSVs are included in the repo.
-# Data processing targets (data-*) are optional and require raw JSON files.
+# Pipeline: data → LM elicitation → fit → predict → CV → analysis (qmds)
+#
+# Processed CSVs are checked into the repo, so the model + analysis stages
+# work without re-running data processing or LM elicitation.
 
-.PHONY: all help clean test data data-forw data-intimacy-alt data-intimacy-noalt data-desire-alt \
-        data-nonfood-forw \
-        fit fit-forward fit-inverse fit-forward-nonfood fit-forward-nonfood-ext fit-forward-food-ext predictions \
-        cv-forward-nonfood cv-forward-nonfood-ext cv-forward-food-ext \
-        lm-v lm-v-food lm-v-nonfood lm-v-alternatives \
-        analysis analysis-forw-plan analysis-inv-plan-intimacy-alt analysis-inv-plan-desire-alt \
-        analysis-inv-plan-intimacy-noalt analysis-inv-plan-combined analysis-nonfood-forw-plan
+EXPERIMENTS_FORWARD := food_forw_intimacy_desire food_forw_intimacy_effort nonfood_forw_intimacy_desire
+EXPERIMENTS_INVERSE := food_inv-intimacy_desire_alt food_inv-desire_intimacy_alt \
+                       food_inv-intimacy_desire_noalt food_inv-desire_intimacy_noalt \
+                       food_inv-intimacy_effort_alt food_inv-effort_intimacy_alt
+EXPERIMENTS_ALL := $(EXPERIMENTS_FORWARD) $(EXPERIMENTS_INVERSE)
 
-# Default target
-all: fit predictions analysis
+ANALYSIS_QMDS := \
+  food-forw-intimacy-desire-analysis \
+  food-forw-intimacy-effort-analysis \
+  nonfood-forw-intimacy-desire-analysis \
+  food-inv-intimacy-desire-alt-analysis \
+  food-inv-desire-intimacy-alt-analysis \
+  food-inv-intimacy-desire-noalt-analysis \
+  food-inv-desire-intimacy-noalt-analysis \
+  food-inv-intimacy-effort-alt-analysis \
+  food-inv-effort-intimacy-alt-analysis \
+  inv-plan-combined-correlation \
+  inv-plan-combined-correlation-by-scenario \
+  cv-loso-forward
+
+.PHONY: all help test clean \
+        data lm lm-canonical lm-effort lm-alternatives \
+        fit fit-forward fit-inverse \
+        predict predict-forward predict-inverse \
+        cv cv-forward cv-inverse \
+        analysis \
+        $(addprefix data-,$(EXPERIMENTS_ALL)) \
+        $(addprefix fit-,$(EXPERIMENTS_ALL)) \
+        $(addprefix predict-,$(EXPERIMENTS_ALL)) \
+        $(addprefix cv-,$(EXPERIMENTS_ALL)) \
+        $(addprefix analysis-,$(ANALYSIS_QMDS))
+
+all: fit predict cv analysis
 
 help:
-	@echo "Available targets:"
+	@echo "Saliva inverse planning pipeline"
 	@echo ""
-	@echo "  Main Pipeline (works without raw JSON):"
-	@echo "    all              - Run full pipeline: fit models, generate predictions, render analysis"
-	@echo "    fit              - Fit all models (forward + inverse planning)"
-	@echo "    fit-forward      - Fit forward planning actor models"
-	@echo "    fit-inverse      - Fit alt-shown inverse planning observer models"
-	@echo "    predictions      - Generate alt-shown inverse planning predictions"
-	@echo "    analysis         - Render all Quarto analysis documents"
+	@echo "Aggregates:"
+	@echo "  all        - fit + predict + cv + analysis"
+	@echo "  fit        - fit all 9 experiments (3 forward + 6 inverse)"
+	@echo "  predict    - generate predictions for all 9 experiments"
+	@echo "  cv         - leave-one-scenario-out CV for all 9 experiments"
+	@echo "  analysis   - render all 12 quarto analysis qmds"
+	@echo "  lm         - regenerate all LM-elicited CSVs (needs TOGETHER_API_KEY)"
+	@echo "  data       - process raw JSON to CSV for all 9 experiments"
+	@echo "  test       - model compliance tests"
+	@echo "  clean      - remove fit/predict/CV outputs"
 	@echo ""
-	@echo "  Individual Analysis Targets:"
-	@echo "    analysis-forw-plan               - Render forward planning analysis"
-	@echo "    analysis-inv-plan-intimacy-alt   - Render alt-shown intimacy inference analysis"
-	@echo "    analysis-inv-plan-desire-alt     - Render alt-shown desire inference analysis"
-	@echo "    analysis-inv-plan-intimacy-noalt - Render no-alt intimacy inference analysis"
-	@echo "    analysis-inv-plan-combined       - Render combined correlation analysis"
-	@echo "    analysis-nonfood-forw-plan       - Render non-food forward planning analysis"
+	@echo "Per-stage aggregates:"
+	@echo "  fit-forward, fit-inverse"
+	@echo "  predict-forward, predict-inverse"
+	@echo "  cv-forward, cv-inverse"
+	@echo "  lm-canonical, lm-effort, lm-alternatives"
 	@echo ""
-	@echo "  Non-food pipeline (parallels canonical food pipeline):"
-	@echo "    data-nonfood-forw         - Process non-food forward planning raw JSON"
-	@echo "    fit-forward-nonfood       - Fit non-food forward planning models"
-	@echo "    cv-forward-nonfood        - LOSO CV for non-food forward planning"
-	@echo "    fit-forward-nonfood-ext   - Fit non-food extensions (Full + power-law gamma)"
-	@echo "    cv-forward-nonfood-ext    - LOSO CV for non-food extensions"
-	@echo "    fit-forward-food-ext      - Fit food gamma extension (cross-domain comparison)"
-	@echo "    cv-forward-food-ext       - LOSO CV for food gamma extension"
+	@echo "Per-experiment (substitute slug):"
+	@echo "  fit-<slug>, predict-<slug>, cv-<slug>, data-<slug>"
+	@echo "  e.g. make fit-food_forw_intimacy_desire"
 	@echo ""
-	@echo "  LM-V tables (signed-valence V is the canonical V; required for forward + alt-shown fits):"
-	@echo "    lm-v                    - Generate LM-V tables for both food and non-food"
-	@echo "    lm-v-food / lm-v-nonfood - Generate LM-V table for one domain"
-	@echo "    lm-v-alternatives       - Generate V for LM-generated alternatives (food, required for no-alt observers)"
+	@echo "Per-qmd:"
+	@echo "  analysis-<name>  (without .qmd suffix)"
+	@echo "  e.g. make analysis-inv-plan-combined-correlation"
 	@echo ""
-	@echo "  Data Processing (requires raw JSON - for internal use):"
-	@echo "    data                   - Process all raw JSON to CSV"
-	@echo "    data-forw              - Process forward planning data"
-	@echo "    data-intimacy-alt      - Process alt-shown intimacy inference data"
-	@echo "    data-intimacy-noalt    - Process no-alt intimacy inference data"
-	@echo "    data-desire-alt        - Process alt-shown desire inference data"
-	@echo ""
-	@echo "  Utilities:"
-	@echo "    test             - Run model compliance tests"
-	@echo "    clean            - Remove generated model outputs"
+	@echo "Forward slugs: $(EXPERIMENTS_FORWARD)"
+	@echo "Inverse slugs: $(EXPERIMENTS_INVERSE)"
 
 # =============================================================================
-# Data Processing (optional - requires raw JSON files)
+# Data: raw JSON → CSV. Only useful if raw JSON in data/<slug>/raw_data/ exists;
+# otherwise the checked-in CSVs are already current.
 # =============================================================================
 
-data: data-forw data-intimacy-alt data-intimacy-noalt data-desire-alt
+data: $(addprefix data-,$(EXPERIMENTS_ALL))
 
-data-forw:
-	uv run python analysis/json_to_csv.py forw_plan
-
-data-intimacy-alt:
-	uv run python analysis/json_to_csv.py inv_plan_intimacy_alt
-
-data-intimacy-noalt:
-	uv run python analysis/json_to_csv.py inv_plan_intimacy_noalt
-
-data-desire-alt:
-	uv run python analysis/json_to_csv.py inv_plan_desire_alt
-
-data-nonfood-forw:
-	uv run python analysis/json_to_csv.py nonfood_forw_plan
+$(addprefix data-,$(EXPERIMENTS_ALL)): data-%:
+	uv run python analysis/json_to_csv.py $*
 
 # =============================================================================
-# Model Fitting
+# LM elicitation (Llama-3.3-70B via Together AI; needs TOGETHER_API_KEY in .env)
+# =============================================================================
+
+lm: lm-canonical lm-effort lm-alternatives
+
+lm-canonical:
+	uv run python model/lm/score_canonical_features.py
+	uv run python model/lm/score_canonical_features.py --domain nonfood
+	uv run python model/lm/score_canonical_v.py
+	uv run python model/lm/score_canonical_v.py --domain nonfood
+
+lm-effort:
+	uv run python model/lm/score_effort_features.py
+
+lm-alternatives:
+	uv run python model/lm/generate_alternatives_motivation.py
+	uv run python model/lm/score_alternative_features.py
+	uv run python model/lm/score_alternative_v.py
+	uv run python model/lm/generate_alternatives_relationship.py
+	uv run python model/lm/score_alternative_features.py --conditioning relationship
+	uv run python model/lm/score_alternative_v.py --conditioning relationship
+
+# =============================================================================
+# Fits → outputs/<slug>/fit_results.csv
 # =============================================================================
 
 fit: fit-forward fit-inverse
+fit-forward: $(addprefix fit-,$(EXPERIMENTS_FORWARD))
+fit-inverse: $(addprefix fit-,$(EXPERIMENTS_INVERSE))
 
-# Forward planning model fitting
-# Depends on processed CSV (included in repo) plus LM-V table
-model/outputs/forward_planning_fit_results.csv model/outputs/forward_planning_fits.csv: data/forw_plan/main_trials_long.csv model/outputs/lm_scenario_v.csv model/fit_forward_planning.py model/model_utils.py
-	uv run python model/fit_forward_planning.py
+$(addprefix fit-,$(EXPERIMENTS_FORWARD)): fit-%:
+	uv run python model/forward/fit_$*.py
 
-fit-forward: model/outputs/forward_planning_fit_results.csv
-
-# Inverse planning model fitting (alt-shown)
-# Depends on forward planning results and processed CSVs
-model/outputs/inverse_planning_fit_results.csv: model/outputs/forward_planning_fit_results.csv \
-                                        data/inv_plan_intimacy_alt/main_trials_long.csv \
-                                        data/inv_plan_desire_alt/main_trials_long.csv \
-                                        model/fit_inverse_planning.py \
-                                        model/model_utils.py
-	uv run python model/fit_inverse_planning.py
-
-fit-inverse: model/outputs/inverse_planning_fit_results.csv
-
-# Non-food forward planning fit
-# Requires lm_scenario_params_nonfood.csv and lm_scenario_v_nonfood.csv
-model/outputs/forward_planning_fit_results_nonfood.csv model/outputs/forward_planning_fits_nonfood.csv: \
-        data/nonfood_forw_plan/main_trials_long.csv \
-        model/outputs/lm_scenario_params_nonfood.csv \
-        model/outputs/lm_scenario_v_nonfood.csv \
-        model/fit_forward_planning.py model/model_utils.py
-	uv run python model/fit_forward_planning.py --domain nonfood
-
-fit-forward-nonfood: model/outputs/forward_planning_fit_results_nonfood.csv
-
-# Non-food LOSO CV
-model/outputs/cv_loso_preds_nonfood.csv model/outputs/cv_loso_forward_nonfood.csv: \
-        model/outputs/forward_planning_fit_results_nonfood.csv \
-        model/cv/loso_forward.py model/model_utils.py
-	uv run python model/cv/loso_forward.py --domain nonfood
-
-cv-forward-nonfood: model/outputs/cv_loso_preds_nonfood.csv
-
-# Non-food extensions: Full + power-law intimacy ((1 - I)^gamma).
-# Lives in nonfood_ext files so the canonical food pipeline is not touched.
-model/outputs/forward_planning_fit_results_nonfood_ext.csv model/outputs/forward_planning_fits_nonfood_ext.csv: \
-        data/nonfood_forw_plan/main_trials_long.csv \
-        model/outputs/lm_scenario_params_nonfood.csv \
-        model/outputs/lm_scenario_v_nonfood.csv \
-        model/fit_forward_planning_nonfood_ext.py \
-        model/model_utils_nonfood_ext.py \
-        model/model_utils.py
-	uv run python model/fit_forward_planning_nonfood_ext.py
-
-fit-forward-nonfood-ext: model/outputs/forward_planning_fit_results_nonfood_ext.csv
-
-model/outputs/cv_loso_preds_nonfood_ext.csv model/outputs/cv_loso_forward_nonfood_ext.csv: \
-        model/outputs/forward_planning_fit_results_nonfood_ext.csv \
-        model/cv/loso_forward_nonfood_ext.py \
-        model/fit_forward_planning_nonfood_ext.py \
-        model/model_utils_nonfood_ext.py \
-        model/model_utils.py
-	uv run python model/cv/loso_forward_nonfood_ext.py
-
-cv-forward-nonfood-ext: model/outputs/cv_loso_preds_nonfood_ext.csv
-
-# Food gamma extension (cross-domain comparison; canonical food fits in
-# fit_forward_planning.py are NOT touched).
-model/outputs/forward_planning_fit_results_ext.csv model/outputs/forward_planning_fits_ext.csv: \
-        data/forw_plan/main_trials_long.csv \
-        model/outputs/lm_scenario_params.csv \
-        model/outputs/lm_scenario_v.csv \
-        model/fit_forward_planning_nonfood_ext.py \
-        model/model_utils_nonfood_ext.py \
-        model/model_utils.py
-	uv run python model/fit_forward_planning_nonfood_ext.py --domain food
-
-fit-forward-food-ext: model/outputs/forward_planning_fit_results_ext.csv
-
-model/outputs/cv_loso_preds_ext.csv model/outputs/cv_loso_forward_ext.csv: \
-        model/outputs/forward_planning_fit_results_ext.csv \
-        model/cv/loso_forward_nonfood_ext.py \
-        model/fit_forward_planning_nonfood_ext.py \
-        model/model_utils_nonfood_ext.py \
-        model/model_utils.py
-	uv run python model/cv/loso_forward_nonfood_ext.py --domain food
-
-cv-forward-food-ext: model/outputs/cv_loso_preds_ext.csv
-
-# LM-V tables (canonical signed-valence V — required for all forward + alt-shown fits)
-model/outputs/lm_scenario_v.csv: experiments/scenarios.csv model/lm_scenario_params.py model/lm_prompts.py
-	uv run python model/lm_scenario_params.py --feature v --domain food
-
-model/outputs/lm_scenario_v_nonfood.csv: experiments/scenarios_nonfood.csv model/lm_scenario_params.py model/lm_prompts.py
-	uv run python model/lm_scenario_params.py --feature v --domain nonfood
-
-# V for LM-generated alternatives — required only for no-alt observer fits
-model/outputs/lm_alternatives_v.csv: model/outputs/lm_alternatives.csv model/lm_scenario_params.py model/lm_prompts.py
-	uv run python model/lm_scenario_params.py --feature v_alternatives --domain food
-
-lm-v-food: model/outputs/lm_scenario_v.csv
-lm-v-nonfood: model/outputs/lm_scenario_v_nonfood.csv
-lm-v: lm-v-food lm-v-nonfood
-lm-v-alternatives: model/outputs/lm_alternatives_v.csv
+$(addprefix fit-,$(EXPERIMENTS_INVERSE)): fit-%:
+	uv run python "model/inverse/fit_$*.py"
 
 # =============================================================================
-# Model Predictions
+# Predicts → outputs/<slug>/preds.csv (forward) or preds_full.csv +
+# preds_summary.csv (inverse)
 # =============================================================================
 
-model/outputs/inv_plan_intimacy_alt_preds_summary.csv model/outputs/inv_plan_desire_alt_preds_summary.csv: \
-        model/outputs/forward_planning_fit_results.csv \
-        model/outputs/inverse_planning_fit_results.csv \
-        model/generate_inverse_planning_preds.py \
-        model/model_utils.py
-	uv run python model/generate_inverse_planning_preds.py
+predict: predict-forward predict-inverse
+predict-forward: $(addprefix predict-,$(EXPERIMENTS_FORWARD))
+predict-inverse: $(addprefix predict-,$(EXPERIMENTS_INVERSE))
 
-predictions: model/outputs/inv_plan_intimacy_alt_preds_summary.csv
+$(addprefix predict-,$(EXPERIMENTS_FORWARD)): predict-%:
+	uv run python model/forward/predict_$*.py
+
+$(addprefix predict-,$(EXPERIMENTS_INVERSE)): predict-%:
+	uv run python "model/inverse/predict_$*.py"
 
 # =============================================================================
-# Analysis
+# Leave-one-scenario-out CV → outputs/<slug>/cv_folds.csv +
+# cv_preds.csv (forward) or cv_preds_summary.csv (inverse)
 # =============================================================================
 
-analysis: analysis-forw-plan analysis-inv-plan-intimacy-alt analysis-inv-plan-desire-alt analysis-inv-plan-combined
+cv: cv-forward cv-inverse
+cv-forward: $(addprefix cv-,$(EXPERIMENTS_FORWARD))
+cv-inverse: $(addprefix cv-,$(EXPERIMENTS_INVERSE))
 
-analysis-forw-plan: model/outputs/forward_planning_fits.csv
-	quarto render analysis/forw-plan-analysis.qmd
+$(addprefix cv-,$(EXPERIMENTS_FORWARD)): cv-%:
+	uv run python model/cv/cv_$*.py
 
-analysis-inv-plan-intimacy-alt: model/outputs/inv_plan_intimacy_alt_preds_summary.csv
-	quarto render analysis/inv-plan-intimacy-alt-analysis.qmd
+$(addprefix cv-,$(EXPERIMENTS_INVERSE)): cv-%:
+	uv run python "model/cv/cv_$*.py"
 
-analysis-inv-plan-desire-alt: model/outputs/inv_plan_desire_alt_preds_summary.csv
-	quarto render analysis/inv-plan-desire-alt-analysis.qmd
+# =============================================================================
+# Analysis: quarto render
+# =============================================================================
 
-analysis-inv-plan-intimacy-noalt: model/outputs/inv_plan_intimacy_noalt_preds_summary.csv
-	quarto render analysis/inv-plan-intimacy-noalt-analysis.qmd
+analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
 
-analysis-inv-plan-combined: model/outputs/inv_plan_intimacy_alt_preds_summary.csv model/outputs/inv_plan_desire_alt_preds_summary.csv
-	quarto render analysis/inv-plan-combined-correlation.qmd
-
-analysis-nonfood-forw-plan: model/outputs/cv_loso_preds_nonfood.csv
-	quarto render analysis/nonfood-forw-plan-analysis.qmd
+$(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
+	quarto render analysis/$*.qmd
 
 # =============================================================================
 # Utilities
@@ -229,10 +164,6 @@ test:
 	uv run python model/test_model_compliance.py
 
 clean:
-	rm -f model/outputs/forward_planning_fits.csv
-	rm -f model/outputs/forward_planning_fit_results.csv
-	rm -f model/outputs/inverse_planning_fit_results.csv
-	rm -f model/outputs/inv_plan_intimacy_alt_preds_full.csv
-	rm -f model/outputs/inv_plan_intimacy_alt_preds_summary.csv
-	rm -f model/outputs/inv_plan_desire_alt_preds_full.csv
-	rm -f model/outputs/inv_plan_desire_alt_preds_summary.csv
+	rm -f model/outputs/*/fit_results.csv
+	rm -f model/outputs/*/preds*.csv
+	rm -f model/outputs/*/cv_*.csv
