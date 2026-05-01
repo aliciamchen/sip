@@ -41,7 +41,7 @@ from utils import get_project_root
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
-VARIANTS = ["access_full", "access_only", "no_access"]
+VARIANTS = ["full", "discomfort_only", "base"]
 INTIMACY_DISPLAY_LEVELS = [0, 50, 75, 100]
 
 

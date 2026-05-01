@@ -29,9 +29,9 @@ from fit_inverse_planning import (
 from model_utils import SCENARIO_TO_IDX
 from model_utils_effort import (
     LLM_TABLES_EFFORT,
-    observer_effort_inferred_access_full,
-    observer_effort_inferred_access_only,
-    observer_effort_inferred_no_access,
+    observer_effort_inferred_full,
+    observer_effort_inferred_discomfort_only,
+    observer_effort_inferred_base,
 )
 
 from utils import get_project_root
@@ -128,16 +128,16 @@ def fit_effort_inferred_observer(
 
 # Variant registry: name -> (observer_fn, actor_kwarg_names)
 ACCESS_VARIANTS_EFFORT_INFERRED = {
-    "access_full": (
-        observer_effort_inferred_access_full,
+    "full": (
+        observer_effort_inferred_full,
         ["alpha", "w_v", "w_d", "w_e", "gamma"],
     ),
-    "access_only": (
-        observer_effort_inferred_access_only,
+    "discomfort_only": (
+        observer_effort_inferred_discomfort_only,
         ["alpha", "w_d", "gamma"],
     ),
-    "no_access": (
-        observer_effort_inferred_no_access,
+    "base": (
+        observer_effort_inferred_base,
         ["alpha", "w_v", "w_e"],
     ),
 }

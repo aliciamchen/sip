@@ -3,23 +3,23 @@ Forward-planning extensions to the canonical actor. Most variants here are
 non-food-only; one (`actor_forw_gamma`) supports both domains.
 
 NOTE (post γ-promotion): γ is now part of the CANONICAL utility in
-`model_utils.py` (`get_utility_access_full` etc. take γ as a positional
-arg). The `actor_forw_gamma` and `access_full_gamma` here are therefore
-numerically identical to the canonical `actor_forw_access_full` /
-`access_full` — kept as a redundant cross-check and to keep the
+`model_utils.py` (`get_utility_full` etc. take γ as a positional
+arg). The `actor_forw_gamma` and `full_gamma` here are therefore
+numerically identical to the canonical `actor_forw_full` /
+`full` — kept as a redundant cross-check and to keep the
 exploratory variants (typed_gamma, gamma_alpha, gamma_vpow) buildable.
 
 Variants:
 
-  access_full_gamma — replaces the linear (1 - I) intimacy modulator with
+  full_gamma — replaces the linear (1 - I) intimacy modulator with
   a single power-law exponent gamma:
 
       U(a | s, I) = w_v * V - w_d * access * (1 - I)^gamma - w_e * effort
 
-  Now equivalent to the canonical access_full. Kept for historical /
+  Now equivalent to the canonical full. Kept for historical /
   cross-checking purposes.
 
-  access_full_typed_gamma (NON-FOOD ONLY) — adds channel-specific access
+  full_typed_gamma (NON-FOOD ONLY) — adds channel-specific access
   weights on top of gamma:
 
       U(a | s, I) = w_v * V
@@ -171,9 +171,9 @@ def actor_forw_typed_gamma[
 # ==============================================================================
 # Decisiveness / dynamic-range variants
 # ==============================================================================
-# access_full_gamma_alpha: free α, w_v fixed = 1 (canonical-rescaling invariance
-# test; should give identical NLL to access_full_gamma).
-# access_full_gamma_vpow: V_eff = sign(V) * |V|^beta; β free; tests whether the
+# full_gamma_alpha: free α, w_v fixed = 1 (canonical-rescaling invariance
+# test; should give identical NLL to full_gamma).
+# full_gamma_vpow: V_eff = sign(V) * |V|^beta; β free; tests whether the
 # LM-rated V scale is too compressed for human responses.
 
 

@@ -1,8 +1,8 @@
 """
 Fit observer alpha parameter to inverse planning human data.
 
-Fits alpha_observer for each access-model ablation (access_full, access_only,
-no_access), with all actor parameters frozen from forward planning fits.
+Fits alpha_observer for each access-model ablation (full, discomfort_only,
+base), with all actor parameters frozen from forward planning fits.
 
 For intimacy inference: NLL = -log(P(intimacy = response/100 | action, reward))
 For reward inference: binary cross-entropy between response/100 and P(high reward)
@@ -27,12 +27,12 @@ from model_utils import (
     LLM_TABLES,
     SCENARIO_TO_IDX,
     load_lm_v,
-    observer_intimacy_access_full,
-    observer_intimacy_access_only,
-    observer_intimacy_no_access,
-    observer_reward_access_full,
-    observer_reward_access_only,
-    observer_reward_no_access,
+    observer_intimacy_full,
+    observer_intimacy_discomfort_only,
+    observer_intimacy_base,
+    observer_reward_full,
+    observer_reward_discomfort_only,
+    observer_reward_base,
 )
 
 from utils import get_project_root
@@ -288,23 +288,23 @@ def fit_reward_observer(
 
 
 # Variant registry: name -> (intimacy_observer, reward_observer, actor_kwarg_names,
-# uses_v). access_only is V-independent and doesn't take v_table.
+# uses_v). discomfort_only is V-independent and doesn't take v_table.
 ACCESS_VARIANTS = {
-    "access_full": (
-        observer_intimacy_access_full,
-        observer_reward_access_full,
+    "full": (
+        observer_intimacy_full,
+        observer_reward_full,
         ["alpha", "w_v", "w_d", "w_e", "gamma"],
         True,
     ),
-    "access_only": (
-        observer_intimacy_access_only,
-        observer_reward_access_only,
+    "discomfort_only": (
+        observer_intimacy_discomfort_only,
+        observer_reward_discomfort_only,
         ["alpha", "w_d", "gamma"],
         False,
     ),
-    "no_access": (
-        observer_intimacy_no_access,
-        observer_reward_no_access,
+    "base": (
+        observer_intimacy_base,
+        observer_reward_base,
         ["alpha", "w_v", "w_e"],
         True,
     ),
@@ -312,7 +312,7 @@ ACCESS_VARIANTS = {
 
 
 def _table_kwargs(uses_v: bool):
-    """access_full and no_access need v_table; access_only is V-independent."""
+    """full and base need v_table; discomfort_only is V-independent."""
     kw = {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
     if uses_v:
         kw["v_table"] = load_lm_v("food")

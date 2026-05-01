@@ -1,4 +1,4 @@
-subject_id,scenario_label,intimacy,effort,action,p_action,intimacy_scaled,effort_condition,action_idx,scenario_idx,pred_access_full,pred_access_only,pred_no_access
+subject_id,scenario_label,intimacy,effort,action,p_action,intimacy_scaled,effort_condition,action_idx,scenario_idx,pred_full,pred_discomfort_only,pred_base
 01124630-c1db-5d33-add3-dd1dee859a27,apples,0,high,1,0.02,0.0,1,0,0,0.7785948,0.872164,0.4998985
 01124630-c1db-5d33-add3-dd1dee859a27,apples,0,high,2,0.98,0.0,1,1,0,0.22140528,0.12783602,0.5001015
 01124630-c1db-5d33-add3-dd1dee859a27,basketball,50,high,1,0.05,0.5,1,0,1,0.5598409,0.71263343,0.49989504

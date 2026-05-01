@@ -1,4 +1,4 @@
-subject_id,scenario_label,intimacy,motivation,action,p_action,intimacy_scaled,reward_condition,scenario_idx,pred_access_full,pred_access_only,pred_no_access
+subject_id,scenario_label,intimacy,motivation,action,p_action,intimacy_scaled,reward_condition,scenario_idx,pred_full,pred_discomfort_only,pred_base
 15e4b468-56da-5152-a637-1f11b624f2e9,bed,0,low,0,1.0,0.0,0,0,0.5839662,0.5244511,0.26446676
 15e4b468-56da-5152-a637-1f11b624f2e9,bed,0,low,1,0.0,0.0,0,0,0.20742352,0.23735932,0.2244373
 15e4b468-56da-5152-a637-1f11b624f2e9,bed,0,low,2,0.0,0.0,0,0,0.13821883,0.15323338,0.25383535

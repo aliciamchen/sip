@@ -36,9 +36,9 @@ Here `V(a|s, m)` is the signed valence of the action with respect to the actor's
 
 Three ablations of this utility are fit and compared for both the forward-planning (actor) and inverse-planning (observer) models:
 
-- **Full model** (`access_full`) — the full utility above: food utility, the access-discomfort term, and effort (the main model)
-- **Discomfort-only** (`access_only`) — only the access-discomfort term `−w_d · access · (1 − I)`; drops food utility and effort to ask whether the access signal alone can account for behavior
-- **Base model** (`no_access`) — `w_v · V − w_e · effort`; no relational structure
+- **Full model** (`full`) — the full utility above: food utility, the access-discomfort term, and effort (the main model)
+- **Discomfort-only** (`discomfort_only`) — only the access-discomfort term `−w_d · access · (1 − I)`; drops food utility and effort to ask whether the access signal alone can account for behavior
+- **Base model** (`base`) — `w_v · V − w_e · effort`; no relational structure
 
 ### Where the utility values come from
 

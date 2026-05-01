@@ -26,18 +26,18 @@ from model_utils import (
     SCENARIO_LABELS,
     RelationshipConditions,
     load_padded_lm_tables_relationship,
-    observer_reward_access_full_padded_rel,
-    observer_reward_access_only_padded_rel,
-    observer_reward_no_access_padded_rel,
+    observer_reward_full_padded_rel,
+    observer_reward_discomfort_only_padded_rel,
+    observer_reward_base_padded_rel,
 )
 
 
 # Variant registry: name -> (observer_fn, utility_param_names, uses_v).
-# access_only is V-independent.
+# discomfort_only is V-independent.
 PADDED_VARIANTS = {
-    "access_full": (observer_reward_access_full_padded_rel, ["w_v", "w_d", "w_e", "gamma"], True),
-    "access_only": (observer_reward_access_only_padded_rel, ["w_d", "gamma"], False),
-    "no_access":   (observer_reward_no_access_padded_rel,   ["w_v", "w_e"], True),
+    "full": (observer_reward_full_padded_rel, ["w_v", "w_d", "w_e", "gamma"], True),
+    "discomfort_only": (observer_reward_discomfort_only_padded_rel, ["w_d", "gamma"], False),
+    "base":   (observer_reward_base_padded_rel,   ["w_v", "w_e"], True),
 }
 
 

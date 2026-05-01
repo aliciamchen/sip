@@ -39,7 +39,7 @@ from utils import get_project_root
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
-VARIANTS = ["access_full", "access_only", "no_access"]
+VARIANTS = ["full", "discomfort_only", "base"]
 EFFORT_LABELS = {0: "low", 1: "high"}
 
 

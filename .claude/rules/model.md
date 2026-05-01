@@ -19,11 +19,11 @@ U(a|s, I) = w_v · V(a|s)
 
 Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exposure) through a power-law modulator `(1 − I)^γ`: at high intimacy the penalty shrinks toward zero, so higher-access actions become relatively more attractive. The exponent γ is a free parameter (initialized at 1.0; γ = 1 reproduces the linear-intimacy special case). Empirically food prefers γ < 1 (late relaxation) and non-food prefers γ > 1 (early relaxation). `V(a|s, m)` is the signed valence of the action with respect to the actor's motivational state (in [-1, +1]; positive = serves the state, negative = actively counterproductive). Three ablations are fit and compared:
 
-- **access_full** — the full utility above (the main Full model)
-- **access_only** — only the access-discomfort term (`−w_d · access · (1 − I)^γ`); drops V and effort (Discomfort-only)
-- **no_access** — `w_v · V − w_e · effort`; no relational structure (Base model). Has no intimacy term, so γ does not apply.
+- **full** — the full utility above (the main Full model)
+- **discomfort_only** — only the access-discomfort term (`−w_d · access · (1 − I)^γ`); drops V and effort (Discomfort-only)
+- **base** — `w_v · V − w_e · effort`; no relational structure (Base model). Has no intimacy term, so γ does not apply.
 
-Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires; access_full and access_only fit γ, no_access does not.
+Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires; full and discomfort_only fit γ, base does not.
 
 ## Where the utility values come from
 
@@ -35,7 +35,7 @@ All three components — V, access, effort — are LLM-elicited per scenario by 
 
 `model_utils.py` loads these into `LLM_TABLES` (access/effort canonical) at import; `load_lm_v(domain)` lazily loads the V table; `load_padded_lm_tables()` builds the (16, 4, 2, MAX_ACTIONS) padded tables (access, effort, v, prior) used by the no-alt observers. If any required CSV is missing, the loader raises FileNotFoundError or returns None.
 
-Every memo model takes the scenario tables as arguments (`access_table: ...`, `effort_table: ...`, and `v_table: ...` for the access_full and no_access variants) and has `scenario_idx: Scenarios` as a dimension, so predictions vary by scenario. The `access_only` ablation is V-independent and doesn't take `v_table`.
+Every memo model takes the scenario tables as arguments (`access_table: ...`, `effort_table: ...`, and `v_table: ...` for the full and base variants) and has `scenario_idx: Scenarios` as a dimension, so predictions vary by scenario. The `discomfort_only` ablation is V-independent and doesn't take `v_table`.
 
 ## Core files
 
@@ -94,7 +94,7 @@ uv run python model/lm_scenario_params.py --feature v_alternatives_relationship 
 uv run python model/lm_scenario_params_effort.py                            # effort: 64-row conditional + 32-row marginal
 ```
 
-Forward-planning fits (3 ablations: Base / Discomfort-only / Full). All variants now use LM-elicited V; `access_only` is V-independent.
+Forward-planning fits (3 ablations: Base / Discomfort-only / Full). All variants now use LM-elicited V; `discomfort_only` is V-independent.
 
 ```bash
 uv run python model/fit_forward_planning.py                                 # food

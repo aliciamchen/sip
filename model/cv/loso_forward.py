@@ -2,7 +2,7 @@
 Leave-one-scenario-out CV for the forward-planning canonical variants.
 
 For each of the 16 scenarios, hold it out, fit the three uniform-prior
-variants (access_full, access_only, no_access) on the remaining 15
+variants (full, discomfort_only, base) on the remaining 15
 scenarios, and predict the held-out scenario's human action probabilities.
 
 Reports per-fold fitted parameters, train/test NLL, and Pearson r at the
@@ -28,13 +28,13 @@ from scipy import stats
 
 from fit_forward_planning import (
     compute_nll,
-    fit_access_full_model,
-    fit_access_only_model,
-    fit_no_access_model,
+    fit_full_model,
+    fit_discomfort_only_model,
+    fit_base_model,
     load_data,
-    predict_access_full,
-    predict_access_only,
-    predict_no_access,
+    predict_full,
+    predict_discomfort_only,
+    predict_base,
 )
 from model_utils import LLM_TABLES, SCENARIO_LABELS, load_domain_assets, load_lm_v
 
@@ -44,22 +44,22 @@ from utils import get_project_root
 N_SCENARIOS = len(SCENARIO_LABELS)
 
 # variant_name -> (fit_fn, predict_fn, utility_param_names). All three variants
-# now take LM-V as canonical V; access_only is V-independent and uses only
+# now take LM-V as canonical V; discomfort_only is V-independent and uses only
 # (access, effort) but the dispatcher still gives it the trimmed tables tuple.
 VARIANTS = {
-    "access_full": (
-        fit_access_full_model,
-        predict_access_full,
+    "full": (
+        fit_full_model,
+        predict_full,
         ["w_v", "w_d", "w_e", "gamma"],
     ),
-    "access_only": (
-        fit_access_only_model,
-        predict_access_only,
+    "discomfort_only": (
+        fit_discomfort_only_model,
+        predict_discomfort_only,
         ["w_d", "gamma"],
     ),
-    "no_access": (
-        fit_no_access_model,
-        predict_no_access,
+    "base": (
+        fit_base_model,
+        predict_base,
         ["w_v", "w_e"],
     ),
 }
@@ -99,11 +99,11 @@ def run_loso(domain: str = "food"):
         filepath=data_path, scenario_to_idx=scenario_to_idx,
     )
     tables = (llm_tables["access"], llm_tables["effort"], v_table)
-    # access_only is V-independent; the rest take the full 3-tuple.
+    # discomfort_only is V-independent; the rest take the full 3-tuple.
     tables_per_variant = {
-        "access_full": tables,
-        "access_only": tables[:2],
-        "no_access":   tables,
+        "full": tables,
+        "discomfort_only": tables[:2],
+        "base":   tables,
     }
     scenario_idx_np = np.asarray(scenario_idx)
 

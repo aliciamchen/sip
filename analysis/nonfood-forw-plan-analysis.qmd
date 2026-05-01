@@ -143,7 +143,7 @@ Out-of-sample predictions from `model/outputs/cv_loso_preds_nonfood.csv`: each t
 df_cv <- read_csv(here("model", "outputs", "cv_loso_preds_nonfood.csv"), show_col_types = FALSE)
 
 df_humans_cv <- df_cv |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   transmute(
     subject_id, scenario_label = held_out_scenario,
     intimacy, motivation, action,
@@ -153,9 +153,9 @@ df_humans_cv <- df_cv |>
 df_model_cv <- df_cv |>
   mutate(
     model = case_when(
-      variant == "access_full" ~ "Full model",
-      variant == "access_only" ~ "Discomfort-only",
-      variant == "no_access" ~ "Base model"
+      variant == "full" ~ "Full model",
+      variant == "discomfort_only" ~ "Discomfort-only",
+      variant == "base" ~ "Base model"
     )
   ) |>
   transmute(
@@ -329,8 +329,8 @@ fit_results |>
   arrange(AIC) |>
   knitr::kable(digits = 2, caption = "Model comparison (lower AIC/BIC is better)")
 
-best_aic <- fit_results$AIC[fit_results$model == "access_full"]
-best_bic <- fit_results$BIC[fit_results$model == "access_full"]
+best_aic <- fit_results$AIC[fit_results$model == "full"]
+best_bic <- fit_results$BIC[fit_results$model == "full"]
 
 fit_results |>
   mutate(delta_AIC = AIC - best_aic, delta_BIC = BIC - best_bic) |>
@@ -429,7 +429,7 @@ df_type_r <- df_cell |>
   select(-boot)
 
 df_type_nll <- df_cv |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   inner_join(df_scenario_types, by = c("held_out_scenario" = "scenario_label")) |>
   mutate(
     p_pred_safe = pmax(p_action_pred, 1e-6),
@@ -692,7 +692,7 @@ with γ a free parameter (init 1.0). γ̂ should be stable across LOSO folds —
 ```{r}
 df_folds_nonfood <- read_csv(here("model", "outputs", "cv_loso_forward_nonfood.csv"),
                              show_col_types = FALSE) |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   inner_join(df_scenario_types, by = c("held_out_scenario" = "scenario_label"))
 
 df_folds_nonfood |>
@@ -722,18 +722,18 @@ Both food and non-food fit the same canonical utility with γ free; the question
 
 food_full <- read_csv(here("model", "outputs", "forward_planning_fit_results.csv"),
                       show_col_types = FALSE) |>
-  filter(model == "access_full") |>
+  filter(model == "full") |>
   transmute(domain = "food", model, nll, n_params,
             w_v = param_w_v, w_d = param_w_d, w_e = param_w_e, gamma = param_gamma)
 
 nonfood_full <- fit_results |>
-  filter(model == "access_full") |>
+  filter(model == "full") |>
   transmute(domain = "nonfood", model, nll, n_params,
             w_v = param_w_v, w_d = param_w_d, w_e = param_w_e, gamma = param_gamma)
 
 bind_rows(food_full, nonfood_full) |>
   knitr::kable(digits = 3,
-               caption = "Canonical access_full fits (all-data). γ is far from 1 in both domains, in opposite directions.")
+               caption = "Canonical full fits (all-data). γ is far from 1 in both domains, in opposite directions.")
 ```
 
 ### Per-fold γ stability — food vs non-food
@@ -741,7 +741,7 @@ bind_rows(food_full, nonfood_full) |>
 ```{r}
 df_folds_food <- read_csv(here("model", "outputs", "cv_loso_forward.csv"),
                           show_col_types = FALSE) |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   transmute(domain = "food", scenario = held_out_scenario, gamma = param_gamma)
 
 df_folds_nf <- df_folds_nonfood |>

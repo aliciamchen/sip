@@ -10,8 +10,8 @@ For each of the 16 scenarios, hold it out, jointly fit all actor weights +
 α_observer on the remaining 15 scenarios, and generate predictions for the
 held-out scenario using the refit weights.
 
-Runs over the three padded-observer variants (access_full_padded,
-access_only_padded, no_access_padded). These use the uniform-over-valid-slots
+Runs over the three padded-observer variants (full_padded,
+discomfort_only_padded, base_padded). These use the uniform-over-valid-slots
 prior baked into the padded observer architecture — not the LM action prior
 (which only applies to the canonical-4-action variants).
 

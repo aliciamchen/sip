@@ -35,9 +35,9 @@ Per-trial model predictions for forward planning (`data/forw_plan/`). One row pe
 | `intimacy_scaled` | Intimacy normalized to 0-1 scale |
 | `reward_condition` | Binary reward condition (0 or 1) |
 | `scenario_idx` | Numeric scenario index |
-| `pred_access_full` | Predicted probability from the full model |
-| `pred_access_only` | Predicted probability from the discomfort-only ablation |
-| `pred_no_access` | Predicted probability from the base ablation |
+| `pred_full` | Predicted probability from the full model |
+| `pred_discomfort_only` | Predicted probability from the discomfort-only ablation |
+| `pred_base` | Predicted probability from the base ablation |
 
 ## forward_planning_fit_results.csv
 
@@ -45,7 +45,7 @@ Summary of fitted forward planning models (3 rows — one per ablation).
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (`access_full`, `access_only`, `no_access`) |
+| `model` | Model name (`full`, `discomfort_only`, `base`) |
 | `nll` | Negative log-likelihood |
 | `n_params` | Number of free parameters |
 | `aic` | Akaike Information Criterion |
@@ -63,7 +63,7 @@ Summary of fitted inverse planning (observer) models (6 rows — 3 ablations × 
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (`access_full`, `access_only`, `no_access`) |
+| `model` | Model name (`full`, `discomfort_only`, `base`) |
 | `experiment` | Experiment (`intimacy` or `reward`) |
 | `alpha_observer` | Fitted observer inverse temperature |
 | `nll` | Negative log-likelihood |
@@ -125,7 +125,7 @@ Summary of jointly-fitted parameters for the no-alternatives-shown intimacy-infe
 
 | Column | Description |
 |--------|-------------|
-| `model` | Model name (e.g., `access_full_padded`) |
+| `model` | Model name (e.g., `full_padded`) |
 | `experiment` | Always `intimacy_noalt` |
 | `param_alpha` | Actor softmax temperature (fixed at 1) |
 | `param_w_v`, `param_w_d`, `param_w_e` | Fitted utility weights (NaN where not applicable per ablation) |
@@ -166,7 +166,7 @@ Per-fold forward-planning LOSO results. 48 rows (16 folds × 3 ablations).
 |--------|-------------|
 | `fold` | Held-out scenario index (0–15) |
 | `held_out_scenario` | Held-out scenario label |
-| `variant` | `access_full`, `access_only`, `no_access` |
+| `variant` | `full`, `discomfort_only`, `base` |
 | `train_nll`, `test_nll`, `train_nll_per_trial`, `test_nll_per_trial`, `n_train`, `n_test` | Fit diagnostics |
 | `param_alpha`, `param_w_v`, `param_w_d`, `param_w_e` | Per-fold fitted params (NaN where not applicable) |
 | `test_cell_r` | Pearson r at (intimacy, motivation, action) cell-means on the held-out scenario |

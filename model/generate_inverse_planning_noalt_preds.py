@@ -1,8 +1,8 @@
 """
 Generate predictions for the no-alternatives-shown intimacy inference variant.
 
-Generates predictions for all three access-utility ablations (access_full,
-access_only, no_access) using their respective padded observer memos. Emits
+Generates predictions for all three access-utility ablations (full,
+discomfort_only, base) using their respective padded observer memos. Emits
 one prediction row per (scenario, observed_action, motivation, intimacy_level,
 model). Summary adds expected intimacy per (scenario, observed, motivation,
 model). Actor prior is uniform over valid padded slots.
@@ -27,19 +27,19 @@ from model_utils import (
     SCENARIO_LABELS,
     IntimacyLevels,
     load_padded_lm_tables,
-    observer_intimacy_access_full_padded,
-    observer_intimacy_access_only_padded,
-    observer_intimacy_no_access_padded,
+    observer_intimacy_full_padded,
+    observer_intimacy_discomfort_only_padded,
+    observer_intimacy_base_padded,
 )
 
 
 # Variant registry: name -> (observer_fn, utility_param_names, uses_v).
 # α_actor is fixed at 1; utility names are what we pull from the fit-results CSV.
-# access_only is V-independent and doesn't take v_padded_table.
+# discomfort_only is V-independent and doesn't take v_padded_table.
 PADDED_VARIANTS = {
-    "access_full": (observer_intimacy_access_full_padded, ["w_v", "w_d", "w_e", "gamma"], True),
-    "access_only": (observer_intimacy_access_only_padded, ["w_d", "gamma"], False),
-    "no_access":   (observer_intimacy_no_access_padded,   ["w_v", "w_e"], True),
+    "full": (observer_intimacy_full_padded, ["w_v", "w_d", "w_e", "gamma"], True),
+    "discomfort_only": (observer_intimacy_discomfort_only_padded, ["w_d", "gamma"], False),
+    "base":   (observer_intimacy_base_padded,   ["w_v", "w_e"], True),
 }
 
 
@@ -47,7 +47,7 @@ def load_noalt_fit_results(filepath=None):
     """Return dict: variant_name -> dict of all fitted params (utility + α_obs + α_actor).
 
     Reads the joint-fit CSV written by fit_inverse_planning_noalt.py:main().
-    Keys are "access_full", "access_only", "no_access" (no `_padded` suffix).
+    Keys are "full", "discomfort_only", "base" (no `_padded` suffix).
     """
     if filepath is None:
         filepath = (

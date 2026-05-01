@@ -9,7 +9,7 @@ Parallel to model/fit_forward_planning.py, adapted for:
     utility for ablation-parallelism with the canonical pipeline but is
     non-identified in the softmax and will stay near its initialization.
 
-Three access-model ablations: access_full, access_only, no_access. α = 1
+Three access-model ablations: full, discomfort_only, base. α = 1
 fixed (matches canonical for identifiability).
 """
 
@@ -38,9 +38,9 @@ from fit_forward_planning import (
 from model_utils_effort import (
     EFFORT_CONDITION_TO_IDX,
     LLM_TABLES_EFFORT,
-    actor_forw_effort_access_full,
-    actor_forw_effort_access_only,
-    actor_forw_effort_no_access,
+    actor_forw_effort_full,
+    actor_forw_effort_discomfort_only,
+    actor_forw_effort_base,
 )
 from model_utils import SCENARIO_TO_IDX
 
@@ -94,13 +94,13 @@ def get_intimacy_index(intimacy_value):
 
 
 @jax.jit
-def predict_access_full(
+def predict_full(
     intimacy, effort_condition, action, scenario_idx,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_effort_access_full(
+    probs = actor_forw_effort_full(
         alpha, w_v, w_d, w_e, gamma, access_table, effort_table,
     )
     return jax.vmap(lambda i, e, a, s: probs[a, s, i, e])(
@@ -109,13 +109,13 @@ def predict_access_full(
 
 
 @jax.jit
-def predict_access_only(
+def predict_discomfort_only(
     intimacy, effort_condition, action, scenario_idx,
     alpha, w_d, gamma,
     access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_effort_access_only(
+    probs = actor_forw_effort_discomfort_only(
         alpha, w_d, gamma, access_table, effort_table,
     )
     return jax.vmap(lambda i, e, a, s: probs[a, s, i, e])(
@@ -124,13 +124,13 @@ def predict_access_only(
 
 
 @jax.jit
-def predict_no_access(
+def predict_base(
     intimacy, effort_condition, action, scenario_idx,
     alpha, w_v, w_e,
     access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_effort_no_access(
+    probs = actor_forw_effort_base(
         alpha, w_v, w_e, access_table, effort_table,
     )
     return jax.vmap(lambda i, e, a, s: probs[a, s, i, e])(
@@ -141,7 +141,7 @@ def predict_no_access(
 # Model fitting (alpha=1 fixed for identifiability)
 
 
-def fit_access_full_model(
+def fit_full_model(
     intimacy, effort_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     ALPHA = 1.0
@@ -149,19 +149,19 @@ def fit_access_full_model(
 
     def loss_fn(params):
         w_v, w_d, w_e, gamma = params
-        preds = predict_access_full(
+        preds = predict_full(
             intimacy, effort_condition, action, scenario_idx,
             ALPHA, w_v, w_d, w_e, gamma, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full", **kwargs
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="full", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
 
 
-def fit_access_only_model(
+def fit_discomfort_only_model(
     intimacy, effort_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     ALPHA = 1.0
@@ -169,19 +169,19 @@ def fit_access_only_model(
 
     def loss_fn(params):
         w_d, gamma = params
-        preds = predict_access_only(
+        preds = predict_discomfort_only(
             intimacy, effort_condition, action, scenario_idx,
             ALPHA, w_d, gamma, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0], label="access_only", **kwargs
+        loss_fn, [1.0, 1.0], label="discomfort_only", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
-def fit_no_access_model(
+def fit_base_model(
     intimacy, effort_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     ALPHA = 1.0
@@ -189,14 +189,14 @@ def fit_no_access_model(
 
     def loss_fn(params):
         w_v, w_e = params
-        preds = predict_no_access(
+        preds = predict_base(
             intimacy, effort_condition, action, scenario_idx,
             ALPHA, w_v, w_e, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0], label="no_access", **kwargs
+        loss_fn, [1.0, 1.0], label="base", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
@@ -214,14 +214,14 @@ def main():
     tables = (LLM_TABLES_EFFORT["access"], LLM_TABLES_EFFORT["effort"])
 
     fits = {
-        "access_full": (
-            fit_access_full_model, predict_access_full, ["w_v", "w_d", "w_e", "gamma"], tables,
+        "full": (
+            fit_full_model, predict_full, ["w_v", "w_d", "w_e", "gamma"], tables,
         ),
-        "access_only": (
-            fit_access_only_model, predict_access_only, ["w_d", "gamma"], tables,
+        "discomfort_only": (
+            fit_discomfort_only_model, predict_discomfort_only, ["w_d", "gamma"], tables,
         ),
-        "no_access": (
-            fit_no_access_model, predict_no_access, ["w_v", "w_e"], tables,
+        "base": (
+            fit_base_model, predict_base, ["w_v", "w_e"], tables,
         ),
     }
 

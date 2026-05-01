@@ -169,9 +169,9 @@ df_fit_results <- read_csv(here("model", "outputs",
   filter(experiment == "effort_inferred") |>
   mutate(
     model_label = case_when(
-      model == "access_full" ~ "Full model",
-      model == "access_only" ~ "Discomfort-only",
-      model == "no_access" ~ "Base model"
+      model == "full" ~ "Full model",
+      model == "discomfort_only" ~ "Discomfort-only",
+      model == "base" ~ "Base model"
     )
   ) |>
   filter(!is.na(model_label)) |>
@@ -204,9 +204,9 @@ df_model <- read_csv(here("model", "outputs",
     intimacy = factor(intimacy, levels = c(0, 50, 75, 100),
                       labels = INTIMACY_LEVELS),
     model = case_when(
-      model == "access_full" ~ "Full model",
-      model == "access_only" ~ "Discomfort-only",
-      model == "no_access" ~ "Base model"
+      model == "full" ~ "Full model",
+      model == "discomfort_only" ~ "Discomfort-only",
+      model == "base" ~ "Base model"
     )
   ) |>
   filter(!is.na(model))

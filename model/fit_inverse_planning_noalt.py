@@ -2,9 +2,9 @@
 Fit alpha_observer for the no-alternatives-shown intimacy inference variant.
 
 Fits three access-utility ablations (same three as the alt-shown inverse-planning fit):
-  - access_full  : w_v * V - w_d * access * (1-I) - w_e * effort
-  - access_only  : -w_d * access * (1-I)
-  - no_access    : w_v * V - w_e * effort
+  - full  : w_v * V - w_d * access * (1-I) - w_e * effort
+  - discomfort_only  : -w_d * access * (1-I)
+  - base    : w_v * V - w_e * effort
 
 All variants use the padded observer with a trial-specific action space
 (observed canonical action at slot 0, LM-generated alternatives at slots 1..k,
@@ -28,9 +28,9 @@ import pandas as pd
 from model_utils import (
     SCENARIO_TO_IDX,
     load_padded_lm_tables,
-    observer_intimacy_access_full_padded,
-    observer_intimacy_access_only_padded,
-    observer_intimacy_no_access_padded,
+    observer_intimacy_full_padded,
+    observer_intimacy_discomfort_only_padded,
+    observer_intimacy_base_padded,
 )
 
 from utils import get_project_root
@@ -45,22 +45,22 @@ from fit_inverse_planning import compute_intimacy_nll, load_fitted_params
 # the subset that is actually fitted jointly with α_observer in the no-alt
 # pipeline (α_actor is not fitted).
 # Tuple values: (observer_fn, full_kw_names, utility_names, uses_v).
-# access_only is V-independent and doesn't take v_padded_table.
+# discomfort_only is V-independent and doesn't take v_padded_table.
 PADDED_VARIANTS = {
-    "access_full": (
-        observer_intimacy_access_full_padded,
+    "full": (
+        observer_intimacy_full_padded,
         ["alpha", "w_v", "w_d", "w_e", "gamma"],
         ["w_v", "w_d", "w_e", "gamma"],
         True,
     ),
-    "access_only": (
-        observer_intimacy_access_only_padded,
+    "discomfort_only": (
+        observer_intimacy_discomfort_only_padded,
         ["alpha", "w_d", "gamma"],
         ["w_d", "gamma"],
         False,
     ),
-    "no_access": (
-        observer_intimacy_no_access_padded,
+    "base": (
+        observer_intimacy_base_padded,
         ["alpha", "w_v", "w_e"],
         ["w_v", "w_e"],
         True,

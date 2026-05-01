@@ -8,7 +8,7 @@ writes to its own `*_ext.csv` siblings.
 
 Currently fits one variant:
 
-  access_full_gamma — Full utility with a power-law intimacy modulator
+  full_gamma — Full utility with a power-law intimacy modulator
       U = w_v * V - w_d * access * (1 - I)^gamma - w_e * effort
 
   Nests the canonical Full model (gamma = 1). 4 free params: w_v, w_d, w_e, gamma.
@@ -64,7 +64,7 @@ def _w_d_per_scenario(w_d_per_type):
 
 
 @jax.jit
-def predict_access_full_gamma(
+def predict_full_gamma(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table, v_table,
@@ -78,7 +78,7 @@ def predict_access_full_gamma(
     )
 
 
-def fit_access_full_gamma_model(
+def fit_full_gamma_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """tables = (access, effort, v). Init gamma = 1 (Full-model special case)."""
@@ -87,20 +87,20 @@ def fit_access_full_gamma_model(
 
     def loss_fn(params):
         w_v, w_d, w_e, gamma = params
-        preds = predict_access_full_gamma(
+        preds = predict_full_gamma(
             intimacy, reward_condition, action, scenario_idx,
             ALPHA, w_v, w_d, w_e, gamma, a_tab, e_tab, v_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full_gamma", **kwargs
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="full_gamma", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
 
 
 @jax.jit
-def predict_access_full_typed_gamma(
+def predict_full_typed_gamma(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_d_substance, w_d_space, w_d_privacy, w_e, gamma,
     access_table, effort_table, v_table,
@@ -116,26 +116,26 @@ def predict_access_full_typed_gamma(
     )
 
 
-def fit_access_full_gamma_alpha_model(
+def fit_full_gamma_alpha_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """Reparameterized gamma model: w_v fixed = 1.0, α free.
-    Reuses predict_access_full_gamma. 4 free params: α, w_d, w_e, γ.
-    Should give identical NLL to access_full_gamma — softmax rescaling
+    Reuses predict_full_gamma. 4 free params: α, w_d, w_e, γ.
+    Should give identical NLL to full_gamma — softmax rescaling
     invariance means this is the same model in different coordinates."""
     W_V_FIXED = 1.0
     a_tab, e_tab, v_tab = tables
 
     def loss_fn(params):
         alpha, w_d, w_e, gamma = params
-        preds = predict_access_full_gamma(
+        preds = predict_full_gamma(
             intimacy, reward_condition, action, scenario_idx,
             alpha, W_V_FIXED, w_d, w_e, gamma, a_tab, e_tab, v_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full_gamma_alpha", **kwargs
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="full_gamma_alpha", **kwargs
     )
     # Pack as [alpha, w_v=1 (fixed), w_d, w_e, gamma] for main() compatibility
     return jnp.array([
@@ -148,7 +148,7 @@ def fit_access_full_gamma_alpha_model(
 
 
 @jax.jit
-def predict_access_full_gamma_vpow(
+def predict_full_gamma_vpow(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_d, w_e, gamma, beta,
     access_table, effort_table, v_table,
@@ -162,7 +162,7 @@ def predict_access_full_gamma_vpow(
     )
 
 
-def fit_access_full_gamma_vpow_model(
+def fit_full_gamma_vpow_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """V_eff = sign(V) * |V|^β; α=1 fixed. 5 free params: w_v, w_d, w_e, γ, β.
@@ -172,7 +172,7 @@ def fit_access_full_gamma_vpow_model(
 
     def loss_fn(params):
         w_v, w_d, w_e, gamma, beta = params
-        preds = predict_access_full_gamma_vpow(
+        preds = predict_full_gamma_vpow(
             intimacy, reward_condition, action, scenario_idx,
             ALPHA, w_v, w_d, w_e, gamma, beta, a_tab, e_tab, v_tab,
         )
@@ -180,12 +180,12 @@ def fit_access_full_gamma_vpow_model(
 
     params, nll = _fit_with_adam(
         loss_fn, [1.0, 1.0, 1.0, 1.0, 1.0],
-        label="access_full_gamma_vpow", **kwargs
+        label="full_gamma_vpow", **kwargs
     )
     return jnp.array([ALPHA] + [float(p) for p in params]), nll
 
 
-def fit_access_full_typed_gamma_model(
+def fit_full_typed_gamma_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """tables = (access, effort, v). 6 free params:
@@ -196,7 +196,7 @@ def fit_access_full_typed_gamma_model(
 
     def loss_fn(params):
         w_v, w_d_s, w_d_sp, w_d_p, w_e, gamma = params
-        preds = predict_access_full_typed_gamma(
+        preds = predict_full_typed_gamma(
             intimacy, reward_condition, action, scenario_idx,
             ALPHA, w_v, w_d_s, w_d_sp, w_d_p, w_e, gamma,
             a_tab, e_tab, v_tab,
@@ -205,7 +205,7 @@ def fit_access_full_typed_gamma_model(
 
     params, nll = _fit_with_adam(
         loss_fn, [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        label="access_full_typed_gamma", **kwargs
+        label="full_typed_gamma", **kwargs
     )
     return jnp.array([ALPHA] + [float(p) for p in params]), nll
 
@@ -237,32 +237,32 @@ def main(domain: str = "nonfood"):
     tables = (llm_tables["access"], llm_tables["effort"], v_table)
 
     fits = {
-        "access_full_gamma": (
-            fit_access_full_gamma_model,
-            predict_access_full_gamma,
+        "full_gamma": (
+            fit_full_gamma_model,
+            predict_full_gamma,
             ["w_v", "w_d", "w_e", "gamma"],
         ),
     }
     if domain == "nonfood":
         # Per-channel w_d (substance/space/privacy) on top of gamma.
         # Channels are non-food-specific; food has only one channel.
-        fits["access_full_typed_gamma"] = (
-            fit_access_full_typed_gamma_model,
-            predict_access_full_typed_gamma,
+        fits["full_typed_gamma"] = (
+            fit_full_typed_gamma_model,
+            predict_full_typed_gamma,
             ["w_v", "w_d_substance", "w_d_space", "w_d_privacy", "w_e", "gamma"],
         )
         # Decisiveness tests:
         # gamma_alpha = reparameterization (w_v=1 fixed, α free) — should
         # give identical NLL to gamma (softmax rescaling invariance check).
-        fits["access_full_gamma_alpha"] = (
-            fit_access_full_gamma_alpha_model,
-            predict_access_full_gamma,
+        fits["full_gamma_alpha"] = (
+            fit_full_gamma_alpha_model,
+            predict_full_gamma,
             ["w_v", "w_d", "w_e", "gamma"],
         )
         # gamma_vpow = V_eff = sign(V) * |V|^β; β free. Genuine new flexibility.
-        fits["access_full_gamma_vpow"] = (
-            fit_access_full_gamma_vpow_model,
-            predict_access_full_gamma_vpow,
+        fits["full_gamma_vpow"] = (
+            fit_full_gamma_vpow_model,
+            predict_full_gamma_vpow,
             ["w_v", "w_d", "w_e", "gamma", "beta"],
         )
 
@@ -369,7 +369,7 @@ def main(domain: str = "nonfood"):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(
-        description="Fit forward-planning extensions (currently: access_full_gamma) on food or non-food."
+        description="Fit forward-planning extensions (currently: full_gamma) on food or non-food."
     )
     parser.add_argument(
         "--domain", choices=("food", "nonfood"), default="nonfood",

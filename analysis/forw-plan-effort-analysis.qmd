@@ -117,7 +117,7 @@ df_cv <- read_csv(here("model", "outputs", "cv_loso_preds_effort.csv"),
                   show_col_types = FALSE)
 
 df_humans_cv <- df_cv |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   transmute(
     subject_id, scenario_label = held_out_scenario,
     intimacy, effort, action,
@@ -127,9 +127,9 @@ df_humans_cv <- df_cv |>
 df_model_cv <- df_cv |>
   mutate(
     model = case_when(
-      variant == "access_full" ~ "Full model",
-      variant == "access_only" ~ "Discomfort-only",
-      variant == "no_access" ~ "Base model"
+      variant == "full" ~ "Full model",
+      variant == "discomfort_only" ~ "Discomfort-only",
+      variant == "base" ~ "Base model"
     )
   ) |>
   transmute(

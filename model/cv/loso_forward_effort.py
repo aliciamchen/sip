@@ -2,8 +2,8 @@
 Leave-one-scenario-out CV for the effort-experiment forward-planning canonical variants.
 
 Parallel to model/cv/loso_forward.py. For each of the 16 scenarios, hold it
-out, refit the three uniform-prior variants (access_full, access_only,
-no_access) on the remaining 15 scenarios, and predict the held-out
+out, refit the three uniform-prior variants (full, discomfort_only,
+base) on the remaining 15 scenarios, and predict the held-out
 scenario's human action probabilities.
 
 Reports per-fold fitted parameters, train/test NLL, and Pearson r at the
@@ -27,13 +27,13 @@ import pandas as pd
 from scipy import stats
 
 from fit_forward_planning_effort import (
-    fit_access_full_model,
-    fit_access_only_model,
-    fit_no_access_model,
+    fit_full_model,
+    fit_discomfort_only_model,
+    fit_base_model,
     load_data,
-    predict_access_full,
-    predict_access_only,
-    predict_no_access,
+    predict_full,
+    predict_discomfort_only,
+    predict_base,
 )
 from fit_forward_planning import compute_nll
 from model_utils import SCENARIO_LABELS
@@ -45,19 +45,19 @@ from utils import get_project_root
 N_SCENARIOS = len(SCENARIO_LABELS)
 
 VARIANTS = {
-    "access_full": (
-        fit_access_full_model,
-        predict_access_full,
+    "full": (
+        fit_full_model,
+        predict_full,
         ["w_v", "w_d", "w_e", "gamma"],
     ),
-    "access_only": (
-        fit_access_only_model,
-        predict_access_only,
+    "discomfort_only": (
+        fit_discomfort_only_model,
+        predict_discomfort_only,
         ["w_d", "gamma"],
     ),
-    "no_access": (
-        fit_no_access_model,
-        predict_no_access,
+    "base": (
+        fit_base_model,
+        predict_base,
         ["w_v", "w_e"],
     ),
 }

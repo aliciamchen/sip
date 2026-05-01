@@ -7,7 +7,7 @@ For each of the 16 scenarios, hold it out, refit α_observer on the remaining
 generate predictions for the held-out scenario using the refit α_observer.
 
 Runs over the three canonical uniform-prior variants
-(access_full, access_only, no_access).
+(full, discomfort_only, base).
 
 Outputs (in model/outputs/):
   - cv_loso_inv_plan_intimacy_alt_preds_summary.csv
@@ -50,11 +50,11 @@ from utils import get_project_root
 N_SCENARIOS = len(SCENARIO_LABELS)
 
 # Canonical uniform-prior variants.
-VARIANTS = ["access_full", "access_only", "no_access"]
+VARIANTS = ["full", "discomfort_only", "base"]
 VARIANT_LABEL = {
-    "access_full": "Full model",
-    "access_only": "Discomfort-only",
-    "no_access": "Base model",
+    "full": "Full model",
+    "discomfort_only": "Discomfort-only",
+    "base": "Base model",
 }
 
 

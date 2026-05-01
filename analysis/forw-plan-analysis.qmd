@@ -73,7 +73,7 @@ df_cv <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_types 
 
 # Humans (take from one variant — all three variants share the same p_action column)
 df_humans_cv <- df_cv |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   transmute(
     subject_id, scenario_label = held_out_scenario,
     intimacy, motivation, action,
@@ -84,9 +84,9 @@ df_humans_cv <- df_cv |>
 df_model_cv <- df_cv |>
   mutate(
     model = case_when(
-      variant == "access_full" ~ "Full model",
-      variant == "access_only" ~ "Discomfort-only",
-      variant == "no_access" ~ "Base model"
+      variant == "full" ~ "Full model",
+      variant == "discomfort_only" ~ "Discomfort-only",
+      variant == "base" ~ "Base model"
     )
   ) |>
   transmute(
@@ -390,9 +390,9 @@ fit_results |>
 ```
 
 ```{r}
-# Compute differences from best model (access_full)
-best_aic <- fit_results$AIC[fit_results$model == "access_full"]
-best_bic <- fit_results$BIC[fit_results$model == "access_full"]
+# Compute differences from best model (full)
+best_aic <- fit_results$AIC[fit_results$model == "full"]
+best_bic <- fit_results$BIC[fit_results$model == "full"]
 
 fit_results |>
   mutate(

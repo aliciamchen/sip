@@ -2,9 +2,9 @@
 Fit forward planning models to human data.
 
 Three access-model ablations are fit (scenario-specific LLM-parameterized):
-1. access_full: full utility with food reward, access discomfort, and effort
-2. access_only: only the access-discomfort term (-w_d*access*(1-I))
-3. no_access:   base model (w_v*V - w_e*effort)
+1. full: full utility with food reward, access discomfort, and effort
+2. discomfort_only: only the access-discomfort term (-w_d*access*(1-I))
+3. base:   base model (w_v*V - w_e*effort)
 
 Uses maximum likelihood estimation with gradient descent (optax.adam).
 """
@@ -24,9 +24,9 @@ import pandas as pd
 from model_utils import (
     LLM_TABLES,
     SCENARIO_TO_IDX,
-    actor_forw_access_full,
-    actor_forw_access_only,
-    actor_forw_no_access,
+    actor_forw_full,
+    actor_forw_discomfort_only,
+    actor_forw_base,
     load_domain_assets,
     load_lm_v,
 )
@@ -151,13 +151,13 @@ def get_intimacy_index(intimacy_value):
 
 
 @jax.jit
-def predict_access_full(
+def predict_full(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table, v_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_access_full(
+    probs = actor_forw_full(
         alpha, w_v, w_d, w_e, gamma, access_table, effort_table, v_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
@@ -166,13 +166,13 @@ def predict_access_full(
 
 
 @jax.jit
-def predict_access_only(
+def predict_discomfort_only(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_d, gamma,
     access_table, effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_access_only(
+    probs = actor_forw_discomfort_only(
         alpha, w_d, gamma, access_table, effort_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
@@ -181,13 +181,13 @@ def predict_access_only(
 
 
 @jax.jit
-def predict_no_access(
+def predict_base(
     intimacy, reward_condition, action, scenario_idx,
     alpha, w_v, w_e,
     access_table, effort_table, v_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
-    probs = actor_forw_no_access(
+    probs = actor_forw_base(
         alpha, w_v, w_e, access_table, effort_table, v_table
     )
     return jax.vmap(lambda i, r, a, s: probs[a, s, i, r])(
@@ -229,7 +229,7 @@ def _fit_with_adam(
     return params, best_nll
 
 
-def fit_access_full_model(
+def fit_full_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """tables = (access, effort, v). 4 free params: w_v, w_d, w_e, gamma."""
@@ -238,19 +238,19 @@ def fit_access_full_model(
 
     def loss_fn(params):
         w_v, w_d, w_e, gamma = params
-        preds = predict_access_full(
+        preds = predict_full(
             intimacy, reward_condition, action, scenario_idx,
             ALPHA, w_v, w_d, w_e, gamma, a_tab, e_tab, v_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0, 1.0, 1.0], label="access_full", **kwargs
+        loss_fn, [1.0, 1.0, 1.0, 1.0], label="full", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
 
 
-def fit_access_only_model(
+def fit_discomfort_only_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """tables = (access, effort) — V-independent ablation. 2 free params: w_d, gamma."""
@@ -259,19 +259,19 @@ def fit_access_only_model(
 
     def loss_fn(params):
         w_d, gamma = params
-        preds = predict_access_only(
+        preds = predict_discomfort_only(
             intimacy, reward_condition, action, scenario_idx,
             ALPHA, w_d, gamma, a_tab, e_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0], label="access_only", **kwargs
+        loss_fn, [1.0, 1.0], label="discomfort_only", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
-def fit_no_access_model(
+def fit_base_model(
     intimacy, reward_condition, action, scenario_idx, p_action, tables, **kwargs
 ):
     """tables = (access, effort, v)."""
@@ -280,14 +280,14 @@ def fit_no_access_model(
 
     def loss_fn(params):
         w_v, w_e = params
-        preds = predict_no_access(
+        preds = predict_base(
             intimacy, reward_condition, action, scenario_idx,
             ALPHA, w_v, w_e, a_tab, e_tab, v_tab,
         )
         return compute_nll(preds, p_action)
 
     params, nll = _fit_with_adam(
-        loss_fn, [1.0, 1.0], label="no_access", **kwargs
+        loss_fn, [1.0, 1.0], label="base", **kwargs
     )
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
@@ -321,28 +321,28 @@ def main(domain: str = "food"):
     tables = (llm_tables["access"], llm_tables["effort"], v_table)
 
     fits = {
-        "access_full": (
-            fit_access_full_model,
-            predict_access_full,
+        "full": (
+            fit_full_model,
+            predict_full,
             ["w_v", "w_d", "w_e", "gamma"],
         ),
-        "access_only": (
-            fit_access_only_model,
-            predict_access_only,
+        "discomfort_only": (
+            fit_discomfort_only_model,
+            predict_discomfort_only,
             ["w_d", "gamma"],
         ),
-        "no_access": (
-            fit_no_access_model,
-            predict_no_access,
+        "base": (
+            fit_base_model,
+            predict_base,
             ["w_v", "w_e"],
         ),
     }
 
-    # access_only is V-independent, so it takes only (access, effort).
+    # discomfort_only is V-independent, so it takes only (access, effort).
     tables_by_variant = {
-        "access_full": tables,
-        "access_only": tables[:2],
-        "no_access":   tables,
+        "full": tables,
+        "discomfort_only": tables[:2],
+        "base":   tables,
     }
 
     results = {}

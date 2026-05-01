@@ -31,9 +31,9 @@ from model_utils import SCENARIO_TO_IDX
 from model_utils_effort import (
     EFFORT_CONDITION_TO_IDX,
     LLM_TABLES_EFFORT,
-    observer_intimacy_effort_access_full,
-    observer_intimacy_effort_access_only,
-    observer_intimacy_effort_no_access,
+    observer_intimacy_effort_full,
+    observer_intimacy_effort_discomfort_only,
+    observer_intimacy_effort_base,
 )
 
 from utils import get_project_root
@@ -114,16 +114,16 @@ def fit_intimacy_effort_observer(
 
 # Variant registry: name -> (observer_fn, actor_kwarg_names)
 ACCESS_VARIANTS_EFFORT = {
-    "access_full": (
-        observer_intimacy_effort_access_full,
+    "full": (
+        observer_intimacy_effort_full,
         ["alpha", "w_v", "w_d", "w_e", "gamma"],
     ),
-    "access_only": (
-        observer_intimacy_effort_access_only,
+    "discomfort_only": (
+        observer_intimacy_effort_discomfort_only,
         ["alpha", "w_d", "gamma"],
     ),
-    "no_access": (
-        observer_intimacy_effort_no_access,
+    "base": (
+        observer_intimacy_effort_base,
         ["alpha", "w_v", "w_e"],
     ),
 }

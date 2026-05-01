@@ -536,9 +536,9 @@ def get_intimacy(relationship_condition):
 # them into the compiled graph.
 #
 # Three ablations:
-#   - access_full : full utility above (main model)
-#   - access_only : only the access-discomfort term (-w_d * access * (1-I))
-#   - no_access   : base model (w_v*V - w_e*effort)
+#   - full : full utility above (main model)
+#   - discomfort_only : only the access-discomfort term (-w_d * access * (1-I))
+#   - base   : base model (w_v*V - w_e*effort)
 
 
 @jax.jit
@@ -552,7 +552,7 @@ def get_lm_v(action, scenario_idx, reward_condition, v_table):
 
 
 @jax.jit
-def get_utility_access_full(
+def get_utility_full(
     action, scenario_idx, intimacy, reward_condition,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table, v_table,
@@ -569,13 +569,13 @@ def get_utility_access_full(
 
 
 @jax.jit
-def get_utility_access_full_disc(
+def get_utility_full_disc(
     action, scenario_idx, relationship_condition, reward_condition,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table, v_table,
 ):
     intimacy = get_intimacy(relationship_condition)
-    return get_utility_access_full(
+    return get_utility_full(
         action, scenario_idx, intimacy, reward_condition,
         alpha, w_v, w_d, w_e, gamma,
         access_table, effort_table, v_table,
@@ -583,7 +583,7 @@ def get_utility_access_full_disc(
 
 
 @jax.jit
-def get_utility_access_only(
+def get_utility_discomfort_only(
     action, scenario_idx, intimacy, reward_condition,
     alpha, w_d, gamma,
     access_table, effort_table,
@@ -594,13 +594,13 @@ def get_utility_access_only(
 
 
 @jax.jit
-def get_utility_access_only_disc(
+def get_utility_discomfort_only_disc(
     action, scenario_idx, relationship_condition, reward_condition,
     alpha, w_d, gamma,
     access_table, effort_table,
 ):
     intimacy = get_intimacy(relationship_condition)
-    return get_utility_access_only(
+    return get_utility_discomfort_only(
         action, scenario_idx, intimacy, reward_condition,
         alpha, w_d, gamma,
         access_table, effort_table,
@@ -608,7 +608,7 @@ def get_utility_access_only_disc(
 
 
 @jax.jit
-def get_utility_no_access(
+def get_utility_base(
     action, scenario_idx, intimacy, reward_condition,
     alpha, w_v, w_e,
     access_table, effort_table, v_table,
@@ -619,13 +619,13 @@ def get_utility_no_access(
 
 
 @jax.jit
-def get_utility_no_access_disc(
+def get_utility_base_disc(
     action, scenario_idx, relationship_condition, reward_condition,
     alpha, w_v, w_e,
     access_table, effort_table, v_table,
 ):
     intimacy = get_intimacy(relationship_condition)
-    return get_utility_no_access(
+    return get_utility_base(
         action, scenario_idx, intimacy, reward_condition,
         alpha, w_v, w_e,
         access_table, effort_table, v_table,
@@ -638,7 +638,7 @@ def get_utility_no_access_disc(
 
 
 @memo
-def actor_forw_access_full[
+def actor_forw_full[
     action: actions,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -651,7 +651,7 @@ def actor_forw_access_full[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_access_full(
+            get_utility_full(
                 action, scenario_idx, intimacy, reward_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table, v_table,
@@ -662,7 +662,7 @@ def actor_forw_access_full[
 
 
 @memo
-def actor_forw_access_only[
+def actor_forw_discomfort_only[
     action: actions,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -675,7 +675,7 @@ def actor_forw_access_only[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_access_only(
+            get_utility_discomfort_only(
                 action, scenario_idx, intimacy, reward_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -686,7 +686,7 @@ def actor_forw_access_only[
 
 
 @memo
-def actor_forw_no_access[
+def actor_forw_base[
     action: actions,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -699,7 +699,7 @@ def actor_forw_no_access[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_no_access(
+            get_utility_base(
                 action, scenario_idx, intimacy, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table, v_table,
@@ -715,7 +715,7 @@ def actor_forw_no_access[
 
 
 @memo
-def actor_discrete_access_full[
+def actor_discrete_full[
     action: actions,
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
@@ -728,7 +728,7 @@ def actor_discrete_access_full[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_access_full_disc(
+            get_utility_full_disc(
                 action, scenario_idx, relationship_condition, reward_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table, v_table,
@@ -739,7 +739,7 @@ def actor_discrete_access_full[
 
 
 @memo
-def actor_discrete_access_only[
+def actor_discrete_discomfort_only[
     action: actions,
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
@@ -752,7 +752,7 @@ def actor_discrete_access_only[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_access_only_disc(
+            get_utility_discomfort_only_disc(
                 action, scenario_idx, relationship_condition, reward_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -763,7 +763,7 @@ def actor_discrete_access_only[
 
 
 @memo
-def actor_discrete_no_access[
+def actor_discrete_base[
     action: actions,
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
@@ -776,7 +776,7 @@ def actor_discrete_no_access[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_no_access_disc(
+            get_utility_base_disc(
                 action, scenario_idx, relationship_condition, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table, v_table,
@@ -792,7 +792,7 @@ def actor_discrete_no_access[
 
 
 @memo
-def actor_continuous_access_full[
+def actor_continuous_full[
     action: actions,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -805,7 +805,7 @@ def actor_continuous_access_full[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_access_full(
+            get_utility_full(
                 action, scenario_idx, relationship, reward_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table, v_table,
@@ -816,7 +816,7 @@ def actor_continuous_access_full[
 
 
 @memo
-def actor_continuous_access_only[
+def actor_continuous_discomfort_only[
     action: actions,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -829,7 +829,7 @@ def actor_continuous_access_only[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_access_only(
+            get_utility_discomfort_only(
                 action, scenario_idx, relationship, reward_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -840,7 +840,7 @@ def actor_continuous_access_only[
 
 
 @memo
-def actor_continuous_no_access[
+def actor_continuous_base[
     action: actions,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -853,7 +853,7 @@ def actor_continuous_no_access[
     actor: chooses(
         action in actions,
         wpp=exp(
-            get_utility_no_access(
+            get_utility_base(
                 action, scenario_idx, relationship, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table, v_table,
@@ -869,7 +869,7 @@ def actor_continuous_no_access[
 
 
 @memo
-def observer_intimacy_access_full[
+def observer_intimacy_full[
     action: actions,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -884,7 +884,7 @@ def observer_intimacy_access_full[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_continuous_access_full[
+            wpp=actor_continuous_full[
                 action, scenario_idx, relationship, reward_condition
             ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table, v_table),
         ),
@@ -898,7 +898,7 @@ def observer_intimacy_access_full[
 
 
 @memo
-def observer_intimacy_access_only[
+def observer_intimacy_discomfort_only[
     action: actions,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -913,7 +913,7 @@ def observer_intimacy_access_only[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_continuous_access_only[
+            wpp=actor_continuous_discomfort_only[
                 action, scenario_idx, relationship, reward_condition
             ](alpha, w_d, gamma, access_table, effort_table),
         ),
@@ -927,7 +927,7 @@ def observer_intimacy_access_only[
 
 
 @memo
-def observer_intimacy_no_access[
+def observer_intimacy_base[
     action: actions,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -942,7 +942,7 @@ def observer_intimacy_no_access[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_continuous_no_access[
+            wpp=actor_continuous_base[
                 action, scenario_idx, relationship, reward_condition
             ](alpha, w_v, w_e, access_table, effort_table, v_table),
         ),
@@ -961,7 +961,7 @@ def observer_intimacy_no_access[
 
 
 @memo
-def observer_reward_access_full[
+def observer_reward_full[
     action: actions,
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
@@ -976,7 +976,7 @@ def observer_reward_access_full[
         actor : chooses(reward_condition in RewardConditions, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_discrete_access_full[
+            wpp=actor_discrete_full[
                 action, scenario_idx, relationship_condition, reward_condition
             ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table, v_table),
         ),
@@ -990,7 +990,7 @@ def observer_reward_access_full[
 
 
 @memo
-def observer_reward_access_only[
+def observer_reward_discomfort_only[
     action: actions,
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
@@ -1005,7 +1005,7 @@ def observer_reward_access_only[
         actor : chooses(reward_condition in RewardConditions, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_discrete_access_only[
+            wpp=actor_discrete_discomfort_only[
                 action, scenario_idx, relationship_condition, reward_condition
             ](alpha, w_d, gamma, access_table, effort_table),
         ),
@@ -1019,7 +1019,7 @@ def observer_reward_access_only[
 
 
 @memo
-def observer_reward_no_access[
+def observer_reward_base[
     action: actions,
     scenario_idx: Scenarios,
     relationship_condition: RelationshipConditions,
@@ -1034,7 +1034,7 @@ def observer_reward_no_access[
         actor : chooses(reward_condition in RewardConditions, wpp=1),
         actor : chooses(
             action in actions,
-            wpp=actor_discrete_no_access[
+            wpp=actor_discrete_base[
                 action, scenario_idx, relationship_condition, reward_condition
             ](alpha, w_v, w_e, access_table, effort_table, v_table),
         ),
@@ -1081,7 +1081,7 @@ def get_lm_v_padded(
 
 
 @jax.jit
-def get_utility_access_full_padded(
+def get_utility_full_padded(
     padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table, v_padded_table,
@@ -1100,7 +1100,7 @@ def get_utility_access_full_padded(
 
 
 @memo
-def actor_continuous_access_full_padded[
+def actor_continuous_full_padded[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1115,7 +1115,7 @@ def actor_continuous_access_full_padded[
     actor: chooses(
         padded_slot in PaddedActionSlots,
         wpp=get_prior_padded(padded_slot, scenario_idx, observed_action, reward_condition, prior_table) * exp(
-            get_utility_access_full_padded(
+            get_utility_full_padded(
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table, v_padded_table,
@@ -1126,7 +1126,7 @@ def actor_continuous_access_full_padded[
 
 
 @memo
-def observer_intimacy_access_full_padded[
+def observer_intimacy_full_padded[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1149,7 +1149,7 @@ def observer_intimacy_access_full_padded[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots,
-            wpp=actor_continuous_access_full_padded[
+            wpp=actor_continuous_full_padded[
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition
             ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table, v_padded_table, prior_table),
         ),
@@ -1162,11 +1162,11 @@ def observer_intimacy_access_full_padded[
     return Pr[observer.relationship == relationship]
 
 
-# --- access_only padded variant: V-independent (drops w_v*V and w_e*effort) ---
+# --- discomfort_only padded variant: V-independent (drops w_v*V and w_e*effort) ---
 
 
 @jax.jit
-def get_utility_access_only_padded(
+def get_utility_discomfort_only_padded(
     padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
     alpha, w_d, gamma,
     access_table, effort_table,
@@ -1177,7 +1177,7 @@ def get_utility_access_only_padded(
 
 
 @memo
-def actor_continuous_access_only_padded[
+def actor_continuous_discomfort_only_padded[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1192,7 +1192,7 @@ def actor_continuous_access_only_padded[
     actor: chooses(
         padded_slot in PaddedActionSlots,
         wpp=get_prior_padded(padded_slot, scenario_idx, observed_action, reward_condition, prior_table) * exp(
-            get_utility_access_only_padded(
+            get_utility_discomfort_only_padded(
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -1203,7 +1203,7 @@ def actor_continuous_access_only_padded[
 
 
 @memo
-def observer_intimacy_access_only_padded[
+def observer_intimacy_discomfort_only_padded[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1221,7 +1221,7 @@ def observer_intimacy_access_only_padded[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots,
-            wpp=actor_continuous_access_only_padded[
+            wpp=actor_continuous_discomfort_only_padded[
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition
             ](alpha, w_d, gamma, access_table, effort_table, prior_table),
         ),
@@ -1234,11 +1234,11 @@ def observer_intimacy_access_only_padded[
     return Pr[observer.relationship == relationship]
 
 
-# --- no_access padded variant: drops w_d*access ---
+# --- base padded variant: drops w_d*access ---
 
 
 @jax.jit
-def get_utility_no_access_padded(
+def get_utility_base_padded(
     padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
     alpha, w_v, w_e,
     access_table, effort_table, v_padded_table,
@@ -1251,7 +1251,7 @@ def get_utility_no_access_padded(
 
 
 @memo
-def actor_continuous_no_access_padded[
+def actor_continuous_base_padded[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1266,7 +1266,7 @@ def actor_continuous_no_access_padded[
     actor: chooses(
         padded_slot in PaddedActionSlots,
         wpp=get_prior_padded(padded_slot, scenario_idx, observed_action, reward_condition, prior_table) * exp(
-            get_utility_no_access_padded(
+            get_utility_base_padded(
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table, v_padded_table,
@@ -1277,7 +1277,7 @@ def actor_continuous_no_access_padded[
 
 
 @memo
-def observer_intimacy_no_access_padded[
+def observer_intimacy_base_padded[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1295,7 +1295,7 @@ def observer_intimacy_no_access_padded[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots,
-            wpp=actor_continuous_no_access_padded[
+            wpp=actor_continuous_base_padded[
                 padded_slot, scenario_idx, observed_action, relationship, reward_condition
             ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
         ),
@@ -1350,7 +1350,7 @@ def get_lm_v_padded_rel(
 
 
 @jax.jit
-def get_utility_access_full_padded_rel(
+def get_utility_full_padded_rel(
     padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table, v_padded_table,
@@ -1371,7 +1371,7 @@ def get_utility_access_full_padded_rel(
 
 
 @jax.jit
-def get_utility_access_only_padded_rel(
+def get_utility_discomfort_only_padded_rel(
     padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
     alpha, w_d, gamma,
     access_table, effort_table,
@@ -1383,7 +1383,7 @@ def get_utility_access_only_padded_rel(
 
 
 @jax.jit
-def get_utility_no_access_padded_rel(
+def get_utility_base_padded_rel(
     padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
     alpha, w_v, w_e,
     access_table, effort_table, v_padded_table,
@@ -1397,7 +1397,7 @@ def get_utility_no_access_padded_rel(
 
 
 @memo
-def actor_continuous_access_full_padded_rel[
+def actor_continuous_full_padded_rel[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1414,7 +1414,7 @@ def actor_continuous_access_full_padded_rel[
         wpp=get_prior_padded_rel(
             padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
         ) * exp(
-            get_utility_access_full_padded_rel(
+            get_utility_full_padded_rel(
                 padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table, v_padded_table,
@@ -1425,7 +1425,7 @@ def actor_continuous_access_full_padded_rel[
 
 
 @memo
-def actor_continuous_access_only_padded_rel[
+def actor_continuous_discomfort_only_padded_rel[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1442,7 +1442,7 @@ def actor_continuous_access_only_padded_rel[
         wpp=get_prior_padded_rel(
             padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
         ) * exp(
-            get_utility_access_only_padded_rel(
+            get_utility_discomfort_only_padded_rel(
                 padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -1453,7 +1453,7 @@ def actor_continuous_access_only_padded_rel[
 
 
 @memo
-def actor_continuous_no_access_padded_rel[
+def actor_continuous_base_padded_rel[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1470,7 +1470,7 @@ def actor_continuous_no_access_padded_rel[
         wpp=get_prior_padded_rel(
             padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
         ) * exp(
-            get_utility_no_access_padded_rel(
+            get_utility_base_padded_rel(
                 padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table, v_padded_table,
@@ -1481,7 +1481,7 @@ def actor_continuous_no_access_padded_rel[
 
 
 @memo
-def observer_reward_access_full_padded_rel[
+def observer_reward_full_padded_rel[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1499,7 +1499,7 @@ def observer_reward_access_full_padded_rel[
         actor : chooses(reward_condition in RewardConditions, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots,
-            wpp=actor_continuous_access_full_padded_rel[
+            wpp=actor_continuous_full_padded_rel[
                 padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition
             ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table, v_padded_table, prior_table),
         ),
@@ -1513,7 +1513,7 @@ def observer_reward_access_full_padded_rel[
 
 
 @memo
-def observer_reward_access_only_padded_rel[
+def observer_reward_discomfort_only_padded_rel[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1531,7 +1531,7 @@ def observer_reward_access_only_padded_rel[
         actor : chooses(reward_condition in RewardConditions, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots,
-            wpp=actor_continuous_access_only_padded_rel[
+            wpp=actor_continuous_discomfort_only_padded_rel[
                 padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition
             ](alpha, w_d, gamma, access_table, effort_table, prior_table),
         ),
@@ -1545,7 +1545,7 @@ def observer_reward_access_only_padded_rel[
 
 
 @memo
-def observer_reward_no_access_padded_rel[
+def observer_reward_base_padded_rel[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -1563,7 +1563,7 @@ def observer_reward_no_access_padded_rel[
         actor : chooses(reward_condition in RewardConditions, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots,
-            wpp=actor_continuous_no_access_padded_rel[
+            wpp=actor_continuous_base_padded_rel[
                 padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition
             ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
         ),

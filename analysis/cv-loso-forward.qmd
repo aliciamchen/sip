@@ -30,9 +30,9 @@ Leave-one-scenario-out (LOSO) addresses this: for each of the 16 scenarios, hold
 df_fold <- read_csv(here("model", "outputs", "cv_loso_forward.csv"), show_col_types = FALSE) |>
   mutate(
     variant_label = case_when(
-      variant == "access_full" ~ "Full model",
-      variant == "access_only" ~ "Discomfort-only",
-      variant == "no_access" ~ "Base model"
+      variant == "full" ~ "Full model",
+      variant == "discomfort_only" ~ "Discomfort-only",
+      variant == "base" ~ "Base model"
     ),
     variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
   )
@@ -41,9 +41,9 @@ df_pred <- read_csv(here("model", "outputs", "cv_loso_preds.csv"), show_col_type
   mutate(
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
     variant_label = case_when(
-      variant == "access_full" ~ "Full model",
-      variant == "access_only" ~ "Discomfort-only",
-      variant == "no_access" ~ "Base model"
+      variant == "full" ~ "Full model",
+      variant == "discomfort_only" ~ "Discomfort-only",
+      variant == "base" ~ "Base model"
     ),
     variant_label = factor(variant_label, levels = c("Base model", "Discomfort-only", "Full model"))
   )
@@ -67,7 +67,7 @@ df_pooled <- df_pred |>
 
 df_full_r <- df_full |>
   select(variant = model, r_in_sample = r) |>
-  filter(variant %in% c("access_full", "access_only", "no_access"))
+  filter(variant %in% c("full", "discomfort_only", "base"))
 
 df_headline <- df_pooled |>
   left_join(df_full_r, by = "variant") |>
@@ -97,7 +97,7 @@ For each held-out scenario, the Pearson r between model predictions and human `p
 #| fig-asp: 0.55
 
 scenario_order <- df_fold |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   arrange(desc(test_cell_r)) |>
   pull(held_out_scenario)
 
@@ -150,7 +150,7 @@ Each LOSO fold refits the three parameters on 15 scenarios. If fitted weights ca
 #| fig-asp: 0.32
 
 df_params <- df_fold |>
-  filter(variant == "access_full") |>
+  filter(variant == "full") |>
   select(held_out_scenario, param_w_v, param_w_d, param_w_e, param_gamma) |>
   pivot_longer(starts_with("param_"), names_to = "parameter", values_to = "value") |>
   mutate(
@@ -163,7 +163,7 @@ df_params <- df_fold |>
   )
 
 df_full_params <- df_full |>
-  filter(model == "access_full") |>
+  filter(model == "full") |>
   select(param_w_v, param_w_d, param_w_e, param_gamma) |>
   pivot_longer(everything(), names_to = "parameter", values_to = "full_value") |>
   mutate(
@@ -188,9 +188,9 @@ ggplot(df_params, aes(x = reorder(held_out_scenario, value), y = value)) +
 
 ```{r}
 #| echo: false
-full_out <- df_pooled |> filter(variant == "access_full") |> pull(r_out_of_sample)
-full_in <- df_full_r |> filter(variant == "access_full") |> pull(r_in_sample)
-per_fold <- df_fold |> filter(variant == "access_full") |> pull(test_cell_r)
+full_out <- df_pooled |> filter(variant == "full") |> pull(r_out_of_sample)
+full_in <- df_full_r |> filter(variant == "full") |> pull(r_in_sample)
+per_fold <- df_fold |> filter(variant == "full") |> pull(test_cell_r)
 ```
 
 For the Full model, held-out Pearson r pooled across the 16 LOSO folds is `r round(full_out, 3)`, compared to an in-sample r of `r round(full_in, 3)`. Per-fold held-out r (32 cells each) is `r sprintf("%.2f ± %.2f", mean(per_fold), sd(per_fold))`. Fitted weights cluster tightly around the full-data values, confirming that the model captures scenario-general utility structure rather than scenario-specific patterns.

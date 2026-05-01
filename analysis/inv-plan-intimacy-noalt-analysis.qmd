@@ -152,9 +152,9 @@ df_fit_results <- read_csv(here("model", "outputs", "inverse_planning_noalt_fit_
   mutate(
     utility = str_remove(model, "_padded$"),
     model_label = case_when(
-      utility == "access_full" ~ "Full model",
-      utility == "access_only" ~ "Discomfort-only",
-      utility == "no_access" ~ "Base model"
+      utility == "full" ~ "Full model",
+      utility == "discomfort_only" ~ "Discomfort-only",
+      utility == "base" ~ "Base model"
     )
   ) |>
   select(model_label, param_w_v, param_w_d, param_w_e, param_gamma, alpha_observer, nll, n_params) |>
@@ -190,9 +190,9 @@ df_model <- read_csv(here("model", "outputs", "cv_loso_inv_plan_intimacy_noalt_p
     belief_update = (expected_intimacy - 50) / 100,
     utility = str_remove(model, "_padded$"),
     model_label = case_when(
-      utility == "access_full" ~ "Full model",
-      utility == "access_only" ~ "Discomfort-only",
-      utility == "no_access" ~ "Base model"
+      utility == "full" ~ "Full model",
+      utility == "discomfort_only" ~ "Discomfort-only",
+      utility == "base" ~ "Base model"
     )
   )
 ```

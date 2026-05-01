@@ -6,9 +6,9 @@ Mirrors fit_inverse_planning_noalt.py (intimacy variant) but flips the
 inference target. The observer infers reward_condition (motivation) from a
 single observed action, conditioned on the actor's relationship. Three
 ablations are jointly fit:
-  - access_full  : w_v * V - w_d * access * (1-I) - w_e * effort
-  - access_only  : -w_d * access * (1-I)
-  - no_access    : w_v * V - w_e * effort
+  - full  : w_v * V - w_d * access * (1-I) - w_e * effort
+  - discomfort_only  : -w_d * access * (1-I)
+  - base    : w_v * V - w_e * effort
 
 The action space is **relationship-keyed** — the LM-generated counterfactual
 alternatives are conditioned on (scenario, observed_action, relationship)
@@ -36,9 +36,9 @@ import pandas as pd
 from model_utils import (
     SCENARIO_TO_IDX,
     load_padded_lm_tables_relationship,
-    observer_reward_access_full_padded_rel,
-    observer_reward_access_only_padded_rel,
-    observer_reward_no_access_padded_rel,
+    observer_reward_full_padded_rel,
+    observer_reward_discomfort_only_padded_rel,
+    observer_reward_base_padded_rel,
 )
 
 from utils import get_project_root
@@ -48,20 +48,20 @@ from fit_inverse_planning import compute_reward_nll
 
 # Variant registry: name -> (observer_fn, utility_param_names, uses_v).
 # alpha_actor is fixed at 1; alpha_observer is appended to the fit params.
-# access_only is V-independent.
+# discomfort_only is V-independent.
 PADDED_VARIANTS = {
-    "access_full": (
-        observer_reward_access_full_padded_rel,
+    "full": (
+        observer_reward_full_padded_rel,
         ["w_v", "w_d", "w_e", "gamma"],
         True,
     ),
-    "access_only": (
-        observer_reward_access_only_padded_rel,
+    "discomfort_only": (
+        observer_reward_discomfort_only_padded_rel,
         ["w_d", "gamma"],
         False,
     ),
-    "no_access": (
-        observer_reward_no_access_padded_rel,
+    "base": (
+        observer_reward_base_padded_rel,
         ["w_v", "w_e"],
         True,
     ),

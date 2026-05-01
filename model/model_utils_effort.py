@@ -143,7 +143,7 @@ def get_stipulated_reward_effort(action):
 
 
 @jax.jit
-def get_utility_effort_access_full(
+def get_utility_effort_full(
     action, scenario_idx, intimacy, effort_condition,
     alpha, w_v, w_d, w_e, gamma,
     access_table, effort_table,
@@ -160,7 +160,7 @@ def get_utility_effort_access_full(
 
 
 @jax.jit
-def get_utility_effort_access_only(
+def get_utility_effort_discomfort_only(
     action, scenario_idx, intimacy, effort_condition,
     alpha, w_d, gamma,
     access_table, effort_table,
@@ -171,7 +171,7 @@ def get_utility_effort_access_only(
 
 
 @jax.jit
-def get_utility_effort_no_access(
+def get_utility_effort_base(
     action, scenario_idx, intimacy, effort_condition,
     alpha, w_v, w_e,
     access_table, effort_table,
@@ -187,7 +187,7 @@ def get_utility_effort_no_access(
 
 
 @memo
-def actor_forw_effort_access_full[
+def actor_forw_effort_full[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -200,7 +200,7 @@ def actor_forw_effort_access_full[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_access_full(
+            get_utility_effort_full(
                 action, scenario_idx, intimacy, effort_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table,
@@ -211,7 +211,7 @@ def actor_forw_effort_access_full[
 
 
 @memo
-def actor_forw_effort_access_only[
+def actor_forw_effort_discomfort_only[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -224,7 +224,7 @@ def actor_forw_effort_access_only[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_access_only(
+            get_utility_effort_discomfort_only(
                 action, scenario_idx, intimacy, effort_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -235,7 +235,7 @@ def actor_forw_effort_access_only[
 
 
 @memo
-def actor_forw_effort_no_access[
+def actor_forw_effort_base[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -248,7 +248,7 @@ def actor_forw_effort_no_access[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_no_access(
+            get_utility_effort_base(
                 action, scenario_idx, intimacy, effort_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table,
@@ -267,7 +267,7 @@ def actor_forw_effort_no_access[
 
 
 @memo
-def actor_continuous_effort_access_full[
+def actor_continuous_effort_full[
     action: actions_effort,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -280,7 +280,7 @@ def actor_continuous_effort_access_full[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_access_full(
+            get_utility_effort_full(
                 action, scenario_idx, relationship, effort_condition,
                 alpha, w_v, w_d, w_e, gamma,
                 access_table, effort_table,
@@ -291,7 +291,7 @@ def actor_continuous_effort_access_full[
 
 
 @memo
-def actor_continuous_effort_access_only[
+def actor_continuous_effort_discomfort_only[
     action: actions_effort,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -304,7 +304,7 @@ def actor_continuous_effort_access_only[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_access_only(
+            get_utility_effort_discomfort_only(
                 action, scenario_idx, relationship, effort_condition,
                 alpha, w_d, gamma,
                 access_table, effort_table,
@@ -315,7 +315,7 @@ def actor_continuous_effort_access_only[
 
 
 @memo
-def actor_continuous_effort_no_access[
+def actor_continuous_effort_base[
     action: actions_effort,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -328,7 +328,7 @@ def actor_continuous_effort_no_access[
     actor: chooses(
         action in actions_effort,
         wpp=exp(
-            get_utility_effort_no_access(
+            get_utility_effort_base(
                 action, scenario_idx, relationship, effort_condition,
                 alpha, w_v, w_e,
                 access_table, effort_table,
@@ -344,7 +344,7 @@ def actor_continuous_effort_no_access[
 
 
 @memo
-def observer_intimacy_effort_access_full[
+def observer_intimacy_effort_full[
     action: actions_effort,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -359,7 +359,7 @@ def observer_intimacy_effort_access_full[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions_effort,
-            wpp=actor_continuous_effort_access_full[
+            wpp=actor_continuous_effort_full[
                 action, scenario_idx, relationship, effort_condition
             ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table),
         ),
@@ -373,7 +373,7 @@ def observer_intimacy_effort_access_full[
 
 
 @memo
-def observer_intimacy_effort_access_only[
+def observer_intimacy_effort_discomfort_only[
     action: actions_effort,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -388,7 +388,7 @@ def observer_intimacy_effort_access_only[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions_effort,
-            wpp=actor_continuous_effort_access_only[
+            wpp=actor_continuous_effort_discomfort_only[
                 action, scenario_idx, relationship, effort_condition
             ](alpha, w_d, gamma, access_table, effort_table),
         ),
@@ -402,7 +402,7 @@ def observer_intimacy_effort_access_only[
 
 
 @memo
-def observer_intimacy_effort_no_access[
+def observer_intimacy_effort_base[
     action: actions_effort,
     scenario_idx: Scenarios,
     relationship: IntimacyLevels,
@@ -417,7 +417,7 @@ def observer_intimacy_effort_no_access[
         actor : chooses(relationship in IntimacyLevels, wpp=1),
         actor : chooses(
             action in actions_effort,
-            wpp=actor_continuous_effort_no_access[
+            wpp=actor_continuous_effort_base[
                 action, scenario_idx, relationship, effort_condition
             ](alpha, w_v, w_e, access_table, effort_table),
         ),
@@ -439,7 +439,7 @@ def observer_intimacy_effort_no_access[
 
 
 @memo
-def observer_effort_inferred_access_full[
+def observer_effort_inferred_full[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -454,7 +454,7 @@ def observer_effort_inferred_access_full[
         actor : chooses(effort_condition in EffortConditions, wpp=1),
         actor : chooses(
             action in actions_effort,
-            wpp=actor_forw_effort_access_full[
+            wpp=actor_forw_effort_full[
                 action, scenario_idx, intimacy, effort_condition
             ](alpha, w_v, w_d, w_e, gamma, access_table, effort_table),
         ),
@@ -468,7 +468,7 @@ def observer_effort_inferred_access_full[
 
 
 @memo
-def observer_effort_inferred_access_only[
+def observer_effort_inferred_discomfort_only[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -483,7 +483,7 @@ def observer_effort_inferred_access_only[
         actor : chooses(effort_condition in EffortConditions, wpp=1),
         actor : chooses(
             action in actions_effort,
-            wpp=actor_forw_effort_access_only[
+            wpp=actor_forw_effort_discomfort_only[
                 action, scenario_idx, intimacy, effort_condition
             ](alpha, w_d, gamma, access_table, effort_table),
         ),
@@ -497,7 +497,7 @@ def observer_effort_inferred_access_only[
 
 
 @memo
-def observer_effort_inferred_no_access[
+def observer_effort_inferred_base[
     action: actions_effort,
     scenario_idx: Scenarios,
     intimacy: IntimacyLevels,
@@ -512,7 +512,7 @@ def observer_effort_inferred_no_access[
         actor : chooses(effort_condition in EffortConditions, wpp=1),
         actor : chooses(
             action in actions_effort,
-            wpp=actor_forw_effort_no_access[
+            wpp=actor_forw_effort_base[
                 action, scenario_idx, intimacy, effort_condition
             ](alpha, w_v, w_e, access_table, effort_table),
         ),

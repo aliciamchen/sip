@@ -8,7 +8,7 @@ weights + α_observer on the remaining 15 scenarios, and emit predictions for
 the held-out scenario using the refit weights.
 
 Runs over the three relationship-keyed padded-observer variants
-(access_full_padded_rel, access_only_padded_rel, no_access_padded_rel), via
+(full_padded_rel, discomfort_only_padded_rel, base_padded_rel), via
 the PADDED_VARIANTS registry in fit_inverse_planning_desire_noalt.
 
 Output (in model/outputs/):

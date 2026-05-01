@@ -3,13 +3,13 @@ LOSO CV for forward-planning extensions (food and non-food). The file
 name keeps the "_nonfood_ext" suffix from when this only supported
 non-food, but it now accepts --domain food|nonfood.
 
-Currently: only `access_full_gamma` (Full + power-law intimacy).
+Currently: only `full_gamma` (Full + power-law intimacy).
 
 For each of the 16 scenarios in the chosen domain, hold it out, fit the
 gamma variant on the remaining 15 scenarios, and predict the held-out
 scenario's human action probabilities. Mirrors `cv/loso_forward.py` but
 on the extension variant only — does NOT refit the canonical
-access_full / access_only / no_access (those are produced by the existing
+full / discomfort_only / base (those are produced by the existing
 `cv/loso_forward.py`).
 
 Outputs (in model/outputs/):
@@ -28,13 +28,13 @@ import numpy as np
 import pandas as pd
 from fit_forward_planning import compute_nll, load_data
 from fit_forward_planning_nonfood_ext import (
-    fit_access_full_gamma_alpha_model,
-    fit_access_full_gamma_model,
-    fit_access_full_gamma_vpow_model,
-    fit_access_full_typed_gamma_model,
-    predict_access_full_gamma,
-    predict_access_full_gamma_vpow,
-    predict_access_full_typed_gamma,
+    fit_full_gamma_alpha_model,
+    fit_full_gamma_model,
+    fit_full_gamma_vpow_model,
+    fit_full_typed_gamma_model,
+    predict_full_gamma,
+    predict_full_gamma_vpow,
+    predict_full_typed_gamma,
 )
 from model_utils import load_domain_assets, load_lm_v
 from scipy import stats
@@ -44,26 +44,26 @@ from utils import get_project_root
 
 def variants_for_domain(domain: str):
     v = {
-        "access_full_gamma": (
-            fit_access_full_gamma_model,
-            predict_access_full_gamma,
+        "full_gamma": (
+            fit_full_gamma_model,
+            predict_full_gamma,
             ["w_v", "w_d", "w_e", "gamma"],
         ),
     }
     if domain == "nonfood":
-        v["access_full_typed_gamma"] = (
-            fit_access_full_typed_gamma_model,
-            predict_access_full_typed_gamma,
+        v["full_typed_gamma"] = (
+            fit_full_typed_gamma_model,
+            predict_full_typed_gamma,
             ["w_v", "w_d_substance", "w_d_space", "w_d_privacy", "w_e", "gamma"],
         )
-        v["access_full_gamma_alpha"] = (
-            fit_access_full_gamma_alpha_model,
-            predict_access_full_gamma,
+        v["full_gamma_alpha"] = (
+            fit_full_gamma_alpha_model,
+            predict_full_gamma,
             ["w_v", "w_d", "w_e", "gamma"],
         )
-        v["access_full_gamma_vpow"] = (
-            fit_access_full_gamma_vpow_model,
-            predict_access_full_gamma_vpow,
+        v["full_gamma_vpow"] = (
+            fit_full_gamma_vpow_model,
+            predict_full_gamma_vpow,
             ["w_v", "w_d", "w_e", "gamma", "beta"],
         )
     return v
@@ -222,7 +222,7 @@ def main(domain: str = "nonfood"):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(
-        description="LOSO CV for forward-planning extensions (currently: access_full_gamma) on food or non-food."
+        description="LOSO CV for forward-planning extensions (currently: full_gamma) on food or non-food."
     )
     parser.add_argument(
         "--domain", choices=("food", "nonfood"), default="nonfood",

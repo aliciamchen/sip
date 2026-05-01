@@ -1,4 +1,4 @@
-subject_id,scenario_label,intimacy,motivation,action,p_action,intimacy_scaled,reward_condition,scenario_idx,pred_access_full_gamma,pred_access_full_typed_gamma,pred_access_full_gamma_alpha,pred_access_full_gamma_vpow
+subject_id,scenario_label,intimacy,motivation,action,p_action,intimacy_scaled,reward_condition,scenario_idx,pred_full_gamma,pred_full_typed_gamma,pred_full_gamma_alpha,pred_full_gamma_vpow
 15e4b468-56da-5152-a637-1f11b624f2e9,bed,0,low,0,1.0,0.0,0,0,0.5839662,0.59730697,0.583587,0.58603805
 15e4b468-56da-5152-a637-1f11b624f2e9,bed,0,low,1,0.0,0.0,0,0,0.20742352,0.20367499,0.20724803,0.20505466
 15e4b468-56da-5152-a637-1f11b624f2e9,bed,0,low,2,0.0,0.0,0,0,0.13821883,0.133116,0.13850865,0.1376429

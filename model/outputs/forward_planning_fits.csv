@@ -1,4 +1,4 @@
-subject_id,scenario_label,intimacy,motivation,action,p_action,intimacy_scaled,reward_condition,scenario_idx,pred_access_full,pred_access_only,pred_no_access
+subject_id,scenario_label,intimacy,motivation,action,p_action,intimacy_scaled,reward_condition,scenario_idx,pred_full,pred_discomfort_only,pred_base
 00f163d0-f623-5456-b48c-e09b0d6c6fd5,apples,0,high,0,0.94,0.0,1,0,0.42791286,0.6587775,0.12527153
 00f163d0-f623-5456-b48c-e09b0d6c6fd5,apples,0,high,1,0.02,0.0,1,0,0.3903696,0.22868356,0.27210128
 00f163d0-f623-5456-b48c-e09b0d6c6fd5,apples,0,high,2,0.02,0.0,1,0,0.099026375,0.060547773,0.3013136
