@@ -113,7 +113,7 @@ def _loso_effort_intimacy(actor_params_by_model):
                 test_nll += -(p_human * np.log(p_high) + (1.0 - p_human) * np.log(1.0 - p_high))
 
             fold_rows.append({
-                "experiment": "effort_intimacy",
+                "experiment": EXPERIMENT_SLUG,
                 "variant": variant,
                 "fold": fold,
                 "held_out_scenario": scenario_label,

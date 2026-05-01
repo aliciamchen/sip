@@ -147,7 +147,7 @@ def run_loso_desire_noalt_joint(padded):
             )
 
             fold_row = {
-                "experiment": "desire_noalt",
+                "experiment": EXPERIMENT_SLUG,
                 "variant": f"{variant}_padded",
                 "fold": fold,
                 "held_out_scenario": scenario_label,

@@ -113,7 +113,7 @@ def _loso_intimacy_effort(actor_params_by_model):
                 test_nll += -float(np.log(prob))
 
             fold_rows.append({
-                "experiment": "intimacy_effort",
+                "experiment": EXPERIMENT_SLUG,
                 "variant": variant,
                 "fold": fold,
                 "held_out_scenario": scenario_label,

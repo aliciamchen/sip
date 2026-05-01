@@ -218,9 +218,9 @@ A parallel set of CSVs covers the effort-manipulation experiments (`food_forw_in
 
 LLM-generated access and effort per (scenario, effort_condition, action). 64 rows (16 × 2 × 2). The LM is prompted with the full vignette plus the matching effort paragraph, so the manipulation lands in the ratings (the non-saliva action's effort rating should rise from `low` to `high`). Same column schema as `lm_scenario_params.csv`, with `effort_condition` added.
 
-### forward_planning_effort_fits.csv / forward_planning_effort_fit_results.csv
+### food_forw_intimacy_effort/preds.csv and fit_results.csv
 
-Per-trial predictions and per-variant fit summaries for `data/food_forw_intimacy_effort/`. Same columns as `forward_planning_fits.csv` / `<slug>/fit_results.csv`, with `effort` / `effort_condition` in place of `motivation` / `reward_condition` and only two action indices. `param_w_v` is non-identified and may print as the initial value.
+Per-cell predictions (256 rows) and per-variant fit summaries for `data/food_forw_intimacy_effort/`. Same column schema as the canonical `<forward_slug>/preds.csv` and `<forward_slug>/fit_results.csv`, with `effort` / `effort_idx` in place of `motivation` / `motivation_idx` and only two action indices (with `action_csv` giving the 1-2 label that matches the data CSV). `param_w_v` is non-identified and may print as the initial value.
 
 ### inverse_planning_intimacy_effort_fit_results.csv
 

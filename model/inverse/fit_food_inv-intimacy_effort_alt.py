@@ -72,7 +72,7 @@ def main():
         )
         results.append({
             "model": variant_name,
-            "experiment": "intimacy_effort",
+            "experiment": EXPERIMENT_SLUG,
             "alpha_observer": alpha_observer,
             "nll": nll,
             "n_params": 1,

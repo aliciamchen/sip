@@ -78,7 +78,7 @@ def main():
         if variant not in params:
             print(f"  (skipping {variant})")
             continue
-        a_obs = alpha_obs.get((variant, "reward"), 1.0)
+        a_obs = alpha_obs.get((variant, EXPERIMENT_SLUG), 1.0)
         print(f"  {variant} (alpha_observer={a_obs:.3f})...")
         dfs.append(generate_preds(params[variant], variant, a_obs))
     df_full = pd.concat(dfs, ignore_index=True)

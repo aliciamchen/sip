@@ -74,7 +74,7 @@ def main():
         )
         row = {
             "model": f"{variant}_padded",
-            "experiment": "desire_noalt",
+            "experiment": EXPERIMENT_SLUG,
             "nll": nll,
             "n_params": len(utility_names) + 1,
             "param_alpha": 1.0,

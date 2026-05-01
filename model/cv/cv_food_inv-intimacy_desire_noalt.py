@@ -141,7 +141,7 @@ def run_loso_noalt_joint(padded):
             )
 
             fold_row = {
-                "experiment": "intimacy_noalt",
+                "experiment": EXPERIMENT_SLUG,
                 "variant": f"{variant}_padded",
                 "fold": fold,
                 "held_out_scenario": scenario_label,

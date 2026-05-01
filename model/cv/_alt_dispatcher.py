@@ -128,7 +128,7 @@ def _loso_intimacy(actor_params_by_model):
                 test_nll += -float(np.log(prob))
 
             fold_rows.append({
-                "experiment": "intimacy",
+                "experiment": "food_inv-intimacy_desire_alt",
                 "variant": variant,
                 "fold": fold,
                 "held_out_scenario": scenario_label,
@@ -209,7 +209,7 @@ def _loso_desire(actor_params_by_model):
                 test_nll += -(p_human * float(np.log(p_m)) + (1 - p_human) * float(np.log(1 - p_m)))
 
             fold_rows.append({
-                "experiment": "desire",
+                "experiment": "food_inv-desire_intimacy_alt",
                 "variant": variant,
                 "fold": fold,
                 "held_out_scenario": scenario_label,

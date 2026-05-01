@@ -165,7 +165,7 @@ The observer assumes a uniform 0.5/0.5 prior over the two effort conditions and 
 ```{r}
 df_fit_results <- read_csv(here("model", "outputs", "food_inv-effort_intimacy_alt", "fit_results.csv"),
                            show_col_types = FALSE) |>
-  filter(experiment == "effort_intimacy") |>
+  filter(experiment == "food_inv-effort_intimacy_alt") |>
   mutate(
     model_label = case_when(
       model == "full" ~ "Full model",

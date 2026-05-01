@@ -168,7 +168,7 @@ Per-(scenario, effort_condition) values of $\text{access}$ and $\text{effort}$ a
 ```{r}
 df_fit_results <- read_csv(here("model", "outputs", "food_inv-intimacy_effort_alt", "fit_results.csv"),
                            show_col_types = FALSE) |>
-  filter(experiment == "intimacy_effort") |>
+  filter(experiment == "food_inv-intimacy_effort_alt") |>
   mutate(
     model_label = case_when(
       model == "full" ~ "Full model",
