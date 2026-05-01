@@ -15,10 +15,10 @@ goal: sharing under HIGH motivation, not-sharing under LOW motivation).
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
 Usage:
-    uv run python model/lm_scenario_params.py                          # food scenarios canonical-4 (default)
-    uv run python model/lm_scenario_params.py --score-alternatives     # features for LM-generated food alternatives
-    uv run python model/lm_scenario_params.py --domain nonfood                       # nonfood scenarios canonical-4
-    uv run python model/lm_scenario_params.py --domain nonfood --score-alternatives  # nonfood alternatives features
+    uv run python model/lm/scenario_params.py                          # food scenarios canonical-4 (default)
+    uv run python model/lm/scenario_params.py --score-alternatives     # features for LM-generated food alternatives
+    uv run python model/lm/scenario_params.py --domain nonfood                       # nonfood scenarios canonical-4
+    uv run python model/lm/scenario_params.py --domain nonfood --score-alternatives  # nonfood alternatives features
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
@@ -34,13 +34,13 @@ import numpy as np
 import pandas as pd
 from together import Together
 
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
 # Shared LM-call infrastructure (concurrency, retries, JSON helpers, key loading).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lm_client import (
+from client import (
     MODEL_ID,
     aggregate_action_ratings,
     find_json,
@@ -79,13 +79,13 @@ _DOMAIN_PATHS = {
 
 
 # ==============================================================================
-# Prompt builders (centralized in model/lm_prompts.py)
+# Prompt builders (centralized in model/lm/prompts.py)
 # ==============================================================================
 
 # Imported with aliases so the function names don't collide with the
 # `system_prompt` / `user_prompt` parameters of get_ratings below.
-from lm_prompts import system_prompt as build_system_prompt
-from lm_prompts import user_prompt as build_user_prompt
+from prompts import system_prompt as build_system_prompt
+from prompts import user_prompt as build_user_prompt
 
 
 # Reward is stipulated in model/utility.py as a binary goal-satisfaction
@@ -359,7 +359,7 @@ def score_alternatives_main(domain="food"):
     scenarios_df = load_scenarios(domain)
     alt_path = get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
-        print(f"Error: {alt_path} not found. Run lm_generate_alternatives.py first.", flush=True)
+        print(f"Error: {alt_path} not found. Run lm/generate_alternatives.py first.", flush=True)
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
@@ -503,7 +503,7 @@ def score_v_alternatives_main(domain="food"):
     scenarios_df = load_scenarios(domain)
     alt_path = get_project_root() / "model" / "outputs" / _DOMAIN_PATHS[domain]["alternatives_input"]
     if not alt_path.exists():
-        print(f"Error: {alt_path} not found. Run lm_generate_alternatives.py first.", flush=True)
+        print(f"Error: {alt_path} not found. Run lm/generate_alternatives.py first.", flush=True)
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
@@ -622,7 +622,7 @@ def score_alternatives_relationship_main(domain="food"):
     if not alt_path.exists():
         print(
             f"Error: {alt_path} not found. Run "
-            "lm_generate_alternatives.py --conditioning relationship first.",
+            "lm/generate_alternatives.py --conditioning relationship first.",
             flush=True,
         )
         sys.exit(1)
@@ -761,7 +761,7 @@ def score_v_alternatives_relationship_main(domain="food"):
     if not alt_path.exists():
         print(
             f"Error: {alt_path} not found. Run "
-            "lm_generate_alternatives.py --conditioning relationship first.",
+            "lm/generate_alternatives.py --conditioning relationship first.",
             flush=True,
         )
         sys.exit(1)

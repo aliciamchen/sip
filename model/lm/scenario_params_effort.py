@@ -30,7 +30,7 @@ mean/std. Outputs (model/outputs/):
   paragraph and so must reason about access from the base vignette alone.
 
 Usage:
-    uv run python model/lm_scenario_params_effort.py
+    uv run python model/lm/scenario_params_effort.py
 
 If the conditional CSV already exists the conditional pass is skipped (useful
 when only refreshing the marginal table).
@@ -46,13 +46,13 @@ import numpy as np
 import pandas as pd
 from together import Together
 
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
 # Shared LM-call infrastructure + canonical-script helpers.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lm_client import (
+from client import (
     MODEL_ID,
     aggregate_action_ratings,
     find_json,
@@ -60,10 +60,10 @@ from lm_client import (
     load_api_key,
     numeric_action_schema,
 )
-from lm_scenario_params import normalize_access, normalize_effort
+from scenario_params import normalize_access, normalize_effort
 # Imported with aliases so they don't collide with parameters below.
-from lm_prompts import system_prompt as build_system_prompt
-from lm_prompts import user_prompt as build_user_prompt
+from prompts import system_prompt as build_system_prompt
+from prompts import user_prompt as build_user_prompt
 
 
 EFFORT_CONDITIONS = ["low", "high"]

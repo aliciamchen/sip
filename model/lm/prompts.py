@@ -2,7 +2,7 @@
 
 All system prompts and user-prompt formatters live here so they're easy to
 compare and edit together. This module has no LM-call logic — see
-`lm_scenario_params*.py` and `lm_generate_alternatives.py` for that.
+`lm_scenario_params*.py` and `lm/generate_alternatives.py` for that.
 
 Three rating types share the same overall structure (preamble + intro line +
 rating-specific body + JSON format block):

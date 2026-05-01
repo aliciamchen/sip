@@ -30,9 +30,9 @@ A second parallel pipeline tests **generalization beyond food sharing** using `e
 
 ## LM prompts
 
-Both the food and non-food pipelines use a single prompt set defined in `model/lm_prompts.py`. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy/information-disclosure scenarios. The earlier food-only prompts were retired after a side-by-side comparison showed the unified prompts produced equal or slightly better fits on the food data; they live in git history under commit `eb13d0e` if anyone needs to reproduce a pre-unification fit.
+Both the food and non-food pipelines use a single prompt set defined in `model/lm/prompts.py`. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy/information-disclosure scenarios. The earlier food-only prompts were retired after a side-by-side comparison showed the unified prompts produced equal or slightly better fits on the food data; they live in git history under commit `eb13d0e` if anyone needs to reproduce a pre-unification fit.
 
-`lm_scenario_params.py` and `lm_generate_alternatives.py` accept a `--domain food|nonfood` flag that selects which scenario CSV to score and which output filename to write to.
+`lm/scenario_params.py` and `lm/generate_alternatives.py` accept a `--domain food|nonfood` flag that selects which scenario CSV to score and which output filename to write to.
 
 ## Intermediate conference submission
 

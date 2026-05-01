@@ -263,8 +263,8 @@ def main():
     if padded is None:
         print(
             "  Error: missing one of lm_alternatives.csv, lm_alternatives_features.csv, "
-            "lm_scenario_v.csv, lm_alternatives_v.csv. Run lm_generate_alternatives.py "
-            "and lm_scenario_params.py --feature {v,v_alternatives} first."
+            "lm_scenario_v.csv, lm_alternatives_v.csv. Run lm/generate_alternatives.py "
+            "and lm/scenario_params.py --feature {v,v_alternatives} first."
         )
         sys.exit(1)
     print(f"  access shape: {padded['access'].shape}")

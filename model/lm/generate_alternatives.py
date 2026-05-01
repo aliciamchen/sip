@@ -30,8 +30,8 @@ Output:
     --conditioning relationship, --domain nonfood → model/outputs/lm_alternatives_relationship_nonfood.csv
 
 Usage:
-    uv run python model/lm_generate_alternatives.py
-    uv run python model/lm_generate_alternatives.py --conditioning relationship
+    uv run python model/lm/generate_alternatives.py
+    uv run python model/lm/generate_alternatives.py --conditioning relationship
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
@@ -47,13 +47,13 @@ from pathlib import Path
 import pandas as pd
 from together import Together
 
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
 # Shared LM-call infrastructure (key loading, JSON helpers, retries).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from lm_client import (
+from client import (
     MAX_RETRIES,
     MODEL_ID,
     alternatives_array_schema,
@@ -90,9 +90,9 @@ _DOMAIN_PATHS = {
 }
 
 
-from lm_prompts import ALTERNATIVES_SYSTEM_PROMPT
-from lm_prompts import alternatives_user_prompt as format_motivation_user_prompt
-from lm_prompts import alternatives_user_prompt_relationship as format_relationship_user_prompt
+from prompts import ALTERNATIVES_SYSTEM_PROMPT
+from prompts import alternatives_user_prompt as format_motivation_user_prompt
+from prompts import alternatives_user_prompt_relationship as format_relationship_user_prompt
 
 
 def parse_alternatives(response_text):

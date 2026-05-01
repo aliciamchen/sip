@@ -3,8 +3,8 @@
 elicitation pipelines.
 
 Centralizes what previously lived in three near-duplicate copies across
-``lm_scenario_params.py``, ``lm_scenario_params_effort.py``, and
-``lm_generate_alternatives.py``:
+``lm/scenario_params.py``, ``lm/scenario_params_effort.py``, and
+``lm/generate_alternatives.py``:
 
 - ``load_api_key`` — resolve ``TOGETHER_API_KEY`` from env or ``.env``.
 - ``find_json`` / ``find_json_array`` — best-effort JSON extraction.
@@ -29,7 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 

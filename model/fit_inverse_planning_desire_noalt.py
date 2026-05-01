@@ -229,9 +229,9 @@ def main():
             "  Error: missing one of lm_alternatives_relationship.csv, "
             "lm_alternatives_relationship_features.csv, lm_scenario_v.csv, "
             "lm_alternatives_relationship_v.csv. Run "
-            "`lm_generate_alternatives.py --conditioning relationship`, "
-            "`lm_scenario_params.py --feature access_effort_alternatives_relationship`, "
-            "and `lm_scenario_params.py --feature v_alternatives_relationship` first."
+            "`lm/generate_alternatives.py --conditioning relationship`, "
+            "`lm/scenario_params.py --feature access_effort_alternatives_relationship`, "
+            "and `lm/scenario_params.py --feature v_alternatives_relationship` first."
         )
         sys.exit(1)
     print(f"  access shape: {padded['access'].shape}")

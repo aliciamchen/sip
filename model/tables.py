@@ -156,7 +156,7 @@ def load_lm_scenario_params(filepath=None):
     goal: sharing under HIGH motivation, or not-sharing under LOW motivation).
 
     Rows are ordered by SCENARIO_LABELS (alphabetical). Raises FileNotFoundError
-    if the CSV is missing — run `uv run python model/lm_scenario_params.py` first.
+    if the CSV is missing — run `uv run python model/lm/scenario_params.py` first.
     """
     if filepath is None:
         filepath = (
@@ -221,7 +221,7 @@ def load_lm_v(domain="food"):
     matches RewardConditions (LOW=0, HIGH=1). Values normalized to [-1, +1].
 
     Raises FileNotFoundError if the CSV is missing — run
-    `uv run python model/lm_scenario_params.py --feature v --domain {domain}` first.
+    `uv run python model/lm/scenario_params.py --feature v --domain {domain}` first.
     """
     if domain == "food":
         scenario_to_idx = SCENARIO_TO_IDX
@@ -551,7 +551,7 @@ def load_lm_scenario_params_effort(filepath=None):
       - "effort": jnp.array of shape (16, 2, 2)
 
     Raises FileNotFoundError if the CSV is missing — run
-    `uv run python model/lm_scenario_params_effort.py` first.
+    `uv run python model/lm/scenario_params_effort.py` first.
     """
     if filepath is None:
         filepath = (
