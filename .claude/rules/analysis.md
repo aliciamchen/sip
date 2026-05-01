@@ -17,6 +17,8 @@ Core analysis files (named after their data folder, not paper experiment number)
 - `food-inv-intimacy-effort-alt-analysis.qmd` — Inverse planning, effort manipulation (parallels `food-inv-intimacy-desire-alt-analysis.qmd`)
 - `food-inv-effort-intimacy-alt-analysis.qmd` — Inverse planning, effort inferred (parallels `food-inv-intimacy-effort-alt-analysis.qmd` but flips the latent: action × intimacy → P(effort_high))
 - `nonfood-forw-intimacy-desire-analysis.qmd` — Non-food forward planning (parallels `food-forw-intimacy-desire-analysis.qmd`; reads `outputs/nonfood_forw_intimacy_desire/cv_preds.csv` etc.)
+- `inv-plan-combined-correlation-by-scenario.qmd` — Combined correlation broken down by scenario across the inverse planning experiments
+- `cv-loso-forward.qmd` — LOSO CV summary across the forward planning experiments
 - `json_to_csv.py` — Data processing pipeline
 
 Legacy pilot analysis files are in `analysis/legacy/`.
@@ -27,7 +29,7 @@ Convert experiment JSON output to CSV:
 
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
-# experiments: food_forw_intimacy_desire, food_inv-intimacy_desire_alt, food_inv-intimacy_desire_noalt, food_inv-desire_intimacy_alt, food_inv-desire_intimacy_noalt, food_forw_intimacy_effort, food_inv-intimacy_effort_alt, food_inv-effort_intimacy_alt
+# experiments: food_forw_intimacy_desire, food_inv-intimacy_desire_alt, food_inv-intimacy_desire_noalt, food_inv-desire_intimacy_alt, food_inv-desire_intimacy_noalt, food_forw_intimacy_effort, food_inv-intimacy_effort_alt, food_inv-effort_intimacy_alt, nonfood_forw_intimacy_desire
 ```
 
 For pilot experiments (in `analysis/legacy/`), use `json_to_csv_old_pilots.py`.
@@ -43,5 +45,8 @@ quarto render analysis/food-inv-intimacy-desire-noalt-analysis.qmd
 quarto render analysis/inv-plan-combined-correlation.qmd
 quarto render analysis/food-forw-intimacy-effort-analysis.qmd
 quarto render analysis/food-inv-intimacy-effort-alt-analysis.qmd
+quarto render analysis/food-inv-effort-intimacy-alt-analysis.qmd
 quarto render analysis/nonfood-forw-intimacy-desire-analysis.qmd
+quarto render analysis/inv-plan-combined-correlation-by-scenario.qmd
+quarto render analysis/cv-loso-forward.qmd
 ```

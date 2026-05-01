@@ -107,17 +107,17 @@ Preregistration documents are in `model/preregs/`. Legacy/experimental code is i
 LLM-derived scenario parameters (prerequisite for all fits; requires `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged):
 
 ```bash
-uv run python model/lm/score_canonical_features.py                                  # canonical food access+effort → outputs/lm/lm_scenario_params.csv
-uv run python model/lm/score_canonical_features.py --domain nonfood                 # nonfood → lm_scenario_params_nonfood.csv
-uv run python model/lm/score_canonical_v.py                                         # food signed-valence V → lm_scenario_v.csv
-uv run python model/lm/score_canonical_v.py --domain nonfood                        # nonfood → lm_scenario_v_nonfood.csv
-uv run python model/lm/generate_alternatives_motivation.py                          # motivation-conditioned alternatives → lm_alternatives_food_inv-intimacy_desire_noalt.csv
-uv run python model/lm/score_alternative_features.py                                # access+effort for motivation alts → lm_alternatives_features_food_inv-intimacy_desire_noalt.csv
-uv run python model/lm/score_alternative_v.py                                       # V for motivation alts → lm_alternatives_v_food_inv-intimacy_desire_noalt.csv
-uv run python model/lm/generate_alternatives_relationship.py                        # relationship-conditioned alternatives → lm_alternatives_food_inv-desire_intimacy_noalt.csv
-uv run python model/lm/score_alternative_features.py --conditioning relationship    # → lm_alternatives_features_food_inv-desire_intimacy_noalt.csv
-uv run python model/lm/score_alternative_v.py --conditioning relationship           # → lm_alternatives_v_food_inv-desire_intimacy_noalt.csv
-uv run python model/lm/score_effort_features.py                                     # effort: 64-row conditional + 32-row marginal
+uv run python model/lm/score_canonical_features.py                                  # → model/outputs/lm/lm_scenario_params.csv (food access+effort)
+uv run python model/lm/score_canonical_features.py --domain nonfood                 # → model/outputs/lm/lm_scenario_params_nonfood.csv
+uv run python model/lm/score_canonical_v.py                                         # → model/outputs/lm/lm_scenario_v.csv (food signed-valence V)
+uv run python model/lm/score_canonical_v.py --domain nonfood                        # → model/outputs/lm/lm_scenario_v_nonfood.csv
+uv run python model/lm/generate_alternatives_motivation.py                          # → model/outputs/lm/lm_alternatives_food_inv-intimacy_desire_noalt.csv
+uv run python model/lm/score_alternative_features.py                                # → model/outputs/lm/lm_alternatives_features_food_inv-intimacy_desire_noalt.csv
+uv run python model/lm/score_alternative_v.py                                       # → model/outputs/lm/lm_alternatives_v_food_inv-intimacy_desire_noalt.csv
+uv run python model/lm/generate_alternatives_relationship.py                        # → model/outputs/lm/lm_alternatives_food_inv-desire_intimacy_noalt.csv
+uv run python model/lm/score_alternative_features.py --conditioning relationship    # → model/outputs/lm/lm_alternatives_features_food_inv-desire_intimacy_noalt.csv
+uv run python model/lm/score_alternative_v.py --conditioning relationship           # → model/outputs/lm/lm_alternatives_v_food_inv-desire_intimacy_noalt.csv
+uv run python model/lm/score_effort_features.py                                     # → model/outputs/lm/lm_scenario_params_effort{,_marginal}.csv
 ```
 
 Forward-planning fits + predictions:

@@ -72,7 +72,7 @@ uv run python experiments/scenarios_effort.py
 - [food_inv-intimacy_desire_alt](food_inv-intimacy_desire_alt/README.md) — Inverse planning: infer intimacy from the observed action (four candidate actions shown to participants)
 - [food_inv-intimacy_desire_noalt](food_inv-intimacy_desire_noalt/README.md) — Same inference as `food_inv-intimacy_desire_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side
 - [food_inv-desire_intimacy_alt](food_inv-desire_intimacy_alt/README.md) — Inverse planning: infer desire from the observed action (four candidate actions shown)
-- [food_inv-desire_intimacy_noalt](food_inv-desire_intimacy_noalt/README.md) — Same inference as `food_inv-desire_intimacy_alt` but with the candidate actions hidden; LM-generated counterfactual alternatives on the model side (no data collected yet)
+- [food_inv-desire_intimacy_noalt](food_inv-desire_intimacy_noalt/README.md) — Same inference as `food_inv-desire_intimacy_alt` but with the candidate actions hidden; LM-generated counterfactual alternatives on the model side
 
 ## Effort-manipulation experiments
 
@@ -84,7 +84,7 @@ These use the `scenarios_effort.csv` stimulus set (two actions per scenario, rew
 
 ## Non-food experiments
 
-A second parallel pipeline that uses the `scenarios_nonfood.csv` stimulus set (substance sharing, shared space, and privacy) instead of food sharing. The five experiments mirror the canonical food set one-to-one in structure and counterbalancing, with the participant-facing copy generalized away from food. No data has been collected yet for any of them.
+A second parallel pipeline that uses the `scenarios_nonfood.csv` stimulus set (substance sharing, shared space, and privacy) instead of food sharing. The five experiments mirror the canonical food set one-to-one in structure and counterbalancing, with the participant-facing copy generalized away from food. Only the forward variant has data so far; the four inverse variants are pending.
 
 - [nonfood_forw_intimacy_desire](nonfood_forw_intimacy_desire/README.md)
 - [nonfood_inv-intimacy_desire_alt](nonfood_inv-intimacy_desire_alt/README.md)

@@ -53,7 +53,7 @@ df_full <- read_csv(here("model", "outputs", "food_forw_intimacy_desire", "fit_r
 
 ## Headline: in-sample vs out-of-sample fit quality
 
-For each variant, compare the in-sample r (from `forward_planning_fit_results.csv`, fit on all 16 scenarios) to the pooled out-of-sample r (cell means across all 16 held-out LOSO folds, at the (intimacy, motivation, action) level — the same group used for the in-sample r).
+For each variant, compare the in-sample r (from `food_forw_intimacy_desire/fit_results.csv`, fit on all 16 scenarios) to the pooled out-of-sample r (cell means across all 16 held-out LOSO folds, at the (intimacy, motivation, action) level — the same group used for the in-sample r).
 
 ```{r}
 df_pooled <- df_pred |>

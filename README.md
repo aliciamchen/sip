@@ -88,7 +88,7 @@ The fitting and prediction scripts index into these tables by `scenario_idx`; ru
 │   ├── food_forw_intimacy_effort/       # Effort-manipulation experiments
 │   ├── food_inv-intimacy_effort_alt/
 │   ├── food_inv-effort_intimacy_alt/
-│   ├── nonfood_forw_intimacy_desire/      # Non-food experiments (no data collected yet)
+│   ├── nonfood_forw_intimacy_desire/      # Non-food experiments (only forward has data; 4 inverse pending)
 │   ├── nonfood_inv-intimacy_desire_alt/
 │   ├── nonfood_inv-desire_intimacy_alt/
 │   ├── nonfood_inv-intimacy_desire_noalt/
