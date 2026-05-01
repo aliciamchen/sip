@@ -1,7 +1,7 @@
 """
 Leave-one-scenario-out CV for the food_inv-effort_intimacy_alt observer.
 
-Mirrors model/cv/loso_inverse_intimacy_effort.py but flips the inference direction:
+Mirrors model/cv/cv_food_inv-intimacy_effort_alt.py but flips the inference direction:
   - Manipulation: observed action × intimacy.
   - Latent: effort_condition. Slider response 0-100 = P(effort_high)*100.
   - Frozen actor weights from food_forw_intimacy_effort.
@@ -10,10 +10,10 @@ Per fold: hold out one scenario, refit α_observer on the remaining 15
 scenarios, generate held-out posterior predictions using the refit α.
 
 Outputs:
-  - cv_loso_food_inv-effort_intimacy_alt_preds_summary.csv  — one row per
+  - food_inv-effort_intimacy_alt/cv_preds_summary.csv  — one row per
     (scenario, action, intimacy, model); column `p_effort_high` is the
     LOSO-refit observer's P(effort_high).
-  - cv_loso_inverse_intimacy_effort_intimacy_folds.csv  — per-fold α_observer,
+  - cv_folds.csv  — per-fold α_observer,
     train/test NLL.
 """
 

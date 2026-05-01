@@ -16,10 +16,10 @@ prior baked into the padded observer architecture — not the LM action prior
 (which only applies to the canonical-4-action variants).
 
 Output (in model/outputs/):
-  - cv_loso_food_inv-intimacy_desire_noalt_preds_summary.csv
+  - food_inv-intimacy_desire_noalt/cv_preds_summary.csv
     One row per (scenario, observed_action, motivation, model), same schema
     as food_inv-intimacy_desire_noalt_preds_summary.csv.
-  - cv_loso_inverse_intimacy_noalt_folds.csv
+  - cv_folds.csv
     Per-fold fitted weights + α_observer + train/test NLL, per variant.
 """
 

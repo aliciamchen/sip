@@ -205,42 +205,48 @@ The effort experiments have a parallel script that consumes `scenarios_effort.cs
 uv run python model/lm/score_effort_features.py   # → lm_scenario_params_effort.csv (effort-conditional access + effort) AND lm_scenario_params_effort_marginal.csv (effort-marginal access only)
 ```
 
-Fit forward planning models
+Every fit/predict/CV script is named after the experiment it serves and lives in `model/forward/`, `model/inverse/`, or `model/cv/`. Run `fit_<slug>.py` then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`.
+
+Forward planning fits + predictions:
 
 ```bash
-uv run python model/fit_forward_planning.py                   # food
-uv run python model/fit_forward_planning.py --domain nonfood  # non-food (writes *_nonfood.csv outputs)
+uv run python model/forward/fit_food_forw_intimacy_desire.py
+uv run python model/forward/predict_food_forw_intimacy_desire.py
+uv run python model/forward/fit_nonfood_forw_intimacy_desire.py
+uv run python model/forward/predict_nonfood_forw_intimacy_desire.py
+uv run python model/forward/fit_food_forw_intimacy_effort.py
+uv run python model/forward/predict_food_forw_intimacy_effort.py
 ```
 
-Use forward planning parameters to fit inverse planning models and generate predictions. The alt-shown experiments freeze the Exp 1 actor weights and fit only α_observer; the no-alt experiment refits all actor weights jointly with α_observer because the padded observer reasons over a different (variable-length) action space where the Exp 1 weights don't transplant cleanly.
+Inverse planning. The alt-shown experiments freeze the forward actor weights and fit only α_observer; the no-alt experiments refit all actor weights jointly with α_observer because the padded observer's variable-length action space doesn't accept the alt-shown weights as a transplant. The two effort inverse observers freeze their actor weights from the `food_forw_intimacy_effort` forward fit (not the canonical food fit, since the 2-action softmax doesn't transplant either). `food_inv-effort_intimacy_alt` flips the inference direction: it infers effort from observed (action, intimacy) using binary cross-entropy on a P(effort_high) slider response and uses **effort-marginal access** because the observer doesn't see the effort paragraph.
+
 ```bash
-uv run python model/fit_inverse_planning_alt.py           # alt-shown (intimacy + desire), α_obs only
-uv run python model/generate_inverse_planning_alt_preds.py
-uv run python model/fit_inverse_planning_intimacy_noalt.py     # no-alt, joint fit (all weights + α_obs)
-uv run python model/generate_inverse_planning_intimacy_noalt_preds.py
+uv run python "model/inverse/fit_food_inv-intimacy_desire_alt.py"
+uv run python "model/inverse/predict_food_inv-intimacy_desire_alt.py"
+uv run python "model/inverse/fit_food_inv-desire_intimacy_alt.py"
+uv run python "model/inverse/predict_food_inv-desire_intimacy_alt.py"
+uv run python "model/inverse/fit_food_inv-intimacy_desire_noalt.py"        # joint fit
+uv run python "model/inverse/predict_food_inv-intimacy_desire_noalt.py"
+uv run python "model/inverse/fit_food_inv-desire_intimacy_noalt.py"        # joint fit (relationship-keyed)
+uv run python "model/inverse/predict_food_inv-desire_intimacy_noalt.py"
+uv run python "model/inverse/fit_food_inv-intimacy_effort_alt.py"
+uv run python "model/inverse/predict_food_inv-intimacy_effort_alt.py"
+uv run python "model/inverse/fit_food_inv-effort_intimacy_alt.py"
+uv run python "model/inverse/predict_food_inv-effort_intimacy_alt.py"
 ```
 
-Fit the effort-experiment forward planning actor and inverse planning observer. The effort observer freezes its actor weights from `forward_planning_effort_fit_results.csv` (not from the canonical `food_forw_intimacy_desire` fit) because the effort actor's two-action softmax doesn't transplant. Reward is held fixed at HIGH so V is constant across actions and `w_v` is non-identified — it's kept in the utility for parallelism with the canonical pipeline but stays near initialization.
+Generate leave-one-scenario-out (LOSO) cross-validation predictions. All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 held-out folds. Forward CV refits actor weights ($w_v, w_d, w_e, \gamma$) per fold; alt-shown inverse CV refits only $\alpha_\mathrm{obs}$; no-alt inverse CV refits all weights jointly per fold.
 
 ```bash
-uv run python model/fit_forward_planning_effort.py            # food_forw_intimacy_effort actor
-uv run python model/fit_inverse_planning_intimacy_effort.py            # food_inv-intimacy_effort_alt observer; α_obs only
-uv run python model/generate_inverse_planning_intimacy_effort_preds.py
-uv run python model/fit_inverse_planning_intimacy_effort_intimacy.py            # food_inv-effort_intimacy_alt observer; α_obs only
-uv run python model/generate_inverse_planning_effort_intimacy_preds.py
-```
-
-The two effort observers share the forward fit but flip the inference target. `food_inv-intimacy_effort_alt` infers intimacy from observed (action, effort) using a continuous-intimacy posterior, while `food_inv-effort_intimacy_alt` infers effort from observed (action, intimacy) using binary cross-entropy on a P(effort_high) slider response.
-
-Generate leave-one-scenario-out (LOSO) cross-validation predictions. All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 held-out folds. The forward-plan CV refits $w_v$, $w_d$, $w_e$, and $\beta$ on 15 scenarios per fold; the alt-shown inverse-plan CVs refit only $\alpha_{\mathrm{obs}}$ (actor frozen from the all-data Exp 1 fit); the no-alt CV refits all weights jointly per fold.
-```bash
-uv run python model/cv/loso_forward.py                       # Exp 1 forward planning (food)
-uv run python model/cv/loso_forward.py --domain nonfood      # Non-food forward planning
-uv run python model/cv/loso_inverse_alt.py                   # Exp 2a intimacy + 2b desire (alt-shown)
-uv run python model/cv/loso_inverse_intimacy_noalt.py                 # Exp 2c intimacy (no-alt, joint fit)
-uv run python model/cv/loso_forward_effort.py                # Effort forward planning
-uv run python model/cv/loso_inverse_intimacy_effort.py                # Effort inverse planning, intimacy inference
-uv run python model/cv/loso_inverse_intimacy_effort_intimacy.py       # Effort inverse planning, effort inference
+uv run python model/cv/cv_food_forw_intimacy_desire.py
+uv run python model/cv/cv_food_forw_intimacy_effort.py
+uv run python model/cv/cv_nonfood_forw_intimacy_desire.py
+uv run python "model/cv/cv_food_inv-intimacy_desire_alt.py"
+uv run python "model/cv/cv_food_inv-desire_intimacy_alt.py"
+uv run python "model/cv/cv_food_inv-intimacy_desire_noalt.py"
+uv run python "model/cv/cv_food_inv-desire_intimacy_noalt.py"
+uv run python "model/cv/cv_food_inv-intimacy_effort_alt.py"
+uv run python "model/cv/cv_food_inv-effort_intimacy_alt.py"
 ```
 
 Analyze data and generate plots

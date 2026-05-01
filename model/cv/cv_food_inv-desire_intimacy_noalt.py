@@ -2,21 +2,21 @@
 Leave-one-scenario-out CV for the no-alternatives-shown desire (reward) inference
 experiment, using the JOINT fit (all actor weights + α_observer refit per fold).
 
-Mirrors loso_inverse_intimacy_noalt.py but for the relationship-keyed desire-noalt
+Mirrors cv_food_inv-intimacy_desire_noalt.py but for the relationship-keyed desire-noalt
 pipeline. For each of the 16 scenarios, hold it out, jointly fit all actor
 weights + α_observer on the remaining 15 scenarios, and emit predictions for
 the held-out scenario using the refit weights.
 
 Runs over the three relationship-keyed padded-observer variants
 (full_padded_rel, discomfort_only_padded_rel, base_padded_rel), via
-the PADDED_VARIANTS registry in fit_inverse_planning_desire_noalt.
+the PADDED_VARIANTS registry in inverse/fit_food_inv-desire_intimacy_noalt.
 
 Output (in model/outputs/):
-  - cv_loso_food_inv-desire_intimacy_noalt_preds_summary.csv
+  - food_inv-desire_intimacy_noalt/cv_preds_summary.csv
     One row per (scenario, observed_action, intimacy, model). Same shape as
     food_inv-desire_intimacy_noalt_preds_summary.csv; `p_high` is what the slider
     response 0-100 encodes (P(motivation = HIGH)).
-  - cv_loso_inverse_desire_noalt_folds.csv
+  - cv_folds.csv
     Per-fold fitted weights + α_observer + train/test NLL, per variant.
 """
 
