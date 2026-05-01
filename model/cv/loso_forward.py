@@ -1,18 +1,22 @@
 """
-Leave-one-scenario-out CV for the forward-planning canonical variants.
+Leave-one-scenario-out CV for forward-planning experiments — unified driver.
 
-For each of the 16 scenarios, hold it out, fit the three uniform-prior
-variants (full, discomfort_only, base) on the remaining 15
-scenarios, and predict the held-out scenario's human action probabilities.
+Holds out each of the 16 scenarios in turn, refits the three ablations
+(full / discomfort_only / base) on the remaining 15, and predicts the
+held-out scenario's human action probabilities.
 
 Reports per-fold fitted parameters, train/test NLL, and Pearson r at the
-(intimacy, motivation, action) cell-mean level — both per held-out scenario
-and pooled across folds. The pooled metric is directly comparable to the
-in-sample r reported in forward_planning_fit_results.csv.
+(intimacy, IV, action) cell-mean level — both per held-out scenario and
+pooled across folds. The pooled metric is directly comparable to the
+in-sample r reported in the corresponding fit_results CSV.
 
-Outputs (in model/outputs/):
-  - cv_loso_forward.csv — one row per (fold, variant) with fitted params + metrics
-  - cv_loso_preds.csv   — per-trial predictions across all 16 held-out folds
+Three experiments are dispatched by `--experiment <slug>`:
+  - food_forw_intimacy_desire: canonical 4-action × motivation IV (food)
+  - nonfood_forw_intimacy_desire: canonical 4-action × motivation IV (nonfood)
+  - food_forw_intimacy_effort: 2-action × effort IV (food)
+
+Outputs (in model/outputs/) preserve the pre-existing filename convention
+and will be reorganized in a later pass (Step 7 of the model/ refactor).
 """
 
 import sys
@@ -28,52 +32,41 @@ from scipy import stats
 
 from fit_forward import (
     compute_nll,
-    fit_canonical_base as fit_base_model,
-    fit_canonical_discomfort_only as fit_discomfort_only_model,
-    fit_canonical_full as fit_full_model,
-    load_data_canonical as load_data,
-    predict_canonical_base as predict_base,
-    predict_canonical_discomfort_only as predict_discomfort_only,
-    predict_canonical_full as predict_full,
+    fit_canonical_base,
+    fit_canonical_discomfort_only,
+    fit_canonical_full,
+    fit_effort_base,
+    fit_effort_discomfort_only,
+    fit_effort_full,
+    load_data_canonical,
+    load_data_effort,
+    predict_canonical_base,
+    predict_canonical_discomfort_only,
+    predict_canonical_full,
+    predict_effort_base,
+    predict_effort_discomfort_only,
+    predict_effort_full,
 )
-from tables import LLM_TABLES, SCENARIO_LABELS, load_domain_assets, load_lm_v
+from tables import (
+    LLM_TABLES,
+    LLM_TABLES_EFFORT,
+    SCENARIO_LABELS,
+    load_domain_assets,
+    load_lm_v,
+)
 
 from utils import get_project_root
 
 
-N_SCENARIOS = len(SCENARIO_LABELS)
-
-# variant_name -> (fit_fn, predict_fn, utility_param_names). All three variants
-# now take LM-V as canonical V; discomfort_only is V-independent and uses only
-# (access, effort) but the dispatcher still gives it the trimmed tables tuple.
-VARIANTS = {
-    "full": (
-        fit_full_model,
-        predict_full,
-        ["w_v", "w_d", "w_e", "gamma"],
-    ),
-    "discomfort_only": (
-        fit_discomfort_only_model,
-        predict_discomfort_only,
-        ["w_d", "gamma"],
-    ),
-    "base": (
-        fit_base_model,
-        predict_base,
-        ["w_v", "w_e"],
-    ),
-}
-
-
-def _cell_mean_r(pred_df, variant, scenario=None):
-    """Pearson r between model and human p_action at (intimacy, motivation,
-    action) cell-means. If `scenario` is given, restrict to that held-out
-    scenario; otherwise pool across all folds."""
+def _cell_mean_r(pred_df, variant, group_cols, scenario=None):
+    """Pearson r between model and human p_action at cell-mean level. If
+    `scenario` is given, restrict to that held-out scenario; otherwise pool
+    across all folds."""
     sub = pred_df[pred_df["variant"] == variant]
     if scenario is not None:
         sub = sub[sub["held_out_scenario"] == scenario]
     cell = (
-        sub.groupby(["intimacy", "motivation", "action"])
+        sub.groupby(group_cols)
         .agg(humans=("p_action", "mean"), model=("p_action_pred", "mean"))
         .reset_index()
     )
@@ -83,28 +76,91 @@ def _cell_mean_r(pred_df, variant, scenario=None):
     return float(r)
 
 
-def run_loso(domain: str = "food"):
-    scenario_labels, scenario_to_idx, llm_tables = load_domain_assets(domain)
-    n_scenarios = len(scenario_labels)
-    v_table = load_lm_v(domain)
+# ==============================================================================
+# Experiment registry
+# ==============================================================================
+# For each slug: scenario labels, data path, data loader, tables_per_variant,
+# fit + predict + param-name registries, the per-trial IV column name (used
+# in pred_rows), and the cell-mean group columns.
 
+
+def _canonical_config(domain: str):
+    scenario_labels, scenario_to_idx, llm_tables = load_domain_assets(domain)
+    v_table = load_lm_v(domain)
     if domain == "food":
         data_path = get_project_root() / "data" / "food_forw_intimacy_desire" / "main_trials_long.csv"
+        fold_filename = "cv_loso_forward.csv"
+        pred_filename = "cv_loso_preds.csv"
     elif domain == "nonfood":
         data_path = get_project_root() / "data" / "nonfood_forw_intimacy_desire" / "main_trials_long.csv"
+        fold_filename = "cv_loso_forward_nonfood.csv"
+        pred_filename = "cv_loso_preds_nonfood.csv"
     else:
         raise ValueError(f"Unknown domain: {domain!r}")
 
-    data, intimacy, reward_condition, action, p_action, scenario_idx = load_data(
-        filepath=data_path, scenario_to_idx=scenario_to_idx,
-    )
     tables = (llm_tables["access"], llm_tables["effort"], v_table)
-    # discomfort_only is V-independent; the rest take the full 3-tuple.
-    tables_per_variant = {
-        "full": tables,
-        "discomfort_only": tables[:2],
-        "base":   tables,
+    return {
+        "scenario_labels": scenario_labels,
+        "data_path": data_path,
+        "data_loader": lambda fp: load_data_canonical(fp, scenario_to_idx),
+        "tables_per_variant": {
+            "full": tables,
+            "discomfort_only": tables[:2],
+            "base": tables,
+        },
+        "variants": {
+            "full": (fit_canonical_full, predict_canonical_full, ["w_v", "w_d", "w_e", "gamma"]),
+            "discomfort_only": (fit_canonical_discomfort_only, predict_canonical_discomfort_only, ["w_d", "gamma"]),
+            "base": (fit_canonical_base, predict_canonical_base, ["w_v", "w_e"]),
+        },
+        "iv_column": "motivation",       # column name in human data CSV
+        "iv_dtype": "object",            # leave as string ("low"/"high")
+        "group_cols": ["intimacy", "motivation", "action"],
+        "fold_filename": fold_filename,
+        "pred_filename": pred_filename,
     }
+
+
+def _effort_config():
+    tables = (LLM_TABLES_EFFORT["access"], LLM_TABLES_EFFORT["effort"])
+    return {
+        "scenario_labels": SCENARIO_LABELS,
+        "data_path": get_project_root() / "data" / "food_forw_intimacy_effort" / "main_trials_long.csv",
+        "data_loader": lambda fp: load_data_effort(fp),
+        "tables_per_variant": {
+            "full": tables,
+            "discomfort_only": tables,
+            "base": tables,
+        },
+        "variants": {
+            "full": (fit_effort_full, predict_effort_full, ["w_v", "w_d", "w_e", "gamma"]),
+            "discomfort_only": (fit_effort_discomfort_only, predict_effort_discomfort_only, ["w_d", "gamma"]),
+            "base": (fit_effort_base, predict_effort_base, ["w_v", "w_e"]),
+        },
+        "iv_column": "effort",
+        "iv_dtype": "object",            # "low" / "high"
+        "group_cols": ["intimacy", "effort", "action"],
+        "fold_filename": "cv_loso_forward_effort.csv",
+        "pred_filename": "cv_loso_preds_effort.csv",
+    }
+
+
+EXPERIMENT_CONFIGS = {
+    "food_forw_intimacy_desire": lambda: _canonical_config("food"),
+    "nonfood_forw_intimacy_desire": lambda: _canonical_config("nonfood"),
+    "food_forw_intimacy_effort": _effort_config,
+}
+
+
+# ==============================================================================
+# CV core
+# ==============================================================================
+
+
+def run_loso(config: dict):
+    scenario_labels = config["scenario_labels"]
+    n_scenarios = len(scenario_labels)
+    data, intimacy, condition_iv, action, p_action, scenario_idx = config["data_loader"](config["data_path"])
     scenario_idx_np = np.asarray(scenario_idx)
 
     fold_rows = []
@@ -116,108 +172,102 @@ def run_loso(domain: str = "food"):
         test_mask = scenario_idx_np == fold
         n_train = int(train_mask.sum())
         n_test = int(test_mask.sum())
-        print(
-            f"\n=== Fold {fold + 1}/{n_scenarios} (holding out '{scenario_label}') ==="
-        )
+        print(f"\n=== Fold {fold + 1}/{n_scenarios} (holding out '{scenario_label}') ===")
         print(f"  train trials: {n_train}, test trials: {n_test}")
 
         train_args = (
             intimacy[train_mask],
-            reward_condition[train_mask],
+            condition_iv[train_mask],
             action[train_mask],
             scenario_idx[train_mask],
             p_action[train_mask],
         )
         test_args = (
             intimacy[test_mask],
-            reward_condition[test_mask],
+            condition_iv[test_mask],
             action[test_mask],
             scenario_idx[test_mask],
         )
 
-        for variant, (fit_fn, pred_fn, param_names) in VARIANTS.items():
+        for variant, (fit_fn, pred_fn, param_names) in config["variants"].items():
             print(f"  Fitting {variant}...")
-            tab = tables_per_variant[variant]
+            tab = config["tables_per_variant"][variant]
             params, train_nll = fit_fn(*train_args, tab, verbose=False)
             test_preds = pred_fn(*test_args, *params, *tab)
             test_nll = float(compute_nll(test_preds, p_action[test_mask]))
 
-            fold_rows.append(
-                {
-                    "fold": fold,
-                    "held_out_scenario": scenario_label,
-                    "variant": variant,
-                    "train_nll": float(train_nll),
-                    "test_nll": test_nll,
-                    "train_nll_per_trial": float(train_nll) / n_train,
-                    "test_nll_per_trial": test_nll / n_test,
-                    "n_train": n_train,
-                    "n_test": n_test,
-                    "param_alpha": float(params[0]),
-                    **{
-                        f"param_{pn}": float(params[i + 1])
-                        for i, pn in enumerate(param_names)
-                    },
-                }
-            )
+            fold_rows.append({
+                "fold": fold,
+                "held_out_scenario": scenario_label,
+                "variant": variant,
+                "train_nll": float(train_nll),
+                "test_nll": test_nll,
+                "train_nll_per_trial": float(train_nll) / n_train,
+                "test_nll_per_trial": test_nll / n_test,
+                "n_train": n_train,
+                "n_test": n_test,
+                "param_alpha": float(params[0]),
+                **{
+                    f"param_{pn}": float(params[i + 1])
+                    for i, pn in enumerate(param_names)
+                },
+            })
 
             test_preds_np = np.asarray(test_preds)
             test_idx = np.where(test_mask)[0]
+            iv_col = config["iv_column"]
             for i, trial_idx in enumerate(test_idx):
-                pred_rows.append(
-                    {
-                        "fold": fold,
-                        "held_out_scenario": scenario_label,
-                        "variant": variant,
-                        "subject_id": data["subject_id"].iloc[trial_idx],
-                        "intimacy": int(data["intimacy"].iloc[trial_idx]),
-                        "motivation": data["motivation"].iloc[trial_idx],
-                        "action": int(data["action"].iloc[trial_idx]),
-                        "p_action": float(p_action[trial_idx]),
-                        "p_action_pred": float(test_preds_np[i]),
-                    }
-                )
+                pred_rows.append({
+                    "fold": fold,
+                    "held_out_scenario": scenario_label,
+                    "variant": variant,
+                    "subject_id": data["subject_id"].iloc[trial_idx],
+                    "intimacy": int(data["intimacy"].iloc[trial_idx]),
+                    iv_col: data[iv_col].iloc[trial_idx],
+                    "action": int(data["action"].iloc[trial_idx]),
+                    "p_action": float(p_action[trial_idx]),
+                    "p_action_pred": float(test_preds_np[i]),
+                })
 
     return pd.DataFrame(fold_rows), pd.DataFrame(pred_rows)
 
 
-def attach_per_scenario_r(fold_df, pred_df):
-    """Add `test_cell_r` column: per-fold (intimacy, motivation, action)
-    cell-mean Pearson r on that fold's held-out scenario."""
+def attach_per_scenario_r(fold_df, pred_df, group_cols):
     rs = []
     for _, row in fold_df.iterrows():
-        rs.append(_cell_mean_r(pred_df, row["variant"], scenario=row["held_out_scenario"]))
+        rs.append(_cell_mean_r(pred_df, row["variant"], group_cols, scenario=row["held_out_scenario"]))
     fold_df = fold_df.copy()
     fold_df["test_cell_r"] = rs
     return fold_df
 
 
-def main(domain: str = "food"):
+def main(experiment: str):
+    if experiment not in EXPERIMENT_CONFIGS:
+        raise ValueError(
+            f"Unknown experiment: {experiment!r}. "
+            f"Choose from {list(EXPERIMENT_CONFIGS)}"
+        )
+
     print("=" * 60)
-    print(f"LOSO cross-validation: forward planning (domain={domain})")
+    print(f"LOSO cross-validation: forward planning (experiment={experiment})")
     print("=" * 60)
 
-    fold_df, pred_df = run_loso(domain=domain)
-    fold_df = attach_per_scenario_r(fold_df, pred_df)
+    config = EXPERIMENT_CONFIGS[experiment]()
+    fold_df, pred_df = run_loso(config)
+    fold_df = attach_per_scenario_r(fold_df, pred_df, config["group_cols"])
 
     output_dir = get_project_root() / "model" / "outputs"
     output_dir.mkdir(exist_ok=True)
-    if domain == "food":
-        fold_filename = "cv_loso_forward.csv"
-        pred_filename = "cv_loso_preds.csv"
-    else:
-        fold_filename = f"cv_loso_forward_{domain}.csv"
-        pred_filename = f"cv_loso_preds_{domain}.csv"
-    fold_path = output_dir / fold_filename
-    pred_path = output_dir / pred_filename
+    fold_path = output_dir / config["fold_filename"]
+    pred_path = output_dir / config["pred_filename"]
     fold_df.to_csv(fold_path, index=False)
     pred_df.to_csv(pred_path, index=False)
     print(f"\nSaved fold-level results to {fold_path}")
     print(f"Saved per-trial predictions to {pred_path}")
 
     print("\n=== Pooled out-of-sample Pearson r (cell means across 16 folds) ===")
-    for variant in VARIANTS:
-        r = _cell_mean_r(pred_df, variant)
+    for variant in config["variants"]:
+        r = _cell_mean_r(pred_df, variant, config["group_cols"])
         sub = fold_df[fold_df["variant"] == variant]
         per_fold = sub["test_cell_r"].dropna()
         print(
@@ -231,8 +281,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="LOSO CV for forward planning.")
     parser.add_argument(
-        "--domain", choices=("food", "nonfood"), default="food",
-        help="Which experiment to CV: 'food' (default) or 'nonfood'.",
+        "--experiment",
+        choices=tuple(EXPERIMENT_CONFIGS),
+        default="food_forw_intimacy_desire",
+        help="Which forward-planning experiment to CV.",
     )
     args = parser.parse_args()
-    main(domain=args.domain)
+    main(args.experiment)
