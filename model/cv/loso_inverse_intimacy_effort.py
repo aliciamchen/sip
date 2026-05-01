@@ -21,18 +21,20 @@ from pathlib import Path
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
+sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
 import numpy as np
 import pandas as pd
 
-from fit_inverse_planning_alt import _fit_alpha_observer, compute_intimacy_nll
-from fit_inverse_planning_intimacy_effort import (
+from _helpers import (  # noqa: E402
     ACCESS_VARIANTS_EFFORT,
-    _table_kwargs,
+    _fit_alpha_observer,
+    compute_intimacy_nll,
+    effort_table_kwargs as _table_kwargs,
     load_food_forw_intimacy_effort_actor_params,
     load_intimacy_effort_data,
 )
-from tables import IntimacyLevels, SCENARIO_LABELS, actions_effort
+from tables import IntimacyLevels, SCENARIO_LABELS, actions_effort  # noqa: E402
 
 from utils import get_project_root
 

@@ -27,22 +27,23 @@ from pathlib import Path
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
+sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
-from fit_inverse_planning_alt import (
+from _helpers import (  # noqa: E402
     ACCESS_VARIANTS,
     _fit_alpha_observer,
-    _table_kwargs,
+    alt_table_kwargs as _table_kwargs,
     compute_intimacy_nll,
     compute_reward_nll,
     load_fitted_params,
-    load_intimacy_data,
-    load_reward_data,
+    load_intimacy_alt_data as load_intimacy_data,
+    load_desire_alt_data as load_reward_data,
 )
-from tables import IntimacyLevels, SCENARIO_LABELS, actions
+from tables import IntimacyLevels, SCENARIO_LABELS, actions  # noqa: E402
 
 from utils import get_project_root
 

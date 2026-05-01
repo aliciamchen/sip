@@ -29,17 +29,18 @@ from pathlib import Path
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
+sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
-from fit_inverse_planning_intimacy_noalt import (
-    PADDED_VARIANTS,
-    fit_padded_joint_model,
+from _helpers import (  # noqa: E402
+    PADDED_VARIANTS_INTIMACY as PADDED_VARIANTS,
+    fit_padded_joint_intimacy as fit_padded_joint_model,
     load_intimacy_noalt_data,
 )
-from tables import IntimacyLevels, SCENARIO_LABELS, load_padded_lm_tables
+from tables import IntimacyLevels, SCENARIO_LABELS, load_padded_lm_tables  # noqa: E402
 
 from utils import get_project_root
 
