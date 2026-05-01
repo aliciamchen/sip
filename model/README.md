@@ -19,7 +19,7 @@ LM elicitation  (model/lm/)
         ↓
 Forward planning  (model/forward/)
     fit_<slug>.py     → outputs/<slug>/fit_results.csv
-    predict_<slug>.py → outputs/<slug>/fits.csv
+    predict_<slug>.py → outputs/<slug>/preds.csv
         ↓
 Inverse planning  (model/inverse/)
     fit_<slug>.py     → outputs/<slug>/fit_results.csv
@@ -49,12 +49,27 @@ For every experiment slug, exactly two scripts in fit/predict + one CV script:
 
 Run any script directly as `uv run python <path>`. No flags needed for the per-experiment ones.
 
+### Why hyphens, why dispatchers?
+
+Inverse experiment slugs use `inv-<target>` — a hyphen between `inv` and the inference target — to visually mark `<target>` as the thing the observer infers, distinct from the underscore-separated context tokens that follow. Hyphens are valid in filenames but **not** in Python module names, so per-experiment inverse fit/predict/cv scripts (e.g. `inverse/fit_food_inv-intimacy_desire_alt.py`) are runnable as scripts but cannot be imported as modules.
+
+To work around that, the few places where logic is naturally shared across experiments (the joint LOSO loops in `cv/`, the multi-mode LM dispatchers in `lm/`) live in `_dispatcher.py` files with no hyphens. Each per-experiment script is a thin wrapper: it imports from the dispatcher and calls its main with the experiment slug hardcoded. To trace what `cv/cv_food_forw_intimacy_desire.py` does, follow the import to `cv/_forward_dispatcher.py`. Same pattern for `cv/cv_food_inv-intimacy_desire_alt.py` → `cv/_alt_dispatcher.py:main_intimacy_alt`, and `lm/score_canonical_features.py` → `lm/_features_dispatcher.py:main`.
+
 ## Core math (one copy, shared across all experiments)
 
 - `tables.py` — enums, scenario maps, `LLM_TABLES`, `LLM_TABLES_EFFORT`, padded-table loaders, domain-asset loader.
 - `utility.py` — jit-compiled utility functions (Full / Discomfort-only / Base) with all variants.
 - `actors.py` — actor memo models (forward + inverse + padded + effort counterparts).
 - `observers.py` — observer memo models (intimacy / reward / effort, alt-shown + padded + relationship-keyed).
+
+### Terminology: V, reward, desire, motivation
+
+These four words all relate to the actor's motivational state, but they're not interchangeable in code:
+
+- **V** is the *signed valence* of an action with respect to the actor's motivational state, in `[-1, +1]`. Positive = action serves the state; negative = action is counterproductive; 0 = neutral. V is what enters the utility as `w_v · V`.
+- The **canonical 4-action pipeline** elicits V from the LM per `(scenario, action, motivation)` and stores it in `outputs/lm/lm_scenario_v.csv`, loaded via `tables.load_lm_v(domain)`.
+- The **effort 2-action pipeline** stipulates V=1 for both actions in `utility.get_stipulated_reward_effort` because reward is held fixed at HIGH and both actions involve eating, so V is uniform by construction. With V uniform across actions, `w_v` is non-identified under the softmax — it's kept in the utility for parallelism with the canonical pipeline but stays near initialization during fitting.
+- "Reward" appears in code (`reward_condition`, `param_w_v`, internal `experiment="reward"` column values) and "motivation" appears in the data CSVs (`motivation` column with values `low`/`high`); both refer to the same underlying motivational state. The paper-facing word is **desire**. We use whichever fits the local context — paper text says "desire", data files say "motivation", code uses "reward" for V/condition variables. None of these are different quantities; the multiplicity is purely terminological drift.
 
 ## Shared infrastructure (under each pipeline subfolder)
 
