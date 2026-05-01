@@ -34,7 +34,7 @@ from observers import (
 
 from utils import get_project_root
 
-from fit_forward_planning import _fit_with_adam
+from fit_forward import _fit_with_adam
 from fit_inverse_planning_alt import compute_intimacy_nll, load_fitted_params
 
 

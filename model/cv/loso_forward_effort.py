@@ -26,16 +26,16 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from fit_forward_planning_effort import (
-    fit_full_model,
-    fit_discomfort_only_model,
-    fit_base_model,
-    load_data,
-    predict_full,
-    predict_discomfort_only,
-    predict_base,
+from fit_forward import (
+    compute_nll,
+    fit_effort_base as fit_base_model,
+    fit_effort_discomfort_only as fit_discomfort_only_model,
+    fit_effort_full as fit_full_model,
+    load_data_effort as load_data,
+    predict_effort_base as predict_base,
+    predict_effort_discomfort_only as predict_discomfort_only,
+    predict_effort_full as predict_full,
 )
-from fit_forward_planning import compute_nll
 from tables import LLM_TABLES_EFFORT, SCENARIO_LABELS
 
 from utils import get_project_root

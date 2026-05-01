@@ -26,15 +26,15 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from fit_forward_planning import (
+from fit_forward import (
     compute_nll,
-    fit_full_model,
-    fit_discomfort_only_model,
-    fit_base_model,
-    load_data,
-    predict_full,
-    predict_discomfort_only,
-    predict_base,
+    fit_canonical_base as fit_base_model,
+    fit_canonical_discomfort_only as fit_discomfort_only_model,
+    fit_canonical_full as fit_full_model,
+    load_data_canonical as load_data,
+    predict_canonical_base as predict_base,
+    predict_canonical_discomfort_only as predict_discomfort_only,
+    predict_canonical_full as predict_full,
 )
 from tables import LLM_TABLES, SCENARIO_LABELS, load_domain_assets, load_lm_v
 
