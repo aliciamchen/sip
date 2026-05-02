@@ -75,15 +75,15 @@ uv run python experiments/scenarios_effort.py
 
 The first four use the canonical 4-action food-sharing set:
 
-- [food_inv-intimacy_desire_alt](food_inv-intimacy_desire_alt/README.md) — Infer intimacy from the observed action; all four candidate actions shown to participants.
-- [food_inv-desire_intimacy_alt](food_inv-desire_intimacy_alt/README.md) — Infer desire from the observed action; all four candidate actions shown.
-- [food_inv-intimacy_desire_noalt](food_inv-intimacy_desire_noalt/README.md) — Same as `food_inv-intimacy_desire_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side.
-- [food_inv-desire_intimacy_noalt](food_inv-desire_intimacy_noalt/README.md) — Same as `food_inv-desire_intimacy_alt` but with the candidate actions hidden; LM-generated counterfactual alternatives on the model side.
+- [food_inv_intimacy_desire_alt](food_inv_intimacy_desire_alt/README.md) — Infer intimacy from the observed action; all four candidate actions shown to participants.
+- [food_inv_desire_intimacy_alt](food_inv_desire_intimacy_alt/README.md) — Infer desire from the observed action; all four candidate actions shown.
+- [food_inv_intimacy_desire_noalt](food_inv_intimacy_desire_noalt/README.md) — Same as `food_inv_intimacy_desire_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side.
+- [food_inv_desire_intimacy_noalt](food_inv_desire_intimacy_noalt/README.md) — Same as `food_inv_desire_intimacy_alt` but with the candidate actions hidden; LM-generated counterfactual alternatives on the model side.
 
 The other two use the effort 2-action set:
 
-- [food_inv-intimacy_effort_alt](food_inv-intimacy_effort_alt/README.md) — Infer intimacy from observed action (2 levels) × relative effort (2 levels); both candidate actions shown.
-- [food_inv-effort_intimacy_alt](food_inv-effort_intimacy_alt/README.md) — Infer effort from observed action (2 levels) × intimacy (4 levels), with the two effort paragraphs as slider endpoints.
+- [food_inv_intimacy_effort_alt](food_inv_intimacy_effort_alt/README.md) — Infer intimacy from observed action (2 levels) × relative effort (2 levels); both candidate actions shown.
+- [food_inv_effort_intimacy_alt](food_inv_effort_intimacy_alt/README.md) — Infer effort from observed action (2 levels) × intimacy (4 levels), with the two effort paragraphs as slider endpoints.
 
 ## Generalization beyond food sharing
 
@@ -92,7 +92,7 @@ A non-food stimulus set (`scenarios_nonfood.csv`: substance sharing, shared spac
 Only the forward variant has data so far; the four non-food inverse variants are pending. The full set of generalization experiments is TBD.
 
 - [nonfood_forw_intimacy_desire](nonfood_forw_intimacy_desire/README.md)
-- [nonfood_inv-intimacy_desire_alt](nonfood_inv-intimacy_desire_alt/README.md)
-- [nonfood_inv-desire_intimacy_alt](nonfood_inv-desire_intimacy_alt/README.md)
-- [nonfood_inv-intimacy_desire_noalt](nonfood_inv-intimacy_desire_noalt/README.md)
-- [nonfood_inv-desire_intimacy_noalt](nonfood_inv-desire_intimacy_noalt/README.md)
+- [nonfood_inv_intimacy_desire_alt](nonfood_inv_intimacy_desire_alt/README.md)
+- [nonfood_inv_desire_intimacy_alt](nonfood_inv_desire_intimacy_alt/README.md)
+- [nonfood_inv_intimacy_desire_noalt](nonfood_inv_intimacy_desire_noalt/README.md)
+- [nonfood_inv_desire_intimacy_noalt](nonfood_inv_desire_intimacy_noalt/README.md)

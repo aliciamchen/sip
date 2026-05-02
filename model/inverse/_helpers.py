@@ -122,8 +122,8 @@ def load_fitted_alpha_observer(filepath=None) -> dict:
     else:
         outputs_root = get_project_root() / "model" / "outputs"
         paths = [
-            outputs_root / "food_inv-intimacy_desire_alt" / "fit_results.csv",
-            outputs_root / "food_inv-desire_intimacy_alt" / "fit_results.csv",
+            outputs_root / "food_inv_intimacy_desire_alt" / "fit_results.csv",
+            outputs_root / "food_inv_desire_intimacy_alt" / "fit_results.csv",
         ]
     alpha_obs = {}
     for path in paths:
@@ -141,10 +141,10 @@ def load_fitted_alpha_observer(filepath=None) -> dict:
 
 
 def load_intimacy_alt_data(filepath: str = None):
-    """food_inv-intimacy_desire_alt — observer infers intimacy under known motivation."""
+    """food_inv_intimacy_desire_alt — observer infers intimacy under known motivation."""
     if filepath is None:
-        filepath = get_project_root() / "data" / "food_inv-intimacy_desire_alt" / "main_trials_long.csv"
-    print("Loading food_inv-intimacy_desire_alt data...")
+        filepath = get_project_root() / "data" / "food_inv_intimacy_desire_alt" / "main_trials_long.csv"
+    print("Loading food_inv_intimacy_desire_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
     data["action"] = data["action_condition"].str.replace("action_", "").astype(int)
@@ -161,10 +161,10 @@ def load_intimacy_alt_data(filepath: str = None):
 
 
 def load_desire_alt_data(filepath: str = None):
-    """food_inv-desire_intimacy_alt — observer infers desire (motivation) under known intimacy."""
+    """food_inv_desire_intimacy_alt — observer infers desire (motivation) under known intimacy."""
     if filepath is None:
-        filepath = get_project_root() / "data" / "food_inv-desire_intimacy_alt" / "main_trials_long.csv"
-    print("Loading food_inv-desire_intimacy_alt data...")
+        filepath = get_project_root() / "data" / "food_inv_desire_intimacy_alt" / "main_trials_long.csv"
+    print("Loading food_inv_desire_intimacy_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
     data["action"] = data["action_condition"].str.replace("action_", "").astype(int)
@@ -181,12 +181,12 @@ def load_desire_alt_data(filepath: str = None):
 
 
 def load_intimacy_noalt_data(filepath=None):
-    """food_inv-intimacy_desire_noalt — observer sees only the chosen action."""
+    """food_inv_intimacy_desire_noalt — observer sees only the chosen action."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv-intimacy_desire_noalt" / "main_trials_long.csv"
+            get_project_root() / "data" / "food_inv_intimacy_desire_noalt" / "main_trials_long.csv"
         )
-    print("Loading food_inv-intimacy_desire_noalt data...")
+    print("Loading food_inv_intimacy_desire_noalt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
     data["observed_action"] = data["action_condition"].str.replace("action_", "").astype(int)
@@ -203,12 +203,12 @@ def load_intimacy_noalt_data(filepath=None):
 
 
 def load_desire_noalt_data(filepath=None):
-    """food_inv-desire_intimacy_noalt — observer sees only the chosen action; infers motivation."""
+    """food_inv_desire_intimacy_noalt — observer sees only the chosen action; infers motivation."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv-desire_intimacy_noalt" / "main_trials_long.csv"
+            get_project_root() / "data" / "food_inv_desire_intimacy_noalt" / "main_trials_long.csv"
         )
-    print("Loading food_inv-desire_intimacy_noalt data...")
+    print("Loading food_inv_desire_intimacy_noalt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
     data["observed_action"] = data["action_condition"].str.replace("action_", "").astype(int)
@@ -225,12 +225,12 @@ def load_desire_noalt_data(filepath=None):
 
 
 def load_intimacy_effort_data(filepath: str = None):
-    """food_inv-intimacy_effort_alt — observer infers intimacy under effort manipulation."""
+    """food_inv_intimacy_effort_alt — observer infers intimacy under effort manipulation."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv-intimacy_effort_alt" / "main_trials_long.csv"
+            get_project_root() / "data" / "food_inv_intimacy_effort_alt" / "main_trials_long.csv"
         )
-    print("Loading food_inv-intimacy_effort_alt data...")
+    print("Loading food_inv_intimacy_effort_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
     data["action"] = data["action_condition"].str.replace("action_", "").astype(int) - 1
@@ -246,7 +246,7 @@ def load_intimacy_effort_data(filepath: str = None):
 
 
 def load_effort_intimacy_data(filepath: str = None):
-    """food_inv-effort_intimacy_alt — observer infers effort under intimacy manipulation.
+    """food_inv_effort_intimacy_alt — observer infers effort under intimacy manipulation.
 
     Note: intimacy_idx is the index into the actor's 101-level IntimacyLevels
     axis (0..100 in 0.01 increments) — so the integer intimacy values
@@ -254,9 +254,9 @@ def load_effort_intimacy_data(filepath: str = None):
     """
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv-effort_intimacy_alt" / "main_trials_long.csv"
+            get_project_root() / "data" / "food_inv_effort_intimacy_alt" / "main_trials_long.csv"
         )
-    print("Loading food_inv-effort_intimacy_alt data...")
+    print("Loading food_inv_effort_intimacy_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
     data["action"] = data["action_condition"].str.replace("action_", "").astype(int) - 1
@@ -619,14 +619,14 @@ PADDED_VARIANTS_REWARD = {
     "base": (observer_reward_base_padded_rel, ["w_v", "w_e"], True),
 }
 
-# Effort intimacy observer (food_inv-intimacy_effort_alt)
+# Effort intimacy observer (food_inv_intimacy_effort_alt)
 ACCESS_VARIANTS_EFFORT = {
     "full": (observer_intimacy_effort_full, ["alpha", "w_v", "w_d", "w_e", "gamma"]),
     "discomfort_only": (observer_intimacy_effort_discomfort_only, ["alpha", "w_d", "gamma"]),
     "base": (observer_intimacy_effort_base, ["alpha", "w_v", "w_e"]),
 }
 
-# Effort intimacy observer for effort-inferred (food_inv-effort_intimacy_alt)
+# Effort intimacy observer for effort-inferred (food_inv_effort_intimacy_alt)
 ACCESS_VARIANTS_EFFORT_INFERRED = {
     "full": (observer_effort_intimacy_full, ["alpha", "w_v", "w_d", "w_e", "gamma"]),
     "discomfort_only": (observer_effort_intimacy_discomfort_only, ["alpha", "w_d", "gamma"]),
@@ -643,7 +643,7 @@ def alt_table_kwargs(uses_v):
 
 
 def effort_table_kwargs():
-    """Table kwargs for the food_inv-intimacy_effort_alt observer."""
+    """Table kwargs for the food_inv_intimacy_effort_alt observer."""
     return {
         "access_table": LLM_TABLES_EFFORT["access"],
         "effort_table": LLM_TABLES_EFFORT["effort"],
@@ -651,6 +651,6 @@ def effort_table_kwargs():
 
 
 def effort_marginal_table_kwargs():
-    """Table kwargs for the food_inv-effort_intimacy_alt observer (effort-marginal access)."""
+    """Table kwargs for the food_inv_effort_intimacy_alt observer (effort-marginal access)."""
     access_table = LLM_TABLES_EFFORT.get("access_marg", LLM_TABLES_EFFORT["access"])
     return {"access_table": access_table, "effort_table": LLM_TABLES_EFFORT["effort"]}

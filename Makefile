@@ -6,9 +6,9 @@
 # work without re-running data processing or LM elicitation.
 
 EXPERIMENTS_FORWARD := food_forw_intimacy_desire food_forw_intimacy_effort nonfood_forw_intimacy_desire
-EXPERIMENTS_INVERSE := food_inv-intimacy_desire_alt food_inv-desire_intimacy_alt \
-                       food_inv-intimacy_desire_noalt food_inv-desire_intimacy_noalt \
-                       food_inv-intimacy_effort_alt food_inv-effort_intimacy_alt
+EXPERIMENTS_INVERSE := food_inv_intimacy_desire_alt food_inv_desire_intimacy_alt \
+                       food_inv_intimacy_desire_noalt food_inv_desire_intimacy_noalt \
+                       food_inv_intimacy_effort_alt food_inv_effort_intimacy_alt
 EXPERIMENTS_ALL := $(EXPERIMENTS_FORWARD) $(EXPERIMENTS_INVERSE)
 
 ANALYSIS_QMDS := \
@@ -115,7 +115,7 @@ $(addprefix fit-,$(EXPERIMENTS_FORWARD)): fit-%:
 	uv run python model/forward/fit_$*.py
 
 $(addprefix fit-,$(EXPERIMENTS_INVERSE)): fit-%:
-	uv run python "model/inverse/fit_$*.py"
+	uv run python model/inverse/fit_$*.py
 
 # =============================================================================
 # Predicts → outputs/<slug>/preds.csv (forward) or preds_full.csv +
@@ -130,7 +130,7 @@ $(addprefix predict-,$(EXPERIMENTS_FORWARD)): predict-%:
 	uv run python model/forward/predict_$*.py
 
 $(addprefix predict-,$(EXPERIMENTS_INVERSE)): predict-%:
-	uv run python "model/inverse/predict_$*.py"
+	uv run python model/inverse/predict_$*.py
 
 # =============================================================================
 # Leave-one-scenario-out CV → outputs/<slug>/cv_folds.csv +
@@ -145,7 +145,7 @@ $(addprefix cv-,$(EXPERIMENTS_FORWARD)): cv-%:
 	uv run python model/cv/cv_$*.py
 
 $(addprefix cv-,$(EXPERIMENTS_INVERSE)): cv-%:
-	uv run python "model/cv/cv_$*.py"
+	uv run python model/cv/cv_$*.py
 
 # =============================================================================
 # Analysis: quarto render

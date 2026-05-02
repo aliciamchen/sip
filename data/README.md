@@ -45,7 +45,7 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 | `action` | Action index (0-3) |
 | `p_action` | Probability allocated to this action |
 
-## Intimacy inference, alternatives shown (`food_inv-intimacy_desire_alt/`)
+## Intimacy inference, alternatives shown (`food_inv_intimacy_desire_alt/`)
 
 **main_trials.csv** and **main_trials_long.csv**:
 
@@ -60,11 +60,11 @@ In the inverse-planning experiments, internal variable names use "reward" (e.g.,
 
 Note: `main_trials_long.csv` uses `motivation` instead of `reward_condition`.
 
-## Intimacy inference, no alternatives shown (`food_inv-intimacy_desire_noalt/`)
+## Intimacy inference, no alternatives shown (`food_inv_intimacy_desire_noalt/`)
 
-Same columns as `food_inv-intimacy_desire_alt/` above. The experimental procedure differs only in that participants see a single observed action at the posterior stage rather than the full four-action list; on the model side, counterfactual alternatives are supplied by a language model.
+Same columns as `food_inv_intimacy_desire_alt/` above. The experimental procedure differs only in that participants see a single observed action at the posterior stage rather than the full four-action list; on the model side, counterfactual alternatives are supplied by a language model.
 
-## Desire inference, alternatives shown (`food_inv-desire_intimacy_alt/`)
+## Desire inference, alternatives shown (`food_inv_desire_intimacy_alt/`)
 
 **main_trials.csv** and **main_trials_long.csv**:
 
@@ -103,9 +103,9 @@ Parallel to `food_forw_intimacy_desire/` but on the `scenarios_effort.csv` stimu
 | `action` | Action index (1 = non-saliva, 2 = saliva) |
 | `p_action` | Probability allocated to this action |
 
-## Intimacy inference, effort manipulation (`food_inv-intimacy_effort_alt/`)
+## Intimacy inference, effort manipulation (`food_inv_intimacy_effort_alt/`)
 
-Parallel to `food_inv-intimacy_desire_alt/` but on the `scenarios_effort.csv` stimulus set: observers see both candidate actions and the one the actors took, and infer intimacy. 2 actions × 2 effort conditions, with prior/posterior measurement at each cell.
+Parallel to `food_inv_intimacy_desire_alt/` but on the `scenarios_effort.csv` stimulus set: observers see both candidate actions and the one the actors took, and infer intimacy. 2 actions × 2 effort conditions, with prior/posterior measurement at each cell.
 
 **main_trials.csv** and **main_trials_long.csv**:
 

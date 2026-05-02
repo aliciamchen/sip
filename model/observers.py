@@ -343,7 +343,7 @@ def observer_intimacy_base_padded[
 # ==============================================================================
 # Observer inferring reward — padded action space, relationship-keyed
 # ==============================================================================
-# Used by `food_inv-desire_intimacy_noalt`. The observer knows scenario,
+# Used by `food_inv_desire_intimacy_noalt`. The observer knows scenario,
 # observed_action, and relationship_condition; the latent is reward_condition.
 # Action space is conditioned on (scenario, observed_action, relationship_condition)
 # — i.e. the LM alternatives are elicited per relationship level so the

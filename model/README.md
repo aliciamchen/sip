@@ -10,12 +10,12 @@ in script names; no `--feature` flags hiding what a script does.
 LM elicitation  (model/lm/)
     score_canonical_features.py   →  outputs/lm/lm_scenario_params{,_nonfood}.csv
     score_canonical_v.py          →  outputs/lm/lm_scenario_v{,_nonfood}.csv
-    score_alternative_features.py →  outputs/lm/lm_alternatives_features_food_inv-intimacy_desire_noalt.csv (motivation)
-                                  →  outputs/lm/lm_alternatives_features_food_inv-desire_intimacy_noalt.csv (relationship)
-    score_alternative_v.py        →  outputs/lm/lm_alternatives_v_food_inv-intimacy_desire_noalt.csv / lm_alternatives_v_food_inv-desire_intimacy_noalt.csv
+    score_alternative_features.py →  outputs/lm/lm_alternatives_features_food_inv_intimacy_desire_noalt.csv (motivation)
+                                  →  outputs/lm/lm_alternatives_features_food_inv_desire_intimacy_noalt.csv (relationship)
+    score_alternative_v.py        →  outputs/lm/lm_alternatives_v_food_inv_intimacy_desire_noalt.csv / lm_alternatives_v_food_inv_desire_intimacy_noalt.csv
     score_effort_features.py      →  outputs/lm/lm_scenario_params_effort{,_marginal}.csv
-    generate_alternatives_motivation.py    →  outputs/lm/lm_alternatives_food_inv-intimacy_desire_noalt.csv
-    generate_alternatives_relationship.py  →  outputs/lm/lm_alternatives_food_inv-desire_intimacy_noalt.csv
+    generate_alternatives_motivation.py    →  outputs/lm/lm_alternatives_food_inv_intimacy_desire_noalt.csv
+    generate_alternatives_relationship.py  →  outputs/lm/lm_alternatives_food_inv_desire_intimacy_noalt.csv
         ↓
 Forward planning  (model/forward/)
     fit_<slug>.py     → outputs/<slug>/fit_results.csv
@@ -40,20 +40,18 @@ For every experiment slug, exactly two scripts in fit/predict + one CV script:
 | `food_forw_intimacy_desire` | `forward/fit_food_forw_intimacy_desire.py` | `forward/predict_food_forw_intimacy_desire.py` | `cv/cv_food_forw_intimacy_desire.py` |
 | `food_forw_intimacy_effort` | `forward/fit_food_forw_intimacy_effort.py` | `forward/predict_food_forw_intimacy_effort.py` | `cv/cv_food_forw_intimacy_effort.py` |
 | `nonfood_forw_intimacy_desire` | `forward/fit_nonfood_forw_intimacy_desire.py` | `forward/predict_nonfood_forw_intimacy_desire.py` | `cv/cv_nonfood_forw_intimacy_desire.py` |
-| `food_inv-intimacy_desire_alt` | `inverse/fit_food_inv-intimacy_desire_alt.py` | `inverse/predict_food_inv-intimacy_desire_alt.py` | `cv/cv_food_inv-intimacy_desire_alt.py` |
-| `food_inv-desire_intimacy_alt` | `inverse/fit_food_inv-desire_intimacy_alt.py` | `inverse/predict_food_inv-desire_intimacy_alt.py` | `cv/cv_food_inv-desire_intimacy_alt.py` |
-| `food_inv-intimacy_desire_noalt` | `inverse/fit_food_inv-intimacy_desire_noalt.py` | `inverse/predict_food_inv-intimacy_desire_noalt.py` | `cv/cv_food_inv-intimacy_desire_noalt.py` |
-| `food_inv-desire_intimacy_noalt` | `inverse/fit_food_inv-desire_intimacy_noalt.py` | `inverse/predict_food_inv-desire_intimacy_noalt.py` | `cv/cv_food_inv-desire_intimacy_noalt.py` |
-| `food_inv-intimacy_effort_alt` | `inverse/fit_food_inv-intimacy_effort_alt.py` | `inverse/predict_food_inv-intimacy_effort_alt.py` | `cv/cv_food_inv-intimacy_effort_alt.py` |
-| `food_inv-effort_intimacy_alt` | `inverse/fit_food_inv-effort_intimacy_alt.py` | `inverse/predict_food_inv-effort_intimacy_alt.py` | `cv/cv_food_inv-effort_intimacy_alt.py` |
+| `food_inv_intimacy_desire_alt` | `inverse/fit_food_inv_intimacy_desire_alt.py` | `inverse/predict_food_inv_intimacy_desire_alt.py` | `cv/cv_food_inv_intimacy_desire_alt.py` |
+| `food_inv_desire_intimacy_alt` | `inverse/fit_food_inv_desire_intimacy_alt.py` | `inverse/predict_food_inv_desire_intimacy_alt.py` | `cv/cv_food_inv_desire_intimacy_alt.py` |
+| `food_inv_intimacy_desire_noalt` | `inverse/fit_food_inv_intimacy_desire_noalt.py` | `inverse/predict_food_inv_intimacy_desire_noalt.py` | `cv/cv_food_inv_intimacy_desire_noalt.py` |
+| `food_inv_desire_intimacy_noalt` | `inverse/fit_food_inv_desire_intimacy_noalt.py` | `inverse/predict_food_inv_desire_intimacy_noalt.py` | `cv/cv_food_inv_desire_intimacy_noalt.py` |
+| `food_inv_intimacy_effort_alt` | `inverse/fit_food_inv_intimacy_effort_alt.py` | `inverse/predict_food_inv_intimacy_effort_alt.py` | `cv/cv_food_inv_intimacy_effort_alt.py` |
+| `food_inv_effort_intimacy_alt` | `inverse/fit_food_inv_effort_intimacy_alt.py` | `inverse/predict_food_inv_effort_intimacy_alt.py` | `cv/cv_food_inv_effort_intimacy_alt.py` |
 
 Run any script directly as `uv run python <path>`. No flags needed for the per-experiment ones.
 
-### Why hyphens, why dispatchers?
+### Why dispatchers?
 
-Inverse experiment slugs use `inv-<target>` — a hyphen between `inv` and the inference target — to visually mark `<target>` as the thing the observer infers, distinct from the underscore-separated context tokens that follow. Hyphens are valid in filenames but **not** in Python module names, so per-experiment inverse fit/predict/cv scripts (e.g. `inverse/fit_food_inv-intimacy_desire_alt.py`) are runnable as scripts but cannot be imported as modules.
-
-To work around that, the few places where logic is naturally shared across experiments (the joint LOSO loops in `cv/`, the multi-mode LM dispatchers in `lm/`) live in `_dispatcher.py` files with no hyphens. Each per-experiment script is a thin wrapper: it imports from the dispatcher and calls its main with the experiment slug hardcoded. To trace what `cv/cv_food_forw_intimacy_desire.py` does, follow the import to `cv/_forward_dispatcher.py`. Same pattern for `cv/cv_food_inv-intimacy_desire_alt.py` → `cv/_alt_dispatcher.py:main_intimacy_alt`, and `lm/score_canonical_features.py` → `lm/_features_dispatcher.py:main`.
+The few places where logic is naturally shared across experiments (the joint LOSO loops in `cv/`, the multi-mode LM dispatchers in `lm/`) live in `_dispatcher.py` files. Each per-experiment script is a thin wrapper: it imports from the dispatcher and calls its main with the experiment slug hardcoded. To trace what `cv/cv_food_forw_intimacy_desire.py` does, follow the import to `cv/_forward_dispatcher.py`. Same pattern for `cv/cv_food_inv_intimacy_desire_alt.py` → `cv/_alt_dispatcher.py:main_intimacy_alt`, and `lm/score_canonical_features.py` → `lm/_features_dispatcher.py:main`.
 
 ## Core math (one copy, shared across all experiments)
 

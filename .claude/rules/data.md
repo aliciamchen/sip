@@ -14,7 +14,7 @@ Each experiment folder is named after its slug and contains:
 
 `data/legacy/` holds earlier experiments not part of the current pipeline (`planning_comm/`, `pilots/`); the directory is covered by the `legacy` gitignore rule.
 
-`data/food_inv-desire_intimacy_alt/raw_data/` was originally collected under the URL slug `inv-plan-reward-final` (back when the experiment was called "reward inference"). The raw JSONs use Prolific PIDs, which `analysis/json_to_csv.py` deterministically anonymizes to UUIDs in the processed CSVs.
+`data/food_inv_desire_intimacy_alt/raw_data/` was originally collected under the URL slug `inv-plan-reward-final` (back when the experiment was called "reward inference"). The raw JSONs use Prolific PIDs, which `analysis/json_to_csv.py` deterministically anonymizes to UUIDs in the processed CSVs.
 
 ## Participant exclusion criteria
 

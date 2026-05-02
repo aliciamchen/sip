@@ -57,12 +57,12 @@ _DOMAIN_PATHS = {
         "scenarios":                          "scenarios.csv",
         "params_output":                      "lm_scenario_params.csv",
         "v_output":                           "lm_scenario_v.csv",
-        "alternatives_input":                 "lm_alternatives_food_inv-intimacy_desire_noalt.csv",
-        "alternatives_output":                "lm_alternatives_features_food_inv-intimacy_desire_noalt.csv",
-        "alternatives_v_output":              "lm_alternatives_v_food_inv-intimacy_desire_noalt.csv",
-        "alternatives_rel_input":             "lm_alternatives_food_inv-desire_intimacy_noalt.csv",
-        "alternatives_rel_output":            "lm_alternatives_features_food_inv-desire_intimacy_noalt.csv",
-        "alternatives_rel_v_output":          "lm_alternatives_v_food_inv-desire_intimacy_noalt.csv",
+        "alternatives_input":                 "lm_alternatives_food_inv_intimacy_desire_noalt.csv",
+        "alternatives_output":                "lm_alternatives_features_food_inv_intimacy_desire_noalt.csv",
+        "alternatives_v_output":              "lm_alternatives_v_food_inv_intimacy_desire_noalt.csv",
+        "alternatives_rel_input":             "lm_alternatives_food_inv_desire_intimacy_noalt.csv",
+        "alternatives_rel_output":            "lm_alternatives_features_food_inv_desire_intimacy_noalt.csv",
+        "alternatives_rel_v_output":          "lm_alternatives_v_food_inv_desire_intimacy_noalt.csv",
     },
     "nonfood": {
         "scenarios":                          "scenarios_nonfood.csv",
@@ -489,7 +489,7 @@ def score_v_alternatives_main(domain="food"):
         v_raw, v_raw_std, v, n_runs
 
     `motivation` is the motivation context the alternative was generated under
-    (matches lm_alternatives_food_inv-intimacy_desire_noalt.csv); `motivation_query` is the state we ask V
+    (matches lm_alternatives_food_inv_intimacy_desire_noalt.csv); `motivation_query` is the state we ask V
     against. We compute V for both motivation_query values for every alt so
     the desire-noalt observer (which infers motivation as latent) has both.
 
@@ -602,9 +602,9 @@ def score_v_alternatives_main(domain="food"):
 def score_alternatives_relationship_main(domain="food"):
     """Score access/effort for relationship-conditioned LM-generated alternatives.
 
-    Mirrors score_alternatives_main but reads from lm_alternatives_food_inv-desire_intimacy_noalt.csv
+    Mirrors score_alternatives_main but reads from lm_alternatives_food_inv_desire_intimacy_noalt.csv
     (keyed by relationship_condition instead of motivation) and writes to
-    lm_alternatives_features_food_inv-desire_intimacy_noalt.csv. Dedupe is per scenario across all
+    lm_alternatives_features_food_inv_desire_intimacy_noalt.csv. Dedupe is per scenario across all
     (observed_action, relationship_condition, alt_idx) cells, identical to the
     motivation-keyed pass — access and effort are properties of the action and
     don't depend on the conditioning axis.
@@ -742,8 +742,8 @@ def score_alternatives_relationship_main(domain="food"):
 def score_v_alternatives_relationship_main(domain="food"):
     """Score signed-valence V for relationship-conditioned LM-generated alternatives.
 
-    Mirrors score_v_alternatives_main but reads from lm_alternatives_food_inv-desire_intimacy_noalt.csv
-    (keyed by relationship_condition) and writes to lm_alternatives_v_food_inv-desire_intimacy_noalt.csv.
+    Mirrors score_v_alternatives_main but reads from lm_alternatives_food_inv_desire_intimacy_noalt.csv
+    (keyed by relationship_condition) and writes to lm_alternatives_v_food_inv_desire_intimacy_noalt.csv.
     Each unique action is still scored under both motivation_query ∈ {low, high}
     because V depends on motivation regardless of the conditioning axis. Output:
         scenario_label, observed_action, relationship_condition, alt_idx,
@@ -954,7 +954,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--score-alternatives",
         action="store_true",
-        help="Score access/effort for LM-generated alternatives in lm_alternatives_food_inv-intimacy_desire_noalt.csv",
+        help="Score access/effort for LM-generated alternatives in lm_alternatives_food_inv_intimacy_desire_noalt.csv",
     )
     parser.add_argument(
         "--feature",
@@ -974,7 +974,7 @@ if __name__ == "__main__":
             "'access_effort_alternatives_relationship' and "
             "'v_alternatives_relationship' do the equivalent for "
             "relationship-conditioned alternatives (requires "
-            "lm_alternatives_food_inv-desire_intimacy_noalt.csv). The feature flags are mutually "
+            "lm_alternatives_food_inv_desire_intimacy_noalt.csv). The feature flags are mutually "
             "exclusive with --score-alternatives."
         ),
     )

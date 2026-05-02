@@ -14,7 +14,7 @@ outputs/
     └── cv_preds_summary.csv           # inverse only — held-out per-condition summary
 ```
 
-The 9 experiment slugs: `food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`, `food_inv-intimacy_desire_alt`, `food_inv-desire_intimacy_alt`, `food_inv-intimacy_desire_noalt`, `food_inv-desire_intimacy_noalt`, `food_inv-intimacy_effort_alt`, `food_inv-effort_intimacy_alt`.
+The 9 experiment slugs: `food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`, `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`, `food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`, `food_inv_intimacy_effort_alt`, `food_inv_effort_intimacy_alt`.
 
 The sections below document the columns of each output type.
 
@@ -79,14 +79,14 @@ Summary of fitted inverse planning (observer) models (6 rows — 3 ablations × 
 | Column | Description |
 |--------|-------------|
 | `model` | Model name (`full`, `discomfort_only`, `base`) |
-| `experiment` | Experiment slug (e.g. `food_inv-intimacy_desire_alt`) |
+| `experiment` | Experiment slug (e.g. `food_inv_intimacy_desire_alt`) |
 | `alpha_observer` | Fitted observer inverse temperature |
 | `nll` | Negative log-likelihood |
 | `n_params` | Number of free parameters |
 
-## food_inv-intimacy_desire_alt/preds_summary.csv
+## food_inv_intimacy_desire_alt/preds_summary.csv
 
-Summarized model predictions for the alt-shown intimacy-inference experiment (`data/food_inv-intimacy_desire_alt/`). One row per scenario × action × motivation × model.
+Summarized model predictions for the alt-shown intimacy-inference experiment (`data/food_inv_intimacy_desire_alt/`). One row per scenario × action × motivation × model.
 
 | Column | Description |
 |--------|-------------|
@@ -96,7 +96,7 @@ Summarized model predictions for the alt-shown intimacy-inference experiment (`d
 | `model` | Model name |
 | `expected_intimacy` | Model's expected intimacy (0-100) |
 
-## food_inv-intimacy_desire_alt/preds_full.csv
+## food_inv_intimacy_desire_alt/preds_full.csv
 
 Full posterior distributions for alt-shown intimacy inference (101 intimacy levels per row set).
 
@@ -109,9 +109,9 @@ Full posterior distributions for alt-shown intimacy inference (101 intimacy leve
 | `density` | Posterior density at this intimacy value |
 | `model` | Model name |
 
-## food_inv-desire_intimacy_alt/preds_summary.csv
+## food_inv_desire_intimacy_alt/preds_summary.csv
 
-Summarized model predictions for the alt-shown desire-inference experiment (`data/food_inv-desire_intimacy_alt/`).
+Summarized model predictions for the alt-shown desire-inference experiment (`data/food_inv_desire_intimacy_alt/`).
 
 | Column | Description |
 |--------|-------------|
@@ -121,7 +121,7 @@ Summarized model predictions for the alt-shown desire-inference experiment (`dat
 | `p_high_reward` | Model's predicted probability of high desire (0-100) |
 | `model` | Model name |
 
-## food_inv-desire_intimacy_alt/preds_full.csv
+## food_inv_desire_intimacy_alt/preds_full.csv
 
 Full posterior distributions for alt-shown desire inference.
 
@@ -134,25 +134,25 @@ Full posterior distributions for alt-shown desire inference.
 | `density` | Posterior probability of this desire state |
 | `model` | Model name |
 
-## food_inv-intimacy_desire_noalt/fit_results.csv (and similar for desire_noalt)
+## food_inv_intimacy_desire_noalt/fit_results.csv (and similar for desire_noalt)
 
-Summary of jointly-fitted parameters for the no-alternatives-shown intimacy-inference experiment (`data/food_inv-intimacy_desire_noalt/`), using the padded observer with LM-generated counterfactual alternatives. One row per utility ablation. Unlike the alt-shown pipeline, actor weights are **not** frozen from the forward-planning fit — the padded observer reasons over a variable-length action set whose softmax competition structure differs from the alt-shown pipeline's fixed four-action space, so all actor weights are refit jointly with α_observer on the no-alt data.
+Summary of jointly-fitted parameters for the no-alternatives-shown intimacy-inference experiment (`data/food_inv_intimacy_desire_noalt/`), using the padded observer with LM-generated counterfactual alternatives. One row per utility ablation. Unlike the alt-shown pipeline, actor weights are **not** frozen from the forward-planning fit — the padded observer reasons over a variable-length action set whose softmax competition structure differs from the alt-shown pipeline's fixed four-action space, so all actor weights are refit jointly with α_observer on the no-alt data.
 
 | Column | Description |
 |--------|-------------|
 | `model` | Model name (e.g., `full_padded`) |
-| `experiment` | Experiment slug (e.g. `food_inv-intimacy_desire_noalt`) |
+| `experiment` | Experiment slug (e.g. `food_inv_intimacy_desire_noalt`) |
 | `param_alpha` | Actor softmax temperature (fixed at 1) |
 | `param_w_v`, `param_w_d`, `param_w_e` | Fitted utility weights (NaN where not applicable per ablation) |
 | `alpha_observer` | Fitted observer inverse temperature |
 | `nll` | Negative log-likelihood on all-data fit |
 | `n_params` | Number of free parameters |
 
-## food_inv-intimacy_desire_noalt/preds_summary.csv and preds_full.csv
+## food_inv_intimacy_desire_noalt/preds_summary.csv and preds_full.csv
 
 No-alt intimacy-inference predictions. `_summary.csv` has one row per (scenario, observed_action, motivation, model) with `expected_intimacy` (0-100). `_full.csv` has one row per (scenario, observed_action, motivation, intimacy_level, model) with the posterior `density`.
 
-## lm_alternatives_food_inv-intimacy_desire_noalt.csv
+## lm_alternatives_food_inv_intimacy_desire_noalt.csv
 
 LM-generated counterfactual action sets used by the no-alt padded observer. One row per (scenario, observed_action, motivation, alt_idx).
 
@@ -165,9 +165,9 @@ LM-generated counterfactual action sets used by the no-alt padded observer. One 
 | `action_text` | Text of the LM-generated alternative action |
 | `is_share` | Binary tag: 1 if the alternative involves both characters eating the shared food, else 0 |
 
-## lm_alternatives_features_food_inv-intimacy_desire_noalt.csv
+## lm_alternatives_features_food_inv_intimacy_desire_noalt.csv
 
-Access and effort features scored by the LM for each alternative in `lm_alternatives_food_inv-intimacy_desire_noalt.csv`. One row per (scenario, observed_action, motivation, alt_idx) with the same identifier columns plus `access` (normalized to [0, 2]) and `effort` (normalized to [0, 1]).
+Access and effort features scored by the LM for each alternative in `lm_alternatives_food_inv_intimacy_desire_noalt.csv`. One row per (scenario, observed_action, motivation, alt_idx) with the same identifier columns plus `access` (normalized to [0, 2]) and `effort` (normalized to [0, 1]).
 
 ## Cross-validation CSVs (cv_*)
 
@@ -205,13 +205,13 @@ Out-of-sample cell-mean predictions, same schema as the corresponding non-CV `<i
 
 Per-fold fitted parameters for the inverse-planning CVs.
 
-`cv_folds.csv` columns: `experiment` (the experiment slug, e.g. `food_inv-intimacy_desire_alt`), `variant`, `fold`, `held_out_scenario`, `alpha_observer`, `train_nll`, `test_nll`, `n_train`, `n_test`.
+`cv_folds.csv` columns: `experiment` (the experiment slug, e.g. `food_inv_intimacy_desire_alt`), `variant`, `fold`, `held_out_scenario`, `alpha_observer`, `train_nll`, `test_nll`, `n_train`, `n_test`.
 
-`food_inv-intimacy_desire_noalt/cv_folds.csv` adds `param_w_v`, `param_w_d`, `param_w_e` columns (NaN where not applicable per ablation) — these are the jointly-refit utility weights per fold.
+`food_inv_intimacy_desire_noalt/cv_folds.csv` adds `param_w_v`, `param_w_d`, `param_w_e` columns (NaN where not applicable per ablation) — these are the jointly-refit utility weights per fold.
 
 ## Effort-experiment outputs
 
-A parallel set of CSVs covers the effort-manipulation experiments (`food_forw_intimacy_effort/`, `food_inv-intimacy_effort_alt/`). The schemas mirror the canonical pipeline above, with two action indices (1 = non-saliva, 2 = saliva) instead of four and an `effort_condition` column ("low" or "high") in place of `reward_condition` / `motivation`. Reward is held fixed at high so V is constant across actions and `param_w_v` is non-identified — it appears in the fit-result tables for parallelism but stays near its initialization.
+A parallel set of CSVs covers the effort-manipulation experiments (`food_forw_intimacy_effort/`, `food_inv_intimacy_effort_alt/`). The schemas mirror the canonical pipeline above, with two action indices (1 = non-saliva, 2 = saliva) instead of four and an `effort_condition` column ("low" or "high") in place of `reward_condition` / `motivation`. Reward is held fixed at high so V is constant across actions and `param_w_v` is non-identified — it appears in the fit-result tables for parallelism but stays near its initialization.
 
 ### lm/lm_scenario_params_effort.csv
 
@@ -219,20 +219,20 @@ LLM-generated access and effort per (scenario, effort_condition, action). 64 row
 
 ### lm/lm_scenario_params_effort_marginal.csv
 
-Effort-marginal access ratings — the LM is prompted without the effort paragraph, so the resulting access value is what the effort-inferred observer (`food_inv-effort_intimacy_alt`) sees when it doesn't yet know the effort condition. 32 rows (16 × 2). Used by `tables.LLM_TABLES_EFFORT['access_marg']`.
+Effort-marginal access ratings — the LM is prompted without the effort paragraph, so the resulting access value is what the effort-inferred observer (`food_inv_effort_intimacy_alt`) sees when it doesn't yet know the effort condition. 32 rows (16 × 2). Used by `tables.LLM_TABLES_EFFORT['access_marg']`.
 
 ### food_forw_intimacy_effort/preds.csv and fit_results.csv
 
 Per-cell predictions (256 rows) and per-variant fit summaries for `data/food_forw_intimacy_effort/`. Same column schema as the canonical `<forward_slug>/preds.csv` and `<forward_slug>/fit_results.csv`, with `effort` / `effort_idx` in place of `motivation` / `motivation_idx` and only two action indices (with `action_csv` giving the 1-2 label that matches the data CSV). `param_w_v` is non-identified and may print as the initial value.
 
-### food_inv-intimacy_effort_alt/{fit_results,preds_full,preds_summary}.csv
+### food_inv_intimacy_effort_alt/{fit_results,preds_full,preds_summary}.csv
 
-Per-variant α_observer for `data/food_inv-intimacy_effort_alt/` plus posterior predictions. Same columns as the canonical `<inverse_slug>/fit_results.csv` / `preds_full.csv` / `preds_summary.csv`. Actor weights are frozen from `food_forw_intimacy_effort/fit_results.csv` (NOT the canonical `food_forw_intimacy_desire` fit). `preds_summary.csv` has one row per (scenario, action, effort_condition, model) with `expected_intimacy` (0-100); `preds_full.csv` adds the `intimacy` axis with the posterior `density` at each level.
+Per-variant α_observer for `data/food_inv_intimacy_effort_alt/` plus posterior predictions. Same columns as the canonical `<inverse_slug>/fit_results.csv` / `preds_full.csv` / `preds_summary.csv`. Actor weights are frozen from `food_forw_intimacy_effort/fit_results.csv` (NOT the canonical `food_forw_intimacy_desire` fit). `preds_summary.csv` has one row per (scenario, action, effort_condition, model) with `expected_intimacy` (0-100); `preds_full.csv` adds the `intimacy` axis with the posterior `density` at each level.
 
-### food_inv-effort_intimacy_alt/{fit_results,preds_full,preds_summary}.csv
+### food_inv_effort_intimacy_alt/{fit_results,preds_full,preds_summary}.csv
 
-The effort-inferred observer: same structure as `food_inv-intimacy_effort_alt` above but flips the latent — observers see (action × intimacy) and infer the effort context, so `preds_summary.csv` has `p_effort_high` (×100) instead of `expected_intimacy`. Uses the effort-marginal access table (`LLM_TABLES_EFFORT['access_marg']`) because the observer doesn't see the effort paragraph.
+The effort-inferred observer: same structure as `food_inv_intimacy_effort_alt` above but flips the latent — observers see (action × intimacy) and infer the effort context, so `preds_summary.csv` has `p_effort_high` (×100) instead of `expected_intimacy`. Uses the effort-marginal access table (`LLM_TABLES_EFFORT['access_marg']`) because the observer doesn't see the effort paragraph.
 
 ### Effort-experiment CV outputs
 
-`food_forw_intimacy_effort/cv_folds.csv` + `cv_preds.csv`, and `food_inv-{intimacy_effort_alt,effort_intimacy_alt}/cv_folds.csv` + `cv_preds_summary.csv`. Same schemas as the canonical-experiment CV outputs documented above, with `effort` / `effort_condition` in place of `motivation` where applicable.
+`food_forw_intimacy_effort/cv_folds.csv` + `cv_preds.csv`, and `food_inv_{intimacy_effort_alt,effort_intimacy_alt}/cv_folds.csv` + `cv_preds_summary.csv`. Same schemas as the canonical-experiment CV outputs documented above, with `effort` / `effort_condition` in place of `motivation` where applicable.

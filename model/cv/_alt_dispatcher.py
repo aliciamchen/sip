@@ -10,11 +10,11 @@ Runs over the three canonical uniform-prior variants
 (full, discomfort_only, base).
 
 Outputs (in model/outputs/):
-  - cv_loso_food_inv-intimacy_desire_alt_preds_summary.csv
+  - cv_loso_food_inv_intimacy_desire_alt_preds_summary.csv
     One row per (scenario, action, motivation, model), same schema as
-    food_inv-intimacy_desire_alt_preds_summary.csv; `expected_intimacy` comes from
+    food_inv_intimacy_desire_alt_preds_summary.csv; `expected_intimacy` comes from
     the LOSO-refit observer for that scenario's held-out fold.
-  - cv_loso_food_inv-desire_intimacy_alt_preds_summary.csv
+  - cv_loso_food_inv_desire_intimacy_alt_preds_summary.csv
     One row per (scenario, action, intimacy_condition, model); `p_high_reward`
     from LOSO-refit observer.
   - cv_loso_inverse_alt_folds.csv
@@ -128,7 +128,7 @@ def _loso_intimacy(actor_params_by_model):
                 test_nll += -float(np.log(prob))
 
             fold_rows.append({
-                "experiment": "food_inv-intimacy_desire_alt",
+                "experiment": "food_inv_intimacy_desire_alt",
                 "variant": variant,
                 "fold": fold,
                 "held_out_scenario": scenario_label,
@@ -209,7 +209,7 @@ def _loso_desire(actor_params_by_model):
                 test_nll += -(p_human * float(np.log(p_m)) + (1 - p_human) * float(np.log(1 - p_m)))
 
             fold_rows.append({
-                "experiment": "food_inv-desire_intimacy_alt",
+                "experiment": "food_inv_desire_intimacy_alt",
                 "variant": variant,
                 "fold": fold,
                 "held_out_scenario": scenario_label,
@@ -225,11 +225,11 @@ def _loso_desire(actor_params_by_model):
 
 def main_intimacy_alt():
     print("=" * 60)
-    print("LOSO CV: food_inv-intimacy_desire_alt")
+    print("LOSO CV: food_inv_intimacy_desire_alt")
     print("=" * 60)
 
     actor_params_by_model = load_fitted_params()
-    outputs_dir = get_project_root() / "model" / "outputs" / "food_inv-intimacy_desire_alt"
+    outputs_dir = get_project_root() / "model" / "outputs" / "food_inv_intimacy_desire_alt"
     outputs_dir.mkdir(parents=True, exist_ok=True)
 
     int_preds, int_folds = _loso_intimacy(actor_params_by_model)
@@ -248,11 +248,11 @@ def main_intimacy_alt():
 
 def main_desire_alt():
     print("=" * 60)
-    print("LOSO CV: food_inv-desire_intimacy_alt")
+    print("LOSO CV: food_inv_desire_intimacy_alt")
     print("=" * 60)
 
     actor_params_by_model = load_fitted_params()
-    outputs_dir = get_project_root() / "model" / "outputs" / "food_inv-desire_intimacy_alt"
+    outputs_dir = get_project_root() / "model" / "outputs" / "food_inv_desire_intimacy_alt"
     outputs_dir.mkdir(parents=True, exist_ok=True)
 
     des_preds, des_folds = _loso_desire(actor_params_by_model)

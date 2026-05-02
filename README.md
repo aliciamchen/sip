@@ -46,19 +46,19 @@ The stable identifier for each experiment is its directory slug in `data/` and `
 
 The first four use the canonical 4-action food-sharing set:
 
-- **Intimacy inference, alternatives shown** (`food_inv-intimacy_desire_alt/`) — observers see all four candidate actions (with the actor's desire known) and infer intimacy.
-- **Desire inference, alternatives shown** (`food_inv-desire_intimacy_alt/`) — observers see all four candidate actions (with intimacy known) and infer desire.
-- **Intimacy inference, no alternatives shown** (`food_inv-intimacy_desire_noalt/`) — observers see only the single observed action; on the model side, counterfactual alternatives are LM-generated.
-- **Desire inference, no alternatives shown** (`food_inv-desire_intimacy_noalt/`) — same noalt setup applied to the desire-inference direction; the slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs.
+- **Intimacy inference, alternatives shown** (`food_inv_intimacy_desire_alt/`) — observers see all four candidate actions (with the actor's desire known) and infer intimacy.
+- **Desire inference, alternatives shown** (`food_inv_desire_intimacy_alt/`) — observers see all four candidate actions (with intimacy known) and infer desire.
+- **Intimacy inference, no alternatives shown** (`food_inv_intimacy_desire_noalt/`) — observers see only the single observed action; on the model side, counterfactual alternatives are LM-generated.
+- **Desire inference, no alternatives shown** (`food_inv_desire_intimacy_noalt/`) — same noalt setup applied to the desire-inference direction; the slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs.
 
 The other two use the effort 2-action set:
 
-- **Intimacy inference, effort manipulation** (`food_inv-intimacy_effort_alt/`) — observers see observed action (2 levels) × effort (2 levels) and infer intimacy. Both candidate actions are shown; prior/posterior intimacy sliders.
-- **Effort inference** (`food_inv-effort_intimacy_alt/`) — flips the inverse direction: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context. The vignette no longer reveals the effort paragraph; instead the two effort paragraphs become the slider endpoints, and participants give prior and posterior probability ratings for which effort situation is more likely.
+- **Intimacy inference, effort manipulation** (`food_inv_intimacy_effort_alt/`) — observers see observed action (2 levels) × effort (2 levels) and infer intimacy. Both candidate actions are shown; prior/posterior intimacy sliders.
+- **Effort inference** (`food_inv_effort_intimacy_alt/`) — flips the inverse direction: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context. The vignette no longer reveals the effort paragraph; instead the two effort paragraphs become the slider endpoints, and participants give prior and posterior probability ratings for which effort situation is more likely.
 
 ### Generalization beyond food sharing
 
-A non-food stimulus set parallels the canonical food set: 16 scenarios covering substance sharing (chapstick, hairbrush), shared physical space (blanket, bed), and informational/situational privacy (a breakup conversation, a phone passcode). The non-food experiments mirror the canonical food set one-to-one and live alongside them under `experiments/`: `nonfood_forw_intimacy_desire/`, `nonfood_inv-intimacy_desire_alt/`, `nonfood_inv-desire_intimacy_alt/`, `nonfood_inv-intimacy_desire_noalt/`, and `nonfood_inv-desire_intimacy_noalt/`. The modeling pipeline reuses the canonical scripts via a `--domain food|nonfood` flag.
+A non-food stimulus set parallels the canonical food set: 16 scenarios covering substance sharing (chapstick, hairbrush), shared physical space (blanket, bed), and informational/situational privacy (a breakup conversation, a phone passcode). The non-food experiments mirror the canonical food set one-to-one and live alongside them under `experiments/`: `nonfood_forw_intimacy_desire/`, `nonfood_inv_intimacy_desire_alt/`, `nonfood_inv_desire_intimacy_alt/`, `nonfood_inv_intimacy_desire_noalt/`, and `nonfood_inv_desire_intimacy_noalt/`. The modeling pipeline reuses the canonical scripts via a `--domain food|nonfood` flag.
 
 Currently only `nonfood_forw_intimacy_desire` has data; the four non-food inverse experiments are pending. The full set of generalization experiments is TBD.
 
@@ -100,8 +100,8 @@ The Together AI calls go through `model/lm/client.py`, which fans the 10 runs ac
 
 The no-alt observer experiments need V scored not just for the four canonical actions but also for LM-generated counterfactual alternatives. The two no-alt experiments use different conditioning axes for those alternatives, following the design rule that alternatives should be conditioned on what the observer can see (not on the latent the observer infers):
 
-- `food_inv-intimacy_desire_noalt`: observer sees motivation, infers intimacy. Alternatives are conditioned on (scenario, observed action, motivation). Generated by `model/lm/generate_alternatives_motivation.py`; features and V scored by `score_alternative_features.py` and `score_alternative_v.py`.
-- `food_inv-desire_intimacy_noalt`: observer sees relationship, infers motivation. Alternatives are conditioned on (scenario, observed action, relationship). Generated by `model/lm/generate_alternatives_relationship.py`; same scripts handle features and V via `--conditioning relationship`.
+- `food_inv_intimacy_desire_noalt`: observer sees motivation, infers intimacy. Alternatives are conditioned on (scenario, observed action, motivation). Generated by `model/lm/generate_alternatives_motivation.py`; features and V scored by `score_alternative_features.py` and `score_alternative_v.py`.
+- `food_inv_desire_intimacy_noalt`: observer sees relationship, infers motivation. Alternatives are conditioned on (scenario, observed action, relationship). Generated by `model/lm/generate_alternatives_relationship.py`; same scripts handle features and V via `--conditioning relationship`.
 
 Generating LM tables requires `TOGETHER_API_KEY` in `.env`. The fitting and prediction scripts index into these tables by `scenario_idx`; they require the relevant CSVs to exist.
 
@@ -171,21 +171,21 @@ uv run python model/lm/score_alternative_features.py --conditioning relationship
 uv run python model/lm/score_alternative_v.py --conditioning relationship
 ```
 
-Each fit/predict/CV script is named after the experiment it serves and lives in `model/forward/`, `model/inverse/`, or `model/cv/`. Run `fit_<slug>.py`, then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`. Hyphens in inverse slugs require quoting in the shell:
+Each fit/predict/CV script is named after the experiment it serves and lives in `model/forward/`, `model/inverse/`, or `model/cv/`. Run `fit_<slug>.py`, then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`.
 
 ```bash
 # forward
 uv run python model/forward/fit_food_forw_intimacy_desire.py
 uv run python model/forward/predict_food_forw_intimacy_desire.py
-# inverse (note quoting)
-uv run python "model/inverse/fit_food_inv-intimacy_desire_alt.py"
-uv run python "model/inverse/predict_food_inv-intimacy_desire_alt.py"
+# inverse
+uv run python model/inverse/fit_food_inv_intimacy_desire_alt.py
+uv run python model/inverse/predict_food_inv_intimacy_desire_alt.py
 # cross-validation
 uv run python model/cv/cv_food_forw_intimacy_desire.py
-uv run python "model/cv/cv_food_inv-intimacy_desire_alt.py"
+uv run python model/cv/cv_food_inv_intimacy_desire_alt.py
 ```
 
-The alt-shown inverse experiments freeze actor weights from their corresponding forward fit and fit only `α_observer`; the no-alt experiments refit all actor weights jointly with `α_observer` because the padded observer's variable-length action space doesn't accept the alt-shown weights as a transplant. The two effort inverse observers freeze actor weights from `food_forw_intimacy_effort`. `food_inv-effort_intimacy_alt` flips the inference direction (infers effort from observed action, intimacy) and uses **effort-marginal access** because that observer doesn't see the effort paragraph.
+The alt-shown inverse experiments freeze actor weights from their corresponding forward fit and fit only `α_observer`; the no-alt experiments refit all actor weights jointly with `α_observer` because the padded observer's variable-length action space doesn't accept the alt-shown weights as a transplant. The two effort inverse observers freeze actor weights from `food_forw_intimacy_effort`. `food_inv_effort_intimacy_alt` flips the inference direction (infers effort from observed action, intimacy) and uses **effort-marginal access** because that observer doesn't see the effort paragraph.
 
 All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 LOSO folds. Forward CV refits actor weights ($w_v, w_d, w_e, \gamma$) per fold; alt-shown inverse CV refits only $\alpha_\mathrm{obs}$; no-alt inverse CV refits all weights jointly per fold.
 

@@ -163,7 +163,7 @@ def get_lm_v_padded(
     v_padded_table has shape (16, 4, 2, MAX_ACTIONS) — indexed by
     (scenario, observed_action, motivation, padded_slot). Slot 0 is the
     canonical action (V from lm_scenario_v.csv); slots 1..k are LM-generated
-    alternatives (V from lm_alternatives_v_food_inv-intimacy_desire_noalt.csv); remaining slots are
+    alternatives (V from lm_alternatives_v_food_inv_intimacy_desire_noalt.csv); remaining slots are
     null-padded with V=0 (no contribution after multiplying by zero prior).
     """
     return v_padded_table[scenario_idx, observed_action, reward_condition, padded_slot]

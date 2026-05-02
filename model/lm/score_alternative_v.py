@@ -1,7 +1,7 @@
 """Score signed-valence V for LM-generated alternatives.
 
---conditioning motivation (default): produces lm_alternatives_v_food_inv-intimacy_desire_noalt.csv
---conditioning relationship: produces lm_alternatives_v_food_inv-desire_intimacy_noalt.csv
+--conditioning motivation (default): produces lm_alternatives_v_food_inv_intimacy_desire_noalt.csv
+--conditioning relationship: produces lm_alternatives_v_food_inv_desire_intimacy_noalt.csv
 """
 
 import argparse

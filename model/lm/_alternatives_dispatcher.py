@@ -6,11 +6,11 @@ inverse-planning variants.
 Two conditioning modes are supported via `--conditioning`:
 
   * `motivation` (default): conditions alternatives on (observed_action,
-    motivation). Used by `food_inv-intimacy_desire_noalt` (observer sees motivation,
+    motivation). Used by `food_inv_intimacy_desire_noalt` (observer sees motivation,
     infers intimacy). 16 scenarios × 4 actions × 2 motivations = 128 cells.
 
   * `relationship`: conditions alternatives on (observed_action,
-    relationship_condition). Used by `food_inv-desire_intimacy_noalt` (observer sees
+    relationship_condition). Used by `food_inv_desire_intimacy_noalt` (observer sees
     relationship, infers motivation). 16 scenarios × 4 actions × 4 relationship
     levels = 256 cells.
 
@@ -24,9 +24,9 @@ The LM decides set size; no fixed quota. Each alternative is tagged with a
 binary is_share flag so the V/access/effort scoring downstream can be applied.
 
 Output:
-    --conditioning motivation, --domain food   → model/outputs/lm_alternatives_food_inv-intimacy_desire_noalt.csv
+    --conditioning motivation, --domain food   → model/outputs/lm_alternatives_food_inv_intimacy_desire_noalt.csv
     --conditioning motivation, --domain nonfood → model/outputs/lm_alternatives_nonfood.csv
-    --conditioning relationship, --domain food → model/outputs/lm_alternatives_food_inv-desire_intimacy_noalt.csv
+    --conditioning relationship, --domain food → model/outputs/lm_alternatives_food_inv_desire_intimacy_noalt.csv
     --conditioning relationship, --domain nonfood → model/outputs/lm_alternatives_relationship_nonfood.csv
 
 Usage:
@@ -83,9 +83,9 @@ CHECKPOINT_EVERY = 16
 # filenames) to use; --conditioning selects which axis the alternatives are
 # split along.
 _DOMAIN_PATHS = {
-    ("food", "motivation"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_food_inv-intimacy_desire_noalt.csv"},
+    ("food", "motivation"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_food_inv_intimacy_desire_noalt.csv"},
     ("nonfood", "motivation"): {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_nonfood.csv"},
-    ("food", "relationship"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_food_inv-desire_intimacy_noalt.csv"},
+    ("food", "relationship"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_food_inv_desire_intimacy_noalt.csv"},
     ("nonfood", "relationship"): {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_relationship_nonfood.csv"},
 }
 
@@ -303,8 +303,8 @@ if __name__ == "__main__":
         default="motivation",
         help=(
             "Which axis to condition alternatives on. 'motivation' (default) "
-            "is used by food_inv-intimacy_desire_noalt (observer sees motivation, "
-            "infers intimacy); 'relationship' is used by food_inv-desire_intimacy_noalt "
+            "is used by food_inv_intimacy_desire_noalt (observer sees motivation, "
+            "infers intimacy); 'relationship' is used by food_inv_desire_intimacy_noalt "
             "(observer sees relationship, infers motivation)."
         ),
     )

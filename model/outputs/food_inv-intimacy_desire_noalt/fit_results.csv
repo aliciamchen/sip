@@ -1,4 +1,0 @@
-model,experiment,nll,n_params,param_alpha,alpha_observer,param_w_v,param_w_d,param_w_e,param_gamma
-full_padded,food_inv-intimacy_desire_noalt,2054.865234375,5,1.0,1.6526813507080078,0.316879004240036,1.6426481008529663,1.402333378791809,0.8708809018135071
-discomfort_only_padded,food_inv-intimacy_desire_noalt,2051.93212890625,3,1.0,1.692855715751648,,1.683739185333252,,0.9730936884880066
-base_padded,food_inv-intimacy_desire_noalt,2141.416015625,3,1.0,0.9000020027160645,0.9938168525695801,,1.0876643657684326,

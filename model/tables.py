@@ -263,7 +263,7 @@ def load_padded_lm_tables(
     lm_scenario_params.csv; V from lm_scenario_v.csv).
 
     Slots 1..k hold the LM-generated alternatives for that cell (access + effort
-    from lm_alternatives_features_food_inv-intimacy_desire_noalt.csv; V from lm_alternatives_v_food_inv-intimacy_desire_noalt.csv with
+    from lm_alternatives_features_food_inv_intimacy_desire_noalt.csv; V from lm_alternatives_v_food_inv_intimacy_desire_noalt.csv with
     motivation_query == motivation, since the actor reasoning under a given
     motivation evaluates V under that same motivation).
 
@@ -279,11 +279,11 @@ def load_padded_lm_tables(
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives_food_inv-intimacy_desire_noalt.csv"
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives_food_inv_intimacy_desire_noalt.csv"
     alternatives_features_path = (
-        alternatives_features_path or outputs_dir / "lm_alternatives_features_food_inv-intimacy_desire_noalt.csv"
+        alternatives_features_path or outputs_dir / "lm_alternatives_features_food_inv_intimacy_desire_noalt.csv"
     )
-    alternatives_v_path = alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv-intimacy_desire_noalt.csv"
+    alternatives_v_path = alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_intimacy_desire_noalt.csv"
 
     required = [alternatives_path, alternatives_features_path, canonical_v_path, alternatives_v_path]
     if any(not p.exists() for p in required):
@@ -388,7 +388,7 @@ def load_padded_lm_tables_relationship(
     alternatives_v_path=None,
 ):
     """Build padded tables for the relationship-conditioned no-alt action space
-    used by `food_inv-desire_intimacy_noalt`.
+    used by `food_inv_desire_intimacy_noalt`.
 
     Shapes:
       - access: (16, 4, 4, MAX_ACTIONS) — (scenario, observed_action, relationship, slot)
@@ -402,7 +402,7 @@ def load_padded_lm_tables_relationship(
     relationship axis since the canonical action's V doesn't depend on
     relationship). Slots 1..k hold the LM-generated alternatives for that
     (scenario, observed, relationship) cell, from
-    lm_alternatives_features_food_inv-desire_intimacy_noalt.csv and lm_alternatives_v_food_inv-desire_intimacy_noalt.csv.
+    lm_alternatives_features_food_inv_desire_intimacy_noalt.csv and lm_alternatives_v_food_inv_desire_intimacy_noalt.csv.
 
     Returns a dict {access, effort, v, prior}, or None if any required CSV is
     missing.
@@ -411,14 +411,14 @@ def load_padded_lm_tables_relationship(
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v.csv"
     alternatives_path = (
-        alternatives_path or outputs_dir / "lm_alternatives_food_inv-desire_intimacy_noalt.csv"
+        alternatives_path or outputs_dir / "lm_alternatives_food_inv_desire_intimacy_noalt.csv"
     )
     alternatives_features_path = (
         alternatives_features_path
-        or outputs_dir / "lm_alternatives_features_food_inv-desire_intimacy_noalt.csv"
+        or outputs_dir / "lm_alternatives_features_food_inv_desire_intimacy_noalt.csv"
     )
     alternatives_v_path = (
-        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv-desire_intimacy_noalt.csv"
+        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_desire_intimacy_noalt.csv"
     )
 
     required = [alternatives_path, alternatives_features_path, canonical_v_path, alternatives_v_path]
@@ -580,7 +580,7 @@ LLM_TABLES_EFFORT = load_lm_scenario_params_effort()
 def load_lm_scenario_params_effort_marginal(filepath=None):
     """Load effort-marginal access ratings (vignette without effort paragraph).
 
-    Used by the food_inv-effort_intimacy_alt experiment, where the observer does
+    Used by the food_inv_effort_intimacy_alt experiment, where the observer does
     not see the effort paragraph and so cannot perceive any effort-induced
     setting differences when reasoning about action access.
 

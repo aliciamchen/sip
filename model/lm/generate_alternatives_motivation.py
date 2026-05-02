@@ -1,6 +1,6 @@
 """Generate motivation-conditioned LM alternatives.
 
-Produces lm_alternatives_food_inv-intimacy_desire_noalt.csv (or lm_alternatives_nonfood.csv with --domain nonfood).
+Produces lm_alternatives_food_inv_intimacy_desire_noalt.csv (or lm_alternatives_nonfood.csv with --domain nonfood).
 """
 
 import argparse

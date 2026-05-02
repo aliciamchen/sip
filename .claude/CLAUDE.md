@@ -4,9 +4,8 @@ Guidance for Claude Code sessions working in this repository. Project overview, 
 
 ## Naming and structure conventions
 
-- The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't.
-- Inverse experiment slugs use a hyphen for the inference target: `food_inv-<target>_<context>_<altness>` (e.g. `food_inv-intimacy_desire_alt`). Hyphens are valid in filenames but not in Python module names, so per-experiment fit/predict/cv scripts are runnable as scripts but not importable as modules. They're thin wrappers that import shared logic from `_dispatcher.py` (cv/) or `_helpers.py` (inverse/) — trace the import to find the work.
-- Hyphenated paths require quoting in shell commands: `uv run python "model/inverse/fit_food_inv-intimacy_desire_alt.py"`.
+- The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/predict/cv scripts can also be imported as modules if needed.
+- Per-experiment scripts (e.g. `model/inverse/fit_food_inv_intimacy_desire_alt.py`) are thin wrappers that import shared logic from `_dispatcher.py` (cv/) or `_helpers.py` (inverse/) and call its main with their hardcoded slug. To trace what a script does, follow the import.
 
 ## Terminology
 

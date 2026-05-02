@@ -11,11 +11,11 @@ Usage:
 
 Available experiments:
     - food_forw_intimacy_desire: Experiment with probability sliders for action ratings
-    - food_inv-intimacy_desire_alt: Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
-    - food_inv-intimacy_desire_noalt: Same as food_inv-intimacy_desire_alt but with action alternatives hidden from participants
-    - food_inv-desire_intimacy_alt: Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
+    - food_inv_intimacy_desire_alt: Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
+    - food_inv_intimacy_desire_noalt: Same as food_inv_intimacy_desire_alt but with action alternatives hidden from participants
+    - food_inv_desire_intimacy_alt: Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
     - food_forw_intimacy_effort: Forward planning, intimacy x relative effort manipulation (2-action space, reward held high)
-    - food_inv-intimacy_effort_alt: Inverse planning intimacy inference, observed-action x relative effort manipulation (2-action space)
+    - food_inv_intimacy_effort_alt: Inverse planning intimacy inference, observed-action x relative effort manipulation (2-action space)
 """
 
 import argparse
@@ -83,7 +83,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": True,
         "has_attention_memory": True,
     },
-    "food_inv-intimacy_desire_alt": {
+    "food_inv_intimacy_desire_alt": {
         "description": "Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)",
         "main_trial_fields": [
             "subject_id",
@@ -105,7 +105,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "food_inv-intimacy_desire_noalt": {
+    "food_inv_intimacy_desire_noalt": {
         "description": "Inverse planning intimacy inference where action alternatives are hidden from participants",
         "main_trial_fields": [
             "subject_id",
@@ -127,7 +127,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "food_inv-desire_intimacy_alt": {
+    "food_inv_desire_intimacy_alt": {
         "description": "Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)",
         "main_trial_fields": [
             "subject_id",
@@ -149,7 +149,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "food_inv-desire_intimacy_noalt": {
+    "food_inv_desire_intimacy_noalt": {
         "description": "Inverse planning desire inference where action alternatives are hidden from participants",
         "main_trial_fields": [
             "subject_id",
@@ -193,7 +193,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": True,
         "has_attention_memory": True,
     },
-    "food_inv-intimacy_effort_alt": {
+    "food_inv_intimacy_effort_alt": {
         "description": "Inverse planning intimacy inference with observed-action x effort manipulation (2 actions)",
         "main_trial_fields": [
             "subject_id",
@@ -215,7 +215,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "food_inv-effort_intimacy_alt": {
+    "food_inv_effort_intimacy_alt": {
         "description": "Inverse planning effort inference with observed-action x intimacy manipulation (2 actions)",
         "main_trial_fields": [
             "subject_id",
@@ -329,7 +329,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                                 "reward_condition", ""
                             )
 
-                    elif experiment_name in ("food_inv-intimacy_desire_alt", "food_inv-intimacy_desire_noalt"):
+                    elif experiment_name in ("food_inv_intimacy_desire_alt", "food_inv_intimacy_desire_noalt"):
                         # Extract intimacy rating and stage information
                         intimacy_rating = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -346,7 +346,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_rating": intimacy_rating,
                         }
 
-                    elif experiment_name in ("food_inv-desire_intimacy_alt", "food_inv-desire_intimacy_noalt"):
+                    elif experiment_name in ("food_inv_desire_intimacy_alt", "food_inv_desire_intimacy_noalt"):
                         # Extract reward likelihood rating and stage information
                         response = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -375,7 +375,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "action_2": probs[1] if len(probs) > 1 else "",
                         }
 
-                    elif experiment_name == "food_inv-intimacy_effort_alt":
+                    elif experiment_name == "food_inv_intimacy_effort_alt":
                         # Prior/posterior intimacy slider response
                         trial_data = {
                             "subject_id": subject_id,
@@ -386,7 +386,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_rating": trial.get("response", ""),
                         }
 
-                    elif experiment_name == "food_inv-effort_intimacy_alt":
+                    elif experiment_name == "food_inv_effort_intimacy_alt":
                         # Prior/posterior effort-likelihood slider response
                         # response is the slider value 0-100, encoding P(effort_high)
                         trial_data = {
@@ -529,7 +529,7 @@ def create_food_forw_intimacy_desire_long(output_dir):
 
 def create_food_inv_intimacy_long(output_dir):
     """
-    Create main_trials_long.csv for the food_inv-intimacy_desire_alt / food_inv-intimacy_desire_noalt experiments.
+    Create main_trials_long.csv for the food_inv_intimacy_desire_alt / food_inv_intimacy_desire_noalt experiments.
 
     Filters out participants who failed attention check or got 0 correct on memory check.
 
@@ -639,9 +639,9 @@ def create_food_forw_intimacy_effort_long(output_dir):
     )
 
 
-def create_food_inv-intimacy_effort_alt_long(output_dir):
+def create_food_inv_intimacy_effort_alt_long(output_dir):
     """
-    Create main_trials_long.csv for food_inv-intimacy_effort_alt experiment.
+    Create main_trials_long.csv for food_inv_intimacy_effort_alt experiment.
 
     Filters out participants who failed attention or got 0 correct on memory.
     Renames effort_condition -> effort for analysis consistency.
@@ -681,9 +681,9 @@ def create_food_inv-intimacy_effort_alt_long(output_dir):
     )
 
 
-def create_food_inv-effort_intimacy_alt_long(output_dir):
+def create_food_inv_effort_intimacy_alt_long(output_dir):
     """
-    Create main_trials_long.csv for the food_inv-effort_intimacy_alt experiment.
+    Create main_trials_long.csv for the food_inv_effort_intimacy_alt experiment.
 
     Filters out participants who failed attention or got 0 correct on memory.
     Renames intimacy_condition -> intimacy for analysis consistency.
@@ -725,7 +725,7 @@ def create_food_inv-effort_intimacy_alt_long(output_dir):
 
 def create_food_inv_desire_long(output_dir):
     """
-    Create main_trials_long.csv for the food_inv-desire_intimacy_alt / food_inv-desire_intimacy_noalt experiments.
+    Create main_trials_long.csv for the food_inv_desire_intimacy_alt / food_inv_desire_intimacy_noalt experiments.
 
     Filters out participants who failed attention check or got 0 correct on memory check.
 
@@ -783,23 +783,23 @@ def main():
         epilog="""
 Available experiments:
   food_forw_intimacy_desire                Experiment with probability sliders for action ratings
-  food_inv-intimacy_desire_alt    Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
-  food_inv-intimacy_desire_noalt  Same as food_inv-intimacy_desire_alt but with action alternatives hidden from participants
-  food_inv-desire_intimacy_alt      Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
-  food_inv-desire_intimacy_noalt    Same as food_inv-desire_intimacy_alt but with action alternatives hidden from participants
+  food_inv_intimacy_desire_alt    Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)
+  food_inv_intimacy_desire_noalt  Same as food_inv_intimacy_desire_alt but with action alternatives hidden from participants
+  food_inv_desire_intimacy_alt      Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)
+  food_inv_desire_intimacy_noalt    Same as food_inv_desire_intimacy_alt but with action alternatives hidden from participants
   food_forw_intimacy_effort         Forward planning, intimacy x relative effort (2 actions, reward fixed high)
-  food_inv-intimacy_effort_alt          Inverse planning intimacy inference, observed-action x relative effort (2 actions)
-  food_inv-effort_intimacy_alt Inverse planning effort inference, observed-action x intimacy (2 actions)
+  food_inv_intimacy_effort_alt          Inverse planning intimacy inference, observed-action x relative effort (2 actions)
+  food_inv_effort_intimacy_alt Inverse planning effort inference, observed-action x intimacy (2 actions)
 
 Examples:
   python json_to_csv.py food_forw_intimacy_desire
-  python json_to_csv.py food_inv-intimacy_desire_alt
-  python json_to_csv.py food_inv-intimacy_desire_noalt
-  python json_to_csv.py food_inv-desire_intimacy_alt
-  python json_to_csv.py food_inv-desire_intimacy_noalt
+  python json_to_csv.py food_inv_intimacy_desire_alt
+  python json_to_csv.py food_inv_intimacy_desire_noalt
+  python json_to_csv.py food_inv_desire_intimacy_alt
+  python json_to_csv.py food_inv_desire_intimacy_noalt
   python json_to_csv.py food_forw_intimacy_effort
-  python json_to_csv.py food_inv-intimacy_effort_alt
-  python json_to_csv.py food_inv-effort_intimacy_alt
+  python json_to_csv.py food_inv_intimacy_effort_alt
+  python json_to_csv.py food_inv_effort_intimacy_alt
         """,
     )
 
@@ -833,21 +833,21 @@ Examples:
     if args.experiment in ("food_forw_intimacy_desire", "nonfood_forw_intimacy_desire"):
         print("\nCreating long format with exclusions...")
         create_food_forw_intimacy_desire_long(output_dir)
-    elif args.experiment in ("food_inv-intimacy_desire_alt", "food_inv-intimacy_desire_noalt"):
+    elif args.experiment in ("food_inv_intimacy_desire_alt", "food_inv_intimacy_desire_noalt"):
         print("\nCreating long format with exclusions...")
         create_food_inv_intimacy_long(output_dir)
-    elif args.experiment in ("food_inv-desire_intimacy_alt", "food_inv-desire_intimacy_noalt"):
+    elif args.experiment in ("food_inv_desire_intimacy_alt", "food_inv_desire_intimacy_noalt"):
         print("\nCreating long format with exclusions...")
         create_food_inv_desire_long(output_dir)
     elif args.experiment == "food_forw_intimacy_effort":
         print("\nCreating long format with exclusions...")
         create_food_forw_intimacy_effort_long(output_dir)
-    elif args.experiment == "food_inv-intimacy_effort_alt":
+    elif args.experiment == "food_inv_intimacy_effort_alt":
         print("\nCreating long format with exclusions...")
-        create_food_inv-intimacy_effort_alt_long(output_dir)
-    elif args.experiment == "food_inv-effort_intimacy_alt":
+        create_food_inv_intimacy_effort_alt_long(output_dir)
+    elif args.experiment == "food_inv_effort_intimacy_alt":
         print("\nCreating long format with exclusions...")
-        create_food_inv-effort_intimacy_alt_long(output_dir)
+        create_food_inv_effort_intimacy_alt_long(output_dir)
 
     print("\nConversion complete!")
 
