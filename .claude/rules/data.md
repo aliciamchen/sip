@@ -5,32 +5,30 @@ paths:
 
 # Data structure
 
-Main experiments are at the top level:
+Each experiment folder is named after its slug and contains:
 
-Each directory name reflects what the experiment measures, not a paper experiment number:
+- `raw_data/` — JSON files from jsPsych (gitignored).
+- `main_trials.csv` — wide-format processed trials (all participants).
+- `main_trials_long.csv` — long format with excluded participants removed; this is what the analysis qmds load.
+- `exit_survey.csv` — demographics and attention/memory checks.
 
-```
-data/
-  food_forw_intimacy_desire/        # Forward planning (actors choose actions)
-  food_inv-intimacy_desire_alt/     # Intimacy inference, alternatives shown to participants
-  food_inv-intimacy_desire_noalt/   # Intimacy inference, no alternatives shown (LM-generated counterfactuals on the model side)
-  food_inv-desire_intimacy_alt/     # Desire inference, alternatives shown
-  food_inv-desire_intimacy_noalt/   # Desire inference, no alternatives shown (relationship-keyed action space)
-  food_forw_intimacy_effort/        # Forward planning, effort manipulation (2 actions, intimacy × effort, reward fixed at high)
-  food_inv-intimacy_effort_alt/     # Inverse planning, effort manipulation (2 candidate actions × effort, intimacy inference)
-  food_inv-effort_intimacy_alt/     # Inverse planning, effort inference (2 candidate actions × intimacy, effort inference)
-  nonfood_forw_intimacy_desire/     # Non-food forward planning (parallels food_forw_intimacy_desire on scenarios_nonfood.csv)
-  legacy/                           # Earlier experiments not part of the current pipeline (planning_comm/, pilots/)
-```
+`data/legacy/` holds earlier experiments not part of the current pipeline (`planning_comm/`, `pilots/`); the directory is covered by the `legacy` gitignore rule.
 
-`food_inv-desire_intimacy_alt/raw_data/` was originally collected under the URL slug `inv-plan-reward-final` (back when the experiment was called "reward inference"); the raw JSONs use Prolific PIDs which `analysis/json_to_csv.py` deterministically anonymizes to UUIDs in the processed CSVs.
+`data/food_inv-desire_intimacy_alt/raw_data/` was originally collected under the URL slug `inv-plan-reward-final` (back when the experiment was called "reward inference"). The raw JSONs use Prolific PIDs, which `analysis/json_to_csv.py` deterministically anonymizes to UUIDs in the processed CSVs.
 
-Each experiment folder contains:
-- `raw_data/` - JSON files from experiment
-- `main_trials.csv` - Processed trial data (all participants)
-- `main_trials_long.csv` - Long format with excluded participants removed
-- `exit_survey.csv` - Demographic and attention check data
+## Participant exclusion criteria
 
-Participant exclusion criteria:
+Participants are excluded if either is true:
 - Failed attention check (`attention_passed != True`)
 - Got 0 correct on memory check (`memory_correct_count == 0`)
+
+`main_trials_long.csv` reflects exclusions; `main_trials.csv` does not.
+
+## Anonymization
+
+`analysis/json_to_csv.py` maps each Prolific PID to a deterministic UUID5 (namespace `6ba7b810-9dad-11d1-80b4-00c04fd430c8`); the mapping is regenerated from `raw_data/` on each run and never persisted to disk. Tracked CSVs only ever contain the anonymized UUIDs. The `raw_data/` directories are gitignored repo-wide.
+
+## Where else to look
+
+- The full experiment roster lives in [README.md](../../README.md).
+- Per-CSV column documentation is in [data/README.md](../../data/README.md).
