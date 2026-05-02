@@ -22,3 +22,11 @@ cogsci-2026
 .claude/scheduled_tasks.lock
 SIP_journal
 notes/
+
+# Non-CV prediction outputs — written by model/{forward,inverse}/predict_*.py
+# but never read by downstream code (analysis qmds use cv_preds[_summary].csv
+# instead). Keep the writers so they can be regenerated for debugging,
+# but don't track the outputs.
+model/outputs/*/preds.csv
+model/outputs/*/preds_full.csv
+model/outputs/*/preds_summary.csv
