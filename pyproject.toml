@@ -36,5 +36,10 @@ dependencies = [
     "together>=1.3.0",
 ]
 
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]
+
 [tool.uv]
 package = false
