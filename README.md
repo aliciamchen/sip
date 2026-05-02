@@ -1,6 +1,6 @@
 # Inverse planning in the context of sociological structure
 
-Cognitive science research on social inference and food sharing: how people decide to share saliva-transferring food with someone given the relationship between them, and how observers infer either the relationship or the actor's desire from the observed action. The project comprises 9 experiments — a forward-planning actor experiment plus six inverse-planning observer experiments on the canonical food set, two further inverse experiments that manipulate effort instead of desire, and a non-food generalization set.
+Cognitive science research on social inference and food sharing: how people decide to share saliva-transferring food with someone given the relationship between them, and how observers infer either the relationship or the actor's desire from the observed action. The project comprises two forward-planning actor experiments and six inverse-planning observer experiments on the canonical food set, plus a generalization set beyond food sharing that is currently in progress (one experiment collected so far; the full set is TBD).
 
 ## Quick start
 
@@ -37,17 +37,30 @@ LM elicitation (lm/score_*.py) → scenario tables (model/outputs/lm/)
 
 The stable identifier for each experiment is its directory slug in `data/` and `experiments/` (paper-level numbers change as the writeup evolves).
 
-- **Forward planning** (`food_forw_intimacy_desire/`) — actors choose actions based on intimacy and desire.
-- **Inverse, intimacy inference, alternatives shown** (`food_inv-intimacy_desire_alt/`) — observers see the scenario plus all four candidate actions (with the actor's desire known) and infer intimacy.
-- **Inverse, desire inference, alternatives shown** (`food_inv-desire_intimacy_alt/`) — observers see all four candidate actions (with intimacy known) and infer desire.
-- **Inverse, intimacy inference, no alternatives shown** (`food_inv-intimacy_desire_noalt/`) — observers see only the single observed action; on the model side, counterfactual alternatives are LM-generated.
-- **Inverse, desire inference, no alternatives shown** (`food_inv-desire_intimacy_noalt/`) — same noalt setup applied to the desire-inference direction; the slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs.
+### Forward planning (actors choose actions)
 
-A parallel pair of experiments (`food_forw_intimacy_effort/`, `food_inv-intimacy_effort_alt/`) uses the same 16 scenarios but manipulates **relative effort** instead of desire. Each scenario has two actions (a non-saliva alternative and a saliva-sharing one) rather than four, reward is held fixed at high, and a separate effort paragraph makes the resource that the non-saliva action relies on either easy or costly to obtain. The forward variant crosses intimacy (4 levels) × effort (2 levels); the inverse variant crosses observed action (2 levels) × effort (2 levels) and asks observers to infer intimacy.
+- **Desire manipulation** (`food_forw_intimacy_desire/`) — actors choose among four candidate actions given intimacy (4 levels) × desire (2 levels).
+- **Effort manipulation** (`food_forw_intimacy_effort/`) — actors choose between two actions (a non-saliva alternative and a saliva-sharing one) given intimacy (4 levels) × relative effort (2 levels). Reward is held fixed at high; an effort paragraph in the vignette makes the resource that the non-saliva action relies on either easy or costly to obtain.
 
-A third effort experiment (`food_inv-effort_intimacy_alt/`) flips the inverse direction: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context. The vignette no longer reveals the effort paragraph; instead the two effort paragraphs become the slider endpoints, and participants give prior and posterior probability ratings for which effort situation is more likely.
+### Inverse planning (observers infer latents from actions)
 
-A second parallel pipeline tests **generalization beyond food sharing** using a 16-scenario non-food stimulus set (substance sharing like chapstick or hairbrush, shared space like a blanket or bed, and informational/situational privacy like a breakup conversation or a phone passcode). The five non-food experiments mirror the canonical food set one-to-one and live alongside them under `experiments/`: `nonfood_forw_intimacy_desire/`, `nonfood_inv-intimacy_desire_alt/`, `nonfood_inv-desire_intimacy_alt/`, `nonfood_inv-intimacy_desire_noalt/`, and `nonfood_inv-desire_intimacy_noalt/`. Data has been collected only for `nonfood_forw_intimacy_desire` so far; the modeling pipeline reuses the canonical scripts via a `--domain food|nonfood` flag.
+The first four use the canonical 4-action food-sharing set:
+
+- **Intimacy inference, alternatives shown** (`food_inv-intimacy_desire_alt/`) — observers see all four candidate actions (with the actor's desire known) and infer intimacy.
+- **Desire inference, alternatives shown** (`food_inv-desire_intimacy_alt/`) — observers see all four candidate actions (with intimacy known) and infer desire.
+- **Intimacy inference, no alternatives shown** (`food_inv-intimacy_desire_noalt/`) — observers see only the single observed action; on the model side, counterfactual alternatives are LM-generated.
+- **Desire inference, no alternatives shown** (`food_inv-desire_intimacy_noalt/`) — same noalt setup applied to the desire-inference direction; the slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs.
+
+The other two use the effort 2-action set:
+
+- **Intimacy inference, effort manipulation** (`food_inv-intimacy_effort_alt/`) — observers see observed action (2 levels) × effort (2 levels) and infer intimacy. Both candidate actions are shown; prior/posterior intimacy sliders.
+- **Effort inference** (`food_inv-effort_intimacy_alt/`) — flips the inverse direction: observers see observed action (2 levels) × intimacy (4 levels) and infer the effort context. The vignette no longer reveals the effort paragraph; instead the two effort paragraphs become the slider endpoints, and participants give prior and posterior probability ratings for which effort situation is more likely.
+
+### Generalization beyond food sharing
+
+A non-food stimulus set parallels the canonical food set: 16 scenarios covering substance sharing (chapstick, hairbrush), shared physical space (blanket, bed), and informational/situational privacy (a breakup conversation, a phone passcode). The non-food experiments mirror the canonical food set one-to-one and live alongside them under `experiments/`: `nonfood_forw_intimacy_desire/`, `nonfood_inv-intimacy_desire_alt/`, `nonfood_inv-desire_intimacy_alt/`, `nonfood_inv-intimacy_desire_noalt/`, and `nonfood_inv-desire_intimacy_noalt/`. The modeling pipeline reuses the canonical scripts via a `--domain food|nonfood` flag.
+
+Currently only `nonfood_forw_intimacy_desire` has data; the four non-food inverse experiments are pending. The full set of generalization experiments is TBD.
 
 ### Scenarios
 
