@@ -7,14 +7,16 @@ outputs/
 ├── lm/                                # LM-elicited tables (lm_*.csv)
 └── <experiment_slug>/                 # one folder per experiment
     ├── fit_results.csv
-    ├── preds.csv                      # forward only — per-cell predictions (one row per (scenario, action, intimacy, IV) cell)
-    ├── preds_full.csv, preds_summary.csv  # inverse only — per-condition posteriors
+    ├── preds.csv                      # forward only — per-cell predictions (one row per (scenario, action, intimacy, IV) cell); gitignored
+    ├── preds_full.csv, preds_summary.csv  # inverse only — per-condition posteriors; gitignored
     ├── cv_folds.csv                   # per-fold fit results from LOSO CV
     ├── cv_preds.csv                   # forward only — per-trial held-out predictions
     └── cv_preds_summary.csv           # inverse only — held-out per-condition summary
 ```
 
 The 9 experiment slugs: `food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`, `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`, `food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`, `food_inv_intimacy_effort_alt`, `food_inv_effort_intimacy_alt`.
+
+`preds.csv`, `preds_full.csv`, and `preds_summary.csv` are the all-data (non-CV) predictions. They're written by the predict scripts but not read anywhere downstream — analysis qmds and any other consumers use `cv_preds.csv` / `cv_preds_summary.csv` instead, since reported correlations are out-of-sample. The non-CV files are gitignored (regenerate locally for debugging via `make predict-<slug>`).
 
 The sections below document the columns of each output type.
 
