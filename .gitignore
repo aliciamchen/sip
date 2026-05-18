@@ -18,7 +18,7 @@ sandbox
 experiments/pilots/
 data/pilots/
 submissions
-cogsci-2026
+cogsci-cr
 .claude/scheduled_tasks.lock
 SIP_journal
 notes/

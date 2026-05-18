@@ -13,7 +13,9 @@ The paper uses "desire" but internal variable names use "reward" (e.g. `p_high_r
 
 ## Submission status
 
-The early conference version is in `cogsci-2026/` (older model; reviews in `cogsci-2026/cogsci-2026-reviews.md`). The current journal version is in `SIP_journal/`. Both folders are gitignored and each has its own git repo synced to Overleaf.
+The current journal version is in `SIP_journal/` (gitignored; its own git repo synced to Overleaf).
+
+The camera-ready CogSci 2026 fork is in `cogsci-cr/` (gitignored; will be spun out into its own repo). It's a self-contained subset — slimmed copies of `model/`, the 3 cogsci experiments under `data/`, 4 analysis qmds, and the conference-paper LaTeX under `cogsci-cr/cogsci-2026/` — using the journal-version utility shape (no appeal term) but with hand-stipulated, action-only V/access/effort values from `cogsci-cr/model/stipulated_tables.py` instead of LM-elicited per-scenario tables. No `model/lm/` pipeline. The 3 experiments it covers: `food_forw_intimacy_desire`, `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`. `cogsci-cr/cogsci-2026/` is a nested git repo synced to Overleaf; reviews of the conference submission are in `cogsci-cr/cogsci-2026/cogsci-2026-reviews.md`. Don't edit HEAD code on the user's behalf to make `cogsci-cr/` work — keep the change isolated to that subfolder.
 
 ## Workflow
 
