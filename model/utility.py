@@ -61,40 +61,71 @@ def get_lm_v(action, scenario_idx, reward_condition, v_table):
 
 @jax.jit
 def get_utility_full(
-    action, scenario_idx, intimacy, reward_condition,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table, v_table,
+    action,
+    scenario_idx,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_table,
 ):
     access = access_table[scenario_idx, action]
     effort = effort_table[scenario_idx, action]
     V = get_lm_v(action, scenario_idx, reward_condition, v_table)
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
     return alpha * (
-        w_v * V
-        - w_d * access * jnp.power(one_minus_I, gamma)
-        - w_e * effort
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
     )
 
 
 @jax.jit
 def get_utility_full_disc(
-    action, scenario_idx, relationship_condition, reward_condition,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table, v_table,
+    action,
+    scenario_idx,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_table,
 ):
     intimacy = get_intimacy(relationship_condition)
     return get_utility_full(
-        action, scenario_idx, intimacy, reward_condition,
-        alpha, w_v, w_d, w_e, gamma,
-        access_table, effort_table, v_table,
+        action,
+        scenario_idx,
+        intimacy,
+        reward_condition,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        access_table,
+        effort_table,
+        v_table,
     )
 
 
 @jax.jit
 def get_utility_discomfort_only(
-    action, scenario_idx, intimacy, reward_condition,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    action,
+    scenario_idx,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     access = access_table[scenario_idx, action]
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
@@ -103,23 +134,42 @@ def get_utility_discomfort_only(
 
 @jax.jit
 def get_utility_discomfort_only_disc(
-    action, scenario_idx, relationship_condition, reward_condition,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    action,
+    scenario_idx,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     intimacy = get_intimacy(relationship_condition)
     return get_utility_discomfort_only(
-        action, scenario_idx, intimacy, reward_condition,
-        alpha, w_d, gamma,
-        access_table, effort_table,
+        action,
+        scenario_idx,
+        intimacy,
+        reward_condition,
+        alpha,
+        w_d,
+        gamma,
+        access_table,
+        effort_table,
     )
 
 
 @jax.jit
 def get_utility_base(
-    action, scenario_idx, intimacy, reward_condition,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_table,
+    action,
+    scenario_idx,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_table,
 ):
     effort = effort_table[scenario_idx, action]
     V = get_lm_v(action, scenario_idx, reward_condition, v_table)
@@ -128,15 +178,29 @@ def get_utility_base(
 
 @jax.jit
 def get_utility_base_disc(
-    action, scenario_idx, relationship_condition, reward_condition,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_table,
+    action,
+    scenario_idx,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_table,
 ):
     intimacy = get_intimacy(relationship_condition)
     return get_utility_base(
-        action, scenario_idx, intimacy, reward_condition,
-        alpha, w_v, w_e,
-        access_table, effort_table, v_table,
+        action,
+        scenario_idx,
+        intimacy,
+        reward_condition,
+        alpha,
+        w_v,
+        w_e,
+        access_table,
+        effort_table,
+        v_table,
     )
 
 
@@ -147,7 +211,11 @@ def get_utility_base_disc(
 
 @jax.jit
 def get_prior_padded(
-    padded_slot, scenario_idx, observed_action, reward_condition, prior_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    prior_table,
 ):
     """Look up the actor-prior weight for this slot. Null-padded slots have 0."""
     return prior_table[scenario_idx, observed_action, reward_condition, padded_slot]
@@ -155,7 +223,11 @@ def get_prior_padded(
 
 @jax.jit
 def get_lm_v_padded(
-    padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    v_padded_table,
 ):
     """LM-elicited signed valence for an arbitrary action in the padded action
     space.
@@ -171,28 +243,47 @@ def get_lm_v_padded(
 
 @jax.jit
 def get_utility_full_padded(
-    padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table, v_padded_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_padded_table,
 ):
     access = access_table[scenario_idx, observed_action, reward_condition, padded_slot]
     effort = effort_table[scenario_idx, observed_action, reward_condition, padded_slot]
     V = get_lm_v_padded(
-        padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table,
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        reward_condition,
+        v_padded_table,
     )
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
     return alpha * (
-        w_v * V
-        - w_d * access * jnp.power(one_minus_I, gamma)
-        - w_e * effort
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
     )
 
 
 @jax.jit
 def get_utility_discomfort_only_padded(
-    padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     access = access_table[scenario_idx, observed_action, reward_condition, padded_slot]
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
@@ -201,13 +292,25 @@ def get_utility_discomfort_only_padded(
 
 @jax.jit
 def get_utility_base_padded(
-    padded_slot, scenario_idx, observed_action, intimacy, reward_condition,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_padded_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    intimacy,
+    reward_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_padded_table,
 ):
     effort = effort_table[scenario_idx, observed_action, reward_condition, padded_slot]
     V = get_lm_v_padded(
-        padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table,
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        reward_condition,
+        v_padded_table,
     )
     return alpha * (w_v * V - w_e * effort)
 
@@ -219,70 +322,123 @@ def get_utility_base_padded(
 
 @jax.jit
 def get_prior_padded_rel(
-    padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    prior_table,
 ):
     """Look up the actor-prior weight for this slot under the relationship-keyed
     action space. Null-padded slots have ~0 (1e-8 epsilon)."""
-    return prior_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+    return prior_table[
+        scenario_idx, observed_action, relationship_condition, padded_slot
+    ]
 
 
 @jax.jit
 def get_lm_v_padded_rel(
-    padded_slot, scenario_idx, observed_action, relationship_condition,
-    reward_condition, v_padded_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    v_padded_table,
 ):
     """LM-elicited signed valence for an arbitrary action in the relationship-
     keyed padded action space. v_padded_table has shape
     (16, 4, 4, MAX_ACTIONS, 2) — indexed by
     (scenario, observed_action, relationship, padded_slot, motivation)."""
     return v_padded_table[
-        scenario_idx, observed_action, relationship_condition, padded_slot, reward_condition,
+        scenario_idx,
+        observed_action,
+        relationship_condition,
+        padded_slot,
+        reward_condition,
     ]
 
 
 @jax.jit
 def get_utility_full_padded_rel(
-    padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table, v_padded_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_padded_table,
 ):
     intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
-    access = access_table[scenario_idx, observed_action, relationship_condition, padded_slot]
-    effort = effort_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+    access = access_table[
+        scenario_idx, observed_action, relationship_condition, padded_slot
+    ]
+    effort = effort_table[
+        scenario_idx, observed_action, relationship_condition, padded_slot
+    ]
     V = get_lm_v_padded_rel(
-        padded_slot, scenario_idx, observed_action, relationship_condition,
-        reward_condition, v_padded_table,
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        relationship_condition,
+        reward_condition,
+        v_padded_table,
     )
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
     return alpha * (
-        w_v * V
-        - w_d * access * jnp.power(one_minus_I, gamma)
-        - w_e * effort
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
     )
 
 
 @jax.jit
 def get_utility_discomfort_only_padded_rel(
-    padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
-    access = access_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+    access = access_table[
+        scenario_idx, observed_action, relationship_condition, padded_slot
+    ]
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
     return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
 
 
 @jax.jit
 def get_utility_base_padded_rel(
-    padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_padded_table,
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_padded_table,
 ):
-    effort = effort_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+    effort = effort_table[
+        scenario_idx, observed_action, relationship_condition, padded_slot
+    ]
     V = get_lm_v_padded_rel(
-        padded_slot, scenario_idx, observed_action, relationship_condition,
-        reward_condition, v_padded_table,
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        relationship_condition,
+        reward_condition,
+        v_padded_table,
     )
     return alpha * (w_v * V - w_e * effort)
 
@@ -302,26 +458,38 @@ def get_stipulated_reward_effort(action):
 
 @jax.jit
 def get_utility_effort_full(
-    action, scenario_idx, intimacy, effort_condition,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table,
+    action,
+    scenario_idx,
+    intimacy,
+    effort_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
 ):
     access = access_table[scenario_idx, effort_condition, action]
     effort = effort_table[scenario_idx, effort_condition, action]
     V = get_stipulated_reward_effort(action)
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
     return alpha * (
-        w_v * V
-        - w_d * access * jnp.power(one_minus_I, gamma)
-        - w_e * effort
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
     )
 
 
 @jax.jit
 def get_utility_effort_discomfort_only(
-    action, scenario_idx, intimacy, effort_condition,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    action,
+    scenario_idx,
+    intimacy,
+    effort_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     access = access_table[scenario_idx, effort_condition, action]
     one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
@@ -330,10 +498,180 @@ def get_utility_effort_discomfort_only(
 
 @jax.jit
 def get_utility_effort_base(
-    action, scenario_idx, intimacy, effort_condition,
-    alpha, w_v, w_e,
-    access_table, effort_table,
+    action,
+    scenario_idx,
+    intimacy,
+    effort_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
 ):
     effort = effort_table[scenario_idx, effort_condition, action]
     V = get_stipulated_reward_effort(action)
     return alpha * (w_v * V - w_e * effort)
+
+
+# ==============================================================================
+# 3-action utility (Studies 2, 3a, 3b, 4a, 4b)
+# ==============================================================================
+# The 3-action canonical set crosses the effort manipulation from the effort
+# experiment with the reward manipulation from the canonical 4-action pipeline.
+# Tables: access[scen, effort, action], effort[scen, effort, action],
+# v[scen, action, reward]. Continuous-intimacy and discrete-relationship forms
+# follow the canonical pattern.
+
+
+@jax.jit
+def get_utility_3act_full(
+    action,
+    scenario_idx,
+    intimacy,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_table,
+):
+    access = access_table[scenario_idx, effort_condition, action]
+    effort = effort_table[scenario_idx, effort_condition, action]
+    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_3act_full_disc(
+    action,
+    scenario_idx,
+    relationship_condition,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_table,
+):
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_3act_full(
+        action,
+        scenario_idx,
+        intimacy,
+        reward_condition,
+        effort_condition,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        access_table,
+        effort_table,
+        v_table,
+    )
+
+
+@jax.jit
+def get_utility_3act_discomfort_only(
+    action,
+    scenario_idx,
+    intimacy,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
+):
+    access = access_table[scenario_idx, effort_condition, action]
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
+
+
+@jax.jit
+def get_utility_3act_discomfort_only_disc(
+    action,
+    scenario_idx,
+    relationship_condition,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
+):
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_3act_discomfort_only(
+        action,
+        scenario_idx,
+        intimacy,
+        reward_condition,
+        effort_condition,
+        alpha,
+        w_d,
+        gamma,
+        access_table,
+        effort_table,
+    )
+
+
+@jax.jit
+def get_utility_3act_base(
+    action,
+    scenario_idx,
+    intimacy,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_table,
+):
+    effort = effort_table[scenario_idx, effort_condition, action]
+    V = get_lm_v(action, scenario_idx, reward_condition, v_table)
+    return alpha * (w_v * V - w_e * effort)
+
+
+@jax.jit
+def get_utility_3act_base_disc(
+    action,
+    scenario_idx,
+    relationship_condition,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_table,
+):
+    intimacy = get_intimacy(relationship_condition)
+    return get_utility_3act_base(
+        action,
+        scenario_idx,
+        intimacy,
+        reward_condition,
+        effort_condition,
+        alpha,
+        w_v,
+        w_e,
+        access_table,
+        effort_table,
+        v_table,
+    )

@@ -23,11 +23,18 @@ from tables import (
     RewardConditions,
     Scenarios,
     actions,
+    actions_3act,
     actions_effort,
 )
 from utility import (
     get_prior_padded,
     get_prior_padded_rel,
+    get_utility_3act_base,
+    get_utility_3act_base_disc,
+    get_utility_3act_discomfort_only,
+    get_utility_3act_discomfort_only_disc,
+    get_utility_3act_full,
+    get_utility_3act_full_disc,
     get_utility_base,
     get_utility_base_disc,
     get_utility_base_padded,
@@ -66,9 +73,18 @@ def actor_forw_full[
         action in actions,
         wpp=exp(
             get_utility_full(
-                action, scenario_idx, intimacy, reward_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table, v_table,
+                action,
+                scenario_idx,
+                intimacy,
+                reward_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )
@@ -90,9 +106,15 @@ def actor_forw_discomfort_only[
         action in actions,
         wpp=exp(
             get_utility_discomfort_only(
-                action, scenario_idx, intimacy, reward_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                intimacy,
+                reward_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -114,9 +136,16 @@ def actor_forw_base[
         action in actions,
         wpp=exp(
             get_utility_base(
-                action, scenario_idx, intimacy, reward_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table, v_table,
+                action,
+                scenario_idx,
+                intimacy,
+                reward_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )
@@ -143,9 +172,18 @@ def actor_discrete_full[
         action in actions,
         wpp=exp(
             get_utility_full_disc(
-                action, scenario_idx, relationship_condition, reward_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table, v_table,
+                action,
+                scenario_idx,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )
@@ -167,9 +205,15 @@ def actor_discrete_discomfort_only[
         action in actions,
         wpp=exp(
             get_utility_discomfort_only_disc(
-                action, scenario_idx, relationship_condition, reward_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -191,9 +235,16 @@ def actor_discrete_base[
         action in actions,
         wpp=exp(
             get_utility_base_disc(
-                action, scenario_idx, relationship_condition, reward_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table, v_table,
+                action,
+                scenario_idx,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )
@@ -220,9 +271,18 @@ def actor_continuous_full[
         action in actions,
         wpp=exp(
             get_utility_full(
-                action, scenario_idx, relationship, reward_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table, v_table,
+                action,
+                scenario_idx,
+                relationship,
+                reward_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )
@@ -244,9 +304,15 @@ def actor_continuous_discomfort_only[
         action in actions,
         wpp=exp(
             get_utility_discomfort_only(
-                action, scenario_idx, relationship, reward_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                relationship,
+                reward_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -268,9 +334,16 @@ def actor_continuous_base[
         action in actions,
         wpp=exp(
             get_utility_base(
-                action, scenario_idx, relationship, reward_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table, v_table,
+                action,
+                scenario_idx,
+                relationship,
+                reward_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )
@@ -289,7 +362,17 @@ def actor_continuous_full_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
+](
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table: ...,
+    effort_table: ...,
+    v_padded_table: ...,
+    prior_table: ...,
+):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -297,11 +380,24 @@ def actor_continuous_full_padded[
     actor: knows(reward_condition)
     actor: chooses(
         padded_slot in PaddedActionSlots,
-        wpp=get_prior_padded(padded_slot, scenario_idx, observed_action, reward_condition, prior_table) * exp(
+        wpp=get_prior_padded(
+            padded_slot, scenario_idx, observed_action, reward_condition, prior_table
+        )
+        * exp(
             get_utility_full_padded(
-                padded_slot, scenario_idx, observed_action, relationship, reward_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table, v_padded_table,
+                padded_slot,
+                scenario_idx,
+                observed_action,
+                relationship,
+                reward_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_padded_table,
             )
         ),
     )
@@ -323,11 +419,21 @@ def actor_continuous_discomfort_only_padded[
     actor: knows(reward_condition)
     actor: chooses(
         padded_slot in PaddedActionSlots,
-        wpp=get_prior_padded(padded_slot, scenario_idx, observed_action, reward_condition, prior_table) * exp(
+        wpp=get_prior_padded(
+            padded_slot, scenario_idx, observed_action, reward_condition, prior_table
+        )
+        * exp(
             get_utility_discomfort_only_padded(
-                padded_slot, scenario_idx, observed_action, relationship, reward_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                padded_slot,
+                scenario_idx,
+                observed_action,
+                relationship,
+                reward_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -341,7 +447,15 @@ def actor_continuous_base_padded[
     observed_action: ObservedActions,
     relationship: IntimacyLevels,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
+](
+    alpha,
+    w_v,
+    w_e,
+    access_table: ...,
+    effort_table: ...,
+    v_padded_table: ...,
+    prior_table: ...,
+):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -349,11 +463,22 @@ def actor_continuous_base_padded[
     actor: knows(reward_condition)
     actor: chooses(
         padded_slot in PaddedActionSlots,
-        wpp=get_prior_padded(padded_slot, scenario_idx, observed_action, reward_condition, prior_table) * exp(
+        wpp=get_prior_padded(
+            padded_slot, scenario_idx, observed_action, reward_condition, prior_table
+        )
+        * exp(
             get_utility_base_padded(
-                padded_slot, scenario_idx, observed_action, relationship, reward_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table, v_padded_table,
+                padded_slot,
+                scenario_idx,
+                observed_action,
+                relationship,
+                reward_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_padded_table,
             )
         ),
     )
@@ -372,7 +497,17 @@ def actor_continuous_full_padded_rel[
     observed_action: ObservedActions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
+](
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table: ...,
+    effort_table: ...,
+    v_padded_table: ...,
+    prior_table: ...,
+):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -381,12 +516,27 @@ def actor_continuous_full_padded_rel[
     actor: chooses(
         padded_slot in PaddedActionSlots,
         wpp=get_prior_padded_rel(
-            padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
-        ) * exp(
+            padded_slot,
+            scenario_idx,
+            observed_action,
+            relationship_condition,
+            prior_table,
+        )
+        * exp(
             get_utility_full_padded_rel(
-                padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table, v_padded_table,
+                padded_slot,
+                scenario_idx,
+                observed_action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_padded_table,
             )
         ),
     )
@@ -409,12 +559,24 @@ def actor_continuous_discomfort_only_padded_rel[
     actor: chooses(
         padded_slot in PaddedActionSlots,
         wpp=get_prior_padded_rel(
-            padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
-        ) * exp(
+            padded_slot,
+            scenario_idx,
+            observed_action,
+            relationship_condition,
+            prior_table,
+        )
+        * exp(
             get_utility_discomfort_only_padded_rel(
-                padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                padded_slot,
+                scenario_idx,
+                observed_action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -428,7 +590,15 @@ def actor_continuous_base_padded_rel[
     observed_action: ObservedActions,
     relationship_condition: RelationshipConditions,
     reward_condition: RewardConditions,
-](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_padded_table: ..., prior_table: ...):
+](
+    alpha,
+    w_v,
+    w_e,
+    access_table: ...,
+    effort_table: ...,
+    v_padded_table: ...,
+    prior_table: ...,
+):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -437,12 +607,25 @@ def actor_continuous_base_padded_rel[
     actor: chooses(
         padded_slot in PaddedActionSlots,
         wpp=get_prior_padded_rel(
-            padded_slot, scenario_idx, observed_action, relationship_condition, prior_table,
-        ) * exp(
+            padded_slot,
+            scenario_idx,
+            observed_action,
+            relationship_condition,
+            prior_table,
+        )
+        * exp(
             get_utility_base_padded_rel(
-                padded_slot, scenario_idx, observed_action, relationship_condition, reward_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table, v_padded_table,
+                padded_slot,
+                scenario_idx,
+                observed_action,
+                relationship_condition,
+                reward_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_padded_table,
             )
         ),
     )
@@ -469,9 +652,17 @@ def actor_forw_effort_full[
         action in actions_effort,
         wpp=exp(
             get_utility_effort_full(
-                action, scenario_idx, intimacy, effort_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                intimacy,
+                effort_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -493,9 +684,15 @@ def actor_forw_effort_discomfort_only[
         action in actions_effort,
         wpp=exp(
             get_utility_effort_discomfort_only(
-                action, scenario_idx, intimacy, effort_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                intimacy,
+                effort_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -517,9 +714,15 @@ def actor_forw_effort_base[
         action in actions_effort,
         wpp=exp(
             get_utility_effort_base(
-                action, scenario_idx, intimacy, effort_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                intimacy,
+                effort_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -547,9 +750,17 @@ def actor_continuous_effort_full[
         action in actions_effort,
         wpp=exp(
             get_utility_effort_full(
-                action, scenario_idx, relationship, effort_condition,
-                alpha, w_v, w_d, w_e, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                relationship,
+                effort_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -571,9 +782,15 @@ def actor_continuous_effort_discomfort_only[
         action in actions_effort,
         wpp=exp(
             get_utility_effort_discomfort_only(
-                action, scenario_idx, relationship, effort_condition,
-                alpha, w_d, gamma,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                relationship,
+                effort_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
             )
         ),
     )
@@ -595,9 +812,348 @@ def actor_continuous_effort_base[
         action in actions_effort,
         wpp=exp(
             get_utility_effort_base(
-                action, scenario_idx, relationship, effort_condition,
-                alpha, w_v, w_e,
-                access_table, effort_table,
+                action,
+                scenario_idx,
+                relationship,
+                effort_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# ==============================================================================
+# 3-action actors (Studies 2, 3a, 3b, 4a, 4b)
+# ==============================================================================
+# Three families of actors over the 3-action set, paralleling the canonical
+# 4-action actors:
+#   - `actor_forw_3act_*`: continuous-intimacy forward actor with all three
+#     known variables (intimacy, reward, effort). Used inside the inverse
+#     observers' `thinks[...]` blocks when intimacy is the inferred latent.
+#   - `actor_discrete_3act_*`: discrete-relationship variant for observers
+#     that infer reward or effort (intimacy is known at one of the four
+#     RelationshipConditions levels).
+#   - `actor_continuous_3act_*`: continuous-intimacy variant used by
+#     observers that infer intimacy.
+
+
+@memo
+def actor_forw_3act_full[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_full(
+                action,
+                scenario_idx,
+                intimacy,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_forw_3act_discomfort_only[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_d, gamma, access_table: ..., effort_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_discomfort_only(
+                action,
+                scenario_idx,
+                intimacy,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_forw_3act_base[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    intimacy: IntimacyLevels,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(intimacy)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_base(
+                action,
+                scenario_idx,
+                intimacy,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# Continuous-intimacy 3-action actor — used inside `observer_intimacy_3act_*`
+# (Study 2) and inside the joint observers that infer intimacy (Study 4b).
+
+
+@memo
+def actor_continuous_3act_full[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_full(
+                action,
+                scenario_idx,
+                relationship,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_3act_discomfort_only[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_d, gamma, access_table: ..., effort_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_discomfort_only(
+                action,
+                scenario_idx,
+                relationship,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_continuous_3act_base[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    relationship: IntimacyLevels,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(relationship)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_base(
+                action,
+                scenario_idx,
+                relationship,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+# Discrete-relationship 3-action actor — used inside `observer_effort_3act_*`
+# (Study 3a) and `observer_reward_3act_*` (Study 3b), where intimacy is fixed
+# at one of the four RelationshipConditions levels.
+
+
+@memo
+def actor_discrete_3act_full[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_d, w_e, gamma, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_full_disc(
+                action,
+                scenario_idx,
+                relationship_condition,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_v,
+                w_d,
+                w_e,
+                gamma,
+                access_table,
+                effort_table,
+                v_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_3act_discomfort_only[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_d, gamma, access_table: ..., effort_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_discomfort_only_disc(
+                action,
+                scenario_idx,
+                relationship_condition,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_d,
+                gamma,
+                access_table,
+                effort_table,
+            )
+        ),
+    )
+    return Pr[actor.action == action]
+
+
+@memo
+def actor_discrete_3act_base[
+    action: actions_3act,
+    scenario_idx: Scenarios,
+    relationship_condition: RelationshipConditions,
+    reward_condition: RewardConditions,
+    effort_condition: EffortConditions,
+](alpha, w_v, w_e, access_table: ..., effort_table: ..., v_table: ...):
+    cast: [actor]
+    actor: knows(scenario_idx)
+    actor: knows(relationship_condition)
+    actor: knows(reward_condition)
+    actor: knows(effort_condition)
+    actor: chooses(
+        action in actions_3act,
+        wpp=exp(
+            get_utility_3act_base_disc(
+                action,
+                scenario_idx,
+                relationship_condition,
+                reward_condition,
+                effort_condition,
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                v_table,
             )
         ),
     )

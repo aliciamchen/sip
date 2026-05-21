@@ -78,13 +78,16 @@ def compute_pearson_r_by_condition(data, pred_col, human_col, group_cols, n_boot
         boot_r, _ = stats.pearsonr(boot_pred, boot_human)
         boot_rs.append(boot_r)
     return {
-        "r": r, "p": p,
+        "r": r,
+        "p": p,
         "ci_lower": np.percentile(boot_rs, 2.5),
         "ci_upper": np.percentile(boot_rs, 97.5),
     }
 
 
-def _fit_with_adam(loss_fn, init_params, lr=0.01, max_steps=5000, verbose=True, label=""):
+def _fit_with_adam(
+    loss_fn, init_params, lr=0.01, max_steps=5000, verbose=True, label=""
+):
     """Adam fit loop with non-negativity clipping and NLL monotonicity stop."""
     params = jnp.array(init_params)
     grad_fn = jax.value_and_grad(loss_fn)
@@ -125,50 +128,99 @@ def get_intimacy_index(intimacy_value):
 
 @jax.jit
 def predict_canonical_full(
-    intimacy, condition_iv, action, scenario_idx,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table, v_table,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_full(
-        alpha, w_v, w_d, w_e, gamma, access_table, effort_table, v_table,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        access_table,
+        effort_table,
+        v_table,
     )
     return jax.vmap(lambda i, c, a, s: probs[a, s, i, c])(
-        intimacy_idx, condition_iv, action, scenario_idx,
+        intimacy_idx,
+        condition_iv,
+        action,
+        scenario_idx,
     )
 
 
 @jax.jit
 def predict_canonical_discomfort_only(
-    intimacy, condition_iv, action, scenario_idx,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_discomfort_only(
-        alpha, w_d, gamma, access_table, effort_table,
+        alpha,
+        w_d,
+        gamma,
+        access_table,
+        effort_table,
     )
     return jax.vmap(lambda i, c, a, s: probs[a, s, i, c])(
-        intimacy_idx, condition_iv, action, scenario_idx,
+        intimacy_idx,
+        condition_iv,
+        action,
+        scenario_idx,
     )
 
 
 @jax.jit
 def predict_canonical_base(
-    intimacy, condition_iv, action, scenario_idx,
-    alpha, w_v, w_e,
-    access_table, effort_table, v_table,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_base(
-        alpha, w_v, w_e, access_table, effort_table, v_table,
+        alpha,
+        w_v,
+        w_e,
+        access_table,
+        effort_table,
+        v_table,
     )
     return jax.vmap(lambda i, c, a, s: probs[a, s, i, c])(
-        intimacy_idx, condition_iv, action, scenario_idx,
+        intimacy_idx,
+        condition_iv,
+        action,
+        scenario_idx,
     )
 
 
-def fit_canonical_full(intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs):
+def fit_canonical_full(
+    intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs
+):
     """tables = (access, effort, v). 4 free params: w_v, w_d, w_e, gamma."""
     ALPHA = 1.0
     a_tab, e_tab, v_tab = tables
@@ -176,8 +228,18 @@ def fit_canonical_full(intimacy, condition_iv, action, scenario_idx, p_action, t
     def loss_fn(params):
         w_v, w_d, w_e, gamma = params
         preds = predict_canonical_full(
-            intimacy, condition_iv, action, scenario_idx,
-            ALPHA, w_v, w_d, w_e, gamma, a_tab, e_tab, v_tab,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            ALPHA,
+            w_v,
+            w_d,
+            w_e,
+            gamma,
+            a_tab,
+            e_tab,
+            v_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -185,7 +247,9 @@ def fit_canonical_full(intimacy, condition_iv, action, scenario_idx, p_action, t
     return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
 
 
-def fit_canonical_discomfort_only(intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs):
+def fit_canonical_discomfort_only(
+    intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs
+):
     """tables = (access, effort). 2 free params: w_d, gamma."""
     ALPHA = 1.0
     a_tab, e_tab = tables[:2]
@@ -193,8 +257,15 @@ def fit_canonical_discomfort_only(intimacy, condition_iv, action, scenario_idx, 
     def loss_fn(params):
         w_d, gamma = params
         preds = predict_canonical_discomfort_only(
-            intimacy, condition_iv, action, scenario_idx,
-            ALPHA, w_d, gamma, a_tab, e_tab,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            ALPHA,
+            w_d,
+            gamma,
+            a_tab,
+            e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -202,7 +273,9 @@ def fit_canonical_discomfort_only(intimacy, condition_iv, action, scenario_idx, 
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
-def fit_canonical_base(intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs):
+def fit_canonical_base(
+    intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs
+):
     """tables = (access, effort, v). 2 free params: w_v, w_e."""
     ALPHA = 1.0
     a_tab, e_tab, v_tab = tables
@@ -210,8 +283,16 @@ def fit_canonical_base(intimacy, condition_iv, action, scenario_idx, p_action, t
     def loss_fn(params):
         w_v, w_e = params
         preds = predict_canonical_base(
-            intimacy, condition_iv, action, scenario_idx,
-            ALPHA, w_v, w_e, a_tab, e_tab, v_tab,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            ALPHA,
+            w_v,
+            w_e,
+            a_tab,
+            e_tab,
+            v_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -226,58 +307,112 @@ def fit_canonical_base(intimacy, condition_iv, action, scenario_idx, p_action, t
 
 @jax.jit
 def predict_effort_full(
-    intimacy, condition_iv, action, scenario_idx,
-    alpha, w_v, w_d, w_e, gamma,
-    access_table, effort_table,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_effort_full(
-        alpha, w_v, w_d, w_e, gamma, access_table, effort_table,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        access_table,
+        effort_table,
     )
     return jax.vmap(lambda i, c, a, s: probs[a, s, i, c])(
-        intimacy_idx, condition_iv, action, scenario_idx,
+        intimacy_idx,
+        condition_iv,
+        action,
+        scenario_idx,
     )
 
 
 @jax.jit
 def predict_effort_discomfort_only(
-    intimacy, condition_iv, action, scenario_idx,
-    alpha, w_d, gamma,
-    access_table, effort_table,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_effort_discomfort_only(
-        alpha, w_d, gamma, access_table, effort_table,
+        alpha,
+        w_d,
+        gamma,
+        access_table,
+        effort_table,
     )
     return jax.vmap(lambda i, c, a, s: probs[a, s, i, c])(
-        intimacy_idx, condition_iv, action, scenario_idx,
+        intimacy_idx,
+        condition_iv,
+        action,
+        scenario_idx,
     )
 
 
 @jax.jit
 def predict_effort_base(
-    intimacy, condition_iv, action, scenario_idx,
-    alpha, w_v, w_e,
-    access_table, effort_table,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
 ):
     intimacy_idx = get_intimacy_index(intimacy)
     probs = actor_forw_effort_base(
-        alpha, w_v, w_e, access_table, effort_table,
+        alpha,
+        w_v,
+        w_e,
+        access_table,
+        effort_table,
     )
     return jax.vmap(lambda i, c, a, s: probs[a, s, i, c])(
-        intimacy_idx, condition_iv, action, scenario_idx,
+        intimacy_idx,
+        condition_iv,
+        action,
+        scenario_idx,
     )
 
 
-def fit_effort_full(intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs):
+def fit_effort_full(
+    intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs
+):
     ALPHA = 1.0
     a_tab, e_tab = tables
 
     def loss_fn(params):
         w_v, w_d, w_e, gamma = params
         preds = predict_effort_full(
-            intimacy, condition_iv, action, scenario_idx,
-            ALPHA, w_v, w_d, w_e, gamma, a_tab, e_tab,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            ALPHA,
+            w_v,
+            w_d,
+            w_e,
+            gamma,
+            a_tab,
+            e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -285,15 +420,24 @@ def fit_effort_full(intimacy, condition_iv, action, scenario_idx, p_action, tabl
     return jnp.array([ALPHA, params[0], params[1], params[2], params[3]]), nll
 
 
-def fit_effort_discomfort_only(intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs):
+def fit_effort_discomfort_only(
+    intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs
+):
     ALPHA = 1.0
     a_tab, e_tab = tables
 
     def loss_fn(params):
         w_d, gamma = params
         preds = predict_effort_discomfort_only(
-            intimacy, condition_iv, action, scenario_idx,
-            ALPHA, w_d, gamma, a_tab, e_tab,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            ALPHA,
+            w_d,
+            gamma,
+            a_tab,
+            e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -301,15 +445,24 @@ def fit_effort_discomfort_only(intimacy, condition_iv, action, scenario_idx, p_a
     return jnp.array([ALPHA, params[0], params[1]]), nll
 
 
-def fit_effort_base(intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs):
+def fit_effort_base(
+    intimacy, condition_iv, action, scenario_idx, p_action, tables, **kwargs
+):
     ALPHA = 1.0
     a_tab, e_tab = tables
 
     def loss_fn(params):
         w_v, w_e = params
         preds = predict_effort_base(
-            intimacy, condition_iv, action, scenario_idx,
-            ALPHA, w_v, w_e, a_tab, e_tab,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            ALPHA,
+            w_v,
+            w_e,
+            a_tab,
+            e_tab,
         )
         return compute_nll(preds, p_action)
 
@@ -373,7 +526,11 @@ def load_data_effort(filepath):
 def run_fit_and_save_results(
     *,
     experiment_slug,
-    intimacy, condition_iv, action, scenario_idx, p_action,
+    intimacy,
+    condition_iv,
+    action,
+    scenario_idx,
+    p_action,
     tables_by_variant,
     fit_funcs,
     group_cols,
@@ -396,7 +553,11 @@ def run_fit_and_save_results(
         print(f"Fitting {name.upper()} model (alpha=1 fixed)...")
         print("-" * 40)
         params, nll = fit_fn(
-            intimacy, condition_iv, action, scenario_idx, p_action,
+            intimacy,
+            condition_iv,
+            action,
+            scenario_idx,
+            p_action,
             tables_by_variant[name],
         )
         param_arrays[name] = params
@@ -422,15 +583,20 @@ def run_fit_and_save_results(
         params = param_arrays[name]
         data[f"pred_{name}"] = np.array(
             pred_fn(
-                intimacy, condition_iv, action, scenario_idx,
-                *params, *tables_by_variant[name],
+                intimacy,
+                condition_iv,
+                action,
+                scenario_idx,
+                *params,
+                *tables_by_variant[name],
             )
         )
         r_result = compute_pearson_r_by_condition(
             data, f"pred_{name}", "p_action", group_cols
         )
         model_metrics[name] = {
-            "aic": aic, "bic": bic,
+            "aic": aic,
+            "bic": bic,
             "r": r_result["r"],
             "r_ci_lower": r_result["ci_lower"],
             "r_ci_upper": r_result["ci_upper"],
@@ -443,18 +609,20 @@ def run_fit_and_save_results(
     # Save fit_results.csv
     rows = []
     for name in fit_funcs.keys():
-        rows.append({
-            "model": name,
-            "experiment": experiment_slug,
-            "nll": results[name]["nll"],
-            "n_params": results[name]["n_params"],
-            "aic": model_metrics[name]["aic"],
-            "bic": model_metrics[name]["bic"],
-            "r": model_metrics[name]["r"],
-            "r_ci_lower": model_metrics[name]["r_ci_lower"],
-            "r_ci_upper": model_metrics[name]["r_ci_upper"],
-            **{f"param_{k}": v for k, v in results[name]["params"].items()},
-        })
+        rows.append(
+            {
+                "model": name,
+                "experiment": experiment_slug,
+                "nll": results[name]["nll"],
+                "n_params": results[name]["n_params"],
+                "aic": model_metrics[name]["aic"],
+                "bic": model_metrics[name]["bic"],
+                "r": model_metrics[name]["r"],
+                "r_ci_lower": model_metrics[name]["r_ci_lower"],
+                "r_ci_upper": model_metrics[name]["r_ci_upper"],
+                **{f"param_{k}": v for k, v in results[name]["params"].items()},
+            }
+        )
 
     output_dir = Path(__file__).resolve().parent.parent / "outputs" / experiment_slug
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -519,8 +687,12 @@ def run_predict_and_save_preds(
         )
         out_df[f"pred_{name}"] = np.array(
             pred_fn(
-                intimacy_arr, condition_iv_arr, action_arr, scenario_idx_arr,
-                *params, *tables_by_variant[name],
+                intimacy_arr,
+                condition_iv_arr,
+                action_arr,
+                scenario_idx_arr,
+                *params,
+                *tables_by_variant[name],
             )
         )
 
@@ -529,23 +701,30 @@ def run_predict_and_save_preds(
     print(f"\nSaved per-cell predictions ({len(out_df)} rows) to {preds_path}")
 
 
-def build_canonical_cells(scenario_labels):
-    """Enumerate (scenario, action, intimacy, motivation) cells for canonical 4-action."""
+def build_canonical_cells(scenario_labels, n_actions=4):
+    """Enumerate (scenario, action, intimacy, motivation) cells for a canonical
+    fixed-length action set.
+
+    Default `n_actions=4` matches the 4-action canonical pipeline; pass
+    `n_actions=3` for the new 3-action design.
+    """
     intimacy_levels = [0, 50, 75, 100]  # human-facing
     rows = []
     for s_idx, scenario_label in enumerate(scenario_labels):
-        for action_int in range(4):
+        for action_int in range(n_actions):
             for intimacy_int in intimacy_levels:
                 for motivation_str, motivation_idx in (("low", 0), ("high", 1)):
-                    rows.append({
-                        "scenario_label": scenario_label,
-                        "scenario_idx": s_idx,
-                        "action": action_int,
-                        "intimacy": intimacy_int,
-                        "intimacy_scaled": INTIMACY_MAP[intimacy_int],
-                        "motivation": motivation_str,
-                        "motivation_idx": motivation_idx,
-                    })
+                    rows.append(
+                        {
+                            "scenario_label": scenario_label,
+                            "scenario_idx": s_idx,
+                            "action": action_int,
+                            "intimacy": intimacy_int,
+                            "intimacy_scaled": INTIMACY_MAP[intimacy_int],
+                            "motivation": motivation_str,
+                            "motivation_idx": motivation_idx,
+                        }
+                    )
     return pd.DataFrame(rows)
 
 
@@ -557,14 +736,16 @@ def build_effort_cells(scenario_labels):
         for action_int in range(2):  # internal 0/1 (CSV label 1/2)
             for intimacy_int in intimacy_levels:
                 for effort_str, effort_idx in (("low", 0), ("high", 1)):
-                    rows.append({
-                        "scenario_label": scenario_label,
-                        "scenario_idx": s_idx,
-                        "action": action_int,
-                        "action_csv": action_int + 1,  # 1/2 (matches data CSV)
-                        "intimacy": intimacy_int,
-                        "intimacy_scaled": INTIMACY_MAP[intimacy_int],
-                        "effort": effort_str,
-                        "effort_idx": effort_idx,
-                    })
+                    rows.append(
+                        {
+                            "scenario_label": scenario_label,
+                            "scenario_idx": s_idx,
+                            "action": action_int,
+                            "action_csv": action_int + 1,  # 1/2 (matches data CSV)
+                            "intimacy": intimacy_int,
+                            "intimacy_scaled": INTIMACY_MAP[intimacy_int],
+                            "effort": effort_str,
+                            "effort_idx": effort_idx,
+                        }
+                    )
     return pd.DataFrame(rows)
