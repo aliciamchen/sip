@@ -6,15 +6,31 @@
 # work without re-running data processing or LM elicitation.
 
 EXPERIMENTS_FORWARD := food_forw_intimacy_desire food_forw_intimacy_effort nonfood_forw_intimacy_desire
-EXPERIMENTS_INVERSE := food_inv_intimacy_desire_alt food_inv_desire_intimacy_alt \
-                       food_inv_intimacy_desire_noalt food_inv_desire_intimacy_noalt \
-                       food_inv_intimacy_effort_alt food_inv_effort_intimacy_alt
+# New inverse experiments (Studies 2, 3a, 3b, 4a, 4b) get added here as they are
+# built. The data for the old 4-action and 2-action inverse experiments lives
+# under data/legacy/ and is reachable via the LEGACY_INVERSE per-slug targets
+# below (e.g. `make fit-food_inv_intimacy_desire_alt`), but they are not part
+# of the default `make all` pipeline.
+EXPERIMENTS_INVERSE := food_inv_intimacy_3act food_inv_effort_3act \
+                       food_inv_desire_3act food_inv_joint_de_3act \
+                       food_inv_joint_di_3act
+LEGACY_INVERSE := food_inv_intimacy_desire_alt food_inv_desire_intimacy_alt \
+                  food_inv_intimacy_desire_noalt food_inv_desire_intimacy_noalt \
+                  food_inv_intimacy_effort_alt food_inv_effort_intimacy_alt
 EXPERIMENTS_ALL := $(EXPERIMENTS_FORWARD) $(EXPERIMENTS_INVERSE)
+EXPERIMENTS_REGISTERED := $(EXPERIMENTS_ALL) $(LEGACY_INVERSE)
 
 ANALYSIS_QMDS := \
   food-forw-intimacy-desire-analysis \
   food-forw-intimacy-effort-analysis \
   nonfood-forw-intimacy-desire-analysis \
+  cv-loso-forward \
+  food-inv-intimacy-3act-analysis \
+  food-inv-effort-3act-analysis \
+  food-inv-desire-3act-analysis \
+  food-inv-joint-de-3act-analysis \
+  food-inv-joint-di-3act-analysis
+LEGACY_ANALYSIS_QMDS := \
   food-inv-intimacy-desire-alt-analysis \
   food-inv-desire-intimacy-alt-analysis \
   food-inv-intimacy-desire-noalt-analysis \
@@ -22,8 +38,8 @@ ANALYSIS_QMDS := \
   food-inv-intimacy-effort-alt-analysis \
   food-inv-effort-intimacy-alt-analysis \
   inv-plan-combined-correlation \
-  inv-plan-combined-correlation-by-scenario \
-  cv-loso-forward
+  inv-plan-combined-correlation-by-scenario
+ANALYSIS_QMDS_REGISTERED := $(ANALYSIS_QMDS) $(LEGACY_ANALYSIS_QMDS)
 
 .PHONY: all help test clean \
         data lm lm-canonical lm-effort lm-alternatives \
@@ -32,24 +48,24 @@ ANALYSIS_QMDS := \
         cv cv-forward cv-inverse \
         analysis \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
-        $(addprefix fit-,$(EXPERIMENTS_ALL)) \
-        $(addprefix predict-,$(EXPERIMENTS_ALL)) \
-        $(addprefix cv-,$(EXPERIMENTS_ALL)) \
-        $(addprefix analysis-,$(ANALYSIS_QMDS))
+        $(addprefix fit-,$(EXPERIMENTS_REGISTERED)) \
+        $(addprefix predict-,$(EXPERIMENTS_REGISTERED)) \
+        $(addprefix cv-,$(EXPERIMENTS_REGISTERED)) \
+        $(addprefix analysis-,$(ANALYSIS_QMDS_REGISTERED))
 
 all: fit predict cv analysis
 
 help:
 	@echo "Saliva inverse planning pipeline"
 	@echo ""
-	@echo "Aggregates:"
+	@echo "Aggregates (active experiments only):"
 	@echo "  all        - fit + predict + cv + analysis"
-	@echo "  fit        - fit all 9 experiments (3 forward + 6 inverse)"
-	@echo "  predict    - generate predictions for all 9 experiments"
-	@echo "  cv         - leave-one-scenario-out CV for all 9 experiments"
-	@echo "  analysis   - render all 12 quarto analysis qmds"
+	@echo "  fit        - fit all active experiments"
+	@echo "  predict    - generate predictions for all active experiments"
+	@echo "  cv         - leave-one-scenario-out CV for all active experiments"
+	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate all LM-elicited CSVs (needs TOGETHER_API_KEY)"
-	@echo "  data       - process raw JSON to CSV for all 9 experiments"
+	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance tests"
 	@echo "  clean      - remove fit/predict/CV outputs"
 	@echo ""
@@ -60,15 +76,18 @@ help:
 	@echo "  lm-canonical, lm-effort, lm-alternatives"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
-	@echo "  fit-<slug>, predict-<slug>, cv-<slug>, data-<slug>"
+	@echo "  fit-<slug>, predict-<slug>, cv-<slug>  (works for active and legacy)"
+	@echo "  data-<slug>                            (active only; legacy CSVs already processed)"
 	@echo "  e.g. make fit-food_forw_intimacy_desire"
+	@echo "  e.g. make fit-food_inv_intimacy_desire_alt   (legacy)"
 	@echo ""
 	@echo "Per-qmd:"
 	@echo "  analysis-<name>  (without .qmd suffix)"
 	@echo "  e.g. make analysis-inv-plan-combined-correlation"
 	@echo ""
-	@echo "Forward slugs: $(EXPERIMENTS_FORWARD)"
-	@echo "Inverse slugs: $(EXPERIMENTS_INVERSE)"
+	@echo "Active forward slugs:  $(EXPERIMENTS_FORWARD)"
+	@echo "Active inverse slugs:  $(EXPERIMENTS_INVERSE)"
+	@echo "Legacy inverse slugs:  $(LEGACY_INVERSE)"
 
 # =============================================================================
 # Data: raw JSON → CSV. Only useful if raw JSON in data/<slug>/raw_data/ exists;
@@ -79,6 +98,10 @@ data: $(addprefix data-,$(EXPERIMENTS_ALL))
 
 $(addprefix data-,$(EXPERIMENTS_ALL)): data-%:
 	uv run python analysis/json_to_csv.py $*
+
+# Legacy data CSVs are already processed and live under data/legacy/<slug>/;
+# re-processing them from raw JSON is not part of the active pipeline. To
+# regenerate one, point analysis/json_to_csv.py at the legacy location manually.
 
 # =============================================================================
 # LM elicitation (Llama-3.3-70B via Together AI; needs TOGETHER_API_KEY in .env)
@@ -114,7 +137,7 @@ fit-inverse: $(addprefix fit-,$(EXPERIMENTS_INVERSE))
 $(addprefix fit-,$(EXPERIMENTS_FORWARD)): fit-%:
 	uv run python model/forward/fit_$*.py
 
-$(addprefix fit-,$(EXPERIMENTS_INVERSE)): fit-%:
+$(addprefix fit-,$(EXPERIMENTS_INVERSE) $(LEGACY_INVERSE)): fit-%:
 	uv run python model/inverse/fit_$*.py
 
 # =============================================================================
@@ -129,7 +152,7 @@ predict-inverse: $(addprefix predict-,$(EXPERIMENTS_INVERSE))
 $(addprefix predict-,$(EXPERIMENTS_FORWARD)): predict-%:
 	uv run python model/forward/predict_$*.py
 
-$(addprefix predict-,$(EXPERIMENTS_INVERSE)): predict-%:
+$(addprefix predict-,$(EXPERIMENTS_INVERSE) $(LEGACY_INVERSE)): predict-%:
 	uv run python model/inverse/predict_$*.py
 
 # =============================================================================
@@ -144,7 +167,7 @@ cv-inverse: $(addprefix cv-,$(EXPERIMENTS_INVERSE))
 $(addprefix cv-,$(EXPERIMENTS_FORWARD)): cv-%:
 	uv run python model/cv/cv_$*.py
 
-$(addprefix cv-,$(EXPERIMENTS_INVERSE)): cv-%:
+$(addprefix cv-,$(EXPERIMENTS_INVERSE) $(LEGACY_INVERSE)): cv-%:
 	uv run python model/cv/cv_$*.py
 
 # =============================================================================
@@ -153,7 +176,7 @@ $(addprefix cv-,$(EXPERIMENTS_INVERSE)): cv-%:
 
 analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
 
-$(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
+$(addprefix analysis-,$(ANALYSIS_QMDS) $(LEGACY_ANALYSIS_QMDS)): analysis-%:
 	quarto render analysis/$*.qmd
 
 # =============================================================================

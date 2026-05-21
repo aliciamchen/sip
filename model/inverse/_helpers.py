@@ -143,7 +143,13 @@ def load_fitted_alpha_observer(filepath=None) -> dict:
 def load_intimacy_alt_data(filepath: str = None):
     """food_inv_intimacy_desire_alt — observer infers intimacy under known motivation."""
     if filepath is None:
-        filepath = get_project_root() / "data" / "legacy" / "food_inv_intimacy_desire_alt" / "main_trials_long.csv"
+        filepath = (
+            get_project_root()
+            / "data"
+            / "legacy"
+            / "food_inv_intimacy_desire_alt"
+            / "main_trials_long.csv"
+        )
     print("Loading food_inv_intimacy_desire_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
@@ -163,7 +169,13 @@ def load_intimacy_alt_data(filepath: str = None):
 def load_desire_alt_data(filepath: str = None):
     """food_inv_desire_intimacy_alt — observer infers desire (motivation) under known intimacy."""
     if filepath is None:
-        filepath = get_project_root() / "data" / "legacy" / "food_inv_desire_intimacy_alt" / "main_trials_long.csv"
+        filepath = (
+            get_project_root()
+            / "data"
+            / "legacy"
+            / "food_inv_desire_intimacy_alt"
+            / "main_trials_long.csv"
+        )
     print("Loading food_inv_desire_intimacy_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
@@ -184,12 +196,18 @@ def load_intimacy_noalt_data(filepath=None):
     """food_inv_intimacy_desire_noalt — observer sees only the chosen action."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "legacy" / "food_inv_intimacy_desire_noalt" / "main_trials_long.csv"
+            get_project_root()
+            / "data"
+            / "legacy"
+            / "food_inv_intimacy_desire_noalt"
+            / "main_trials_long.csv"
         )
     print("Loading food_inv_intimacy_desire_noalt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
-    data["observed_action"] = data["action_condition"].str.replace("action_", "").astype(int)
+    data["observed_action"] = (
+        data["action_condition"].str.replace("action_", "").astype(int)
+    )
     motivation_map = {"low": 0, "high": 1}
     data["reward_condition"] = data["motivation"].map(motivation_map)
     data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
@@ -206,12 +224,18 @@ def load_desire_noalt_data(filepath=None):
     """food_inv_desire_intimacy_noalt — observer sees only the chosen action; infers motivation."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "legacy" / "food_inv_desire_intimacy_noalt" / "main_trials_long.csv"
+            get_project_root()
+            / "data"
+            / "legacy"
+            / "food_inv_desire_intimacy_noalt"
+            / "main_trials_long.csv"
         )
     print("Loading food_inv_desire_intimacy_noalt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
-    data["observed_action"] = data["action_condition"].str.replace("action_", "").astype(int)
+    data["observed_action"] = (
+        data["action_condition"].str.replace("action_", "").astype(int)
+    )
     intimacy_map = {0: 0, 50: 1, 75: 2, 100: 3}
     data["relationship_condition"] = data["intimacy"].map(intimacy_map)
     data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
@@ -228,7 +252,11 @@ def load_intimacy_effort_data(filepath: str = None):
     """food_inv_intimacy_effort_alt — observer infers intimacy under effort manipulation."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "legacy" / "food_inv_intimacy_effort_alt" / "main_trials_long.csv"
+            get_project_root()
+            / "data"
+            / "legacy"
+            / "food_inv_intimacy_effort_alt"
+            / "main_trials_long.csv"
         )
     print("Loading food_inv_intimacy_effort_alt data...")
     data = pd.read_csv(filepath)
@@ -254,7 +282,11 @@ def load_effort_intimacy_data(filepath: str = None):
     """
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "legacy" / "food_inv_effort_intimacy_alt" / "main_trials_long.csv"
+            get_project_root()
+            / "data"
+            / "legacy"
+            / "food_inv_effort_intimacy_alt"
+            / "main_trials_long.csv"
         )
     print("Loading food_inv_effort_intimacy_alt data...")
     data = pd.read_csv(filepath)
@@ -299,7 +331,8 @@ def _fit_alpha_observer(
 
     def observer_table(alpha_observer):
         return observer_fn(
-            **actor_kwargs, alpha_observer=alpha_observer,
+            **actor_kwargs,
+            alpha_observer=alpha_observer,
             **table_kwargs,
         )
 
@@ -332,7 +365,9 @@ def _fit_alpha_observer(
             zero_grad_count += 1
             if zero_grad_count >= 5:
                 if verbose:
-                    print("  Gradient zero/NaN for 5 consecutive steps; alpha_observer=1.0")
+                    print(
+                        "  Gradient zero/NaN for 5 consecutive steps; alpha_observer=1.0"
+                    )
                 return 1.0, float(loss)
         else:
             zero_grad_count = 0
@@ -360,8 +395,15 @@ def _fit_alpha_observer(
 
 
 def fit_intimacy_observer(
-    observer_fn, actor_params, actor_kwarg_names,
-    action, scenario_idx, conditioning, response, table_kwargs, **kwargs,
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    conditioning,
+    response,
+    table_kwargs,
+    **kwargs,
 ):
     """For observers whose table is (action, scenario, intimacy, conditioning_axis)."""
     return _fit_alpha_observer(
@@ -380,8 +422,15 @@ def fit_intimacy_observer(
 
 
 def fit_reward_observer(
-    observer_fn, actor_params, actor_kwarg_names,
-    action, scenario_idx, intimacy_condition, response, table_kwargs, **kwargs,
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    intimacy_condition,
+    response,
+    table_kwargs,
+    **kwargs,
 ):
     """For observers whose table is (action, scenario, relationship, reward_condition)."""
     return _fit_alpha_observer(
@@ -400,8 +449,15 @@ def fit_reward_observer(
 
 
 def fit_effort_intimacy_observer(
-    observer_fn, actor_params, actor_kwarg_names,
-    action, scenario_idx, intimacy_condition, response, table_kwargs, **kwargs,
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    intimacy_condition,
+    response,
+    table_kwargs,
+    **kwargs,
 ):
     """For the effort-intimacy observer: table is (action, scenario, intimacy, effort) → P(effort=high)."""
     return _fit_alpha_observer(
@@ -446,7 +502,9 @@ def fit_padded_joint_intimacy(
     ALPHA_ACTOR = 1.0
     n_utility = len(utility_param_names)
     table_kwargs = dict(
-        access_table=access_table, effort_table=effort_table, prior_table=prior_table,
+        access_table=access_table,
+        effort_table=effort_table,
+        prior_table=prior_table,
     )
     if v_padded_table is not None:
         table_kwargs["v_padded_table"] = v_padded_table
@@ -475,7 +533,12 @@ def fit_padded_joint_intimacy(
 
     init_params = jnp.ones(n_utility + 1)
     params, nll = _fit_with_adam(
-        loss_fn, init_params, lr=lr, max_steps=max_steps, verbose=verbose, label=label,
+        loss_fn,
+        init_params,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label=label,
     )
     return params, float(nll)
 
@@ -500,7 +563,9 @@ def fit_padded_joint_desire(
     ALPHA_ACTOR = 1.0
     n_utility = len(utility_param_names)
     table_kwargs = dict(
-        access_table=access_table, effort_table=effort_table, prior_table=prior_table,
+        access_table=access_table,
+        effort_table=effort_table,
+        prior_table=prior_table,
     )
     if v_padded_table is not None:
         table_kwargs["v_padded_table"] = v_padded_table
@@ -525,12 +590,19 @@ def fit_padded_joint_desire(
     def loss_fn(params):
         table = build_observer_table(params)
         return jnp.sum(
-            vmap_nll(table, observed_action, scenario_idx, relationship_condition, response)
+            vmap_nll(
+                table, observed_action, scenario_idx, relationship_condition, response
+            )
         )
 
     init_params = jnp.ones(n_utility + 1)
     params, nll = _fit_with_adam(
-        loss_fn, init_params, lr=lr, max_steps=max_steps, verbose=verbose, label=label,
+        loss_fn,
+        init_params,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label=label,
     )
     return params, float(nll)
 
@@ -546,12 +618,18 @@ def compute_expected_intimacy(df: pd.DataFrame) -> pd.DataFrame:
     """Expected intimacy from posterior over the 0-100 grid."""
     df = df.copy()
     df["intimacy_scaled"] = df["intimacy"] * 100
-    summary = df.groupby(
-        ["scenario_label", "action", "reward_condition", "model"],
-        dropna=False,
-    ).apply(
-        lambda g: pd.Series({"expected_intimacy": (g["intimacy_scaled"] * g["density"]).sum()})
-    ).reset_index()
+    summary = (
+        df.groupby(
+            ["scenario_label", "action", "reward_condition", "model"],
+            dropna=False,
+        )
+        .apply(
+            lambda g: pd.Series(
+                {"expected_intimacy": (g["intimacy_scaled"] * g["density"]).sum()}
+            )
+        )
+        .reset_index()
+    )
     return summary
 
 
@@ -597,39 +675,65 @@ from tables import LLM_TABLES, LLM_TABLES_EFFORT, load_lm_v  # noqa: E402
 
 # Alt-shown 4-action canonical
 ACCESS_VARIANTS = {
-    "full": (observer_intimacy_full, observer_reward_full,
-             ["alpha", "w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_intimacy_discomfort_only, observer_reward_discomfort_only,
-                        ["alpha", "w_d", "gamma"], False),
-    "base": (observer_intimacy_base, observer_reward_base,
-             ["alpha", "w_v", "w_e"], True),
+    "full": (
+        observer_intimacy_full,
+        observer_reward_full,
+        ["alpha", "w_v", "w_d", "w_e", "gamma"],
+        True,
+    ),
+    "discomfort_only": (
+        observer_intimacy_discomfort_only,
+        observer_reward_discomfort_only,
+        ["alpha", "w_d", "gamma"],
+        False,
+    ),
+    "base": (
+        observer_intimacy_base,
+        observer_reward_base,
+        ["alpha", "w_v", "w_e"],
+        True,
+    ),
 }
 
 # Padded intimacy (no-alt motivation-keyed)
 PADDED_VARIANTS_INTIMACY = {
     "full": (observer_intimacy_full_padded, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_intimacy_discomfort_only_padded, ["w_d", "gamma"], False),
+    "discomfort_only": (
+        observer_intimacy_discomfort_only_padded,
+        ["w_d", "gamma"],
+        False,
+    ),
     "base": (observer_intimacy_base_padded, ["w_v", "w_e"], True),
 }
 
 # Padded reward (no-alt relationship-keyed)
 PADDED_VARIANTS_REWARD = {
     "full": (observer_reward_full_padded_rel, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_reward_discomfort_only_padded_rel, ["w_d", "gamma"], False),
+    "discomfort_only": (
+        observer_reward_discomfort_only_padded_rel,
+        ["w_d", "gamma"],
+        False,
+    ),
     "base": (observer_reward_base_padded_rel, ["w_v", "w_e"], True),
 }
 
 # Effort intimacy observer (food_inv_intimacy_effort_alt)
 ACCESS_VARIANTS_EFFORT = {
     "full": (observer_intimacy_effort_full, ["alpha", "w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_intimacy_effort_discomfort_only, ["alpha", "w_d", "gamma"]),
+    "discomfort_only": (
+        observer_intimacy_effort_discomfort_only,
+        ["alpha", "w_d", "gamma"],
+    ),
     "base": (observer_intimacy_effort_base, ["alpha", "w_v", "w_e"]),
 }
 
 # Effort intimacy observer for effort-inferred (food_inv_effort_intimacy_alt)
 ACCESS_VARIANTS_EFFORT_INFERRED = {
     "full": (observer_effort_intimacy_full, ["alpha", "w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_effort_intimacy_discomfort_only, ["alpha", "w_d", "gamma"]),
+    "discomfort_only": (
+        observer_effort_intimacy_discomfort_only,
+        ["alpha", "w_d", "gamma"],
+    ),
     "base": (observer_effort_intimacy_base, ["alpha", "w_v", "w_e"]),
 }
 
@@ -654,3 +758,422 @@ def effort_marginal_table_kwargs():
     """Table kwargs for the food_inv_effort_intimacy_alt observer (effort-marginal access)."""
     access_table = LLM_TABLES_EFFORT.get("access_marg", LLM_TABLES_EFFORT["access"])
     return {"access_table": access_table, "effort_table": LLM_TABLES_EFFORT["effort"]}
+
+
+# ==============================================================================
+# 3-action experiments (Studies 2, 3a, 3b, 4a, 4b)
+# ==============================================================================
+# Data loaders, table kwargs, and fit helpers. The single-target fits (2, 3a,
+# 3b) reuse `_fit_alpha_observer` with slicers appropriate to the 5-D table
+# shape (action, scenario, intimacy/rel, reward, effort). The joint fits (4a,
+# 4b) marginalize the joint table to each slider judgment and sum the two NLLs.
+
+
+def _load_3act_long(slug):
+    """Load the posterior-stage rows of a 3-action experiment's main_trials_long.csv.
+
+    Returns the pandas DataFrame with columns: scenario_label, scenario_idx,
+    action, intimacy_idx_4, intimacy_idx_101, reward_condition (0/1),
+    effort_condition (0/1), response (or two responses for joint studies).
+
+    The exact column names in incoming CSVs may need to be normalized — this
+    loader assumes:
+      - `action_condition` like 'action_0' / 'action_1' / 'action_2'
+      - `reward_condition` (or `motivation`) in {'low', 'high'} when present
+      - `effort_condition` (or `effort`) in {'low', 'high'} when present
+      - `intimacy` (or `relationship_condition`) in {0, 50, 75, 100} when present
+      - `stage` filter on 'posterior'
+    """
+    filepath = get_project_root() / "data" / slug / "main_trials_long.csv"
+    data = pd.read_csv(filepath)
+    data = data[data["stage"] == "posterior"].copy()
+    data["action"] = data["action_condition"].str.replace("action_", "").astype(int)
+    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
+
+    motivation_map = {"low": 0, "high": 1}
+    if "motivation" in data.columns:
+        data["reward_condition"] = data["motivation"].map(motivation_map)
+    elif (
+        "reward_condition" in data.columns and data["reward_condition"].dtype == object
+    ):
+        data["reward_condition"] = data["reward_condition"].map(motivation_map)
+
+    if "effort" in data.columns:
+        data["effort_condition"] = data["effort"].map(EFFORT_CONDITION_TO_IDX)
+    elif (
+        "effort_condition" in data.columns and data["effort_condition"].dtype == object
+    ):
+        data["effort_condition"] = data["effort_condition"].map(EFFORT_CONDITION_TO_IDX)
+
+    intimacy_map = {0: 0, 50: 1, 75: 2, 100: 3}
+    if "intimacy" in data.columns:
+        data["intimacy_idx_4"] = data["intimacy"].map(intimacy_map)
+        data["intimacy_idx_101"] = data["intimacy"].astype(int)
+    elif "relationship_condition" in data.columns:
+        data["intimacy_idx_4"] = data["relationship_condition"].map(intimacy_map)
+        data["intimacy_idx_101"] = data["relationship_condition"].astype(int)
+
+    return data
+
+
+def load_intimacy_3act_data(slug="food_inv_intimacy_3act"):
+    """Study 2 — observer knows (reward, effort), infers intimacy."""
+    data = _load_3act_long(slug)
+    print(f"Loading {slug} data...")
+    action = jnp.array(data["action"].values)
+    scenario_idx = jnp.array(data["scenario_idx"].values)
+    reward_condition = jnp.array(data["reward_condition"].values)
+    effort_condition = jnp.array(data["effort_condition"].values)
+    response = jnp.array(data["intimacy_rating"].values)
+    print(f"Loaded {len(data)} posterior data points")
+    return data, action, scenario_idx, reward_condition, effort_condition, response
+
+
+def load_effort_3act_data(slug="food_inv_effort_3act"):
+    """Study 3a — observer knows (reward, intimacy), infers effort.
+
+    Note: the observer does not see the effort paragraph; the model uses
+    `lm_scenario_params_3act_marginal.csv` for access. effort_condition is the
+    latent the participant infers.
+    """
+    data = _load_3act_long(slug)
+    print(f"Loading {slug} data...")
+    action = jnp.array(data["action"].values)
+    scenario_idx = jnp.array(data["scenario_idx"].values)
+    reward_condition = jnp.array(data["reward_condition"].values)
+    relationship_condition = jnp.array(data["intimacy_idx_4"].values)
+    response = jnp.array(data["response"].values)  # P(effort_high) * 100
+    print(f"Loaded {len(data)} posterior data points")
+    return (
+        data,
+        action,
+        scenario_idx,
+        reward_condition,
+        relationship_condition,
+        response,
+    )
+
+
+def load_desire_3act_data(slug="food_inv_desire_3act"):
+    """Study 3b — observer knows (effort, intimacy), infers desire (reward)."""
+    data = _load_3act_long(slug)
+    print(f"Loading {slug} data...")
+    action = jnp.array(data["action"].values)
+    scenario_idx = jnp.array(data["scenario_idx"].values)
+    effort_condition = jnp.array(data["effort_condition"].values)
+    relationship_condition = jnp.array(data["intimacy_idx_4"].values)
+    response = jnp.array(data["response"].values)  # P(high motivation) * 100
+    print(f"Loaded {len(data)} posterior data points")
+    return (
+        data,
+        action,
+        scenario_idx,
+        effort_condition,
+        relationship_condition,
+        response,
+    )
+
+
+def load_joint_de_3act_data(slug="food_inv_joint_de_3act"):
+    """Study 4a — observer knows intimacy, jointly infers (reward, effort).
+
+    Each posterior trial contributes two slider responses; expects columns
+    `p_high_reward_rating` and `p_effort_high_rating` (0-100).
+    """
+    data = _load_3act_long(slug)
+    print(f"Loading {slug} data...")
+    action = jnp.array(data["action"].values)
+    scenario_idx = jnp.array(data["scenario_idx"].values)
+    relationship_condition = jnp.array(data["intimacy_idx_4"].values)
+    resp_reward = jnp.array(data["p_high_reward_rating"].values)
+    resp_effort = jnp.array(data["p_effort_high_rating"].values)
+    print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
+    return data, action, scenario_idx, relationship_condition, resp_reward, resp_effort
+
+
+def load_joint_di_3act_data(slug="food_inv_joint_di_3act"):
+    """Study 4b — observer knows effort, jointly infers (reward, intimacy).
+
+    Expects columns `p_high_reward_rating` (0-100) and `intimacy_rating` (0-100).
+    """
+    data = _load_3act_long(slug)
+    print(f"Loading {slug} data...")
+    action = jnp.array(data["action"].values)
+    scenario_idx = jnp.array(data["scenario_idx"].values)
+    effort_condition = jnp.array(data["effort_condition"].values)
+    resp_reward = jnp.array(data["p_high_reward_rating"].values)
+    resp_intimacy = jnp.array(data["intimacy_rating"].values)
+    print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
+    return data, action, scenario_idx, effort_condition, resp_reward, resp_intimacy
+
+
+# ------------------------------------------------------------------------------
+# Table-kwargs helpers for the new pipeline (load lazily — tables may be None
+# during early development if the LM CSVs haven't been produced yet).
+# ------------------------------------------------------------------------------
+
+
+def _3act_tables(uses_v, effort_marginal=False, domain="food"):
+    """Build the access/effort/v table kwargs for a 3-action observer."""
+    from tables import LLM_TABLES_3ACT, load_lm_v_3act
+
+    if LLM_TABLES_3ACT is None:
+        raise FileNotFoundError(
+            "model/outputs/lm/lm_scenario_params_3act.csv not found — "
+            "run `uv run python model/lm/score_3act_features.py` first."
+        )
+    access_key = "access_marg" if effort_marginal else "access"
+    access_table = LLM_TABLES_3ACT.get(access_key, LLM_TABLES_3ACT["access"])
+    kw = {"access_table": access_table, "effort_table": LLM_TABLES_3ACT["effort"]}
+    if uses_v:
+        v_table = load_lm_v_3act(domain=domain)
+        if v_table is None:
+            raise FileNotFoundError(
+                "model/outputs/lm/lm_scenario_v_3act.csv not found — "
+                "run `uv run python model/lm/score_3act_v.py` first."
+            )
+        kw["v_table"] = v_table
+    return kw
+
+
+def intimacy_3act_table_kwargs(uses_v, domain="food"):
+    return _3act_tables(uses_v, effort_marginal=False, domain=domain)
+
+
+def effort_3act_table_kwargs(uses_v, domain="food"):
+    """Study 3a uses effort-marginal access since the observer doesn't see the effort paragraph."""
+    return _3act_tables(uses_v, effort_marginal=True, domain=domain)
+
+
+def desire_3act_table_kwargs(uses_v, domain="food"):
+    return _3act_tables(uses_v, effort_marginal=False, domain=domain)
+
+
+def joint_3act_table_kwargs(uses_v, domain="food"):
+    return _3act_tables(uses_v, effort_marginal=False, domain=domain)
+
+
+# ------------------------------------------------------------------------------
+# Single-target fits — reuse _fit_alpha_observer with the appropriate slicer.
+# The 3-action observer tables are 5-D: (action, scenario, intimacy/rel, reward, effort).
+# ------------------------------------------------------------------------------
+
+
+def fit_intimacy_3act_observer(
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    reward_condition,
+    effort_condition,
+    response,
+    table_kwargs,
+    **kwargs,
+):
+    """Study 2. Table: (action, scenario, intimacy_101, reward, effort)."""
+    # Encode the two conditioning variables into a single integer index
+    # (reward * 2 + effort) so we can reuse _fit_alpha_observer's signature.
+    conditioning = reward_condition * 2 + effort_condition
+    return _fit_alpha_observer(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        scenario_idx=scenario_idx,
+        conditioning=conditioning,
+        response=response,
+        nll_fn=compute_intimacy_nll,
+        # Slice the intimacy posterior for the right (reward, effort) cell.
+        posterior_slicer=lambda tab, a, s, c: tab[a, s, :, c // 2, c % 2],
+        table_kwargs=table_kwargs,
+        **kwargs,
+    )
+
+
+def fit_effort_3act_observer(
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    reward_condition,
+    relationship_condition,
+    response,
+    table_kwargs,
+    **kwargs,
+):
+    """Study 3a. Table: (action, scenario, relationship_4, reward, effort). Returns P(effort_high)."""
+    conditioning = reward_condition * 4 + relationship_condition
+    return _fit_alpha_observer(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        scenario_idx=scenario_idx,
+        conditioning=conditioning,
+        response=response,
+        nll_fn=compute_reward_nll,  # binary cross-entropy
+        # P(effort_high | observed) = tab[a, s, rel, reward, 1]
+        posterior_slicer=lambda tab, a, s, c: tab[a, s, c % 4, c // 4, 1],
+        table_kwargs=table_kwargs,
+        **kwargs,
+    )
+
+
+def fit_desire_3act_observer(
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    effort_condition,
+    relationship_condition,
+    response,
+    table_kwargs,
+    **kwargs,
+):
+    """Study 3b. Table: (action, scenario, relationship_4, reward, effort). Returns P(reward_high)."""
+    conditioning = effort_condition * 4 + relationship_condition
+    return _fit_alpha_observer(
+        observer_fn=observer_fn,
+        actor_params=actor_params,
+        actor_kwarg_names=actor_kwarg_names,
+        action=action,
+        scenario_idx=scenario_idx,
+        conditioning=conditioning,
+        response=response,
+        nll_fn=compute_reward_nll,
+        # P(reward_high | observed) = tab[a, s, rel, 1, effort]
+        posterior_slicer=lambda tab, a, s, c: tab[a, s, c % 4, 1, c // 4],
+        table_kwargs=table_kwargs,
+        **kwargs,
+    )
+
+
+# ------------------------------------------------------------------------------
+# Joint fits (Studies 4a, 4b)
+# ------------------------------------------------------------------------------
+
+
+@jax.jit
+def _joint_de_nll_trial(table, action, scenario_idx, rel, r_reward, r_effort):
+    """Per-trial NLL for Study 4a — marginalize the joint over (reward, effort) to
+    each slider, then sum the two binary cross-entropies."""
+    joint = table[action, scenario_idx, rel, :, :]  # (2, 2)
+    p_reward_high = joint[1, :].sum()  # marginalize effort
+    p_effort_high = joint[:, 1].sum()  # marginalize reward
+    return compute_reward_nll(p_reward_high, r_reward) + compute_reward_nll(
+        p_effort_high, r_effort
+    )
+
+
+def fit_joint_de_3act_observer(
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    relationship_condition,
+    response_reward,
+    response_effort,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 4a — joint over (reward, effort) given intimacy."""
+    actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
+
+    def observer_table(alpha_observer):
+        return observer_fn(
+            **actor_kwargs, alpha_observer=alpha_observer, **table_kwargs
+        )
+
+    vmap_nll = jax.vmap(_joint_de_nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = observer_table(params[0])
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                relationship_condition,
+                response_reward,
+                response_effort,
+            )
+        )
+
+    init = jnp.array([1.0])
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="joint_de_3act",
+    )
+    return float(params[0]), float(nll)
+
+
+@jax.jit
+def _joint_di_nll_trial(
+    table, action, scenario_idx, effort_condition, r_reward, r_intimacy
+):
+    """Per-trial NLL for Study 4b — joint over (reward, intimacy) → marginalize each."""
+    joint = table[action, scenario_idx, :, :, effort_condition]  # (101, 2)
+    p_intimacy = joint.sum(axis=-1)  # marginalize reward → (101,)
+    p_reward_high = joint[:, 1].sum()  # marginalize intimacy → scalar
+    return compute_intimacy_nll(p_intimacy, r_intimacy) + compute_reward_nll(
+        p_reward_high, r_reward
+    )
+
+
+def fit_joint_di_3act_observer(
+    observer_fn,
+    actor_params,
+    actor_kwarg_names,
+    action,
+    scenario_idx,
+    effort_condition,
+    response_reward,
+    response_intimacy,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 4b — joint over (reward, intimacy) given effort."""
+    actor_kwargs = {k: actor_params[k] for k in actor_kwarg_names}
+
+    def observer_table(alpha_observer):
+        return observer_fn(
+            **actor_kwargs, alpha_observer=alpha_observer, **table_kwargs
+        )
+
+    vmap_nll = jax.vmap(_joint_di_nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = observer_table(params[0])
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                effort_condition,
+                response_reward,
+                response_intimacy,
+            )
+        )
+
+    init = jnp.array([1.0])
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="joint_di_3act",
+    )
+    return float(params[0]), float(nll)
