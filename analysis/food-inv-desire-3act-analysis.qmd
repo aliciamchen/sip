@@ -1,81 +1,291 @@
 ---
-title: "Study 3b — Desire inference"
+title: "Study 3b — Desire inference (pilot)"
+author: Alicia Chen
+date: 2026-05-21
 format:
   html:
-    code-fold: true
     toc: true
+    code-fold: true
+    df-print: paged
+    page-layout: full
+    search: false
     embed-resources: true
+knitr:
+  opts_chunk:
+    dev: "ragg_png"
 execute:
-  echo: true
   warning: false
 ---
 
-```{r setup, include=FALSE}
+```{r setup}
 source(here::here("analysis", "utils.R"))
 setup_analysis()
 ```
 
 # Study 3b — Desire inference
 
-Observer infers desire from a single observed action, given effort and intimacy.
-
-**Status:** Scaffolding stub. The plots below come online once pilot data lands in
-`data/food_inv_desire_3act/`. Until then, this qmd is structure-only.
+Observer infers the actors' desire (low / high) from a single observed action, given known effort and intimacy. Design: 2 (effort: low / high) × 4 (intimacy: 0 / 50 / 75 / 100) × 3 (observed action: 0 / 1 / 2). Each participant sees 16 scenarios, sampled from 24 cells. The slider's endpoints are the scenario's `reward_low` / `reward_high` paragraphs, so the response encodes P(high desire).
 
 ## Demographics
 
 ```{r demographics}
-if (file.exists(here::here("data", "food_inv_desire_3act", "exit_survey.csv"))) {
-  report_demographics("food_inv_desire_3act")
-} else {
-  cat("No data yet for food_inv_desire_3act.\n")
-}
+report_demographics("food_inv_desire_3act")
 ```
 
-## Data
+## Load data
 
 ```{r load-data}
-data_path <- here::here("data", "food_inv_desire_3act", "main_trials_long.csv")
-if (file.exists(data_path)) {
-  df <- read_csv(data_path, show_col_types = FALSE)
-  cat("Trials:", nrow(df), "\n")
-  glimpse(df)
-} else {
-  cat("No data yet for food_inv_desire_3act.\n")
-}
+df <- read_csv(
+  here("data", "food_inv_desire_3act", "main_trials_long.csv"),
+  show_col_types = FALSE
+) |>
+  mutate(
+    action = str_replace(action_condition, "action_", ""),
+    intimacy = factor(intimacy, levels = c(0, 50, 75, 100)),
+    effort = factor(effort, levels = c("low", "high"),
+                    labels = c("Low effort", "High effort")),
+    p_high_reward = response / 100,
+    stage = factor(stage, levels = c("prior", "posterior")),
+    model = "Humans"
+  ) |>
+  select(-action_condition, -response)
+
+df <- calculate_belief_update(df, "p_high_reward")
+
+cat("N participants:", n_distinct(df$subject_id), "\n")
+cat("N scenarios:", n_distinct(df$scenario_label), "\n")
+cat("Trials per participant:", nrow(df) / n_distinct(df$subject_id), "\n")
 ```
 
-## Belief update
+## Cell coverage
 
-```{r belief-update, eval=FALSE}
-# Compute belief update (posterior - prior) per (subject, scenario)
-# Uses calculate_belief_update() from utils.R with the appropriate rating column.
-# TODO: fill in the right rating column once data lands. Currently expected: response
+How many trials landed in each (effort × intimacy × action) cell across the pilot. Each participant sees 16 of the 24 cells; cell counts will be uneven at small N.
+
+```{r cell-coverage}
+df |>
+  filter(stage == "posterior") |>
+  count(effort, intimacy, action) |>
+  ggplot(aes(x = action, y = intimacy, fill = n)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = n), size = 4) +
+  facet_wrap(~ effort) +
+  scale_fill_viridis_c(option = "mako", begin = 0.2, end = 0.9) +
+  labs(x = "Observed action", y = "Intimacy", fill = "n trials",
+       title = "Pilot cell coverage (posterior trials per cell)")
 ```
 
-## Model predictions
+## Distribution of ratings
 
-```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_desire_3act", "cv_preds_summary.csv")
-if (file.exists(preds_path)) {
-  preds <- read_csv(preds_path, show_col_types = FALSE)
-  glimpse(preds)
-} else {
-  cat("No CV predictions yet — run `make cv-food_inv_desire_3act` once a forward fit + data exist.\n")
-}
+```{r ratings-density}
+#| fig-width: 14
+#| fig-asp: 0.55
+
+ggplot(df, aes(x = p_high_reward, fill = action)) +
+  geom_density(alpha = 0.5) +
+  scale_fill_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  labs(y = "Density", x = "P(high desire)", fill = "Action") +
+  facet_grid(stage + effort ~ intimacy, labeller = label_both)
 ```
 
-## Model-vs-human correlations
+## Prior vs posterior by action × effort × intimacy
 
-```{r model-vs-human, eval=FALSE}
-# TODO: wire up once both data and model predictions exist.
-# Standard pattern (cf. food-inv-intimacy-desire-alt-analysis.qmd):
-#   1. Aggregate human belief updates by cell.
-#   2. Aggregate model predictions by the same cell.
-#   3. Plot scatter + report bootstrap Pearson via format_correlation_labels().
+```{r prior-posterior}
+#| fig-width: 14
+#| fig-asp: 0.7
+
+df_summary <- df |>
+  group_by(effort, intimacy, action, stage) |>
+  tidyboot_mean(p_high_reward)
+
+ggplot(df_summary, aes(x = stage, y = empirical_stat,
+                       color = action, group = action)) +
+  geom_point(size = 3, alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                width = 0.1, linewidth = 1) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
+  facet_grid(effort ~ intimacy, labeller = label_both) +
+  scale_color_viridis_d(option = "plasma", begin = 0, end = 0.85) +
+  labs(y = "P(high desire)", x = "Stage", color = "Observed action",
+       title = "Prior → posterior P(high desire) by cell")
+```
+
+## Belief updates (posterior − prior)
+
+```{r belief-updates}
+#| fig-width: 14
+#| fig-asp: 0.5
+
+df_belief <- df |>
+  filter(stage == "posterior") |>
+  group_by(effort, intimacy, action) |>
+  tidyboot_mean(belief_update) |>
+  rescale_belief_update(scale = 1)  # already on probability scale (/100 done above)
+
+ggplot(df_belief, aes(x = action, y = belief_update, fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                position = position_dodge(width = 0.9),
+                width = 0.1, color = "black", alpha = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_intimacy() +
+  facet_wrap(~ effort, nrow = 1) +
+  labs(y = "Belief update (posterior − prior)", x = "Observed action",
+       fill = "Intimacy",
+       title = "Belief updates by action × effort × intimacy")
+```
+
+## Marginal decomposition
+
+Two marginal views of the belief update, each collapsed over one known factor. Together with the 3-way bar plot above they decompose where the signal lives: if (a) is flat and (b) is structured, intimacy is doing the work; if (a) is structured the effort manipulation is biting; if the 3-way looks substantially different from the sum of the marginals, there's a real interaction.
+
+```{r marg-action-by-effort}
+#| fig-width: 10
+#| fig-asp: 0.5
+
+df_action_by_effort <- df |>
+  filter(stage == "posterior") |>
+  group_by(action, effort) |>
+  tidyboot_mean(belief_update)
+
+ggplot(df_action_by_effort,
+       aes(x = action, y = empirical_stat, fill = effort)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                position = position_dodge(width = 0.9),
+                width = 0.1, color = "black", alpha = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_effort() +
+  labs(y = "Belief update", x = "Observed action", fill = "Effort",
+       title = "(a) Action × effort, collapsed over intimacy")
+```
+
+```{r marg-action-by-intimacy}
+#| fig-width: 10
+#| fig-asp: 0.5
+
+df_action_by_intimacy <- df |>
+  filter(stage == "posterior") |>
+  group_by(action, intimacy) |>
+  tidyboot_mean(belief_update)
+
+ggplot(df_action_by_intimacy,
+       aes(x = action, y = empirical_stat, fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                position = position_dodge(width = 0.9),
+                width = 0.1, color = "black", alpha = 0.8) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_intimacy() +
+  labs(y = "Belief update", x = "Observed action", fill = "Intimacy",
+       title = "(b) Action × intimacy, collapsed over effort")
+```
+
+## Effort × action interaction (theory headline)
+
+The novel claim of this study is that **effort modulates how diagnostic each action is of desire**. Under high effort, direct sharing (action_2) becomes more attributable to "the actors couldn't be bothered with utensils" rather than to high desire, so its posterior P(high desire) should sit *lower* than under low effort. The opposite asymmetry holds for the no-share / indirect-share end of the action axis.
+
+```{r effort-action-interaction}
+#| fig-width: 14
+#| fig-asp: 0.45
+
+df_post_interaction <- df |>
+  filter(stage == "posterior") |>
+  group_by(intimacy, effort, action) |>
+  tidyboot_mean(p_high_reward)
+
+ggplot(df_post_interaction,
+       aes(x = action, y = empirical_stat,
+           color = effort, group = effort)) +
+  geom_point(size = 3, alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                width = 0.1, linewidth = 1) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
+  scale_color_effort() +
+  facet_wrap(~ intimacy, nrow = 1, labeller = label_both) +
+  labs(y = "Posterior P(high desire)", x = "Observed action",
+       color = "Effort",
+       title = "Posterior P(high desire) by action × effort, per intimacy level")
+```
+
+## Explaining-away signature
+
+For each (intimacy, action) cell, the asymmetry between effort conditions: `belief_update(low effort) − belief_update(high effort)`. Positive values mean the action is **more diagnostic of high desire when effort is low** — the predicted explaining-away signature. The expected pattern: positive in the action_1/action_2 columns at low intimacy (where effort plausibly competes with desire as an explanation), shading toward zero at high intimacy (where the cost of sharing is already low for both effort conditions).
+
+```{r explaining-away-signature}
+#| fig-width: 9
+#| fig-asp: 0.6
+
+df_signature <- df |>
+  filter(stage == "posterior") |>
+  mutate(effort_lab = ifelse(effort == "Low effort", "low_eff", "high_eff")) |>
+  group_by(intimacy, action, effort_lab) |>
+  summarize(belief_update = mean(belief_update, na.rm = TRUE),
+            .groups = "drop") |>
+  pivot_wider(names_from = effort_lab, values_from = belief_update) |>
+  mutate(signature = low_eff - high_eff)
+
+ggplot(df_signature, aes(x = action, y = intimacy, fill = signature)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = sprintf("%+.2f", signature)), size = 5) +
+  scale_fill_gradient2(low = "#7A4A5A", mid = "white", high = "#4A7A4A",
+                       midpoint = 0, name = "Δ belief update") +
+  labs(x = "Observed action", y = "Intimacy",
+       title = "Explaining-away signature",
+       subtitle = "belief_update(low effort) − belief_update(high effort); + = effort competes with desire as an explanation")
+```
+
+## Posterior P(high desire) only
+
+A complementary view that swaps the role of intimacy and effort in the faceting from the headline plot above.
+
+```{r posterior-summary}
+#| fig-width: 14
+#| fig-asp: 0.5
+
+df_post <- df |>
+  filter(stage == "posterior") |>
+  group_by(effort, intimacy, action) |>
+  tidyboot_mean(p_high_reward)
+
+ggplot(df_post, aes(x = action, y = empirical_stat, fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                position = position_dodge(width = 0.9),
+                width = 0.1, color = "black", alpha = 0.8) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "grey") +
+  scale_fill_intimacy() +
+  facet_wrap(~ effort, nrow = 1) +
+  labs(y = "Posterior P(high desire)", x = "Observed action",
+       fill = "Intimacy",
+       title = "Posterior P(high desire) by cell")
+```
+
+## Scenario-level view
+
+```{r belief-by-scenario}
+#| fig-width: 14
+#| fig-asp: 0.9
+
+df_scenario <- df |>
+  filter(stage == "posterior") |>
+  group_by(scenario_label, effort, intimacy, action) |>
+  summarize(belief_update = mean(belief_update, na.rm = TRUE), .groups = "drop")
+
+ggplot(df_scenario, aes(x = action, y = belief_update,
+                        fill = intimacy)) +
+  geom_col(position = position_dodge(width = 0.9), alpha = PLOT_ALPHA) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey") +
+  scale_fill_intimacy() +
+  facet_grid(effort ~ scenario_label,
+             labeller = labeller(scenario_label = label_wrap_gen(12))) +
+  labs(y = "Belief update", x = "Action", fill = "Intimacy",
+       title = "Belief update by scenario × effort × intimacy") +
+  theme(axis.text.x = element_text(size = 9),
+        strip.text.x = element_text(size = 9))
 ```
 
 ## Notes
 
-See the manuscript Methods section for the exact design, plus
-`experiments/food_inv_desire_3act/README.md` for the trial structure spec.
+This is a 25-participant pilot with no exclusions (all passed attention; none zeroed both memory checks). Cells are unevenly populated because each participant sees only 16 of the 24 cells; the CI widths above already reflect that imbalance. The next pass plugs CV model predictions from `model/outputs/food_inv_desire_3act/cv_preds_summary.csv` into the belief-update panel (cf. `food-inv-desire-intimacy-noalt-analysis.qmd` for the pattern).

@@ -237,6 +237,29 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
+    "food_inv_desire_3act": {
+        "description": "Study 3b — desire inference under known effort + intimacy (3-action set)",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "action_condition",
+            "effort_condition",
+            "intimacy_condition",
+            "stage",
+            "response",
+        ],
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+        ],
+        "has_closeness": False,
+        "has_attention_memory": True,
+    },
 }
 
 
@@ -302,7 +325,10 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                     scenario_label = trial.get("scenario_label", "")
 
                     # Handle different experiment types
-                    if experiment_name in ("food_forw_intimacy_desire", "nonfood_forw_intimacy_desire"):
+                    if experiment_name in (
+                        "food_forw_intimacy_desire",
+                        "nonfood_forw_intimacy_desire",
+                    ):
                         # Extract action probabilities from probs field
                         probs = trial.get("probs", [])
                         action_0 = probs[0] if len(probs) > 0 else ""
@@ -329,7 +355,10 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                                 "reward_condition", ""
                             )
 
-                    elif experiment_name in ("food_inv_intimacy_desire_alt", "food_inv_intimacy_desire_noalt"):
+                    elif experiment_name in (
+                        "food_inv_intimacy_desire_alt",
+                        "food_inv_intimacy_desire_noalt",
+                    ):
                         # Extract intimacy rating and stage information
                         intimacy_rating = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -346,7 +375,10 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "intimacy_rating": intimacy_rating,
                         }
 
-                    elif experiment_name in ("food_inv_desire_intimacy_alt", "food_inv_desire_intimacy_noalt"):
+                    elif experiment_name in (
+                        "food_inv_desire_intimacy_alt",
+                        "food_inv_desire_intimacy_noalt",
+                    ):
                         # Extract reward likelihood rating and stage information
                         response = trial.get("response", "")
                         stage = trial.get("stage", "")
@@ -393,6 +425,20 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "subject_id": subject_id,
                             "scenario_label": scenario_label,
                             "action_condition": trial.get("action_condition", ""),
+                            "intimacy_condition": trial.get("intimacy_condition", ""),
+                            "stage": trial.get("stage", ""),
+                            "response": trial.get("response", ""),
+                        }
+
+                    elif experiment_name == "food_inv_desire_3act":
+                        # Prior/posterior desire-likelihood slider response under
+                        # known effort + intimacy. response is the slider value
+                        # 0-100, encoding P(high desire).
+                        trial_data = {
+                            "subject_id": subject_id,
+                            "scenario_label": scenario_label,
+                            "action_condition": trial.get("action_condition", ""),
+                            "effort_condition": trial.get("effort_condition", ""),
                             "intimacy_condition": trial.get("intimacy_condition", ""),
                             "stage": trial.get("stage", ""),
                             "response": trial.get("response", ""),
@@ -775,6 +821,49 @@ def create_food_inv_desire_long(output_dir):
     )
 
 
+def create_food_inv_desire_3act_long(output_dir):
+    """
+    Create main_trials_long.csv for the food_inv_desire_3act experiment.
+
+    Filters out participants who failed attention or got 0 correct on memory.
+    Renames effort_condition -> effort and intimacy_condition -> intimacy for
+    analysis consistency.
+    """
+    output_path = Path(output_dir)
+
+    main_trials = pd.read_csv(output_path / "main_trials.csv")
+    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
+
+    excluded_subjects = exit_survey[
+        (exit_survey["attention_passed"] != True)
+        | (exit_survey["memory_correct_count"] == 0)
+    ]["subject_id"].tolist()
+
+    n_excluded = len(excluded_subjects)
+    n_total = exit_survey["subject_id"].nunique()
+    print(
+        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
+    )
+
+    main_trials_filtered = main_trials[
+        ~main_trials["subject_id"].isin(excluded_subjects)
+    ]
+
+    main_trials_long = main_trials_filtered.rename(
+        columns={"effort_condition": "effort", "intimacy_condition": "intimacy"}
+    )
+
+    main_trials_long = main_trials_long.sort_values(
+        ["subject_id", "scenario_label", "action_condition", "stage"]
+    ).reset_index(drop=True)
+
+    output_file = output_path / "main_trials_long.csv"
+    main_trials_long.to_csv(output_file, index=False)
+    print(
+        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
+    )
+
+
 def main():
     """Main function to run the conversion."""
     parser = argparse.ArgumentParser(
@@ -833,10 +922,16 @@ Examples:
     if args.experiment in ("food_forw_intimacy_desire", "nonfood_forw_intimacy_desire"):
         print("\nCreating long format with exclusions...")
         create_food_forw_intimacy_desire_long(output_dir)
-    elif args.experiment in ("food_inv_intimacy_desire_alt", "food_inv_intimacy_desire_noalt"):
+    elif args.experiment in (
+        "food_inv_intimacy_desire_alt",
+        "food_inv_intimacy_desire_noalt",
+    ):
         print("\nCreating long format with exclusions...")
         create_food_inv_intimacy_long(output_dir)
-    elif args.experiment in ("food_inv_desire_intimacy_alt", "food_inv_desire_intimacy_noalt"):
+    elif args.experiment in (
+        "food_inv_desire_intimacy_alt",
+        "food_inv_desire_intimacy_noalt",
+    ):
         print("\nCreating long format with exclusions...")
         create_food_inv_desire_long(output_dir)
     elif args.experiment == "food_forw_intimacy_effort":
@@ -848,6 +943,9 @@ Examples:
     elif args.experiment == "food_inv_effort_intimacy_alt":
         print("\nCreating long format with exclusions...")
         create_food_inv_effort_intimacy_alt_long(output_dir)
+    elif args.experiment == "food_inv_desire_3act":
+        print("\nCreating long format with exclusions...")
+        create_food_inv_desire_3act_long(output_dir)
 
     print("\nConversion complete!")
 
