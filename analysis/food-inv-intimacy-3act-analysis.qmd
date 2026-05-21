@@ -1,0 +1,81 @@
+---
+title: "Study 2 — Intimacy inference"
+format:
+  html:
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+---
+
+```{r setup, include=FALSE}
+source(here::here("analysis", "utils.R"))
+setup_analysis()
+```
+
+# Study 2 — Intimacy inference
+
+Observer infers intimacy from a single observed action, given desire and effort.
+
+**Status:** Scaffolding stub. The plots below come online once pilot data lands in
+`data/food_inv_intimacy_3act/`. Until then, this qmd is structure-only.
+
+## Demographics
+
+```{r demographics}
+if (file.exists(here::here("data", "food_inv_intimacy_3act", "exit_survey.csv"))) {
+  report_demographics("food_inv_intimacy_3act")
+} else {
+  cat("No data yet for food_inv_intimacy_3act.\n")
+}
+```
+
+## Data
+
+```{r load-data}
+data_path <- here::here("data", "food_inv_intimacy_3act", "main_trials_long.csv")
+if (file.exists(data_path)) {
+  df <- read_csv(data_path, show_col_types = FALSE)
+  cat("Trials:", nrow(df), "\n")
+  glimpse(df)
+} else {
+  cat("No data yet for food_inv_intimacy_3act.\n")
+}
+```
+
+## Belief update
+
+```{r belief-update, eval=FALSE}
+# Compute belief update (posterior - prior) per (subject, scenario)
+# Uses calculate_belief_update() from utils.R with the appropriate rating column.
+# TODO: fill in the right rating column once data lands. Currently expected: intimacy_rating
+```
+
+## Model predictions
+
+```{r preds, eval=FALSE}
+preds_path <- here::here("model", "outputs", "food_inv_intimacy_3act", "cv_preds_summary.csv")
+if (file.exists(preds_path)) {
+  preds <- read_csv(preds_path, show_col_types = FALSE)
+  glimpse(preds)
+} else {
+  cat("No CV predictions yet — run `make cv-food_inv_intimacy_3act` once a forward fit + data exist.\n")
+}
+```
+
+## Model-vs-human correlations
+
+```{r model-vs-human, eval=FALSE}
+# TODO: wire up once both data and model predictions exist.
+# Standard pattern (cf. food-inv-intimacy-desire-alt-analysis.qmd):
+#   1. Aggregate human belief updates by cell.
+#   2. Aggregate model predictions by the same cell.
+#   3. Plot scatter + report bootstrap Pearson via format_correlation_labels().
+```
+
+## Notes
+
+See the manuscript Methods section for the exact design, plus
+`experiments/food_inv_intimacy_3act/README.md` for the trial structure spec.
