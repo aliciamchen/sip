@@ -19,6 +19,7 @@ experiments/pilots/
 data/pilots/
 submissions
 cogsci-cr
+design_exploration
 .claude/scheduled_tasks.lock
 SIP_journal
 notes/
