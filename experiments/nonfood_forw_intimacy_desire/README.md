@@ -1,10 +1,13 @@
 # nonfood_forw_intimacy_desire
 
-Forward planning experiment (non-food scenarios) with probability sliders for action ratings
+Forward planning experiment on the non-food stimulus set (`scenarios_nonfood.csv`), paralleling `food_forw_intimacy_desire`. 4-action design with intimacy × desire crossing; participants rate the probability that the two people will choose each action.
 
-`ssh aliciach@athena.dialup.mit.edu "mkdir -p ~/www/food-sharing"`
+## Deploy
 
-`cd experiments`
-`rsync -av --delete nonfood_forw_intimacy_desire/ aliciach@athena.dialup.mit.edu:~/www/food-sharing/nonfood_forw_intimacy_desire`
+```bash
+bin/deploy-experiment nonfood_forw_intimacy_desire
+```
 
-URL: https://web.mit.edu/aliciach/www/food-sharing/nonfood_forw_intimacy_desire
+The deploy script pushes this directory and `experiments/_lib/` to athena; see [experiments/README.md](../README.md#deploying-experiments) for details. After deploy the experiment is reachable at:
+
+https://web.mit.edu/aliciach/www/sip/experiments/nonfood_forw_intimacy_desire/

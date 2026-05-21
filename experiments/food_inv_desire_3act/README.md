@@ -42,3 +42,13 @@ uv run python experiments/csv_to_json.py
 - Replace `PIPE_EXPERIMENT_ID` in `trials.js` `CONFIG` with the real DataPipe experiment ID.
 - Replace `PROLIFIC_COMPLETION_URL` with the real Prolific completion URL.
 - Open `index.html` locally and walk through a few trials per cell to confirm the UI renders and the slider endpoints / observed actions look right.
+
+## Deploy
+
+```bash
+bin/deploy-experiment food_inv_desire_3act
+```
+
+The deploy script pushes this directory and `experiments/_lib/` to athena; see [experiments/README.md](../README.md#deploying-experiments) for details. After deploy the experiment is reachable at:
+
+https://web.mit.edu/aliciach/www/sip/experiments/food_inv_desire_3act/

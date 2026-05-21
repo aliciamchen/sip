@@ -16,9 +16,9 @@ uv run python experiments/food_forw_intimacy_effort/python/generate_counterbalan
 Deploy:
 
 ```bash
-ssh aliciach@athena.dialup.mit.edu "mkdir -p ~/www/food-sharing"
-cd experiments
-rsync -av --delete food_forw_intimacy_effort/ aliciach@athena.dialup.mit.edu:~/www/food-sharing/food_forw_intimacy_effort
+bin/deploy-experiment food_forw_intimacy_effort
 ```
 
-URL: https://web.mit.edu/aliciach/www/food-sharing/food_forw_intimacy_effort
+The deploy script pushes this directory and `experiments/_lib/` to athena; see [experiments/README.md](../README.md#deploying-experiments) for details. After deploy the experiment is reachable at:
+
+https://web.mit.edu/aliciach/www/sip/experiments/food_forw_intimacy_effort/

@@ -1,10 +1,13 @@
 # food_forw_intimacy_desire
 
-Forward planning experiment with probability sliders for action ratings
+Study 1a — forward planning with probability sliders for action ratings, 4-action canonical stimulus set, intimacy × desire crossing.
 
-`ssh aliciach@athena.dialup.mit.edu "mkdir -p ~/www/food-sharing"`
+## Deploy
 
-`cd experiments`
-`rsync -av --delete food_forw_intimacy_desire/ aliciach@athena.dialup.mit.edu:~/www/food-sharing/food_forw_intimacy_desire`
-    
-URL: https://web.mit.edu/aliciach/www/food-sharing/food_forw_intimacy_desire
+```bash
+bin/deploy-experiment food_forw_intimacy_desire
+```
+
+The deploy script pushes this directory and `experiments/_lib/` to athena; see [experiments/README.md](../README.md#deploying-experiments) for details. After deploy the experiment is reachable at:
+
+https://web.mit.edu/aliciach/www/sip/experiments/food_forw_intimacy_desire/

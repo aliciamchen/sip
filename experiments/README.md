@@ -82,3 +82,24 @@ Four non-food inverse stubs (`nonfood_inv_*`) were scaffolded against the obsole
 ## Counterbalancing
 
 Each experiment dir has `python/generate_counterbalancing.py` which produces `json/full_counterbalancing.json` — an array of N "sequences," each a 16-trial assignment of factor cells to the 16 scenarios. `experiment.js` reads a per-participant `condition_assignment` from jsPsychPipe and selects `counterbalancing[condition_assignment]`. For the new 3-action experiments, cells are distributed across the 16 slots as evenly as possible (with subsets of the cell space sampled per participant for Studies 3a/3b, which have 24 cells > 16 slots). Each experiment uses 192 sequences (12 rounds × 16 rotations).
+
+## Shared experiment code
+
+The active experiments share a single copy of the jsPsych boilerplate — consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, and the merged stylesheet — in [`_lib/`](_lib/). Each per-experiment `experiment.js` is a thin call to `runExperiment()` from `_lib/bootstrap.js`, and each `trials.js` holds only the experiment-specific `CONFIG`, instruction text, and prior/posterior trial rendering. The three consent variants (`food-forward`, `food-inverse`, `nonfood-forward`) live in `_lib/consent/`.
+
+This shared layout means the experiments are not standalone folders anymore: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
+
+## Deploying experiments
+
+Active experiments are hosted on the MIT athena Locker at `https://web.mit.edu/aliciach/www/sip/experiments/<slug>/`. Pushes go through [`bin/deploy-experiment`](../bin/deploy-experiment), which rsyncs the experiment directory plus the shared `_lib/` to `aliciach@athena.dialup.mit.edu:~/www/sip/experiments/`:
+
+```bash
+bin/deploy-experiment food_inv_desire_3act           # push _lib/ + the experiment
+bin/deploy-experiment food_inv_desire_3act --dry-run # preview what would change
+bin/deploy-experiment --lib-only                     # push only _lib/ (after editing it)
+bin/deploy-experiment --list                         # list the active slugs
+```
+
+The script rejects slugs that aren't in the active roster (the eight experiments listed under "Active experiments" above), excludes `python/`, `README.md`, `.DS_Store`, and `*.bak` from the push, and runs rsync with `--delete` so stale files from earlier deploys get cleaned up. The server destination is overridable per-invocation with `RSYNC_DEST=user@host:/path`.
+
+Each experiment's `trials.js` still needs `PIPE_EXPERIMENT_ID` and `PROLIFIC_COMPLETION_URL` filled in with the real DataPipe and Prolific identifiers before it is launched to participants.

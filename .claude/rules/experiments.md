@@ -7,12 +7,18 @@ paths:
 
 Each experiment folder contains:
 - `index.html` - Entry point
-- `experiment.js` - jsPsych 8.x experiment logic
-- `trials.js` - Trial configuration
+- `experiment.js` - thin call to `runExperiment()` from `_lib/bootstrap.js`
+- `trials.js` - per-experiment `CONFIG`, instruction text, and prior/posterior trial rendering
+
+All shared jsPsych boilerplate (consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, the stylesheet, and the consent + exit-survey HTML templates) lives in [`experiments/_lib/`](../../experiments/_lib/). Each experiment references it via `../_lib/`, so the active experiments are not standalone folders — `_lib/` must be deployed alongside them.
 
 Experiments collect data via jsPsych-contrib/pipe plugin to `data/<experiment_name>/raw_data/`.
 
 Each different experiment needs a new datapipe ID but they all have the same prolific completion link.
+
+## Deploy
+
+Deploys go through [`bin/deploy-experiment`](../../bin/deploy-experiment), which rsyncs an experiment + `_lib/` to athena (`~/www/sip/experiments/`). Usage: `bin/deploy-experiment <slug>`. The script only accepts the eight active slugs (Makefile's `EXPERIMENTS_FORWARD` + `EXPERIMENTS_INVERSE`). See [experiments/README.md](../../experiments/README.md#deploying-experiments) for the full reference.
 
 ## Scenario CSVs are generated from Python
 
