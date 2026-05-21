@@ -143,7 +143,7 @@ def load_fitted_alpha_observer(filepath=None) -> dict:
 def load_intimacy_alt_data(filepath: str = None):
     """food_inv_intimacy_desire_alt — observer infers intimacy under known motivation."""
     if filepath is None:
-        filepath = get_project_root() / "data" / "food_inv_intimacy_desire_alt" / "main_trials_long.csv"
+        filepath = get_project_root() / "data" / "legacy" / "food_inv_intimacy_desire_alt" / "main_trials_long.csv"
     print("Loading food_inv_intimacy_desire_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
@@ -163,7 +163,7 @@ def load_intimacy_alt_data(filepath: str = None):
 def load_desire_alt_data(filepath: str = None):
     """food_inv_desire_intimacy_alt — observer infers desire (motivation) under known intimacy."""
     if filepath is None:
-        filepath = get_project_root() / "data" / "food_inv_desire_intimacy_alt" / "main_trials_long.csv"
+        filepath = get_project_root() / "data" / "legacy" / "food_inv_desire_intimacy_alt" / "main_trials_long.csv"
     print("Loading food_inv_desire_intimacy_alt data...")
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
@@ -184,7 +184,7 @@ def load_intimacy_noalt_data(filepath=None):
     """food_inv_intimacy_desire_noalt — observer sees only the chosen action."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv_intimacy_desire_noalt" / "main_trials_long.csv"
+            get_project_root() / "data" / "legacy" / "food_inv_intimacy_desire_noalt" / "main_trials_long.csv"
         )
     print("Loading food_inv_intimacy_desire_noalt data...")
     data = pd.read_csv(filepath)
@@ -206,7 +206,7 @@ def load_desire_noalt_data(filepath=None):
     """food_inv_desire_intimacy_noalt — observer sees only the chosen action; infers motivation."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv_desire_intimacy_noalt" / "main_trials_long.csv"
+            get_project_root() / "data" / "legacy" / "food_inv_desire_intimacy_noalt" / "main_trials_long.csv"
         )
     print("Loading food_inv_desire_intimacy_noalt data...")
     data = pd.read_csv(filepath)
@@ -228,7 +228,7 @@ def load_intimacy_effort_data(filepath: str = None):
     """food_inv_intimacy_effort_alt — observer infers intimacy under effort manipulation."""
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv_intimacy_effort_alt" / "main_trials_long.csv"
+            get_project_root() / "data" / "legacy" / "food_inv_intimacy_effort_alt" / "main_trials_long.csv"
         )
     print("Loading food_inv_intimacy_effort_alt data...")
     data = pd.read_csv(filepath)
@@ -254,7 +254,7 @@ def load_effort_intimacy_data(filepath: str = None):
     """
     if filepath is None:
         filepath = (
-            get_project_root() / "data" / "food_inv_effort_intimacy_alt" / "main_trials_long.csv"
+            get_project_root() / "data" / "legacy" / "food_inv_effort_intimacy_alt" / "main_trials_long.csv"
         )
     print("Loading food_inv_effort_intimacy_alt data...")
     data = pd.read_csv(filepath)

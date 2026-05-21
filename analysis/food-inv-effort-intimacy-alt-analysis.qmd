@@ -43,7 +43,7 @@ This experiment flips the inference direction of `food_inv_intimacy_effort_alt`.
 ```{r}
 EXCLUDED_SUBJECTS <- c()
 
-df <- read_csv(here("data", "food_inv_effort_intimacy_alt", "main_trials_long.csv"),
+df <- read_csv(here("data", "legacy", "food_inv_effort_intimacy_alt", "main_trials_long.csv"),
                show_col_types = FALSE) |>
   filter(!subject_id %in% EXCLUDED_SUBJECTS) |>
   mutate(

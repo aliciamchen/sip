@@ -37,7 +37,7 @@ This notebook aggregates model-human correlations across both alt-shown inverse 
 ### Human data
 
 ```{r}
-df_intimacy <- read_csv(here("data", "food_inv_intimacy_desire_alt", "main_trials_long.csv")) |>
+df_intimacy <- read_csv(here("data", "legacy", "food_inv_intimacy_desire_alt", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),
@@ -85,7 +85,7 @@ df_model_intimacy <- read_csv(here("model", "outputs", "food_inv_intimacy_desire
 ### Human data
 
 ```{r}
-df_desire <- read_csv(here("data", "food_inv_desire_intimacy_alt", "main_trials_long.csv")) |>
+df_desire <- read_csv(here("data", "legacy", "food_inv_desire_intimacy_alt", "main_trials_long.csv")) |>
   mutate(
     action = str_replace(action_condition, "action_", ""),
     intimacy = factor(intimacy),
@@ -268,7 +268,7 @@ EXCLUDED_SUBJECTS_EFFORT <- c("daeeb393-ddef-5529-804a-36dbdd257d5c")
 ### Human data
 
 ```{r}
-df_intimacy_effort <- read_csv(here("data", "food_inv_intimacy_effort_alt", "main_trials_long.csv")) |>
+df_intimacy_effort <- read_csv(here("data", "legacy", "food_inv_intimacy_effort_alt", "main_trials_long.csv")) |>
   filter(!subject_id %in% EXCLUDED_SUBJECTS_EFFORT) |>
   mutate(
     action = factor(action_condition, levels = c("action_1", "action_2"),
@@ -318,7 +318,7 @@ df_model_intimacy_effort <- read_csv(here("model", "outputs", "food_inv_intimacy
 ### Human data
 
 ```{r}
-df_effort_intimacy <- read_csv(here("data", "food_inv_effort_intimacy_alt", "main_trials_long.csv")) |>
+df_effort_intimacy <- read_csv(here("data", "legacy", "food_inv_effort_intimacy_alt", "main_trials_long.csv")) |>
   mutate(
     action = factor(action_condition, levels = c("action_1", "action_2"),
                     labels = EFFORT_ACTION_LEVELS),

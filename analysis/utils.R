@@ -161,8 +161,11 @@ POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
 
 # Print standardized demographics block from an experiment's exit_survey.csv
 report_demographics <- function(data_dir) {
-  df_exit <- read_csv(here("data", data_dir, "exit_survey.csv"),
-                      show_col_types = FALSE)
+  path <- here("data", data_dir, "exit_survey.csv")
+  if (!file.exists(path)) {
+    path <- here("data", "legacy", data_dir, "exit_survey.csv")
+  }
+  df_exit <- read_csv(path, show_col_types = FALSE)
   n_total <- nrow(df_exit)
   n_passed <- df_exit |>
     filter(attention_passed == TRUE, memory_correct_count > 0) |>

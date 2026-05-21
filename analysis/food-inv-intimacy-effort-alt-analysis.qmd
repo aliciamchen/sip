@@ -47,7 +47,7 @@ This experiment presents participants with scenarios where they observe one of t
 # from plots only; model fits / CV predictions are unaffected.
 EXCLUDED_SUBJECTS <- c("daeeb393-ddef-5529-804a-36dbdd257d5c")
 
-df <- read_csv(here("data", "food_inv_intimacy_effort_alt", "main_trials_long.csv"),
+df <- read_csv(here("data", "legacy", "food_inv_intimacy_effort_alt", "main_trials_long.csv"),
                show_col_types = FALSE) |>
   filter(!subject_id %in% EXCLUDED_SUBJECTS) |>
   mutate(

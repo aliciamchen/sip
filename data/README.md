@@ -3,6 +3,8 @@
 
 Each experiment folder contains `main_trials.csv`, `main_trials_long.csv`, and `exit_survey.csv`.
 
+The six older inverse-planning experiments documented below live under [`legacy/`](legacy/README.md) since the experimental design was reorganized around a 3-action canonical set; their column schemas are still authoritative for the archived CSVs.
+
 ## Terminology note
 
 In the inverse-planning experiments, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) or "motivation" rather than "desire" — we changed the terminology to "desire" after running the experiments, for clarity.
