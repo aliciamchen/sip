@@ -2,97 +2,83 @@
 
 ## Terminology note
 
-In the inverse-planning experiments, internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — we changed the terminology to "desire" after running the experiments, for clarity.
+Internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — the public manuscript uses "desire" but the data column names were fixed before that rename.
 
-## Scenarios (`scenarios.csv`)
+## Stimulus sources
 
-Spreadsheet of scenarios used to generate stimuli for the experiments. The CSV is a generated artifact — the source of truth is `scenarios.py`, which writes the CSV when run. To edit scenarios, modify `scenarios.py` and regenerate:
+Four scenario CSVs, all generated from Python sources of truth. Edit the `.py` file and regenerate with `uv run python experiments/<name>.py` — never edit the CSV directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`.
 
-```bash
-uv run python experiments/scenarios.py
-```
+### `scenarios.csv` — 4-action canonical (Study 1a, plus archived inverse experiments)
 
 | Column | Description |
 |--------|-------------|
 | `scenario_label` | Scenario identifier used in data files |
 | `name_0`, `name_1` | Character names in the vignette |
 | `vignette` | Base scenario description |
-| `reward_low` | Text describing low motivation condition |
-| `reward_high` | Text describing high motivation condition |
-| `action_0` | Description of action 0 |
-| `action_1` | Description of action 1 |
-| `action_2` | Description of action 2 |
-| `action_3` | Description of action 3 |
+| `reward_low`, `reward_high` | Two motivation-state paragraphs |
+| `action_0` … `action_3` | Four actions, ordered by saliva-transfer risk |
 
-### Action Scale
-
-Actions are ordered by degree of saliva-sharing risk:
+Action ordering:
 - **Action 0**: No sharing
-- **Action 1**: Sharing with no saliva risk (e.g., cutting food in half, using separate utensils)
-- **Action 2**: Sharing with moderate saliva risk (e.g., eating from opposite ends)
-- **Action 3**: Sharing with high saliva risk (e.g., same utensil, same bite location)
+- **Action 1**: Sharing with no saliva risk (separate utensils, divide into portions)
+- **Action 2**: Sharing with moderate saliva risk (opposite ends of a shared item)
+- **Action 3**: Sharing with high saliva risk (same end, same utensil)
 
-## Non-food scenarios (`scenarios_nonfood.csv`)
+### `scenarios_effort.csv` — 2-action effort (Study 1b)
 
-A parallel set of 16 scenarios covering non-food sharing situations, grouped by what is being shared: substance (e.g., chapstick, sunscreen, hairbrush), space (e.g., blanket, bed, sauna), and privacy (e.g., breakup conversation, payment, phone passcode). Like `scenarios.csv`, the CSV is generated from a Python source of truth — edit `scenarios_nonfood.py` and regenerate:
-
-```bash
-uv run python experiments/scenarios_nonfood.py
-```
-
-The schema matches `scenarios.csv` with one additional column, `scenario_type`, which takes one of `substance`, `space`, or `privacy`.
-
-## Effort-manipulation scenarios (`scenarios_effort.csv`)
-
-A parallel set of 16 food-sharing scenarios for an experiment that manipulates the relative effort of avoiding saliva sharing, rather than reward. Each scenario uses the same `scenario_label` and character names as `scenarios.csv`, but differs in three ways:
-
-- Reward is held fixed at high and integrated into the vignette narrative (no separate `reward_low`/`reward_high` columns).
-- The action space is collapsed to two actions: `action_1` is a non-saliva-sharing action (e.g., using an extra utensil, cutting a portion, using a second cup), and `action_2` is a plausible saliva-sharing action for the scenario.
-- Each scenario has one shared `vignette` followed by one of two effort-manipulation paragraphs, `effort_low` or `effort_high`. The low paragraph makes the resource that `action_1` relies on (knife, extra plate, second cup, etc.) easy to obtain; the high paragraph makes it costly. The action text is identical across conditions. In the experiments, the effort paragraph is rendered as a separate paragraph immediately after the shared vignette.
-
-Like the other two scenario CSVs, this one is generated from a Python source of truth — edit `scenarios_effort.py` and regenerate:
-
-```bash
-uv run python experiments/scenarios_effort.py
-```
+Same 16 scenarios as `scenarios.csv`, but collapsed to 2 actions and supplemented with separable effort paragraphs. Reward is held fixed at high and integrated into the shared vignette.
 
 | Column | Description |
 |--------|-------------|
-| `scenario_label` | Scenario identifier (matches `scenarios.csv`) |
-| `name_0`, `name_1` | Character names in the vignette |
+| `scenario_label`, `name_0`, `name_1` | Same as canonical |
 | `vignette` | Shared scenario narrative (same across both effort conditions) |
-| `effort_low` | Trailing paragraph in which avoiding saliva sharing is easy |
-| `effort_high` | Trailing paragraph in which avoiding saliva sharing is costly |
+| `effort_low`, `effort_high` | Trailing paragraphs — the low version makes the resource that `action_1` relies on easy to obtain, the high version makes it costly |
 | `action_1` | Non-saliva-sharing action |
-| `action_2` | Saliva-sharing action |
+| `action_2` | Saliva-sharing action (collapsed from `action_2`/`action_3` of `scenarios.csv`) |
 
-## Forward planning (actors choose actions)
+### `scenarios_3act.csv` — 3-action canonical (Studies 2, 3a, 3b, 4a, 4b)
 
-- [food_forw_intimacy_desire](food_forw_intimacy_desire/README.md) — Actors choose among four candidate actions given intimacy (4 levels) × desire (2 levels). Uses `scenarios.csv`.
-- [food_forw_intimacy_effort](food_forw_intimacy_effort/README.md) — Actors choose between two actions given intimacy (4 levels) × relative effort (2 levels). Reward is held fixed at high; uses `scenarios_effort.csv`.
+The new stimulus set used by all five inverse-planning experiments. Merges the effort paragraphs from `scenarios_effort.csv` into the canonical scenarios so all three latent variables (desire, effort, intimacy) can be manipulated alongside the observed action.
 
-## Inverse planning (observers infer latents from actions)
+| Column | Description |
+|--------|-------------|
+| `scenario_label`, `name_0`, `name_1`, `vignette` | Same as canonical |
+| `reward_low`, `reward_high` | Same as canonical |
+| `effort_low`, `effort_high` | Same as effort set |
+| `action_0` | No sharing (same as canonical action_0) |
+| `action_1` | Low-risk sharing (separable from effort context — same wording as effort set's `action_1`) |
+| `action_2` | High-risk sharing — the more intuitively plausible of the canonical `action_2`/`action_3` per scenario |
 
-The first four use the canonical 4-action food-sharing set:
+### `scenarios_nonfood.csv` — Non-food
 
-- [food_inv_intimacy_desire_alt](food_inv_intimacy_desire_alt/README.md) — Infer intimacy from the observed action; all four candidate actions shown to participants.
-- [food_inv_desire_intimacy_alt](food_inv_desire_intimacy_alt/README.md) — Infer desire from the observed action; all four candidate actions shown.
-- [food_inv_intimacy_desire_noalt](food_inv_intimacy_desire_noalt/README.md) — Same as `food_inv_intimacy_desire_alt` but with the candidate actions hidden from participants; counterfactual alternatives are supplied by a language model on the model side.
-- [food_inv_desire_intimacy_noalt](food_inv_desire_intimacy_noalt/README.md) — Same as `food_inv_desire_intimacy_alt` but with the candidate actions hidden; LM-generated counterfactual alternatives on the model side.
+A parallel set of 16 scenarios covering substance sharing (chapstick, hairbrush), shared physical space (blanket, sauna), and informational/situational privacy (breakup conversation, phone passcode). Schema matches `scenarios.csv` with one additional column, `scenario_type`, taking one of `substance`, `space`, or `privacy`. Currently only the forward variant has data.
 
-The other two use the effort 2-action set:
+## Active experiments
 
-- [food_inv_intimacy_effort_alt](food_inv_intimacy_effort_alt/README.md) — Infer intimacy from observed action (2 levels) × relative effort (2 levels); both candidate actions shown.
-- [food_inv_effort_intimacy_alt](food_inv_effort_intimacy_alt/README.md) — Infer effort from observed action (2 levels) × intimacy (4 levels), with the two effort paragraphs as slider endpoints.
+### Forward planning
 
-## Generalization beyond food sharing
+- [food_forw_intimacy_desire](food_forw_intimacy_desire/README.md) — **Study 1a**: 4-action canonical with desire × intimacy crossing.
+- [food_forw_intimacy_effort](food_forw_intimacy_effort/README.md) — **Study 1b**: 2-action effort experiment with effort × intimacy crossing; reward held at high.
+- [nonfood_forw_intimacy_desire](nonfood_forw_intimacy_desire/README.md) — Non-food forward (parallels Study 1a on `scenarios_nonfood.csv`).
 
-A non-food stimulus set (`scenarios_nonfood.csv`: substance sharing, shared space, privacy) parallels the canonical food set. The non-food experiments mirror the canonical food set one-to-one in structure and counterbalancing, with the participant-facing copy generalized away from food.
+### Inverse planning (3-action set)
 
-Only the forward variant has data so far; the four non-food inverse variants are pending. The full set of generalization experiments is TBD.
+All five use `scenarios_3act.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. Each experiment dir's `README.md` documents the design spec.
 
-- [nonfood_forw_intimacy_desire](nonfood_forw_intimacy_desire/README.md)
-- [nonfood_inv_intimacy_desire_alt](nonfood_inv_intimacy_desire_alt/README.md)
-- [nonfood_inv_desire_intimacy_alt](nonfood_inv_desire_intimacy_alt/README.md)
-- [nonfood_inv_intimacy_desire_noalt](nonfood_inv_intimacy_desire_noalt/README.md)
-- [nonfood_inv_desire_intimacy_noalt](nonfood_inv_desire_intimacy_noalt/README.md)
+- [food_inv_intimacy_3act](food_inv_intimacy_3act/README.md) — **Study 2**: infer intimacy under known desire + effort. Design 2 × 2 × 3.
+- [food_inv_effort_3act](food_inv_effort_3act/README.md) — **Study 3a**: infer effort under known desire + intimacy. Design 2 × 4 × 3. Slider endpoints are the two effort paragraphs.
+- [food_inv_desire_3act](food_inv_desire_3act/README.md) — **Study 3b**: infer desire under known effort + intimacy. Design 2 × 4 × 3. Slider endpoints are the two reward paragraphs.
+- [food_inv_joint_de_3act](food_inv_joint_de_3act/README.md) — **Study 4a**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
+- [food_inv_joint_di_3act](food_inv_joint_di_3act/README.md) — **Study 4b**: joint inference over desire and intimacy given effort. Design 2 × 3, two sliders per trial (desire with paragraph endpoints, intimacy on the 0–100 maximally-formal-to-maximally-intimate scale).
+
+## Legacy experiment dirs (slated for removal)
+
+Six older inverse-planning experiment dirs from the previous 4-action / 2-action design remain on disk so their model scripts and analysis qmds still run against the archived data under `data/legacy/`:
+
+- `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`, `food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`, `food_inv_intimacy_effort_alt`, `food_inv_effort_intimacy_alt`.
+
+Four non-food inverse stubs (`nonfood_inv_*`) were scaffolded against the obsolete 4-action design and were never run; they'll be retired along with the legacy food inverse dirs.
+
+## Counterbalancing
+
+Each experiment dir has `python/generate_counterbalancing.py` which produces `json/full_counterbalancing.json` — an array of N "sequences," each a 16-trial assignment of factor cells to the 16 scenarios. `experiment.js` reads a per-participant `condition_assignment` from jsPsychPipe and selects `counterbalancing[condition_assignment]`. For the new 3-action experiments, cells are distributed across the 16 slots as evenly as possible (with subsets of the cell space sampled per participant for Studies 3a/3b, which have 24 cells > 16 slots). Each experiment uses 192 sequences (12 rounds × 16 rotations).

@@ -1,6 +1,6 @@
 # food_inv_intimacy_3act
 
-Study 2 — Inverse planning of intimacy.
+Study 2 — Inverse intimacy.
 
 ## Design
 
@@ -8,20 +8,21 @@ Study 2 — Inverse planning of intimacy.
 
 **Known to participant**: reward_condition, effort_condition
 
-**Inferred by participant**: intimacy (one slider, 0-100 = maximally formal -> maximally intimate)
+**Inferred by participant**: intimacy (one slider, 0 = maximally formal, 100 = maximally intimate)
 
 ## Trial structure
 
-Each trial shows: vignette + reward_low/high paragraph + effort_low/high paragraph + observed action
+Each trial shows: vignette + reward paragraph + effort paragraph + observed action (at posterior). Goes straight to the prior slider; no intimacy-descriptor preamble since intimacy is the inferred variable.
 
-The participant gives prior and posterior ratings on 1 slider(s):
-intimacy (0 = maximally formal, 100 = maximally intimate)
+Slider responses: one intimacy slider (0–100), prior and posterior.
 
-Each participant sees 16 trials total (one per scenario). Cell assignment is rotated across participants so cells are balanced in aggregate.
+Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 12 cells. The counterbalancing script (`python/generate_counterbalancing.py`) produces 192 sequences (12 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
+
+The trial flow follows the "noalt" pattern from `food_inv_intimacy_desire_noalt` / `food_inv_desire_intimacy_noalt`: no candidate action list shown to the participant, only the single observed action at the posterior stage.
 
 ## Stimulus source
 
-Loads stimuli from `experiments/scenarios_3act.csv` via the routing in `experiments/csv_to_json.py`. Regenerate the stimuli JSON with:
+Loads stimuli from `experiments/scenarios_3act.csv` via the routing in `experiments/csv_to_json.py`. Regenerate `json/stimuli.json` with:
 
 ```bash
 uv run python experiments/csv_to_json.py
@@ -30,11 +31,14 @@ uv run python experiments/csv_to_json.py
 ## Files in this directory
 
 - `index.html` — entry point
-- `experiment.js` — jsPsych 8.x boilerplate
-- `trials.js` — **TODO**: adapt from the cloned `food_inv_intimacy_effort_alt` template to match this study's design (different paragraphs shown, different slider count, 3 actions instead of 2). See `## Trial structure` above for the spec.
-- `python/generate_counterbalancing.py` — **TODO**: write a counterbalancing script that assigns each participant 16 cells covering all scenarios, with cell-balanced rotation across participants.
-- `json/stimuli.json` — generated from `scenarios_3act.csv`; do not edit by hand.
+- `experiment.js` — jsPsych 8.x boilerplate; spreads the sequence item's factor fields onto each stimulus
+- `trials.js` — trial logic (instructions, attention check, scenario presentation, sliders, memory checks, exit survey, save)
+- `python/generate_counterbalancing.py` — produces `json/full_counterbalancing.json`
+- `json/stimuli.json` — generated from `scenarios_3act.csv`; do not edit by hand
+- `json/full_counterbalancing.json` — generated; one sequence per condition_assignment
 
-## Status
+## Before running pilots
 
-Scaffolding only. The `trials.js` here is a verbatim clone of the 2-action effort-experiment template and **will not run correctly** until adapted to this study's factor structure. See the manuscript's Methods section for the exact wording of the inference instructions.
+- Replace `PIPE_EXPERIMENT_ID` in `trials.js` `CONFIG` with the real DataPipe experiment ID.
+- Replace `PROLIFIC_COMPLETION_URL` with the real Prolific completion URL.
+- Open `index.html` locally and walk through a few trials per cell to confirm the UI renders and the slider endpoints / observed actions look right.
