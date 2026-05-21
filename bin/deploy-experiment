@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Deploy a single jsPsych experiment + the shared _lib/ to the athena server.
+#
+# Usage:
+#   bin/deploy-experiment <slug>             # push _lib/ then the experiment
+#   bin/deploy-experiment <slug> --dry-run   # show what would be transferred
+#   bin/deploy-experiment --lib-only         # push only _lib/ (e.g. after editing it)
+#   bin/deploy-experiment --list             # list active experiment slugs
+#   bin/deploy-experiment --help
+#
+# Server destination is set in RSYNC_DEST below. Override per-invocation with
+# `RSYNC_DEST=... bin/deploy-experiment <slug>` if needed.
+#
+# After deploy, the experiment is reachable at:
+#   https://web.mit.edu/aliciach/www/sip/experiments/<slug>/
+
+set -euo pipefail
+
+# -------- config --------
+: "${RSYNC_DEST:=aliciach@athena.dialup.mit.edu:~/www/sip/experiments}"
+
+# Active experiments — keep in sync with the Makefile's EXPERIMENTS_FORWARD
+# + EXPERIMENTS_INVERSE. Slugs not in this list are rejected to avoid
+# accidentally deploying legacy experiments.
+ACTIVE_EXPERIMENTS=(
+  food_forw_intimacy_desire
+  food_forw_intimacy_effort
+  nonfood_forw_intimacy_desire
+  food_inv_intimacy_3act
+  food_inv_effort_3act
+  food_inv_desire_3act
+  food_inv_joint_de_3act
+  food_inv_joint_di_3act
+)
+
+# Files/dirs not needed for runtime on the public server.
+EXCLUDES=(
+  --exclude='python/'
+  --exclude='README.md'
+  --exclude='.DS_Store'
+  --exclude='*.bak'
+)
+# ------------------------
+
+repo_root=$(cd "$(dirname "$0")/.." && pwd)
+cd "$repo_root"
+
+usage() {
+  sed -n '2,14p' "$0" | sed 's/^# \?//'
+  exit "${1:-0}"
+}
+
+list_experiments() {
+  printf '%s\n' "${ACTIVE_EXPERIMENTS[@]}"
+}
+
+is_active() {
+  local needle="$1"
+  local candidate
+  for candidate in "${ACTIVE_EXPERIMENTS[@]}"; do
+    [[ "$candidate" == "$needle" ]] && return 0
+  done
+  return 1
+}
+
+slug=""
+lib_only=false
+dry_run=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)   usage 0 ;;
+    --list)      list_experiments; exit 0 ;;
+    --lib-only)  lib_only=true; shift ;;
+    --dry-run)   dry_run=true; shift ;;
+    -*)          echo "unknown flag: $1" >&2; usage 1 ;;
+    *)
+      if [[ -n "$slug" ]]; then
+        echo "multiple slugs given: '$slug' and '$1'" >&2
+        usage 1
+      fi
+      slug="$1"; shift
+      ;;
+  esac
+done
+
+rsync_flags=(-av --delete "${EXCLUDES[@]}")
+$dry_run && rsync_flags+=(--dry-run)
+
+push_lib() {
+  echo "→ experiments/_lib/  ->  $RSYNC_DEST/_lib/"
+  rsync "${rsync_flags[@]}" experiments/_lib/ "$RSYNC_DEST/_lib/"
+}
+
+push_experiment() {
+  local s="$1"
+  echo "→ experiments/$s/  ->  $RSYNC_DEST/$s/"
+  rsync "${rsync_flags[@]}" "experiments/$s/" "$RSYNC_DEST/$s/"
+}
+
+if $lib_only; then
+  push_lib
+  exit 0
+fi
+
+if [[ -z "$slug" ]]; then
+  echo "no experiment slug provided" >&2
+  usage 1
+fi
+
+if ! is_active "$slug"; then
+  echo "not an active experiment: $slug" >&2
+  echo "active experiments:" >&2
+  list_experiments | sed 's/^/  /' >&2
+  exit 1
+fi
+
+push_lib
+push_experiment "$slug"
+
+echo
+echo "done. URL: https://web.mit.edu/aliciach/www/sip/experiments/$slug/"
