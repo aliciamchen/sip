@@ -4,6 +4,17 @@
 // descriptor preamble, then vignette + effort paragraph + slider with the two
 // reward paragraphs as endpoints. No candidate action list.
 
+import {
+  makeConsentScreen,
+  makeInstructionsScreen,
+  makeInterTrialBlank,
+  makeExitSurvey,
+  makeSaveData,
+  makeThankYou,
+} from "../_lib/timeline.js";
+import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
+import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
+
 const intimacy_texts = {
   0: "0 (maximally formal)",
   50: "50 (neither formal nor intimate)",
@@ -15,7 +26,7 @@ export const CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
   ATTENTION_TOLERANCE: 0.02,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
-  PIPE_EXPERIMENT_ID: "TODO_FILL_IN_DATAPIPE_ID",
+  PIPE_EXPERIMENT_ID: "ixxsoCvjY9kH",
   PROLIFIC_COMPLETION_URL:
     "https://app.prolific.com/submissions/complete?cc=TODO_FILL_IN",
 };
@@ -23,75 +34,46 @@ export const CONFIG = {
 const getEffortText = (stim) =>
   stim.effort_condition === "low" ? stim.effort_low : stim.effort_high;
 
-export function makeTimeline(
-  jsPsych,
-  stimuli,
-  consentHtml,
-  exitSurveyHtml,
-  subjectId,
-) {
-  const consent = {
-    type: jsPsychInstructions,
-    pages: [`<div>${consentHtml}</div>`],
-    show_clickable_nav: true,
-    show_page_number: true,
-  };
+const INSTRUCTIONS_PAGES = [
+  `
+    <div class="instructions-container">
+        <h2>Social interactions survey</h2>
+        <p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding how to eat different kinds of food in different situations.</p>
+        <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p>
+    </div>
+  `,
+  `
+    <div class="instructions-container">
+        <h2>Social interactions survey</h2>
+        <p>Before observing what action the two people decide to take, we will ask you to evaluate how likely you think two possible situations are.</p>
+        <p>You will use a slider to evaluate the likelihood of the two situations. The slider will be labeled with the two situations. The farther you move it toward one side, the more likely you think that situation is, compared to the other.</p>
+        <p>Then, we will show you what they decide to do, and ask you to re-evaluate how likely you think the two possible situations are.</p>
+    </div>
+  `,
+  `
+    <div class="instructions-container">
+      <h2>Social interactions survey</h2>
+        <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of eating food carefully! 🙂 You will receive $5 if you successfully complete the survey.</p>
+        <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
+        <p>Press next to begin the survey.</p>
+    </div>
+  `,
+];
 
-  const instructions = {
-    type: jsPsychInstructions,
-    pages: [
-      `
-            <div class="instructions-container">
-                <h2>Social interactions survey</h2>
-                <p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding how to eat different kinds of food in different situations.</p>
-                <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p>
-            </div>
-            `,
-      `
-            <div class="instructions-container">
-                <h2>Social interactions survey</h2>
-                <p>Before observing what action the two people decide to take, we will ask you to evaluate how likely you think two possible situations are.</p>
-                <p>You will use a slider to evaluate the likelihood of the two situations. The slider will be labeled with the two situations. The farther you move it toward one side, the more likely you think that situation is, compared to the other.</p>
-                <p>Then, we will show you what they decide to do, and ask you to re-evaluate how likely you think the two possible situations are.</p>
-            </div>
-            `,
-      `
-            <div class="instructions-container">
-              <h2>Social interactions survey</h2>
-                <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of eating food carefully! 🙂 You will receive $5 if you successfully complete the survey.</p>
-                <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
-                <p>Press next to begin the survey.</p>
-            </div>
-          `,
-    ],
-    show_clickable_nav: true,
-    show_page_number: true,
-  };
+function rewardSliderLabels(stimulus) {
+  return [
+    `<div style="width: 65%;margin: 0 auto;">${stimulus.reward_low}</div>`,
+    `<div style="width: 65%;margin: 0 auto;">Equally likely</div>`,
+    `<div style="width: 65%;margin: 0 auto;">${stimulus.reward_high}</div>`,
+  ];
+}
 
+function makeStimulusTrials(jsPsych, stimuli) {
   const trials = [];
 
   stimuli.forEach((stimulus, stimulusIndex) => {
     if (stimulusIndex === CONFIG.ATTENTION_CHECK_INDEX) {
-      trials.push({
-        type: jsPsychHtmlSliderResponse,
-        labels: ["0", "50", "100"],
-        slider_min: 0,
-        slider_max: 100,
-        step: 1,
-        require_movement: true,
-        button_label: "Continue",
-        stimulus: `
-          <div>
-            <p>This is an attention check to make sure you're not a bot and that we can award you your pay for the study.</p>
-            <p><strong>Please set the slider all the way to the left (0).</strong></p>
-          </div>
-        `,
-        data: { response_type: "attention_check" },
-        on_finish: function (data) {
-          data.attention_passed =
-            Math.abs(data.response - 0) < CONFIG.ATTENTION_TOLERANCE;
-        },
-      });
+      trials.push(makeAttentionCheckSingleSlider(CONFIG.ATTENTION_TOLERANCE));
     }
 
     trials.push({
@@ -107,7 +89,6 @@ export function makeTimeline(
       `,
       choices: "ALL_KEYS",
     });
-
 
     trials.push({
       type: jsPsychHtmlSliderResponse,
@@ -127,11 +108,7 @@ export function makeTimeline(
       slider_max: 100,
       step: 1,
       require_movement: true,
-      labels: [
-        `<div style="width: 70%;margin: 0 auto;">${stimulus.reward_low}</div>`,
-        `<div style="width: 70%;margin: 0 auto;">Equally likely</div>`,
-        `<div style="width: 70%;margin: 0 auto;">${stimulus.reward_high}</div>`,
-      ],
+      labels: rewardSliderLabels(stimulus),
       button_label: "Continue",
       data: {
         response_type: "response",
@@ -146,7 +123,12 @@ export function makeTimeline(
       },
     });
 
-    trials.push({ type: jsPsychHtmlKeyboardResponse, stimulus: "", choices: "NO_KEYS", trial_duration: 1000 });
+    trials.push({
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: "",
+      choices: "NO_KEYS",
+      trial_duration: 1000,
+    });
 
     trials.push({
       type: jsPsychHtmlSliderResponse,
@@ -170,11 +152,7 @@ export function makeTimeline(
       slider_max: 100,
       step: 1,
       require_movement: true,
-      labels: [
-        `<div style="width: 70%;margin: 0 auto;">${stimulus.reward_low}</div>`,
-        `<div style="width: 70%;margin: 0 auto;">Equally likely</div>`,
-        `<div style="width: 70%;margin: 0 auto;">${stimulus.reward_high}</div>`,
-      ],
+      labels: rewardSliderLabels(stimulus),
       button_label: "Continue",
       data: {
         response_type: "response",
@@ -189,131 +167,28 @@ export function makeTimeline(
       },
     });
 
-    if (stimulus.scenario_label === "hike") {
-      trials.push({
-        type: jsPsychSurveyMultiChoice,
-        preamble: `
-          <div>
-            <h3>Memory Check</h3>
-            <p>This is a memory check to make sure you're not a bot and that we can incorporate your responses into our study. Your responses on the memory check will not affect your pay or whether your submission is approved for payment.</p>
-            <p>Please answer the following questions about the previous scenario.</p>
-          </div>
-        `,
-        questions: [
-          {
-            prompt: "What were the names of the people in the scenario?",
-            name: "names",
-            options: ["Alvin and Allen", "Tony and Kevin", "Tony and Alvin", "Kevin and Alvin"],
-            required: true,
-          },
-          {
-            prompt: "What food did Alvin bring?",
-            name: "food",
-            options: ["Snacks and energy bars", "Peanut butter and jelly sandwiches"],
-            required: true,
-          },
-        ],
-        button_label: "Continue",
-        on_finish: function (data) {
-          const r = data.response || {};
-          const cn = r.names === "Tony and Alvin" ? 1 : 0;
-          const cf = r.food === "Snacks and energy bars" ? 1 : 0;
-          data.response_type = "memory_check";
-          data.memory_correct_count = cn + cf;
-          data.memory_correct_names = cn;
-          data.memory_correct_food = cf;
-        },
-      });
-    }
+    const memoryCheck = makeMemoryCheckForStimulus(stimulus);
+    if (memoryCheck) trials.push(memoryCheck);
 
-    if (stimulus.scenario_label === "wedding") {
-      trials.push({
-        type: jsPsychSurveyMultiChoice,
-        preamble: `
-            <div>
-              <h3>Memory Check</h3>
-              <p>This is a memory check to make sure you're not a bot and that we can incorporate your responses into our study. Your responses on the memory check will not affect your pay or whether your submission is approved for payment.</p>
-              <p>Please answer the following question about the previous scenario.</p>
-            </div>
-          `,
-        questions: [
-          {
-            prompt: "Where were the people in the scenario?",
-            name: "location",
-            options: ["A wedding", "A darty", "A birthday party", "A religious organization"],
-            required: true,
-          },
-        ],
-        button_label: "Continue",
-        on_finish: function (data) {
-          const r = data.response || {};
-          const c = r.location === "A wedding" ? 1 : 0;
-          data.response_type = "memory_check";
-          data.memory_correct_count = c;
-          data.memory_correct_location = c;
-        },
-      });
-    }
-
-    trials.push({
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: "Next scenario",
-      choices: "NO_KEYS",
-      trial_duration: function () {
-        return jsPsych.randomization.sampleWithoutReplacement(
-          CONFIG.INTER_TRIAL_DURATIONS,
-          1,
-        )[0];
-      },
-    });
+    trials.push(makeInterTrialBlank(jsPsych, CONFIG.INTER_TRIAL_DURATIONS));
   });
 
-  const exitSurvey = {
-    type: jsPsychSurveyHtmlForm,
-    preamble: `
-      <div>
-        <h2>Exit Survey</h2>
-        <p>You have reached the end of the survey. To collect your pay, please complete the following questions. Your answer to these questions will not affect your pay or whether your submission is approved for payment, so please answer honestly.</p>
-      </div>
-    `,
-    html: exitSurveyHtml,
-    on_finish: function (data) {
-      data.attention_passed = jsPsych.data
-        .get()
-        .filter({ response_type: "attention_check" })
-        .select("attention_passed").values[0];
-      data.memory_correct_count = jsPsych.data
-        .get()
-        .filter({ response_type: "memory_check" })
-        .select("memory_correct_count")
-        .sum();
-      data.response_type = "exit_survey";
-    },
-  };
+  return trials;
+}
 
-  const saveData = {
-    type: jsPsychPipe,
-    action: "save",
-    experiment_id: CONFIG.PIPE_EXPERIMENT_ID,
-    filename: `${subjectId}.json`,
-    data_string: () => jsPsych.data.get().json(),
-  };
-
-  const thankYou = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: `<p>Thanks for participating in the experiment!</p>
-                  <p><a href="${CONFIG.PROLIFIC_COMPLETION_URL}">Click here to return to Prolific and complete the study</a>.</p>
-                  <p>It is now safe to close the window. Your pay will be delivered within a few days.</p>
-                  `,
-    choices: "NO_KEYS",
-  };
-
-  let timeline = [];
-  timeline.push(consent);
-  timeline.push(instructions);
-  timeline.push(...trials);
-  timeline.push(exitSurvey);
-  timeline.push(saveData);
-  timeline.push(thankYou);
-  return timeline;
+export function makeTimeline(
+  jsPsych,
+  stimuli,
+  consentHtml,
+  exitSurveyHtml,
+  subjectId,
+) {
+  return [
+    makeConsentScreen(consentHtml),
+    makeInstructionsScreen(INSTRUCTIONS_PAGES),
+    ...makeStimulusTrials(jsPsych, stimuli),
+    makeExitSurvey(jsPsych, exitSurveyHtml),
+    makeSaveData(jsPsych, CONFIG.PIPE_EXPERIMENT_ID, subjectId),
+    makeThankYou(CONFIG.PROLIFIC_COMPLETION_URL),
+  ];
 }

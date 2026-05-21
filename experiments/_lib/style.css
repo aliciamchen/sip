@@ -194,3 +194,59 @@ p.jspsych-survey-multi-choice-text.survey-multi-choice {
   height: 80px;
   resize: vertical;
 }
+
+/* =========================
+   Probability Sliders Plugin (forward experiments only)
+   ========================= */
+.ps-row {
+  margin: 20px 0;
+}
+
+.ps-label {
+  font-weight: normal;
+  margin-bottom: 8px;
+  font-size: 18px;
+  text-align: left;
+  padding-left: 20px;
+}
+
+.ps-slider-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ps-slider {
+  flex: 1;
+  max-width: 800px;
+}
+
+.ps-value {
+  min-width: 60px;
+  text-align: right;
+}
+
+.ps-btn {
+  padding: 10px 16px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.ps-instruction-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.ps-slider-container {
+  max-width: 800px;
+  margin: 40px auto 0 auto;
+}
+
+.ps-totalbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 34px;
+}
