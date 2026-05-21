@@ -5,7 +5,8 @@ Guidance for Claude Code sessions working in this repository. Project overview, 
 ## Naming and structure conventions
 
 - The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/predict/cv scripts can also be imported as modules if needed.
-- Per-experiment scripts (e.g. `model/inverse/fit_food_inv_intimacy_desire_alt.py`) are thin wrappers that import shared logic from `_dispatcher.py` (cv/) or `_helpers.py` (inverse/) and call its main with their hardcoded slug. To trace what a script does, follow the import.
+- Per-experiment scripts (e.g. `model/inverse/fit_food_inv_intimacy_3act.py`) are thin wrappers that import shared logic from `_dispatcher.py` (cv/) or `_helpers.py` (inverse/) and call its main with their hardcoded slug. To trace what a script does, follow the import.
+- The active experiment roster lives in `Makefile`'s `EXPERIMENTS_FORWARD` and `EXPERIMENTS_INVERSE` variables. The six pre-3-action inverse food experiments (`food_inv_*_alt`, `food_inv_*_noalt` on the 4-action and 2-action sets) were archived in May 2026 — their data is under `data/legacy/`, their model scripts and qmds remain runnable, and their slugs are kept in the Makefile's `LEGACY_INVERSE` / `LEGACY_ANALYSIS_QMDS` lists. `make all` only touches active experiments.
 
 ## Terminology
 
