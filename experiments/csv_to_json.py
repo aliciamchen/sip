@@ -31,6 +31,16 @@ SOURCES = [
         ],
     ),
     (
+        "scenarios_3act.csv",
+        [
+            "food_inv_intimacy_3act",
+            "food_inv_effort_3act",
+            "food_inv_desire_3act",
+            "food_inv_joint_de_3act",
+            "food_inv_joint_di_3act",
+        ],
+    ),
+    (
         "scenarios_nonfood.csv",
         [
             "nonfood_forw_intimacy_desire",
