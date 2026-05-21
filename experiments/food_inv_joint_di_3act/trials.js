@@ -22,7 +22,7 @@ export const CONFIG = {
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
   PIPE_EXPERIMENT_ID: "w3Hb64KR0DwT",
   PROLIFIC_COMPLETION_URL:
-    "https://app.prolific.com/submissions/complete?cc=TODO_FILL_IN",
+    "https://app.prolific.com/submissions/complete?cc=C1A889GX",
 };
 
 const getEffortText = (stim) =>
