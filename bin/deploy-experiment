@@ -86,6 +86,17 @@ done
 rsync_flags=(-av --delete "${EXCLUDES[@]}")
 $dry_run && rsync_flags+=(--dry-run)
 
+# Multiplex SSH across the (potentially two) rsync invocations so the password
+# is entered once. The master connection is opened on the first rsync and
+# torn down when the script exits.
+ssh_ctl="${TMPDIR:-/tmp}/ssh-deploy-experiment-$$.sock"
+export RSYNC_RSH="ssh -o ControlMaster=auto -o ControlPath=$ssh_ctl -o ControlPersist=60s"
+cleanup_ssh() {
+  local host="${RSYNC_DEST%%:*}"
+  ssh -O exit -o "ControlPath=$ssh_ctl" "$host" 2>/dev/null || true
+}
+trap cleanup_ssh EXIT
+
 push_lib() {
   echo "→ experiments/_lib/  ->  $RSYNC_DEST/_lib/"
   rsync "${rsync_flags[@]}" experiments/_lib/ "$RSYNC_DEST/_lib/"
