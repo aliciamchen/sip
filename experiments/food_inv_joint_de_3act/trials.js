@@ -57,15 +57,15 @@ const INSTRUCTIONS_PAGES = [
 ];
 
 const rewardLabels = (stim) => [
-  `<div style="width: 70%;margin: 0 auto;">${stim.reward_low}</div>`,
-  `<div style="width: 70%;margin: 0 auto;">Equally likely</div>`,
-  `<div style="width: 70%;margin: 0 auto;">${stim.reward_high}</div>`,
+  `<div class="slider-endpoint">${stim.reward_low}</div>`,
+  `<div class="slider-endpoint">Equally likely</div>`,
+  `<div class="slider-endpoint">${stim.reward_high}</div>`,
 ];
 
 const effortLabels = (stim) => [
-  `<div style="width: 70%;margin: 0 auto;">${stim.effort_low}</div>`,
-  `<div style="width: 70%;margin: 0 auto;">Equally likely</div>`,
-  `<div style="width: 70%;margin: 0 auto;">${stim.effort_high}</div>`,
+  `<div class="slider-endpoint">${stim.effort_low}</div>`,
+  `<div class="slider-endpoint">Equally likely</div>`,
+  `<div class="slider-endpoint">${stim.effort_high}</div>`,
 ];
 
 const intimacyPreamble = (stim) =>

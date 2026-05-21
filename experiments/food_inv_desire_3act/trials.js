@@ -62,9 +62,9 @@ const INSTRUCTIONS_PAGES = [
 
 function rewardSliderLabels(stimulus) {
   return [
-    `<div style="width: 65%;margin: 0 auto;">${stimulus.reward_low}</div>`,
-    `<div style="width: 65%;margin: 0 auto;">Equally likely</div>`,
-    `<div style="width: 65%;margin: 0 auto;">${stimulus.reward_high}</div>`,
+    `<div class="slider-endpoint">${stimulus.reward_low}</div>`,
+    `<div class="slider-endpoint">Equally likely</div>`,
+    `<div class="slider-endpoint">${stimulus.reward_high}</div>`,
   ];
 }
 

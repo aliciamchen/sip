@@ -35,12 +35,12 @@ h3 {
   border-radius: 10px;
   padding: 20px 30px;
   margin: 20px auto 30px auto;
-  max-width: 50%;
+  max-width: 720px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .vignette-text.vignette-text-wide {
-  max-width: 55%;
+  max-width: 820px;
 }
 
 .vignette-text.vignette-observed {
@@ -64,6 +64,31 @@ h3 {
 .vignette-text li {
   text-align: left;
   margin-bottom: 6px;
+}
+
+/* The question prompt that follows a vignette block should sit at the same
+   horizontal extent as the box above it, not at the wider default `p` width.
+   The prompt text is wrapped in <strong> in trials.js for emphasis structure,
+   but visually we want it un-bolded. */
+.vignette-text + p,
+.vignette-text + div + p {
+  max-width: 720px;
+  width: 100%;
+  margin: 24px auto 18px auto;
+}
+
+.vignette-text + p strong,
+.vignette-text + div + p strong {
+  font-weight: normal;
+}
+
+/* Slider endpoint labels for the inverse-3act experiments that use a
+   reward_low/reward_high (or effort_low/effort_high) paragraph as each
+   endpoint of an html-slider-response. Constrains each endpoint cell so the
+   text wraps within the slider-label slot and stays centered. */
+.slider-endpoint {
+  width: 65%;
+  margin: 0 auto;
 }
 
 /* =========================

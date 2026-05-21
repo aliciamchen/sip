@@ -63,9 +63,9 @@ const INSTRUCTIONS_PAGES = [
 
 function effortSliderLabels(stimulus) {
   return [
-    `<div style="width: 70%;margin: 0 auto;">${stimulus.effort_low}</div>`,
-    `<div style="width: 70%;margin: 0 auto;">Equally likely</div>`,
-    `<div style="width: 70%;margin: 0 auto;">${stimulus.effort_high}</div>`,
+    `<div class="slider-endpoint">${stimulus.effort_low}</div>`,
+    `<div class="slider-endpoint">Equally likely</div>`,
+    `<div class="slider-endpoint">${stimulus.effort_high}</div>`,
   ];
 }
 
