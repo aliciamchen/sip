@@ -1,7 +1,9 @@
-"""LOSO CV for food_inv_joint_de_3act.
+"""LOSO CV for food_inv_joint_de_3act (Study 4a).
 
-Stub — full LOSO logic to be added once data exists. For now this just runs
-the all-data fit/predict pipeline.
+Each fold jointly refits the actor utility weights + alpha_observer on 15
+scenarios, then predicts the held-out scenario. Per-trial test NLL sums two
+binary cross-entropies (P(reward=HIGH) and P(effort=HIGH)). See
+`_inverse_3act_dispatcher` for the loop body.
 """
 
 import sys
@@ -12,11 +14,8 @@ sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "cv"))
 
-
-def main():
-    print("LOSO CV for food_inv_joint_de_3act — TODO: implement full leave-one-scenario-out loop.")
-    print("Until then, run `make fit-food_inv_joint_de_3act` followed by `make predict-food_inv_joint_de_3act`.")
+from _inverse_3act_dispatcher import main_joint_de_3act  # noqa: E402
 
 
 if __name__ == "__main__":
-    main()
+    main_joint_de_3act()

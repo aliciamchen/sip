@@ -675,3 +675,170 @@ def get_utility_3act_base_disc(
         effort_table,
         v_table,
     )
+
+
+# ==============================================================================
+# Padded utilities for Study 3b — desire inference with LM-generated alternatives
+# ==============================================================================
+# `food_inv_desire_3act`. Observer knows scenario, observed_action,
+# effort_condition, relationship_condition; latent is reward_condition. Action
+# space is conditioned on (scenario, observed_action, effort_condition,
+# relationship_condition) — the LM enumerates plausible alternatives per cell
+# and the observer's actor softmaxes over `{observed_action} ∪ alternatives`,
+# padded to `MAX_ACTIONS_3ACT`. V carries a motivation_query axis since reward
+# is the latent (the actor's `thinks[reward in RewardConditions, ...]` block
+# evaluates V at both values).
+
+
+@jax.jit
+def get_prior_padded_3act_desire(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    effort_condition,
+    relationship_condition,
+    prior_table,
+):
+    """Actor-prior weight for this slot in Study 3b's padded action space.
+
+    Null-padded slots have ~0 mass (1e-8 epsilon), so the actor's softmax
+    effectively skips them while keeping `E[...] ** alpha_observer`
+    differentiable."""
+    return prior_table[
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        padded_slot,
+    ]
+
+
+@jax.jit
+def get_lm_v_padded_3act_desire(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    effort_condition,
+    relationship_condition,
+    reward_condition,
+    v_padded_table,
+):
+    """LM-elicited signed valence for an arbitrary slot in Study 3b's padded
+    action space. v_padded_table has shape
+    (16, 3, 2, 4, MAX_ACTIONS_3ACT, 2) — indexed by
+    (scenario, observed_action, effort_condition, relationship, slot, motivation)."""
+    return v_padded_table[
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        padded_slot,
+        reward_condition,
+    ]
+
+
+@jax.jit
+def get_utility_3act_full_padded_desire(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    effort_condition,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    access = access_table[
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        padded_slot,
+    ]
+    effort = effort_table[
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        padded_slot,
+    ]
+    V = get_lm_v_padded_3act_desire(
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        reward_condition,
+        v_padded_table,
+    )
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_3act_discomfort_only_padded_desire(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    effort_condition,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
+):
+    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    access = access_table[
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        padded_slot,
+    ]
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
+
+
+@jax.jit
+def get_utility_3act_base_padded_desire(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    effort_condition,
+    relationship_condition,
+    reward_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    effort = effort_table[
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        padded_slot,
+    ]
+    V = get_lm_v_padded_3act_desire(
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        effort_condition,
+        relationship_condition,
+        reward_condition,
+        v_padded_table,
+    )
+    return alpha * (w_v * V - w_e * effort)

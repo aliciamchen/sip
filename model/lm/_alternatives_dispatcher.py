@@ -83,16 +83,30 @@ CHECKPOINT_EVERY = 16
 # filenames) to use; --conditioning selects which axis the alternatives are
 # split along.
 _DOMAIN_PATHS = {
-    ("food", "motivation"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_food_inv_intimacy_desire_noalt.csv"},
-    ("nonfood", "motivation"): {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_nonfood.csv"},
-    ("food", "relationship"):    {"scenarios": "scenarios.csv",         "output": "lm_alternatives_food_inv_desire_intimacy_noalt.csv"},
-    ("nonfood", "relationship"): {"scenarios": "scenarios_nonfood.csv", "output": "lm_alternatives_relationship_nonfood.csv"},
+    ("food", "motivation"): {
+        "scenarios": "scenarios.csv",
+        "output": "lm_alternatives_food_inv_intimacy_desire_noalt.csv",
+    },
+    ("nonfood", "motivation"): {
+        "scenarios": "scenarios_nonfood.csv",
+        "output": "lm_alternatives_nonfood.csv",
+    },
+    ("food", "relationship"): {
+        "scenarios": "scenarios.csv",
+        "output": "lm_alternatives_food_inv_desire_intimacy_noalt.csv",
+    },
+    ("nonfood", "relationship"): {
+        "scenarios": "scenarios_nonfood.csv",
+        "output": "lm_alternatives_relationship_nonfood.csv",
+    },
 }
 
 
 from prompts import ALTERNATIVES_SYSTEM_PROMPT
 from prompts import alternatives_user_prompt as format_motivation_user_prompt
-from prompts import alternatives_user_prompt_relationship as format_relationship_user_prompt
+from prompts import (
+    alternatives_user_prompt_relationship as format_relationship_user_prompt,
+)
 
 
 def parse_alternatives(response_text):
@@ -129,11 +143,17 @@ def _dedup_alternatives(alts):
     return out
 
 
-def elicit_alternatives(client, user_prompt):
+def elicit_alternatives(client, user_prompt, temperature=TEMPERATURE):
     """Elicit alternatives for one cell. Up to MAX_PARSE_RETRIES tries to land
     a parseable response; transient errors inside each call are retried by the
     SDK via ``max_retries=MAX_RETRIES``. Returns [] when all parse retries are
-    exhausted (rather than raising) so a thread-pool batch can continue."""
+    exhausted (rather than raising) so a thread-pool batch can continue.
+
+    ``temperature`` defaults to the module-level TEMPERATURE (1.0) for
+    backward compatibility with the legacy noalt pipeline. Callers (e.g. the
+    3-act path) can override to a lower value to reduce phrasing variability
+    across cells, which tightens case-insensitive dedup at the scoring stage.
+    """
     messages = [
         {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt},
@@ -145,7 +165,7 @@ def elicit_alternatives(client, user_prompt):
                 model=MODEL_ID,
                 messages=messages,
                 max_tokens=MAX_TOKENS,
-                temperature=TEMPERATURE,
+                temperature=temperature,
                 response_format=_ALTERNATIVES_RESPONSE_FORMAT,
             )
             parsed = parse_alternatives(response.choices[0].message.content)
@@ -162,7 +182,9 @@ def elicit_alternatives(client, user_prompt):
 
 def load_scenarios(domain, conditioning):
     scenarios_path = (
-        get_project_root() / "experiments" / _DOMAIN_PATHS[(domain, conditioning)]["scenarios"]
+        get_project_root()
+        / "experiments"
+        / _DOMAIN_PATHS[(domain, conditioning)]["scenarios"]
     )
     return pd.read_csv(scenarios_path)
 
@@ -170,7 +192,10 @@ def load_scenarios(domain, conditioning):
 def main(domain, conditioning):
     api_key = load_api_key()
 
-    print(f"Loading scenarios (domain={domain}, conditioning={conditioning})...", flush=True)
+    print(
+        f"Loading scenarios (domain={domain}, conditioning={conditioning})...",
+        flush=True,
+    )
     scenarios_df = load_scenarios(domain, conditioning)
     print(f"Loaded {len(scenarios_df)} scenarios", flush=True)
 

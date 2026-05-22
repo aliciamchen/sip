@@ -1,7 +1,9 @@
-"""LOSO CV for food_inv_effort_3act.
+"""LOSO CV for food_inv_effort_3act (Study 3a).
 
-Stub — full LOSO logic to be added once data exists. For now this just runs
-the all-data fit/predict pipeline.
+Each fold jointly refits the actor utility weights + alpha_observer on 15
+scenarios, then predicts the held-out scenario. Uses effort-marginal access
+(the observer doesn't see the effort paragraph). See
+`_inverse_3act_dispatcher` for the loop body.
 """
 
 import sys
@@ -12,11 +14,8 @@ sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "cv"))
 
-
-def main():
-    print("LOSO CV for food_inv_effort_3act — TODO: implement full leave-one-scenario-out loop.")
-    print("Until then, run `make fit-food_inv_effort_3act` followed by `make predict-food_inv_effort_3act`.")
+from _inverse_3act_dispatcher import main_effort_3act  # noqa: E402
 
 
 if __name__ == "__main__":
-    main()
+    main_effort_3act()

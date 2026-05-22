@@ -109,6 +109,35 @@ def load_food_forw_intimacy_effort_actor_params(filepath: str = None) -> dict:
     return load_fitted_params(filepath=filepath)
 
 
+def load_3act_fit_results(slug: str) -> dict:
+    """Load per-variant {actor utility weights + alpha_observer} for a 3-action
+    inverse experiment.
+
+    Reads `outputs/<slug>/fit_results.csv` (written by the joint
+    fit_food_inv_*_3act.py scripts). Returns a dict mapping variant name (e.g.
+    'full', 'discomfort_only', 'base') to a kwargs dict suitable for calling
+    the observer function: `{alpha, alpha_observer, w_v?, w_d?, w_e?, gamma?}`
+    (only the columns present for that variant; alpha defaults to 1.0).
+    """
+    path = get_project_root() / "model" / "outputs" / slug / "fit_results.csv"
+    df = pd.read_csv(path)
+    out = {}
+    for _, row in df.iterrows():
+        variant = str(row["model"])
+        params = {
+            "alpha": float(row["param_alpha"])
+            if "param_alpha" in row and pd.notna(row.get("param_alpha", None))
+            else 1.0,
+            "alpha_observer": float(row["alpha_observer"]),
+        }
+        for pn in ("w_v", "w_d", "w_e", "gamma"):
+            col = f"param_{pn}"
+            if col in row and pd.notna(row[col]):
+                params[pn] = float(row[col])
+        out[variant] = params
+    return out
+
+
 def load_fitted_alpha_observer(filepath=None) -> dict:
     """Load fitted alpha_observer values from inverse planning fit_results.csv.
 
@@ -946,7 +975,38 @@ def effort_3act_table_kwargs(uses_v, domain="food"):
 
 
 def desire_3act_table_kwargs(uses_v, domain="food"):
-    return _3act_tables(uses_v, effort_marginal=False, domain=domain)
+    """Padded LM tables for Study 3b — observer's actor softmaxes over
+    LM-generated alternatives per (scenario, observed_action, effort, intimacy)
+    cell. Returns kwargs {access_table, effort_table, prior_table} plus
+    `v_padded_table` when the variant uses V.
+
+    Raises FileNotFoundError if any prerequisite LM CSV is missing — run
+    `model/lm/generate_alternatives_3act.py` and
+    `model/lm/score_alternatives_3act{,_v}.py` first.
+    """
+    from tables import load_padded_lm_tables_3act_desire
+
+    if domain != "food":
+        raise NotImplementedError(
+            "Study 3b padded LM tables are only available for the food domain "
+            "(no nonfood 3-act stimulus set yet)."
+        )
+    padded = load_padded_lm_tables_3act_desire()
+    if padded is None:
+        raise FileNotFoundError(
+            "Padded LM tables for Study 3b not found. Run "
+            "model/lm/generate_alternatives_3act.py and "
+            "model/lm/score_alternatives_3act{,_v}.py to produce the "
+            "lm_alternatives_*_food_inv_desire_3act.csv set."
+        )
+    kw = {
+        "access_table": padded["access"],
+        "effort_table": padded["effort"],
+        "prior_table": padded["prior"],
+    }
+    if uses_v:
+        kw["v_padded_table"] = padded["v"]
+    return kw
 
 
 def joint_3act_table_kwargs(uses_v, domain="food"):
@@ -1177,3 +1237,281 @@ def fit_joint_di_3act_observer(
         label="joint_di_3act",
     )
     return float(params[0]), float(nll)
+
+
+# ==============================================================================
+# 3-action joint fits — utility weights + α_observer (Studies 2, 3a, 3b, 4a, 4b)
+# ==============================================================================
+# Each inverse experiment fits its own actor utility weights jointly with
+# α_observer from its own posterior data. Actor weights are NOT transferred
+# from the forward-planning (Study 1a) fit — the forward and inverse tasks have
+# different data and different identifiability, so transferring would conflate
+# the two fits.
+#
+# Params layout in the returned 1-D array: [*utility_param_values, alpha_observer].
+# Caller maps utility_param_names → param_<name> columns; reads params[-1] as
+# alpha_observer. Actor inverse-temperature is held at α=1 (same convention as
+# the legacy padded joint fits).
+
+
+def _build_3act_observer_table(observer_fn, params, utility_param_names, table_kwargs):
+    """Shared closure for the 5 joint fits below."""
+    actor_kwargs = {"alpha": 1.0}
+    for i, name in enumerate(utility_param_names):
+        actor_kwargs[name] = params[i]
+    return observer_fn(**actor_kwargs, alpha_observer=params[-1], **table_kwargs)
+
+
+def fit_intimacy_3act_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    reward_condition,
+    effort_condition,
+    response,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 2 — joint fit of utility weights + α_observer (intimacy NLL)."""
+
+    def nll_trial(table, a, s, r, e, resp):
+        post = table[a, s, :, r, e]
+        return compute_intimacy_nll(post, resp)
+
+    vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = _build_3act_observer_table(
+            observer_fn, params, utility_param_names, table_kwargs
+        )
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                reward_condition,
+                effort_condition,
+                response,
+            )
+        )
+
+    init = jnp.ones(len(utility_param_names) + 1)
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="intimacy_3act_joint",
+    )
+    return params, float(nll)
+
+
+def fit_effort_3act_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    reward_condition,
+    relationship_condition,
+    response,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 3a — joint fit of utility weights + α_observer (BCE for P(effort=HIGH))."""
+
+    def nll_trial(table, a, s, r, rel, resp):
+        p_high = table[a, s, rel, r, 1]
+        return compute_reward_nll(p_high, resp)
+
+    vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = _build_3act_observer_table(
+            observer_fn, params, utility_param_names, table_kwargs
+        )
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                reward_condition,
+                relationship_condition,
+                response,
+            )
+        )
+
+    init = jnp.ones(len(utility_param_names) + 1)
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="effort_3act_joint",
+    )
+    return params, float(nll)
+
+
+def fit_desire_3act_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    effort_condition,
+    relationship_condition,
+    response,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 3b — joint fit of utility weights + α_observer (BCE for P(reward=HIGH)).
+
+    With the LM-generated alternatives pipeline, the observer table is 6-D —
+    `(padded_slot, scenario, observed_action, effort, intimacy, reward)`. The
+    canonical observed action lives in slot 0 by construction, so the per-trial
+    P(reward=HIGH) slice is `table[0, scenario, action, effort, intimacy, 1]`
+    (where `action` is the participant-observed action index 0/1/2).
+    """
+
+    def nll_trial(table, a, s, e, rel, resp):
+        p_high = table[0, s, a, e, rel, 1]
+        return compute_reward_nll(p_high, resp)
+
+    vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = _build_3act_observer_table(
+            observer_fn, params, utility_param_names, table_kwargs
+        )
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                effort_condition,
+                relationship_condition,
+                response,
+            )
+        )
+
+    init = jnp.ones(len(utility_param_names) + 1)
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="desire_3act_joint",
+    )
+    return params, float(nll)
+
+
+def fit_joint_de_3act_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    relationship_condition,
+    response_reward,
+    response_effort,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 4a — joint fit of utility weights + α_observer (sum of two BCEs)."""
+
+    def nll_trial(table, a, s, rel, r_reward, r_effort):
+        joint = table[a, s, rel, :, :]
+        p_reward_high = joint[1, :].sum()
+        p_effort_high = joint[:, 1].sum()
+        return compute_reward_nll(p_reward_high, r_reward) + compute_reward_nll(
+            p_effort_high, r_effort
+        )
+
+    vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = _build_3act_observer_table(
+            observer_fn, params, utility_param_names, table_kwargs
+        )
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                relationship_condition,
+                response_reward,
+                response_effort,
+            )
+        )
+
+    init = jnp.ones(len(utility_param_names) + 1)
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="joint_de_3act_joint",
+    )
+    return params, float(nll)
+
+
+def fit_joint_di_3act_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    effort_condition,
+    response_reward,
+    response_intimacy,
+    table_kwargs,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+):
+    """Study 4b — joint fit of utility weights + α_observer (BCE + intimacy NLL)."""
+
+    def nll_trial(table, a, s, e, r_reward, r_intimacy):
+        joint = table[a, s, :, :, e]  # (101, 2)
+        p_intimacy = joint.sum(axis=-1)  # marginalize reward → (101,)
+        p_reward_high = joint[:, 1].sum()  # marginalize intimacy → scalar
+        return compute_intimacy_nll(p_intimacy, r_intimacy) + compute_reward_nll(
+            p_reward_high, r_reward
+        )
+
+    vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
+
+    def loss_fn(params):
+        table = _build_3act_observer_table(
+            observer_fn, params, utility_param_names, table_kwargs
+        )
+        return jnp.sum(
+            vmap_nll(
+                table,
+                action,
+                scenario_idx,
+                effort_condition,
+                response_reward,
+                response_intimacy,
+            )
+        )
+
+    init = jnp.ones(len(utility_param_names) + 1)
+    params, nll = _fit_with_adam(
+        loss_fn,
+        init,
+        lr=lr,
+        max_steps=max_steps,
+        verbose=verbose,
+        label="joint_di_3act_joint",
+    )
+    return params, float(nll)

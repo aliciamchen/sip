@@ -1,7 +1,8 @@
-"""Fit alpha_observer for food_inv_desire_3act.
+"""Fit observer + actor utility weights for food_inv_desire_3act.
 
-Study 3b — observer knows (effort, intimacy), infers desire. Actor params frozen from the canonical food forward fit
-(food_forw_intimacy_desire). Writes outputs/food_inv_desire_3act/fit_results.csv.
+Study 3b — observer knows (effort, intimacy), infers desire. Each variant jointly
+fits its utility weights and alpha_observer from this experiment's posterior data
+(no transfer from the forward fit). Writes outputs/food_inv_desire_3act/fit_results.csv.
 """
 
 import sys
@@ -15,10 +16,9 @@ sys.path.insert(0, str(_project_root / "model" / "inverse"))
 import pandas as pd  # noqa: E402
 
 from _helpers import (  # noqa: E402
-    load_desire_3act_data,
-    fit_desire_3act_observer,
     desire_3act_table_kwargs,
-    load_fitted_params,
+    fit_desire_3act_observer_joint,
+    load_desire_3act_data,
 )
 from observers import (  # noqa: E402
     observer_reward_3act_base,
@@ -28,42 +28,50 @@ from observers import (  # noqa: E402
 
 EXPERIMENT_SLUG = "food_inv_desire_3act"
 
+# (observer_fn, utility_param_names, uses_v)
 VARIANTS = {
-    "full": (observer_reward_3act_full, ["alpha", "w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_reward_3act_discomfort_only, ["alpha", "w_d", "gamma"], False),
-    "base": (observer_reward_3act_base, ["alpha", "w_v", "w_e"], True),
+    "full": (observer_reward_3act_full, ["w_v", "w_d", "w_e", "gamma"], True),
+    "discomfort_only": (observer_reward_3act_discomfort_only, ["w_d", "gamma"], False),
+    "base": (observer_reward_3act_base, ["w_v", "w_e"], True),
 }
 
 
 def main():
     print("=" * 60)
-    print(f"Inverse planning fit: {EXPERIMENT_SLUG}")
-    print("Fitting alpha_observer (frozen actor params)")
+    print(f"Joint inverse fit: {EXPERIMENT_SLUG}")
+    print("Fitting utility weights + alpha_observer per variant")
     print("=" * 60)
 
-    actor_params = load_fitted_params()
-    data, action, scenario_idx, effort_condition, relationship_condition, response = load_desire_3act_data(EXPERIMENT_SLUG)
+    data, action, scenario_idx, effort_condition, relationship_condition, response = (
+        load_desire_3act_data(EXPERIMENT_SLUG)
+    )
 
     results = []
-    for variant_name, (obs_fn, kw_names, uses_v) in VARIANTS.items():
-        if variant_name not in actor_params:
-            print(f"  (skipping {variant_name}: no forward fit available)")
-            continue
-        print(f"\n{'-' * 40}\nFitting {variant_name}...\n{'-' * 40}")
-        alpha_observer, nll = fit_desire_3act_observer(
+    for variant_name, (obs_fn, utility_names, uses_v) in VARIANTS.items():
+        print(
+            f"\n{'-' * 40}\nJointly fitting {variant_name} ({len(utility_names)} weights + alpha_observer)...\n{'-' * 40}"
+        )
+        params, nll = fit_desire_3act_observer_joint(
             observer_fn=obs_fn,
-            actor_params=actor_params[variant_name],
-            actor_kwarg_names=kw_names,
-            action=action, scenario_idx=scenario_idx, effort_condition=effort_condition, relationship_condition=relationship_condition, response=response,
+            utility_param_names=utility_names,
+            action=action,
+            scenario_idx=scenario_idx,
+            effort_condition=effort_condition,
+            relationship_condition=relationship_condition,
+            response=response,
             table_kwargs=desire_3act_table_kwargs(uses_v),
         )
-        results.append({
+        row = {
             "model": variant_name,
             "experiment": EXPERIMENT_SLUG,
-            "alpha_observer": alpha_observer,
             "nll": nll,
-            "n_params": 1,
-        })
+            "n_params": len(utility_names) + 1,
+            "param_alpha": 1.0,
+            "alpha_observer": float(params[-1]),
+        }
+        for i, name in enumerate(utility_names):
+            row[f"param_{name}"] = float(params[i])
+        results.append(row)
 
     output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
