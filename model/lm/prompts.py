@@ -63,7 +63,7 @@ _NUMBER_WORD = {
 _JSON_EXAMPLE_VALUES = {
     "access": [0.5, 1.2, 3.8, 5.5],
     "effort": [0.5, 3.2, 2.1, 1.5],
-    "v":      [-1.5, 0.5, 2.0, 2.8],
+    "v": [-1.5, 0.5, 2.0, 2.8],
 }
 
 # 2-action JSON examples differ from the first 2 entries of the 4-action
@@ -71,7 +71,7 @@ _JSON_EXAMPLE_VALUES = {
 _JSON_EXAMPLE_VALUES_2 = {
     "access": [0.5, 3.8],
     "effort": [0.5, 3.2],
-    "v":      [-1.5, 2.0],
+    "v": [-1.5, 2.0],
 }
 
 
@@ -123,39 +123,100 @@ def _json_format_block(rating_type, n_actions):
 # Rating-type-specific bodies
 # ==============================================================================
 
+# _ACCESS_BODY draws on four established literatures. The prompt body itself
+# stays jargon-free (the LM is prompted "as a participant"), but the
+# conceptual content of each channel is grounded as follows; cite these in
+# the manuscript when defending the construct.
+#
+#   - Substance-transmission channels — Rozin, P. & Fallon, A. E. (1987).
+#     "A perspective on disgust." Psychological Review 94(1): 23–41.
+#     Establishes contamination via bodily-substance transfer as the core
+#     domain of disgust; even brief contact transmits.
+#
+#   - Direct-contact channels — Suvilehto, J. T., Glerean, E., Dunbar, R. I. M.,
+#     Hari, R., & Nummenmaa, L. (2015). "Topography of social touching depends
+#     on emotional bonds between humans." PNAS 112(45): 13811–13816.
+#     Body-map permissions for touch are graded by relational closeness across
+#     cultures; grounds why contact extent and body region both matter.
+#
+#   - Informational / disclosure channels — Reis, H. T. & Shaver, P. (1988).
+#     "Intimacy as an interpersonal process." In S. Duck (Ed.), Handbook of
+#     Personal Relationships, Wiley. Self-disclosure + partner responsiveness
+#     defines intimacy at the level of individual interactions; co-presence
+#     without disclosure does not.
+#
+#   - Project-specific anchor — Thomas, A. J., Woo, B., Nettle, D., Spelke, E.,
+#     & Saxe, R. (2022). "Early concepts of intimacy: Young humans use saliva
+#     sharing to infer close relationships." Science 375(6578): 311–315.
+#     Direct evidence that saliva-sharing is read as a thick-relationship cue,
+#     separable from other positive social interactions.
+
 _ACCESS_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate: how much does this action create a channel between the two people — a pathway for something to move from one person's side to the other, in a way that exposes one person to the other.
+For each action, evaluate: how much does this action open one person up to the other? Three kinds of opening are possible — each is a channel through which something passes from one person's side to the other:
 
-Consider the kinds of channels that might open up:
-- Bodily-substance channels: substances from one person's body (saliva, breath, skin oils, sweat) reach the other person, or come into contact with something the other person will then use.
-- Direct physical-contact channels: the two people's bodies physically touch each other, or come into very close proximity.
-- Informational or private-resource channels: private information, sensitive personal details, or personal resources from one person become accessible to the other.
+- Substance-transmission channels: bodily substances (saliva, breath, skin oils, sweat) from one person reach the other, either directly or via a shared vessel or item that's been on the first person's body. Even brief contact counts — the substance doesn't have to remain visible for the transmission to be real.
+- Direct-contact channels: the two people's bodies physically touch each other, or come into very close proximity. The extent of contact and the body region involved both matter — brief incidental touch is a small channel; sustained skin contact, or contact with body regions normally restricted to close relationships, is a larger channel.
+- Informational or private-resource channels: private information, sensitive personal details, or personal resources (a private space, a personal item, a confidential record) from one person become accessible to the other — content that someone would not share with a stranger or a passing acquaintance.
 
-Simply being in the same physical space with no exchange — for example, two people each handling their own separate things, or keeping conversation to surface-level topics — does NOT by itself create such a channel, and should be rated near zero.
+Co-presence without substance transmission, contact, or disclosure does NOT by itself create a channel — for example, two people each handling their own separate utensils, sitting in the same room without interacting, or keeping a conversation to surface-level topics. These should be rated near zero.
 
-Rate only what the action DOES in this physical or informational sense — not how intimate or awkward it would feel in any particular relationship.
+Rate the action's physical, contact, or informational opening — the channel itself — not how emotionally intimate or awkward it would feel. The emotional reading depends on who the two people are; here we're asking what the action does, independent of relationship.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No channel between the two people (they remain fully separate)
-3 = Indirect or limited channel (e.g. using a shared item with a barrier or after cleaning, sitting near each other without touching, sharing surface-level information)
-6 = Direct channel (e.g. direct bodily-substance transfer, skin-to-skin contact, sharing private or sensitive personal details)"""
+0 = No channel between the two people (they remain fully separate; the action involves no exchange of substance, contact, or disclosure)
+3 = Indirect or limited channel (e.g. using a shared item after cleaning or with a barrier, sitting near each other without touching, sharing surface-level information anyone could ask about)
+6 = Direct channel (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, or sharing private details one would not disclose to a stranger)"""
 
+
+# _EFFORT_BODY is grounded in the Naïve Utility Calculus (NUC) framework
+# and scoped to physical effort — motor work, equipment / preparation,
+# and time. The construct does not extend to coordination or other
+# cognitive cost types; this is a scope choice grounded in the physical-
+# cost-only character of the empirical NUC literature, not an active
+# exclusion called out in the prompt itself (the prompt simply doesn't
+# list coordination as a criterion — telling the LM to ignore it would
+# prime the concept). The prompt body stays jargon-free; the rating
+# dimension is anchored as follows.
+#
+#   - Conceptual anchor (cost as trade-off quantity) — Jara-Ettinger, J.,
+#     Gweon, H., Schulz, L. E., & Tenenbaum, J. B. (2016). "The naïve
+#     utility calculus: Computational principles underlying commonsense
+#     psychology." Trends in Cognitive Sciences 20(8): 589–604. Defines
+#     cost formally as what an agent weighs against reward — the framework
+#     this project's inverse-planning model instantiates.
+#
+#   - Single-scalar physical cost (integrating across physical sub-types)
+#     — Liu, S., Ullman, T. D., Tenenbaum, J. B., & Spelke, E. S. (2017).
+#     "Ten-month-old infants infer the value of goals from the costs of
+#     actions." Science 358(6366): 1038–1041. Showed that observers
+#     integrate distinct physical cost features (height, width, incline)
+#     into one abstract cost metric — directly grounds collapsing motor,
+#     equipment, and time onto one 0-6 scale and motivates restricting
+#     the construct to physical cost features (rather than cognitive ones).
+#
+#   - Effort as a perceptible quantity separable from reward —
+#     Jara-Ettinger, J., Gweon, H., Tenenbaum, J. B., & Schulz, L. E.
+#     (2015). "Children's understanding of the costs and rewards underlying
+#     rational action." Cognition 140: 14–23. Establishes that children at
+#     4–6 can estimate action cost as distinct from goal value and agent
+#     competence — grounds the assumption that an "LM-as-participant" can
+#     rate physical effort with the instruction below.
 
 _EFFORT_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate the PHYSICAL, LOGISTICAL, AND TIME COST of executing the action. Consider:
-- How much physical work does the action require (preparing, serving, cutting, pouring, handing over, cleaning, wiping, drying, tidying, rearranging, applying)?
-- Does the action need extra items, equipment, or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces)?
-- How much time does the action take (waiting for something to dry, taking turns one at a time, sequential rather than simultaneous use, an extended conversation)?
-- Does the action add coordination or bookkeeping steps (handing items back and forth repeatedly, tracking amounts owed, repeating a step, going somewhere else first)?
+For each action, evaluate the *physical* cost the actor would weigh against the benefit of the action — the bodily, material, and temporal cost of carrying it out. The three cost types below all count; integrate across them into a single rating:
 
-Do NOT rate social awkwardness or interpersonal discomfort — only the physical, logistical, and time cost of carrying the action out.
+- Physical motor cost: how much bodily work the action requires (preparing, serving, cutting, pouring, handing over, cleaning, wiping, drying, tidying, rearranging, applying).
+- Equipment and preparation cost: whether the action needs extra items or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces) that someone has to obtain, set up, or take care of.
+- Time cost: how long the action takes — waiting for something to dry, sequential rather than simultaneous use, an extended preparation.
+
+Do NOT rate social awkwardness, relational discomfort, or how intimate or appropriate the action would feel — those are separate dimensions handled by other questions in this study. Here we want only the physical effort of carrying the action out.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No effort (acting independently or doing the simplest direct thing, no extra steps or waiting)
-3 = Moderate effort (a few steps, some preparation, some waiting, or a few extra items needed)
-6 = High effort (many steps, substantial setup, significant time, or repeated coordination)"""
+0 = No physical effort (acting independently or doing the simplest direct thing — no bodily work beyond the basic motion, no extra items, no waiting)
+3 = Moderate physical effort (a few bodily steps, such as setting out a clean utensil, dividing a portion, or briefly waiting; or a small handful of extra items to obtain)
+6 = High physical effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, preparing food from scratch, or cleaning and assembling many separate items)"""
 
 
 # Per-rating-type instructions used in the user prompt (the line just above
@@ -178,11 +239,51 @@ _USER_INSTRUCTIONS = {
 }
 
 
+# _V_BODY is the reward component of the project's Bayesian inverse-planning
+# model — the signed valence of an action with respect to the actor's
+# motivational state. The prompt body stays jargon-free, but the rating
+# dimension draws on the following established literatures:
+#
+#   - Formal anchor (V as reward in inverse planning) — Baker, C. L.,
+#     Saxe, R., & Tenenbaum, J. B. (2009). "Action understanding as
+#     inverse planning." Cognition 113(3): 329–349. The foundational
+#     Bayesian model where action understanding is treated as inverse
+#     inference over a (goal, reward, cost) model of the actor. V in
+#     this project is literally the reward in that formalism.
+#
+#   - Reward as signed and separable from cost — Jara-Ettinger, J.,
+#     Gweon, H., Schulz, L. E., & Tenenbaum, J. B. (2016). "The naïve
+#     utility calculus: Computational principles underlying commonsense
+#     psychology." Trends in Cognitive Sciences 20(8): 589–604. Grounds
+#     the −3 to +3 range and the formal distinction between "irrelevant
+#     action" (reward = 0) and "thwarting action" (reward < 0).
+#
+#   - Teleological interpretation of actions — Gergely, G. & Csibra, G.
+#     (2003). "Teleological reasoning in infancy: The naïve theory of
+#     rational action." Trends in Cognitive Sciences 7(7): 287–292.
+#     Foundational claim that observers represent actions in relation
+#     to goal-states under a principle of rational action — grounds the
+#     question "does this action serve what the actor wants?" as a
+#     psychologically natural one to ask.
+#
+#   - Diverse desires as a basic, early-emerging mental state attribution
+#     — Wellman, H. M. & Liu, D. (2004). "Scaling of theory-of-mind tasks."
+#     Child Development 75(2): 523–541. "Diverse Desires" is the FIRST
+#     step in their ToM developmental scale — before belief understanding.
+#     Grounds the claim that conditional-on-motivational-state valence
+#     judgments are a basic capacity the LM-as-participant can perform.
+#
+#   - Observers infer reward from action choices — Liu, S., Ullman, T. D.,
+#     Tenenbaum, J. B., & Spelke, E. S. (2017). "Ten-month-old infants
+#     infer the value of goals from the costs of actions." Science 358:
+#     1038–1041. Empirical anchor that V exists as a separable, inferable
+#     quantity — observers reason about reward from choices even in infancy.
+
 _V_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each scenario, one of the two people is in a particular motivational state — for example, wanting something (hungry, in pain, in urgent need) or wanting to avoid something (full, comfortable, wanting privacy). The state will be given to you explicitly.
+For each scenario, one of the two people is in a particular motivational state — for example, wanting something (hungry, in pain, in urgent need) or wanting to avoid something (full, comfortable, wanting privacy). The state will be given to you explicitly. The same action can serve one motivational state and thwart another — your rating should be conditional on the state you are given, not on the actor's overall well-being or what you yourself would prioritize.
 
-For each action, evaluate how that action affects the actor with respect to their motivational state. Does the action serve what the actor wants? Or does it actively work against it?
+For each action, evaluate how that action affects the actor *given the state they are in*. Does the action serve what the actor wants in this moment? Or does it actively work against it?
 
 Use this scale from -3 to +3 (continuous values allowed):
 +3 = Strongly serves the state (the action straightforwardly fulfills what the actor needs or wants)
@@ -191,15 +292,15 @@ Use this scale from -3 to +3 (continuous values allowed):
 -1 = Mildly counterproductive (the action partially works against the state, e.g. eating a small bite when full, declining a small amount of needed help)
 -3 = Strongly counterproductive (the action actively makes the state worse — e.g. eating heartily when already painfully full, refusing urgently needed information when the actor is in distress)
 
-Important: "doesn't help" and "actively harms" are different. An action that simply fails to address the state should be near 0; only use negative ratings when the action actively makes the state worse.
+Important: "doesn't help" and "actively harms" are different things. An action that simply fails to address the state — that's irrelevant to what the actor wants — should be rated near 0. Reserve negative ratings for actions that actively move the actor away from the state they want (eating when full, sharing when wanting privacy, etc.).
 
-Rate each action only on this state-fit dimension — not on whether it would feel intimate or awkward, and not on physical effort. Those are separate dimensions."""
+Do NOT rate how intimate or awkward the action would feel, and do NOT rate the physical effort of carrying it out — those are separate dimensions handled by other questions in this study. Here we want only how the action sits with the actor's current motivational state."""
 
 
 _BODIES = {
     "access": _ACCESS_BODY,
     "effort": _EFFORT_BODY,
-    "v":      _V_BODY,
+    "v": _V_BODY,
 }
 
 
@@ -239,14 +340,11 @@ def user_prompt(rating_type, vignette, action_texts, state=None):
     if rating_type == "v" and state is None:
         raise ValueError("rating_type='v' requires a `state` paragraph")
     instr = _USER_INSTRUCTIONS[rating_type]
-    actions_block = "\n".join(f"Action {i}: {txt}" for i, txt in enumerate(action_texts))
+    actions_block = "\n".join(
+        f"Action {i}: {txt}" for i, txt in enumerate(action_texts)
+    )
     if rating_type == "v":
-        return (
-            f"Scenario: {vignette}\n\n"
-            f"State: {state}\n\n"
-            f"{instr}\n\n"
-            f"{actions_block}"
-        )
+        return f"Scenario: {vignette}\n\nState: {state}\n\n{instr}\n\n{actions_block}"
     return f"Scenario: {vignette}\n\n{instr}\n\n{actions_block}"
 
 
@@ -255,13 +353,43 @@ def user_prompt(rating_type, vignette, action_texts, state=None):
 # ==============================================================================
 
 
+# ALTERNATIVES_SYSTEM_PROMPT is the methodological core of this project's
+# open-world inverse-planning move: rather than reasoning over a fixed
+# action set, the LM proposes a small, scenario-specific set of plausible
+# counterfactual actions that then feed into the formal inverse-planning
+# model with their LM-elicited utility features (access, effort, V). The
+# prompt body stays jargon-free; the methodological choice is anchored
+# as follows.
+#
+#   - Neuro-symbolic / model-synthesis approach — Wong et al. (2025).
+#     "Modeling Open-World Cognition as On-Demand Synthesis of
+#     Probabilistic Models." CogSci 2025 (eScholarship). The foundational
+#     methodological anchor for using a language model to propose a
+#     contextual symbolic model on demand, combining LM distributional
+#     knowledge with formal probabilistic inference. Cited in the
+#     manuscript as `wong2025modeling`.
+#
+#   - Frame-problem motivation — Dennett, D. C. (1984). "Cognitive wheels:
+#     The frame problem of AI." In C. Hookway (Ed.), Minds, machines, and
+#     evolution. Cambridge University Press. The classic philosophical
+#     statement of why an observer cannot reason over all possible actions
+#     but must construct a smaller, context-sensitive comparison set —
+#     what this prompt operationalizes.
+#
+# The explicit "preserve the scenario's central goal" paragraph and its
+# negative examples address an empirical failure mode: an earlier
+# underspecified version of this prompt produced scenario-shifting
+# alternatives ("find a different food vendor," "pay with a different
+# method") that the formal inverse-planning model could not consume
+# sensibly. The current wording rules those out at generation time.
+
 ALTERNATIVES_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
 
 In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
-Your job is to list the set of plausible alternative actions the two people could have taken instead. Focus specifically on different WAYS the two people could handle the situation — the mechanics of sharing or not sharing. The alternatives should span a range of exposure between the two people: from one person handling things entirely alone or no one engaging at all, through ways that involve some separation, distance, or barrier between them, to ways that bring them into closer bodily, physical, or informational contact (e.g., direct skin or saliva contact via the shared item, bodies touching, or sharing private/sensitive details).
+Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between. The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
 
-Generate however many alternatives you think are plausible, but no more than 10. Only include alternatives that are plausible in the specific situation; do not pad the list with implausible options. Do not include the action they actually took.
+Aim for a small, focused set — typically 3 to 5 strong alternatives. Up to 10 is allowed only if you're confident each one is salient. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. Better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
 For each alternative, tag it with is_share ∈ {0, 1}:
 - is_share = 1 if both people end up engaging with the shared resource together (whether through divided portions, shared use of the same item, shared physical space, or mutual disclosure of information)
@@ -283,8 +411,7 @@ def alternatives_user_prompt(vignette, reward_text, observed_action_text):
         f"The two people took the following action:\n"
         f"{observed_action_text}\n\n"
         "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Vary across exposure between "
-        "them — bodily, physical, or informational. Tag each with "
+        "have handled the situation instead. Tag each with "
         "is_share ∈ {0, 1}. Do not include the action they actually took."
     )
 
@@ -298,11 +425,13 @@ RELATIONSHIP_DESCRIPTORS = {
     0: "0 out of 100 (maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader)",
     50: "50 out of 100 (neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker)",
     75: "75 out of 100 (somewhat intimate — e.g., the kind of relationship one might have with a close friend)",
-    100: "100 out of 100 (maximally intimate — e.g., the kind of relationship one might have with a romantic partner, sibling, or best friend)",
+    100: "100 out of 100 (maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend)",
 }
 
 
-def alternatives_user_prompt_relationship(vignette, relationship_level, observed_action_text):
+def alternatives_user_prompt_relationship(
+    vignette, relationship_level, observed_action_text
+):
     """Build the user prompt for the alternative-generation call when
     conditioning on relationship instead of motivation (desire-noalt observer).
 
@@ -317,7 +446,53 @@ def alternatives_user_prompt_relationship(vignette, relationship_level, observed
         f"The two people took the following action:\n"
         f"{observed_action_text}\n\n"
         "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Vary across exposure between "
-        "them — bodily, physical, or informational. Tag each with "
+        "have handled the situation instead. Tag each with "
         "is_share ∈ {0, 1}. Do not include the action they actually took."
     )
+
+
+def alternatives_user_prompt_3act(
+    vignette,
+    observed_action_text,
+    *,
+    effort_text=None,
+    intimacy_level=None,
+    reward_text=None,
+):
+    """Build the user prompt for the alternative-generation call in the 3-action
+    inverse experiments (Studies 2, 3a, 3b, 4a, 4b).
+
+    Composes whichever observer-visible condition paragraphs the experiment
+    reveals. Each study passes only the paragraphs its observer actually sees:
+
+      - Study 2  (`food_inv_intimacy_3act`):   reward_text + effort_text
+      - Study 3a (`food_inv_effort_3act`):     reward_text + intimacy_level
+      - Study 3b (`food_inv_desire_3act`):     effort_text + intimacy_level
+      - Study 4a (`food_inv_joint_de_3act`):   intimacy_level
+      - Study 4b (`food_inv_joint_di_3act`):   effort_text
+
+    Mirrors how the human participant sees the trial (vignette + revealed
+    condition paragraphs + observed action), per `feedback_llm_as_participant`.
+    `intimacy_level` is one of {0, 50, 75, 100} when provided; it's rendered
+    via the shared `RELATIONSHIP_DESCRIPTORS` dict so the LM sees the same
+    qualitative descriptor humans see.
+    """
+    parts = [f"Scenario: {vignette}"]
+    if reward_text is not None:
+        parts.append(reward_text)
+    if effort_text is not None:
+        parts.append(effort_text)
+    if intimacy_level is not None:
+        parts.append(
+            f"The two people are in a relationship they would describe as "
+            f"{RELATIONSHIP_DESCRIPTORS[intimacy_level]}."
+        )
+    parts.append(
+        f"\nThe two people took the following action:\n{observed_action_text}\n"
+    )
+    parts.append(
+        "List the set of plausible alternative ways the two people could "
+        "have handled the situation instead. Tag each with "
+        "is_share ∈ {0, 1}. Do not include the action they actually took."
+    )
+    return "\n".join(parts)
