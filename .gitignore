@@ -31,3 +31,5 @@ notes/
 model/outputs/*/preds.csv
 model/outputs/*/preds_full.csv
 model/outputs/*/preds_summary.csv
+.positai
+.claude/worktrees/ 
