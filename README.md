@@ -52,7 +52,7 @@ The inverse-planning experiments use a new 3-action stimulus set (no sharing / l
 
 - **Study 2 — Inverse intimacy** (`food_inv_intimacy_3act/`) — known: desire + effort. Inferred: intimacy. Design: 2 × 2 × 3.
 - **Study 3a — Effort inference** (`food_inv_effort_3act/`) — known: desire + intimacy. Inferred: effort. Design: 2 × 4 × 3. The observer does not see the effort paragraph; the model uses an effort-marginal access table.
-- **Study 3b — Desire inference** (`food_inv_desire_3act/`) — known: effort + intimacy. Inferred: desire. Design: 2 × 4 × 3.
+- **Study 3b — Desire inference** (`food_inv_desire_3act/`) — known: effort + intimacy. Inferred: desire. Design: 2 × 4 × 3. The choice set the actor reasons over is not the fixed 3-action canonical set: for each (scenario, observed_action, effort, intimacy) cell the LM generates plausible counterfactual alternatives, and the observer's actor softmaxes over `{observed_action} ∪ generated_alts`, padded to 12 slots with the observed action in slot 0. See [LM-generated alternatives for Study 3b](#lm-generated-alternatives-for-study-3b) below.
 - **Study 4a — Joint inference (desire + effort)** (`food_inv_joint_de_3act/`) — known: intimacy. Inferred jointly: desire and effort. Design: 4 × 3. Two sliders per trial.
 - **Study 4b — Joint inference (desire + intimacy)** (`food_inv_joint_di_3act/`) — known: effort. Inferred jointly: desire and intimacy. Design: 2 × 3. Two sliders per trial.
 
@@ -106,6 +106,27 @@ A single prompt set in `model/lm/prompts.py` is used for both the food and non-f
 The Together AI calls go through `model/lm/client.py`, which fans the 10 runs across a thread pool, constrains the output to a JSON schema via Together's `response_format`, retries transient errors, and checkpoints to disk after each scenario. Output rows record both `n_runs_*` (successful runs) and `n_failures_*` so it's clear how many of the 10 runs returned parseable output.
 
 Generating LM tables requires `TOGETHER_API_KEY` in `.env`. The fitting and prediction scripts index into these tables by `scenario_idx`; they require the relevant CSVs to exist.
+
+### LM-generated alternatives and merged scoring for Study 3b
+
+Study 3b (`food_inv_desire_3act`) goes further than the fixed-action design: rather than scoring V/access/effort on the 3 canonical actions, the LM **generates** plausible counterfactual actions per (scenario, observed_action, effort, intimacy) cell — 16 × 3 × 2 × 4 = 384 cells — and then canonical actions + generated alternatives are scored together on V/access/effort. The observer's actor softmaxes over `{observed_action} ∪ generated_alts`, padded to a fixed slot count (`MAX_ACTIONS_3ACT = 12`) with the observed canonical action in slot 0 and null padding on unused slots (epsilon-weighted prior so the softmax stays differentiable).
+
+The pipeline is two stages. First, alternatives are generated per cell. Second, a single merged scoring script rates the canonical actions and the unique alts together — putting slot 0 and slots 1..k on the same comparative scale by construction:
+
+```bash
+uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire_3act
+uv run python model/lm/score_3act_merged.py          --study food_inv_desire_3act
+```
+
+The alternative-generation prompt (`prompts.py:alternatives_user_prompt_3act`) mirrors what the human participant sees in the trial — vignette + effort paragraph + relationship descriptor + observed action — per the principle that the LM should be prompted with one condition at a time. The merged scoring script makes three design choices, each chosen to align with what the formal model treats each feature as varying with:
+
+- **Canonical and alternative actions are scored together** in the same prompt per scenario, so slot 0 and slots 1..k are calibrated against a shared comparative reference frame rather than being scored in separate prompts with potentially mismatched anchors.
+- **Access is effort-marginal**: the access scoring prompt omits the effort paragraph and a single access rating per action is broadcast across both effort conditions in the output CSVs. The model already modulates access by intimacy via `(1−I)^γ` in the utility, so access(a|s) is formally intimacy- and effort-independent; eliciting access without the effort paragraph avoids double-counting context that the utility formula handles separately. Effort is still elicited per (scenario, effort_condition), and V is elicited per (scenario, motivation_query).
+- **V is LM-elicited**, not derived from the `is_share` flag. Each alternative gets a continuous LM-rated V ∈ [−1, +1] per motivation_query (`reward_low` and `reward_high`). The `is_share` field is preserved in the alternatives CSV as diagnostic metadata.
+
+The merged scoring writes five CSVs at once (preserving the existing loader schemas): `lm_scenario_params_3act{,_marginal}.csv` (canonical access + effort), `lm_scenario_v_3act.csv` (canonical V), `lm_alternatives_features_food_inv_desire_3act.csv` (alts access + effort), and `lm_alternatives_v_food_inv_desire_3act.csv` (alts V). `tables.py:load_padded_lm_tables_3act_desire` assembles these into the 5-D access/effort/prior tables and 6-D V table the Study 3b memo observer indexes into.
+
+Studies 2, 3a, 4a, and 4b still use the fixed-3-action pipeline (the legacy `score_3act_features.py` and `score_3act_v.py` scripts writing to the same canonical CSVs without alts), and will need analogous modeling-code changes when they're migrated to the padded-alts pipeline. The required changes for each migrated study follow the Study 3b template: new padded actor and observer memos, new utility and prior helpers, a new padded table loader sized for that study's conditioning structure (the access/effort/V table shapes depend on which variables the observer sees), updated joint-fit helpers, updated fit/predict/CV scripts, and registry additions in `generate_alternatives_3act.py` and `score_3act_merged.py`. The merged scoring's per-scenario logic generalizes — only the `_STUDY_CONFIG` entries need to be added for new studies.
 
 ## Repository structure
 
@@ -166,6 +187,8 @@ uv run python model/lm/score_canonical_v.py --domain nonfood        # non-food V
 uv run python model/lm/score_effort_features.py                     # Study 1b: access + effort on the 2-action effort set
 uv run python model/lm/score_3act_features.py                       # Studies 2/3/4: access + effort (+ effort-marginal for Study 3a)
 uv run python model/lm/score_3act_v.py                              # Studies 2/3/4: signed-valence V
+uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire_3act  # Study 3b: LM-generated alternative actions per cell
+uv run python model/lm/score_3act_merged.py          --study food_inv_desire_3act  # Study 3b: merged canonical + alts scoring (access-marginal, effort-conditional, V LM-elicited)
 ```
 
 Each fit/predict/CV script is named after the experiment it serves and lives in `model/forward/`, `model/inverse/`, or `model/cv/`. Run `fit_<slug>.py`, then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`.
@@ -182,9 +205,9 @@ uv run python model/cv/cv_food_forw_intimacy_desire.py
 uv run python model/cv/cv_food_inv_intimacy_3act.py
 ```
 
-The 3-action inverse experiments freeze actor weights from `food_forw_intimacy_desire` and fit only `α_observer`. The joint Studies 4a/4b sum two binary cross-entropy NLLs across the two slider responses per trial. `food_inv_effort_3act` (Study 3a) uses **effort-marginal access** because that observer doesn't see the effort paragraph.
+Each 3-action inverse experiment jointly fits its own actor utility weights ($w_v, w_d, w_e, \gamma$) and $\alpha_\mathrm{observer}$ from its own posterior data, rather than transferring actor weights from the forward fit. The joint Studies 4a/4b sum two binary cross-entropy NLLs across the two slider responses per trial. `food_inv_effort_3act` (Study 3a) uses **effort-marginal access** because that observer doesn't see the effort paragraph.
 
-All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 LOSO folds. Forward CV refits actor weights ($w_v, w_d, w_e, \gamma$) per fold; inverse CV refits only $\alpha_\mathrm{obs}$ with actor weights frozen from the forward fit.
+All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 LOSO folds. Forward and inverse CV both refit the actor utility weights ($w_v, w_d, w_e, \gamma$) per fold; inverse CV additionally fits $\alpha_\mathrm{obs}$.
 
 Render analysis qmds:
 
