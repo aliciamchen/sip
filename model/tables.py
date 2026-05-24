@@ -689,9 +689,9 @@ LLM_TABLES_EFFORT = load_lm_scenario_params_effort()
 def load_lm_scenario_params_effort_marginal(filepath=None):
     """Load effort-marginal access ratings (vignette without effort paragraph).
 
-    Used by the food_inv_effort_intimacy_alt experiment, where the observer does
-    not see the effort paragraph and so cannot perceive any effort-induced
-    setting differences when reasoning about action access.
+    Originally built for observer experiments where the observer did not see
+    the effort paragraph and so could not perceive any effort-induced setting
+    differences when reasoning about action access.
 
     Returns a jnp.array of shape (16, 2, 2) with the marginal access value
     broadcast across the effort_condition dimension — so it slots into the

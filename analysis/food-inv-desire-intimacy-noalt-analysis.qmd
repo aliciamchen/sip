@@ -29,7 +29,7 @@ report_demographics("food_inv_desire_intimacy_noalt")
 
 ## Results
 
-This experiment is a variant of `food_inv_desire_intimacy_alt` in which participants observe a single action and infer the actor's desire **without seeing the other three alternative actions the actors could have taken**. The slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs, so the response encodes P(high desire). The experiment manipulates:
+In this experiment participants observe a single action and infer the actor's desire **without seeing the other three alternative actions the actors could have taken**. The slider endpoints are the scenario's `reward_low` / `reward_high` paragraphs, so the response encodes P(high desire). The experiment manipulates:
 
 - **Action**: Which action was taken (action 0–3, varying in saliva-transfer risk)
 - **Intimacy**: The relationship closeness between the actors (0, 50, 75, or 100)

@@ -66,8 +66,8 @@ These four words all relate to the actor's motivational state, but they're not i
 ## Shared infrastructure
 
 - `forward/_shared.py` — NLL/AIC/BIC, `_fit_with_adam`, predict/fit functions, data loaders, `build_canonical_cells(scenario_labels, n_actions)`.
-- `inverse/_helpers.py` — observer fit loops, NLL functions, data loaders for all 5 new inverse experiments plus the 6 legacy experiments, frozen-param loaders, table-kwargs helpers (`intimacy_3act_table_kwargs`, `effort_3act_table_kwargs`, `desire_3act_table_kwargs`, `joint_3act_table_kwargs`).
-- `cv/_forward_dispatcher.py` — joint LOSO logic shared by per-experiment forward CV scripts. (`cv/_alt_dispatcher.py` exists for the legacy alt-shown inverse experiments; the new 3-action CV scripts are currently stubs.)
+- `inverse/_helpers.py` — observer fit loops, NLL functions, data loaders for the 5 active 3-action inverse experiments plus the 2 legacy `_noalt` experiments, frozen-param loaders, table-kwargs helpers (`intimacy_3act_table_kwargs`, `effort_3act_table_kwargs`, `desire_3act_table_kwargs`, `joint_3act_table_kwargs`).
+- `cv/_forward_dispatcher.py` — joint LOSO logic shared by per-experiment forward CV scripts.
 - `lm/_features_dispatcher.py` — multi-mode internals shared by `score_canonical_features.py`.
 - `lm/client.py`, `lm/prompts.py` — LM-call infrastructure and prompt templates.
 
@@ -77,7 +77,8 @@ These four words all relate to the actor's motivational state, but they're not i
 uv run python model/test_model_compliance.py
 ```
 
-## Sandbox / preregs
+## Sandbox
 
 - `model/sandbox/` — exploratory/comparison code (not part of the main pipeline).
-- `model/preregs/` — preregistration documents per experiment.
+
+Preregistration documents are at the repo root under [`preregs/`](../preregs/), one file per active experiment slug.

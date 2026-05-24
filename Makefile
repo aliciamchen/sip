@@ -7,16 +7,14 @@
 
 EXPERIMENTS_FORWARD := food_forw_intimacy_desire food_forw_intimacy_effort nonfood_forw_intimacy_desire
 # New inverse experiments (Studies 2, 3a, 3b, 4a, 4b) get added here as they are
-# built. The data for the old 4-action and 2-action inverse experiments lives
-# under data/legacy/ and is reachable via the LEGACY_INVERSE per-slug targets
-# below (e.g. `make fit-food_inv_intimacy_desire_alt`), but they are not part
-# of the default `make all` pipeline.
+# built. The two `_noalt` experiments below are the remaining 4-action legacy
+# inverse studies; their data lives under data/legacy/ and they are reachable
+# via the LEGACY_INVERSE per-slug targets (e.g. `make fit-food_inv_intimacy_desire_noalt`),
+# but they are not part of the default `make all` pipeline.
 EXPERIMENTS_INVERSE := food_inv_intimacy_3act food_inv_effort_3act \
                        food_inv_desire_3act food_inv_joint_de_3act \
                        food_inv_joint_di_3act
-LEGACY_INVERSE := food_inv_intimacy_desire_alt food_inv_desire_intimacy_alt \
-                  food_inv_intimacy_desire_noalt food_inv_desire_intimacy_noalt \
-                  food_inv_intimacy_effort_alt food_inv_effort_intimacy_alt
+LEGACY_INVERSE := food_inv_intimacy_desire_noalt food_inv_desire_intimacy_noalt
 EXPERIMENTS_ALL := $(EXPERIMENTS_FORWARD) $(EXPERIMENTS_INVERSE)
 EXPERIMENTS_REGISTERED := $(EXPERIMENTS_ALL) $(LEGACY_INVERSE)
 
@@ -31,14 +29,8 @@ ANALYSIS_QMDS := \
   food-inv-joint-de-3act-analysis \
   food-inv-joint-di-3act-analysis
 LEGACY_ANALYSIS_QMDS := \
-  food-inv-intimacy-desire-alt-analysis \
-  food-inv-desire-intimacy-alt-analysis \
   food-inv-intimacy-desire-noalt-analysis \
-  food-inv-desire-intimacy-noalt-analysis \
-  food-inv-intimacy-effort-alt-analysis \
-  food-inv-effort-intimacy-alt-analysis \
-  inv-plan-combined-correlation \
-  inv-plan-combined-correlation-by-scenario
+  food-inv-desire-intimacy-noalt-analysis
 ANALYSIS_QMDS_REGISTERED := $(ANALYSIS_QMDS) $(LEGACY_ANALYSIS_QMDS)
 
 .PHONY: all help test clean \
@@ -79,11 +71,11 @@ help:
 	@echo "  fit-<slug>, predict-<slug>, cv-<slug>  (works for active and legacy)"
 	@echo "  data-<slug>                            (active only; legacy CSVs already processed)"
 	@echo "  e.g. make fit-food_forw_intimacy_desire"
-	@echo "  e.g. make fit-food_inv_intimacy_desire_alt   (legacy)"
+	@echo "  e.g. make fit-food_inv_intimacy_desire_noalt   (legacy)"
 	@echo ""
 	@echo "Per-qmd:"
 	@echo "  analysis-<name>  (without .qmd suffix)"
-	@echo "  e.g. make analysis-inv-plan-combined-correlation"
+	@echo "  e.g. make analysis-food-inv-desire-3act-analysis"
 	@echo ""
 	@echo "Active forward slugs:  $(EXPERIMENTS_FORWARD)"
 	@echo "Active inverse slugs:  $(EXPERIMENTS_INVERSE)"

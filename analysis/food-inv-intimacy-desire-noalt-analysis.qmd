@@ -26,7 +26,7 @@ report_demographics("food_inv_intimacy_desire_noalt")
 
 ## Results
 
-This experiment is a variant of `food_inv_intimacy_desire_alt` in which participants observe a single action and infer the relationship **without seeing the other three alternative actions the actors could have taken**. The experiment manipulates the same factors as the alt-shown version:
+In this experiment participants observe a single action and infer the relationship **without seeing the other three alternative actions the actors could have taken**. The experiment manipulates:
 
 - **Action**: Which action was taken (action 0-3, varying in saliva-transfer risk)
 - **Motivation (desire)**: Whether both people want the food (high vs low)

@@ -27,11 +27,11 @@ Inverse planning (Studies 2, 3a, 3b, 4a, 4b — all on the 3-action set):
 - `food-inv-joint-de-3act-analysis.qmd` — Study 4a: joint over desire × effort given intimacy.
 - `food-inv-joint-di-3act-analysis.qmd` — Study 4b: joint over desire × intimacy given effort.
 
-The five inverse qmds are currently stubs that gracefully handle missing data and missing CV predictions via `file.exists()` guards. TODO blocks mark where belief-update plots and model-vs-human correlation panels need to be filled in once pilots land; the patterns to follow live in the corresponding legacy qmds.
+The five inverse qmds are currently stubs that gracefully handle missing data and missing CV predictions via `file.exists()` guards. TODO blocks mark where belief-update plots and model-vs-human correlation panels need to be filled in once pilots land; the patterns to follow live in the surviving `_noalt` qmds.
 
 ### Legacy
 
-Legacy pilot analysis files are in `analysis/legacy/`. The six older inverse-planning qmds (`food-inv-{intimacy_desire,desire_intimacy,intimacy_effort,effort_intimacy}_alt`, `food-inv-{intimacy_desire,desire_intimacy}_noalt`, plus the two `inv-plan-combined-correlation*` qmds) still live alongside the active set; their data paths point to `data/legacy/<slug>/`, and they remain renderable. They are not part of `make all` and will be removed when the legacy code is deleted.
+Legacy pilot analysis files are in `analysis/legacy/`. The two surviving 4-action inverse qmds (`food-inv-intimacy-desire-noalt-analysis.qmd`, `food-inv-desire-intimacy-noalt-analysis.qmd`) still live alongside the active set; their data paths point to `data/legacy/<slug>/`, and they remain renderable. They are not part of `make all` and will be folded into the 3-action pipeline when the corresponding inverse experiments are migrated to the Study 3b template.
 
 ## Commands
 

@@ -15,7 +15,7 @@ Six food-domain inverse-planning experiments collected against the original 4-ac
 | `food_inv_intimacy_effort_alt`    | intimacy | effort        | 2 actions, alternatives shown |
 | `food_inv_effort_intimacy_alt`    | effort   | intimacy      | 2 actions, alternatives shown |
 
-The model scripts (`model/inverse/{fit,predict}_<slug>.py`, `model/cv/cv_<slug>.py`) and analysis qmds (`analysis/food-inv-*.qmd`, `analysis/inv-plan-combined-correlation*.qmd`) for these experiments are still in the repo and remain runnable: their hardcoded data paths point to `data/legacy/<slug>/`, and the `Makefile` registers per-slug targets (`fit-<slug>`, `predict-<slug>`, `cv-<slug>`, `analysis-<name>`) outside of `EXPERIMENTS_ALL`. Per-CSV column documentation is in [data/README.md](../README.md).
+The two `_noalt` experiments retain runnable model scripts (`model/inverse/{fit,predict}_food_inv_*_noalt.py`, `model/cv/cv_food_inv_*_noalt.py`) and analysis qmds (`analysis/food-inv-*-noalt-analysis.qmd`): their hardcoded data paths point to `data/legacy/<slug>/`, and the `Makefile` registers per-slug targets under `LEGACY_INVERSE` outside of `EXPERIMENTS_ALL`. The four `_alt` experiments used a pre-specified alternatives-shown paradigm that has been retired; their model code, CV scripts, and analysis qmds were removed in May 2026, but the data remains here for reproducibility against the original fits. Per-CSV column documentation is in [data/README.md](../README.md).
 
 ## Earlier pilots and side projects
 

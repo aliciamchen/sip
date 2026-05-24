@@ -8,7 +8,6 @@ it needs from this module. Shared concerns:
   - Observer fit loops (single-param alpha_observer; joint padded weights+α)
   - Data loaders (per experiment)
   - Frozen-actor-param loaders (forward fits → inverse fits)
-  - Fitted-α_observer loader (alt-shown fit_results → predict scripts)
 
 Forward-side helpers like `_fit_with_adam` are imported from
 `forward/_shared.py` (available via the path setup at the top of any caller).
@@ -138,87 +137,9 @@ def load_3act_fit_results(slug: str) -> dict:
     return out
 
 
-def load_fitted_alpha_observer(filepath=None) -> dict:
-    """Load fitted alpha_observer values from inverse planning fit_results.csv.
-
-    `filepath` is a single path (single-experiment file). If None, reads from
-    both alt-shown experiment dirs and merges (intimacy + reward).
-
-    Returns dict with (model, experiment) -> alpha_observer. Defaults to 1.0 if NaN.
-    """
-    if filepath is not None:
-        paths = [Path(filepath)]
-    else:
-        outputs_root = get_project_root() / "model" / "outputs"
-        paths = [
-            outputs_root / "food_inv_intimacy_desire_alt" / "fit_results.csv",
-            outputs_root / "food_inv_desire_intimacy_alt" / "fit_results.csv",
-        ]
-    alpha_obs = {}
-    for path in paths:
-        df = pd.read_csv(path)
-        for _, row in df.iterrows():
-            key = (row["model"], row["experiment"])
-            alpha_val = row["alpha_observer"]
-            alpha_obs[key] = alpha_val if pd.notna(alpha_val) else 1.0
-    return alpha_obs
-
-
 # ==============================================================================
 # Data loaders (one per experiment)
 # ==============================================================================
-
-
-def load_intimacy_alt_data(filepath: str = None):
-    """food_inv_intimacy_desire_alt — observer infers intimacy under known motivation."""
-    if filepath is None:
-        filepath = (
-            get_project_root()
-            / "data"
-            / "legacy"
-            / "food_inv_intimacy_desire_alt"
-            / "main_trials_long.csv"
-        )
-    print("Loading food_inv_intimacy_desire_alt data...")
-    data = pd.read_csv(filepath)
-    data = data[data["stage"] == "posterior"].copy()
-    data["action"] = data["action_condition"].str.replace("action_", "").astype(int)
-    motivation_map = {"low": 0, "high": 1}
-    data["reward_condition"] = data["motivation"].map(motivation_map)
-    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
-
-    action = jnp.array(data["action"].values)
-    reward_condition = jnp.array(data["reward_condition"].values)
-    response = jnp.array(data["intimacy_rating"].values)
-    scenario_idx = jnp.array(data["scenario_idx"].values)
-    print(f"Loaded {len(data)} posterior data points")
-    return data, action, reward_condition, response, scenario_idx
-
-
-def load_desire_alt_data(filepath: str = None):
-    """food_inv_desire_intimacy_alt — observer infers desire (motivation) under known intimacy."""
-    if filepath is None:
-        filepath = (
-            get_project_root()
-            / "data"
-            / "legacy"
-            / "food_inv_desire_intimacy_alt"
-            / "main_trials_long.csv"
-        )
-    print("Loading food_inv_desire_intimacy_alt data...")
-    data = pd.read_csv(filepath)
-    data = data[data["stage"] == "posterior"].copy()
-    data["action"] = data["action_condition"].str.replace("action_", "").astype(int)
-    intimacy_map = {0: 0, 50: 1, 75: 2, 100: 3}
-    data["intimacy_idx"] = data["intimacy"].map(intimacy_map)
-    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
-
-    action = jnp.array(data["action"].values)
-    intimacy_condition = jnp.array(data["intimacy_idx"].values)
-    response = jnp.array(data["response"].values)
-    scenario_idx = jnp.array(data["scenario_idx"].values)
-    print(f"Loaded {len(data)} posterior data points")
-    return data, action, intimacy_condition, response, scenario_idx
 
 
 def load_intimacy_noalt_data(filepath=None):
@@ -277,67 +198,12 @@ def load_desire_noalt_data(filepath=None):
     return data, observed_action, relationship_condition, response, scenario_idx
 
 
-def load_intimacy_effort_data(filepath: str = None):
-    """food_inv_intimacy_effort_alt — observer infers intimacy under effort manipulation."""
-    if filepath is None:
-        filepath = (
-            get_project_root()
-            / "data"
-            / "legacy"
-            / "food_inv_intimacy_effort_alt"
-            / "main_trials_long.csv"
-        )
-    print("Loading food_inv_intimacy_effort_alt data...")
-    data = pd.read_csv(filepath)
-    data = data[data["stage"] == "posterior"].copy()
-    data["action"] = data["action_condition"].str.replace("action_", "").astype(int) - 1
-    data["effort_condition"] = data["effort"].map(EFFORT_CONDITION_TO_IDX)
-    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
-
-    action = jnp.array(data["action"].values)
-    effort_condition = jnp.array(data["effort_condition"].values)
-    response = jnp.array(data["intimacy_rating"].values)
-    scenario_idx = jnp.array(data["scenario_idx"].values)
-    print(f"Loaded {len(data)} posterior data points")
-    return data, action, effort_condition, response, scenario_idx
-
-
-def load_effort_intimacy_data(filepath: str = None):
-    """food_inv_effort_intimacy_alt — observer infers effort under intimacy manipulation.
-
-    Note: intimacy_idx is the index into the actor's 101-level IntimacyLevels
-    axis (0..100 in 0.01 increments) — so the integer intimacy values
-    {0, 50, 75, 100} double as indices.
-    """
-    if filepath is None:
-        filepath = (
-            get_project_root()
-            / "data"
-            / "legacy"
-            / "food_inv_effort_intimacy_alt"
-            / "main_trials_long.csv"
-        )
-    print("Loading food_inv_effort_intimacy_alt data...")
-    data = pd.read_csv(filepath)
-    data = data[data["stage"] == "posterior"].copy()
-    data["action"] = data["action_condition"].str.replace("action_", "").astype(int) - 1
-    data["intimacy_idx"] = data["intimacy"].astype(int)
-    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
-
-    action = jnp.array(data["action"].values)
-    intimacy_idx = jnp.array(data["intimacy_idx"].values)
-    response = jnp.array(data["response"].values)
-    scenario_idx = jnp.array(data["scenario_idx"].values)
-    print(f"Loaded {len(data)} posterior data points")
-    return data, action, intimacy_idx, response, scenario_idx
-
-
 # ==============================================================================
-# Single-α_observer fit loop (alt-shown)
+# Single-α_observer fit loop
 # ==============================================================================
-# The full alt-shown observer takes (actor kwargs, alpha_observer, table kwargs)
-# and produces a 4D table (action, scenario, intimacy_or_relationship, condition).
-# This loop fits only alpha_observer with actor weights frozen.
+# Takes (actor kwargs, alpha_observer, table kwargs) and produces a 4-or-5-D
+# observer table; this loop fits only alpha_observer with actor weights frozen.
+# Used by the single-α 3-act wrappers below.
 
 
 def _fit_alpha_observer(
@@ -421,88 +287,6 @@ def _fit_alpha_observer(
     if verbose:
         print(f"  Final NLL: {best_nll:.4f}, alpha_observer: {final_alpha:.4f}")
     return final_alpha, best_nll
-
-
-def fit_intimacy_observer(
-    observer_fn,
-    actor_params,
-    actor_kwarg_names,
-    action,
-    scenario_idx,
-    conditioning,
-    response,
-    table_kwargs,
-    **kwargs,
-):
-    """For observers whose table is (action, scenario, intimacy, conditioning_axis)."""
-    return _fit_alpha_observer(
-        observer_fn=observer_fn,
-        actor_params=actor_params,
-        actor_kwarg_names=actor_kwarg_names,
-        action=action,
-        scenario_idx=scenario_idx,
-        conditioning=conditioning,
-        response=response,
-        nll_fn=compute_intimacy_nll,
-        posterior_slicer=lambda tab, a, s, c: tab[a, s, :, c],
-        table_kwargs=table_kwargs,
-        **kwargs,
-    )
-
-
-def fit_reward_observer(
-    observer_fn,
-    actor_params,
-    actor_kwarg_names,
-    action,
-    scenario_idx,
-    intimacy_condition,
-    response,
-    table_kwargs,
-    **kwargs,
-):
-    """For observers whose table is (action, scenario, relationship, reward_condition)."""
-    return _fit_alpha_observer(
-        observer_fn=observer_fn,
-        actor_params=actor_params,
-        actor_kwarg_names=actor_kwarg_names,
-        action=action,
-        scenario_idx=scenario_idx,
-        conditioning=intimacy_condition,
-        response=response,
-        nll_fn=compute_reward_nll,
-        posterior_slicer=lambda tab, a, s, i: tab[a, s, i, 1],
-        table_kwargs=table_kwargs,
-        **kwargs,
-    )
-
-
-def fit_effort_intimacy_observer(
-    observer_fn,
-    actor_params,
-    actor_kwarg_names,
-    action,
-    scenario_idx,
-    intimacy_condition,
-    response,
-    table_kwargs,
-    **kwargs,
-):
-    """For the effort-intimacy observer: table is (action, scenario, intimacy, effort) → P(effort=high)."""
-    return _fit_alpha_observer(
-        observer_fn=observer_fn,
-        actor_params=actor_params,
-        actor_kwarg_names=actor_kwarg_names,
-        action=action,
-        scenario_idx=scenario_idx,
-        conditioning=intimacy_condition,
-        response=response,
-        nll_fn=compute_reward_nll,
-        # Posterior over effort_condition; table[a, s, i, :] gives [P(low), P(high)]
-        posterior_slicer=lambda tab, a, s, i: tab[a, s, i, 1],
-        table_kwargs=table_kwargs,
-        **kwargs,
-    )
 
 
 # ==============================================================================
@@ -681,48 +465,13 @@ def compute_p_high_reward(df: pd.DataFrame) -> pd.DataFrame:
 # observers/tables at top of file (they're imported anyway, but this keeps
 # the registry collated with the actual observer references).
 from observers import (  # noqa: E402
-    observer_intimacy_base,
-    observer_intimacy_discomfort_only,
-    observer_intimacy_full,
-    observer_reward_base,
-    observer_reward_discomfort_only,
-    observer_reward_full,
     observer_intimacy_base_padded,
     observer_intimacy_discomfort_only_padded,
     observer_intimacy_full_padded,
     observer_reward_base_padded_rel,
     observer_reward_discomfort_only_padded_rel,
     observer_reward_full_padded_rel,
-    observer_intimacy_effort_base,
-    observer_intimacy_effort_discomfort_only,
-    observer_intimacy_effort_full,
-    observer_effort_intimacy_base,
-    observer_effort_intimacy_discomfort_only,
-    observer_effort_intimacy_full,
 )
-from tables import LLM_TABLES, LLM_TABLES_EFFORT, load_lm_v  # noqa: E402
-
-# Alt-shown 4-action canonical
-ACCESS_VARIANTS = {
-    "full": (
-        observer_intimacy_full,
-        observer_reward_full,
-        ["alpha", "w_v", "w_d", "w_e", "gamma"],
-        True,
-    ),
-    "discomfort_only": (
-        observer_intimacy_discomfort_only,
-        observer_reward_discomfort_only,
-        ["alpha", "w_d", "gamma"],
-        False,
-    ),
-    "base": (
-        observer_intimacy_base,
-        observer_reward_base,
-        ["alpha", "w_v", "w_e"],
-        True,
-    ),
-}
 
 # Padded intimacy (no-alt motivation-keyed)
 PADDED_VARIANTS_INTIMACY = {
@@ -745,48 +494,6 @@ PADDED_VARIANTS_REWARD = {
     ),
     "base": (observer_reward_base_padded_rel, ["w_v", "w_e"], True),
 }
-
-# Effort intimacy observer (food_inv_intimacy_effort_alt)
-ACCESS_VARIANTS_EFFORT = {
-    "full": (observer_intimacy_effort_full, ["alpha", "w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (
-        observer_intimacy_effort_discomfort_only,
-        ["alpha", "w_d", "gamma"],
-    ),
-    "base": (observer_intimacy_effort_base, ["alpha", "w_v", "w_e"]),
-}
-
-# Effort intimacy observer for effort-inferred (food_inv_effort_intimacy_alt)
-ACCESS_VARIANTS_EFFORT_INFERRED = {
-    "full": (observer_effort_intimacy_full, ["alpha", "w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (
-        observer_effort_intimacy_discomfort_only,
-        ["alpha", "w_d", "gamma"],
-    ),
-    "base": (observer_effort_intimacy_base, ["alpha", "w_v", "w_e"]),
-}
-
-
-def alt_table_kwargs(uses_v):
-    """Table kwargs for alt-shown 4-action canonical observers."""
-    kw = {"access_table": LLM_TABLES["access"], "effort_table": LLM_TABLES["effort"]}
-    if uses_v:
-        kw["v_table"] = load_lm_v("food")
-    return kw
-
-
-def effort_table_kwargs():
-    """Table kwargs for the food_inv_intimacy_effort_alt observer."""
-    return {
-        "access_table": LLM_TABLES_EFFORT["access"],
-        "effort_table": LLM_TABLES_EFFORT["effort"],
-    }
-
-
-def effort_marginal_table_kwargs():
-    """Table kwargs for the food_inv_effort_intimacy_alt observer (effort-marginal access)."""
-    access_table = LLM_TABLES_EFFORT.get("access_marg", LLM_TABLES_EFFORT["access"])
-    return {"access_table": access_table, "effort_table": LLM_TABLES_EFFORT["effort"]}
 
 
 # ==============================================================================

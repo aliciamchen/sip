@@ -22,12 +22,12 @@ scenarios and V(a|s) = 1 is stipulated uniformly for both actions.
 10 runs per parameter-type per (scenario, effort_condition), aggregated to
 mean/std. Outputs (model/outputs/):
 - lm_scenario_params_effort.csv (64 rows: 16 scenarios × 2 efforts × 2 actions)
-  Effort-conditional access + effort. Used by food_forw_intimacy_effort and
-  food_inv_intimacy_effort_alt, where the actor / observer sees the effort paragraph.
+  Effort-conditional access + effort. Used by food_forw_intimacy_effort, where
+  the actor sees the effort paragraph.
 - lm_scenario_params_effort_marginal.csv (32 rows: 16 scenarios × 2 actions)
-  Effort-marginal access only (vignette without effort paragraph). Used by
-  food_inv_effort_intimacy_alt, where the observer does not see the effort
-  paragraph and so must reason about access from the base vignette alone.
+  Effort-marginal access only (vignette without effort paragraph). Kept for
+  parallelism with the conditional table; consumed by inverse observers that
+  did not see the effort paragraph (now retired).
 
 Usage:
     uv run python model/lm/score_effort_features.py
@@ -61,6 +61,7 @@ from client import (
     numeric_action_schema,
 )
 from _features_dispatcher import normalize_access, normalize_effort
+
 # Imported with aliases so they don't collide with parameters below.
 from prompts import system_prompt as build_system_prompt
 from prompts import user_prompt as build_user_prompt
@@ -147,13 +148,22 @@ def run_effort_conditional(client, scenarios_df, output_path):
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         if scenario in already_done:
-            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         for effort_condition in EFFORT_CONDITIONS:
-            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort={effort_condition})", flush=True)
+            print(
+                f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort={effort_condition})",
+                flush=True,
+            )
 
-            print("  Getting access ratings (concurrent, structured, effort-conditional)...", flush=True)
+            print(
+                "  Getting access ratings (concurrent, structured, effort-conditional)...",
+                flush=True,
+            )
             access_ratings, access_failures = get_ratings_concurrent(
                 client,
                 ACCESS_SYSTEM_PROMPT,
@@ -189,8 +199,12 @@ def run_effort_conditional(client, scenarios_df, output_path):
                         "access_raw_std": a_std,
                         "effort_raw": e_mean,
                         "effort_raw_std": e_std,
-                        "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
-                        "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
+                        "access": normalize_access(a_mean)
+                        if not np.isnan(a_mean)
+                        else np.nan,
+                        "effort": normalize_effort(e_mean)
+                        if not np.isnan(e_mean)
+                        else np.nan,
                         "n_runs_access": len(access_ratings),
                         "n_runs_effort": len(effort_ratings),
                         "n_failures_access": access_failures,
@@ -210,7 +224,9 @@ def run_effort_conditional(client, scenarios_df, output_path):
     print(f"\nSaved effort-conditional results to {output_path}")
 
     print("\n=== Conditional summary ===")
-    print(f"Total rows: {len(results_df)} (expected 64 = 16 scenarios × 2 effort × 2 actions)")
+    print(
+        f"Total rows: {len(results_df)} (expected 64 = 16 scenarios × 2 effort × 2 actions)"
+    )
     for col, target in [("access", "[0, 2]"), ("effort", "[0, 1]")]:
         print(
             f"\n{col.capitalize()} (normalized, target {target}):"
@@ -220,11 +236,15 @@ def run_effort_conditional(client, scenarios_df, output_path):
 
     print("\n=== Effort manipulation sanity (action_1 effort: low vs high) ===")
     act1 = results_df[results_df["action"] == 1]
-    wide = act1.pivot(index="scenario_label", columns="effort_condition", values="effort")
+    wide = act1.pivot(
+        index="scenario_label", columns="effort_condition", values="effort"
+    )
     wide["delta"] = wide["high"] - wide["low"]
     print(wide.round(3).to_string())
-    print(f"\nMean Δ effort(action_1): {wide['delta'].mean():+.3f} "
-          f"(positive = manipulation worked)")
+    print(
+        f"\nMean Δ effort(action_1): {wide['delta'].mean():+.3f} "
+        f"(positive = manipulation worked)"
+    )
 
 
 def run_marginal_access(client, scenarios_df, output_path):
@@ -245,10 +265,16 @@ def run_marginal_access(client, scenarios_df, output_path):
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         if scenario in already_done:
-            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
-        print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort-marginal access, concurrent)", flush=True)
+        print(
+            f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort-marginal access, concurrent)",
+            flush=True,
+        )
 
         access_ratings, access_failures = get_ratings_concurrent(
             client,
@@ -269,7 +295,9 @@ def run_marginal_access(client, scenarios_df, output_path):
                     "action": csv_action,
                     "access_raw": a_mean,
                     "access_raw_std": a_std,
-                    "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                    "access": normalize_access(a_mean)
+                    if not np.isnan(a_mean)
+                    else np.nan,
                     "n_runs_access": len(access_ratings),
                     "n_failures_access": access_failures,
                 }
