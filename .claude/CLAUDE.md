@@ -12,6 +12,14 @@ Guidance for Claude Code sessions working in this repository. Project overview, 
 
 The paper uses "desire" but internal variable names use "reward" (e.g. `p_high_reward`, `reward_condition`) or "motivation" — same concept, terminology changed mid-project for clarity. In `model/utility.py`, `V` is signed valence in [-1, +1]; in the effort experiment V is stipulated to 1 (reward held fixed at high) and `w_v` is non-identified, so it appears in fit-result tables for parallelism but stays near initialization.
 
+## Source of truth for project intent
+
+The manuscript (`SIP_journal/main.tex`) is generally the most up-to-date description of the project: what the studies are, what design they have, what the model is, how it's fit, and what's being claimed. Treat it as the authoritative plan when the two are out of sync. The code often lags — a script, prompt, or utility shape can be a step or two behind what the manuscript now describes — and bringing the code in line with the manuscript is usually the right move.
+
+The reverse can also happen: the user sometimes develops code first (a new prompt, a new fitting procedure, a new pipeline stage) before writing it up. In that case the code is ahead of the manuscript, and the manuscript needs to catch up rather than the code being rolled back. So discrepancies don't have a single default direction — they usually mean either the code needs an update or the manuscript needs one.
+
+When you spot a discrepancy, don't silently reconcile it. Surface it: name the divergence, say which side looks newer based on context (recent edits, conversation, git log), and ask which direction to update before changing either one.
+
 ## Submission status
 
 The current journal version is in `SIP_journal/` (gitignored; its own git repo synced to Overleaf).
