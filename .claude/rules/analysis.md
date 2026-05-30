@@ -21,11 +21,11 @@ The active roster is four inverse-planning studies on the 3-action set, all curr
 
 ### Legacy
 
-Legacy analysis qmds (not part of `make all`; renderable via `make analysis-<name>`, registered under the Makefile's `LEGACY_ANALYSIS_QMDS`):
+Legacy analysis qmds live under `analysis/legacy/` (not part of `make all`; renderable via `make analysis-<name>`, which the Makefile renders from `analysis/legacy/` for everything in `LEGACY_ANALYSIS_QMDS`; their data is in `data/legacy/` and outputs in `model/outputs/legacy/`):
 
-- Forward: `food-forw-intimacy-desire-analysis.qmd`, `food-forw-intimacy-effort-analysis.qmd`, `nonfood-forw-intimacy-desire-analysis.qmd`, `cv-loso-forward.qmd` (data in `data/legacy/`).
+- Forward: `food-forw-intimacy-desire-analysis.qmd`, `food-forw-intimacy-effort-analysis.qmd`, `nonfood-forw-intimacy-desire-analysis.qmd`, `cv-loso-forward.qmd`.
 - 4-action inverse: `food-inv-intimacy-desire-noalt-analysis.qmd`, `food-inv-desire-intimacy-noalt-analysis.qmd`.
-- `analysis/legacy/food-inv-desire-pilot-analysis.qmd` — the original Study 1a pilot (0–100 DV; data in `data/legacy/food_inv_desire_pilot/`). Other early pilots are also under `analysis/legacy/`.
+- `food-inv-desire-pilot-analysis.qmd` — the original Study 1a pilot (0–100 DV; data in `data/legacy/food_inv_desire_pilot/`). Earlier pilots (`2025-*_pilots.Rmd`) are also here.
 
 ## Commands
 

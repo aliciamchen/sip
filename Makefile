@@ -27,13 +27,15 @@ ANALYSIS_QMDS := \
   food-inv-joint-de-analysis \
   food-inv-intimacy-analysis \
   food-inv-joint-ie-analysis
+# Legacy qmds live under analysis/legacy/ (rendered from there — see recipe below).
 LEGACY_ANALYSIS_QMDS := \
   food-forw-intimacy-desire-analysis \
   food-forw-intimacy-effort-analysis \
   nonfood-forw-intimacy-desire-analysis \
   cv-loso-forward \
   food-inv-intimacy-desire-noalt-analysis \
-  food-inv-desire-intimacy-noalt-analysis
+  food-inv-desire-intimacy-noalt-analysis \
+  food-inv-desire-pilot-analysis
 ANALYSIS_QMDS_REGISTERED := $(ANALYSIS_QMDS) $(LEGACY_ANALYSIS_QMDS)
 
 .PHONY: all help test clean \
@@ -181,8 +183,12 @@ $(addprefix cv-,$(LEGACY_FORWARD) $(EXPERIMENTS_INVERSE) $(LEGACY_INVERSE)): cv-
 
 analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
 
-$(addprefix analysis-,$(ANALYSIS_QMDS) $(LEGACY_ANALYSIS_QMDS)): analysis-%:
+# Active qmds render from analysis/; legacy qmds from analysis/legacy/.
+$(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 	quarto render analysis/$*.qmd
+
+$(addprefix analysis-,$(LEGACY_ANALYSIS_QMDS)): analysis-%:
+	quarto render analysis/legacy/$*.qmd
 
 # =============================================================================
 # Utilities
