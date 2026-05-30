@@ -22,7 +22,7 @@
     "desire_low": "Lio feels neutral about dark chocolate raspberry cake, while Mitchell really likes it.",
     "desire_high": "Lio and Mitchell both really like dark chocolate raspberry cake.",
     "low_risk_share_effort_low": "Extra forks and empty plates have been laid out on the cake table for anyone who wants to share a slice.",
-    "low_risk_share_effort_high": "All the extra forks and plates have already been cleared back to the kitchen.",
+    "low_risk_share_effort_high": "All the extra forks and plates have already been cleared back to the kitchen, and getting them would require walking to the kitchen and looking through the cabinets.",
     "no_share": "Lio does not eat any cake. Mitchell eats the portion of one slice that he can finish, and then throws the rest away.",
     "low_risk_share": "They decide to share one slice. They get an extra fork and plate, cut the slice in half, put each half on its own plate, and each eat their own half.",
     "high_risk_share": "They decide to share one slice, and share the single fork provided to eat the slice together from the same plate."
@@ -75,13 +75,13 @@
     "name_1": "Haoyu",
     "vignette": "Camille and Haoyu go apple picking together in the fall. At the orchard, there are many different apple varieties, including Red Delicious, Yellow Delicious, Honeycrisp, and Jonagold. At the entrance, the employees tell them that visitors are welcome to taste the apples. When they enter the orchard, the apple variety in the first aisle is the Jonagold variety. Camille picks an apple from a tree, to taste.",
     "desire_phrase": "taste the apple",
-    "desire_low": "Haoyu has tasted the Jonagold variety at this orchard before, so she is indifferent about tasting it.",
-    "desire_high": "Haoyu has not tasted the Jonagold variety at this orchard before, so she would like to taste it.",
+    "desire_low": "Both Camille and Haoyu have tasted the Jonagold variety at this orchard before, so they are indifferent about tasting it again.",
+    "desire_high": "Neither Camille nor Haoyu has tasted the Jonagold variety at this orchard before, so they would both like to taste it.",
     "low_risk_share_effort_low": "The Jonagold aisle is dense with ripe apples at eye level — Haoyu could easily reach up and pick her own separate apple from the same tree.",
     "low_risk_share_effort_high": "This particular tree has only the one apple Camille picked within reach; all the other Jonagolds are on trees at the far end of the orchard, a long walk away.",
     "no_share": "Camille takes bites out of the apple. Haoyu does not taste the apple.",
     "low_risk_share": "Haoyu picks a separate Jonagold apple for herself, and each of them eats their own apple.",
-    "high_risk_share": "Camille eats some of the apple and then passes it to Haoyu, who eats the remaining portion."
+    "high_risk_share": "They share the one apple, passing it back and forth and each taking bites until it is finished."
   },
   {
     "scenario_label": "dip",
@@ -95,21 +95,21 @@
     "low_risk_share_effort_high": "The appetizer plates are still packed away in a box of party supplies that hasn't been unboxed yet, buried in the garage under other party boxes — digging them out would take a while.",
     "no_share": "Neither person tries the chips or dips before the party begins.",
     "low_risk_share": "They get two small appetizer plates, put some of each dip on each plate, and try the dips with chips from their own plates.",
-    "high_risk_share": "Declan dips the chips into the dips, takes a bite from each to test the dip, then passes the rest of the chip with dip to Eric to finish."
+    "high_risk_share": "They dip the same chips, each taking bites and double-dipping them back into the dips."
   },
   {
     "scenario_label": "drinks",
     "name_0": "Noah",
     "name_1": "Ria",
-    "vignette": "Noah and Ria are at a party. Noah is holding a drink that he tells Ria is a special cocktail that he invented, that he made himself at the bar. (It's tequila mixed with ice cream.) He tells Ria how good it is, suggesting she try it.",
+    "vignette": "Noah and Ria are at a party. The bar is serving a one-off special cocktail the bartender invented — tequila mixed with ice cream. There is only enough left for a single cup.",
     "desire_phrase": "drink the cocktail",
-    "desire_low": "The drink does not sound good to Ria. She does not particularly want to try the drink.",
-    "desire_high": "The drink sounds good to Ria, and she wants to try it.",
+    "desire_low": "Neither of them is especially curious about how the cocktail tastes.",
+    "desire_high": "They are both very curious about how the cocktail tastes.",
     "low_risk_share_effort_low": "There is a stack of clean empty cups right at the bar within arm's reach.",
     "low_risk_share_effort_high": "The bartender has stepped away to the back, and the clean cups are on a shelf behind the bar that's inaccessible without flagging someone down — which would take a long time given how packed the party is.",
-    "no_share": "Ria does not drink any of Noah's drink. She goes to the bar and asks for her own separate drink.",
-    "low_risk_share": "Ria gets a clean cup and Noah pours some of his drink into that cup. They each sip from their own cups.",
-    "high_risk_share": "Ria takes Noah's cup and sips directly from his cup."
+    "no_share": "Neither of them drinks the special cocktail; they each get a regular drink from the bar instead.",
+    "low_risk_share": "They get a second clean cup, pour half of the cocktail into it, and each sip from their own cup.",
+    "high_risk_share": "They share the single cup, passing it back and forth and sipping from the same rim."
   },
   {
     "scenario_label": "driving",
@@ -159,8 +159,8 @@
     "name_1": "Alvin",
     "vignette": "Tony and Alvin go on a day hike in New Hampshire. Alvin packs snacks and energy bars, while Tony brings peanut butter and jelly sandwiches. Halfway down the mountain, they take a snack break. Tony pulls out a sandwich from his pack.",
     "desire_phrase": "eat the sandwich",
-    "desire_low": "At this time, Alvin has more than enough snacks to fuel him for the rest of the hike.",
-    "desire_high": "At this time, Alvin has finished most of the food he brought, and is tired and hungry.",
+    "desire_low": "Neither of them is very hungry yet — they both still have plenty of food for the rest of the hike.",
+    "desire_high": "They are both tired and hungry, and running low on the food they packed.",
     "low_risk_share_effort_low": "Tony's backpacking knife is in the top lid of his pack and is easy to grab.",
     "low_risk_share_effort_high": "Tony's backpacking knife is buried at the very bottom of his pack, under all of his gear.",
     "no_share": "Tony and Alvin do not share the sandwich; Tony eats the sandwich himself.",
