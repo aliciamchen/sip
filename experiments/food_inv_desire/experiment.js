@@ -1,8 +1,9 @@
 import { runExperiment } from "../_lib/bootstrap.js";
-import { CONFIG, makeTimeline } from "./trials.js";
+import { CONFIG, makeStimulusTrials, INSTRUCTIONS_PAGES } from "./trials.js";
 
 runExperiment({
   config: CONFIG,
-  makeTimeline,
+  makeStimulusTrials,
+  instructionsPages: INSTRUCTIONS_PAGES,
   consentTemplate: "food-inverse",
 });

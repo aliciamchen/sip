@@ -57,7 +57,16 @@ Each experiment dir has `python/generate_counterbalancing.py` which produces `js
 
 ## Shared experiment code
 
-The active experiments share a single copy of the jsPsych boilerplate — consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, and the merged stylesheet — in [`_lib/`](_lib/). Each per-experiment `experiment.js` is a thin call to `runExperiment()` from `_lib/bootstrap.js`, and each `trials.js` holds only the experiment-specific instruction text and prior/posterior trial rendering. The settings repeated across every experiment — the DataPipe ID map, the attention-check index and tolerance, the inter-trial durations, and the shared Prolific completion URL — are collected in [`_lib/config.js`](_lib/config.js); each `trials.js` builds its `CONFIG` with a single `makeConfig("<slug>")` call (passing overrides as a second argument if it needs to depart from a shared default). The four active experiments share a single consent form (`food-inverse`), which is in `_lib/consent/`.
+Most of each experiment lives in shared modules under [`_lib/`](_lib/); each `trials.js` is reduced to its study-specific stimulus trials. The shared modules are:
+
+- `bootstrap.js` — `runExperiment({ config, makeStimulusTrials, instructionsPages, consentTemplate })`: fetches assets, initializes jsPsych, assigns the counterbalancing condition, and **assembles the whole timeline** (consent → instructions → stimulus trials → exit survey → save → thank-you). The per-study `makeStimulusTrials` is slotted in; the rest is identical for every experiment, so timeline-wide changes happen here.
+- `config.js` — the `DATAPIPE_IDS` map plus the settings shared by every experiment (attention-check index/tolerance, inter-trial durations, Prolific completion URL). Each `trials.js` builds its `CONFIG` with `makeConfig("<slug>")` (pass overrides as a second argument to depart from a default).
+- `instructions.js` — `STUDY_INSTRUCTIONS`, all four studies' instruction pages in one place (shared notes + per-study pages), easy to compare.
+- `scenario.js` — the per-trial building blocks: condition-paragraph getters (`getDesireText`/`getEffortText`), the intimacy descriptor, slider labels, the "press any key" page, the prior/posterior pause, and `scenarioStimulus(...)` which renders the vignette block + observed action + lead-in.
+- `two-slider.js` — `makeTwoSliderForm(...)` renders two sliders on one page (Studies 1b/2b) via `survey-html-form`.
+- `timeline.js`, `attention-check.js`, `memory-checks.js`, `style.css`, and the consent templates in `consent/` round out the boilerplate.
+
+So a `trials.js` only defines that study's `makeStimulusTrials` (composing the `_lib` pieces) and exports `CONFIG`, `INSTRUCTIONS_PAGES`, and `makeStimulusTrials`. The per-experiment `index.html` and `experiment.js` are byte-identical across studies and are generated from a single source by `sync_entry_files.py` (run it after changing the entry template, e.g. a jsPsych version bump).
 
 This shared layout means the experiments are not standalone folders anymore: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
 

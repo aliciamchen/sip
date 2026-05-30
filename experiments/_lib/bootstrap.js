@@ -1,19 +1,34 @@
-// Shared experiment entry point. Replaces the per-experiment experiment.js
-// boilerplate (asset fetch, jsPsych init, URL-param extraction, condition
-// assignment, sequence-to-stimuli mapping, shuffle, run).
+// Shared experiment entry point: asset fetch, jsPsych init, URL-param
+// extraction, condition assignment, sequence-to-stimuli mapping, shuffle, and
+// timeline assembly. The full timeline (consent → instructions → stimulus
+// trials → exit survey → save → thank-you) is built here, so each experiment's
+// trials.js only supplies the study-specific stimulus trials.
 //
-// Each experiment's experiment.js calls runExperiment({ config, makeTimeline,
-// consentTemplate }), where:
-//   - config: the CONFIG object exported from trials.js (built there with
-//     makeConfig("<slug>") from _lib/config.js), holding PIPE_EXPERIMENT_ID,
-//     PROLIFIC_COMPLETION_URL, ATTENTION_CHECK_INDEX, ATTENTION_TOLERANCE,
-//     INTER_TRIAL_DURATIONS
-//   - makeTimeline(jsPsych, stimuli, consentHtml, exitSurveyHtml, subjectId):
-//     returns the full ordered timeline array
+// Each experiment's experiment.js calls runExperiment({ config,
+// makeStimulusTrials, instructionsPages, consentTemplate }), where:
+//   - config: the CONFIG object from trials.js (built with makeConfig("<slug>")),
+//     holding PIPE_EXPERIMENT_ID, PROLIFIC_COMPLETION_URL, ATTENTION_CHECK_INDEX,
+//     ATTENTION_TOLERANCE, INTER_TRIAL_DURATIONS
+//   - makeStimulusTrials(jsPsych, stimuli): returns the study's per-scenario
+//     trial array (slid in between the instructions and the exit survey)
+//   - instructionsPages: the study's instructions pages (from STUDY_INSTRUCTIONS)
 //   - consentTemplate: filename (without extension) under _lib/consent/;
 //     the active experiments all use "food-inverse"
 
-export function runExperiment({ config, makeTimeline, consentTemplate }) {
+import {
+  makeConsentScreen,
+  makeInstructionsScreen,
+  makeExitSurvey,
+  makeSaveData,
+  makeThankYou,
+} from "./timeline.js";
+
+export function runExperiment({
+  config,
+  makeStimulusTrials,
+  instructionsPages,
+  consentTemplate,
+}) {
   Promise.all([
     fetch("json/stimuli.json").then((r) => r.json()),
     fetch("json/full_counterbalancing.json").then((r) => r.json()),
@@ -23,7 +38,8 @@ export function runExperiment({ config, makeTimeline, consentTemplate }) {
     .then(([stimuli, counterbalancing, consentHtml, exitSurveyHtml]) =>
       createExperiment({
         config,
-        makeTimeline,
+        makeStimulusTrials,
+        instructionsPages,
         stimuli,
         counterbalancing,
         consentHtml,
@@ -38,7 +54,8 @@ export function runExperiment({ config, makeTimeline, consentTemplate }) {
 
 async function createExperiment({
   config,
-  makeTimeline,
+  makeStimulusTrials,
+  instructionsPages,
   stimuli,
   counterbalancing,
   consentHtml,
@@ -79,13 +96,14 @@ async function createExperiment({
 
   const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithConditions);
 
-  const timeline = makeTimeline(
-    jsPsych,
-    shuffledStimuli,
-    consentHtml,
-    exitSurveyHtml,
-    subject_id
-  );
+  const timeline = [
+    makeConsentScreen(consentHtml),
+    makeInstructionsScreen(instructionsPages),
+    ...makeStimulusTrials(jsPsych, shuffledStimuli),
+    makeExitSurvey(jsPsych, exitSurveyHtml),
+    makeSaveData(jsPsych, config.PIPE_EXPERIMENT_ID, subject_id),
+    makeThankYou(config.PROLIFIC_COMPLETION_URL),
+  ];
 
   jsPsych.run(timeline);
 }
