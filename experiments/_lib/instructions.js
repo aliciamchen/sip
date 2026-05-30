@@ -72,11 +72,7 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 2a — infer intimacy (one slider).
   food_inv_intimacy: [
-    instructionsPage([
-      "<p>In this survey, you will read vignettes about two people deciding how to eat different kinds of food in different situations.</p>",
-      RELATIONSHIPS_NOTE,
-      INFERENCE_NOTE,
-    ]),
+    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE, INFERENCE_NOTE]),
     instructionsPage([
       "<p>Before observing what the two people decide to do, we will ask you to evaluate what kind of social relationship you think they are in.</p>",
       "<p>Then, we will show you what they decide to do, and ask you to re-evaluate what kind of social relationship you think they are in.</p>",
