@@ -28,7 +28,7 @@ actions_effort = jnp.array([0, 1])
 # Three-action canonical set used by the new inverse-planning experiments
 # (Studies 2, 3a, 3b, 4a, 4b in the manuscript). Action 0 = no sharing,
 # action 1 = low-risk sharing, action 2 = high-risk sharing. Stimulus set is
-# `experiments/scenarios_3act.csv`; LM tables live in `outputs/lm/lm_scenario_params_3act.csv`
+# `experiments/scenarios.csv`; LM tables live in `outputs/lm/lm_scenario_params_3act.csv`
 # (access + effort, shaped (16, 2, 3) over scenario × effort_condition × action,
 # matching the effort experiment's layout) and `outputs/lm/lm_scenario_v_3act.csv`
 # (V, shaped (16, 3, 2) over scenario × action × motivation).

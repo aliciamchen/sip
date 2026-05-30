@@ -3,7 +3,7 @@
 Score signed-valence V for the 3-action canonical set (Studies 2, 3a, 3b,
 4a, 4b).
 
-For each (scenario, action, motivation) in experiments/scenarios_3act.csv,
+For each (scenario, action, motivation) in experiments/scenarios.csv,
 the LM rates how strongly each action serves the actor's motivational state
 on a signed -3..+3 scale, normalized to [-1, +1]. V is independent of
 effort_condition (V is about reward fulfillment, not effort), so this script
@@ -48,7 +48,7 @@ from prompts import user_prompt as build_user_prompt
 N_ACTIONS = 3
 
 _DOMAIN_FILES = {
-    "food": ("scenarios_3act.csv", "lm_scenario_v_3act.csv"),
+    "food": ("scenarios.csv", "lm_scenario_v_3act.csv"),
     "nonfood": ("scenarios_nonfood_3act.csv", "lm_scenario_v_3act_nonfood.csv"),
 }
 

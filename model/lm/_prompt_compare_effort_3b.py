@@ -85,7 +85,7 @@ def _parse(response_text):
 def main():
     api_key = load_api_key()
 
-    scenarios_path = get_project_root() / "experiments" / "scenarios_3act.csv"
+    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
     scenarios_df = pd.read_csv(scenarios_path)
     test_rows = scenarios_df[
         scenarios_df["scenario_label"].isin(TEST_SCENARIOS)

@@ -43,7 +43,7 @@ The stable identifier for each experiment is its directory slug in `data/` and `
 
 ### Active studies — inverse planning on the 3-action set
 
-The active experiments use a 3-action stimulus set (no sharing / low-risk sharing / high-risk sharing) defined in `experiments/scenarios_3act.csv`, which merges effort paragraphs into the canonical scenarios so that all three latent variables — desire, effort, intimacy — can be manipulated alongside the observed action. On each trial the participant sees a vignette plus whichever condition paragraphs are revealed by the design, then a single observed action, then gives prior/posterior ratings on one or two sliders. The dependent-variable scales are: desire on a 1–7 Likert ("how much do they want the food?"), effort as a continuous 0–100 rating between two physical states, and intimacy on a 0–100 numeric scale (maximally formal → maximally intimate).
+The active experiments use a 3-action stimulus set (no sharing / low-risk sharing / high-risk sharing) defined in `experiments/scenarios.csv`, which holds the effort paragraphs alongside the desire and intimacy framing so that all three latent variables — desire, effort, intimacy — can be manipulated alongside the observed action. On each trial the participant sees a vignette plus whichever condition paragraphs are revealed by the design, then a single observed action, then gives prior/posterior ratings on one or two sliders. The dependent-variable scales are: desire on a 1–7 Likert ("how much do they want the food?"), effort as a continuous 0–100 rating between two physical states, and intimacy on a 0–100 numeric scale (maximally formal → maximally intimate).
 
 - **Study 1a — Desire inference** (`food_inv_desire/`) — known: effort + intimacy. Inferred: desire. Design: 2 × 4 × 3. The choice set the actor reasons over is not the fixed 3-action canonical set: for each (scenario, observed_action, effort, intimacy) cell the LM generates plausible counterfactual alternatives, and the observer's actor softmaxes over `{observed_action} ∪ generated_alts`, padded to 12 slots with the observed action in slot 0. See [LM-generated alternatives](#lm-generated-alternatives-and-merged-scoring) below.
 - **Study 1b — Joint inference (desire + effort)** (`food_inv_joint_de/`) — known: intimacy. Inferred jointly: desire and effort. Design: 4 × 3. Two sliders per trial.
@@ -66,10 +66,8 @@ Archived under `data/legacy/` and described in [data/legacy/README.md](data/lega
 
 Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it. Edit the `.py` file and regenerate.
 
-- [`experiments/scenarios_3act.py`](experiments/scenarios_3act.py) → `scenarios_3act.csv` (3-action, active Studies 1a/1b/2a/2b).
-- [`experiments/scenarios.py`](experiments/scenarios.py) → `scenarios.csv` (4-action canonical, legacy forward + legacy inverse).
-- [`experiments/scenarios_effort.py`](experiments/scenarios_effort.py) → `scenarios_effort.csv` (2-action effort, legacy forward).
-- [`experiments/scenarios_nonfood.py`](experiments/scenarios_nonfood.py) → `scenarios_nonfood.csv` (4-action non-food, legacy + planned Study 3).
+- [`experiments/scenarios.py`](experiments/scenarios.py) → `scenarios.csv` (3-action, the active Studies 1a/1b/2a/2b).
+- The earlier stimulus sets are archived under `experiments/legacy/`: `scenarios.py` → `scenarios.csv` (4-action canonical), `scenarios_effort.py` → `scenarios_effort.csv` (2-action effort), and `scenarios_nonfood.py` → `scenarios_nonfood.csv` (4-action non-food; a basis for the planned Study 3).
 
 See the [experiments README](experiments/README.md) for the column schema.
 

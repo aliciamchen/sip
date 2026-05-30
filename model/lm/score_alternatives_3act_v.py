@@ -55,7 +55,7 @@ from prompts import system_prompt as build_system_prompt
 
 _STUDY_CONFIG = {
     "food_inv_desire": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives_food_inv_desire.csv",
         "alternatives_v_output": "lm_alternatives_v_food_inv_desire.csv",
     },

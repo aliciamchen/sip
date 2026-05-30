@@ -5,7 +5,7 @@ Merged canonical + alternatives scoring for the 3-action inverse studies
 food_inv_joint_ie). Pick the study with --study.
 
 For each scenario, builds a unified action list combining (i) the 3 canonical
-actions from `scenarios_3act.csv` and (ii) the unique LM-generated alternatives
+actions from `scenarios.csv` and (ii) the unique LM-generated alternatives
 from the study's `lm_alternatives_<slug>.csv` (deduped case-insensitively).
 The LM then rates this single unified list on access, effort, and V in
 separate prompts — so slot 0 (canonical observed action) and slots 1..k (alts)
@@ -106,7 +106,7 @@ MOTIVATIONS = ["low", "high"]
 # is always scored per condition; it is a feature axis, not a generation axis).
 _STUDY_CONFIG = {
     "food_inv_desire": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives_food_inv_desire.csv",
         "canonical_params_output": "lm_scenario_params_3act.csv",
         "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
@@ -117,7 +117,7 @@ _STUDY_CONFIG = {
         "effort_inferred": False,
     },
     "food_inv_joint_de": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives_food_inv_joint_de.csv",
         "canonical_params_output": "lm_scenario_params_3act.csv",
         "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
@@ -128,7 +128,7 @@ _STUDY_CONFIG = {
         "effort_inferred": True,
     },
     "food_inv_intimacy": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives_food_inv_intimacy.csv",
         "canonical_params_output": "lm_scenario_params_3act.csv",
         "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
@@ -139,7 +139,7 @@ _STUDY_CONFIG = {
         "effort_inferred": False,
     },
     "food_inv_joint_ie": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives_food_inv_joint_ie.csv",
         "canonical_params_output": "lm_scenario_params_3act.csv",
         "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
@@ -160,7 +160,7 @@ def _build_merged_actions(scenario_row, alt_rows_for_scenario):
     """Build the unified action list for a scenario.
 
     Positions 0..2 are the 3 canonical actions (action_0/1/2 from
-    scenarios_3act.csv). Positions 3..N are the unique LM-generated alternative
+    scenarios.csv). Positions 3..N are the unique LM-generated alternative
     texts, deduped case-insensitively *and* excluding any alt whose normalized
     text matches one of the canonical actions.
 

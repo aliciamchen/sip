@@ -74,25 +74,25 @@ ALT_GEN_TEMPERATURE = 0.2
 #   2b joint_ie  — visible: reward                  (infers intimacy + effort)
 _STUDY_CONFIG = {
     "food_inv_desire": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_desire.csv",
         "show": ("effort", "intimacy"),
         "cell_cols": ("effort_condition", "intimacy_condition"),
     },
     "food_inv_joint_de": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_joint_de.csv",
         "show": ("intimacy",),
         "cell_cols": ("intimacy_condition",),
     },
     "food_inv_intimacy": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_intimacy.csv",
         "show": ("reward", "effort"),
         "cell_cols": ("reward_condition", "effort_condition"),
     },
     "food_inv_joint_ie": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_joint_ie.csv",
         "show": ("reward",),
         "cell_cols": ("reward_condition",),

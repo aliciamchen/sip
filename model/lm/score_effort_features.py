@@ -78,7 +78,7 @@ EFFORT_SYSTEM_PROMPT = build_system_prompt("effort", n_actions=2)
 
 
 def load_scenarios():
-    scenarios_path = get_project_root() / "experiments" / "scenarios_effort.csv"
+    scenarios_path = get_project_root() / "experiments" / "legacy" / "scenarios_effort.csv"
     return pd.read_csv(scenarios_path)
 
 

@@ -54,7 +54,7 @@ from client import (
 # the --domain flag selects which scenario CSV (and output filenames) to use.
 _DOMAIN_PATHS = {
     "food": {
-        "scenarios":                          "scenarios.csv",
+        "scenarios":                          "legacy/scenarios.csv",
         "params_output":                      "lm_scenario_params.csv",
         "v_output":                           "lm_scenario_v.csv",
         "alternatives_input":                 "lm_alternatives_food_inv_intimacy_desire_noalt.csv",
@@ -65,7 +65,7 @@ _DOMAIN_PATHS = {
         "alternatives_rel_v_output":          "lm_alternatives_v_food_inv_desire_intimacy_noalt.csv",
     },
     "nonfood": {
-        "scenarios":                          "scenarios_nonfood.csv",
+        "scenarios":                          "legacy/scenarios_nonfood.csv",
         "params_output":                      "lm_scenario_params_nonfood.csv",
         "v_output":                           "lm_scenario_v_nonfood.csv",
         "alternatives_input":                 "lm_alternatives_nonfood.csv",

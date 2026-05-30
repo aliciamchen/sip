@@ -27,7 +27,7 @@ Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort we
 
 ## Active roster (four inverse studies, padded LM-alternatives pipeline)
 
-All four active studies are on the **3-action** stimulus set (`scenarios_3act.csv`) and use the LM-generated-alternatives padded-action pipeline: the observer's actor softmaxes over `{observed action} ∪ LM-generated alternatives`, padded to `MAX_ACTIONS_3ACT = 12` with the participant-observed action in slot 0. Each observer comes in `_full` / `_discomfort_only` / `_base`. The fit and CV slice **slot 0** (the observed action) of the observer table.
+All four active studies are on the **3-action** stimulus set (`scenarios.csv`) and use the LM-generated-alternatives padded-action pipeline: the observer's actor softmaxes over `{observed action} ∪ LM-generated alternatives`, padded to `MAX_ACTIONS_3ACT = 12` with the participant-observed action in slot 0. Each observer comes in `_full` / `_discomfort_only` / `_base`. The fit and CV slice **slot 0** (the observed action) of the observer table.
 
 | Slug | Study | Observer family | Actor | Infers | Observer-table dims |
 |---|---|---|---|---|---|
@@ -57,7 +57,7 @@ Joint studies sum the two appropriate per-slider losses. Each study fits its own
 
 ## Stimulus sets and LM table families
 
-The active studies use the **3-action** set (`scenarios_3act.csv`). Fixed-action tables: `LLM_TABLES_3ACT` (access/effort, (16, 2, 3)) and `load_lm_v_3act()` (V, (16, 3, 2)). Each study also has a padded LM-alternatives table family loaded by `load_padded_lm_tables_3act_{desire,joint_de,intimacy,joint_ie}` (built from per-study `lm_alternatives_{,features_,v_}<slug>.csv` + the shared canonical CSVs). The 4-action canonical (`scenarios.csv`, `LLM_TABLES` / `load_lm_v`) and 2-action effort (`scenarios_effort.csv`, `LLM_TABLES_EFFORT`) sets are used only by the **legacy** forward experiments; V is stipulated to 1 for the effort set in `utility.py:get_stipulated_reward_effort`.
+The active studies use the **3-action** set (`scenarios.csv`). Fixed-action tables: `LLM_TABLES_3ACT` (access/effort, (16, 2, 3)) and `load_lm_v_3act()` (V, (16, 3, 2)). Each study also has a padded LM-alternatives table family loaded by `load_padded_lm_tables_3act_{desire,joint_de,intimacy,joint_ie}` (built from per-study `lm_alternatives_{,features_,v_}<slug>.csv` + the shared canonical CSVs). The 4-action canonical (`legacy/scenarios.csv`, `LLM_TABLES` / `load_lm_v`) and 2-action effort (`legacy/scenarios_effort.csv`, `LLM_TABLES_EFFORT`) sets are used only by the **legacy** forward experiments; V is stipulated to 1 for the effort set in `utility.py:get_stipulated_reward_effort`.
 
 All LM table loaders return `None` when their CSV is missing, so imports stay clean before elicitation has been run.
 

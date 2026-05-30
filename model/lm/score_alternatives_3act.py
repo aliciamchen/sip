@@ -54,7 +54,7 @@ from prompts import system_prompt as build_system_prompt
 
 _STUDY_CONFIG = {
     "food_inv_desire": {
-        "scenarios": "scenarios_3act.csv",
+        "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives_food_inv_desire.csv",
         "alternatives_output": "lm_alternatives_features_food_inv_desire.csv",
         # The 3-act access/effort tables depend on effort_condition, so each

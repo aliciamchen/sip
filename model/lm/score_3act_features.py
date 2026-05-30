@@ -3,7 +3,7 @@
 Score access + effort features for the 3-action canonical set (Studies 2, 3a,
 3b, 4a, 4b).
 
-For each of the 16 scenarios in experiments/scenarios_3act.csv, estimates per
+For each of the 16 scenarios in experiments/scenarios.csv, estimates per
 (effort_condition, action):
 
 - access(a): physical / informational / spatial exposure  (0-6 -> [0, 2])
@@ -62,7 +62,7 @@ EFFORT_SYSTEM_PROMPT = build_system_prompt("effort", n_actions=N_ACTIONS)
 
 
 def load_scenarios():
-    scenarios_path = get_project_root() / "experiments" / "scenarios_3act.csv"
+    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
     return pd.read_csv(scenarios_path)
 
 

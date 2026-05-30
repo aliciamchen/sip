@@ -22,7 +22,7 @@ The trial flow follows the "noalt" pattern from `food_inv_intimacy_desire_noalt`
 
 ## Stimulus source
 
-Loads stimuli from `experiments/scenarios_3act.csv` via the routing in `experiments/csv_to_json.py`. Regenerate `json/stimuli.json` with:
+Loads stimuli from `experiments/scenarios.csv` via the routing in `experiments/csv_to_json.py`. Regenerate `json/stimuli.json` with:
 
 ```bash
 uv run python experiments/csv_to_json.py
@@ -34,7 +34,7 @@ uv run python experiments/csv_to_json.py
 - `experiment.js` — jsPsych 8.x boilerplate; spreads the sequence item's factor fields onto each stimulus
 - `trials.js` — trial logic (instructions, attention check, scenario presentation, sliders, memory checks, exit survey, save)
 - `python/generate_counterbalancing.py` — produces `json/full_counterbalancing.json`
-- `json/stimuli.json` — generated from `scenarios_3act.csv`; do not edit by hand
+- `json/stimuli.json` — generated from `scenarios.csv`; do not edit by hand
 - `json/full_counterbalancing.json` — generated; one sequence per condition_assignment
 
 ## Before running pilots

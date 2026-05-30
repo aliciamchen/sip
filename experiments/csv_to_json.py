@@ -3,7 +3,7 @@
 
 Each stimulus CSV maps to a set of experiment directories that consume it; the
 full routing is in the SOURCES list below. The active inverse experiments
-(Studies 1a, 1b, 2a, 2b) all read scenarios_3act.csv.
+(Studies 1a, 1b, 2a, 2b) all read scenarios.csv.
 """
 
 import csv
@@ -12,27 +12,14 @@ from pathlib import Path
 
 # Each scenario CSV maps to the experiment directories under experiments/ that
 # consume it. Active inverse experiments (Studies 1a, 1b, 2a, 2b) read
-# scenarios_3act.csv and live at experiments/<slug>/. Legacy experiments live at
+# scenarios.csv and live at experiments/<slug>/. Legacy experiments live at
 # experiments/legacy/<slug>/ and are referenced with a "legacy/" prefix; they're
 # kept regenerate-able but are not part of `make all`. A slug is silently skipped
 # if its experiment dir has no json/ subdir.
 SOURCES = [
+    # Active: the 3-action stimulus set (experiments/scenarios.csv).
     (
         "scenarios.csv",
-        [
-            "legacy/food_forw_intimacy_desire",
-            "legacy/food_inv_intimacy_desire_noalt",
-            "legacy/food_inv_desire_intimacy_noalt",
-        ],
-    ),
-    (
-        "scenarios_effort.csv",
-        [
-            "legacy/food_forw_intimacy_effort",
-        ],
-    ),
-    (
-        "scenarios_3act.csv",
         [
             "food_inv_intimacy",
             "food_inv_desire",
@@ -40,8 +27,24 @@ SOURCES = [
             "food_inv_joint_ie",
         ],
     ),
+    # Legacy stimulus sets live under experiments/legacy/ (4-action canonical,
+    # 2-action effort, non-food); kept regenerate-able for the legacy experiments.
     (
-        "scenarios_nonfood.csv",
+        "legacy/scenarios.csv",
+        [
+            "legacy/food_forw_intimacy_desire",
+            "legacy/food_inv_intimacy_desire_noalt",
+            "legacy/food_inv_desire_intimacy_noalt",
+        ],
+    ),
+    (
+        "legacy/scenarios_effort.csv",
+        [
+            "legacy/food_forw_intimacy_effort",
+        ],
+    ),
+    (
+        "legacy/scenarios_nonfood.csv",
         [
             "legacy/nonfood_forw_intimacy_desire",
         ],

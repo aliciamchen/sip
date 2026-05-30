@@ -24,7 +24,7 @@ Internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
 
 ### Study 1a — Desire manipulation (`food_forw_intimacy_desire/`)
 
-4-action canonical set (`scenarios.csv`). Design: 16 scenarios × 4 actions × intimacy (4 levels) × desire (2 levels).
+4-action canonical set (`legacy/scenarios.csv`). Design: 16 scenarios × 4 actions × intimacy (4 levels) × desire (2 levels).
 
 **main_trials.csv** (wide format — one row per trial):
 
@@ -52,7 +52,7 @@ Internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
 
 ### Study 1b — Effort manipulation (`food_forw_intimacy_effort/`)
 
-2-action effort set (`scenarios_effort.csv`). Design: 16 scenarios × 2 actions × intimacy (4 levels) × effort (2 levels), with reward held fixed at high.
+2-action effort set (`legacy/scenarios_effort.csv`). Design: 16 scenarios × 2 actions × intimacy (4 levels) × effort (2 levels), with reward held fixed at high.
 
 **main_trials.csv** (wide format):
 
@@ -78,11 +78,11 @@ Internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
 
 ### Non-food forward (`nonfood_forw_intimacy_desire/`)
 
-Same schema as Study 1a but on `scenarios_nonfood.csv`. Covers substance/space/privacy stimulus categories.
+Same schema but on `legacy/scenarios_nonfood.csv`. Covers substance/space/privacy stimulus categories.
 
 ## Inverse planning — 3-action set
 
-All five inverse experiments use `scenarios_3act.csv` and follow the noalt-style presentation: the participant sees one observed action per trial. Slider counts and known vs. inferred variables differ per study (see [the experiments README](../experiments/README.md) for design specs).
+All four active inverse experiments use `scenarios.csv` and follow the noalt-style presentation: the participant sees one observed action per trial. Slider counts and known vs. inferred variables differ per study (see [the experiments README](../experiments/README.md) for design specs).
 
 Each `main_trials_long.csv` has one row per slider response (so 1 or 2 rows per trial × prior/posterior). Common columns:
 
