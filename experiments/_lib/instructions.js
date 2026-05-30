@@ -45,9 +45,8 @@ function finalInstructionsPage(leadIn) {
 
 // "Read carefully" lead-ins for the final page.
 const READ_CAREFULLY_RELATIONSHIP =
-  "Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of eating food carefully!";
-const READ_CAREFULLY_PLAIN =
-  "Please read each of the scenarios and ways of eating food carefully!";
+  "Please pay attention to the social relationship between the two people, and read the scenarios carefully!";
+const READ_CAREFULLY_PLAIN = "Please read each of the scenarios carefully!";
 
 // The inference note as its own standalone page (shown in every study).
 const INFERENCE_PAGE = instructionsPage([INFERENCE_NOTE]);
