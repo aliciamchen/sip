@@ -8,13 +8,13 @@ Study 2b — Joint inference over intimacy and effort, given desire.
 
 **Known to participant**: desire_condition (shown as a paragraph preamble describing how much the characters want the food)
 
-**Inferred by participant**: intimacy AND effort_condition (two sliders per phase — intimacy on a 0–100 numeric scale, effort with `effort_low` / `effort_high` paragraph endpoints)
+**Inferred by participant**: intimacy AND effort_condition (two sliders per phase — intimacy on a 0–100 numeric scale, effort with `low_risk_share_effort_low` / `low_risk_share_effort_high` paragraph endpoints)
 
 ## Trial structure
 
 Each trial shows: vignette + desire paragraph as preamble, then prior sliders, then observed action, then posterior sliders. Neither the intimacy descriptor nor the effort paragraph is shown directly — both are inferred from the action.
 
-Slider responses: two sliders per phase (prior + posterior = 4 sliders total). Intimacy slider 0–100 with maximally formal / maximally intimate labels; effort slider with effort_low / effort_high paragraph endpoints. The `response_target` field on each data row indicates which slider it was.
+Slider responses: two sliders per phase (prior + posterior = 4 sliders total). Intimacy slider 0–100 with maximally formal / maximally intimate labels; effort slider with low_risk_share_effort_low / low_risk_share_effort_high paragraph endpoints. The `response_target` field on each data row indicates which slider it was.
 
 Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 6 cells. The counterbalancing script (`python/generate_counterbalancing.py`) produces 96 sequences (6 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
 

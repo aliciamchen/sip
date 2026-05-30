@@ -59,7 +59,7 @@ def load_scenarios(domain):
 
 
 def _action_texts_3(row):
-    return [row[f"action_{i}"] for i in range(N_ACTIONS)]
+    return [row[c] for c in ("no_share", "low_risk_share", "high_risk_share")]
 
 
 def format_v_prompt(row, motivation):

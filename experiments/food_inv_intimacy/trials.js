@@ -21,7 +21,7 @@ export const CONFIG = makeConfig("food_inv_intimacy");
 const getDesireText = (stim) =>
   stim.desire_condition === "low" ? stim.desire_low : stim.desire_high;
 const getEffortText = (stim) =>
-  stim.effort_condition === "low" ? stim.effort_low : stim.effort_high;
+  stim.effort_condition === "low" ? stim.low_risk_share_effort_low : stim.low_risk_share_effort_high;
 
 const INTIMACY_LABELS = [
   "0<br>Maximally formal",

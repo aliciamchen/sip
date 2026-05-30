@@ -52,7 +52,7 @@ ALL_CELLS = [
     (e, i, a)
     for e in ("low", "high")
     for i in (0, 50, 75, 100)
-    for a in ("action_0", "action_1", "action_2")
+    for a in ("no_share", "low_risk_share", "high_risk_share")
 ]
 assert len(ALL_CELLS) * ROUNDS_PER_CELL == N_ROUNDS * N_SLOTS, (
     "Balanced design requires n_cells * rounds_per_cell == n_rounds * n_slots"

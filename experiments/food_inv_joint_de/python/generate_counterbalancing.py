@@ -32,7 +32,7 @@ all_stories = [
 N_SLOTS = 16
 N_ROUNDS = 12  # × N_SLOTS rotations per round = 192 sequences
 
-ALL_CELLS = [(i, a) for i in (0, 50, 75, 100) for a in ("action_0", "action_1", "action_2")]
+ALL_CELLS = [(i, a) for i in (0, 50, 75, 100) for a in ("no_share", "low_risk_share", "high_risk_share")]
 
 
 def cell_to_dict(cell):

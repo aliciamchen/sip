@@ -4,7 +4,7 @@ Study 2a — Inverse intimacy.
 
 ## Design
 
-**Factor crossing**: 2 (desire: low/high) × 2 (effort: low/high) × 3 (observed action: action_0/1/2)
+**Factor crossing**: 2 (desire: low/high) × 2 (effort: low/high) × 3 (observed action: no_share/low_risk_share/high_risk_share)
 
 **Known to participant**: desire_condition, effort_condition
 

@@ -99,7 +99,7 @@ _STUDY_CONFIG = {
     },
 }
 
-ACTION_COLS_3ACT = ["action_0", "action_1", "action_2"]
+ACTION_COLS_3ACT = ["no_share", "low_risk_share", "high_risk_share"]
 REWARD_LEVELS = ["low", "high"]
 EFFORT_LEVELS = ["low", "high"]
 INTIMACY_LEVELS = [0, 50, 75, 100]
@@ -148,7 +148,9 @@ def _build_cells(scenarios_df, cfg):
                             prompt_kwargs["reward_text"] = row[f"desire_{reward}"]
                             cell["desire_condition"] = reward
                         if effort is not None:
-                            prompt_kwargs["effort_text"] = row[f"effort_{effort}"]
+                            prompt_kwargs["effort_text"] = row[
+                                f"low_risk_share_effort_{effort}"
+                            ]
                             cell["effort_condition"] = effort
                         if intimacy is not None:
                             prompt_kwargs["intimacy_level"] = intimacy

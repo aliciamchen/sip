@@ -65,7 +65,7 @@ def _full_vignette(row, effort_condition):
 
 
 def _action_texts(row):
-    return [row[f"action_{i}"] for i in range(N_ACTIONS)]
+    return [row[c] for c in ("no_share", "low_risk_share", "high_risk_share")]
 
 
 def _parse(response_text):

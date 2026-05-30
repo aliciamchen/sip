@@ -60,6 +60,11 @@ RELATIONSHIP_LEVEL_VALUES = jnp.array([0.0, 0.5, 0.75, 1.0])
 
 EFFORT_CONDITION_TO_IDX = {"low": 0, "high": 1}
 N_ACTIONS_EFFORT = 2
+
+# The 3 canonical actions in index order. Experiment data and LM CSVs label the
+# observed action with these names (was action_0/1/2 before the May 2026 rename).
+ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
+ACTION_LABEL_TO_IDX = {label: i for i, label in enumerate(ACTION_COLS)}
 N_EFFORT_CONDITIONS = 2
 
 
@@ -889,8 +894,7 @@ def load_padded_lm_tables_3act_desire(
         or outputs_dir / "lm_alternatives_features_food_inv_desire.csv"
     )
     alternatives_v_path = (
-        alternatives_v_path
-        or outputs_dir / "lm_alternatives_v_food_inv_desire.csv"
+        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_desire.csv"
     )
 
     required = [
@@ -1073,7 +1077,9 @@ def _canonical_lookups(canonical_path, canonical_v_path):
         )
     v = {}
     for _, row in canonical_v_df.iterrows():
-        v[(row["scenario_label"], int(row["action"]), row["motivation"])] = float(row["v"])
+        v[(row["scenario_label"], int(row["action"]), row["motivation"])] = float(
+            row["v"]
+        )
     return ae, v
 
 
@@ -1102,7 +1108,12 @@ def load_padded_lm_tables_3act_joint_de(
     alternatives_v_path = (
         alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_joint_de.csv"
     )
-    required = [canonical_path, canonical_v_path, alternatives_features_path, alternatives_v_path]
+    required = [
+        canonical_path,
+        canonical_v_path,
+        alternatives_features_path,
+        alternatives_v_path,
+    ]
     if any(not Path(p).exists() for p in required):
         return None
 
@@ -1110,7 +1121,13 @@ def load_padded_lm_tables_3act_joint_de(
     feats_df = pd.read_csv(alternatives_features_path)
     alts_v_df = pd.read_csv(alternatives_v_path)
 
-    n_s, n_o, n_rel, n_eff, n_mot = len(SCENARIO_LABELS), N_ACTIONS_3ACT, 4, N_EFFORT_CONDITIONS, 2
+    n_s, n_o, n_rel, n_eff, n_mot = (
+        len(SCENARIO_LABELS),
+        N_ACTIONS_3ACT,
+        4,
+        N_EFFORT_CONDITIONS,
+        2,
+    )
     access = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS_3ACT), dtype=np.float32)
     effort = np.zeros((n_s, n_o, n_rel, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
     v = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS_3ACT, n_mot), dtype=np.float32)
@@ -1118,7 +1135,7 @@ def load_padded_lm_tables_3act_joint_de(
 
     intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
     mot_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
-    obs_to_idx = {f"action_{i}": i for i in range(n_o)}
+    obs_to_idx = ACTION_LABEL_TO_IDX
 
     # Canonical slot 0: access/effort per (scenario, effort_condition, action),
     # broadcast across relationship; V per (scenario, action, motivation).
@@ -1138,7 +1155,13 @@ def load_padded_lm_tables_3act_joint_de(
     # Alternatives (slots 1..k): features keyed by (scenario, obs, intimacy,
     # effort_condition, alt_idx). access is effort-marginal (same across e).
     alt_v_lookup = {
-        (r["scenario_label"], r["observed_action"], int(r["intimacy_condition"]), int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
+        (
+            r["scenario_label"],
+            r["observed_action"],
+            int(r["intimacy_condition"]),
+            int(r["alt_idx"]),
+            r["motivation_query"],
+        ): float(r["v"])
         for _, r in alts_v_df.iterrows()
     }
     for _, row in feats_df.iterrows():
@@ -1153,14 +1176,28 @@ def load_padded_lm_tables_3act_joint_de(
         effort[s, o, rel, e, slot] = float(row["effort"])
         for mot, m in mot_to_idx.items():
             v[s, o, rel, slot, m] = alt_v_lookup.get(
-                (row["scenario_label"], row["observed_action"], int(row["intimacy_condition"]), int(row["alt_idx"]), mot), 0.0
+                (
+                    row["scenario_label"],
+                    row["observed_action"],
+                    int(row["intimacy_condition"]),
+                    int(row["alt_idx"]),
+                    mot,
+                ),
+                0.0,
             )
         valid[s, o, rel, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid.sum(axis=-1, keepdims=True)
-    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(np.float32)
-    return {"access": jnp.array(access), "effort": jnp.array(effort), "v": jnp.array(v), "prior": jnp.array(prior)}
+    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
+        np.float32
+    )
+    return {
+        "access": jnp.array(access),
+        "effort": jnp.array(effort),
+        "v": jnp.array(v),
+        "prior": jnp.array(prior),
+    }
 
 
 def load_padded_lm_tables_3act_intimacy(
@@ -1188,7 +1225,12 @@ def load_padded_lm_tables_3act_intimacy(
     alternatives_v_path = (
         alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_intimacy.csv"
     )
-    required = [canonical_path, canonical_v_path, alternatives_features_path, alternatives_v_path]
+    required = [
+        canonical_path,
+        canonical_v_path,
+        alternatives_features_path,
+        alternatives_v_path,
+    ]
     if any(not Path(p).exists() for p in required):
         return None
 
@@ -1196,7 +1238,13 @@ def load_padded_lm_tables_3act_intimacy(
     feats_df = pd.read_csv(alternatives_features_path)
     alts_v_df = pd.read_csv(alternatives_v_path)
 
-    n_s, n_o, n_rew, n_eff, n_mot = len(SCENARIO_LABELS), N_ACTIONS_3ACT, 2, N_EFFORT_CONDITIONS, 2
+    n_s, n_o, n_rew, n_eff, n_mot = (
+        len(SCENARIO_LABELS),
+        N_ACTIONS_3ACT,
+        2,
+        N_EFFORT_CONDITIONS,
+        2,
+    )
     access = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
     effort = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
     v = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT, n_mot), dtype=np.float32)
@@ -1204,7 +1252,7 @@ def load_padded_lm_tables_3act_intimacy(
 
     rew_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
     mot_to_idx = rew_to_idx
-    obs_to_idx = {f"action_{i}": i for i in range(n_o)}
+    obs_to_idx = ACTION_LABEL_TO_IDX
 
     for scenario in SCENARIO_LABELS:
         s = SCENARIO_TO_IDX[scenario]
@@ -1220,7 +1268,14 @@ def load_padded_lm_tables_3act_intimacy(
 
     # Alternatives keyed by (scenario, obs, reward, effort, alt_idx).
     alt_v_lookup = {
-        (r["scenario_label"], r["observed_action"], r["desire_condition"], r["effort_condition"], int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
+        (
+            r["scenario_label"],
+            r["observed_action"],
+            r["desire_condition"],
+            r["effort_condition"],
+            int(r["alt_idx"]),
+            r["motivation_query"],
+        ): float(r["v"])
         for _, r in alts_v_df.iterrows()
     }
     for _, row in feats_df.iterrows():
@@ -1235,14 +1290,29 @@ def load_padded_lm_tables_3act_intimacy(
         effort[s, o, rew, e, slot] = float(row["effort"])
         for mot, m in mot_to_idx.items():
             v[s, o, rew, e, slot, m] = alt_v_lookup.get(
-                (row["scenario_label"], row["observed_action"], row["desire_condition"], row["effort_condition"], int(row["alt_idx"]), mot), 0.0
+                (
+                    row["scenario_label"],
+                    row["observed_action"],
+                    row["desire_condition"],
+                    row["effort_condition"],
+                    int(row["alt_idx"]),
+                    mot,
+                ),
+                0.0,
             )
         valid[s, o, rew, e, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid.sum(axis=-1, keepdims=True)
-    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(np.float32)
-    return {"access": jnp.array(access), "effort": jnp.array(effort), "v": jnp.array(v), "prior": jnp.array(prior)}
+    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
+        np.float32
+    )
+    return {
+        "access": jnp.array(access),
+        "effort": jnp.array(effort),
+        "v": jnp.array(v),
+        "prior": jnp.array(prior),
+    }
 
 
 def load_padded_lm_tables_3act_joint_ie(
@@ -1270,7 +1340,12 @@ def load_padded_lm_tables_3act_joint_ie(
     alternatives_v_path = (
         alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_joint_ie.csv"
     )
-    required = [canonical_path, canonical_v_path, alternatives_features_path, alternatives_v_path]
+    required = [
+        canonical_path,
+        canonical_v_path,
+        alternatives_features_path,
+        alternatives_v_path,
+    ]
     if any(not Path(p).exists() for p in required):
         return None
 
@@ -1278,7 +1353,13 @@ def load_padded_lm_tables_3act_joint_ie(
     feats_df = pd.read_csv(alternatives_features_path)
     alts_v_df = pd.read_csv(alternatives_v_path)
 
-    n_s, n_o, n_rew, n_eff, n_mot = len(SCENARIO_LABELS), N_ACTIONS_3ACT, 2, N_EFFORT_CONDITIONS, 2
+    n_s, n_o, n_rew, n_eff, n_mot = (
+        len(SCENARIO_LABELS),
+        N_ACTIONS_3ACT,
+        2,
+        N_EFFORT_CONDITIONS,
+        2,
+    )
     access = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS_3ACT), dtype=np.float32)
     effort = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
     v = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS_3ACT, n_mot), dtype=np.float32)
@@ -1286,7 +1367,7 @@ def load_padded_lm_tables_3act_joint_ie(
 
     rew_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
     mot_to_idx = rew_to_idx
-    obs_to_idx = {f"action_{i}": i for i in range(n_o)}
+    obs_to_idx = ACTION_LABEL_TO_IDX
 
     for scenario in SCENARIO_LABELS:
         s = SCENARIO_TO_IDX[scenario]
@@ -1304,7 +1385,13 @@ def load_padded_lm_tables_3act_joint_ie(
     # Alternatives keyed by (scenario, obs, reward, effort_condition, alt_idx);
     # access effort-marginal.
     alt_v_lookup = {
-        (r["scenario_label"], r["observed_action"], r["desire_condition"], int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
+        (
+            r["scenario_label"],
+            r["observed_action"],
+            r["desire_condition"],
+            int(r["alt_idx"]),
+            r["motivation_query"],
+        ): float(r["v"])
         for _, r in alts_v_df.iterrows()
     }
     for _, row in feats_df.iterrows():
@@ -1319,14 +1406,28 @@ def load_padded_lm_tables_3act_joint_ie(
         effort[s, o, rew, e, slot] = float(row["effort"])
         for mot, m in mot_to_idx.items():
             v[s, o, rew, slot, m] = alt_v_lookup.get(
-                (row["scenario_label"], row["observed_action"], row["desire_condition"], int(row["alt_idx"]), mot), 0.0
+                (
+                    row["scenario_label"],
+                    row["observed_action"],
+                    row["desire_condition"],
+                    int(row["alt_idx"]),
+                    mot,
+                ),
+                0.0,
             )
         valid[s, o, rew, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid.sum(axis=-1, keepdims=True)
-    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(np.float32)
-    return {"access": jnp.array(access), "effort": jnp.array(effort), "v": jnp.array(v), "prior": jnp.array(prior)}
+    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
+        np.float32
+    )
+    return {
+        "access": jnp.array(access),
+        "effort": jnp.array(effort),
+        "v": jnp.array(v),
+        "prior": jnp.array(prior),
+    }
 
 
 LLM_TABLES_3ACT_JOINT_DE_PADDED = load_padded_lm_tables_3act_joint_de()

@@ -57,9 +57,9 @@ const INSTRUCTIONS_PAGES = [
 const DESIRE_SLIDER_LABELS = ["0<br>not at all", "100<br>extremely"];
 
 const effortLabels = (stim) => [
-  `<div class="slider-endpoint">${stim.effort_low}</div>`,
+  `<div class="slider-endpoint">${stim.low_risk_share_effort_low}</div>`,
   `<div class="slider-endpoint">Equally likely</div>`,
-  `<div class="slider-endpoint">${stim.effort_high}</div>`,
+  `<div class="slider-endpoint">${stim.low_risk_share_effort_high}</div>`,
 ];
 
 const intimacyPreamble = (stim) =>
@@ -166,8 +166,8 @@ function makeStimulusTrials(jsPsych, stimuli) {
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
-        effort_low: stimulus.effort_low,
-        effort_high: stimulus.effort_high,
+        low_risk_share_effort_low: stimulus.low_risk_share_effort_low,
+        low_risk_share_effort_high: stimulus.low_risk_share_effort_high,
       },
     });
 
@@ -223,8 +223,8 @@ function makeStimulusTrials(jsPsych, stimuli) {
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
-        effort_low: stimulus.effort_low,
-        effort_high: stimulus.effort_high,
+        low_risk_share_effort_low: stimulus.low_risk_share_effort_low,
+        low_risk_share_effort_high: stimulus.low_risk_share_effort_high,
       },
     });
 

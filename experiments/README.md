@@ -18,10 +18,10 @@ The stimulus set for all four active inverse-planning experiments. Carries the e
 | `name_0`, `name_1` | Character names in the vignette |
 | `vignette` | Base scenario description |
 | `desire_low`, `desire_high` | Two desire-state paragraphs |
-| `effort_low`, `effort_high` | Two effort-state paragraphs — the low version makes the resource that `action_1` relies on easy to obtain, the high version makes it costly |
-| `action_0` | No sharing |
-| `action_1` | Low-risk (non-saliva) sharing — the effort cost lives in the `effort_*` paragraph, not the action text |
-| `action_2` | High-risk (saliva) sharing |
+| `low_risk_share_effort_low`, `low_risk_share_effort_high` | Two effort-state paragraphs — the low version makes the resource that `low_risk_share` relies on easy to obtain, the high version makes it costly |
+| `no_share` | No sharing |
+| `low_risk_share` | Low-risk (non-saliva) sharing — the effort cost lives in the `low_risk_share_effort_*` paragraph, not the action text |
+| `high_risk_share` | High-risk (saliva) sharing |
 
 ### Legacy stimulus sets (`experiments/legacy/`)
 

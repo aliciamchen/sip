@@ -29,7 +29,7 @@ const intimacy_texts = {
 export const CONFIG = makeConfig("food_inv_desire");
 
 const getEffortText = (stim) =>
-  stim.effort_condition === "low" ? stim.effort_low : stim.effort_high;
+  stim.effort_condition === "low" ? stim.low_risk_share_effort_low : stim.low_risk_share_effort_high;
 
 const INSTRUCTIONS_PAGES = [
   `

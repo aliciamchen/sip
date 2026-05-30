@@ -26,7 +26,7 @@ import jax.numpy as jnp
 import optax
 import pandas as pd
 
-from tables import EFFORT_CONDITION_TO_IDX, SCENARIO_TO_IDX
+from tables import ACTION_LABEL_TO_IDX, EFFORT_CONDITION_TO_IDX, SCENARIO_TO_IDX
 from utils import get_project_root
 from _shared import _fit_with_adam  # forward/_shared.py
 
@@ -533,7 +533,7 @@ def _load_3act_long(slug):
 
     The exact column names in incoming CSVs may need to be normalized — this
     loader assumes:
-      - `action_condition` like 'action_0' / 'action_1' / 'action_2'
+      - `action_condition` like 'no_share' / 'low_risk_share' / 'high_risk_share'
       - `reward_condition` (or `motivation`) in {'low', 'high'} when present
       - `effort_condition` (or `effort`) in {'low', 'high'} when present
       - `intimacy` (or `relationship_condition`) in {0, 50, 75, 100} when present
@@ -542,7 +542,7 @@ def _load_3act_long(slug):
     filepath = get_project_root() / "data" / slug / "main_trials_long.csv"
     data = pd.read_csv(filepath)
     data = data[data["stage"] == "posterior"].copy()
-    data["action"] = data["action_condition"].str.replace("action_", "").astype(int)
+    data["action"] = data["action_condition"].map(ACTION_LABEL_TO_IDX)
     data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
 
     motivation_map = {"low": 0, "high": 1}

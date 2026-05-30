@@ -43,7 +43,7 @@ N_SLOTS = 16
 N_ROUNDS = 6  # × N_SLOTS rotations per round = 96 sequences
 
 ALL_CELLS = [
-    (r, a) for r in ("low", "high") for a in ("action_0", "action_1", "action_2")
+    (r, a) for r in ("low", "high") for a in ("no_share", "low_risk_share", "high_risk_share")
 ]
 
 

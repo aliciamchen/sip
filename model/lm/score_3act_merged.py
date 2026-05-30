@@ -159,8 +159,8 @@ def _norm(text):
 def _build_merged_actions(scenario_row, alt_rows_for_scenario):
     """Build the unified action list for a scenario.
 
-    Positions 0..2 are the 3 canonical actions (action_0/1/2 from
-    scenarios.csv). Positions 3..N are the unique LM-generated alternative
+    Positions 0..2 are the 3 canonical actions (no_share / low_risk_share /
+    high_risk_share from scenarios.csv). Positions 3..N are the unique LM-generated alternative
     texts, deduped case-insensitively *and* excluding any alt whose normalized
     text matches one of the canonical actions.
 
@@ -170,7 +170,9 @@ def _build_merged_actions(scenario_row, alt_rows_for_scenario):
       - alt_norms_in_order: list[str] of length n_unique_alts (normalized alt
         texts in the order they appear in merged_action_texts)
     """
-    canonical_actions = [scenario_row[f"action_{i}"] for i in range(N_ACTIONS_3ACT)]
+    canonical_actions = [
+        scenario_row[c] for c in ("no_share", "low_risk_share", "high_risk_share")
+    ]
     canonical_norms = [_norm(a) for a in canonical_actions]
     canonical_norm_set = set(canonical_norms)
 
