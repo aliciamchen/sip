@@ -31,7 +31,7 @@ const RELATIONSHIPS_NOTE =
 // Shown in every study.
 const INFERENCE_NOTE =
   "<p>In each scenario, two people decide what to do in a situation involving food.</p>" +
-  "<p>The descriptions we give you leave out some details — about the characters, what they know, or the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
+  "<p>The descriptions we give you leave out some information — about the characters, what they know, or the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
 
 // Final page: a study-specific "read carefully" lead-in followed by the shared
 // payment, don't-close, and begin lines.
