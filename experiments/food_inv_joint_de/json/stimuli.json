@@ -73,7 +73,7 @@
     "scenario_label": "apples",
     "name_0": "Camille",
     "name_1": "Haoyu",
-    "vignette": "Camille and Haoyu go apple picking together in the fall. At the orchard, there are many different apple varieties, including Red Delicious, Yellow Delicious, Honeycrisp, and Jonagold. At the entrance, the employees tell them that visitors are welcome to taste the apples. When they enter the orchard, the apple variety in the first aisle is the Jonagold variety. Camille picks an apple from a tree, to taste.",
+    "vignette": "Camille and Haoyu go apple picking together in the fall. At the orchard, there are many different apple varieties, including Red Delicious, Yellow Delicious, Honeycrisp, and Jonagold. At the entrance, the employees tell them that visitors are welcome to taste the apples. When they enter the orchard, the apple variety in the first aisle is the Jonagold variety. Camille picks an apple from a tree.",
     "desire_phrase": "taste the apple",
     "desire_low": "Both Camille and Haoyu have tasted the Jonagold variety at this orchard before, so they are indifferent about tasting it again.",
     "desire_high": "Neither Camille nor Haoyu has tasted the Jonagold variety at this orchard before, so they would both like to taste it.",
@@ -165,7 +165,7 @@
     "low_risk_share_effort_high": "Tony's backpacking knife is buried at the very bottom of his pack, under all of his gear.",
     "no_share": "Tony and Alvin do not share the sandwich; Tony eats the sandwich himself.",
     "low_risk_share": "Tony gets his knife from the pack, uses it to cut the sandwich in half, and hands one half to Alvin.",
-    "high_risk_share": "Tony and Alvin alternate taking bites directly from the sandwich"
+    "high_risk_share": "Tony and Alvin alternate taking bites directly from the sandwich."
   },
   {
     "scenario_label": "oysters",
