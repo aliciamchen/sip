@@ -66,8 +66,8 @@ export const STUDY_INSTRUCTIONS = {
     INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what the two people decide to do, we will ask you to rate how much you think they want to eat the food.</p>",
-      DESIRE_NOTE,
       "<p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want to eat the food.</p>",
+      DESIRE_NOTE,
     ]),
     finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),
   ],
@@ -78,8 +78,8 @@ export const STUDY_INSTRUCTIONS = {
     INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what the two people decide to do, we will ask you two questions. The first question asks how much you think they want to eat the food. The second question asks which of two situations — each described in the scenario — you think is more likely. You will answer each of the questions using a slider.</p>",
-      DESIRE_NOTE,
       "<p>Then, we will show you what they decide to do, and ask you to re-evaluate your answers.</p>",
+      DESIRE_NOTE,
     ]),
     finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),
   ],
