@@ -36,7 +36,7 @@ const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_desire;
 
 // Continuous 0-100 desire slider: endpoints labeled "not at all" / "extremely"
 // (no numbers shown).
-const DESIRE_SLIDER_LABELS = ["not at all", "extremely"];
+const DESIRE_SLIDER_LABELS = ["Not at all", "Extremely"];
 
 function makeStimulusTrials(jsPsych, stimuli) {
   const trials = [];

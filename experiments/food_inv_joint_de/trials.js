@@ -33,7 +33,7 @@ const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_joint_de;
 
 // Desire DV is a continuous 0-100 slider (a direct desire rating, not a
 // two-states probability slider): endpoints "not at all" / "extremely".
-const DESIRE_SLIDER_LABELS = ["not at all", "extremely"];
+const DESIRE_SLIDER_LABELS = ["Not at all", "Extremely"];
 
 const effortLabels = (stim) => [
   stim.low_risk_share_effort_low,
