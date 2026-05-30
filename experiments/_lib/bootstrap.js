@@ -10,8 +10,8 @@
 //     INTER_TRIAL_DURATIONS
 //   - makeTimeline(jsPsych, stimuli, consentHtml, exitSurveyHtml, subjectId):
 //     returns the full ordered timeline array
-//   - consentTemplate: filename (without extension) under _lib/consent/, one of
-//     "food-forward", "food-inverse", "nonfood-forward"
+//   - consentTemplate: filename (without extension) under _lib/consent/;
+//     the active experiments all use "food-inverse"
 
 export function runExperiment({ config, makeTimeline, consentTemplate }) {
   Promise.all([
