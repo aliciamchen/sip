@@ -19,10 +19,10 @@ import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 
 const intimacy_texts = {
-  0: "0 (maximally formal)",
-  50: "50 (neither formal nor intimate)",
-  75: "75 (somewhat intimate)",
-  100: "100 (maximally intimate)",
+  0: "maximally formal",
+  50: "neither formal nor intimate",
+  75: "somewhat intimate",
+  100: "maximally intimate",
 };
 
 export const CONFIG = {
@@ -79,7 +79,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
-            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${stimulus.name_0} and ${stimulus.name_1} are in a relationship they would describe as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
+            <p>${stimulus.name_0} and ${stimulus.name_1} would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
           </div>
           <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
         </div>
@@ -93,7 +93,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
-            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${stimulus.name_0} and ${stimulus.name_1} are in a relationship they would describe as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
+            <p>${stimulus.name_0} and ${stimulus.name_1} would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
             <p>${stimulus.vignette}</p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>
@@ -133,7 +133,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
-            <p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${stimulus.name_0} and ${stimulus.name_1} are in a relationship they would describe as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
+            <p>${stimulus.name_0} and ${stimulus.name_1} would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
             <p>${stimulus.vignette}</p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>

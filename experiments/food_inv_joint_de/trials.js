@@ -18,10 +18,10 @@ import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 
 const intimacy_texts = {
-  0: "0 (maximally formal)",
-  50: "50 (neither formal nor intimate)",
-  75: "75 (somewhat intimate)",
-  100: "100 (maximally intimate)",
+  0: "maximally formal",
+  50: "neither formal nor intimate",
+  75: "somewhat intimate",
+  100: "maximally intimate",
 };
 
 export const CONFIG = {
@@ -69,7 +69,7 @@ const effortLabels = (stim) => [
 ];
 
 const intimacyPreamble = (stim) =>
-  `<p>On a scale from 0 (maximally formal) to 100 (maximally intimate), ${stim.name_0} and ${stim.name_1} are in a relationship they would describe as <strong>${intimacy_texts[stim.intimacy_condition]}</strong>.</p>`;
+  `<p>${stim.name_0} and ${stim.name_1} would describe their relationship as <strong>${intimacy_texts[stim.intimacy_condition]}</strong>.</p>`;
 
 function priorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
   return `
