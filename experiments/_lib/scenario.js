@@ -18,6 +18,14 @@ export const getEffortText = (stim) =>
     ? stim.low_risk_share_effort_low
     : stim.low_risk_share_effort_high;
 
+// The desire-elicitation question, naming both characters and the scenario-
+// specific food (e.g. "How much do Carissa and Josh both want to eat the hot
+// dog?"). The "want to ___" completion is the per-scenario `desire_phrase` from
+// scenarios.csv. Asked in Studies 1a and 1b; 1a embeds it (lowercased) after a
+// prior/posterior framing clause, so it takes a `lowercase` option.
+export const desireQuestion = (stim, { lowercase = false } = {}) =>
+  `${lowercase ? "how much" : "How much"} do ${stim.name_0} and ${stim.name_1} both want to ${stim.desire_phrase}?`;
+
 // "Consider X and Y, who would describe their relationship as Z." — shown when
 // intimacy is given (Studies 1a, 1b).
 export const intimacyDescriptor = (stim) =>
@@ -37,7 +45,7 @@ export const effortLabels = (stim) => [
   stim.low_risk_share_effort_high,
 ];
 
-// A "press any key to see the scenario" page showing the given preamble HTML.
+// A "press any key to continue" page showing the given preamble HTML.
 export function pressAnyKeyPage(preambleHtml, index, total) {
   return {
     type: jsPsychHtmlKeyboardResponse,
@@ -47,7 +55,7 @@ export function pressAnyKeyPage(preambleHtml, index, total) {
         <div class="vignette-text">
           ${preambleHtml}
         </div>
-        <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
+        <p style="text-align: center;"><em>Press any key to continue.</em></p>
       </div>
     `,
     choices: "ALL_KEYS",

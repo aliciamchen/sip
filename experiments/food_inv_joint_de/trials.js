@@ -11,6 +11,7 @@ import { makeTwoSliderForm } from "../_lib/two-slider.js";
 import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
 import {
   intimacyDescriptor,
+  desireQuestion,
   DESIRE_SLIDER_LABELS,
   effortLabels,
   pressAnyKeyPage,
@@ -49,7 +50,7 @@ export function makeStimulusTrials(jsPsych, stimuli) {
     const sliders = [
       {
         name: "desire",
-        prompt: `How much do you think ${stimulus.name_0} and ${stimulus.name_1} want to eat the food?`,
+        prompt: desireQuestion(stimulus),
         labels: DESIRE_SLIDER_LABELS,
       },
       {

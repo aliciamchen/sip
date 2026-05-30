@@ -1,9 +1,10 @@
 // Study 1a — Desire inference under known effort + intimacy.
 // Design: 2 (effort) × 4 (intimacy: 0/50/75/100) × 3 (observed action).
 // Intimacy descriptor preamble, then vignette + effort paragraph + a continuous
-// 0-100 desire slider ("how much do {name_0} and {name_1} want to eat the
-// food?", endpoints Not at all/Extremely) rated before and after the single
-// observed action. The desire paragraph is NOT shown (desire is inferred).
+// 0-100 desire slider (scenario-specific question, e.g. "how much do Carissa and
+// Josh both want to eat the hot dog?" — see `desire_phrase` in scenarios.csv;
+// endpoints Not at all/Extremely) rated before and after the single observed
+// action. The desire paragraph is NOT shown (desire is inferred).
 
 import { makeInterTrialBlank } from "../_lib/timeline.js";
 import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
@@ -13,6 +14,7 @@ import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
 import {
   intimacyDescriptor,
   getEffortText,
+  desireQuestion,
   DESIRE_SLIDER_LABELS,
   pressAnyKeyPage,
   blankPause,
@@ -38,7 +40,7 @@ function desireSlider(stimulus, index, total, stage, observedAction) {
         `<p><strong>${getEffortText(stimulus)}</strong></p>`,
       ],
       observedAction,
-      leadIn: `${lead}, how much do you think ${stimulus.name_0} and ${stimulus.name_1} want to eat the food?`,
+      leadIn: `${lead}, ${desireQuestion(stimulus, { lowercase: true })}`,
     }),
     slider_width: 900,
     slider_min: 0,

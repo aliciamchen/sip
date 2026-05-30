@@ -17,6 +17,7 @@ The stimulus set for all four active inverse-planning experiments. Carries the e
 | `scenario_label` | Scenario identifier used in data files |
 | `name_0`, `name_1` | Character names in the vignette |
 | `vignette` | Base scenario description |
+| `desire_phrase` | Scenario-specific completion of the desire question "How much do {name_0} and {name_1} both want to ___?" (e.g. `eat the hot dog`), so the question names the actual food rather than "the food". Used in Studies 1a and 1b |
 | `desire_low`, `desire_high` | Two desire-state paragraphs |
 | `low_risk_share_effort_low`, `low_risk_share_effort_high` | Two effort-state paragraphs — the low version makes the resource that `low_risk_share` relies on easy to obtain, the high version makes it costly |
 | `no_share` | No sharing |
@@ -35,7 +36,7 @@ Archived; their experiments are no longer active. Each is still generated from i
 
 ### Inverse planning (3-action set)
 
-All four use `scenarios.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating ("how much do they want to eat the food?", not-at-all → extremely), effort as a continuous 0–100 rating between two states, and intimacy on a 0–100 numeric scale. Each experiment dir's `README.md` documents the design spec.
+All four use `scenarios.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the food ("how much do Carissa and Josh both want to eat the hot dog?", not-at-all → extremely), effort as a continuous 0–100 rating between two states, and intimacy on a 0–100 numeric scale. Each experiment dir's `README.md` documents the design spec.
 
 - [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy. Design 2 × 4 × 3.
 - [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
