@@ -38,7 +38,7 @@ RELATIONSHIP_LEVELS = [
 
 
 def load_fit_results():
-    path = _project_root / "model" / "outputs" / EXPERIMENT_SLUG / "fit_results.csv"
+    path = _project_root / "model" / "outputs" / "legacy" / EXPERIMENT_SLUG / "fit_results.csv"
     df = pd.read_csv(path)
     out = {}
     for _, row in df.iterrows():
@@ -104,7 +104,7 @@ def main():
     df_full = pd.concat(dfs, ignore_index=True)
     df_summary = df_full[["scenario_label", "observed_action", "intimacy", "model", "p_high"]].copy()
 
-    output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
+    output_dir = _project_root / "model" / "outputs" / "legacy" / EXPERIMENT_SLUG
     df_full.to_csv(output_dir / "preds_full.csv", index=False)
     df_summary.to_csv(output_dir / "preds_summary.csv", index=False)
     print(f"\nSaved {len(df_full)} rows to {output_dir / 'preds_full.csv'}")

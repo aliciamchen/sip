@@ -237,7 +237,7 @@ EXPERIMENT_CONFIGS = {
         "has_closeness": False,
         "has_attention_memory": True,
     },
-    "food_inv_desire_3act": {
+    "food_inv_desire": {
         "description": "Study 3b — desire inference under known effort + intimacy (3-action set)",
         "main_trial_fields": [
             "subject_id",
@@ -430,10 +430,11 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                             "response": trial.get("response", ""),
                         }
 
-                    elif experiment_name == "food_inv_desire_3act":
-                        # Prior/posterior desire-likelihood slider response under
-                        # known effort + intimacy. response is the slider value
-                        # 0-100, encoding P(high desire).
+                    elif experiment_name == "food_inv_desire":
+                        # Prior/posterior desire slider response under known
+                        # effort + intimacy. response is the 1-7 Likert rating
+                        # ("how much do they want the food?", not-at-all →
+                        # extremely).
                         trial_data = {
                             "subject_id": subject_id,
                             "scenario_label": scenario_label,
@@ -821,9 +822,9 @@ def create_food_inv_desire_long(output_dir):
     )
 
 
-def create_food_inv_desire_3act_long(output_dir):
+def create_food_inv_desire_long(output_dir):
     """
-    Create main_trials_long.csv for the food_inv_desire_3act experiment.
+    Create main_trials_long.csv for the food_inv_desire experiment.
 
     Filters out participants who failed attention or got 0 correct on memory.
     Renames effort_condition -> effort and intimacy_condition -> intimacy for
@@ -943,9 +944,9 @@ Examples:
     elif args.experiment == "food_inv_effort_intimacy_alt":
         print("\nCreating long format with exclusions...")
         create_food_inv_effort_intimacy_alt_long(output_dir)
-    elif args.experiment == "food_inv_desire_3act":
+    elif args.experiment == "food_inv_desire":
         print("\nCreating long format with exclusions...")
-        create_food_inv_desire_3act_long(output_dir)
+        create_food_inv_desire_long(output_dir)
 
     print("\nConversion complete!")
 

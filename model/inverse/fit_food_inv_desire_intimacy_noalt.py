@@ -84,7 +84,7 @@ def main():
             row[f"param_{name}"] = float(params[i])
         results.append(row)
 
-    output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
+    output_dir = _project_root / "model" / "outputs" / "legacy" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
     results_df = pd.DataFrame(results)
     results_df.to_csv(output_dir / "fit_results.csv", index=False)

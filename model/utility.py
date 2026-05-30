@@ -680,7 +680,7 @@ def get_utility_3act_base_disc(
 # ==============================================================================
 # Padded utilities for Study 3b — desire inference with LM-generated alternatives
 # ==============================================================================
-# `food_inv_desire_3act`. Observer knows scenario, observed_action,
+# `food_inv_desire`. Observer knows scenario, observed_action,
 # effort_condition, relationship_condition; latent is reward_condition. Action
 # space is conditioned on (scenario, observed_action, effort_condition,
 # relationship_condition) — the LM enumerates plausible alternatives per cell
@@ -840,5 +840,365 @@ def get_utility_3act_base_padded_desire(
         relationship_condition,
         reward_condition,
         v_padded_table,
+    )
+    return alpha * (w_v * V - w_e * effort)
+
+
+# =============================================================================
+# Padded utilities for the migrated studies (1b, 2a, 2b)
+# =============================================================================
+# Each study's LM-generated alternative set is indexed by the cell grid =
+# (scenario, observed_action, <variables the observer/participant sees>). A
+# feature gets an extra axis when the variable it depends on is *inferred* (so
+# the alt set is shared across that variable's hypotheses but the feature value
+# differs): effort gains an effort_condition axis when effort is inferred. V
+# always carries a motivation axis (the actor evaluates V at the relevant
+# reward). access is intimacy- and effort-independent by construction, so it is
+# only indexed by the cell grid + slot.
+
+
+# --- Study 1b (joint_de): observer knows intimacy, infers (reward, effort) ---
+# Cell grid: (scenario, observed_action, relationship_condition). effort is
+# inferred -> effort table carries an effort_condition feature axis. reward is
+# inferred -> V carries a motivation axis.
+#   access: (16, 3, 4, S)            [scenario, obs, relationship, slot]
+#   effort: (16, 3, 4, 2, S)         [scenario, obs, relationship, effort_condition, slot]
+#   v:      (16, 3, 4, S, 2)         [scenario, obs, relationship, slot, motivation]
+#   prior:  (16, 3, 4, S)            [scenario, obs, relationship, slot]
+
+
+@jax.jit
+def get_prior_padded_3act_joint_de(
+    padded_slot, scenario_idx, observed_action, relationship_condition, prior_table
+):
+    return prior_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+
+
+@jax.jit
+def get_lm_v_padded_3act_joint_de(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    v_padded_table,
+):
+    return v_padded_table[
+        scenario_idx, observed_action, relationship_condition, padded_slot, reward_condition
+    ]
+
+
+@jax.jit
+def get_utility_3act_full_padded_joint_de(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    access = access_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+    effort = effort_table[
+        scenario_idx, observed_action, relationship_condition, effort_condition, padded_slot
+    ]
+    V = get_lm_v_padded_3act_joint_de(
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        relationship_condition,
+        reward_condition,
+        v_padded_table,
+    )
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_3act_discomfort_only_padded_joint_de(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
+):
+    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    access = access_table[scenario_idx, observed_action, relationship_condition, padded_slot]
+    one_minus_I = jnp.maximum(1.0 - intimacy, 1e-8)
+    return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
+
+
+@jax.jit
+def get_utility_3act_base_padded_joint_de(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    relationship_condition,
+    reward_condition,
+    effort_condition,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    effort = effort_table[
+        scenario_idx, observed_action, relationship_condition, effort_condition, padded_slot
+    ]
+    V = get_lm_v_padded_3act_joint_de(
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        relationship_condition,
+        reward_condition,
+        v_padded_table,
+    )
+    return alpha * (w_v * V - w_e * effort)
+
+
+# --- Study 2a (intimacy): observer knows (reward, effort), infers intimacy ----
+# Cell grid: (scenario, observed_action, reward_condition, effort_condition).
+# intimacy is inferred (continuous) -> access is modulated by (1-I)^gamma in the
+# utility but the table has no intimacy axis. reward + effort are observed, so
+# both index the cell grid; effort feature is taken at the observed effort.
+#   access: (16, 3, 2, 2, S)         [scenario, obs, reward, effort, slot]
+#   effort: (16, 3, 2, 2, S)         [scenario, obs, reward, effort, slot]
+#   v:      (16, 3, 2, 2, S, 2)      [scenario, obs, reward, effort, slot, motivation]
+#   prior:  (16, 3, 2, 2, S)         [scenario, obs, reward, effort, slot]
+# `intimacy_level` is the continuous value the observer's actor hypothesizes.
+
+
+@jax.jit
+def get_prior_padded_3act_intimacy(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    prior_table,
+):
+    return prior_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+
+
+@jax.jit
+def get_lm_v_padded_3act_intimacy(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    v_padded_table,
+):
+    return v_padded_table[
+        scenario_idx,
+        observed_action,
+        reward_condition,
+        effort_condition,
+        padded_slot,
+        reward_condition,
+    ]
+
+
+@jax.jit
+def get_utility_3act_full_padded_intimacy(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    intimacy_level,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    access = access_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+    effort = effort_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+    V = get_lm_v_padded_3act_intimacy(
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        reward_condition,
+        effort_condition,
+        v_padded_table,
+    )
+    one_minus_I = jnp.maximum(1.0 - intimacy_level, 1e-8)
+    return alpha * (
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_3act_discomfort_only_padded_intimacy(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    intimacy_level,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
+):
+    access = access_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+    one_minus_I = jnp.maximum(1.0 - intimacy_level, 1e-8)
+    return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
+
+
+@jax.jit
+def get_utility_3act_base_padded_intimacy(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    intimacy_level,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    effort = effort_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+    V = get_lm_v_padded_3act_intimacy(
+        padded_slot,
+        scenario_idx,
+        observed_action,
+        reward_condition,
+        effort_condition,
+        v_padded_table,
+    )
+    return alpha * (w_v * V - w_e * effort)
+
+
+# --- Study 2b (joint_ie): observer knows reward, infers (intimacy, effort) ----
+# Cell grid: (scenario, observed_action, reward_condition). intimacy inferred
+# (continuous, no table axis). effort inferred -> effort gains an
+# effort_condition feature axis. reward observed -> indexes cell grid + V.
+#   access: (16, 3, 2, S)            [scenario, obs, reward, slot]
+#   effort: (16, 3, 2, 2, S)         [scenario, obs, reward, effort_condition, slot]
+#   v:      (16, 3, 2, S, 2)         [scenario, obs, reward, slot, motivation]
+#   prior:  (16, 3, 2, S)            [scenario, obs, reward, slot]
+
+
+@jax.jit
+def get_prior_padded_3act_joint_ie(
+    padded_slot, scenario_idx, observed_action, reward_condition, prior_table
+):
+    return prior_table[scenario_idx, observed_action, reward_condition, padded_slot]
+
+
+@jax.jit
+def get_lm_v_padded_3act_joint_ie(
+    padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table
+):
+    return v_padded_table[
+        scenario_idx, observed_action, reward_condition, padded_slot, reward_condition
+    ]
+
+
+@jax.jit
+def get_utility_3act_full_padded_joint_ie(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    intimacy_level,
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    access = access_table[scenario_idx, observed_action, reward_condition, padded_slot]
+    effort = effort_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+    V = get_lm_v_padded_3act_joint_ie(
+        padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table
+    )
+    one_minus_I = jnp.maximum(1.0 - intimacy_level, 1e-8)
+    return alpha * (
+        w_v * V - w_d * access * jnp.power(one_minus_I, gamma) - w_e * effort
+    )
+
+
+@jax.jit
+def get_utility_3act_discomfort_only_padded_joint_ie(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    intimacy_level,
+    alpha,
+    w_d,
+    gamma,
+    access_table,
+    effort_table,
+):
+    access = access_table[scenario_idx, observed_action, reward_condition, padded_slot]
+    one_minus_I = jnp.maximum(1.0 - intimacy_level, 1e-8)
+    return alpha * (-w_d * access * jnp.power(one_minus_I, gamma))
+
+
+@jax.jit
+def get_utility_3act_base_padded_joint_ie(
+    padded_slot,
+    scenario_idx,
+    observed_action,
+    reward_condition,
+    effort_condition,
+    intimacy_level,
+    alpha,
+    w_v,
+    w_e,
+    access_table,
+    effort_table,
+    v_padded_table,
+):
+    effort = effort_table[
+        scenario_idx, observed_action, reward_condition, effort_condition, padded_slot
+    ]
+    V = get_lm_v_padded_3act_joint_ie(
+        padded_slot, scenario_idx, observed_action, reward_condition, v_padded_table
     )
     return alpha * (w_v * V - w_e * effort)

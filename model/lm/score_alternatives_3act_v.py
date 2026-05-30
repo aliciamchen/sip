@@ -10,18 +10,18 @@ motivation_query ∈ {low, high} so the observer's `thinks[reward in
 RewardConditions, …]` block has V at both reward values.
 
 Output (Study 3b):
-    model/outputs/lm/lm_alternatives_v_food_inv_desire_3act.csv
+    model/outputs/lm/lm_alternatives_v_food_inv_desire.csv
 
 Schema:
     scenario_label, observed_action, effort_condition, intimacy_condition,
     alt_idx, motivation_query, v_raw, v_raw_std, v, n_runs, n_failures
 
 Usage:
-    uv run python model/lm/score_alternatives_3act_v.py --study food_inv_desire_3act
+    uv run python model/lm/score_alternatives_3act_v.py --study food_inv_desire
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
-    - lm_alternatives_food_inv_desire_3act.csv produced by generate_alternatives_3act.py
+    - lm_alternatives_food_inv_desire.csv produced by generate_alternatives_3act.py
 """
 
 import argparse
@@ -54,10 +54,10 @@ from prompts import system_prompt as build_system_prompt
 
 
 _STUDY_CONFIG = {
-    "food_inv_desire_3act": {
+    "food_inv_desire": {
         "scenarios": "scenarios_3act.csv",
-        "alternatives_input": "lm_alternatives_food_inv_desire_3act.csv",
-        "alternatives_v_output": "lm_alternatives_v_food_inv_desire_3act.csv",
+        "alternatives_input": "lm_alternatives_food_inv_desire.csv",
+        "alternatives_v_output": "lm_alternatives_v_food_inv_desire.csv",
     },
 }
 
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--study",
         choices=tuple(_STUDY_CONFIG.keys()),
-        default="food_inv_desire_3act",
+        default="food_inv_desire",
     )
     args = parser.parse_args()
     main(args.study)

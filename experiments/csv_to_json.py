@@ -1,53 +1,49 @@
 #!/usr/bin/env python3
 """Convert scenario CSVs to stimuli.json for each experiment.
 
-Each stimulus CSV maps to a set of experiment directories that consume it:
-- scenarios.csv → food_forw_intimacy_desire, food_inv_intimacy_desire_alt, food_inv_desire_intimacy_alt, food_inv_intimacy_desire_noalt
-- scenarios_effort.csv → food_forw_intimacy_effort, food_inv_intimacy_effort_alt, food_inv_effort_intimacy_alt
-- scenarios_nonfood.csv → nonfood_forw_intimacy_desire, nonfood_inv_intimacy_desire_alt, nonfood_inv_desire_intimacy_alt
+Each stimulus CSV maps to a set of experiment directories that consume it; the
+full routing is in the SOURCES list below. The active inverse experiments
+(Studies 1a, 1b, 2a, 2b) all read scenarios_3act.csv.
 """
 
 import csv
 import json
 from pathlib import Path
 
+# Each scenario CSV maps to the experiment directories under experiments/ that
+# consume it. Active inverse experiments (Studies 1a, 1b, 2a, 2b) read
+# scenarios_3act.csv and live at experiments/<slug>/. Legacy experiments live at
+# experiments/legacy/<slug>/ and are referenced with a "legacy/" prefix; they're
+# kept regenerate-able but are not part of `make all`. A slug is silently skipped
+# if its experiment dir has no json/ subdir.
 SOURCES = [
     (
         "scenarios.csv",
         [
-            "food_forw_intimacy_desire",
-            "food_inv_intimacy_desire_alt",
-            "food_inv_desire_intimacy_alt",
-            "food_inv_intimacy_desire_noalt",
-            "food_inv_desire_intimacy_noalt",
+            "legacy/food_forw_intimacy_desire",
+            "legacy/food_inv_intimacy_desire_noalt",
+            "legacy/food_inv_desire_intimacy_noalt",
         ],
     ),
     (
         "scenarios_effort.csv",
         [
-            "food_forw_intimacy_effort",
-            "food_inv_intimacy_effort_alt",
-            "food_inv_effort_intimacy_alt",
+            "legacy/food_forw_intimacy_effort",
         ],
     ),
     (
         "scenarios_3act.csv",
         [
-            "food_inv_intimacy_3act",
-            "food_inv_effort_3act",
-            "food_inv_desire_3act",
-            "food_inv_joint_de_3act",
-            "food_inv_joint_di_3act",
+            "food_inv_intimacy",
+            "food_inv_desire",
+            "food_inv_joint_de",
+            "food_inv_joint_ie",
         ],
     ),
     (
         "scenarios_nonfood.csv",
         [
-            "nonfood_forw_intimacy_desire",
-            "nonfood_inv_intimacy_desire_alt",
-            "nonfood_inv_desire_intimacy_alt",
-            "nonfood_inv_intimacy_desire_noalt",
-            "nonfood_inv_desire_intimacy_noalt",
+            "legacy/nonfood_forw_intimacy_desire",
         ],
     ),
 ]
@@ -90,7 +86,12 @@ def main():
                 scenario[key] = clean_text(value)
 
         for exp in experiments:
-            output_path = script_dir / exp / "json" / "stimuli.json"
+            exp_dir = script_dir / exp
+            if not exp_dir.is_dir():
+                print(f"Skipped (no experiment dir): {exp}")
+                continue
+            output_path = exp_dir / "json" / "stimuli.json"
+            output_path.parent.mkdir(parents=True, exist_ok=True)
             write_json(scenarios, output_path)
             print(f"Written: {output_path}")
 

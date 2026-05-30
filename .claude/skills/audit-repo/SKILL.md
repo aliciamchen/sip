@@ -20,7 +20,7 @@ For broad checks, delegate to the Explore subagent in parallel chunks. For targe
 
 4. **Tests pass.** `uv run python model/test_model_compliance.py` — must exit 0.
 
-5. **Orphaned files.** Survey `model/sandbox/`, `model/preregs/`, `analysis/legacy/`, `data/legacy/`. For each, grep for references in tracked code/docs. Flag content not referenced anywhere.
+5. **Orphaned files.** Survey `model/sandbox/`, `preregs/`, `analysis/legacy/`, `data/legacy/`. For each, grep for references in tracked code/docs. Flag content not referenced anywhere. For `preregs/`, also flag prereg files whose slug is no longer in the active experiment roster.
 
 6. **Doc-vs-code drift.** Check the last few commits for refactors (file renames, schema changes, slug changes). Then grep all .md/.qmd files for the old patterns. Common patterns to check after refactors: legacy script names (`fit_forward_planning.py` etc.), legacy CSV names (`forward_planning_*.csv`), pre-slug-reorg paths.
 

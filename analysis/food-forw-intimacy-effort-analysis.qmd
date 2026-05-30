@@ -34,7 +34,7 @@ This experiment manipulates the relationship between two people (intimacy: 0, 50
 Load the data (produced by `analysis/json_to_csv.py food_forw_intimacy_effort`, with attention/memory-check exclusions already applied):
 
 ```{r}
-df <- read_csv(here("data", "food_forw_intimacy_effort", "main_trials_long.csv"), show_col_types = FALSE) |>
+df <- read_csv(here("data", "legacy", "food_forw_intimacy_effort", "main_trials_long.csv"), show_col_types = FALSE) |>
   mutate(
     intimacy = factor(intimacy, levels = INTIMACY_LEVELS),
     effort = factor(effort, levels = c("low", "high"), labels = c("Low effort", "High effort")),
@@ -113,7 +113,7 @@ $$U(a|s, I, e) = w_v \cdot V(a) - w_d \cdot \text{access}(a) \cdot (1 - I) - w_e
 Model predictions are the **out-of-sample LOSO predictions** from `model/outputs/food_forw_intimacy_effort/cv_preds.csv`: for each trial, the prediction was made by a model fit on the other 15 scenarios.
 
 ```{r}
-df_cv <- read_csv(here("model", "outputs", "food_forw_intimacy_effort", "cv_preds.csv"),
+df_cv <- read_csv(here("model", "outputs", "legacy", "food_forw_intimacy_effort", "cv_preds.csv"),
                   show_col_types = FALSE)
 
 df_humans_cv <- df_cv |>
@@ -310,7 +310,7 @@ ggsave(here("figures", "food_forw_intimacy_effort_correlation.pdf"),
 ### Model fit results
 
 ```{r}
-fit_results <- read_csv(here("model", "outputs", "food_forw_intimacy_effort",
+fit_results <- read_csv(here("model", "outputs", "legacy", "food_forw_intimacy_effort",
                              "fit_results.csv"),
                         show_col_types = FALSE)
 

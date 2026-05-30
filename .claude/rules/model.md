@@ -25,15 +25,11 @@ Intimacy `I` scales the access-discomfort term (bodily/spatial/informational exp
 
 Parameters: `w_v` (V weight), `w_d` (access-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires; full and discomfort_only fit γ, base does not.
 
-## Three stimulus sets, three LM table families
+## Stimulus sets and LM table families
 
-The manuscript covers three different stimulus structures, each backed by its own LM-elicited parameter tables:
+The active roster (Studies 1a, 1b, 2a, 2b) all use the **3-action canonical** set (`scenarios_3act.csv`), which merges the effort paragraphs into the canonical scenarios. Fixed-action tables are in `LLM_TABLES_3ACT` (access/effort, (16, 2, 3)) and `load_lm_v_3act()` (V, (16, 3, 2)); each study also has a per-study padded LM-alternatives table family (see "LM-generated alternatives" below). The 4-action canonical (`scenarios.csv`, `LLM_TABLES` / `load_lm_v`) and 2-action effort (`scenarios_effort.csv`, `LLM_TABLES_EFFORT`) sets are now used only by the **legacy** forward experiments (`food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`); V is stipulated to 1 for the effort set in `utility.py:get_stipulated_reward_effort`.
 
-- **4-action canonical** (Study 1a, `food_forw_intimacy_desire`) — `scenarios.csv` with 4 actions per scenario. Tables in `LLM_TABLES` (access/effort, shape (16, 4)) and `load_lm_v()` (V, (16, 4, 2)).
-- **2-action effort** (Study 1b, `food_forw_intimacy_effort`) — `scenarios_effort.csv` with 2 actions and an `effort_low`/`effort_high` paragraph. Tables in `LLM_TABLES_EFFORT` (access/effort indexed by `(scenario, effort_condition, action)` of shape (16, 2, 2); V is stipulated to 1 in `utility.py:get_stipulated_reward_effort`).
-- **3-action canonical** (Studies 2, 3a, 3b, 4a, 4b — all `food_inv_*_3act` slugs) — `scenarios_3act.csv` merges the effort paragraphs into the canonical scenarios. Tables in `LLM_TABLES_3ACT` (access/effort, (16, 2, 3)) and `load_lm_v_3act()` (V, (16, 3, 2)). Study 3a additionally needs an effort-marginal access table (broadcast across effort_condition) since that observer doesn't see the effort paragraph; it's stored as `LLM_TABLES_3ACT["access_marg"]`.
-
-All three LM table loaders return `None` when their CSV is missing, so imports stay clean before elicitation has been run.
+All LM table loaders return `None` when their CSV is missing, so imports stay clean before elicitation has been run.
 
 The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUNS calls across a thread pool, constrains output to a JSON schema via `response_format`, retries transient errors at the SDK layer, and checkpoints per-scenario; new LM call sites should reuse `get_ratings_concurrent` + the schema helpers (`numeric_action_schema`, `alternatives_array_schema`) rather than calling Together directly. CSV outputs include both `n_runs_*` and `n_failures_*` columns.
 
@@ -116,7 +112,7 @@ The padded loader builds `(16, 3, 2, 4, 12)` access/effort/prior tables and a `(
 
 ### Inverse planning (`model/inverse/`)
 
-Five active inverse experiments, all on the 3-action set: `food_inv_intimacy_3act`, `food_inv_effort_3act`, `food_inv_desire_3act`, `food_inv_joint_de_3act`, `food_inv_joint_di_3act`. Each has its own `fit_<slug>.py` + `predict_<slug>.py` pair.
+Four active inverse experiments, all on the 3-action set: `food_inv_desire` (Study 1a), `food_inv_joint_de` (Study 1b), `food_inv_intimacy` (Study 2a), `food_inv_joint_ie` (Study 2b). Each has its own `fit_<slug>.py` + `predict_<slug>.py` pair. All four use the LM-generated-alternatives padded-action pipeline; the per-study observer table is 6-D `(padded_slot, scenario, observed_action, <observed conditions>, <inferred latents>)` and the fit/CV slice slot 0 (the participant-observed action). (NOTE: the surrounding `model.md` sections still describe the older Study 2/3a/3b/4a/4b roster and the fixed-vs-padded split — they predate the May 2026 migration and need an `audit-docs` pass.)
 
 - `_helpers.py` — `compute_intimacy_nll`, `compute_reward_nll`, plus the joint-fit helpers `fit_intimacy_3act_observer_joint`, `fit_effort_3act_observer_joint`, `fit_desire_3act_observer_joint`, `fit_joint_de_3act_observer_joint`, `fit_joint_di_3act_observer_joint`. Studies 2, 3a, 4a, 4b build a 5-D observer table `(action, scenario, intimacy/rel, reward, effort)` from `{utility weights, α_observer}` and slice the latent posterior per trial. Study 3b is different: its observer table is 6-D `(padded_slot, scenario, observed_action, effort, intimacy, reward)` and its NLL slices `tab[0, s, a, e, rel, 1]` — slot 0 by construction is the participant-observed action, with LM-generated alternatives in slots 1..k. `desire_3act_table_kwargs` returns padded kwargs (`access_table`, `effort_table`, `prior_table`, `v_padded_table`) built by `tables.py:load_padded_lm_tables_3act_desire`. Other table-kwargs helpers (`intimacy_3act_table_kwargs`, `effort_3act_table_kwargs`, `joint_3act_table_kwargs`) still return the fixed-action 3-act tables. `load_3act_fit_results` (predict-side loader) is unchanged. The single-α wrappers `fit_*_3act_observer` and `load_fitted_params` remain for the legacy `_noalt` padded experiments and the single-target 3-act paths.
 - `fit_<slug>.py` — for each ablation, jointly fits the actor utility weights and `α_observer` from this experiment's posterior data (no transfer from the forward fit). Writes `outputs/<slug>/fit_results.csv` with `param_w_v`, `param_w_d`, `param_w_e`, `param_gamma`, `param_alpha=1.0`, `alpha_observer`, `nll`, `n_params`. Study 3a uses effort-marginal access since its observer doesn't see the effort paragraph.
@@ -136,7 +132,7 @@ The non-CV `fit_*` / `predict_*` pipelines still produce all-data fits; AIC and 
 
 ### Outputs (`model/outputs/`)
 
-Grouped by experiment slug. For every experiment, look in `outputs/<slug>/` for:
+Grouped by experiment slug. Active studies are at `outputs/<slug>/`; legacy experiments (the forwards, the `_alt`/`_noalt` inverses, and the `food_inv_desire_pilot`) are at `outputs/legacy/<slug>/` — the legacy forward/`_noalt` scripts write there. For every experiment, look in its dir for:
 - `fit_results.csv` — fitted parameters + AIC/BIC/r per ablation.
 - `preds.csv` — forward only — per-cell predictions.
 - `preds_<variant>.npy`, `preds_summary.csv` — inverse only — per-variant prediction arrays and a summary CSV.
@@ -158,39 +154,37 @@ uv run python model/lm/score_canonical_features.py --domain nonfood
 uv run python model/lm/score_canonical_v.py                       # → lm_scenario_v.csv (Study 1a signed-valence V)
 uv run python model/lm/score_canonical_v.py --domain nonfood
 uv run python model/lm/score_effort_features.py                   # → lm_scenario_params_effort{,_marginal}.csv (Study 1b)
-uv run python model/lm/score_3act_features.py                                # → lm_scenario_params_3act{,_marginal}.csv (Studies 2/3a/4a/4b — fixed-action pipeline)
-uv run python model/lm/score_3act_v.py                                       # → lm_scenario_v_3act.csv (Studies 2/3a/4a/4b — fixed-action pipeline)
-uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire_3act  # Study 3b: LM-generated alternative actions per cell
-uv run python model/lm/score_3act_merged.py          --study food_inv_desire_3act  # Study 3b: merged canonical + alts scoring (overwrites lm_scenario_params_3act{,_marginal}.csv and lm_scenario_v_3act.csv with Study-3b-anchored comparative context)
+uv run python model/lm/score_3act_features.py                                # → lm_scenario_params_3act{,_marginal}.csv (fixed-action tables)
+uv run python model/lm/score_3act_v.py                                       # → lm_scenario_v_3act.csv (fixed-action tables)
+# Per-study LM-generated alternatives + merged scoring (all 4 active studies):
+uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire   # (or food_inv_joint_de / food_inv_intimacy / food_inv_joint_ie)
+uv run python model/lm/score_3act_merged.py          --study food_inv_desire
 ```
 
-Forward-planning fits + predictions (Studies 1a, 1b, plus non-food forward):
+Legacy forward-planning LM tables + fits (per-slug only; not part of `make all`):
 
 ```bash
+uv run python model/lm/score_canonical_features.py                # 4-action canonical access+effort
+uv run python model/lm/score_canonical_v.py
+uv run python model/lm/score_effort_features.py                   # 2-action effort
 uv run python model/forward/fit_food_forw_intimacy_desire.py
 uv run python model/forward/predict_food_forw_intimacy_desire.py
-uv run python model/forward/fit_food_forw_intimacy_effort.py
-uv run python model/forward/predict_food_forw_intimacy_effort.py
-uv run python model/forward/fit_nonfood_forw_intimacy_desire.py
-uv run python model/forward/predict_nonfood_forw_intimacy_desire.py
 ```
 
-Inverse-planning fits + predictions (Studies 2, 3a, 3b, 4a, 4b):
+Inverse-planning fits + predictions (active Studies 1a, 1b, 2a, 2b):
 
 ```bash
-uv run python model/inverse/fit_food_inv_intimacy_3act.py   # Study 2
-uv run python model/inverse/predict_food_inv_intimacy_3act.py
-uv run python model/inverse/fit_food_inv_effort_3act.py     # Study 3a
-uv run python model/inverse/predict_food_inv_effort_3act.py
-uv run python model/inverse/fit_food_inv_desire_3act.py     # Study 3b
-uv run python model/inverse/predict_food_inv_desire_3act.py
-uv run python model/inverse/fit_food_inv_joint_de_3act.py   # Study 4a
-uv run python model/inverse/predict_food_inv_joint_de_3act.py
-uv run python model/inverse/fit_food_inv_joint_di_3act.py   # Study 4b
-uv run python model/inverse/predict_food_inv_joint_di_3act.py
+uv run python model/inverse/fit_food_inv_desire.py      # Study 1a
+uv run python model/inverse/predict_food_inv_desire.py
+uv run python model/inverse/fit_food_inv_joint_de.py    # Study 1b
+uv run python model/inverse/predict_food_inv_joint_de.py
+uv run python model/inverse/fit_food_inv_intimacy.py    # Study 2a
+uv run python model/inverse/predict_food_inv_intimacy.py
+uv run python model/inverse/fit_food_inv_joint_ie.py    # Study 2b
+uv run python model/inverse/predict_food_inv_joint_ie.py
 ```
 
-LOSO cross-validation (forward only for now; inverse 3-action CV scripts are stubs):
+LOSO cross-validation:
 
 ```bash
 uv run python model/cv/cv_food_forw_intimacy_desire.py

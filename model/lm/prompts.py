@@ -460,16 +460,15 @@ def alternatives_user_prompt_3act(
     reward_text=None,
 ):
     """Build the user prompt for the alternative-generation call in the 3-action
-    inverse experiments (Studies 2, 3a, 3b, 4a, 4b).
+    inverse experiments (Studies 1a, 1b, 2a, 2b).
 
     Composes whichever observer-visible condition paragraphs the experiment
     reveals. Each study passes only the paragraphs its observer actually sees:
 
-      - Study 2  (`food_inv_intimacy_3act`):   reward_text + effort_text
-      - Study 3a (`food_inv_effort_3act`):     reward_text + intimacy_level
-      - Study 3b (`food_inv_desire_3act`):     effort_text + intimacy_level
-      - Study 4a (`food_inv_joint_de_3act`):   intimacy_level
-      - Study 4b (`food_inv_joint_di_3act`):   effort_text
+      - Study 1a (`food_inv_desire`):     effort_text + intimacy_level
+      - Study 1b (`food_inv_joint_de`):   intimacy_level
+      - Study 2a (`food_inv_intimacy`):   reward_text + effort_text
+      - Study 2b (`food_inv_joint_ie`):   reward_text
 
     Mirrors how the human participant sees the trial (vignette + revealed
     condition paragraphs + observed action), per `feedback_llm_as_participant`.

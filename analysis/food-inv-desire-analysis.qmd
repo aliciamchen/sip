@@ -1,0 +1,81 @@
+---
+title: "Study 1a — Desire inference"
+format:
+  html:
+    code-fold: true
+    toc: true
+    embed-resources: true
+execute:
+  echo: true
+  warning: false
+---
+
+```{r setup, include=FALSE}
+source(here::here("analysis", "utils.R"))
+setup_analysis()
+```
+
+# Study 1a — Desire inference
+
+Observer infers the actors' desire from a single observed action, given known effort and intimacy. Design: 2 (effort: low / high) × 4 (intimacy: 0 / 50 / 75 / 100) × 3 (observed action). The desire DV is a 1–7 Likert ("how much do they want the food?", from "not at all" to "extremely"). The model's observer reasons over an LM-generated alternative-action set per cell (see `model/lm/generate_alternatives.py`).
+
+**Status:** Scaffolding stub. The original 0–100-DV pilot is archived at
+`analysis/legacy/food-inv-desire-pilot-analysis.qmd` (data in
+`data/legacy/food_inv_desire_pilot/`). The plots below come online once data on the
+corrected 1–7 Likert DV lands in `data/food_inv_desire/`. Until then, this qmd is
+structure-only.
+
+## Demographics
+
+```{r demographics}
+if (file.exists(here::here("data", "food_inv_desire", "exit_survey.csv"))) {
+  report_demographics("food_inv_desire")
+} else {
+  cat("No data yet for food_inv_desire (active 1–7 Likert DV).\n")
+}
+```
+
+## Data
+
+```{r load-data}
+data_path <- here::here("data", "food_inv_desire", "main_trials_long.csv")
+if (file.exists(data_path)) {
+  df <- read_csv(data_path, show_col_types = FALSE)
+  cat("Trials:", nrow(df), "\n")
+  glimpse(df)
+} else {
+  cat("No data yet for food_inv_desire (active 1–7 Likert DV).\n")
+}
+```
+
+## Belief update
+
+```{r belief-update, eval=FALSE}
+# Desire DV is a 1-7 Likert; belief update = posterior - prior on the Likert scale.
+# Uses calculate_belief_update() from utils.R on the response column.
+```
+
+## Model predictions
+
+```{r preds, eval=FALSE}
+preds_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.csv")
+if (file.exists(preds_path)) {
+  preds <- read_csv(preds_path, show_col_types = FALSE)
+  glimpse(preds)
+} else {
+  cat("No CV predictions yet — run `make cv-food_inv_desire` once a fit + data exist.\n")
+}
+```
+
+## Model-vs-human correlations
+
+```{r model-vs-human, eval=FALSE}
+# TODO: wire up once both data and model predictions exist.
+# Model predicts P(high desire); map to the 1-7 Likert via predicted_likert = 1 + 6 * P(high).
+# Standard pattern: aggregate human + model by cell, scatter, bootstrap Pearson.
+```
+
+## Notes
+
+See the manuscript Methods section for the exact design, plus
+`experiments/food_inv_desire/README.md` for the trial structure spec.

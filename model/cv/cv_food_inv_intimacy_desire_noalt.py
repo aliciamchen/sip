@@ -172,7 +172,7 @@ def main():
 
     preds_df, fold_df = run_loso_noalt_joint(padded)
 
-    output_dir = get_project_root() / "model" / "outputs" / "food_inv_intimacy_desire_noalt"
+    output_dir = get_project_root() / "model" / "outputs" / "legacy" / "food_inv_intimacy_desire_noalt"
     output_dir.mkdir(parents=True, exist_ok=True)
     preds_path = output_dir / "cv_preds_summary.csv"
     fold_path = output_dir / "cv_folds.csv"

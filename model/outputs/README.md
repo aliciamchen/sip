@@ -1,26 +1,31 @@
 # Model outputs codebook
 
-Outputs are grouped by experiment slug:
+Outputs are grouped by experiment slug, with legacy experiments under `legacy/`:
 
 ```
 outputs/
 ├── lm/                                # LM-elicited tables (lm_*.csv)
-└── <experiment_slug>/                 # one folder per experiment
-    ├── fit_results.csv
-    ├── preds.csv                      # forward only — per-cell predictions (gitignored)
-    ├── preds_<variant>.npy            # inverse only — raw posterior arrays per variant (gitignored)
-    ├── preds_summary.csv              # inverse only — summary scalars (gitignored)
-    ├── cv_folds.csv                   # per-fold fit results from LOSO CV
-    ├── cv_preds.csv                   # forward only — per-trial held-out predictions
-    └── cv_preds_summary.csv           # inverse only — held-out per-condition summary
+├── <active_slug>/                     # one folder per active experiment
+│   ├── fit_results.csv
+│   ├── preds.csv                      # forward only — per-cell predictions (gitignored)
+│   ├── preds_<variant>.npy            # inverse only — raw posterior arrays per variant (gitignored)
+│   ├── preds_summary.csv              # inverse only — summary scalars (gitignored)
+│   ├── cv_folds.csv                   # per-fold fit results from LOSO CV
+│   ├── cv_preds.csv                   # forward only — per-trial held-out predictions
+│   └── cv_preds_summary.csv           # inverse only — held-out per-condition summary
+└── legacy/<slug>/                     # same layout, for legacy experiments
 ```
 
-Active experiment slugs (3 forward + 5 inverse):
-`food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`,
-`food_inv_intimacy_3act`, `food_inv_effort_3act`, `food_inv_desire_3act`,
-`food_inv_joint_de_3act`, `food_inv_joint_di_3act`.
+Active experiment slugs (4 inverse, all on the 3-action set):
+`food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a),
+`food_inv_joint_ie` (2b). None have collected data yet, so their output folders are
+created on first fit.
 
-Six legacy inverse slugs (`food_inv_*_alt`, `food_inv_*_noalt`) still have output directories on disk from previous fits and will be removed when the legacy code is deleted.
+`outputs/legacy/` holds outputs for the legacy forward experiments
+(`food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`),
+the six pre-3-action inverse experiments (`food_inv_*_alt`, `food_inv_*_noalt`), and the
+Study 1a pilot (`food_inv_desire_pilot`). The forward and `_noalt` scripts write here via
+their per-slug `make fit-/predict-/cv-` targets.
 
 `preds.csv`, `preds_<variant>.npy`, and `preds_summary.csv` are the all-data (non-CV) predictions. They're written by the predict scripts but not read anywhere downstream — analysis qmds and any other consumers use `cv_preds.csv` / `cv_preds_summary.csv` instead, since reported correlations are out-of-sample. The non-CV files are gitignored (regenerate locally for debugging via `make predict-<slug>`).
 

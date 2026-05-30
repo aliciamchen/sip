@@ -624,7 +624,10 @@ def run_fit_and_save_results(
             }
         )
 
-    output_dir = Path(__file__).resolve().parent.parent / "outputs" / experiment_slug
+    # Forward experiments are all legacy now; their outputs live under outputs/legacy/.
+    output_dir = (
+        Path(__file__).resolve().parent.parent / "outputs" / "legacy" / experiment_slug
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     results_path = output_dir / "fit_results.csv"
     pd.DataFrame(rows).to_csv(results_path, index=False)
@@ -666,7 +669,10 @@ def run_predict_and_save_preds(
     `predict_funcs` maps variant_name → predict_fn. `fit_param_names` maps
     variant_name → ordered list of param names after `alpha`.
     """
-    output_dir = Path(__file__).resolve().parent.parent / "outputs" / experiment_slug
+    # Forward experiments are all legacy now; their outputs live under outputs/legacy/.
+    output_dir = (
+        Path(__file__).resolve().parent.parent / "outputs" / "legacy" / experiment_slug
+    )
     fit_results_path = output_dir / "fit_results.csv"
     fit_results = pd.read_csv(fit_results_path)
 

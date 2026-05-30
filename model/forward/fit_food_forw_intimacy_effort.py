@@ -29,21 +29,36 @@ EXPERIMENT_SLUG = "food_forw_intimacy_effort"
 
 
 def main():
-    data_path = get_project_root() / "data" / EXPERIMENT_SLUG / "main_trials_long.csv"
-    data, intimacy, condition_iv, action, p_action, scenario_idx = load_data_effort(data_path)
+    data_path = (
+        get_project_root()
+        / "data"
+        / "legacy"
+        / EXPERIMENT_SLUG
+        / "main_trials_long.csv"
+    )
+    data, intimacy, condition_iv, action, p_action, scenario_idx = load_data_effort(
+        data_path
+    )
 
     tables = (LLM_TABLES_EFFORT["access"], LLM_TABLES_EFFORT["effort"])
     fit_funcs = {
         "full": (fit_effort_full, predict_effort_full, ["w_v", "w_d", "w_e", "gamma"]),
-        "discomfort_only": (fit_effort_discomfort_only, predict_effort_discomfort_only, ["w_d", "gamma"]),
+        "discomfort_only": (
+            fit_effort_discomfort_only,
+            predict_effort_discomfort_only,
+            ["w_d", "gamma"],
+        ),
         "base": (fit_effort_base, predict_effort_base, ["w_v", "w_e"]),
     }
     tables_by_variant = {"full": tables, "discomfort_only": tables, "base": tables}
 
     run_fit_and_save_results(
         experiment_slug=EXPERIMENT_SLUG,
-        intimacy=intimacy, condition_iv=condition_iv, action=action,
-        scenario_idx=scenario_idx, p_action=p_action,
+        intimacy=intimacy,
+        condition_iv=condition_iv,
+        action=action,
+        scenario_idx=scenario_idx,
+        p_action=p_action,
         tables_by_variant=tables_by_variant,
         fit_funcs=fit_funcs,
         group_cols=["intimacy", "effort", "action"],

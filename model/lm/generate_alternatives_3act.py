@@ -2,26 +2,26 @@
 """
 Generate LM counterfactual alternative actions for the 3-action inverse experiments.
 
-The 3-act observers (Studies 2, 3a, 3b, 4a, 4b) softmax over a per-cell action
+The 3-act observers (Studies 1a, 1b, 2a, 2b) softmax over a per-cell action
 space {observed_action} ∪ generated_alts rather than the fixed 3-action set.
 Alternatives are conditioned on what the human participant sees in the trial —
 i.e. observer-visible variables only (`feedback_llm_as_participant.md`).
 
 Per-study conditioning tuples (only the variables the observer actually sees,
-besides scenario + observed_action):
-    food_inv_desire_3act   (Study 3b): (effort_condition, intimacy_condition)
+besides scenario + observed_action), and the resulting cell count:
+    food_inv_desire   (1a): (effort, intimacy)  → 16 × 3 × 2 × 4 = 384 cells
+    food_inv_joint_de (1b): (intimacy,)         → 16 × 3 × 4     = 192 cells
+    food_inv_intimacy (2a): (reward, effort)    → 16 × 3 × 2 × 2 = 192 cells
+    food_inv_joint_ie (2b): (reward,)           → 16 × 3 × 2     =  96 cells
 
-Other 4 studies (Study 2, 3a, 4a, 4b) follow in a future rollout.
-
-For Study 3b: 16 scenarios × 3 observed actions × 2 effort × 4 intimacy = 384
-cells. One LM elicitation per cell (parse-retries up to MAX_PARSE_RETRIES);
-each call returns a JSON array of variable-length alternatives.
+One LM elicitation per cell (parse-retries up to MAX_PARSE_RETRIES); each call
+returns a JSON array of variable-length alternatives.
 
 Output:
-    --study food_inv_desire_3act  →  model/outputs/lm/lm_alternatives_food_inv_desire_3act.csv
+    --study food_inv_desire  →  model/outputs/lm/lm_alternatives_food_inv_desire.csv
 
 Usage:
-    uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire_3act
+    uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
@@ -62,21 +62,47 @@ from prompts import alternatives_user_prompt_3act
 ALT_GEN_TEMPERATURE = 0.2
 
 
-# Per-study conditioning: tuple of (column_in_scenarios_csv, level_values).
-# Each entry defines an axis the alternative-generation loop iterates over,
-# alongside scenario_label and observed_action.
+# Per-study conditioning. `show` lists which condition paragraphs the observer
+# (and hence the LM) sees on each trial — only the observer-visible variables,
+# so the alternative set does not leak the latent being inferred. `cell_cols`
+# are the resulting cell-key columns (besides scenario_label + observed_action)
+# written to the output CSV; the downstream merged-scoring + padded-table loader
+# key on these.
+#   1a desire    — visible: effort, intimacy        (infers desire)
+#   1b joint_de  — visible: intimacy                (infers desire + effort)
+#   2a intimacy  — visible: reward, effort          (infers intimacy)
+#   2b joint_ie  — visible: reward                  (infers intimacy + effort)
 _STUDY_CONFIG = {
-    "food_inv_desire_3act": {
+    "food_inv_desire": {
         "scenarios": "scenarios_3act.csv",
-        "output": "lm_alternatives_food_inv_desire_3act.csv",
-        # Observer-visible variables besides scenario + observed_action.
-        "conditioning_axes": ("effort_condition", "intimacy_condition"),
-        "effort_levels": ["low", "high"],
-        "intimacy_levels": [0, 50, 75, 100],
+        "output": "lm_alternatives_food_inv_desire.csv",
+        "show": ("effort", "intimacy"),
+        "cell_cols": ("effort_condition", "intimacy_condition"),
+    },
+    "food_inv_joint_de": {
+        "scenarios": "scenarios_3act.csv",
+        "output": "lm_alternatives_food_inv_joint_de.csv",
+        "show": ("intimacy",),
+        "cell_cols": ("intimacy_condition",),
+    },
+    "food_inv_intimacy": {
+        "scenarios": "scenarios_3act.csv",
+        "output": "lm_alternatives_food_inv_intimacy.csv",
+        "show": ("reward", "effort"),
+        "cell_cols": ("reward_condition", "effort_condition"),
+    },
+    "food_inv_joint_ie": {
+        "scenarios": "scenarios_3act.csv",
+        "output": "lm_alternatives_food_inv_joint_ie.csv",
+        "show": ("reward",),
+        "cell_cols": ("reward_condition",),
     },
 }
 
 ACTION_COLS_3ACT = ["action_0", "action_1", "action_2"]
+REWARD_LEVELS = ["low", "high"]
+EFFORT_LEVELS = ["low", "high"]
+INTIMACY_LEVELS = [0, 50, 75, 100]
 
 
 def load_scenarios(study):
@@ -85,37 +111,52 @@ def load_scenarios(study):
     return pd.read_csv(scenarios_path)
 
 
-def _build_3b_cells(scenarios_df, cfg):
-    """Enumerate (scenario, observed_action, effort, intimacy) cells for Study 3b
-    and build the user prompt for each.
+def _cell_key(cell, cell_cols):
+    """Tuple key for resume-dedup, normalized like the output CSV row."""
+    key = [cell["scenario_label"], cell["observed_action"]]
+    for col in cell_cols:
+        v = cell[col]
+        key.append(int(v) if col == "intimacy_condition" else v)
+    return tuple(key)
 
-    Returns a list of dicts: {scenario_label, observed_action, effort_condition,
-    intimacy_condition, user_prompt}.
-    """
+
+def _build_cells(scenarios_df, cfg):
+    """Enumerate cells for one study, iterating scenario × observed_action over
+    only the observer-visible conditioning axes (per cfg['show']). Returns dicts
+    with scenario_label, observed_action, the study's cell_cols, and user_prompt
+    (built with only the visible condition paragraphs)."""
+    show = cfg["show"]
+    reward_levels = REWARD_LEVELS if "reward" in show else [None]
+    effort_levels = EFFORT_LEVELS if "effort" in show else [None]
+    intimacy_levels = INTIMACY_LEVELS if "intimacy" in show else [None]
+
     cells = []
     for _, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         vignette = row["vignette"]
         for observed_col in ACTION_COLS_3ACT:
             observed_action_text = row[observed_col]
-            for effort in cfg["effort_levels"]:
-                effort_text = row[f"effort_{effort}"]
-                for intimacy in cfg["intimacy_levels"]:
-                    user_prompt = alternatives_user_prompt_3act(
-                        vignette,
-                        observed_action_text,
-                        effort_text=effort_text,
-                        intimacy_level=intimacy,
-                    )
-                    cells.append(
-                        {
+            for reward in reward_levels:
+                for effort in effort_levels:
+                    for intimacy in intimacy_levels:
+                        prompt_kwargs = {}
+                        cell = {
                             "scenario_label": scenario,
                             "observed_action": observed_col,
-                            "effort_condition": effort,
-                            "intimacy_condition": intimacy,
-                            "user_prompt": user_prompt,
                         }
-                    )
+                        if reward is not None:
+                            prompt_kwargs["reward_text"] = row[f"reward_{reward}"]
+                            cell["reward_condition"] = reward
+                        if effort is not None:
+                            prompt_kwargs["effort_text"] = row[f"effort_{effort}"]
+                            cell["effort_condition"] = effort
+                        if intimacy is not None:
+                            prompt_kwargs["intimacy_level"] = intimacy
+                            cell["intimacy_condition"] = intimacy
+                        cell["user_prompt"] = alternatives_user_prompt_3act(
+                            vignette, observed_action_text, **prompt_kwargs
+                        )
+                        cells.append(cell)
     return cells
 
 
@@ -139,20 +180,14 @@ def main(study):
     output_dir.mkdir(exist_ok=True)
     output_path = output_dir / cfg["output"]
 
+    cell_cols = cfg["cell_cols"]
+
     # Resume: skip cells already in the output CSV.
     done_cells = set()
     results = []
     if output_path.exists():
         existing = pd.read_csv(output_path)
-        done_cells = set(
-            (
-                r["scenario_label"],
-                r["observed_action"],
-                r["effort_condition"],
-                int(r["intimacy_condition"]),
-            )
-            for _, r in existing.iterrows()
-        )
+        done_cells = set(_cell_key(r, cell_cols) for _, r in existing.iterrows())
         results = existing.to_dict("records")
         print(
             f"Found existing {output_path.name} with {len(done_cells)} cells "
@@ -161,21 +196,8 @@ def main(study):
         )
 
     # Build work list, drop done cells.
-    if study == "food_inv_desire_3act":
-        all_cells = _build_3b_cells(scenarios_df, cfg)
-    else:  # pragma: no cover — guarded above
-        raise NotImplementedError(study)
-    pending = [
-        c
-        for c in all_cells
-        if (
-            c["scenario_label"],
-            c["observed_action"],
-            c["effort_condition"],
-            int(c["intimacy_condition"]),
-        )
-        not in done_cells
-    ]
+    all_cells = _build_cells(scenarios_df, cfg)
+    pending = [c for c in all_cells if _cell_key(c, cell_cols) not in done_cells]
     total = len(all_cells)
     print(
         f"\n{len(pending)} cells to elicit "
@@ -195,26 +217,24 @@ def main(study):
             cell = future_to_cell[fut]
             alts = fut.result()
             completed += 1
+            cond_str = " | ".join(f"{c}={cell[c]}" for c in cell_cols)
             print(
                 f"[{completed}/{len(pending)}] {cell['scenario_label']} | "
-                f"observed={cell['observed_action']} | "
-                f"effort={cell['effort_condition']} | "
-                f"intimacy={cell['intimacy_condition']} | "
+                f"observed={cell['observed_action']} | {cond_str} | "
                 f"elicited {len(alts)}",
                 flush=True,
             )
             for alt_idx, alt in enumerate(alts):
-                results.append(
-                    {
-                        "scenario_label": cell["scenario_label"],
-                        "observed_action": cell["observed_action"],
-                        "effort_condition": cell["effort_condition"],
-                        "intimacy_condition": cell["intimacy_condition"],
-                        "alt_idx": alt_idx,
-                        "action_text": alt["action"],
-                        "is_share": alt["is_share"],
-                    }
-                )
+                row = {
+                    "scenario_label": cell["scenario_label"],
+                    "observed_action": cell["observed_action"],
+                }
+                for col in cell_cols:
+                    row[col] = cell[col]
+                row["alt_idx"] = alt_idx
+                row["action_text"] = alt["action"]
+                row["is_share"] = alt["is_share"]
+                results.append(row)
             if completed % CHECKPOINT_EVERY == 0:
                 pd.DataFrame(results).to_csv(output_path, index=False)
                 print(
@@ -228,7 +248,7 @@ def main(study):
 
     print("\n=== Summary ===")
     per_cell = results_df.groupby(
-        ["scenario_label", "observed_action", "effort_condition", "intimacy_condition"]
+        ["scenario_label", "observed_action", *cell_cols]
     ).size()
     print(f"Total cells: {len(per_cell)} (expected {total})")
     print(
@@ -242,12 +262,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--study",
         choices=tuple(_STUDY_CONFIG.keys()),
-        default="food_inv_desire_3act",
-        help=(
-            "Which 3-act inverse experiment to elicit alternatives for. "
-            "Currently only Study 3b (food_inv_desire_3act) is implemented; "
-            "the other 4 studies will be added in a follow-up rollout."
-        ),
+        default="food_inv_desire",
+        help="Which 3-act inverse experiment to elicit alternatives for.",
     )
     args = parser.parse_args()
     main(args.study)

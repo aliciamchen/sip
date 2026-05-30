@@ -55,29 +55,23 @@ A parallel set of 16 scenarios covering substance sharing (chapstick, hairbrush)
 
 ## Active experiments
 
-### Forward planning
-
-- [food_forw_intimacy_desire](food_forw_intimacy_desire/README.md) — **Study 1a**: 4-action canonical with desire × intimacy crossing.
-- [food_forw_intimacy_effort](food_forw_intimacy_effort/README.md) — **Study 1b**: 2-action effort experiment with effort × intimacy crossing; reward held at high.
-- [nonfood_forw_intimacy_desire](nonfood_forw_intimacy_desire/README.md) — Non-food forward (parallels Study 1a on `scenarios_nonfood.csv`).
-
 ### Inverse planning (3-action set)
 
-All five use `scenarios_3act.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. Each experiment dir's `README.md` documents the design spec.
+All four use `scenarios_3act.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire on a 1–7 Likert, effort as a continuous 0–100 rating between two states, and intimacy on a 0–100 numeric scale. Each experiment dir's `README.md` documents the design spec.
 
-- [food_inv_intimacy_3act](food_inv_intimacy_3act/README.md) — **Study 2**: infer intimacy under known desire + effort. Design 2 × 2 × 3.
-- [food_inv_effort_3act](food_inv_effort_3act/README.md) — **Study 3a**: infer effort under known desire + intimacy. Design 2 × 4 × 3. Slider endpoints are the two effort paragraphs.
-- [food_inv_desire_3act](food_inv_desire_3act/README.md) — **Study 3b**: infer desire under known effort + intimacy. Design 2 × 4 × 3. Slider endpoints are the two reward paragraphs.
-- [food_inv_joint_de_3act](food_inv_joint_de_3act/README.md) — **Study 4a**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
-- [food_inv_joint_di_3act](food_inv_joint_di_3act/README.md) — **Study 4b**: joint inference over desire and intimacy given effort. Design 2 × 3, two sliders per trial (desire with paragraph endpoints, intimacy on the 0–100 maximally-formal-to-maximally-intimate scale).
+- [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy. Design 2 × 4 × 3.
+- [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
+- [food_inv_intimacy](food_inv_intimacy/README.md) — **Study 2a**: infer intimacy under known desire + effort. Design 2 × 2 × 3.
+- [food_inv_joint_ie](food_inv_joint_ie/README.md) — **Study 2b**: joint inference over intimacy and effort given desire. Design 2 × 3, two sliders per trial (intimacy on the 0–100 scale, effort with paragraph endpoints).
 
-## Legacy experiment dirs (slated for removal)
+## Legacy experiment dirs
 
-Six older inverse-planning experiment dirs from the previous 4-action / 2-action design remain on disk so their model scripts and analysis qmds still run against the archived data under `data/legacy/`:
+Legacy experiment code lives under [`experiments/legacy/`](legacy/); their model scripts and analysis qmds still run against the archived data under `data/legacy/` (outputs land in `model/outputs/legacy/`), via the Makefile's per-slug `LEGACY_FORWARD` / `LEGACY_INVERSE` targets.
 
-- `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`, `food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`, `food_inv_intimacy_effort_alt`, `food_inv_effort_intimacy_alt`.
+- **Forward planning** (real data): `food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire` — the manuscript's earlier Studies 1a/1b plus a non-food forward, demoted to legacy in the May 2026 roster refactor.
+- **Pre-3-action inverse**: `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`, `food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`, `food_inv_intimacy_effort_alt`, `food_inv_effort_intimacy_alt`. The two `_noalt` dirs retain runnable model code; the `_alt` dirs are data-only (their model code was removed earlier).
 
-Four non-food inverse stubs (`nonfood_inv_*`) were scaffolded against the obsolete 4-action design and were never run; they'll be retired along with the legacy food inverse dirs.
+The four non-food inverse stubs (`nonfood_inv_*`), scaffolded against the obsolete 4-action design and never run, were deleted in the May 2026 cleanup.
 
 ## Counterbalancing
 

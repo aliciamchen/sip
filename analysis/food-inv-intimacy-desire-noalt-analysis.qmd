@@ -148,7 +148,7 @@ The softmax over actions is $P(a | I, s) \propto \pi(a|s, \text{mot}) \cdot \exp
 ### Fitted parameters
 
 ```{r}
-df_fit_results <- read_csv(here("model", "outputs", "food_inv_intimacy_desire_noalt", "fit_results.csv")) |>
+df_fit_results <- read_csv(here("model", "outputs", "legacy", "food_inv_intimacy_desire_noalt", "fit_results.csv")) |>
   mutate(
     utility = str_remove(model, "_padded$"),
     model_label = case_when(
@@ -183,7 +183,7 @@ kable_aic_table(
 ### Load model predictions
 
 ```{r}
-df_model <- read_csv(here("model", "outputs", "food_inv_intimacy_desire_noalt", "cv_preds_summary.csv")) |>
+df_model <- read_csv(here("model", "outputs", "legacy", "food_inv_intimacy_desire_noalt", "cv_preds_summary.csv")) |>
   mutate(
     action = as.character(observed_action),
     motivation = factor(motivation, levels = c("low", "high"), labels = MOTIVATION_LEVELS),

@@ -11,14 +11,14 @@ broadcast back to every (observed_action, effort_condition, intimacy_condition,
 alt_idx) row that used that action text.
 
 Output (Study 3b):
-    model/outputs/lm/lm_alternatives_features_food_inv_desire_3act.csv
+    model/outputs/lm/lm_alternatives_features_food_inv_desire.csv
 
 Usage:
-    uv run python model/lm/score_alternatives_3act.py --study food_inv_desire_3act
+    uv run python model/lm/score_alternatives_3act.py --study food_inv_desire
 
 Requires:
     - TOGETHER_API_KEY environment variable or in .env file
-    - lm_alternatives_food_inv_desire_3act.csv produced by generate_alternatives_3act.py
+    - lm_alternatives_food_inv_desire.csv produced by generate_alternatives_3act.py
 """
 
 import argparse
@@ -53,10 +53,10 @@ from prompts import system_prompt as build_system_prompt
 
 
 _STUDY_CONFIG = {
-    "food_inv_desire_3act": {
+    "food_inv_desire": {
         "scenarios": "scenarios_3act.csv",
-        "alternatives_input": "lm_alternatives_food_inv_desire_3act.csv",
-        "alternatives_output": "lm_alternatives_features_food_inv_desire_3act.csv",
+        "alternatives_input": "lm_alternatives_food_inv_desire.csv",
+        "alternatives_output": "lm_alternatives_features_food_inv_desire.csv",
         # The 3-act access/effort tables depend on effort_condition, so each
         # alt is scored under both effort levels (the effort paragraph is part
         # of the vignette text passed to the LM, mirroring score_3act_features.py).
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--study",
         choices=tuple(_STUDY_CONFIG.keys()),
-        default="food_inv_desire_3act",
+        default="food_inv_desire",
     )
     args = parser.parse_args()
     main(args.study)

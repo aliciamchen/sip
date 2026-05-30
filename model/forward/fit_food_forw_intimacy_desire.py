@@ -29,9 +29,16 @@ EXPERIMENT_SLUG = "food_forw_intimacy_desire"
 
 
 def main():
-    data_path = get_project_root() / "data" / EXPERIMENT_SLUG / "main_trials_long.csv"
+    data_path = (
+        get_project_root()
+        / "data"
+        / "legacy"
+        / EXPERIMENT_SLUG
+        / "main_trials_long.csv"
+    )
     data, intimacy, condition_iv, action, p_action, scenario_idx = load_data_canonical(
-        data_path, SCENARIO_TO_IDX,
+        data_path,
+        SCENARIO_TO_IDX,
     )
 
     v_table = load_lm_v("food")
@@ -39,8 +46,16 @@ def main():
     tables_disc = (LLM_TABLES["access"], LLM_TABLES["effort"])
 
     fit_funcs = {
-        "full": (fit_canonical_full, predict_canonical_full, ["w_v", "w_d", "w_e", "gamma"]),
-        "discomfort_only": (fit_canonical_discomfort_only, predict_canonical_discomfort_only, ["w_d", "gamma"]),
+        "full": (
+            fit_canonical_full,
+            predict_canonical_full,
+            ["w_v", "w_d", "w_e", "gamma"],
+        ),
+        "discomfort_only": (
+            fit_canonical_discomfort_only,
+            predict_canonical_discomfort_only,
+            ["w_d", "gamma"],
+        ),
         "base": (fit_canonical_base, predict_canonical_base, ["w_v", "w_e"]),
     }
     tables_by_variant = {
@@ -51,8 +66,11 @@ def main():
 
     run_fit_and_save_results(
         experiment_slug=EXPERIMENT_SLUG,
-        intimacy=intimacy, condition_iv=condition_iv, action=action,
-        scenario_idx=scenario_idx, p_action=p_action,
+        intimacy=intimacy,
+        condition_iv=condition_iv,
+        action=action,
+        scenario_idx=scenario_idx,
+        p_action=p_action,
         tables_by_variant=tables_by_variant,
         fit_funcs=fit_funcs,
         group_cols=["intimacy", "motivation", "action"],

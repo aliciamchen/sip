@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-Merged canonical + alternatives scoring for Study 3b (food_inv_desire_3act).
+Merged canonical + alternatives scoring for the 3-action inverse studies
+(1a food_inv_desire, 1b food_inv_joint_de, 2a food_inv_intimacy, 2b
+food_inv_joint_ie). Pick the study with --study.
 
 For each scenario, builds a unified action list combining (i) the 3 canonical
 actions from `scenarios_3act.csv` and (ii) the unique LM-generated alternatives
-from `lm_alternatives_food_inv_desire_3act.csv` (deduped case-insensitively).
+from the study's `lm_alternatives_<slug>.csv` (deduped case-insensitively).
 The LM then rates this single unified list on access, effort, and V in
 separate prompts — so slot 0 (canonical observed action) and slots 1..k (alts)
 end up on the same comparative scale by construction.
@@ -32,32 +34,29 @@ Outputs (existing schemas preserved — no downstream loader changes needed):
   - lm_scenario_params_3act_marginal.csv (canonical access only, no effort_
     condition column — same values as above, kept for Study 3a's loader)
   - lm_scenario_v_3act.csv (canonical V per (scenario, action, motivation))
-  - lm_alternatives_features_food_inv_desire_3act.csv (alts access + effort;
-    access broadcast across effort_condition; one row per generation cell)
-  - lm_alternatives_v_food_inv_desire_3act.csv (alts V per (scenario, observed,
-    effort, intimacy, alt_idx, motivation_query))
+  - lm_alternatives_features_<slug>.csv (alts access + effort; access broadcast
+    across effort_condition; the row's cell columns are the study's generation
+    cell, plus an effort_condition feature column. For studies whose observer
+    INFERS effort, effort is not a generation axis, so each alt gets a feature
+    row for BOTH effort conditions.)
+  - lm_alternatives_v_<slug>.csv (alts V per (scenario, observed, <cell cols>,
+    alt_idx, motivation_query))
 
-Cost (Study 3b only, NUM_RUNS=10 per prompt):
-  - access: 16 scenarios × 1 × 10 runs = 160 calls
-  - effort: 16 × 2 effort × 10 runs   = 320 calls
-  - V:      16 × 2 motivation × 10 runs = 320 calls
-  - Total: ~800 calls (vs ~1,920 for split scoring; ~60% reduction)
+Cost (per study, NUM_RUNS=10 per prompt): access 16 × 10 = 160 calls; effort
+16 × 2 × 10 = 320; V 16 × 2 × 10 = 320; ~800 calls per study.
 
-Note on the canonical CSV scope: this script writes the SHARED canonical
-tables (lm_scenario_params_3act.csv, lm_scenario_v_3act.csv) that the other
-4 inverse experiments (Studies 2, 3a, 4a, 4b) also read. When this script
-runs for 3b, the canonical ratings get the comparative context of 3b's
-specific alternative set. That's a feature (richer reference points produce
-better-calibrated canonical ratings) but worth being aware of: if you later
-migrate the other 4 studies to padded-alts, you'd want to re-elicit canonical
-with the union of all studies' alts.
+Note on the canonical CSV scope: this script writes the SHARED canonical tables
+(lm_scenario_params_3act.csv, lm_scenario_v_3act.csv) that all four active
+inverse studies read. Each study's run re-scores the canonical actions with that
+study's alt set as comparative context. For final results, run a sweep with the
+union of all studies' alts as the comparative reference set.
 
 Usage:
-    uv run python model/lm/score_3act_merged.py --study food_inv_desire_3act
+    uv run python model/lm/score_3act_merged.py --study food_inv_desire
 
 Requires:
     - TOGETHER_API_KEY in env or .env
-    - lm_alternatives_food_inv_desire_3act.csv produced by
+    - lm_alternatives_food_inv_desire.csv produced by
       generate_alternatives_3act.py
 """
 
@@ -98,15 +97,57 @@ N_ACTIONS_3ACT = 3
 EFFORT_CONDITIONS = ["low", "high"]
 MOTIVATIONS = ["low", "high"]
 
+# All studies write the shared canonical CSVs (re-scored with that study's alt
+# set as comparative context). `cell_cols` are the generation-cell key columns
+# in the study's alternatives CSV (besides scenario_label + observed_action);
+# the alt feature/V rows carry these. `effort_inferred` flags studies whose
+# observer infers effort: their generation cell does NOT include effort, so the
+# alt's effort feature is emitted for BOTH effort conditions (the effort feature
+# is always scored per condition; it is a feature axis, not a generation axis).
 _STUDY_CONFIG = {
-    "food_inv_desire_3act": {
+    "food_inv_desire": {
         "scenarios": "scenarios_3act.csv",
-        "alternatives_input": "lm_alternatives_food_inv_desire_3act.csv",
+        "alternatives_input": "lm_alternatives_food_inv_desire.csv",
         "canonical_params_output": "lm_scenario_params_3act.csv",
         "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
         "canonical_v_output": "lm_scenario_v_3act.csv",
-        "alternatives_features_output": "lm_alternatives_features_food_inv_desire_3act.csv",
-        "alternatives_v_output": "lm_alternatives_v_food_inv_desire_3act.csv",
+        "alternatives_features_output": "lm_alternatives_features_food_inv_desire.csv",
+        "alternatives_v_output": "lm_alternatives_v_food_inv_desire.csv",
+        "cell_cols": ("effort_condition", "intimacy_condition"),
+        "effort_inferred": False,
+    },
+    "food_inv_joint_de": {
+        "scenarios": "scenarios_3act.csv",
+        "alternatives_input": "lm_alternatives_food_inv_joint_de.csv",
+        "canonical_params_output": "lm_scenario_params_3act.csv",
+        "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
+        "canonical_v_output": "lm_scenario_v_3act.csv",
+        "alternatives_features_output": "lm_alternatives_features_food_inv_joint_de.csv",
+        "alternatives_v_output": "lm_alternatives_v_food_inv_joint_de.csv",
+        "cell_cols": ("intimacy_condition",),
+        "effort_inferred": True,
+    },
+    "food_inv_intimacy": {
+        "scenarios": "scenarios_3act.csv",
+        "alternatives_input": "lm_alternatives_food_inv_intimacy.csv",
+        "canonical_params_output": "lm_scenario_params_3act.csv",
+        "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
+        "canonical_v_output": "lm_scenario_v_3act.csv",
+        "alternatives_features_output": "lm_alternatives_features_food_inv_intimacy.csv",
+        "alternatives_v_output": "lm_alternatives_v_food_inv_intimacy.csv",
+        "cell_cols": ("reward_condition", "effort_condition"),
+        "effort_inferred": False,
+    },
+    "food_inv_joint_ie": {
+        "scenarios": "scenarios_3act.csv",
+        "alternatives_input": "lm_alternatives_food_inv_joint_ie.csv",
+        "canonical_params_output": "lm_scenario_params_3act.csv",
+        "canonical_params_marginal_output": "lm_scenario_params_3act_marginal.csv",
+        "canonical_v_output": "lm_scenario_v_3act.csv",
+        "alternatives_features_output": "lm_alternatives_features_food_inv_joint_ie.csv",
+        "alternatives_v_output": "lm_alternatives_v_food_inv_joint_ie.csv",
+        "cell_cols": ("reward_condition",),
+        "effort_inferred": True,
     },
 }
 
@@ -309,57 +350,78 @@ def _build_canonical_v_row(scenario, action_idx, motivation, canonical_norm, v):
     }
 
 
-def _build_alt_features_row(alt_row, access, effort):
-    """Build an alts-features CSV row, looking up the rating by action_norm.
+def _cell_col_values(alt_row, cell_cols):
+    """Copy the study's generation-cell columns off an alt row, normalizing
+    intimacy_condition to int."""
+    out = {}
+    for col in cell_cols:
+        v = alt_row[col]
+        out[col] = int(v) if col == "intimacy_condition" else v
+    return out
 
-    If the alt's action_norm matches a canonical action (rare but possible —
-    the LM occasionally proposes an alternative that coincides with one of
-    the 3 canonical action texts under case-insensitive match), the lookup
-    will hit the canonical's rating, which is correct: same physical action,
-    same rating.
+
+def _build_alt_features_row(alt_row, access, effort, cell_cols, effort_cond):
+    """Build an alts-features CSV row for a given effort_condition (the effort
+    feature axis). access is effort-marginal (looked up per action_norm);
+    effort is looked up at (effort_cond, action_norm). Copies the study's
+    generation-cell columns plus an explicit `effort_condition` feature column.
+
+    If the alt's action_norm matches a canonical action (rare but possible — the
+    LM occasionally proposes an alternative coinciding with a canonical text
+    under case-insensitive match), the lookup hits the canonical's rating, which
+    is correct: same physical action, same rating.
     """
     norm = _norm(alt_row["action_text"])
     a = access.get(norm)
-    e = effort.get((alt_row["effort_condition"], norm))
+    e = effort.get((effort_cond, norm))
     if a is None or e is None:
         return None  # action not in the merged list this scenario — shouldn't happen
-    return {
+    row = {
         "scenario_label": alt_row["scenario_label"],
         "observed_action": alt_row["observed_action"],
-        "effort_condition": alt_row["effort_condition"],
-        "intimacy_condition": int(alt_row["intimacy_condition"]),
-        "alt_idx": int(alt_row["alt_idx"]),
-        "access_raw": a["raw"],
-        "access_raw_std": a["raw_std"],
-        "access": normalize_access(a["raw"]) if not np.isnan(a["raw"]) else np.nan,
-        "effort_raw": e["raw"],
-        "effort_raw_std": e["raw_std"],
-        "effort": normalize_effort(e["raw"]) if not np.isnan(e["raw"]) else np.nan,
-        "n_runs_access": a["n_runs"],
-        "n_runs_effort": e["n_runs"],
-        "n_failures_access": a["n_failures"],
-        "n_failures_effort": e["n_failures"],
     }
+    row.update(_cell_col_values(alt_row, cell_cols))
+    row["effort_condition"] = effort_cond  # feature axis (may equal a cell col)
+    row["alt_idx"] = int(alt_row["alt_idx"])
+    row.update(
+        {
+            "access_raw": a["raw"],
+            "access_raw_std": a["raw_std"],
+            "access": normalize_access(a["raw"]) if not np.isnan(a["raw"]) else np.nan,
+            "effort_raw": e["raw"],
+            "effort_raw_std": e["raw_std"],
+            "effort": normalize_effort(e["raw"]) if not np.isnan(e["raw"]) else np.nan,
+            "n_runs_access": a["n_runs"],
+            "n_runs_effort": e["n_runs"],
+            "n_failures_access": a["n_failures"],
+            "n_failures_effort": e["n_failures"],
+        }
+    )
+    return row
 
 
-def _build_alt_v_row(alt_row, motivation_query, v):
+def _build_alt_v_row(alt_row, motivation_query, v, cell_cols):
     norm = _norm(alt_row["action_text"])
     val = v.get((motivation_query, norm))
     if val is None:
         return None
-    return {
+    row = {
         "scenario_label": alt_row["scenario_label"],
         "observed_action": alt_row["observed_action"],
-        "effort_condition": alt_row["effort_condition"],
-        "intimacy_condition": int(alt_row["intimacy_condition"]),
-        "alt_idx": int(alt_row["alt_idx"]),
-        "motivation_query": motivation_query,
-        "v_raw": val["raw"],
-        "v_raw_std": val["raw_std"],
-        "v": normalize_v(val["raw"]) if not np.isnan(val["raw"]) else np.nan,
-        "n_runs": val["n_runs"],
-        "n_failures": val["n_failures"],
     }
+    row.update(_cell_col_values(alt_row, cell_cols))
+    row["alt_idx"] = int(alt_row["alt_idx"])
+    row.update(
+        {
+            "motivation_query": motivation_query,
+            "v_raw": val["raw"],
+            "v_raw_std": val["raw_std"],
+            "v": normalize_v(val["raw"]) if not np.isnan(val["raw"]) else np.nan,
+            "n_runs": val["n_runs"],
+            "n_failures": val["n_failures"],
+        }
+    )
+    return row
 
 
 def _load_existing(path, key_cols):
@@ -529,16 +591,25 @@ def main(study):
                     )
                 )
 
-        # Alts features rows (one per generation cell in this scenario).
+        # Alts features rows. When effort is inferred (effort not a generation
+        # cell col), emit a row per effort_condition (effort is a feature axis);
+        # otherwise emit one row at the cell's observed effort_condition.
         for _, alt_row in alt_rows.iterrows():
-            r = _build_alt_features_row(alt_row, access, effort)
-            if r is not None:
-                alt_features_records.append(r)
+            if cfg["effort_inferred"]:
+                effort_conds = list(EFFORT_CONDITIONS)
+            else:
+                effort_conds = [alt_row["effort_condition"]]
+            for ec in effort_conds:
+                r = _build_alt_features_row(
+                    alt_row, access, effort, cfg["cell_cols"], ec
+                )
+                if r is not None:
+                    alt_features_records.append(r)
 
         # Alts V rows (× 2 motivations per generation cell).
         for _, alt_row in alt_rows.iterrows():
             for motivation in MOTIVATIONS:
-                r = _build_alt_v_row(alt_row, motivation, v)
+                r = _build_alt_v_row(alt_row, motivation, v, cfg["cell_cols"])
                 if r is not None:
                     alt_v_records.append(r)
 
@@ -567,7 +638,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--study",
         choices=tuple(_STUDY_CONFIG.keys()),
-        default="food_inv_desire_3act",
+        default="food_inv_desire",
     )
     args = parser.parse_args()
     main(args.study)

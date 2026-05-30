@@ -19,18 +19,14 @@ set -euo pipefail
 # -------- config --------
 : "${RSYNC_DEST:=aliciach@athena.dialup.mit.edu:~/www/sip/experiments}"
 
-# Active experiments — keep in sync with the Makefile's EXPERIMENTS_FORWARD
-# + EXPERIMENTS_INVERSE. Slugs not in this list are rejected to avoid
-# accidentally deploying legacy experiments.
+# Active experiments — keep in sync with the Makefile's EXPERIMENTS_INVERSE.
+# Slugs not in this list are rejected to avoid accidentally deploying legacy
+# experiments.
 ACTIVE_EXPERIMENTS=(
-  food_forw_intimacy_desire
-  food_forw_intimacy_effort
-  nonfood_forw_intimacy_desire
-  food_inv_intimacy_3act
-  food_inv_effort_3act
-  food_inv_desire_3act
-  food_inv_joint_de_3act
-  food_inv_joint_di_3act
+  food_inv_desire
+  food_inv_joint_de
+  food_inv_intimacy
+  food_inv_joint_ie
 )
 
 # Files/dirs not needed for runtime on the public server.
