@@ -2,7 +2,7 @@
 
 ## Terminology note
 
-The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`desire_high` scenario paragraphs and the `desire_condition` factor). The model's internal variables and the processed-data column still use "reward"/"motivation" (e.g., `p_high_reward`, and the `motivation` column that `json_to_csv.py` writes) — the same concept under an older name that predates the switch to "desire" on the experiment side.
+The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`desire_high` scenario paragraphs and the `desire_condition` factor). The model's internal variables and the processed-data column still use "reward"/"motivation" (e.g., `p_high_reward`, and the `motivation` column that `json_to_csv.py` writes) — the same concept under an older name that predates the switch to "desire" on the experiment side. A later, larger change will rename "reward"/"motivation" to "desire" on the model side too (the fitting, CV, and table code); it's deferred for now.
 
 ## Stimulus sources
 

@@ -69,7 +69,7 @@ These four words all relate to the actor's motivational state, but they're not i
 
 - **V** is the *signed valence* of an action with respect to the actor's motivational state, in `[-1, +1]`. Positive = action serves the state; negative = action is counterproductive; 0 = neutral. V enters the utility as `w_v · V`.
 - V is elicited from the LM per `(scenario, action, motivation)` and stored in `outputs/lm/lm_scenario_v_3act.csv` (canonical) plus `outputs/lm/lm_alternatives_v_<slug>.csv` (alternatives), loaded by the padded-table loaders.
-- "Reward" appears in code (`reward_condition`, `param_w_v`); "motivation" appears in the data CSVs (`motivation` column, `low`/`high`); both refer to the same motivational state. The paper-facing word is **desire**, and its DV is a continuous 0–100 rating in Studies 1a/1b.
+- "Reward" appears in code (`reward_condition`, `param_w_v`); "motivation" appears in the data CSVs (`motivation` column, `low`/`high`); both refer to the same motivational state. The paper-facing word is **desire**, and its DV is a continuous 0–100 rating in Studies 1a/1b. The experiment code and saved data were already switched to "desire"; renaming "reward"/"motivation" to "desire" here on the model side (fitting, CV, tables) is a planned larger change, deferred for now.
 
 ## Shared infrastructure
 

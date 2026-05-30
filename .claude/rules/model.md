@@ -125,7 +125,7 @@ LM-elicited tables live in `outputs/lm/` (`lm_scenario_*`, `lm_alternatives_*`).
 ### Terminology: V, reward, desire, motivation
 
 - **V** is the signed valence of an action w.r.t. the actor's motivational state, in `[-1, +1]`; it enters the utility as `w_v · V`.
-- "Reward" appears in code (`reward_condition`, `param_w_v`); "motivation" in the data CSVs (`motivation` column, `low`/`high`); both name the same state. The paper-facing word is **desire**.
+- "Reward" appears in code (`reward_condition`, `param_w_v`); "motivation" in the data CSVs (`motivation` column, `low`/`high`); both name the same state. The paper-facing word is **desire**. The experiment side already switched to "desire"; renaming "reward"/"motivation" to "desire" here on the model side is a planned larger change, deferred for now.
 
 ## Commands
 
