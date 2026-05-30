@@ -73,7 +73,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
-            <p>${stimulus.name_0} and ${stimulus.name_1} would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
+            <p>Consider ${stimulus.name_0} and ${stimulus.name_1}, who would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
           </div>
           <p style="text-align: center;"><em>Press any key to see the scenario.</em></p>
         </div>
@@ -87,7 +87,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
-            <p>${stimulus.name_0} and ${stimulus.name_1} would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
+            <p>Consider ${stimulus.name_0} and ${stimulus.name_1}, who would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
             <p>${stimulus.vignette}</p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>
@@ -127,7 +127,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         <div>
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
-            <p>${stimulus.name_0} and ${stimulus.name_1} would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
+            <p>Consider ${stimulus.name_0} and ${stimulus.name_1}, who would describe their relationship as <strong>${intimacy_texts[stimulus.intimacy_condition]}</strong>.</p>
             <p>${stimulus.vignette}</p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>

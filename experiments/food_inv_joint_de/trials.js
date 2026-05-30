@@ -63,7 +63,7 @@ const effortLabels = (stim) => [
 ];
 
 const intimacyPreamble = (stim) =>
-  `<p>${stim.name_0} and ${stim.name_1} would describe their relationship as <strong>${intimacy_texts[stim.intimacy_condition]}</strong>.</p>`;
+  `<p>Consider ${stim.name_0} and ${stim.name_1}, who would describe their relationship as <strong>${intimacy_texts[stim.intimacy_condition]}</strong>.</p>`;
 
 function priorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
   return `
