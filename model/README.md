@@ -69,11 +69,11 @@ These four words all relate to the actor's motivational state, but they're not i
 
 - **V** is the *signed valence* of an action with respect to the actor's motivational state, in `[-1, +1]`. Positive = action serves the state; negative = action is counterproductive; 0 = neutral. V enters the utility as `w_v · V`.
 - V is elicited from the LM per `(scenario, action, motivation)` and stored in `outputs/lm/lm_scenario_v_3act.csv` (canonical) plus `outputs/lm/lm_alternatives_v_<slug>.csv` (alternatives), loaded by the padded-table loaders.
-- "Reward" appears in code (`reward_condition`, `param_w_v`); "motivation" appears in the data CSVs (`motivation` column, `low`/`high`); both refer to the same motivational state. The paper-facing word is **desire**, and its DV is a 1–7 Likert in Studies 1a/1b.
+- "Reward" appears in code (`reward_condition`, `param_w_v`); "motivation" appears in the data CSVs (`motivation` column, `low`/`high`); both refer to the same motivational state. The paper-facing word is **desire**, and its DV is a continuous 0–100 rating in Studies 1a/1b.
 
 ## Shared infrastructure
 
-- `inverse/_helpers.py` — observer fit loops (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`), NLL functions (`compute_intimacy_nll`, `compute_reward_nll`, `compute_desire_likert_se`), per-study data loaders, frozen-param loaders, and the padded table-kwargs helpers (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`). Legacy `_noalt` loaders/fitters remain.
+- `inverse/_helpers.py` — observer fit loops (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`), NLL functions (`compute_intimacy_nll`, `compute_reward_nll`, `compute_desire_se`), per-study data loaders, frozen-param loaders, and the padded table-kwargs helpers (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`). Legacy `_noalt` loaders/fitters remain.
 - `cv/_inverse_dispatcher.py` — LOSO logic for the four active inverse studies (`main_{desire,joint_de,intimacy,joint_ie}`).
 - `cv/_forward_dispatcher.py` — joint LOSO logic for the legacy forward CV scripts.
 - `forward/_shared.py` — NLL/AIC/BIC, `_fit_with_adam`, predict/fit functions, data loaders (legacy forward experiments).

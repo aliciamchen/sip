@@ -63,18 +63,21 @@ def compute_reward_nll(p_high, response):
 
 
 @jax.jit
-def compute_desire_likert_se(p_high, response):
-    """Squared error for the 1-7 Likert desire DV (Studies 1a, 1b).
+def compute_desire_se(p_high, response):
+    """Squared error for the continuous 0-100 desire DV (Studies 1a, 1b).
 
-    The observer's posterior over reward gives P(reward = HIGH) in [0, 1]; map it
-    to the 1-7 Likert via `predicted_likert = 1 + 6 * P(high)`. `response` is the
-    participant's 1-7 rating ("how much do they want the food?", not-at-all →
-    extremely). Returns squared error, which is the Gaussian NLL up to an additive
-    constant and a fixed scale, so the argmin over {utility weights, alpha_observer}
-    is unchanged by the (unmodeled) observation noise sigma.
+    The observer's posterior over reward gives P(reward = HIGH) in [0, 1]. The
+    participant's continuous slider response in [0, 100] ("how much do they want
+    to eat the food?", not-at-all → extremely) is normalized to [0, 1] and scored
+    against P(high) directly with squared error. Working on the [0, 1] scale keeps
+    this term comparable in magnitude to the effort BCE term in the Study 1b joint
+    loss, and — being a fixed monotone rescaling of the raw 0-100 SE — leaves the
+    argmin over {utility weights, alpha_observer} unchanged. The predicted 0-100
+    rating for reporting is `100 * P(high)`.
     """
-    pred_likert = 1.0 + 6.0 * jnp.clip(p_high, 0.0, 1.0)
-    return (pred_likert - response) ** 2
+    p_human = jnp.clip(response, 0.0, 100.0) / 100.0
+    p_model = jnp.clip(p_high, 0.0, 1.0)
+    return (p_model - p_human) ** 2
 
 
 # ==============================================================================
@@ -584,10 +587,10 @@ def load_intimacy_data(slug="food_inv_intimacy"):
 def load_desire_data(slug="food_inv_desire"):
     """Study 1a — observer knows (effort, intimacy), infers desire (reward).
 
-    The desire DV is a 1-7 Likert ("how much do they want the food?"); the
-    `response` column holds the posterior 1-7 rating. The fit maps the model's
-    P(reward=HIGH) to a predicted Likert and scores it with squared error
-    (see `compute_desire_likert_se`).
+    The desire DV is a continuous 0-100 slider ("how much do they want to eat the
+    food?"); the `response` column holds the posterior 0-100 rating. The fit
+    normalizes the rating to [0, 1] and scores it against the model's
+    P(reward=HIGH) with squared error (see `compute_desire_se`).
     """
     data = _load_3act_long(slug)
     print(f"Loading {slug} data...")
@@ -595,7 +598,7 @@ def load_desire_data(slug="food_inv_desire"):
     scenario_idx = jnp.array(data["scenario_idx"].values)
     effort_condition = jnp.array(data["effort_condition"].values)
     relationship_condition = jnp.array(data["intimacy_idx_4"].values)
-    response = jnp.array(data["response"].values)  # 1-7 Likert desire rating
+    response = jnp.array(data["response"].values)  # 0-100 desire rating
     print(f"Loaded {len(data)} posterior data points")
     return (
         data,
@@ -611,14 +614,15 @@ def load_joint_de_data(slug="food_inv_joint_de"):
     """Study 1b — observer knows intimacy, jointly infers (reward, effort).
 
     Each posterior trial contributes two slider responses: `desire_rating` (the
-    1-7 Likert desire DV) and `p_effort_high_rating` (the 0-100 effort slider).
+    continuous 0-100 desire DV) and `p_effort_high_rating` (the 0-100 effort
+    slider).
     """
     data = _load_3act_long(slug)
     print(f"Loading {slug} data...")
     action = jnp.array(data["action"].values)
     scenario_idx = jnp.array(data["scenario_idx"].values)
     relationship_condition = jnp.array(data["intimacy_idx_4"].values)
-    resp_reward = jnp.array(data["desire_rating"].values)  # 1-7 Likert
+    resp_reward = jnp.array(data["desire_rating"].values)  # 0-100
     resp_effort = jnp.array(data["p_effort_high_rating"].values)  # 0-100
     print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
     return data, action, scenario_idx, relationship_condition, resp_reward, resp_effort
@@ -972,20 +976,20 @@ def fit_desire_observer_joint(
     verbose=True,
 ):
     """Study 1a — joint fit of utility weights + α_observer (squared error on the
-    1-7 Likert desire DV).
+    continuous 0-100 desire DV).
 
     With the LM-generated alternatives pipeline, the observer table is 6-D —
     `(padded_slot, scenario, observed_action, effort, intimacy, reward)`. The
     canonical observed action lives in slot 0 by construction, so the per-trial
     P(reward=HIGH) slice is `table[0, scenario, action, effort, intimacy, 1]`
     (where `action` is the participant-observed action index 0/1/2). The desire
-    DV is a 1-7 Likert, so P(reward=HIGH) is mapped to a predicted Likert and
-    scored with squared error (see `compute_desire_likert_se`).
+    DV is a continuous 0-100 slider, so the rating is normalized to [0, 1] and
+    scored against P(reward=HIGH) with squared error (see `compute_desire_se`).
     """
 
     def nll_trial(table, a, s, e, rel, resp):
         p_high = table[0, s, a, e, rel, 1]
-        return compute_desire_likert_se(p_high, resp)
+        return compute_desire_se(p_high, resp)
 
     vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
 
@@ -1034,16 +1038,16 @@ def fit_joint_de_observer_joint(
     Padded observer table is 6-D — (padded_slot, scenario, observed_action,
     relationship, reward, effort). The observed action sits in slot 0, so the
     per-trial joint over (reward, effort) is `table[0, scenario, action, relationship, :, :]`.
-    Sums two per-slider losses: squared error on the 1-7 Likert desire rating
-    (P(reward=HIGH) mapped to a predicted Likert) and binary cross-entropy on the
-    0-100 effort slider (P(effort=HIGH)).
+    Sums two per-slider losses: squared error on the continuous 0-100 desire
+    rating (normalized to [0, 1] and scored against P(reward=HIGH)) and binary
+    cross-entropy on the 0-100 effort slider (P(effort=HIGH)).
     """
 
     def nll_trial(table, a, s, rel, r_reward, r_effort):
         joint = table[0, s, a, rel, :, :]  # (reward, effort)
         p_reward_high = joint[1, :].sum()
         p_effort_high = joint[:, 1].sum()
-        return compute_desire_likert_se(p_reward_high, r_reward) + compute_reward_nll(
+        return compute_desire_se(p_reward_high, r_reward) + compute_reward_nll(
             p_effort_high, r_effort
         )
 

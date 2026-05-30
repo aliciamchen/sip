@@ -1,7 +1,8 @@
 // Study 1b — Joint inference over desire and effort, given intimacy.
 // Design: 4 (intimacy) × 3 (observed action). Follows the noalt pattern with
 // an intimacy descriptor preamble; two sliders per prior/posterior phase. The
-// desire slider is a 1-7 Likert ("how much do they want the food?"); the effort
+// desire slider is a continuous 0-100 rating ("how much do {name_0} and
+// {name_1} want to eat the food?", endpoints not-at-all/extremely); the effort
 // slider is a continuous 0-100 rating between the two effort paragraphs. No
 // candidate action list.
 
@@ -43,7 +44,7 @@ const INSTRUCTIONS_PAGES = [
   `
     <div class="instructions-container">
         <h2>Social interactions survey</h2>
-        <p>Before observing what action the two people decide to take, we will ask you two questions using two sliders. The first asks how much you think they want the food, on a scale from 1 ("not at all") to 7 ("extremely"). The second asks which of two physical situations you think is more likely.</p>
+        <p>Before observing what action the two people decide to take, we will ask you two questions using two sliders. The first asks how much you think they want to eat the food, on a scale from 0 ("not at all") to 100 ("extremely"). The second asks which of two physical situations you think is more likely.</p>
         <p>Then, we will show you what they decide to do, and ask you to re-evaluate both sliders.</p>
     </div>
   `,
@@ -57,17 +58,9 @@ const INSTRUCTIONS_PAGES = [
   `,
 ];
 
-// Desire DV is a 1-7 Likert (not a two-states probability slider): endpoints
-// "not at all" / "extremely", every integer tick marked.
-const DESIRE_LIKERT_LABELS = [
-  "1<br>not at all",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7<br>extremely",
-];
+// Desire DV is a continuous 0-100 slider (a direct desire rating, not a
+// two-states probability slider): endpoints "not at all" / "extremely".
+const DESIRE_SLIDER_LABELS = ["0<br>not at all", "100<br>extremely"];
 
 const effortLabels = (stim) => [
   `<div class="slider-endpoint">${stim.effort_low}</div>`,
@@ -108,7 +101,8 @@ function posteriorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
   `;
 }
 
-const DESIRE_PROMPT = "<p>How much do you think they want the food?</p>";
+const desirePrompt = (stim) =>
+  `<p>How much do you think ${stim.name_0} and ${stim.name_1} want to eat the food?</p>`;
 const EFFORT_PROMPT = "<p>Which physical situation do you think is more likely?</p>";
 
 function makeStimulusTrials(jsPsych, stimuli) {
@@ -133,17 +127,17 @@ function makeStimulusTrials(jsPsych, stimuli) {
       choices: "ALL_KEYS",
     });
 
-    // Prior — desire (reward) slider, 1-7 Likert
+    // Prior — desire (reward) slider, continuous 0-100
     trials.push({
       type: jsPsychHtmlSliderResponse,
       stimulus: priorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
-      prompt: DESIRE_PROMPT,
+      prompt: desirePrompt(stimulus),
       slider_width: 900,
-      slider_min: 1,
-      slider_max: 7,
+      slider_min: 0,
+      slider_max: 100,
       step: 1,
       require_movement: true,
-      labels: DESIRE_LIKERT_LABELS,
+      labels: DESIRE_SLIDER_LABELS,
       button_label: "Continue",
       data: {
         response_type: "response",
@@ -190,17 +184,17 @@ function makeStimulusTrials(jsPsych, stimuli) {
       trial_duration: 1000,
     });
 
-    // Posterior — desire (reward) slider, 1-7 Likert
+    // Posterior — desire (reward) slider, continuous 0-100
     trials.push({
       type: jsPsychHtmlSliderResponse,
       stimulus: posteriorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
-      prompt: DESIRE_PROMPT,
+      prompt: desirePrompt(stimulus),
       slider_width: 900,
-      slider_min: 1,
-      slider_max: 7,
+      slider_min: 0,
+      slider_max: 100,
       step: 1,
       require_movement: true,
-      labels: DESIRE_LIKERT_LABELS,
+      labels: DESIRE_SLIDER_LABELS,
       button_label: "Continue",
       data: {
         response_type: "response",

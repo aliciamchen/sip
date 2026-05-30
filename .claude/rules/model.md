@@ -49,7 +49,7 @@ The alternative set is indexed by the **cell grid** = (scenario, observed_action
 
 ### DV likelihoods
 
-- **desire** (1a, 1b) → 1–7 Likert. `compute_desire_likert_se`: map `P(reward=HIGH)` to a predicted Likert `1 + 6·P(high)` and score with squared error (Gaussian NLL up to a fixed scale).
+- **desire** (1a, 1b) → continuous 0–100 rating. `compute_desire_se`: normalize the rating to `[0,1]` and score it against `P(reward=HIGH)` with squared error (predicted 0–100 rating = `100·P(high)`; normalizing keeps it comparable to the effort BCE in the 1b joint loss).
 - **effort** (1b, 2b) → 0–100 continuous rating. `compute_reward_nll`: binary cross-entropy on `P(effort=HIGH)`.
 - **intimacy** (2a, 2b) → 0–100 numeric. `compute_intimacy_nll`: NLL over the 101-bin posterior at the response bin.
 
@@ -91,7 +91,7 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 
 Four active experiments, each with its own `fit_<slug>.py` + `predict_<slug>.py` (thin wrappers that define the three variants and call the shared helpers).
 
-- `_helpers.py` — NLLs (`compute_intimacy_nll`, `compute_reward_nll`, `compute_desire_likert_se`); per-study data loaders (`load_{desire,joint_de,intimacy,joint_ie}_data`); padded table-kwargs builders (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`, all raising a clear `FileNotFoundError` until the study's LM CSVs exist); and the joint-fit helpers (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`) that build the observer table from `{utility weights, α_observer}`, slice slot 0, and minimize the study's DV loss with Adam. Legacy `_noalt` loaders/fitters + frozen-param loaders remain.
+- `_helpers.py` — NLLs (`compute_intimacy_nll`, `compute_reward_nll`, `compute_desire_se`); per-study data loaders (`load_{desire,joint_de,intimacy,joint_ie}_data`); padded table-kwargs builders (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`, all raising a clear `FileNotFoundError` until the study's LM CSVs exist); and the joint-fit helpers (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`) that build the observer table from `{utility weights, α_observer}`, slice slot 0, and minimize the study's DV loss with Adam. Legacy `_noalt` loaders/fitters + frozen-param loaders remain.
 - `fit_<slug>.py` — for each ablation, jointly fits the actor utility weights + `α_observer` from this experiment's posterior data. Writes `outputs/<slug>/fit_results.csv`.
 - `predict_<slug>.py` — reads its own `fit_results.csv` via `load_3act_fit_results`, runs the observer, writes `outputs/<slug>/preds_<variant>.npy` + a summary CSV.
 
@@ -99,7 +99,7 @@ Four active experiments, each with its own `fit_<slug>.py` + `predict_<slug>.py`
 
 All model-vs-human correlations in the analysis qmds are out-of-sample, from leave-one-scenario-out (LOSO) CV (`outputs/<slug>/cv_preds_summary.csv`).
 
-- `_inverse_dispatcher.py` — LOSO logic for the four active inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`. Each loops over 16 scenarios, refits utility weights + `alpha_observer` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario, and computes the per-trial test loss (the study's DV loss: squared error on the Likert, BCE on the effort/probability sliders, intimacy NLL over the 101-bin posterior; joint studies sum the two).
+- `_inverse_dispatcher.py` — LOSO logic for the four active inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`. Each loops over 16 scenarios, refits utility weights + `alpha_observer` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario, and computes the per-trial test loss (the study's DV loss: squared error on the normalized continuous desire rating, BCE on the effort/probability sliders, intimacy NLL over the 101-bin posterior; joint studies sum the two).
 - `_forward_dispatcher.py` — joint LOSO logic for the legacy forward experiments.
 - `cv_<slug>.py` — one per experiment, a thin wrapper around the dispatcher main.
 

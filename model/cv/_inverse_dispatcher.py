@@ -326,14 +326,14 @@ def _loso_desire(slug):
                                 "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                                 "effort_condition": "low" if e == 0 else "high",
                                 "p_high_reward": p_high_reward * 100.0,
-                                # 1-7 Likert prediction: 1 + 6 * P(reward=HIGH)
-                                "pred_desire_likert": 1.0 + 6.0 * p_high_reward,
+                                # Continuous 0-100 desire prediction: 100 * P(reward=HIGH)
+                                "pred_desire": 100.0 * p_high_reward,
                                 "model": variant,
                             }
                         )
 
-            # Desire DV is a 1-7 Likert; test loss is squared error between the
-            # predicted Likert (1 + 6 * P(high)) and the observed rating.
+            # Desire DV is a continuous 0-100 slider; test loss is squared error
+            # between the normalized prediction P(high) and the observed rating/100.
             test_nll = 0.0
             for i in np.where(test_mask)[0]:
                 p_model = float(
@@ -346,8 +346,9 @@ def _loso_desire(slug):
                         1,
                     ]
                 )
-                pred_likert = 1.0 + 6.0 * min(max(p_model, 0.0), 1.0)
-                test_nll += (pred_likert - float(response[i])) ** 2
+                test_nll += (
+                    min(max(p_model, 0.0), 1.0) - float(response[i]) / 100.0
+                ) ** 2
 
             fold_rows.append(
                 _fold_row(
@@ -434,15 +435,16 @@ def _loso_joint_de(slug):
                             "action": a_idx,
                             "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                             "p_high_reward": p_reward_high * 100.0,
-                            # 1-7 Likert prediction: 1 + 6 * P(reward=HIGH)
-                            "pred_desire_likert": 1.0 + 6.0 * p_reward_high,
+                            # Continuous 0-100 desire prediction: 100 * P(reward=HIGH)
+                            "pred_desire": 100.0 * p_reward_high,
                             "p_effort_high": p_effort_high,
                             "model": variant,
                         }
                     )
 
-            # Desire slider is a 1-7 Likert (squared error); effort slider is a
-            # 0-100 continuous rating (binary cross-entropy on P(effort=HIGH)).
+            # Desire slider is a continuous 0-100 rating (squared error on the
+            # normalized prediction); effort slider is a 0-100 continuous rating
+            # (binary cross-entropy on P(effort=HIGH)).
             test_nll = 0.0
             for i in np.where(test_mask)[0]:
                 joint = table[
@@ -455,9 +457,10 @@ def _loso_joint_de(slug):
                 ]
                 p_r_high = float(joint[1, :].sum())
                 p_e_high = float(joint[:, 1].sum())
-                # desire: squared error on the 1-7 Likert
-                pred_likert = 1.0 + 6.0 * min(max(p_r_high, 0.0), 1.0)
-                test_nll += (pred_likert - float(response_reward[i])) ** 2
+                # desire: squared error on the normalized 0-100 rating
+                test_nll += (
+                    min(max(p_r_high, 0.0), 1.0) - float(response_reward[i]) / 100.0
+                ) ** 2
                 # effort: binary cross-entropy on the 0-100 slider
                 p_human = float(response_effort[i]) / 100.0
                 p_m = min(max(p_e_high, 1e-8), 1 - 1e-8)

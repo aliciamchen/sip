@@ -432,9 +432,9 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
 
                     elif experiment_name == "food_inv_desire":
                         # Prior/posterior desire slider response under known
-                        # effort + intimacy. response is the 1-7 Likert rating
-                        # ("how much do they want the food?", not-at-all →
-                        # extremely).
+                        # effort + intimacy. response is the continuous 0-100
+                        # rating ("how much do they want to eat the food?",
+                        # not-at-all → extremely).
                         trial_data = {
                             "subject_id": subject_id,
                             "scenario_label": scenario_label,

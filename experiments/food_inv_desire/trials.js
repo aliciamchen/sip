@@ -1,7 +1,8 @@
 // Study 1a — Desire inference under known effort + intimacy.
 // Design: 2 (effort) × 4 (intimacy: 0/50/75/100) × 3 (observed action).
 // Follows the noalt pattern: intimacy descriptor preamble, then vignette +
-// effort paragraph + a 1-7 Likert ("how much do they want the food?") on which
+// effort paragraph + a continuous 0-100 slider ("how much do {name_0} and
+// {name_1} want to eat the food?", endpoints not-at-all/extremely) on which
 // participants rate desire before and after observing the single action. The
 // desire paragraph is NOT shown (desire is the target of inference). No
 // candidate action list.
@@ -47,8 +48,8 @@ const INSTRUCTIONS_PAGES = [
   `
     <div class="instructions-container">
         <h2>Social interactions survey</h2>
-        <p>Before observing what action the two people decide to take, we will ask you to rate how much you think they want the food, on a scale from 1 ("not at all") to 7 ("extremely").</p>
-        <p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want the food.</p>
+        <p>Before observing what action the two people decide to take, we will ask you to rate how much you think they want to eat the food, on a scale from 0 ("not at all") to 100 ("extremely").</p>
+        <p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want to eat the food.</p>
     </div>
   `,
   `
@@ -61,17 +62,8 @@ const INSTRUCTIONS_PAGES = [
   `,
 ];
 
-// 1-7 Likert: endpoints labeled "not at all" / "extremely", with each integer
-// tick marked so the discrete scale reads clearly.
-const DESIRE_LIKERT_LABELS = [
-  "1<br>not at all",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7<br>extremely",
-];
+// Continuous 0-100 desire slider: endpoints labeled "not at all" / "extremely".
+const DESIRE_SLIDER_LABELS = ["0<br>not at all", "100<br>extremely"];
 
 function makeStimulusTrials(jsPsych, stimuli) {
   const trials = [];
@@ -105,15 +97,15 @@ function makeStimulusTrials(jsPsych, stimuli) {
             <p>${stimulus.vignette}</p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>
-          <p><strong>Before observing what they decide to do, how much do you think they want the food?</strong></p>
+          <p><strong>Before observing what they decide to do, how much do you think ${stimulus.name_0} and ${stimulus.name_1} want to eat the food?</strong></p>
         </div>
       `,
       slider_width: 900,
-      slider_min: 1,
-      slider_max: 7,
+      slider_min: 0,
+      slider_max: 100,
       step: 1,
       require_movement: true,
-      labels: DESIRE_LIKERT_LABELS,
+      labels: DESIRE_SLIDER_LABELS,
       button_label: "Continue",
       data: {
         response_type: "response",
@@ -149,15 +141,15 @@ function makeStimulusTrials(jsPsych, stimuli) {
             <p><em>They decide to take the following action:</em></p>
             <p>${stimulus[`${stimulus.action_condition}`]}</p>
           </div>
-          <p><strong>Now that you have observed what they decide to do, how much do you think they want the food?</strong></p>
+          <p><strong>Now that you have observed what they decide to do, how much do you think ${stimulus.name_0} and ${stimulus.name_1} want to eat the food?</strong></p>
         </div>
       `,
       slider_width: 900,
-      slider_min: 1,
-      slider_max: 7,
+      slider_min: 0,
+      slider_max: 100,
       step: 1,
       require_movement: true,
-      labels: DESIRE_LIKERT_LABELS,
+      labels: DESIRE_SLIDER_LABELS,
       button_label: "Continue",
       data: {
         response_type: "response",

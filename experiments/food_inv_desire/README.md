@@ -8,13 +8,13 @@ Study 1a — Desire inference.
 
 **Known to participant**: effort_condition, intimacy_condition
 
-**Inferred by participant**: reward_condition (one slider). The two reward_low/reward_high paragraphs are the slider endpoints.
+**Inferred by participant**: reward_condition (one continuous 0–100 slider — "how much do they want to eat the food?", endpoints "not at all" / "extremely"). The reward_low/reward_high paragraphs are not shown.
 
 ## Trial structure
 
-Each trial shows: intimacy-descriptor preamble page, then vignette + effort paragraph + observed action (at posterior). Reward paragraph is hidden — its low/high values anchor the slider instead.
+Each trial shows: intimacy-descriptor preamble page, then vignette + effort paragraph + observed action (at posterior). The reward paragraph is hidden, since desire is the target of inference.
 
-Slider responses: one slider (0–100). Endpoints = reward_low / reward_high paragraphs..
+Slider responses: one continuous slider (0–100, endpoints "not at all" / "extremely"), rating "how much do {name_0} and {name_1} want to eat the food?" with the scenario's two character names.
 
 Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 24 cells (each participant samples 16 of 24). The counterbalancing script (`python/generate_counterbalancing.py`) produces 192 sequences (12 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
 
