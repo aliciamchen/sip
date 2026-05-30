@@ -14,7 +14,7 @@ Study 1b — Joint inference over desire and effort.
 
 Each trial shows: intimacy-descriptor preamble page, then vignette + observed action (at posterior). Neither desire nor effort paragraph is shown in the vignette.
 
-Slider responses: two sliders per phase (prior + posterior = 4 sliders total). A continuous 0–100 desire slider ("how much do they want to eat the food?", endpoints "not at all" / "extremely"); an effort slider with low_risk_share_effort_low/high paragraph endpoints. The `response_target` field on each data row indicates which slider it was.
+Slider responses: both sliders appear on one page per phase (a prior page and a posterior page), rendered via `survey-html-form` (see `_lib/two-slider.js`) since the `html-slider-response` plugin only supports one slider per trial. A continuous 0–100 desire slider ("how much do they want to eat the food?", endpoints "not at all" / "extremely") and an effort slider with low_risk_share_effort_low/high paragraph endpoints. Each phase records one trial whose `response` is an object keyed by slider, `{desire, effort}`. The Continue button stays disabled until both sliders are moved.
 
 Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 12 cells. The counterbalancing script (`python/generate_counterbalancing.py`) produces 192 sequences (12 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
 

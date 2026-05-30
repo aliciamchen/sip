@@ -15,6 +15,7 @@ import {
 import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 import { makeConfig } from "../_lib/config.js";
+import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
 
 export const CONFIG = makeConfig("food_inv_intimacy");
 
@@ -24,36 +25,12 @@ const getEffortText = (stim) =>
   stim.effort_condition === "low" ? stim.low_risk_share_effort_low : stim.low_risk_share_effort_high;
 
 const INTIMACY_LABELS = [
-  "0<br>Maximally formal",
-  "50<br>Neither formal nor intimate",
-  "100<br>Maximally intimate",
+  "Maximally formal",
+  "Neither formal nor intimate",
+  "Maximally intimate",
 ];
 
-const INSTRUCTIONS_PAGES = [
-  `
-    <div class="instructions-container">
-        <h2>Social interactions survey</h2>
-        <p>In this survey, you will read vignettes about two people deciding how to eat different kinds of food in different situations.</p>
-        <p>Before observing what the two people decide to do, we will ask you to evaluate what kind of social relationship you think they are in.</p>
-        <p>Then, we will show you what they decide to do, and ask you to re-evaluate what kind of social relationship you think they are in.</p>
-    </div>
-  `,
-  `
-    <div class="instructions-container">
-        <h2>Social interactions survey</h2>
-        <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p>
-        <p>You will use sliders to indicate how you think the two people would describe their relationship, from a scale of 0 (maximally formal) to 100 (maximally intimate).</p>
-    </div>
-  `,
-  `
-    <div class="instructions-container">
-      <h2>Social interactions survey</h2>
-        <p>Please read each of the scenarios and ways of eating food carefully! 🙂 You will receive $5 if you successfully complete the survey.</p>
-        <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
-        <p>Press next to begin the survey.</p>
-    </div>
-  `,
-];
+const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_intimacy;
 
 function makeStimulusTrials(jsPsych, stimuli) {
   const trials = [];
@@ -70,10 +47,10 @@ function makeStimulusTrials(jsPsych, stimuli) {
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p><strong>${getDesireText(stimulus)}</strong></p>
-            <p><strong>${getEffortText(stimulus)}</strong></p>
+            <p>${getDesireText(stimulus)}</p>
+            <p>${getEffortText(stimulus)}</p>
           </div>
-          <p><strong>Before observing what they decide to do, how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate)?</strong></p>
+          <p><strong>Before observing what they decide to do, how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship?</strong></p>
         </div>
       `,
       slider_width: 900,
@@ -108,14 +85,14 @@ function makeStimulusTrials(jsPsych, stimuli) {
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p><strong>${getDesireText(stimulus)}</strong></p>
-            <p><strong>${getEffortText(stimulus)}</strong></p>
+            <p>${getDesireText(stimulus)}</p>
+            <p>${getEffortText(stimulus)}</p>
           </div>
           <div class="vignette-text vignette-observed">
             <p><em>They decide to take the following action:</em></p>
             <p>${stimulus[`${stimulus.action_condition}`]}</p>
           </div>
-          <p><strong>Now that you have observed what they decide to do, how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate)?</strong></p>
+          <p><strong>Now that you have observed what they decide to do, how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship?</strong></p>
         </div>
       `,
       slider_width: 900,

@@ -1,6 +1,6 @@
 // Study 1b — Joint inference over desire and effort, given intimacy.
 // Design: 4 (intimacy) × 3 (observed action). Follows the noalt pattern with
-// an intimacy descriptor preamble; two sliders per prior/posterior phase. The
+// an intimacy descriptor preamble; both sliders on one page per phase. The
 // desire slider is a continuous 0-100 rating ("how much do {name_0} and
 // {name_1} want to eat the food?", endpoints not-at-all/extremely); the effort
 // slider is a continuous 0-100 rating between the two effort paragraphs. No
@@ -17,6 +17,8 @@ import {
 import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 import { makeConfig } from "../_lib/config.js";
+import { makeTwoSliderForm } from "../_lib/two-slider.js";
+import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
 
 const intimacy_texts = {
   0: "maximally formal",
@@ -27,39 +29,16 @@ const intimacy_texts = {
 
 export const CONFIG = makeConfig("food_inv_joint_de");
 
-const INSTRUCTIONS_PAGES = [
-  `
-    <div class="instructions-container">
-        <h2>Social interactions survey</h2>
-        <p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding how to eat different kinds of food in different situations.</p>
-        <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p>
-    </div>
-  `,
-  `
-    <div class="instructions-container">
-        <h2>Social interactions survey</h2>
-        <p>Before observing what action the two people decide to take, we will ask you two questions using two sliders. The first asks how much you think they want to eat the food, on a scale from 0 ("not at all") to 100 ("extremely"). The second asks which of two physical situations you think is more likely.</p>
-        <p>Then, we will show you what they decide to do, and ask you to re-evaluate both sliders.</p>
-    </div>
-  `,
-  `
-    <div class="instructions-container">
-      <h2>Social interactions survey</h2>
-        <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of eating food carefully! 🙂 You will receive $5 if you successfully complete the survey.</p>
-        <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
-        <p>Press next to begin the survey.</p>
-    </div>
-  `,
-];
+const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_joint_de;
 
 // Desire DV is a continuous 0-100 slider (a direct desire rating, not a
 // two-states probability slider): endpoints "not at all" / "extremely".
-const DESIRE_SLIDER_LABELS = ["0<br>not at all", "100<br>extremely"];
+const DESIRE_SLIDER_LABELS = ["not at all", "extremely"];
 
 const effortLabels = (stim) => [
-  `<div class="slider-endpoint">${stim.low_risk_share_effort_low}</div>`,
-  `<div class="slider-endpoint">Equally likely</div>`,
-  `<div class="slider-endpoint">${stim.low_risk_share_effort_high}</div>`,
+  stim.low_risk_share_effort_low,
+  "Equally likely",
+  stim.low_risk_share_effort_high,
 ];
 
 const intimacyPreamble = (stim) =>
@@ -73,7 +52,7 @@ function priorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
         ${intimacyPreamble(stimulus)}
         <p>${stimulus.vignette}</p>
       </div>
-      <p><strong>Before observing what they decide to do, please answer the question below.</strong></p>
+      <p><strong>Before observing what they decide to do, please answer the questions below.</strong></p>
     </div>
   `;
 }
@@ -96,8 +75,8 @@ function posteriorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
 }
 
 const desirePrompt = (stim) =>
-  `<p>How much do you think ${stim.name_0} and ${stim.name_1} want to eat the food?</p>`;
-const EFFORT_PROMPT = "<p>Which physical situation do you think is more likely?</p>";
+  `How much do you think ${stim.name_0} and ${stim.name_1} want to eat the food?`;
+const EFFORT_PROMPT = "Which situation do you think is more likely?";
 
 function makeStimulusTrials(jsPsych, stimuli) {
   const trials = [];
@@ -121,55 +100,38 @@ function makeStimulusTrials(jsPsych, stimuli) {
       choices: "ALL_KEYS",
     });
 
-    // Prior — desire slider, continuous 0-100
-    trials.push({
-      type: jsPsychHtmlSliderResponse,
-      stimulus: priorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
-      prompt: desirePrompt(stimulus),
-      slider_width: 900,
-      slider_min: 0,
-      slider_max: 100,
-      step: 1,
-      require_movement: true,
-      labels: DESIRE_SLIDER_LABELS,
-      button_label: "Continue",
-      data: {
-        response_type: "response",
-        response_target: "desire",
-        stage: "prior",
-        stimulus_index: stimulusIndex,
-        scenario_label: stimulus.scenario_label,
-        action_condition: stimulus.action_condition,
-        intimacy_condition: stimulus.intimacy_condition,
-        desire_low: stimulus.desire_low,
-        desire_high: stimulus.desire_high,
+    const jointSliders = [
+      {
+        name: "desire",
+        prompt: desirePrompt(stimulus),
+        labels: DESIRE_SLIDER_LABELS,
       },
-    });
+      {
+        name: "effort",
+        prompt: EFFORT_PROMPT,
+        labels: effortLabels(stimulus),
+      },
+    ];
+    const jointData = {
+      response_type: "response",
+      stimulus_index: stimulusIndex,
+      scenario_label: stimulus.scenario_label,
+      action_condition: stimulus.action_condition,
+      intimacy_condition: stimulus.intimacy_condition,
+      desire_low: stimulus.desire_low,
+      desire_high: stimulus.desire_high,
+      low_risk_share_effort_low: stimulus.low_risk_share_effort_low,
+      low_risk_share_effort_high: stimulus.low_risk_share_effort_high,
+    };
 
-    // Prior — effort slider (continuous 0-100 rating between two states)
-    trials.push({
-      type: jsPsychHtmlSliderResponse,
-      stimulus: priorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
-      prompt: EFFORT_PROMPT,
-      slider_width: 900,
-      slider_min: 0,
-      slider_max: 100,
-      step: 1,
-      require_movement: true,
-      labels: effortLabels(stimulus),
-      button_label: "Continue",
-      data: {
-        response_type: "response",
-        response_target: "effort",
-        stage: "prior",
-        stimulus_index: stimulusIndex,
-        scenario_label: stimulus.scenario_label,
-        action_condition: stimulus.action_condition,
-        intimacy_condition: stimulus.intimacy_condition,
-        low_risk_share_effort_low: stimulus.low_risk_share_effort_low,
-        low_risk_share_effort_high: stimulus.low_risk_share_effort_high,
-      },
-    });
+    // Prior — desire + effort sliders on one page
+    trials.push(
+      makeTwoSliderForm({
+        preamble: priorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
+        sliders: jointSliders,
+        data: { ...jointData, stage: "prior" },
+      }),
+    );
 
     trials.push({
       type: jsPsychHtmlKeyboardResponse,
@@ -178,55 +140,18 @@ function makeStimulusTrials(jsPsych, stimuli) {
       trial_duration: 1000,
     });
 
-    // Posterior — desire slider, continuous 0-100
-    trials.push({
-      type: jsPsychHtmlSliderResponse,
-      stimulus: posteriorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
-      prompt: desirePrompt(stimulus),
-      slider_width: 900,
-      slider_min: 0,
-      slider_max: 100,
-      step: 1,
-      require_movement: true,
-      labels: DESIRE_SLIDER_LABELS,
-      button_label: "Continue",
-      data: {
-        response_type: "response",
-        response_target: "desire",
-        stage: "posterior",
-        stimulus_index: stimulusIndex,
-        scenario_label: stimulus.scenario_label,
-        action_condition: stimulus.action_condition,
-        intimacy_condition: stimulus.intimacy_condition,
-        desire_low: stimulus.desire_low,
-        desire_high: stimulus.desire_high,
-      },
-    });
-
-    // Posterior — effort slider (continuous 0-100 rating between two states)
-    trials.push({
-      type: jsPsychHtmlSliderResponse,
-      stimulus: posteriorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
-      prompt: EFFORT_PROMPT,
-      slider_width: 900,
-      slider_min: 0,
-      slider_max: 100,
-      step: 1,
-      require_movement: true,
-      labels: effortLabels(stimulus),
-      button_label: "Continue",
-      data: {
-        response_type: "response",
-        response_target: "effort",
-        stage: "posterior",
-        stimulus_index: stimulusIndex,
-        scenario_label: stimulus.scenario_label,
-        action_condition: stimulus.action_condition,
-        intimacy_condition: stimulus.intimacy_condition,
-        low_risk_share_effort_low: stimulus.low_risk_share_effort_low,
-        low_risk_share_effort_high: stimulus.low_risk_share_effort_high,
-      },
-    });
+    // Posterior — desire + effort sliders on one page
+    trials.push(
+      makeTwoSliderForm({
+        preamble: posteriorSliderStimulus(
+          stimulus,
+          stimulusIndex,
+          stimuli.length,
+        ),
+        sliders: jointSliders,
+        data: { ...jointData, stage: "posterior" },
+      }),
+    );
 
     const memoryCheck = makeMemoryCheckForStimulus(stimulus);
     if (memoryCheck) trials.push(memoryCheck);

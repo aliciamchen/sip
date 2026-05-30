@@ -26,8 +26,15 @@ h3 {
   width: 50% !important;
 }
 
+/* Pin the instructions to a fixed, centered width (matching the scenario
+   .vignette-text) so every instructions page renders at the same width,
+   regardless of its content. */
+.instructions-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
 .instructions-container p {
-  width: 50% !important;
+  width: 100% !important;
 }
 
 .vignette-text {
@@ -89,6 +96,43 @@ h3 {
 .slider-endpoint {
   width: 65%;
   margin: 0 auto;
+}
+
+/* Two sliders on one page (joint-inference studies 1b/2b), rendered via
+   survey-html-form. Labels sit in normal flow (flexbox), so long effort-paragraph
+   endpoints wrap and size the row without overlapping the next slider. */
+.two-slider-block {
+  margin: 2.5em auto 2em auto;
+}
+.two-slider-prompt {
+  margin-bottom: 1em;
+}
+.two-slider-track {
+  margin: 0 auto;
+}
+.two-slider-track .jspsych-slider {
+  width: 100%;
+}
+.two-slider-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+.two-slider-label {
+  flex: 0 1 30%;
+  text-align: center;
+  font-size: 80%;
+}
+/* Center the endpoint labels ON the track ends (each label centered under the
+   point it refers to). translateX shifts them visually without affecting flow,
+   so the row still auto-sizes to the tallest (wrapped) label. Any middle label
+   is already centered at 50% by space-between. */
+.two-slider-label:first-child {
+  transform: translateX(-50%);
+}
+.two-slider-label:last-child {
+  transform: translateX(50%);
 }
 
 /* =========================

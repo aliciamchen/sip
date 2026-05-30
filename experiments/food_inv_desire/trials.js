@@ -18,6 +18,7 @@ import {
 import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 import { makeConfig } from "../_lib/config.js";
+import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
 
 const intimacy_texts = {
   0: "maximally formal",
@@ -31,33 +32,11 @@ export const CONFIG = makeConfig("food_inv_desire");
 const getEffortText = (stim) =>
   stim.effort_condition === "low" ? stim.low_risk_share_effort_low : stim.low_risk_share_effort_high;
 
-const INSTRUCTIONS_PAGES = [
-  `
-    <div class="instructions-container">
-        <h2>Social interactions survey</h2>
-        <p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding how to eat different kinds of food in different situations.</p>
-        <p>Some relationships are formal, like some relationships with an employee, a religious leader, a shopkeeper or a new acquaintance. Other relationships are close and intimate, like some relationships with a romantic partner, sibling or best friend.</p>
-    </div>
-  `,
-  `
-    <div class="instructions-container">
-        <h2>Social interactions survey</h2>
-        <p>Before observing what action the two people decide to take, we will ask you to rate how much you think they want to eat the food, on a scale from 0 ("not at all") to 100 ("extremely").</p>
-        <p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want to eat the food.</p>
-    </div>
-  `,
-  `
-    <div class="instructions-container">
-      <h2>Social interactions survey</h2>
-        <p>Please pay attention to the social relationship between the two people, and read each of the scenarios and ways of eating food carefully! 🙂 You will receive $5 if you successfully complete the survey.</p>
-        <p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>
-        <p>Press next to begin the survey.</p>
-    </div>
-  `,
-];
+const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_desire;
 
-// Continuous 0-100 desire slider: endpoints labeled "not at all" / "extremely".
-const DESIRE_SLIDER_LABELS = ["0<br>not at all", "100<br>extremely"];
+// Continuous 0-100 desire slider: endpoints labeled "not at all" / "extremely"
+// (no numbers shown).
+const DESIRE_SLIDER_LABELS = ["not at all", "extremely"];
 
 function makeStimulusTrials(jsPsych, stimuli) {
   const trials = [];
