@@ -33,6 +33,12 @@ const INFERENCE_NOTE =
   "<p>In each scenario, two people decide what to do in a situation involving food.</p>" +
   "<p>The descriptions we give you leave out some information — about the characters, what they know, or the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
 
+// Clarifies that the desire rating is about how much the two people want the
+// food itself (liking, hunger, appeal), distinct from what they decide to do.
+// Shown in the desire-DV studies (1a, 1b).
+const DESIRE_NOTE =
+  '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — not whether you think they will actually eat it. Two people might both want the food a lot but still not end up eating it, because of other aspects of the situation, so please rate how much they want the food itself rather than what they decide to do.</p></div>';
+
 // Final page: a study-specific "read carefully" lead-in followed by the shared
 // payment, don't-close, and begin lines.
 function finalInstructionsPage(leadIn) {
@@ -60,6 +66,7 @@ export const STUDY_INSTRUCTIONS = {
     INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what the two people decide to do, we will ask you to rate how much you think they want to eat the food.</p>",
+      DESIRE_NOTE,
       "<p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want to eat the food.</p>",
     ]),
     finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),
@@ -71,6 +78,7 @@ export const STUDY_INSTRUCTIONS = {
     INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what the two people decide to do, we will ask you two questions. The first question asks how much you think they want to eat the food. The second question asks which of two situations — each described in the scenario — you think is more likely. You will answer each of the questions using a slider.</p>",
+      DESIRE_NOTE,
       "<p>Then, we will show you what they decide to do, and ask you to re-evaluate your answers.</p>",
     ]),
     finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),

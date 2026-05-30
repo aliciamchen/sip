@@ -37,6 +37,34 @@ h3 {
   width: 100% !important;
 }
 
+/* "Side note" callout for an aside within the instructions (e.g. the
+   desire-vs-decision clarification): a muted tint + left accent rule and
+   slightly smaller text set it apart from the main instruction flow. */
+.side-note {
+  box-sizing: border-box;
+  max-width: 720px;
+  margin: 18px auto;
+  padding: 12px 18px;
+  background-color: #f5f6f8;
+  border-left: 4px solid #9aa7b8;
+  border-radius: 4px;
+  font-size: 92%;
+  color: #3a4250;
+  text-align: left;
+}
+.side-note p {
+  width: 100% !important;
+  margin: 0;
+}
+.side-note p::before {
+  content: "Note: ";
+  font-weight: 700;
+  color: #5b6677;
+}
+.side-note strong {
+  font-weight: 600;
+}
+
 .vignette-text {
   background-color: #f9f9f9;
   border-radius: 10px;
