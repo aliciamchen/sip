@@ -17,9 +17,9 @@
 // save data or assign a condition until it has a real ID.
 export const DATAPIPE_IDS = {
   food_inv_desire: "ixxsoCvjY9kH", // Study 1a
-  food_inv_joint_de: "TODO_FILL_IN_DATAPIPE_ID", // Study 1b
-  food_inv_intimacy: "TODO_FILL_IN_DATAPIPE_ID", // Study 2a
-  food_inv_joint_ie: "TODO_FILL_IN_DATAPIPE_ID", // Study 2b
+  food_inv_joint_de: "zxPavRt21FCr", // Study 1b
+  food_inv_intimacy: "wX18fBV6FFV1", // Study 2a
+  food_inv_joint_ie: "Z3EeK2XpEZPr", // Study 2b
 };
 
 // Settings identical across all active experiments.
