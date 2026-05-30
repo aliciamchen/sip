@@ -47,12 +47,16 @@ const READ_CAREFULLY_RELATIONSHIP =
 const READ_CAREFULLY_PLAIN =
   "Please read each of the scenarios and ways of eating food carefully!";
 
+// The inference note as its own standalone page (shown in every study).
+const INFERENCE_PAGE = instructionsPage([INFERENCE_NOTE]);
+
 // --- Per-study instructions (study-specific pages in bold relief) -----------
 
 export const STUDY_INSTRUCTIONS = {
   // Study 1a — infer desire (one slider).
   food_inv_desire: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE, INFERENCE_NOTE]),
+    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what action the two people decide to take, we will ask you to rate how much you think they want to eat the food.</p>",
       "<p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want to eat the food.</p>",
@@ -62,7 +66,8 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 1b — jointly infer desire and effort (two sliders).
   food_inv_joint_de: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE, INFERENCE_NOTE]),
+    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what action the two people decide to take, we will ask you two questions using two sliders. The first asks how much you think they want to eat the food. The second asks which of two situations you think is more likely.</p>",
       "<p>Then, we will show you what they decide to do, and ask you to re-evaluate both sliders.</p>",
@@ -72,7 +77,8 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 2a — infer intimacy (one slider).
   food_inv_intimacy: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE, INFERENCE_NOTE]),
+    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what the two people decide to do, we will ask you to evaluate what kind of social relationship you think they are in.</p>",
       "<p>Then, we will show you what they decide to do, and ask you to re-evaluate what kind of social relationship you think they are in.</p>",
@@ -83,7 +89,8 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 2b — jointly infer intimacy and effort (two sliders).
   food_inv_joint_ie: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE, INFERENCE_NOTE]),
+    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    INFERENCE_PAGE,
     instructionsPage([
       "<p>Before observing what action the two people decide to take, we will ask you to evaluate, using two sliders, two things about their situation. The first slider asks about the social relationship between them. The second slider asks about their situation.</p>",
       "<p>Then, we will show you what they decide to do, and ask you to re-evaluate both sliders.</p>",
