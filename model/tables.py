@@ -1170,7 +1170,7 @@ def load_padded_lm_tables_3act_intimacy(
     alternatives_v_path=None,
 ):
     """Study 2a: observer knows (reward, effort), infers intimacy. Cell grid is
-    (scenario, observed_action, reward_condition, effort_condition). intimacy
+    (scenario, observed_action, desire_condition, effort_condition). intimacy
     inferred (continuous; access modulated by (1-I)^gamma in the utility, no
     table axis). effort observed -> effort feature taken at the cell's effort.
       access: (16, 3, 2, 2, S)     [scenario, obs, reward, effort, slot]
@@ -1220,13 +1220,13 @@ def load_padded_lm_tables_3act_intimacy(
 
     # Alternatives keyed by (scenario, obs, reward, effort, alt_idx).
     alt_v_lookup = {
-        (r["scenario_label"], r["observed_action"], r["reward_condition"], r["effort_condition"], int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
+        (r["scenario_label"], r["observed_action"], r["desire_condition"], r["effort_condition"], int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
         for _, r in alts_v_df.iterrows()
     }
     for _, row in feats_df.iterrows():
         s = SCENARIO_TO_IDX[row["scenario_label"]]
         o = obs_to_idx[row["observed_action"]]
-        rew = rew_to_idx[row["reward_condition"]]
+        rew = rew_to_idx[row["desire_condition"]]
         e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
         slot = int(row["alt_idx"]) + 1
         if slot >= MAX_ACTIONS_3ACT:
@@ -1235,7 +1235,7 @@ def load_padded_lm_tables_3act_intimacy(
         effort[s, o, rew, e, slot] = float(row["effort"])
         for mot, m in mot_to_idx.items():
             v[s, o, rew, e, slot, m] = alt_v_lookup.get(
-                (row["scenario_label"], row["observed_action"], row["reward_condition"], row["effort_condition"], int(row["alt_idx"]), mot), 0.0
+                (row["scenario_label"], row["observed_action"], row["desire_condition"], row["effort_condition"], int(row["alt_idx"]), mot), 0.0
             )
         valid[s, o, rew, e, slot] = True
 
@@ -1252,7 +1252,7 @@ def load_padded_lm_tables_3act_joint_ie(
     alternatives_v_path=None,
 ):
     """Study 2b: observer knows reward, infers (intimacy, effort). Cell grid is
-    (scenario, observed_action, reward_condition). intimacy inferred (continuous,
+    (scenario, observed_action, desire_condition). intimacy inferred (continuous,
     no table axis); effort inferred -> effort table carries an effort_condition
     feature axis.
       access: (16, 3, 2, S)        [scenario, obs, reward, slot]
@@ -1304,13 +1304,13 @@ def load_padded_lm_tables_3act_joint_ie(
     # Alternatives keyed by (scenario, obs, reward, effort_condition, alt_idx);
     # access effort-marginal.
     alt_v_lookup = {
-        (r["scenario_label"], r["observed_action"], r["reward_condition"], int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
+        (r["scenario_label"], r["observed_action"], r["desire_condition"], int(r["alt_idx"]), r["motivation_query"]): float(r["v"])
         for _, r in alts_v_df.iterrows()
     }
     for _, row in feats_df.iterrows():
         s = SCENARIO_TO_IDX[row["scenario_label"]]
         o = obs_to_idx[row["observed_action"]]
-        rew = rew_to_idx[row["reward_condition"]]
+        rew = rew_to_idx[row["desire_condition"]]
         e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
         slot = int(row["alt_idx"]) + 1
         if slot >= MAX_ACTIONS_3ACT:
@@ -1319,7 +1319,7 @@ def load_padded_lm_tables_3act_joint_ie(
         effort[s, o, rew, e, slot] = float(row["effort"])
         for mot, m in mot_to_idx.items():
             v[s, o, rew, slot, m] = alt_v_lookup.get(
-                (row["scenario_label"], row["observed_action"], row["reward_condition"], int(row["alt_idx"]), mot), 0.0
+                (row["scenario_label"], row["observed_action"], row["desire_condition"], int(row["alt_idx"]), mot), 0.0
             )
         valid[s, o, rew, slot] = True
 

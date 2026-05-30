@@ -11,7 +11,7 @@ Guidance for Claude Code sessions working in this repository. Project overview, 
 
 ## Terminology
 
-The paper uses "desire" but internal variable names use "reward" (e.g. `p_high_reward`, `reward_condition`) or "motivation" — same concept, terminology changed mid-project for clarity. In `model/utility.py`, `V` is signed valence in [-1, +1]; in the effort experiment V is stipulated to 1 (reward held fixed at high) and `w_v` is non-identified, so it appears in fit-result tables for parallelism but stays near initialization.
+The paper uses "desire." The experiment code and the data it saves now use "desire" too (`desire_low`/`desire_high` scenario paragraphs, the `desire_condition` factor), but the model's internal variables still use "reward" (e.g. `p_high_reward`, the memo `reward_condition`) and the processed-CSV column is "motivation" — same concept, the model-side names predate the experiment-side rename. The active LM scripts that read the scenario paragraphs were updated to the new column names; legacy code still reads `reward_*`. In `model/utility.py`, `V` is signed valence in [-1, +1]; in the effort experiment V is stipulated to 1 (reward held fixed at high) and `w_v` is non-identified, so it appears in fit-result tables for parallelism but stays near initialization.
 
 ## Source of truth for project intent
 

@@ -1,7 +1,7 @@
 """Counterbalancing for food_inv_joint_ie.
 
-Study 2b — Joint inference over intimacy + effort (known desire/reward).
-Cells: reward_condition × action = 2 × 3 = 6 cells.
+Study 2b — Joint inference over intimacy + effort (known desire).
+Cells: desire_condition × action = 2 × 3 = 6 cells.
 
 Each participant sees all 16 scenarios (one trial each). Cells are distributed
 across the 16 trials as evenly as possible: each cell gets `floor(16 / n_cells)`
@@ -48,8 +48,8 @@ ALL_CELLS = [
 
 
 def cell_to_dict(cell):
-    reward, action = cell
-    return {"reward_condition": reward, "action_condition": action}
+    desire, action = cell
+    return {"desire_condition": desire, "action_condition": action}
 
 
 def make_all_conditions(cells, n_slots=N_SLOTS):
@@ -102,4 +102,4 @@ with open(output_path, "w") as f:
 
 print(f"Generated {len(counterbalancing)} counterbalanced sequences")
 print(f"Each sequence has {len(counterbalancing[0])} trials")
-print(f"Cells: {len(ALL_CELLS)} (reward × action = 2 × 3 = 6 cells)")
+print(f"Cells: {len(ALL_CELLS)} (desire × action = 2 × 3 = 6 cells)")

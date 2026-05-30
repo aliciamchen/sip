@@ -8,11 +8,11 @@ Study 1a — Desire inference.
 
 **Known to participant**: effort_condition, intimacy_condition
 
-**Inferred by participant**: reward_condition (one continuous 0–100 slider — "how much do they want to eat the food?", endpoints "not at all" / "extremely"). The reward_low/reward_high paragraphs are not shown.
+**Inferred by participant**: desire_condition (one continuous 0–100 slider — "how much do they want to eat the food?", endpoints "not at all" / "extremely"). The desire_low/desire_high paragraphs are not shown.
 
 ## Trial structure
 
-Each trial shows: intimacy-descriptor preamble page, then vignette + effort paragraph + observed action (at posterior). The reward paragraph is hidden, since desire is the target of inference.
+Each trial shows: intimacy-descriptor preamble page, then vignette + effort paragraph + observed action (at posterior). The desire paragraph is hidden, since desire is the target of inference.
 
 Slider responses: one continuous slider (0–100, endpoints "not at all" / "extremely"), rating "how much do {name_0} and {name_1} want to eat the food?" with the scenario's two character names.
 

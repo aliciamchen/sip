@@ -135,7 +135,7 @@ _STUDY_CONFIG = {
         "canonical_v_output": "lm_scenario_v_3act.csv",
         "alternatives_features_output": "lm_alternatives_features_food_inv_intimacy.csv",
         "alternatives_v_output": "lm_alternatives_v_food_inv_intimacy.csv",
-        "cell_cols": ("reward_condition", "effort_condition"),
+        "cell_cols": ("desire_condition", "effort_condition"),
         "effort_inferred": False,
     },
     "food_inv_joint_ie": {
@@ -146,7 +146,7 @@ _STUDY_CONFIG = {
         "canonical_v_output": "lm_scenario_v_3act.csv",
         "alternatives_features_output": "lm_alternatives_features_food_inv_joint_ie.csv",
         "alternatives_v_output": "lm_alternatives_v_food_inv_joint_ie.csv",
-        "cell_cols": ("reward_condition",),
+        "cell_cols": ("desire_condition",),
         "effort_inferred": True,
     },
 }
@@ -270,7 +270,7 @@ def _score_scenario(client, scenario_row, alt_rows_for_scenario, system_prompts)
     # --- V: 1 prompt per (scenario, motivation_query), with state paragraph ---
     v = {}
     for motivation in MOTIVATIONS:
-        state = scenario_row[f"reward_{motivation}"]
+        state = scenario_row[f"desire_{motivation}"]
         print(
             f"  V (motivation_query={motivation}, n_actions={n_actions})...",
             flush=True,

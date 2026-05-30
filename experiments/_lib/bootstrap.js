@@ -68,7 +68,7 @@ async function createExperiment({
 
   // Spread the assigned sequence's per-scenario factor fields onto each
   // stimulus. The counterbalancing file determines which factor fields exist
-  // (action_condition, reward_condition, effort_condition, intimacy_condition
+  // (action_condition, desire_condition, effort_condition, intimacy_condition
   // — whichever subset applies to this study).
   const stimuliWithConditions = stimuli.map((stimulus) => {
     const sequenceItem = assignedSequence.find(

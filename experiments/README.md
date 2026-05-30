@@ -2,7 +2,7 @@
 
 ## Terminology note
 
-Internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`) rather than "desire" — the public manuscript uses "desire" but the data column names were fixed before that rename.
+The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`desire_high` scenario paragraphs and the `desire_condition` factor). The model's internal variables and the processed-data column still use "reward"/"motivation" (e.g., `p_high_reward`, and the `motivation` column that `json_to_csv.py` writes) — the same concept under an older name that predates the switch to "desire" on the experiment side.
 
 ## Stimulus sources
 
@@ -17,7 +17,7 @@ The stimulus set for all four active inverse-planning experiments. Carries the e
 | `scenario_label` | Scenario identifier used in data files |
 | `name_0`, `name_1` | Character names in the vignette |
 | `vignette` | Base scenario description |
-| `reward_low`, `reward_high` | Two desire-state paragraphs |
+| `desire_low`, `desire_high` | Two desire-state paragraphs |
 | `effort_low`, `effort_high` | Two effort-state paragraphs — the low version makes the resource that `action_1` relies on easy to obtain, the high version makes it costly |
 | `action_0` | No sharing |
 | `action_1` | Low-risk (non-saliva) sharing — the effort cost lives in the `effort_*` paragraph, not the action text |

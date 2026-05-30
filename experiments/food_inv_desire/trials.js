@@ -109,8 +109,8 @@ function makeStimulusTrials(jsPsych, stimuli) {
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
         effort_condition: stimulus.effort_condition,
-        reward_low: stimulus.reward_low,
-        reward_high: stimulus.reward_high,
+        desire_low: stimulus.desire_low,
+        desire_high: stimulus.desire_high,
       },
     });
 
@@ -153,8 +153,8 @@ function makeStimulusTrials(jsPsych, stimuli) {
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
         effort_condition: stimulus.effort_condition,
-        reward_low: stimulus.reward_low,
-        reward_high: stimulus.reward_high,
+        desire_low: stimulus.desire_low,
+        desire_high: stimulus.desire_high,
       },
     });
 

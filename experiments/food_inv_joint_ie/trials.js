@@ -1,6 +1,6 @@
 // Study 2b — Joint inference over intimacy and effort, given desire.
 // Design: 2 (desire) × 3 (observed action). Follows the noalt pattern with a
-// desire/reward paragraph as preamble; two sliders per prior/posterior phase
+// desire paragraph as preamble; two sliders per prior/posterior phase
 // (one for intimacy 0–100 numeric, one for effort with paragraph endpoints).
 // No candidate action list.
 
@@ -43,8 +43,8 @@ const INSTRUCTIONS_PAGES = [
   `,
 ];
 
-const getRewardText = (stim) =>
-  stim.reward_condition === "low" ? stim.reward_low : stim.reward_high;
+const getDesireText = (stim) =>
+  stim.desire_condition === "low" ? stim.desire_low : stim.desire_high;
 
 const INTIMACY_LABELS = [
   "0<br>Maximally formal",
@@ -58,14 +58,14 @@ const effortLabels = (stim) => [
   `<div class="slider-endpoint">${stim.effort_high}</div>`,
 ];
 
-const rewardPreamble = (stim) => `<p>${getRewardText(stim)}</p>`;
+const desirePreamble = (stim) => `<p>${getDesireText(stim)}</p>`;
 
 function priorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
   return `
     <div>
       <h2>Scenario ${stimulusIndex + 1} of ${stimuliLength}</h2>
       <div class="vignette-text">
-        ${rewardPreamble(stimulus)}
+        ${desirePreamble(stimulus)}
         <p>${stimulus.vignette}</p>
       </div>
       <p><strong>Before observing what they decide to do, please answer the question below.</strong></p>
@@ -78,7 +78,7 @@ function posteriorSliderStimulus(stimulus, stimulusIndex, stimuliLength) {
     <div>
       <h2>Scenario ${stimulusIndex + 1} of ${stimuliLength}</h2>
       <div class="vignette-text">
-        ${rewardPreamble(stimulus)}
+        ${desirePreamble(stimulus)}
         <p>${stimulus.vignette}</p>
       </div>
       <div class="vignette-text vignette-observed">
@@ -117,7 +117,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
-        reward_condition: stimulus.reward_condition,
+        desire_condition: stimulus.desire_condition,
       },
     });
 
@@ -140,7 +140,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
-        reward_condition: stimulus.reward_condition,
+        desire_condition: stimulus.desire_condition,
         effort_low: stimulus.effort_low,
         effort_high: stimulus.effort_high,
       },
@@ -172,7 +172,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
-        reward_condition: stimulus.reward_condition,
+        desire_condition: stimulus.desire_condition,
       },
     });
 
@@ -195,7 +195,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
-        reward_condition: stimulus.reward_condition,
+        desire_condition: stimulus.desire_condition,
         effort_low: stimulus.effort_low,
         effort_high: stimulus.effort_high,
       },

@@ -63,7 +63,7 @@ def _action_texts_3(row):
 
 
 def format_v_prompt(row, motivation):
-    state = row[f"reward_{motivation}"]
+    state = row[f"desire_{motivation}"]
     return build_user_prompt("v", row["vignette"], _action_texts_3(row), state=state)
 
 

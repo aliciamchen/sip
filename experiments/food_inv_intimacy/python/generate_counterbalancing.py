@@ -1,7 +1,7 @@
 """Counterbalancing for food_inv_intimacy.
 
-Study 2 — Inverse intimacy (knowns = reward + effort).
-Cells: reward × effort × action = 2 × 2 × 3 = 12 cells.
+Study 2 — Inverse intimacy (knowns = desire + effort).
+Cells: desire × effort × action = 2 × 2 × 3 = 12 cells.
 
 Each participant sees all 16 scenarios (one trial each). Cells are distributed
 across the 16 trials as evenly as possible: each cell gets `floor(16 / n_cells)`
@@ -36,8 +36,8 @@ ALL_CELLS = [(r, e, a) for r in ("low", "high") for e in ("low", "high") for a i
 
 
 def cell_to_dict(cell):
-    reward, effort, action = cell
-    return {"reward_condition": reward, "effort_condition": effort, "action_condition": action}
+    desire, effort, action = cell
+    return {"desire_condition": desire, "effort_condition": effort, "action_condition": action}
 
 
 def make_all_conditions(cells, n_slots=N_SLOTS):
@@ -92,4 +92,4 @@ with open(output_path, "w") as f:
 
 print(f"Generated {len(counterbalancing)} counterbalanced sequences")
 print(f"Each sequence has {len(counterbalancing[0])} trials")
-print(f"Cells: {len(ALL_CELLS)} (reward × effort × action = 2 × 2 × 3 = 12 cells)")
+print(f"Cells: {len(ALL_CELLS)} (desire × effort × action = 2 × 2 × 3 = 12 cells)")

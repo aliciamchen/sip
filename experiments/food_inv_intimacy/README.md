@@ -6,13 +6,13 @@ Study 2a — Inverse intimacy.
 
 **Factor crossing**: 2 (desire: low/high) × 2 (effort: low/high) × 3 (observed action: action_0/1/2)
 
-**Known to participant**: reward_condition, effort_condition
+**Known to participant**: desire_condition, effort_condition
 
 **Inferred by participant**: intimacy (one slider, 0 = maximally formal, 100 = maximally intimate)
 
 ## Trial structure
 
-Each trial shows: vignette + reward paragraph + effort paragraph + observed action (at posterior). Goes straight to the prior slider; no intimacy-descriptor preamble since intimacy is the inferred variable.
+Each trial shows: vignette + desire paragraph + effort paragraph + observed action (at posterior). Goes straight to the prior slider; no intimacy-descriptor preamble since intimacy is the inferred variable.
 
 Slider responses: one intimacy slider (0–100), prior and posterior.
 

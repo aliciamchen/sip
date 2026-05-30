@@ -138,7 +138,7 @@ def main(study):
                 f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...",
                 flush=True,
             )
-            state = sc_meta[f"reward_{motivation_query}"]
+            state = sc_meta[f"desire_{motivation_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
                 v_system_prompt,

@@ -121,7 +121,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
       choices: "ALL_KEYS",
     });
 
-    // Prior — desire (reward) slider, continuous 0-100
+    // Prior — desire slider, continuous 0-100
     trials.push({
       type: jsPsychHtmlSliderResponse,
       stimulus: priorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
@@ -135,14 +135,14 @@ function makeStimulusTrials(jsPsych, stimuli) {
       button_label: "Continue",
       data: {
         response_type: "response",
-        response_target: "reward",
+        response_target: "desire",
         stage: "prior",
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
-        reward_low: stimulus.reward_low,
-        reward_high: stimulus.reward_high,
+        desire_low: stimulus.desire_low,
+        desire_high: stimulus.desire_high,
       },
     });
 
@@ -178,7 +178,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
       trial_duration: 1000,
     });
 
-    // Posterior — desire (reward) slider, continuous 0-100
+    // Posterior — desire slider, continuous 0-100
     trials.push({
       type: jsPsychHtmlSliderResponse,
       stimulus: posteriorSliderStimulus(stimulus, stimulusIndex, stimuli.length),
@@ -192,14 +192,14 @@ function makeStimulusTrials(jsPsych, stimuli) {
       button_label: "Continue",
       data: {
         response_type: "response",
-        response_target: "reward",
+        response_target: "desire",
         stage: "posterior",
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
         intimacy_condition: stimulus.intimacy_condition,
-        reward_low: stimulus.reward_low,
-        reward_high: stimulus.reward_high,
+        desire_low: stimulus.desire_low,
+        desire_high: stimulus.desire_high,
       },
     });
 

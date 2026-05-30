@@ -6,13 +6,13 @@ Study 2b — Joint inference over intimacy and effort, given desire.
 
 **Factor crossing**: 2 (desire: low/high) × 3 (observed action)
 
-**Known to participant**: reward_condition (shown as a paragraph preamble describing how much the characters want the food)
+**Known to participant**: desire_condition (shown as a paragraph preamble describing how much the characters want the food)
 
 **Inferred by participant**: intimacy AND effort_condition (two sliders per phase — intimacy on a 0–100 numeric scale, effort with `effort_low` / `effort_high` paragraph endpoints)
 
 ## Trial structure
 
-Each trial shows: vignette + reward (desire) paragraph as preamble, then prior sliders, then observed action, then posterior sliders. Neither the intimacy descriptor nor the effort paragraph is shown directly — both are inferred from the action.
+Each trial shows: vignette + desire paragraph as preamble, then prior sliders, then observed action, then posterior sliders. Neither the intimacy descriptor nor the effort paragraph is shown directly — both are inferred from the action.
 
 Slider responses: two sliders per phase (prior + posterior = 4 sliders total). Intimacy slider 0–100 with maximally formal / maximally intimate labels; effort slider with effort_low / effort_high paragraph endpoints. The `response_target` field on each data row indicates which slider it was.
 

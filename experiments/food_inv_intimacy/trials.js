@@ -1,5 +1,5 @@
 // Study 2 — Inverse intimacy under known desire + effort.
-// Design: 2 (reward: low/high) × 2 (effort: low/high) × 3 (observed action).
+// Design: 2 (desire: low/high) × 2 (effort: low/high) × 3 (observed action).
 // Follows the noalt pattern from food_inv_intimacy_desire_noalt: no candidate
 // action list shown; the participant sees only the single observed action at
 // the posterior stage.
@@ -18,8 +18,8 @@ import { makeConfig } from "../_lib/config.js";
 
 export const CONFIG = makeConfig("food_inv_intimacy");
 
-const getRewardText = (stim) =>
-  stim.reward_condition === "low" ? stim.reward_low : stim.reward_high;
+const getDesireText = (stim) =>
+  stim.desire_condition === "low" ? stim.desire_low : stim.desire_high;
 const getEffortText = (stim) =>
   stim.effort_condition === "low" ? stim.effort_low : stim.effort_high;
 
@@ -70,7 +70,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p><strong>${getRewardText(stimulus)}</strong></p>
+            <p><strong>${getDesireText(stimulus)}</strong></p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>
           <p><strong>Before observing what they decide to do, how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate)?</strong></p>
@@ -89,7 +89,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
-        reward_condition: stimulus.reward_condition,
+        desire_condition: stimulus.desire_condition,
         effort_condition: stimulus.effort_condition,
       },
     });
@@ -108,7 +108,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
           <h2>Scenario ${stimulusIndex + 1} of ${stimuli.length}</h2>
           <div class="vignette-text">
             <p>${stimulus.vignette}</p>
-            <p><strong>${getRewardText(stimulus)}</strong></p>
+            <p><strong>${getDesireText(stimulus)}</strong></p>
             <p><strong>${getEffortText(stimulus)}</strong></p>
           </div>
           <div class="vignette-text vignette-observed">
@@ -131,7 +131,7 @@ function makeStimulusTrials(jsPsych, stimuli) {
         stimulus_index: stimulusIndex,
         scenario_label: stimulus.scenario_label,
         action_condition: stimulus.action_condition,
-        reward_condition: stimulus.reward_condition,
+        desire_condition: stimulus.desire_condition,
         effort_condition: stimulus.effort_condition,
       },
     });

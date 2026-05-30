@@ -89,13 +89,13 @@ _STUDY_CONFIG = {
         "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_intimacy.csv",
         "show": ("reward", "effort"),
-        "cell_cols": ("reward_condition", "effort_condition"),
+        "cell_cols": ("desire_condition", "effort_condition"),
     },
     "food_inv_joint_ie": {
         "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_joint_ie.csv",
         "show": ("reward",),
-        "cell_cols": ("reward_condition",),
+        "cell_cols": ("desire_condition",),
     },
 }
 
@@ -145,8 +145,8 @@ def _build_cells(scenarios_df, cfg):
                             "observed_action": observed_col,
                         }
                         if reward is not None:
-                            prompt_kwargs["reward_text"] = row[f"reward_{reward}"]
-                            cell["reward_condition"] = reward
+                            prompt_kwargs["reward_text"] = row[f"desire_{reward}"]
+                            cell["desire_condition"] = reward
                         if effort is not None:
                             prompt_kwargs["effort_text"] = row[f"effort_{effort}"]
                             cell["effort_condition"] = effort

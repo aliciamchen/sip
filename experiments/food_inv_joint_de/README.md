@@ -8,11 +8,11 @@ Study 1b — Joint inference over desire and effort.
 
 **Known to participant**: intimacy_condition
 
-**Inferred by participant**: reward_condition AND effort_condition (two sliders per trial — a continuous 0–100 desire slider with "not at all" / "extremely" endpoints, and an effort slider with effort_low/high paragraph endpoints)
+**Inferred by participant**: desire_condition AND effort_condition (two sliders per trial — a continuous 0–100 desire slider with "not at all" / "extremely" endpoints, and an effort slider with effort_low/high paragraph endpoints)
 
 ## Trial structure
 
-Each trial shows: intimacy-descriptor preamble page, then vignette + observed action (at posterior). Neither reward nor effort paragraph is shown in the vignette.
+Each trial shows: intimacy-descriptor preamble page, then vignette + observed action (at posterior). Neither desire nor effort paragraph is shown in the vignette.
 
 Slider responses: two sliders per phase (prior + posterior = 4 sliders total). A continuous 0–100 desire slider ("how much do they want to eat the food?", endpoints "not at all" / "extremely"); an effort slider with effort_low/high paragraph endpoints. The `response_target` field on each data row indicates which slider it was.
 
