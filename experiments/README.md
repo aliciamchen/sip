@@ -57,7 +57,7 @@ Each experiment dir has `python/generate_counterbalancing.py` which produces `js
 
 ## Shared experiment code
 
-The active experiments share a single copy of the jsPsych boilerplate — consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, and the merged stylesheet — in [`_lib/`](_lib/). Each per-experiment `experiment.js` is a thin call to `runExperiment()` from `_lib/bootstrap.js`, and each `trials.js` holds only the experiment-specific `CONFIG`, instruction text, and prior/posterior trial rendering. The three consent variants (`food-forward`, `food-inverse`, `nonfood-forward`) live in `_lib/consent/`.
+The active experiments share a single copy of the jsPsych boilerplate — consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, and the merged stylesheet — in [`_lib/`](_lib/). Each per-experiment `experiment.js` is a thin call to `runExperiment()` from `_lib/bootstrap.js`, and each `trials.js` holds only the experiment-specific instruction text and prior/posterior trial rendering. The settings repeated across every experiment — the DataPipe ID map, the attention-check index and tolerance, the inter-trial durations, and the shared Prolific completion URL — are collected in [`_lib/config.js`](_lib/config.js); each `trials.js` builds its `CONFIG` with a single `makeConfig("<slug>")` call (passing overrides as a second argument if it needs to depart from a shared default). The three consent variants (`food-forward`, `food-inverse`, `nonfood-forward`) live in `_lib/consent/`.
 
 This shared layout means the experiments are not standalone folders anymore: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
 
@@ -74,4 +74,4 @@ bin/deploy-experiment --list                    # list the active slugs
 
 The script rejects slugs that aren't in the active roster (the four experiments listed under "Active experiments" above), excludes `python/`, `README.md`, `.DS_Store`, and `*.bak` from the push, and runs rsync with `--delete` so stale files from earlier deploys get cleaned up. The server destination is overridable per-invocation with `RSYNC_DEST=user@host:/path`.
 
-Each experiment's `trials.js` still needs `PIPE_EXPERIMENT_ID` and `PROLIFIC_COMPLETION_URL` filled in with the real DataPipe and Prolific identifiers before it is launched to participants.
+Before an experiment is launched to participants, its real DataPipe experiment ID needs to be filled into the `DATAPIPE_IDS` map in [`_lib/config.js`](_lib/config.js) (keyed by slug); a `TODO_FILL_IN_DATAPIPE_ID` placeholder means data won't save until a real ID is set. The Prolific completion URL is shared across all experiments and already set in the same file.

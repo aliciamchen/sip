@@ -8,13 +8,13 @@ paths:
 Each experiment folder contains:
 - `index.html` - Entry point
 - `experiment.js` - thin call to `runExperiment()` from `_lib/bootstrap.js`
-- `trials.js` - per-experiment `CONFIG`, instruction text, and prior/posterior trial rendering
+- `trials.js` - instruction text and prior/posterior trial rendering; builds its `CONFIG` with `makeConfig("<slug>")` from `_lib/config.js`
 
-All shared jsPsych boilerplate (consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, the stylesheet, and the consent + exit-survey HTML templates) lives in [`experiments/_lib/`](../../experiments/_lib/). Each experiment references it via `../_lib/`, so the active experiments are not standalone folders — `_lib/` must be deployed alongside them.
+All shared jsPsych boilerplate (consent + instructions screens, attention check, memory checks, exit survey, save, thank-you, the stylesheet, and the consent + exit-survey HTML templates) is in [`experiments/_lib/`](../../experiments/_lib/). Each experiment references it via `../_lib/`, so the active experiments are not standalone folders — `_lib/` must be deployed alongside them.
 
 Experiments collect data via jsPsych-contrib/pipe plugin to `data/<experiment_name>/raw_data/`.
 
-Each different experiment needs a new datapipe ID but they all have the same prolific completion link.
+Config repeated across experiments is collected in [`experiments/_lib/config.js`](../../experiments/_lib/config.js): the `DATAPIPE_IDS` map (each experiment needs its own DataPipe ID — keyed by slug), the shared Prolific completion link, and the attention-check index/tolerance and inter-trial durations. Each `trials.js` calls `makeConfig("<slug>")` to merge the shared defaults with that experiment's DataPipe ID, passing overrides as a second argument when it needs to depart from a default.
 
 ## Deploy
 

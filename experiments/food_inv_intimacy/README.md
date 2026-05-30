@@ -39,8 +39,7 @@ uv run python experiments/csv_to_json.py
 
 ## Before running pilots
 
-- Replace `PIPE_EXPERIMENT_ID` in `trials.js` `CONFIG` with the real DataPipe experiment ID.
-- Replace `PROLIFIC_COMPLETION_URL` with the real Prolific completion URL.
+- Set this experiment's real DataPipe experiment ID in `experiments/_lib/config.js` (the `DATAPIPE_IDS` map, keyed by slug). The Prolific completion URL is shared across experiments and already set there.
 - Open `index.html` locally and walk through a few trials per cell to confirm the UI renders and the slider endpoints / observed actions look right.
 
 ## Deploy

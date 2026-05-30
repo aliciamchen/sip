@@ -4,9 +4,10 @@
 //
 // Each experiment's experiment.js calls runExperiment({ config, makeTimeline,
 // consentTemplate }), where:
-//   - config: the CONFIG object exported from trials.js, holding
-//     PIPE_EXPERIMENT_ID, PROLIFIC_COMPLETION_URL, ATTENTION_CHECK_INDEX,
-//     ATTENTION_TOLERANCE, INTER_TRIAL_DURATIONS
+//   - config: the CONFIG object exported from trials.js (built there with
+//     makeConfig("<slug>") from _lib/config.js), holding PIPE_EXPERIMENT_ID,
+//     PROLIFIC_COMPLETION_URL, ATTENTION_CHECK_INDEX, ATTENTION_TOLERANCE,
+//     INTER_TRIAL_DURATIONS
 //   - makeTimeline(jsPsych, stimuli, consentHtml, exitSurveyHtml, subjectId):
 //     returns the full ordered timeline array
 //   - consentTemplate: filename (without extension) under _lib/consent/, one of

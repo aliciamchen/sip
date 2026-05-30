@@ -16,6 +16,7 @@ import {
 } from "../_lib/timeline.js";
 import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
+import { makeConfig } from "../_lib/config.js";
 
 const intimacy_texts = {
   0: "maximally formal",
@@ -24,14 +25,7 @@ const intimacy_texts = {
   100: "maximally intimate",
 };
 
-export const CONFIG = {
-  ATTENTION_CHECK_INDEX: 14,
-  ATTENTION_TOLERANCE: 0.02,
-  INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
-  PIPE_EXPERIMENT_ID: "TODO_FILL_IN_DATAPIPE_ID",
-  PROLIFIC_COMPLETION_URL:
-    "https://app.prolific.com/submissions/complete?cc=C1A889GX",
-};
+export const CONFIG = makeConfig("food_inv_joint_de");
 
 const INSTRUCTIONS_PAGES = [
   `
