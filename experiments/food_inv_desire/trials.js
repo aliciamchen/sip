@@ -3,7 +3,7 @@
 // Intimacy descriptor preamble, then vignette + effort paragraph + a continuous
 // 0-100 desire slider (scenario-specific question, e.g. "how much do Carissa and
 // Josh both want to eat the hot dog?" — see `desire_phrase` in scenarios.csv;
-// endpoints Not at all/Extremely) rated before and after the single observed
+// labels Not at all / Moderately / Extremely) rated before and after the single observed
 // action. The desire paragraph is NOT shown (desire is inferred).
 
 import { makeInterTrialBlank } from "../_lib/timeline.js";

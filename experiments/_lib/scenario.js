@@ -32,7 +32,7 @@ export const intimacyDescriptor = (stim) =>
   `<p>Consider ${stim.name_0} and ${stim.name_1}, who would describe their relationship as <strong>${intimacy_texts[stim.intimacy_condition]}</strong>.</p>`;
 
 // Slider labels.
-export const DESIRE_SLIDER_LABELS = ["Not at all", "Extremely"];
+export const DESIRE_SLIDER_LABELS = ["Not at all", "Moderately", "Extremely"];
 export const INTIMACY_SLIDER_LABELS = [
   "Maximally formal",
   "Neither formal nor intimate",

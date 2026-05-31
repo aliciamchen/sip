@@ -31,13 +31,39 @@ const RELATIONSHIPS_NOTE =
 // Shown in every study.
 const INFERENCE_NOTE =
   "<p>In each scenario, two people decide what to do in a situation involving food.</p>" +
-  "<p>The descriptions we give you leave out some information — about the characters, what they know, or the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
+  "<p>The descriptions we give you leave out some information — about the characters or about the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
 
 // Clarifies that the desire rating is about how much the two people want the
 // food itself (liking, hunger, appeal), distinct from what they decide to do.
 // Shown in the desire-DV studies (1a, 1b).
 const DESIRE_NOTE =
   '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — not whether you think they will actually eat it. Two people might both want the food a lot but still not end up eating it, because of other aspects of the situation, so please rate how much they want the food itself rather than what they decide to do.</p></div>';
+
+// Explains the desire slider: one end means "not at all", the other "extremely",
+// the middle a moderate amount. Shown in the desire-DV studies (1a, 1b).
+const DESIRE_SLIDER_NOTE =
+  "<p>For the question about how much the two people want the food, sliding the slider all the way to one end means you think they do not want it at all, and all the way to the other end means they want it extremely. Positions in between indicate how much they want it, with the middle meaning a moderate amount.</p>";
+
+// Explains the relationship slider: the ends mean maximally formal / maximally
+// intimate, the middle means neither, and positions in between are somewhere
+// along that range. Shown in the intimacy-DV studies (2a, 2b).
+const RELATIONSHIP_SLIDER_NOTE =
+  "<p>For the question about the relationship, sliding the slider all the way to one end means you think the two people would describe their relationship as maximally formal, and sliding it all the way to the other end means maximally intimate. The middle means their relationship is neither formal nor intimate, and positions in between indicate relationships that are somewhat formal or somewhat intimate.</p>";
+
+// Explains the "which situation is more likely" slider: an end means that
+// situation is definitely the more likely one, the middle means the two are
+// equally likely, and positions in between are intermediate. Shown in the
+// two-slider studies that ask it (1b, 2b).
+const SITUATION_SLIDER_NOTE =
+  "<p>For the question about which of the two situations is more likely, sliding the slider all the way to one end means you think that situation is definitely the more likely one. The middle means you think the two situations are equally likely, and positions in between indicate how much more likely you think one situation is than the other.</p>";
+
+// The before/after timing, stated last (after the questions are introduced):
+// each response is given once before the decision is revealed and once after.
+// Singular for the one-slider studies (1a, 2a), plural for the two (1b, 2b).
+const TIMING_NOTE_ONE =
+  "<p>You will answer this question twice — once before and once after we show you what the two people decide to do.</p>";
+const TIMING_NOTE_TWO =
+  "<p>You will answer both questions twice — once before and once after we show you what the two people decide to do.</p>";
 
 // Final page: a study-specific "read carefully" lead-in followed by the shared
 // payment, don't-close, and begin lines.
@@ -65,8 +91,9 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>Before observing what the two people decide to do, we will ask you to rate how much you think they want to eat the food.</p>",
-      "<p>Then, we will show you what they decide to do, and ask you to re-rate how much you think they want to eat the food.</p>",
+      "<p>For each scenario, we will ask you to rate how much you think the two people want to eat the food.</p>",
+      DESIRE_SLIDER_NOTE,
+      TIMING_NOTE_ONE,
       DESIRE_NOTE,
     ]),
     finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),
@@ -77,8 +104,10 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>Before observing what the two people decide to do, we will ask you two questions. The first question asks how much you think they want to eat the food. The second question asks which of two situations — each described in the scenario — you think is more likely. You will answer each of the questions using a slider.</p>",
-      "<p>Then, we will show you what they decide to do, and ask you to re-evaluate your answers.</p>",
+      "<p>For each scenario, we will ask you two questions. The first question asks how much you think the two people want to eat the food. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      DESIRE_SLIDER_NOTE,
+      SITUATION_SLIDER_NOTE,
+      TIMING_NOTE_TWO,
       DESIRE_NOTE,
     ]),
     finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),
@@ -89,9 +118,9 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>Before observing what the two people decide to do, we will ask you to evaluate what kind of social relationship you think they are in.</p>",
-      "<p>Then, we will show you what they decide to do, and ask you to re-evaluate what kind of social relationship you think they are in.</p>",
-      "<p>You will use a slider to indicate how you think the two people would describe their relationship, from maximally formal to maximally intimate.</p>",
+      "<p>For each scenario, we will ask you to evaluate what kind of social relationship you think the two people are in.</p>",
+      RELATIONSHIP_SLIDER_NOTE,
+      TIMING_NOTE_ONE,
     ]),
     finalInstructionsPage(READ_CAREFULLY_PLAIN),
   ],
@@ -101,8 +130,10 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>Before observing what the two people decide to do, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think they are in. The second question asks which of two situations — each described in the scenario — you think is more likely. You will answer each of the questions using a slider.</p>",
-      "<p>Then, we will show you what they decide to do, and ask you to re-evaluate your answers.</p>",
+      "<p>For each scenario, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think the two people are in. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      RELATIONSHIP_SLIDER_NOTE,
+      SITUATION_SLIDER_NOTE,
+      TIMING_NOTE_TWO,
     ]),
     finalInstructionsPage(READ_CAREFULLY_PLAIN),
   ],
