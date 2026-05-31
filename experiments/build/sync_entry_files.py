@@ -60,7 +60,9 @@ runExperiment({
 
 
 def main():
-    base = Path(__file__).resolve().parent
+    # This script lives in experiments/build/; the experiment dirs are one level
+    # up under experiments/.
+    base = Path(__file__).resolve().parent.parent
     for slug in ACTIVE_SLUGS:
         exp_dir = base / slug
         if not exp_dir.is_dir():

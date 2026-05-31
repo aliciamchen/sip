@@ -6,7 +6,7 @@ The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`
 
 ## Stimulus sources
 
-The active stimulus set is one scenario CSV, generated from a Python source of truth. Edit the `.py` file and regenerate with `uv run python experiments/scenarios.py` — never edit the CSV directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`. The earlier 4-action / 2-action / non-food sets are archived under `experiments/legacy/` (see below).
+The active stimulus set is one scenario CSV, generated from a Python source of truth. Edit the `.py` file and regenerate with `uv run python experiments/scenarios.py` — never edit the CSV directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/build/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`. The earlier 4-action / 2-action / non-food sets are archived under `experiments/legacy/` (see below).
 
 ### `scenarios.csv` — 3-action canonical (active Studies 1a, 1b, 2a, 2b)
 
@@ -26,11 +26,22 @@ The stimulus set for all four active inverse-planning experiments. Carries the e
 
 ### Legacy stimulus sets (`experiments/legacy/`)
 
-Archived; their experiments are no longer active. Each is still generated from its `.py` source and regenerate-able via `csv_to_json.py` (legacy routing):
+Archived; their experiments are no longer active. Each is still generated from its `.py` source and regenerate-able via `build/csv_to_json.py` (legacy routing):
 
 - `legacy/scenarios.csv` — 4-action canonical (no-share / no-risk / moderate-risk / high-risk; `action_0`…`action_3`), the original forward Study 1a + archived inverse experiments.
 - `legacy/scenarios_effort.csv` — 2-action effort set (non-saliva `action_1` vs saliva `action_2`, with `effort_low`/`effort_high` paragraphs; reward fixed high), the original forward Study 1b.
 - `legacy/scenarios_nonfood.csv` — non-food parallel of the 4-action set across substance / shared-space / privacy categories (adds a `scenario_type` column); a basis for the planned Study 3.
+
+## Build scripts
+
+The generators that turn source files into the artifacts each experiment loads are in [`experiments/build/`](build/) (never deployed — the deploy only pushes `_lib/` and the per-experiment dirs). The authored scenario data stays at `experiments/scenarios.py` (and `legacy/`).
+
+- `csv_to_json.py` — scenario CSV → each experiment's `json/stimuli.json` (routing in its `SOURCES` table).
+- `counterbalancing.py` — per-study `json/full_counterbalancing.json` (designs in its `STUDY_CONFIGS` registry; `--study <slug>` for one).
+- `sync_entry_files.py` — the byte-identical `index.html` + `experiment.js` written into every active experiment.
+- `_scenario_io.py` — shared `write_scenarios_csv()` that the `scenarios*.py` source files call.
+
+The `Makefile` wraps these: `make stimuli`, `make counterbalancing`, `make entry-files`, or `make experiments` for all three.
 
 ## Active experiments
 
@@ -54,7 +65,7 @@ The four non-food inverse stubs (`nonfood_inv_*`), scaffolded against the obsole
 
 ## Counterbalancing
 
-A single registry-driven generator, [`_lib/python/counterbalancing.py`](_lib/python/counterbalancing.py), produces every experiment's `json/full_counterbalancing.json` (run it with no arguments for all four studies, or `--study <slug>` for one; via the Makefile, `make counterbalancing`). Each file is an array of N "sequences," each a 16-trial assignment of factor cells to the 16 scenarios. `experiment.js` reads a per-participant `condition_assignment` from jsPsychPipe and selects `counterbalancing[sequence_index]` (the index wrapped modulo the sequence count). The generator builds `n_rounds` rounds per study and rotates which scenario gets which cell within a round, for `n_rounds × 16` sequences total — 192 for Studies 1a/1b/2a (12 rounds) and 96 for Study 2b (6 rounds); each study's cell set, round count, and seed are in the script's `STUDY_CONFIGS` registry. Cells are distributed across the 16 slots by a balanced design so that every factor cell ends up in the same number of trial slots overall: when the cell space exceeds 16 (Study 1a has 2 × 4 × 3 = 24 cells) each round carries a balanced 16-cell subset (every cell in 8 of 12 rounds → 128 slots each); when it is at most 16 (Studies 1b/2a have 12 cells, 2b has 6) each round carries every cell once or twice plus a balanced set of extra slots (256 slots each). Rounds are interleaved by rotation index so sequential `condition_assignment` values spread early participants across all rounds rather than clustering them on one round's cell choices.
+A single registry-driven generator, [`build/counterbalancing.py`](build/counterbalancing.py), produces every experiment's `json/full_counterbalancing.json` (run it with no arguments for all four studies, or `--study <slug>` for one; via the Makefile, `make counterbalancing`). Each file is an array of N "sequences," each a 16-trial assignment of factor cells to the 16 scenarios. `experiment.js` reads a per-participant `condition_assignment` from jsPsychPipe and selects `counterbalancing[sequence_index]` (the index wrapped modulo the sequence count). The generator builds `n_rounds` rounds per study and rotates which scenario gets which cell within a round, for `n_rounds × 16` sequences total — 192 for Studies 1a/1b/2a (12 rounds) and 96 for Study 2b (6 rounds); each study's cell set, round count, and seed are in the script's `STUDY_CONFIGS` registry. Cells are distributed across the 16 slots by a balanced design so that every factor cell ends up in the same number of trial slots overall: when the cell space exceeds 16 (Study 1a has 2 × 4 × 3 = 24 cells) each round carries a balanced 16-cell subset (every cell in 8 of 12 rounds → 128 slots each); when it is at most 16 (Studies 1b/2a have 12 cells, 2b has 6) each round carries every cell once or twice plus a balanced set of extra slots (256 slots each). Rounds are interleaved by rotation index so sequential `condition_assignment` values spread early participants across all rounds rather than clustering them on one round's cell choices.
 
 ## Shared experiment code
 
@@ -67,7 +78,7 @@ Most of each experiment lives in shared modules under [`_lib/`](_lib/); each `tr
 - `two-slider.js` — `makeTwoSliderForm(...)` renders two sliders on one page (Studies 1b/2b) via `survey-html-form`.
 - `timeline.js`, `attention-check.js`, `memory-checks.js`, `style.css`, and the consent templates in `consent/` round out the boilerplate.
 
-So a `trials.js` only defines that study's `makeStimulusTrials` (composing the `_lib` pieces) and exports `CONFIG`, `INSTRUCTIONS_PAGES`, and `makeStimulusTrials`. The per-experiment `index.html` and `experiment.js` are byte-identical across studies and are generated from a single source by `sync_entry_files.py` (run it after changing the entry template, e.g. a jsPsych version bump).
+So a `trials.js` only defines that study's `makeStimulusTrials` (composing the `_lib` pieces) and exports `CONFIG`, `INSTRUCTIONS_PAGES`, and `makeStimulusTrials`. The per-experiment `index.html` and `experiment.js` are byte-identical across studies and are generated from a single source by `build/sync_entry_files.py` (run it after changing the entry template, e.g. a jsPsych version bump).
 
 This shared layout means the experiments are not standalone folders anymore: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
 

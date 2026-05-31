@@ -63,12 +63,13 @@ def load_scenarios(csv_path):
 
 
 def clean_text(text):
-    """Fix known typos and strip whitespace from scenario text."""
-    text = text.strip()
-    text = text.replace("intruiging", "intriguing")
-    text = text.replace("Intruigued", "Intrigued")
-    text = text.replace("that that the bar", "that the bar")
-    return text
+    """Strip surrounding whitespace from a scenario field.
+
+    No text substitutions: the source-of-truth `.py` files are the place to fix
+    typos, so the CSV and the emitted JSON stay identical. (The active scenario
+    set is typo-clean; a legacy CSV may still carry its original spellings.)
+    """
+    return text.strip()
 
 
 def write_json(scenarios, output_path):
@@ -79,7 +80,9 @@ def write_json(scenarios, output_path):
 
 
 def main():
-    script_dir = Path(__file__).parent
+    # This script lives in experiments/build/; the scenario CSVs and experiment
+    # dirs are one level up under experiments/.
+    script_dir = Path(__file__).resolve().parent.parent
 
     for csv_name, experiments in SOURCES:
         csv_path = script_dir / csv_name

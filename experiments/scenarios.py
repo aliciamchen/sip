@@ -28,8 +28,11 @@ Edit this file to change scenarios; the CSV is a generated artifact.
 Regenerate with: `uv run python experiments/scenarios.py`
 """
 
-import csv
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "build"))
+from _scenario_io import write_scenarios_csv
 
 OUT = Path(__file__).resolve().parent / "scenarios.csv"
 
@@ -275,13 +278,4 @@ rows = [
     ),
 ]
 
-assert len(rows) == 16, f"expected 16 rows, got {len(rows)}"
-labels = [r["scenario_label"] for r in rows]
-assert len(set(labels)) == 16, f"duplicate labels: {labels}"
-
-with OUT.open("w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=COLUMNS, quoting=csv.QUOTE_MINIMAL)
-    writer.writeheader()
-    writer.writerows(rows)
-
-print(f"Wrote {len(rows)} rows to {OUT}")
+write_scenarios_csv(rows, COLUMNS, OUT, expected_rows=16)

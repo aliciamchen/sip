@@ -106,19 +106,19 @@ experiments: stimuli counterbalancing entry-files
 # scenarios.py (source of truth) -> scenarios.csv -> per-experiment stimuli.json.
 stimuli:
 	uv run python experiments/scenarios.py
-	uv run python experiments/csv_to_json.py
+	uv run python experiments/build/csv_to_json.py
 
 # Per-participant condition sequences (each json/full_counterbalancing.json),
-# all from one registry-driven generator in _lib/python/.
+# all from one registry-driven generator in experiments/build/.
 counterbalancing:
-	uv run python experiments/_lib/python/counterbalancing.py
+	uv run python experiments/build/counterbalancing.py
 
 $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE)): counterbalancing-%:
-	uv run python experiments/_lib/python/counterbalancing.py --study $*
+	uv run python experiments/build/counterbalancing.py --study $*
 
 # Byte-identical index.html + experiment.js across the active experiments.
 entry-files:
-	uv run python experiments/sync_entry_files.py
+	uv run python experiments/build/sync_entry_files.py
 
 # =============================================================================
 # Data: raw JSON → CSV. Only useful if raw JSON in data/<slug>/raw_data/ exists;

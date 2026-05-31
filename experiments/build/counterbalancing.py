@@ -2,8 +2,8 @@
 
 One script, one balanced design, one per-study registry — replacing the four
 near-identical `experiments/<slug>/python/generate_counterbalancing.py` files.
-(This lives under `_lib/python/`, which `bin/deploy-experiment` excludes, so it
-is never pushed to the server.)
+(This lives under `experiments/build/`, which the deploy never touches — it only
+pushes `_lib/` and the per-experiment dirs.)
 
 For each study it writes `experiments/<slug>/json/full_counterbalancing.json` —
 an array of N "sequences," each a 16-trial assignment of factor cells to the 16
@@ -31,8 +31,8 @@ omitted when that variable is inferred rather than given):
   - food_inv_joint_ie (2b): desire x action             = 2 x 3     =  6 cells,  6 rounds ->  96 seqs
 
 Usage:
-    uv run python experiments/_lib/python/counterbalancing.py            # all studies
-    uv run python experiments/_lib/python/counterbalancing.py --study food_inv_joint_ie
+    uv run python experiments/build/counterbalancing.py            # all studies
+    uv run python experiments/build/counterbalancing.py --study food_inv_joint_ie
 """
 
 import argparse
@@ -43,7 +43,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-project_root = Path(__file__).resolve().parents[3]
+project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 from utils import get_project_root
 
