@@ -49,7 +49,7 @@ export function makeStimulusTrials(jsPsych, stimuli) {
     const sliders = [
       {
         name: "intimacy",
-        prompt: `How would ${stimulus.name_0} and ${stimulus.name_1} describe their relationship?`,
+        prompt: `How do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship?`,
         labels: INTIMACY_SLIDER_LABELS,
       },
       {
