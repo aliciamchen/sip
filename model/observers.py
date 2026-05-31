@@ -44,6 +44,7 @@ from actors import (
     actor_forw_effort_full,
 )
 from tables import (
+    DesireLevels,
     EffortConditions,
     IntimacyLevels,
     ObservedActions,
@@ -408,8 +409,9 @@ def observer_intimacy_full[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -439,8 +441,9 @@ def observer_intimacy_full[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
                 prior_table,
+                desire_table,
             ),
         ),
     ]
@@ -515,8 +518,9 @@ def observer_intimacy_base[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -538,7 +542,16 @@ def observer_intimacy_base[
                 reward_condition,
                 effort_condition,
                 relationship,
-            ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
+            ](
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                g_padded_table,
+                prior_table,
+                desire_table,
+            ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
@@ -558,13 +571,13 @@ def observer_intimacy_base[
 
 
 @memo
-def observer_reward_full[
+def observer_desire_full[
     padded_slot: PaddedActionSlots3Act,
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     effort_condition: EffortConditions,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
 ](
     alpha,
     w_v,
@@ -574,7 +587,7 @@ def observer_reward_full[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor, observer]
@@ -587,7 +600,7 @@ def observer_reward_full[
         actor : knows(observed_action),
         actor : knows(effort_condition),
         actor : knows(relationship_condition),
-        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(desire in DesireLevels, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots3Act,
             wpp=actor_discrete_3act_full_padded_desire[
@@ -596,7 +609,7 @@ def observer_reward_full[
                 observed_action,
                 effort_condition,
                 relationship_condition,
-                reward_condition,
+                desire,
             ](
                 alpha,
                 w_v,
@@ -605,27 +618,27 @@ def observer_reward_full[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
                 prior_table,
             ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
     observer: chooses(
-        reward_condition in RewardConditions,
-        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+        desire in DesireLevels,
+        wpp=E[actor.desire == desire] ** alpha_observer,
     )
-    return Pr[observer.reward_condition == reward_condition]
+    return Pr[observer.desire == desire]
 
 
 @memo
-def observer_reward_discomfort_only[
+def observer_desire_discomfort_only[
     padded_slot: PaddedActionSlots3Act,
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     effort_condition: EffortConditions,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
 ](
     alpha,
     w_d,
@@ -645,7 +658,7 @@ def observer_reward_discomfort_only[
         actor : knows(observed_action),
         actor : knows(effort_condition),
         actor : knows(relationship_condition),
-        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(desire in DesireLevels, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots3Act,
             wpp=actor_discrete_3act_discomfort_only_padded_desire[
@@ -654,26 +667,26 @@ def observer_reward_discomfort_only[
                 observed_action,
                 effort_condition,
                 relationship_condition,
-                reward_condition,
+                desire,
             ](alpha, w_d, gamma, access_table, effort_table, prior_table),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
     observer: chooses(
-        reward_condition in RewardConditions,
-        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+        desire in DesireLevels,
+        wpp=E[actor.desire == desire] ** alpha_observer,
     )
-    return Pr[observer.reward_condition == reward_condition]
+    return Pr[observer.desire == desire]
 
 
 @memo
-def observer_reward_base[
+def observer_desire_base[
     padded_slot: PaddedActionSlots3Act,
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     effort_condition: EffortConditions,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
 ](
     alpha,
     w_v,
@@ -681,7 +694,7 @@ def observer_reward_base[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor, observer]
@@ -694,7 +707,7 @@ def observer_reward_base[
         actor : knows(observed_action),
         actor : knows(effort_condition),
         actor : knows(relationship_condition),
-        actor : chooses(reward_condition in RewardConditions, wpp=1),
+        actor : chooses(desire in DesireLevels, wpp=1),
         actor : chooses(
             padded_slot in PaddedActionSlots3Act,
             wpp=actor_discrete_3act_base_padded_desire[
@@ -703,24 +716,24 @@ def observer_reward_base[
                 observed_action,
                 effort_condition,
                 relationship_condition,
-                reward_condition,
+                desire,
             ](
                 alpha,
                 w_v,
                 w_e,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
                 prior_table,
             ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
     observer: chooses(
-        reward_condition in RewardConditions,
-        wpp=E[actor.reward_condition == reward_condition] ** alpha_observer,
+        desire in DesireLevels,
+        wpp=E[actor.desire == desire] ** alpha_observer,
     )
-    return Pr[observer.reward_condition == reward_condition]
+    return Pr[observer.desire == desire]
 
 
 # ==============================================================================
@@ -750,7 +763,7 @@ def observer_joint_de_full[
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
     effort_condition: EffortConditions,
 ](
     alpha,
@@ -761,7 +774,7 @@ def observer_joint_de_full[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor, observer]
@@ -773,7 +786,7 @@ def observer_joint_de_full[
         actor : knows(observed_action),
         actor : knows(relationship_condition),
         actor : chooses(
-            reward_condition in RewardConditions,
+            desire in DesireLevels,
             effort_condition in EffortConditions,
             wpp=1,
         ),
@@ -784,7 +797,7 @@ def observer_joint_de_full[
                 scenario_idx,
                 observed_action,
                 relationship_condition,
-                reward_condition,
+                desire,
                 effort_condition,
             ](
                 alpha,
@@ -794,23 +807,20 @@ def observer_joint_de_full[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
                 prior_table,
             ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
     observer: chooses(
-        reward_condition in RewardConditions,
+        desire in DesireLevels,
         effort_condition in EffortConditions,
-        wpp=E[
-            (actor.reward_condition == reward_condition)
-            * (actor.effort_condition == effort_condition)
-        ]
+        wpp=E[(actor.desire == desire) * (actor.effort_condition == effort_condition)]
         ** alpha_observer,
     )
     return Pr[
-        observer.reward_condition == reward_condition,
+        observer.desire == desire,
         observer.effort_condition == effort_condition,
     ]
 
@@ -821,7 +831,7 @@ def observer_joint_de_discomfort_only[
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
     effort_condition: EffortConditions,
 ](
     alpha,
@@ -841,7 +851,7 @@ def observer_joint_de_discomfort_only[
         actor : knows(observed_action),
         actor : knows(relationship_condition),
         actor : chooses(
-            reward_condition in RewardConditions,
+            desire in DesireLevels,
             effort_condition in EffortConditions,
             wpp=1,
         ),
@@ -852,23 +862,20 @@ def observer_joint_de_discomfort_only[
                 scenario_idx,
                 observed_action,
                 relationship_condition,
-                reward_condition,
+                desire,
                 effort_condition,
             ](alpha, w_d, gamma, access_table, effort_table, prior_table),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
     observer: chooses(
-        reward_condition in RewardConditions,
+        desire in DesireLevels,
         effort_condition in EffortConditions,
-        wpp=E[
-            (actor.reward_condition == reward_condition)
-            * (actor.effort_condition == effort_condition)
-        ]
+        wpp=E[(actor.desire == desire) * (actor.effort_condition == effort_condition)]
         ** alpha_observer,
     )
     return Pr[
-        observer.reward_condition == reward_condition,
+        observer.desire == desire,
         observer.effort_condition == effort_condition,
     ]
 
@@ -879,7 +886,7 @@ def observer_joint_de_base[
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
     effort_condition: EffortConditions,
 ](
     alpha,
@@ -888,7 +895,7 @@ def observer_joint_de_base[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor, observer]
@@ -900,7 +907,7 @@ def observer_joint_de_base[
         actor : knows(observed_action),
         actor : knows(relationship_condition),
         actor : chooses(
-            reward_condition in RewardConditions,
+            desire in DesireLevels,
             effort_condition in EffortConditions,
             wpp=1,
         ),
@@ -911,23 +918,20 @@ def observer_joint_de_base[
                 scenario_idx,
                 observed_action,
                 relationship_condition,
-                reward_condition,
+                desire,
                 effort_condition,
-            ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
+            ](alpha, w_v, w_e, access_table, effort_table, g_padded_table, prior_table),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
     observer: chooses(
-        reward_condition in RewardConditions,
+        desire in DesireLevels,
         effort_condition in EffortConditions,
-        wpp=E[
-            (actor.reward_condition == reward_condition)
-            * (actor.effort_condition == effort_condition)
-        ]
+        wpp=E[(actor.desire == desire) * (actor.effort_condition == effort_condition)]
         ** alpha_observer,
     )
     return Pr[
-        observer.reward_condition == reward_condition,
+        observer.desire == desire,
         observer.effort_condition == effort_condition,
     ]
 
@@ -958,8 +962,9 @@ def observer_joint_ie_full[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -991,8 +996,9 @@ def observer_joint_ie_full[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
                 prior_table,
+                desire_table,
             ),
         ),
     ]
@@ -1085,8 +1091,9 @@ def observer_joint_ie_base[
     alpha_observer,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -1110,7 +1117,16 @@ def observer_joint_ie_base[
                 reward_condition,
                 relationship,
                 effort_condition,
-            ](alpha, w_v, w_e, access_table, effort_table, v_padded_table, prior_table),
+            ](
+                alpha,
+                w_v,
+                w_e,
+                access_table,
+                effort_table,
+                g_padded_table,
+                prior_table,
+                desire_table,
+            ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot

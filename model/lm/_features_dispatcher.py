@@ -54,26 +54,26 @@ from client import (
 # the --domain flag selects which scenario CSV (and output filenames) to use.
 _DOMAIN_PATHS = {
     "food": {
-        "scenarios":                          "legacy/scenarios.csv",
-        "params_output":                      "lm_scenario_params.csv",
-        "v_output":                           "lm_scenario_v.csv",
-        "alternatives_input":                 "lm_alternatives_food_inv_intimacy_desire_noalt.csv",
-        "alternatives_output":                "lm_alternatives_features_food_inv_intimacy_desire_noalt.csv",
-        "alternatives_v_output":              "lm_alternatives_v_food_inv_intimacy_desire_noalt.csv",
-        "alternatives_rel_input":             "lm_alternatives_food_inv_desire_intimacy_noalt.csv",
-        "alternatives_rel_output":            "lm_alternatives_features_food_inv_desire_intimacy_noalt.csv",
-        "alternatives_rel_v_output":          "lm_alternatives_v_food_inv_desire_intimacy_noalt.csv",
+        "scenarios": "legacy/scenarios.csv",
+        "params_output": "lm_scenario_params.csv",
+        "v_output": "lm_scenario_v.csv",
+        "alternatives_input": "lm_alternatives_food_inv_intimacy_desire_noalt.csv",
+        "alternatives_output": "lm_alternatives_features_food_inv_intimacy_desire_noalt.csv",
+        "alternatives_v_output": "lm_alternatives_v_food_inv_intimacy_desire_noalt.csv",
+        "alternatives_rel_input": "lm_alternatives_food_inv_desire_intimacy_noalt.csv",
+        "alternatives_rel_output": "lm_alternatives_features_food_inv_desire_intimacy_noalt.csv",
+        "alternatives_rel_v_output": "lm_alternatives_v_food_inv_desire_intimacy_noalt.csv",
     },
     "nonfood": {
-        "scenarios":                          "legacy/scenarios_nonfood.csv",
-        "params_output":                      "lm_scenario_params_nonfood.csv",
-        "v_output":                           "lm_scenario_v_nonfood.csv",
-        "alternatives_input":                 "lm_alternatives_nonfood.csv",
-        "alternatives_output":                "lm_alternatives_features_nonfood.csv",
-        "alternatives_v_output":              "lm_alternatives_v_nonfood.csv",
-        "alternatives_rel_input":             "lm_alternatives_relationship_nonfood.csv",
-        "alternatives_rel_output":            "lm_alternatives_relationship_features_nonfood.csv",
-        "alternatives_rel_v_output":          "lm_alternatives_relationship_v_nonfood.csv",
+        "scenarios": "legacy/scenarios_nonfood.csv",
+        "params_output": "lm_scenario_params_nonfood.csv",
+        "v_output": "lm_scenario_v_nonfood.csv",
+        "alternatives_input": "lm_alternatives_nonfood.csv",
+        "alternatives_output": "lm_alternatives_features_nonfood.csv",
+        "alternatives_v_output": "lm_alternatives_v_nonfood.csv",
+        "alternatives_rel_input": "lm_alternatives_relationship_nonfood.csv",
+        "alternatives_rel_output": "lm_alternatives_relationship_features_nonfood.csv",
+        "alternatives_rel_v_output": "lm_alternatives_relationship_v_nonfood.csv",
     },
 }
 
@@ -99,7 +99,9 @@ from prompts import user_prompt as build_user_prompt
 
 
 def load_scenarios(domain="food"):
-    scenarios_path = get_project_root() / "experiments" / _DOMAIN_PATHS[domain]["scenarios"]
+    scenarios_path = (
+        get_project_root() / "experiments" / _DOMAIN_PATHS[domain]["scenarios"]
+    )
     return pd.read_csv(scenarios_path)
 
 
@@ -123,7 +125,10 @@ def format_v_prompt(row, motivation):
     """
     state_col = f"reward_{motivation}"
     return build_user_prompt(
-        "v", row["vignette"], _action_texts_4(row), state=row[state_col],
+        "v",
+        row["vignette"],
+        _action_texts_4(row),
+        state=row[state_col],
     )
 
 
@@ -209,7 +214,10 @@ def main(domain="food"):
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         if scenario in already_done_scenarios:
-            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
@@ -248,8 +256,12 @@ def main(domain="food"):
                     "access_raw_std": a_std,
                     "effort_raw": e_mean,
                     "effort_raw_std": e_std,
-                    "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
-                    "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
+                    "access": normalize_access(a_mean)
+                    if not np.isnan(a_mean)
+                    else np.nan,
+                    "effort": normalize_effort(e_mean)
+                    if not np.isnan(e_mean)
+                    else np.nan,
                     "n_runs_access": len(access_ratings),
                     "n_runs_effort": len(effort_ratings),
                     "n_failures_access": access_failures,
@@ -295,6 +307,53 @@ def format_effort_prompt_variable(vignette, action_texts):
 
 def format_v_prompt_variable(vignette, state, action_texts):
     return build_user_prompt("v", vignette, action_texts, state=state)
+
+
+def format_g_prompt_variable(vignette, action_texts):
+    """Goal-satisfaction g prompt: how fully each action delivers the outcome.
+    Desire-free (no state paragraph) — desire enters the utility separately as
+    the multiplier in w_v · desire · g."""
+    return build_user_prompt("g", vignette, action_texts)
+
+
+def normalize_g(value, target_max=1.0):
+    """0-6 -> [0, 1]. Goal-satisfaction rating (how fully the action delivers
+    the outcome)."""
+    return value * (target_max / 6.0)
+
+
+def numeric_desire_schema(name="desire"):
+    """response_format constraining the LM to emit ``{"desire": <number>}`` for
+    the scenario-level desire rating in the given-desire studies."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": name,
+            "schema": {
+                "type": "object",
+                "properties": {"desire": {"type": "number"}},
+                "required": ["desire"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+
+def parse_desire_response(response_text):
+    """Parse a ``{"desire": <number>}`` scalar response (0-100)."""
+    if response_text is None:
+        return None
+    js = find_json(response_text)
+    if js is None:
+        return None
+    js = strip_leading_plus(js)
+    try:
+        d = json.loads(js)
+        if "desire" in d:
+            return float(d["desire"])
+    except (json.JSONDecodeError, ValueError, TypeError) as e:
+        print(f"  Failed to parse desire JSON: {e}")
+    return None
 
 
 # Variable-length system prompts are domain-specific; constructed at runtime
@@ -357,13 +416,24 @@ def score_alternatives_main(domain="food"):
 
     print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
     scenarios_df = load_scenarios(domain)
-    alt_path = get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_input"]
+    alt_path = (
+        get_project_root()
+        / "model"
+        / "outputs"
+        / "lm"
+        / _DOMAIN_PATHS[domain]["alternatives_input"]
+    )
     if not alt_path.exists():
-        print(f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.", flush=True)
+        print(
+            f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.",
+            flush=True,
+        )
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
-    n_cells = alt_df.groupby(["scenario_label", "observed_action", "motivation"]).ngroups
+    n_cells = alt_df.groupby(
+        ["scenario_label", "observed_action", "motivation"]
+    ).ngroups
     print(
         f"Loaded {len(alt_df)} alternatives across {n_cells} cells "
         f"({alt_df['action_norm'].nunique()} unique action strings)",
@@ -395,7 +465,10 @@ def score_alternatives_main(domain="food"):
     scenarios_in_data = sorted(alt_df["scenario_label"].unique())
     for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
         if scenario in already_done_scenarios:
-            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         sc_group = alt_df[alt_df["scenario_label"] == scenario]
@@ -463,20 +536,28 @@ def score_alternatives_main(domain="food"):
             f = feats_by_norm.get(row["action_norm"])
             if f is None:
                 continue
-            results.append({
-                "scenario_label": scenario,
-                "observed_action": row["observed_action"],
-                "motivation": row["motivation"],
-                "alt_idx": int(row["alt_idx"]),
-                **f,
-            })
+            results.append(
+                {
+                    "scenario_label": scenario,
+                    "observed_action": row["observed_action"],
+                    "motivation": row["motivation"],
+                    "alt_idx": int(row["alt_idx"]),
+                    **f,
+                }
+            )
             new_rows += 1
 
         # Checkpoint: flush accumulated results to disk after each scenario
         pd.DataFrame(results).to_csv(output_path, index=False)
-        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+        print(
+            f"  +{new_rows} rows | checkpoint written ({len(results)} total)",
+            flush=True,
+        )
 
-    print(f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}", flush=True)
+    print(
+        f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}",
+        flush=True,
+    )
 
 
 def score_v_alternatives_main(domain="food"):
@@ -501,9 +582,18 @@ def score_v_alternatives_main(domain="food"):
 
     print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
     scenarios_df = load_scenarios(domain)
-    alt_path = get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_input"]
+    alt_path = (
+        get_project_root()
+        / "model"
+        / "outputs"
+        / "lm"
+        / _DOMAIN_PATHS[domain]["alternatives_input"]
+    )
     if not alt_path.exists():
-        print(f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.", flush=True)
+        print(
+            f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.",
+            flush=True,
+        )
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
@@ -532,7 +622,10 @@ def score_v_alternatives_main(domain="food"):
     scenarios_in_data = sorted(alt_df["scenario_label"].unique())
     for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
         if scenario in already_done_scenarios:
-            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         sc_group = alt_df[alt_df["scenario_label"] == scenario]
@@ -553,7 +646,10 @@ def score_v_alternatives_main(domain="food"):
 
         v_by_norm_by_query = {}
         for motivation_query in ("low", "high"):
-            print(f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...", flush=True)
+            print(
+                f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...",
+                flush=True,
+            )
             state = sc_meta[f"reward_{motivation_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
@@ -583,20 +679,27 @@ def score_v_alternatives_main(domain="food"):
                 f = v_by_norm_by_query.get(row["action_norm"], {}).get(motivation_query)
                 if f is None:
                     continue
-                results.append({
-                    "scenario_label": scenario,
-                    "observed_action": row["observed_action"],
-                    "motivation": row["motivation"],
-                    "alt_idx": int(row["alt_idx"]),
-                    "motivation_query": motivation_query,
-                    **f,
-                })
+                results.append(
+                    {
+                        "scenario_label": scenario,
+                        "observed_action": row["observed_action"],
+                        "motivation": row["motivation"],
+                        "alt_idx": int(row["alt_idx"]),
+                        "motivation_query": motivation_query,
+                        **f,
+                    }
+                )
                 new_rows += 1
 
         pd.DataFrame(results).to_csv(output_path, index=False)
-        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+        print(
+            f"  +{new_rows} rows | checkpoint written ({len(results)} total)",
+            flush=True,
+        )
 
-    print(f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True)
+    print(
+        f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True
+    )
 
 
 def score_alternatives_relationship_main(domain="food"):
@@ -614,10 +717,17 @@ def score_alternatives_relationship_main(domain="food"):
     access_system_prompt = build_system_prompt("access", n_actions=None)
     effort_system_prompt = build_system_prompt("effort", n_actions=None)
 
-    print(f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...", flush=True)
+    print(
+        f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...",
+        flush=True,
+    )
     scenarios_df = load_scenarios(domain)
     alt_path = (
-        get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
+        get_project_root()
+        / "model"
+        / "outputs"
+        / "lm"
+        / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
     )
     if not alt_path.exists():
         print(
@@ -628,7 +738,9 @@ def score_alternatives_relationship_main(domain="food"):
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
-    n_cells = alt_df.groupby(["scenario_label", "observed_action", "relationship_condition"]).ngroups
+    n_cells = alt_df.groupby(
+        ["scenario_label", "observed_action", "relationship_condition"]
+    ).ngroups
     print(
         f"Loaded {len(alt_df)} alternatives across {n_cells} cells "
         f"({alt_df['action_norm'].nunique()} unique action strings)",
@@ -659,7 +771,10 @@ def score_alternatives_relationship_main(domain="food"):
     scenarios_in_data = sorted(alt_df["scenario_label"].unique())
     for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
         if scenario in already_done_scenarios:
-            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         sc_group = alt_df[alt_df["scenario_label"] == scenario]
@@ -724,19 +839,27 @@ def score_alternatives_relationship_main(domain="food"):
             f = feats_by_norm.get(row["action_norm"])
             if f is None:
                 continue
-            results.append({
-                "scenario_label": scenario,
-                "observed_action": row["observed_action"],
-                "relationship_condition": int(row["relationship_condition"]),
-                "alt_idx": int(row["alt_idx"]),
-                **f,
-            })
+            results.append(
+                {
+                    "scenario_label": scenario,
+                    "observed_action": row["observed_action"],
+                    "relationship_condition": int(row["relationship_condition"]),
+                    "alt_idx": int(row["alt_idx"]),
+                    **f,
+                }
+            )
             new_rows += 1
 
         pd.DataFrame(results).to_csv(output_path, index=False)
-        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+        print(
+            f"  +{new_rows} rows | checkpoint written ({len(results)} total)",
+            flush=True,
+        )
 
-    print(f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}", flush=True)
+    print(
+        f"\nFinal: saved {len(results)} alternative-feature rows to {output_path}",
+        flush=True,
+    )
 
 
 def score_v_alternatives_relationship_main(domain="food"):
@@ -753,10 +876,17 @@ def score_v_alternatives_relationship_main(domain="food"):
 
     v_system_prompt = build_system_prompt("v", n_actions=None)
 
-    print(f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...", flush=True)
+    print(
+        f"Loading scenarios and relationship-conditioned LM alternatives (domain={domain})...",
+        flush=True,
+    )
     scenarios_df = load_scenarios(domain)
     alt_path = (
-        get_project_root() / "model" / "outputs" / "lm" / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
+        get_project_root()
+        / "model"
+        / "outputs"
+        / "lm"
+        / _DOMAIN_PATHS[domain]["alternatives_rel_input"]
     )
     if not alt_path.exists():
         print(
@@ -792,7 +922,10 @@ def score_v_alternatives_relationship_main(domain="food"):
     scenarios_in_data = sorted(alt_df["scenario_label"].unique())
     for sc_idx, scenario in enumerate(scenarios_in_data, start=1):
         if scenario in already_done_scenarios:
-            print(f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{sc_idx}/{len(scenarios_in_data)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         sc_group = alt_df[alt_df["scenario_label"] == scenario]
@@ -813,7 +946,10 @@ def score_v_alternatives_relationship_main(domain="food"):
 
         v_by_norm_by_query = {}
         for motivation_query in ("low", "high"):
-            print(f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...", flush=True)
+            print(
+                f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...",
+                flush=True,
+            )
             state = sc_meta[f"reward_{motivation_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
@@ -842,20 +978,27 @@ def score_v_alternatives_relationship_main(domain="food"):
                 f = v_by_norm_by_query.get(row["action_norm"], {}).get(motivation_query)
                 if f is None:
                     continue
-                results.append({
-                    "scenario_label": scenario,
-                    "observed_action": row["observed_action"],
-                    "relationship_condition": int(row["relationship_condition"]),
-                    "alt_idx": int(row["alt_idx"]),
-                    "motivation_query": motivation_query,
-                    **f,
-                })
+                results.append(
+                    {
+                        "scenario_label": scenario,
+                        "observed_action": row["observed_action"],
+                        "relationship_condition": int(row["relationship_condition"]),
+                        "alt_idx": int(row["alt_idx"]),
+                        "motivation_query": motivation_query,
+                        **f,
+                    }
+                )
                 new_rows += 1
 
         pd.DataFrame(results).to_csv(output_path, index=False)
-        print(f"  +{new_rows} rows | checkpoint written ({len(results)} total)", flush=True)
+        print(
+            f"  +{new_rows} rows | checkpoint written ({len(results)} total)",
+            flush=True,
+        )
 
-    print(f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True)
+    print(
+        f"\nFinal: saved {len(results)} alternative-V rows to {output_path}", flush=True
+    )
 
 
 def score_v_main(domain="food"):
@@ -895,13 +1038,19 @@ def score_v_main(domain="food"):
     for idx, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         if scenario in already_done_scenarios:
-            print(f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.", flush=True)
+            print(
+                f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.",
+                flush=True,
+            )
             continue
 
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
 
         for motivation in ("low", "high"):
-            print(f"  Getting V ratings (motivation={motivation}, concurrent, structured)...", flush=True)
+            print(
+                f"  Getting V ratings (motivation={motivation}, concurrent, structured)...",
+                flush=True,
+            )
             v_ratings, n_failures = get_ratings_concurrent(
                 client,
                 build_system_prompt("v", n_actions=4),
@@ -991,7 +1140,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     if args.score_alternatives and args.feature != "access_effort":
-        parser.error(f"--score-alternatives is incompatible with --feature {args.feature}")
+        parser.error(
+            f"--score-alternatives is incompatible with --feature {args.feature}"
+        )
     if args.score_alternatives:
         score_alternatives_main(args.domain)
     elif args.feature == "v":

@@ -63,21 +63,20 @@ def compute_reward_nll(p_high, response):
 
 
 @jax.jit
-def compute_desire_se(p_high, response):
-    """Squared error for the continuous 0-100 desire DV (Studies 1a, 1b).
+def compute_desire_nll(posterior, response):
+    """NLL = -log(P(desire = response/100)) for the continuous 0-100 desire DV
+    (Studies 1a, 1b).
 
-    The observer's posterior over reward gives P(reward = HIGH) in [0, 1]. The
-    participant's continuous slider response in [0, 100] ("how much do they want
-    to eat the food?", not-at-all → extremely) is normalized to [0, 1] and scored
-    against P(high) directly with squared error. Working on the [0, 1] scale keeps
-    this term comparable in magnitude to the effort BCE term in the Study 1b joint
-    loss, and — being a fixed monotone rescaling of the raw 0-100 SE — leaves the
-    argmin over {utility weights, alpha_observer} unchanged. The predicted 0-100
-    rating for reporting is `100 * P(high)`.
+    Desire is a continuous latent inferred over the 101-bin DesireLevels grid
+    ([0, 1] = "not at all" → "extremely"). `posterior` is the (101,) posterior
+    over that grid; `response` is the participant's 0-100 rating ("how much do
+    the two people want the food?"). The response maps directly onto the grid
+    bin, an exact parallel of `compute_intimacy_nll`.
     """
-    p_human = jnp.clip(response, 0.0, 100.0) / 100.0
-    p_model = jnp.clip(p_high, 0.0, 1.0)
-    return (p_model - p_human) ** 2
+    epsilon = 1e-8
+    response_idx = jnp.clip(jnp.round(response).astype(int), 0, 100)
+    prob = posterior[response_idx]
+    return -jnp.log(jnp.clip(prob, epsilon, 1.0))
 
 
 # ==============================================================================
@@ -585,12 +584,12 @@ def load_intimacy_data(slug="food_inv_intimacy"):
 
 
 def load_desire_data(slug="food_inv_desire"):
-    """Study 1a — observer knows (effort, intimacy), infers desire (reward).
+    """Study 1a — observer knows (effort, intimacy), infers desire.
 
-    The desire DV is a continuous 0-100 slider ("how much do they want to eat the
-    food?"); the `response` column holds the posterior 0-100 rating. The fit
-    normalizes the rating to [0, 1] and scores it against the model's
-    P(reward=HIGH) with squared error (see `compute_desire_se`).
+    The desire DV is a continuous 0-100 rating ("how much do the two people want
+    the food?"); the `response` column holds the posterior 0-100 rating. The fit
+    scores it against the observer's 101-bin desire posterior with
+    `compute_desire_nll`.
     """
     data = _load_3act_long(slug)
     print(f"Loading {slug} data...")
@@ -622,7 +621,7 @@ def load_joint_de_data(slug="food_inv_joint_de"):
     action = jnp.array(data["action"].values)
     scenario_idx = jnp.array(data["scenario_idx"].values)
     relationship_condition = jnp.array(data["intimacy_idx_4"].values)
-    resp_reward = jnp.array(data["desire_rating"].values)  # 0-100
+    resp_reward = jnp.array(data["desire_rating"].values)  # 0-100 desire rating
     resp_effort = jnp.array(data["effort_rating"].values)  # 0-100
     print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
     return data, action, scenario_idx, relationship_condition, resp_reward, resp_effort
@@ -674,10 +673,16 @@ def _3act_tables(uses_v, effort_marginal=False, domain="food"):
     return kw
 
 
-def _padded_table_kwargs(loader, uses_v, study, slug_hint):
+def _padded_table_kwargs(loader, uses_g, study, slug_hint, desire_loader=None):
     """Shared assembly for the padded LM-alternatives kwargs. Raises
     FileNotFoundError if the study's LM CSVs are missing (run
-    generate_alternatives_3act.py + score_3act_merged.py --study <slug> first)."""
+    generate_alternatives_3act.py + score_3act_merged.py --study <slug> first).
+
+    `uses_g` adds the goal-satisfaction table for the full/base variants (the
+    discomfort-only variant has no reward term). `desire_loader`, when given (the
+    given-desire studies 2a/2b), additionally loads the per-condition desire
+    scalar table — desire there is observer-visible context, so the actor reads
+    its magnitude from the LM rather than inferring it."""
     padded = loader()
     if padded is None:
         raise FileNotFoundError(
@@ -690,15 +695,24 @@ def _padded_table_kwargs(loader, uses_v, study, slug_hint):
         "effort_table": padded["effort"],
         "prior_table": padded["prior"],
     }
-    if uses_v:
-        kw["v_padded_table"] = padded["v"]
+    if uses_g:
+        kw["g_padded_table"] = padded["g"]
+        if desire_loader is not None:
+            desire = desire_loader()
+            if desire is None:
+                raise FileNotFoundError(
+                    f"lm_scenario_desire_3act.csv not found for {study} — the "
+                    "given-desire studies need the per-condition desire scalar. "
+                    f"Run `model/lm/score_3act_merged.py --study {slug_hint}` first."
+                )
+            kw["desire_table"] = desire
     return kw
 
 
-def desire_table_kwargs(uses_v, domain="food"):
+def desire_table_kwargs(uses_g, domain="food"):
     """Padded LM tables for Study 1a (food_inv_desire). Observer's actor
     softmaxes over LM-generated alternatives per (scenario, observed_action,
-    effort, intimacy) cell."""
+    effort, intimacy) cell. Desire is inferred, so no desire scalar is loaded."""
     from tables import load_padded_lm_tables_3act_desire
 
     if domain != "food":
@@ -706,27 +720,36 @@ def desire_table_kwargs(uses_v, domain="food"):
             "Padded LM tables are only available for the food domain."
         )
     return _padded_table_kwargs(
-        load_padded_lm_tables_3act_desire, uses_v, "Study 1a", "food_inv_desire"
+        load_padded_lm_tables_3act_desire, uses_g, "Study 1a", "food_inv_desire"
     )
 
 
-def intimacy_table_kwargs(uses_v, domain="food"):
+def intimacy_table_kwargs(uses_g, domain="food"):
     """Padded LM tables for Study 2a (food_inv_intimacy). Cell grid
-    (scenario, observed_action, reward, effort); infers intimacy."""
-    from tables import load_padded_lm_tables_3act_intimacy
+    (scenario, observed_action, reward, effort); infers intimacy. Desire is
+    given, so the per-condition desire scalar is loaded for full/base."""
+    from tables import (
+        load_lm_scenario_desire_3act,
+        load_padded_lm_tables_3act_intimacy,
+    )
 
     if domain != "food":
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
     return _padded_table_kwargs(
-        load_padded_lm_tables_3act_intimacy, uses_v, "Study 2a", "food_inv_intimacy"
+        load_padded_lm_tables_3act_intimacy,
+        uses_g,
+        "Study 2a",
+        "food_inv_intimacy",
+        desire_loader=load_lm_scenario_desire_3act,
     )
 
 
-def joint_de_table_kwargs(uses_v, domain="food"):
+def joint_de_table_kwargs(uses_g, domain="food"):
     """Padded LM tables for Study 1b (food_inv_joint_de). Cell grid
-    (scenario, observed_action, intimacy); infers (reward, effort)."""
+    (scenario, observed_action, intimacy); jointly infers (desire, effort).
+    Desire is inferred, so no desire scalar is loaded."""
     from tables import load_padded_lm_tables_3act_joint_de
 
     if domain != "food":
@@ -734,21 +757,29 @@ def joint_de_table_kwargs(uses_v, domain="food"):
             "Padded LM tables are only available for the food domain."
         )
     return _padded_table_kwargs(
-        load_padded_lm_tables_3act_joint_de, uses_v, "Study 1b", "food_inv_joint_de"
+        load_padded_lm_tables_3act_joint_de, uses_g, "Study 1b", "food_inv_joint_de"
     )
 
 
-def joint_ie_table_kwargs(uses_v, domain="food"):
+def joint_ie_table_kwargs(uses_g, domain="food"):
     """Padded LM tables for Study 2b (food_inv_joint_ie). Cell grid
-    (scenario, observed_action, reward); infers (intimacy, effort)."""
-    from tables import load_padded_lm_tables_3act_joint_ie
+    (scenario, observed_action, reward); infers (intimacy, effort). Desire is
+    given, so the per-condition desire scalar is loaded for full/base."""
+    from tables import (
+        load_lm_scenario_desire_3act,
+        load_padded_lm_tables_3act_joint_ie,
+    )
 
     if domain != "food":
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
     return _padded_table_kwargs(
-        load_padded_lm_tables_3act_joint_ie, uses_v, "Study 2b", "food_inv_joint_ie"
+        load_padded_lm_tables_3act_joint_ie,
+        uses_g,
+        "Study 2b",
+        "food_inv_joint_ie",
+        desire_loader=load_lm_scenario_desire_3act,
     )
 
 
@@ -975,21 +1006,23 @@ def fit_desire_observer_joint(
     max_steps=1000,
     verbose=True,
 ):
-    """Study 1a — joint fit of utility weights + α_observer (squared error on the
+    """Study 1a — joint fit of utility weights + α_observer (NLL on the
     continuous 0-100 desire DV).
 
     With the LM-generated alternatives pipeline, the observer table is 6-D —
-    `(padded_slot, scenario, observed_action, effort, intimacy, reward)`. The
+    `(padded_slot, scenario, observed_action, effort, intimacy, desire[101])`. The
     canonical observed action lives in slot 0 by construction, so the per-trial
-    P(reward=HIGH) slice is `table[0, scenario, action, effort, intimacy, 1]`
-    (where `action` is the participant-observed action index 0/1/2). The desire
-    DV is a continuous 0-100 slider, so the rating is normalized to [0, 1] and
-    scored against P(reward=HIGH) with squared error (see `compute_desire_se`).
+    desire posterior is `table[0, scenario, action, effort, intimacy, :]` (where
+    `action` is the participant-observed action index 0/1/2), scored against the
+    0-100 rating with `compute_desire_nll`.
     """
 
     def nll_trial(table, a, s, e, rel, resp):
-        p_high = table[0, s, a, e, rel, 1]
-        return compute_desire_se(p_high, resp)
+        # Desire posterior over the 101-bin DesireLevels grid for the observed
+        # action (slot 0). Table dims: (slot, scenario, observed_action, effort,
+        # relationship, desire[101]).
+        post = table[0, s, a, e, rel, :]
+        return compute_desire_nll(post, resp)
 
     vmap_nll = jax.vmap(nll_trial, in_axes=(None, 0, 0, 0, 0, 0))
 
@@ -1036,18 +1069,18 @@ def fit_joint_de_observer_joint(
     """Study 1b — joint fit of utility weights + α_observer.
 
     Padded observer table is 6-D — (padded_slot, scenario, observed_action,
-    relationship, reward, effort). The observed action sits in slot 0, so the
-    per-trial joint over (reward, effort) is `table[0, scenario, action, relationship, :, :]`.
-    Sums two per-slider losses: squared error on the continuous 0-100 desire
-    rating (normalized to [0, 1] and scored against P(reward=HIGH)) and binary
+    relationship, desire[101], effort). The observed action sits in slot 0, so the
+    per-trial joint over (desire, effort) is `table[0, scenario, action, relationship, :, :]`.
+    Sums two per-slider losses: NLL of the continuous 0-100 desire rating against
+    the marginal 101-bin desire posterior (`compute_desire_nll`) and binary
     cross-entropy on the 0-100 effort slider (P(effort=HIGH)).
     """
 
-    def nll_trial(table, a, s, rel, r_reward, r_effort):
-        joint = table[0, s, a, rel, :, :]  # (reward, effort)
-        p_reward_high = joint[1, :].sum()
-        p_effort_high = joint[:, 1].sum()
-        return compute_desire_se(p_reward_high, r_reward) + compute_reward_nll(
+    def nll_trial(table, a, s, rel, r_desire, r_effort):
+        joint = table[0, s, a, rel, :, :]  # (desire[101], effort[2])
+        desire_post = joint.sum(axis=1)  # marginal over effort -> (101,)
+        p_effort_high = joint[:, 1].sum()  # marginal over desire
+        return compute_desire_nll(desire_post, r_desire) + compute_reward_nll(
             p_effort_high, r_effort
         )
 

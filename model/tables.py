@@ -22,6 +22,14 @@ import pandas as pd
 actions = jnp.array([0, 1, 2, 3])
 IntimacyLevels = jnp.arange(0, 1.01, 0.01)
 
+# Continuous desire latent (Studies 1a/1b infer it). ψ(d) ∈ [0, 1]: 0 = "not at
+# all want the food", 1 = "extremely". Read out to the 1–7 human scale as
+# 1 + 6·d. Same 101-bin grid as IntimacyLevels so the inferred-desire observers
+# reuse the continuous-intimacy machinery. Enters the utility as the reward
+# multiplier w_v · desire · g(a|s), where g is the desire-free goal-satisfaction
+# of the action (see load_lm_g_3act / the padded g loaders below).
+DesireLevels = jnp.arange(0, 1.01, 0.01)
+
 # Effort experiment uses 2 actions instead of 4 (action_1 = non-share, action_2 = share)
 actions_effort = jnp.array([0, 1])
 
@@ -34,6 +42,10 @@ actions_effort = jnp.array([0, 1])
 # (V, shaped (16, 3, 2) over scenario × action × motivation).
 actions_3act = jnp.array([0, 1, 2])
 N_ACTIONS_3ACT = 3
+# The 3 canonical actions in index order. Experiment data and LM CSVs label the
+# observed action with these names (was action_0/1/2 before the May 2026 rename).
+ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
+ACTION_LABEL_TO_IDX = {label: i for i, label in enumerate(ACTION_COLS)}
 
 
 class RewardConditions(IntEnum):
@@ -60,11 +72,6 @@ RELATIONSHIP_LEVEL_VALUES = jnp.array([0.0, 0.5, 0.75, 1.0])
 
 EFFORT_CONDITION_TO_IDX = {"low": 0, "high": 1}
 N_ACTIONS_EFFORT = 2
-
-# The 3 canonical actions in index order. Experiment data and LM CSVs label the
-# observed action with these names (was action_0/1/2 before the May 2026 rename).
-ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
-ACTION_LABEL_TO_IDX = {label: i for i, label in enumerate(ACTION_COLS)}
 N_EFFORT_CONDITIONS = 2
 
 
@@ -833,6 +840,76 @@ def load_lm_v_3act(domain="food", filepath=None):
     return jnp.array(v)
 
 
+def load_lm_g_3act(domain="food", filepath=None):
+    """Load goal-satisfaction g table for the 3-action design.
+
+    g(a|s) is the desire-free LM rating of how much an action results in the two
+    people getting/eating the food, normalized to [0, 1]. It replaces the old
+    per-motivation signed-valence V: desire now enters the utility as the
+    continuous multiplier w_v · desire · g (see DesireLevels). Because g is
+    desire-free it has NO motivation axis.
+
+    Returns a jnp.array of shape (16, 3) indexed by (scenario, action), or None
+    if the CSV is missing.
+    """
+    if domain == "food":
+        scenario_to_idx = SCENARIO_TO_IDX
+        filename = "lm_scenario_g_3act.csv"
+    elif domain == "nonfood":
+        scenario_to_idx = NONFOOD_SCENARIO_TO_IDX
+        filename = "lm_scenario_g_3act_nonfood.csv"
+    else:
+        raise ValueError(f"Unknown domain: {domain!r}")
+    if filepath is None:
+        filepath = Path(__file__).resolve().parent / "outputs" / "lm" / filename
+    if not Path(filepath).exists():
+        return None
+    df = pd.read_csv(filepath)
+    g = np.zeros((len(scenario_to_idx), N_ACTIONS_3ACT), dtype=np.float32)
+    for _, row in df.iterrows():
+        s = scenario_to_idx[row["scenario_label"]]
+        a = int(row["action"])
+        g[s, a] = row["g"]
+    return jnp.array(g)
+
+
+def load_lm_scenario_desire_3act(domain="food", filepath=None):
+    """Load the per-condition desire scalar for the given-desire studies
+    (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`).
+
+    When desire is observer-visible context, the LM reads the scenario + the
+    shown desire paragraph and rates how much the two people want the food on the
+    [0, 1] scale (1–7 read out as 1 + 6·d). That scalar plugs into the actor
+    utility as the constant `desire` in w_v · desire · g.
+
+    Returns a jnp.array of shape (16, 2) indexed by
+    (scenario, reward_condition), or None if the CSV is missing.
+    """
+    if domain == "food":
+        scenario_to_idx = SCENARIO_TO_IDX
+        filename = "lm_scenario_desire_3act.csv"
+    elif domain == "nonfood":
+        scenario_to_idx = NONFOOD_SCENARIO_TO_IDX
+        filename = "lm_scenario_desire_3act_nonfood.csv"
+    else:
+        raise ValueError(f"Unknown domain: {domain!r}")
+    if filepath is None:
+        filepath = Path(__file__).resolve().parent / "outputs" / "lm" / filename
+    if not Path(filepath).exists():
+        return None
+    df = pd.read_csv(filepath)
+    reward_to_idx = {
+        "low": int(RewardConditions.LOW),
+        "high": int(RewardConditions.HIGH),
+    }
+    d = np.zeros((len(scenario_to_idx), 2), dtype=np.float32)
+    for _, row in df.iterrows():
+        s = scenario_to_idx[row["scenario_label"]]
+        r = reward_to_idx[row["reward_condition"]]
+        d[s, r] = row["desire"]
+    return jnp.array(d)
+
+
 LLM_TABLES_3ACT = load_lm_scenario_params_3act()
 _access_marg_3act = load_lm_scenario_params_3act_marginal()
 if LLM_TABLES_3ACT is not None and _access_marg_3act is not None:
@@ -851,41 +928,41 @@ if LLM_TABLES_3ACT is not None and _access_marg_3act is not None:
 
 def load_padded_lm_tables_3act_desire(
     canonical_path=None,
-    canonical_v_path=None,
+    canonical_g_path=None,
     alternatives_path=None,
     alternatives_features_path=None,
-    alternatives_v_path=None,
+    alternatives_g_path=None,
 ):
-    """Build padded tables for Study 3b's LM-generated alternatives action space.
+    """Build padded tables for Study 1a's LM-generated alternatives action space.
 
     Shapes (with S = MAX_ACTIONS_3ACT):
       - access: (16, 3, 2, 4, S) — (scenario, observed_action, effort_condition,
         intimacy_condition, slot)
       - effort: (16, 3, 2, 4, S)
       - prior:  (16, 3, 2, 4, S)
-      - v:      (16, 3, 2, 4, S, 2) — extra motivation_query axis since the
-        actor inside `thinks[reward in RewardConditions, …]` evaluates V under
-        both reward values.
+      - g:      (16, 3, 2, 4, S) — goal-satisfaction; desire-free, so NO
+        motivation axis. Desire enters the utility as the continuous multiplier
+        w_v · desire · g, with desire the inferred latent.
 
     Slot 0 of every cell holds the observed canonical action's features:
-    access/effort from `lm_scenario_params_3act.csv` (which depends on
-    scenario + effort_condition + action but not on intimacy, so broadcasts
-    across the intimacy axis); V from `lm_scenario_v_3act.csv` (depends on
-    scenario + action + motivation, broadcasts across effort and intimacy).
+    access/effort from `lm_scenario_params_3act.csv` (depends on scenario +
+    effort_condition + action but not intimacy, so broadcasts across intimacy);
+    g from `lm_scenario_g_3act.csv` (depends on scenario + action, broadcasts
+    across effort and intimacy).
 
     Slots 1..k hold the LM-generated alternatives for that cell, from
     `lm_alternatives_food_inv_desire.csv`,
     `lm_alternatives_features_food_inv_desire.csv`, and
-    `lm_alternatives_v_food_inv_desire.csv`. Remaining slots are
-    null-padded (access/effort/v = 0; prior = NULL_EPSILON to keep the
-    softmax differentiable).
+    `lm_alternatives_g_food_inv_desire.csv`. Remaining slots are null-padded
+    (access/effort/g = 0; prior = NULL_EPSILON to keep the softmax
+    differentiable).
 
-    Returns a dict {access, effort, v, prior} of jnp.arrays, or None if any
+    Returns a dict {access, effort, g, prior} of jnp.arrays, or None if any
     required CSV is missing.
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params_3act.csv"
-    canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v_3act.csv"
+    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g_3act.csv"
     alternatives_path = (
         alternatives_path or outputs_dir / "lm_alternatives_food_inv_desire.csv"
     )
@@ -893,54 +970,41 @@ def load_padded_lm_tables_3act_desire(
         alternatives_features_path
         or outputs_dir / "lm_alternatives_features_food_inv_desire.csv"
     )
-    alternatives_v_path = (
-        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_desire.csv"
+    alternatives_g_path = (
+        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_desire.csv"
     )
 
     required = [
         canonical_path,
-        canonical_v_path,
+        canonical_g_path,
         alternatives_path,
         alternatives_features_path,
-        alternatives_v_path,
+        alternatives_g_path,
     ]
-    if any(not p.exists() for p in required):
+    if any(not Path(p).exists() for p in required):
         return None
 
     canonical_df = pd.read_csv(canonical_path)
-    canonical_v_df = pd.read_csv(canonical_v_path)
+    canonical_g_df = pd.read_csv(canonical_g_path)
     feats_df = pd.read_csv(alternatives_features_path)
-    alts_v_df = pd.read_csv(alternatives_v_path)
+    alts_g_df = pd.read_csv(alternatives_g_path)
 
     n_scenarios = len(SCENARIO_LABELS)
     n_observed = N_ACTIONS_3ACT
     n_effort = N_EFFORT_CONDITIONS
     n_intimacy = 4
-    n_motivations = 2
     shape_5d = (n_scenarios, n_observed, n_effort, n_intimacy, MAX_ACTIONS_3ACT)
-    shape_6d = (
-        n_scenarios,
-        n_observed,
-        n_effort,
-        n_intimacy,
-        MAX_ACTIONS_3ACT,
-        n_motivations,
-    )
     access = np.zeros(shape_5d, dtype=np.float32)
     effort = np.zeros(shape_5d, dtype=np.float32)
-    v = np.zeros(shape_6d, dtype=np.float32)
+    g = np.zeros(shape_5d, dtype=np.float32)
     valid_mask = np.zeros(shape_5d, dtype=bool)
 
     intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
-    motivation_to_idx = {
-        "low": int(RewardConditions.LOW),
-        "high": int(RewardConditions.HIGH),
-    }
     observed_str_to_idx = {f"action_{i}": i for i in range(n_observed)}
 
     # Canonical (slot 0): access/effort depend on scenario + effort + action
-    # (3-act CSV layout); broadcast across intimacy. V depends on scenario +
-    # action + motivation; broadcast across effort and intimacy.
+    # (3-act CSV layout); broadcast across intimacy. g depends on scenario +
+    # action; broadcast across effort and intimacy.
     canon_ae_lookup = {}
     for _, row in canonical_df.iterrows():
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
@@ -948,11 +1012,10 @@ def load_padded_lm_tables_3act_desire(
             float(row["access"]),
             float(row["effort"]),
         )
-    canon_v_lookup = {}
-    for _, row in canonical_v_df.iterrows():
-        canon_v_lookup[
-            (row["scenario_label"], int(row["action"]), row["motivation"])
-        ] = float(row["v"])
+    canon_g_lookup = {
+        (row["scenario_label"], int(row["action"])): float(row["g"])
+        for _, row in canonical_g_df.iterrows()
+    }
 
     for scenario in SCENARIO_LABELS:
         s_idx = SCENARIO_TO_IDX[scenario]
@@ -962,25 +1025,23 @@ def load_padded_lm_tables_3act_desire(
                 for i_idx in range(n_intimacy):
                     access[s_idx, observed, e_idx, i_idx, 0] = a_access
                     effort[s_idx, observed, e_idx, i_idx, 0] = a_effort
-                    for motivation_str, m_idx in motivation_to_idx.items():
-                        v[s_idx, observed, e_idx, i_idx, 0, m_idx] = canon_v_lookup[
-                            (scenario, observed, motivation_str)
-                        ]
+                    g[s_idx, observed, e_idx, i_idx, 0] = canon_g_lookup[
+                        (scenario, observed)
+                    ]
                     valid_mask[s_idx, observed, e_idx, i_idx, 0] = True
 
     # LM-generated alternatives (slots 1..k). Index by (scenario,
-    # observed_action, effort_condition, intimacy_condition, alt_idx). V also
-    # carries motivation_query so the actor's `thinks` block has both values.
-    alt_v_lookup = {
+    # observed_action, effort_condition, intimacy_condition, alt_idx). g is
+    # desire-free, so no motivation_query axis.
+    alt_g_lookup = {
         (
             r["scenario_label"],
             r["observed_action"],
             r["effort_condition"],
             int(r["intimacy_condition"]),
             int(r["alt_idx"]),
-            r["motivation_query"],
-        ): float(r["v"])
-        for _, r in alts_v_df.iterrows()
+        ): float(r["g"])
+        for _, r in alts_g_df.iterrows()
     }
 
     for _, row in feats_df.iterrows():
@@ -994,18 +1055,16 @@ def load_padded_lm_tables_3act_desire(
             continue
         access[s_idx, o_idx, e_idx, i_idx, slot] = float(row["access"])
         effort[s_idx, o_idx, e_idx, i_idx, slot] = float(row["effort"])
-        for motivation_str, m_idx in motivation_to_idx.items():
-            v[s_idx, o_idx, e_idx, i_idx, slot, m_idx] = alt_v_lookup.get(
-                (
-                    row["scenario_label"],
-                    row["observed_action"],
-                    row["effort_condition"],
-                    int(row["intimacy_condition"]),
-                    alt_idx,
-                    motivation_str,
-                ),
-                0.0,
-            )
+        g[s_idx, o_idx, e_idx, i_idx, slot] = alt_g_lookup.get(
+            (
+                row["scenario_label"],
+                row["observed_action"],
+                row["effort_condition"],
+                int(row["intimacy_condition"]),
+                alt_idx,
+            ),
+            0.0,
+        )
         valid_mask[s_idx, o_idx, e_idx, i_idx, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -1036,7 +1095,7 @@ def load_padded_lm_tables_3act_desire(
     return {
         "access": jnp.array(access),
         "effort": jnp.array(effort),
-        "v": jnp.array(v),
+        "g": jnp.array(g),
         "prior": jnp.array(prior_table),
     }
 
@@ -1063,11 +1122,12 @@ LLM_TABLES_3ACT_DESIRE_PADDED = load_padded_lm_tables_3act_desire()
 #       motivation_query, column v
 
 
-def _canonical_lookups(canonical_path, canonical_v_path):
+def _canonical_lookups(canonical_path, canonical_g_path):
     """Shared canonical (slot-0) lookups: (access,effort) per
-    (scenario, effort_condition, action) and V per (scenario, action, motivation)."""
+    (scenario, effort_condition, action) and goal-satisfaction g per
+    (scenario, action). g is desire-free, so it has no motivation key."""
     canonical_df = pd.read_csv(canonical_path)
-    canonical_v_df = pd.read_csv(canonical_v_path)
+    canonical_g_df = pd.read_csv(canonical_g_path)
     ae = {}
     for _, row in canonical_df.iterrows():
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
@@ -1075,70 +1135,68 @@ def _canonical_lookups(canonical_path, canonical_v_path):
             float(row["access"]),
             float(row["effort"]),
         )
-    v = {}
-    for _, row in canonical_v_df.iterrows():
-        v[(row["scenario_label"], int(row["action"]), row["motivation"])] = float(
-            row["v"]
-        )
-    return ae, v
+    g = {
+        (row["scenario_label"], int(row["action"])): float(row["g"])
+        for _, row in canonical_g_df.iterrows()
+    }
+    return ae, g
 
 
 def load_padded_lm_tables_3act_joint_de(
     canonical_path=None,
-    canonical_v_path=None,
+    canonical_g_path=None,
     alternatives_features_path=None,
-    alternatives_v_path=None,
+    alternatives_g_path=None,
 ):
-    """Study 1b: observer knows intimacy, infers (reward, effort). Cell grid is
-    (scenario, observed_action, intimacy_condition). effort inferred -> effort
-    table carries an effort_condition feature axis; reward inferred -> V carries
-    a motivation axis.
+    """Study 1b: observer knows intimacy, jointly infers (desire, effort). Cell
+    grid is (scenario, observed_action, intimacy_condition). effort inferred ->
+    effort table carries an effort_condition feature axis. desire enters as the
+    continuous multiplier w_v · desire · g, so g is desire-free (no motivation
+    axis) and matches the access shape.
       access: (16, 3, 4, S)        [scenario, obs, relationship, slot]
       effort: (16, 3, 4, 2, S)     [scenario, obs, relationship, effort_condition, slot]
-      v:      (16, 3, 4, S, 2)     [scenario, obs, relationship, slot, motivation]
+      g:      (16, 3, 4, S)        [scenario, obs, relationship, slot]
       prior:  (16, 3, 4, S)
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params_3act.csv"
-    canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v_3act.csv"
+    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g_3act.csv"
     alternatives_features_path = (
         alternatives_features_path
         or outputs_dir / "lm_alternatives_features_food_inv_joint_de.csv"
     )
-    alternatives_v_path = (
-        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_joint_de.csv"
+    alternatives_g_path = (
+        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_joint_de.csv"
     )
     required = [
         canonical_path,
-        canonical_v_path,
+        canonical_g_path,
         alternatives_features_path,
-        alternatives_v_path,
+        alternatives_g_path,
     ]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canon_ae, canon_v = _canonical_lookups(canonical_path, canonical_v_path)
+    canon_ae, canon_g = _canonical_lookups(canonical_path, canonical_g_path)
     feats_df = pd.read_csv(alternatives_features_path)
-    alts_v_df = pd.read_csv(alternatives_v_path)
+    alts_g_df = pd.read_csv(alternatives_g_path)
 
-    n_s, n_o, n_rel, n_eff, n_mot = (
+    n_s, n_o, n_rel, n_eff = (
         len(SCENARIO_LABELS),
         N_ACTIONS_3ACT,
         4,
         N_EFFORT_CONDITIONS,
-        2,
     )
     access = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS_3ACT), dtype=np.float32)
     effort = np.zeros((n_s, n_o, n_rel, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
-    v = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS_3ACT, n_mot), dtype=np.float32)
+    g = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS_3ACT), dtype=np.float32)
     valid = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS_3ACT), dtype=bool)
 
     intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
-    mot_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
     obs_to_idx = ACTION_LABEL_TO_IDX
 
     # Canonical slot 0: access/effort per (scenario, effort_condition, action),
-    # broadcast across relationship; V per (scenario, action, motivation).
+    # broadcast across relationship; g per (scenario, action).
     for scenario in SCENARIO_LABELS:
         s = SCENARIO_TO_IDX[scenario]
         for o in range(n_o):
@@ -1148,21 +1206,20 @@ def load_padded_lm_tables_3act_joint_de(
                     effort[s, o, rel, e, 0] = a_effort
                     if e == 0:
                         access[s, o, rel, 0] = a_access
-                for mot, m in mot_to_idx.items():
-                    v[s, o, rel, 0, m] = canon_v[(scenario, o, mot)]
+                g[s, o, rel, 0] = canon_g[(scenario, o)]
                 valid[s, o, rel, 0] = True
 
     # Alternatives (slots 1..k): features keyed by (scenario, obs, intimacy,
-    # effort_condition, alt_idx). access is effort-marginal (same across e).
-    alt_v_lookup = {
+    # effort_condition, alt_idx). access is effort-marginal (same across e); g is
+    # desire-free, keyed by (scenario, obs, intimacy, alt_idx).
+    alt_g_lookup = {
         (
             r["scenario_label"],
             r["observed_action"],
             int(r["intimacy_condition"]),
             int(r["alt_idx"]),
-            r["motivation_query"],
-        ): float(r["v"])
-        for _, r in alts_v_df.iterrows()
+        ): float(r["g"])
+        for _, r in alts_g_df.iterrows()
     }
     for _, row in feats_df.iterrows():
         s = SCENARIO_TO_IDX[row["scenario_label"]]
@@ -1174,17 +1231,15 @@ def load_padded_lm_tables_3act_joint_de(
             continue
         access[s, o, rel, slot] = float(row["access"])
         effort[s, o, rel, e, slot] = float(row["effort"])
-        for mot, m in mot_to_idx.items():
-            v[s, o, rel, slot, m] = alt_v_lookup.get(
-                (
-                    row["scenario_label"],
-                    row["observed_action"],
-                    int(row["intimacy_condition"]),
-                    int(row["alt_idx"]),
-                    mot,
-                ),
-                0.0,
-            )
+        g[s, o, rel, slot] = alt_g_lookup.get(
+            (
+                row["scenario_label"],
+                row["observed_action"],
+                int(row["intimacy_condition"]),
+                int(row["alt_idx"]),
+            ),
+            0.0,
+        )
         valid[s, o, rel, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -1195,63 +1250,64 @@ def load_padded_lm_tables_3act_joint_de(
     return {
         "access": jnp.array(access),
         "effort": jnp.array(effort),
-        "v": jnp.array(v),
+        "g": jnp.array(g),
         "prior": jnp.array(prior),
     }
 
 
 def load_padded_lm_tables_3act_intimacy(
     canonical_path=None,
-    canonical_v_path=None,
+    canonical_g_path=None,
     alternatives_features_path=None,
-    alternatives_v_path=None,
+    alternatives_g_path=None,
 ):
-    """Study 2a: observer knows (reward, effort), infers intimacy. Cell grid is
-    (scenario, observed_action, desire_condition, effort_condition). intimacy
+    """Study 2a: observer knows (desire, effort), infers intimacy. Cell grid is
+    (scenario, observed_action, reward_condition, effort_condition). intimacy
     inferred (continuous; access modulated by (1-I)^gamma in the utility, no
     table axis). effort observed -> effort feature taken at the cell's effort.
+    Desire is given (observer-visible); it enters as w_v · desire_table[s,r] · g,
+    so g is desire-free (no motivation axis) and the per-condition desire scalar
+    is loaded separately via load_lm_scenario_desire_3act.
       access: (16, 3, 2, 2, S)     [scenario, obs, reward, effort, slot]
       effort: (16, 3, 2, 2, S)     [scenario, obs, reward, effort, slot]
-      v:      (16, 3, 2, 2, S, 2)  [scenario, obs, reward, effort, slot, motivation]
+      g:      (16, 3, 2, 2, S)     [scenario, obs, reward, effort, slot]
       prior:  (16, 3, 2, 2, S)
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params_3act.csv"
-    canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v_3act.csv"
+    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g_3act.csv"
     alternatives_features_path = (
         alternatives_features_path
         or outputs_dir / "lm_alternatives_features_food_inv_intimacy.csv"
     )
-    alternatives_v_path = (
-        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_intimacy.csv"
+    alternatives_g_path = (
+        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_intimacy.csv"
     )
     required = [
         canonical_path,
-        canonical_v_path,
+        canonical_g_path,
         alternatives_features_path,
-        alternatives_v_path,
+        alternatives_g_path,
     ]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canon_ae, canon_v = _canonical_lookups(canonical_path, canonical_v_path)
+    canon_ae, canon_g = _canonical_lookups(canonical_path, canonical_g_path)
     feats_df = pd.read_csv(alternatives_features_path)
-    alts_v_df = pd.read_csv(alternatives_v_path)
+    alts_g_df = pd.read_csv(alternatives_g_path)
 
-    n_s, n_o, n_rew, n_eff, n_mot = (
+    n_s, n_o, n_rew, n_eff = (
         len(SCENARIO_LABELS),
         N_ACTIONS_3ACT,
         2,
         N_EFFORT_CONDITIONS,
-        2,
     )
     access = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
     effort = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
-    v = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT, n_mot), dtype=np.float32)
+    g = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
     valid = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=bool)
 
     rew_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
-    mot_to_idx = rew_to_idx
     obs_to_idx = ACTION_LABEL_TO_IDX
 
     for scenario in SCENARIO_LABELS:
@@ -1262,21 +1318,20 @@ def load_padded_lm_tables_3act_intimacy(
                     a_access, a_effort = canon_ae[(scenario, e, o)]
                     access[s, o, rew, e, 0] = a_access
                     effort[s, o, rew, e, 0] = a_effort
-                    for mot, m in mot_to_idx.items():
-                        v[s, o, rew, e, 0, m] = canon_v[(scenario, o, mot)]
+                    g[s, o, rew, e, 0] = canon_g[(scenario, o)]
                     valid[s, o, rew, e, 0] = True
 
-    # Alternatives keyed by (scenario, obs, reward, effort, alt_idx).
-    alt_v_lookup = {
+    # Alternatives keyed by (scenario, obs, reward, effort, alt_idx). g is
+    # desire-free, keyed by (scenario, obs, reward, effort, alt_idx).
+    alt_g_lookup = {
         (
             r["scenario_label"],
             r["observed_action"],
             r["desire_condition"],
             r["effort_condition"],
             int(r["alt_idx"]),
-            r["motivation_query"],
-        ): float(r["v"])
-        for _, r in alts_v_df.iterrows()
+        ): float(r["g"])
+        for _, r in alts_g_df.iterrows()
     }
     for _, row in feats_df.iterrows():
         s = SCENARIO_TO_IDX[row["scenario_label"]]
@@ -1288,18 +1343,16 @@ def load_padded_lm_tables_3act_intimacy(
             continue
         access[s, o, rew, e, slot] = float(row["access"])
         effort[s, o, rew, e, slot] = float(row["effort"])
-        for mot, m in mot_to_idx.items():
-            v[s, o, rew, e, slot, m] = alt_v_lookup.get(
-                (
-                    row["scenario_label"],
-                    row["observed_action"],
-                    row["desire_condition"],
-                    row["effort_condition"],
-                    int(row["alt_idx"]),
-                    mot,
-                ),
-                0.0,
-            )
+        g[s, o, rew, e, slot] = alt_g_lookup.get(
+            (
+                row["scenario_label"],
+                row["observed_action"],
+                row["desire_condition"],
+                row["effort_condition"],
+                int(row["alt_idx"]),
+            ),
+            0.0,
+        )
         valid[s, o, rew, e, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -1310,63 +1363,63 @@ def load_padded_lm_tables_3act_intimacy(
     return {
         "access": jnp.array(access),
         "effort": jnp.array(effort),
-        "v": jnp.array(v),
+        "g": jnp.array(g),
         "prior": jnp.array(prior),
     }
 
 
 def load_padded_lm_tables_3act_joint_ie(
     canonical_path=None,
-    canonical_v_path=None,
+    canonical_g_path=None,
     alternatives_features_path=None,
-    alternatives_v_path=None,
+    alternatives_g_path=None,
 ):
-    """Study 2b: observer knows reward, infers (intimacy, effort). Cell grid is
-    (scenario, observed_action, desire_condition). intimacy inferred (continuous,
+    """Study 2b: observer knows desire, infers (intimacy, effort). Cell grid is
+    (scenario, observed_action, reward_condition). intimacy inferred (continuous,
     no table axis); effort inferred -> effort table carries an effort_condition
-    feature axis.
+    feature axis. Desire is given; it enters as w_v · desire_table[s,r] · g, so g
+    is desire-free (no motivation axis) and the per-condition desire scalar is
+    loaded separately via load_lm_scenario_desire_3act.
       access: (16, 3, 2, S)        [scenario, obs, reward, slot]
       effort: (16, 3, 2, 2, S)     [scenario, obs, reward, effort_condition, slot]
-      v:      (16, 3, 2, S, 2)     [scenario, obs, reward, slot, motivation]
+      g:      (16, 3, 2, S)        [scenario, obs, reward, slot]
       prior:  (16, 3, 2, S)
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params_3act.csv"
-    canonical_v_path = canonical_v_path or outputs_dir / "lm_scenario_v_3act.csv"
+    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g_3act.csv"
     alternatives_features_path = (
         alternatives_features_path
         or outputs_dir / "lm_alternatives_features_food_inv_joint_ie.csv"
     )
-    alternatives_v_path = (
-        alternatives_v_path or outputs_dir / "lm_alternatives_v_food_inv_joint_ie.csv"
+    alternatives_g_path = (
+        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_joint_ie.csv"
     )
     required = [
         canonical_path,
-        canonical_v_path,
+        canonical_g_path,
         alternatives_features_path,
-        alternatives_v_path,
+        alternatives_g_path,
     ]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canon_ae, canon_v = _canonical_lookups(canonical_path, canonical_v_path)
+    canon_ae, canon_g = _canonical_lookups(canonical_path, canonical_g_path)
     feats_df = pd.read_csv(alternatives_features_path)
-    alts_v_df = pd.read_csv(alternatives_v_path)
+    alts_g_df = pd.read_csv(alternatives_g_path)
 
-    n_s, n_o, n_rew, n_eff, n_mot = (
+    n_s, n_o, n_rew, n_eff = (
         len(SCENARIO_LABELS),
         N_ACTIONS_3ACT,
         2,
         N_EFFORT_CONDITIONS,
-        2,
     )
     access = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS_3ACT), dtype=np.float32)
     effort = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS_3ACT), dtype=np.float32)
-    v = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS_3ACT, n_mot), dtype=np.float32)
+    g = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS_3ACT), dtype=np.float32)
     valid = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS_3ACT), dtype=bool)
 
     rew_to_idx = {"low": int(RewardConditions.LOW), "high": int(RewardConditions.HIGH)}
-    mot_to_idx = rew_to_idx
     obs_to_idx = ACTION_LABEL_TO_IDX
 
     for scenario in SCENARIO_LABELS:
@@ -1378,21 +1431,20 @@ def load_padded_lm_tables_3act_joint_ie(
                     effort[s, o, rew, e, 0] = a_effort
                     if e == 0:
                         access[s, o, rew, 0] = a_access
-                for mot, m in mot_to_idx.items():
-                    v[s, o, rew, 0, m] = canon_v[(scenario, o, mot)]
+                g[s, o, rew, 0] = canon_g[(scenario, o)]
                 valid[s, o, rew, 0] = True
 
     # Alternatives keyed by (scenario, obs, reward, effort_condition, alt_idx);
-    # access effort-marginal.
-    alt_v_lookup = {
+    # access effort-marginal. g is desire-free, keyed by
+    # (scenario, obs, reward, alt_idx).
+    alt_g_lookup = {
         (
             r["scenario_label"],
             r["observed_action"],
             r["desire_condition"],
             int(r["alt_idx"]),
-            r["motivation_query"],
-        ): float(r["v"])
-        for _, r in alts_v_df.iterrows()
+        ): float(r["g"])
+        for _, r in alts_g_df.iterrows()
     }
     for _, row in feats_df.iterrows():
         s = SCENARIO_TO_IDX[row["scenario_label"]]
@@ -1404,17 +1456,15 @@ def load_padded_lm_tables_3act_joint_ie(
             continue
         access[s, o, rew, slot] = float(row["access"])
         effort[s, o, rew, e, slot] = float(row["effort"])
-        for mot, m in mot_to_idx.items():
-            v[s, o, rew, slot, m] = alt_v_lookup.get(
-                (
-                    row["scenario_label"],
-                    row["observed_action"],
-                    row["desire_condition"],
-                    int(row["alt_idx"]),
-                    mot,
-                ),
-                0.0,
-            )
+        g[s, o, rew, slot] = alt_g_lookup.get(
+            (
+                row["scenario_label"],
+                row["observed_action"],
+                row["desire_condition"],
+                int(row["alt_idx"]),
+            ),
+            0.0,
+        )
         valid[s, o, rew, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -1425,7 +1475,7 @@ def load_padded_lm_tables_3act_joint_ie(
     return {
         "access": jnp.array(access),
         "effort": jnp.array(effort),
-        "v": jnp.array(v),
+        "g": jnp.array(g),
         "prior": jnp.array(prior),
     }
 

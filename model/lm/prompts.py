@@ -64,6 +64,7 @@ _JSON_EXAMPLE_VALUES = {
     "access": [0.5, 1.2, 3.8, 5.5],
     "effort": [0.5, 3.2, 2.1, 1.5],
     "v": [-1.5, 0.5, 2.0, 2.8],
+    "g": [0.5, 3.0, 5.5, 4.0],
 }
 
 # 2-action JSON examples differ from the first 2 entries of the 4-action
@@ -72,6 +73,7 @@ _JSON_EXAMPLE_VALUES_2 = {
     "access": [0.5, 3.8],
     "effort": [0.5, 3.2],
     "v": [-1.5, 2.0],
+    "g": [0.5, 5.5],
 }
 
 
@@ -101,6 +103,8 @@ def _json_format_block(rating_type, n_actions):
             example = '{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1}'
         elif rating_type == "v":
             example = '{"action_0": -1.5, "action_1": 0.5, "action_2": 2.8}'
+        elif rating_type == "g":
+            example = '{"action_0": 0.5, "action_1": 3.0, "action_2": 5.5}'
         return (
             "Respond with your numerical ratings as a JSON object whose keys "
             'are "action_0", "action_1", ... matching the number of actions '
@@ -236,6 +240,10 @@ _USER_INSTRUCTIONS = {
         "— from -3 (strongly counterproductive for the state) through 0 "
         "(neutral) to +3 (strongly serves the state):"
     ),
+    "g": (
+        "Rate how much each action results in the two people actually getting "
+        "or consuming the thing at stake (0-6 scale):"
+    ),
 }
 
 
@@ -297,10 +305,31 @@ Important: "doesn't help" and "actively harms" are different things. An action t
 Do NOT rate how intimate or awkward the action would feel, and do NOT rate the physical effort of carrying it out — those are separate dimensions handled by other questions in this study. Here we want only how the action sits with the actor's current motivational state."""
 
 
+# _G_BODY is the goal-satisfaction component of the reward term. In the
+# continuous-desire model the reward enters the utility as w_v · desire · g(a|s),
+# where desire is the latent magnitude (how much the dyad wants the outcome) and
+# g(a|s) is this desire-free rating of how fully the action delivers the outcome.
+# Splitting reward this way is what lets desire be inferred as a continuous
+# latent: g is a stable, elicitable property of the action, while desire is the
+# free quantity the observer recovers (or, in the given-desire studies, the
+# scalar rated by `desire_user_prompt`). g replaces the old signed-valence V.
+_G_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+
+For each action, evaluate how much it results in the two people actually obtaining or consuming the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. This is about whether the action delivers the goal, NOT about how much the people want it (a separate question), and NOT about the physical effort or the interpersonal exposure the action involves (also separate questions).
+
+An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low. How they get it — directly, or via a safer indirect route — does not matter here; only how fully they end up with it.
+
+Use this scale from 0 to 6 (continuous values allowed):
+0 = The thing is not obtained (the action forgoes or abandons it)
+3 = Partially obtained (a reduced portion, only one person, or an incomplete version)
+6 = Fully obtained (both people end up getting and consuming the thing)"""
+
+
 _BODIES = {
     "access": _ACCESS_BODY,
     "effort": _EFFORT_BODY,
     "v": _V_BODY,
+    "g": _G_BODY,
 }
 
 
@@ -495,3 +524,43 @@ def alternatives_user_prompt_3act(
         "is_share ∈ {0, 1}. Do not include the action they actually took."
     )
     return "\n".join(parts)
+
+
+# ==============================================================================
+# Public API: scenario-level desire scalar (given-desire studies 2a, 2b)
+# ==============================================================================
+# When desire is observer-visible context rather than the inferred latent, the
+# actor utility needs a numeric desire magnitude. The LM reads the scenario plus
+# the shown desire-state paragraph (reward_low / reward_high) and rates how much
+# the two people want the thing on the same 0-100 scale the human participant
+# uses. This is one rating per (scenario, desire condition) — it is NOT
+# per-action (g already carries the action dependence).
+
+DESIRE_SYSTEM_PROMPT = (
+    "You are a participant in a human study. Respond as if you were a regular "
+    "adult, just going off of your intuition.\n\n"
+    "In this survey, you will read a vignette about two people in a situation "
+    "where some resource — food, an object, a physical space, or a piece of "
+    "information — could be shared between them, along with a short description "
+    "of their current state. Judge how much the two people want the thing at "
+    "stake in the scenario, given that state, on a scale from 0 (do not want it "
+    "at all) to 100 (want it extremely). Rate only how much they want it — not "
+    "what they end up doing, how much effort it takes, or how the two people are "
+    "related.\n\n"
+    "Respond with a JSON object in this format only, no explanation:\n"
+    '{"desire": 65}'
+)
+
+
+def desire_user_prompt(vignette, state):
+    """Build the user prompt for the scenario-level desire rating.
+
+    `state` is the actor's motivational-state paragraph (the scenario's
+    `reward_low` or `reward_high` text). Returns one 0-100 desire magnitude.
+    """
+    return (
+        f"Scenario: {vignette}\n\n"
+        f"State: {state}\n\n"
+        "On a scale from 0 to 100, how much do the two people want the thing at "
+        'stake in this scenario? Respond with {"desire": <number>}.'
+    )

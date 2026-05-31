@@ -59,16 +59,22 @@ from observers import (  # noqa: E402
     observer_joint_ie_base,
     observer_joint_ie_discomfort_only,
     observer_joint_ie_full,
-    observer_reward_base,
-    observer_reward_discomfort_only,
-    observer_reward_full,
+    observer_desire_base,
+    observer_desire_discomfort_only,
+    observer_desire_full,
 )
-from tables import IntimacyLevels, SCENARIO_LABELS, actions_3act  # noqa: E402
+from tables import (  # noqa: E402
+    DesireLevels,
+    IntimacyLevels,
+    SCENARIO_LABELS,
+    actions_3act,
+)
 from utils import get_project_root  # noqa: E402
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
 INTIMACY_GRID_100 = np.asarray(IntimacyLevels) * 100.0
+DESIRE_GRID_100 = np.asarray(DesireLevels) * 100.0
 INTIMACY_IDX_TO_LEVEL = {0: 0, 1: 50, 2: 75, 3: 100}
 N_ACTIONS = int(len(actions_3act))
 
@@ -85,9 +91,9 @@ VARIANTS_INTIMACY = {
     "base": (observer_intimacy_base, ["w_v", "w_e"], True),
 }
 VARIANTS_DESIRE = {
-    "full": (observer_reward_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_reward_discomfort_only, ["w_d", "gamma"], False),
-    "base": (observer_reward_base, ["w_v", "w_e"], True),
+    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"], True),
+    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"], False),
+    "base": (observer_desire_base, ["w_v", "w_e"], True),
 }
 VARIANTS_JOINT_DE = {
     "full": (observer_joint_de_full, ["w_v", "w_d", "w_e", "gamma"], True),
@@ -314,41 +320,37 @@ def _loso_desire(slug):
 
             held_out = table[
                 0, fold, :, :, :, :
-            ]  # (observed_action, effort, intimacy, reward)
+            ]  # (observed_action, effort, intimacy, desire[101])
             for a_idx in range(N_ACTIONS):
                 for rel_idx in range(4):
                     for e in (0, 1):
-                        p_high_reward = float(held_out[a_idx, e, rel_idx, 1])
+                        density = held_out[a_idx, e, rel_idx, :]
+                        expected_desire = float(np.sum(DESIRE_GRID_100 * density))
                         pred_rows.append(
                             {
                                 "scenario_label": scenario_label,
                                 "action": a_idx,
                                 "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                                 "effort_condition": "low" if e == 0 else "high",
-                                "p_high_reward": p_high_reward * 100.0,
-                                # Continuous 0-100 desire prediction: 100 * P(reward=HIGH)
-                                "pred_desire": 100.0 * p_high_reward,
+                                "expected_desire": expected_desire,
                                 "model": variant,
                             }
                         )
 
-            # Desire DV is a continuous 0-100 slider; test loss is squared error
-            # between the normalized prediction P(high) and the observed rating/100.
+            # Desire DV is a continuous 0-100 rating; test loss is the NLL of the
+            # response bin under the 101-bin desire posterior.
             test_nll = 0.0
             for i in np.where(test_mask)[0]:
-                p_model = float(
-                    table[
-                        0,
-                        int(scenario_idx[i]),
-                        int(action[i]),
-                        int(effort_condition[i]),
-                        int(relationship_condition[i]),
-                        1,
-                    ]
-                )
-                test_nll += (
-                    min(max(p_model, 0.0), 1.0) - float(response[i]) / 100.0
-                ) ** 2
+                post = table[
+                    0,
+                    int(scenario_idx[i]),
+                    int(action[i]),
+                    int(effort_condition[i]),
+                    int(relationship_condition[i]),
+                    :,
+                ]
+                resp_idx = int(np.clip(round(float(response[i])), 0, 100))
+                test_nll += -float(np.log(max(float(post[resp_idx]), 1e-8)))
 
             fold_rows.append(
                 _fold_row(
@@ -423,28 +425,26 @@ def _loso_joint_de(slug):
 
             held_out = table[
                 0, fold, :, :, :, :
-            ]  # (observed_action, rel_4, reward, effort)
+            ]  # (observed_action, rel_4, desire[101], effort[2])
             for a_idx in range(N_ACTIONS):
                 for rel_idx in range(4):
-                    joint = held_out[a_idx, rel_idx, :, :]  # (2, 2)
-                    p_reward_high = float(joint[1, :].sum())
+                    joint = held_out[a_idx, rel_idx, :, :]  # (101, 2)
+                    desire_post = joint.sum(axis=1)  # marginal over effort
+                    expected_desire = float(np.sum(DESIRE_GRID_100 * desire_post))
                     p_effort_high = float(joint[:, 1].sum()) * 100.0
                     pred_rows.append(
                         {
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
-                            "p_high_reward": p_reward_high * 100.0,
-                            # Continuous 0-100 desire prediction: 100 * P(reward=HIGH)
-                            "pred_desire": 100.0 * p_reward_high,
+                            "expected_desire": expected_desire,
                             "p_effort_high": p_effort_high,
                             "model": variant,
                         }
                     )
 
-            # Desire slider is a continuous 0-100 rating (squared error on the
-            # normalized prediction); effort slider is a 0-100 continuous rating
-            # (binary cross-entropy on P(effort=HIGH)).
+            # Desire slider is a continuous 0-100 rating (NLL over the 101-bin
+            # posterior); effort slider is a 0-100 rating (BCE on P(effort=HIGH)).
             test_nll = 0.0
             for i in np.where(test_mask)[0]:
                 joint = table[
@@ -455,12 +455,11 @@ def _loso_joint_de(slug):
                     :,
                     :,
                 ]
-                p_r_high = float(joint[1, :].sum())
+                desire_post = joint.sum(axis=1)
                 p_e_high = float(joint[:, 1].sum())
-                # desire: squared error on the normalized 0-100 rating
-                test_nll += (
-                    min(max(p_r_high, 0.0), 1.0) - float(response_reward[i]) / 100.0
-                ) ** 2
+                # desire: NLL of the response bin under the 101-bin posterior
+                resp_idx = int(np.clip(round(float(response_reward[i])), 0, 100))
+                test_nll += -float(np.log(max(float(desire_post[resp_idx]), 1e-8)))
                 # effort: binary cross-entropy on the 0-100 slider
                 p_human = float(response_effort[i]) / 100.0
                 p_m = min(max(p_e_high, 1e-8), 1 - 1e-8)

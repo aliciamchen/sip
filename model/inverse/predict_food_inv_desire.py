@@ -21,18 +21,18 @@ from _helpers import (  # noqa: E402
     load_3act_fit_results,
 )
 from observers import (  # noqa: E402
-    observer_reward_base,
-    observer_reward_discomfort_only,
-    observer_reward_full,
+    observer_desire_base,
+    observer_desire_discomfort_only,
+    observer_desire_full,
 )
 
 EXPERIMENT_SLUG = "food_inv_desire"
 
 # (observer_fn, utility_param_names, uses_v)
 VARIANTS = {
-    "full": (observer_reward_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_reward_discomfort_only, ["w_d", "gamma"], False),
-    "base": (observer_reward_base, ["w_v", "w_e"], True),
+    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"], True),
+    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"], False),
+    "base": (observer_desire_base, ["w_v", "w_e"], True),
 }
 
 
