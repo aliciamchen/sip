@@ -24,7 +24,7 @@ function preamble(stimulus, index, total, stage, observedAction) {
   const leadIn =
     stage === "prior"
       ? "Before observing what they decide to do, please answer the questions below."
-      : "Now that you have observed what they decide to do, please re-evaluate.";
+      : "Now that you have observed what they decide to do, please answer the questions again.";
   return scenarioStimulus({
     index,
     total,
