@@ -37,7 +37,7 @@ const INFERENCE_NOTE =
 // food itself (liking, hunger, appeal), distinct from what they decide to do.
 // Shown in the desire-DV studies (1a, 1b).
 const DESIRE_NOTE =
-  '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — separate from what they decide to do and from other aspects of the situation. For example, in some situations, people might both want the food a lot but still not end up eating it for other reasons.</p></div>';
+  '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — separate from what they decide to do and from other aspects of the situation. For example, in some situations, people might both want the food a lot but still not end up eating it because of other reasons.</p></div>';
 
 // Explains the desire slider: one end means "not at all", the other "extremely",
 // the middle a moderate amount. Shown in the desire-DV studies (1a, 1b).
