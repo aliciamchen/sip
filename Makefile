@@ -108,11 +108,13 @@ stimuli:
 	uv run python experiments/scenarios.py
 	uv run python experiments/csv_to_json.py
 
-# Per-participant condition sequences (each json/full_counterbalancing.json).
-counterbalancing: $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
+# Per-participant condition sequences (each json/full_counterbalancing.json),
+# all from one registry-driven generator in _lib/python/.
+counterbalancing:
+	uv run python experiments/_lib/python/counterbalancing.py
 
 $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE)): counterbalancing-%:
-	uv run python experiments/$*/python/generate_counterbalancing.py
+	uv run python experiments/_lib/python/counterbalancing.py --study $*
 
 # Byte-identical index.html + experiment.js across the active experiments.
 entry-files:
