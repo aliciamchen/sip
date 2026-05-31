@@ -73,7 +73,17 @@ async function createExperiment({
   const condition_assignment = await jsPsychPipe.getCondition(
     config.PIPE_EXPERIMENT_ID
   );
-  const assignedSequence = counterbalancing[condition_assignment];
+  // DataPipe returns an index in [0, N) where N is the condition count set on
+  // the DataPipe dashboard. If that count is ever larger than the number of
+  // counterbalancing sequences we actually have, wrap with modulo so the
+  // participant still gets a valid sequence instead of `undefined`.
+  // `sequence_index` is the index actually used — map it to
+  // full_counterbalancing.json in analysis (condition_assignment is kept raw).
+  const n_sequences = counterbalancing.length;
+  const sequence_index = Number.isInteger(condition_assignment)
+    ? ((condition_assignment % n_sequences) + n_sequences) % n_sequences
+    : 0;
+  const assignedSequence = counterbalancing[sequence_index];
 
   jsPsych.data.addProperties({
     study_id,
@@ -81,6 +91,7 @@ async function createExperiment({
     subject_id,
     url: window.location.href,
     condition_assignment,
+    sequence_index,
   });
 
   // Spread the assigned sequence's per-scenario factor fields onto each
