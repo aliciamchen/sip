@@ -66,6 +66,12 @@ help:
 	@echo "  test       - model compliance tests"
 	@echo "  clean      - remove fit/predict/CV outputs"
 	@echo ""
+	@echo "Experiment assets (jsPsych build, run before deploying):"
+	@echo "  experiments       - regenerate stimuli + counterbalancing + entry files"
+	@echo "  stimuli           - scenarios.py -> scenarios.csv -> per-experiment stimuli.json"
+	@echo "  counterbalancing  - regenerate every active full_counterbalancing.json"
+	@echo "  entry-files       - sync index.html + experiment.js across active experiments"
+	@echo ""
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, predict-inverse, cv-inverse        (active)"
 	@echo "  fit-forward, predict-forward, cv-forward        (legacy forwards)"
@@ -85,6 +91,32 @@ help:
 	@echo "Active inverse slugs:   $(EXPERIMENTS_INVERSE)"
 	@echo "Legacy forward slugs:   $(LEGACY_FORWARD)"
 	@echo "Legacy inverse slugs:   $(LEGACY_INVERSE)"
+
+# =============================================================================
+# Experiment assets (jsPsych): regenerate what a deploy needs from source.
+# Run before bin/deploy-experiment when scenarios, counterbalancing, or the
+# shared entry files change. Not part of `make all`.
+# =============================================================================
+
+.PHONY: experiments stimuli counterbalancing entry-files \
+        $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
+
+experiments: stimuli counterbalancing entry-files
+
+# scenarios.py (source of truth) -> scenarios.csv -> per-experiment stimuli.json.
+stimuli:
+	uv run python experiments/scenarios.py
+	uv run python experiments/csv_to_json.py
+
+# Per-participant condition sequences (each json/full_counterbalancing.json).
+counterbalancing: $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
+
+$(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE)): counterbalancing-%:
+	uv run python experiments/$*/python/generate_counterbalancing.py
+
+# Byte-identical index.html + experiment.js across the active experiments.
+entry-files:
+	uv run python experiments/sync_entry_files.py
 
 # =============================================================================
 # Data: raw JSON → CSV. Only useful if raw JSON in data/<slug>/raw_data/ exists;
