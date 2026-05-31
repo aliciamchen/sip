@@ -16,51 +16,33 @@ import {
   getEffortText,
   desireQuestion,
   DESIRE_SLIDER_LABELS,
+  singleSliderTrial,
   pressAnyKeyPage,
   blankPause,
-  scenarioStimulus,
 } from "../_lib/scenario.js";
 
 export const CONFIG = makeConfig("food_inv_desire");
 export const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_desire;
 
 function desireSlider(stimulus, index, total, stage, observedAction) {
-  const lead =
-    stage === "prior"
-      ? "Before observing what they decide to do"
-      : "Now that you have observed what they decide to do";
-  return {
-    type: jsPsychHtmlSliderResponse,
-    stimulus: scenarioStimulus({
-      index,
-      total,
-      paragraphs: [
-        intimacyDescriptor(stimulus),
-        `<p>${stimulus.vignette}</p>`,
-        `<p><strong>${getEffortText(stimulus)}</strong></p>`,
-      ],
-      observedAction,
-      leadIn: `${lead}, ${desireQuestion(stimulus, { lowercase: true })}`,
-    }),
-    slider_width: 900,
-    slider_min: 0,
-    slider_max: 100,
-    step: 1,
-    require_movement: true,
+  return singleSliderTrial({
+    stimulus,
+    index,
+    total,
+    stage,
+    observedAction,
+    paragraphs: [
+      intimacyDescriptor(stimulus),
+      `<p>${stimulus.vignette}</p>`,
+      `<p><strong>${getEffortText(stimulus)}</strong></p>`,
+    ],
     labels: DESIRE_SLIDER_LABELS,
-    button_label: "Continue",
+    leadInQuestion: desireQuestion(stimulus, { lowercase: true }),
     data: {
-      response_type: "response",
-      stage,
-      stimulus_index: index,
-      scenario_label: stimulus.scenario_label,
-      action_condition: stimulus.action_condition,
       intimacy_condition: stimulus.intimacy_condition,
       effort_condition: stimulus.effort_condition,
-      desire_low: stimulus.desire_low,
-      desire_high: stimulus.desire_high,
     },
-  };
+  });
 }
 
 export function makeStimulusTrials(jsPsych, stimuli) {

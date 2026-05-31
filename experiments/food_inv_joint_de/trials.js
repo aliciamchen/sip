@@ -65,8 +65,6 @@ export function makeStimulusTrials(jsPsych, stimuli) {
       scenario_label: stimulus.scenario_label,
       action_condition: stimulus.action_condition,
       intimacy_condition: stimulus.intimacy_condition,
-      desire_low: stimulus.desire_low,
-      desire_high: stimulus.desire_high,
       low_risk_share_effort_low: stimulus.low_risk_share_effort_low,
       low_risk_share_effort_high: stimulus.low_risk_share_effort_high,
     };

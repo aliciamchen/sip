@@ -12,48 +12,32 @@ import {
   getDesireText,
   getEffortText,
   INTIMACY_SLIDER_LABELS,
+  singleSliderTrial,
   blankPause,
-  scenarioStimulus,
 } from "../_lib/scenario.js";
 
 export const CONFIG = makeConfig("food_inv_intimacy");
 export const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_intimacy;
 
 function intimacySlider(stimulus, index, total, stage, observedAction) {
-  const lead =
-    stage === "prior"
-      ? "Before observing what they decide to do"
-      : "Now that you have observed what they decide to do";
-  return {
-    type: jsPsychHtmlSliderResponse,
-    stimulus: scenarioStimulus({
-      index,
-      total,
-      paragraphs: [
-        `<p>${stimulus.vignette}</p>`,
-        `<p>${getDesireText(stimulus)}</p>`,
-        `<p>${getEffortText(stimulus)}</p>`,
-      ],
-      observedAction,
-      leadIn: `${lead}, how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship?`,
-    }),
-    slider_width: 900,
-    slider_min: 0,
-    slider_max: 100,
-    step: 1,
-    require_movement: true,
+  return singleSliderTrial({
+    stimulus,
+    index,
+    total,
+    stage,
+    observedAction,
+    paragraphs: [
+      `<p>${stimulus.vignette}</p>`,
+      `<p>${getDesireText(stimulus)}</p>`,
+      `<p>${getEffortText(stimulus)}</p>`,
+    ],
     labels: INTIMACY_SLIDER_LABELS,
-    button_label: "Continue",
+    leadInQuestion: `how do you think ${stimulus.name_0} and ${stimulus.name_1} would describe their relationship?`,
     data: {
-      response_type: "response",
-      stage,
-      stimulus_index: index,
-      scenario_label: stimulus.scenario_label,
-      action_condition: stimulus.action_condition,
       desire_condition: stimulus.desire_condition,
       effort_condition: stimulus.effort_condition,
     },
-  };
+  });
 }
 
 export function makeStimulusTrials(jsPsych, stimuli) {

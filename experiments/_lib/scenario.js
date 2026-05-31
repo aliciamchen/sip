@@ -45,6 +45,10 @@ export const effortLabels = (stim) => [
   stim.low_risk_share_effort_high,
 ];
 
+// Shared pixel width for every rating slider (single-slider 1a/2a and the
+// two-slider 1b/2b form), so the width lives in one place.
+export const SLIDER_WIDTH = 900;
+
 // A "press any key to continue" page showing the given preamble HTML.
 export function pressAnyKeyPage(preambleHtml, index, total) {
   return {
@@ -100,4 +104,51 @@ export function scenarioStimulus({
       <p><strong>${leadIn}</strong></p>
     </div>
   `;
+}
+
+// A single-slider rating trial (Studies 1a, 2a): the scenario stimulus with a
+// prior/posterior lead-in, plus a continuous 0-100 html-slider-response. The
+// caller supplies the paragraphs, the slider labels, the lead-in question clause
+// (appended after the "Before/Now that..." framing), and any study-specific
+// condition fields to merge into the saved trial data.
+export function singleSliderTrial({
+  stimulus,
+  index,
+  total,
+  stage,
+  observedAction,
+  paragraphs,
+  labels,
+  leadInQuestion,
+  data = {},
+}) {
+  const lead =
+    stage === "prior"
+      ? "Before observing what they decide to do"
+      : "Now that you have observed what they decide to do";
+  return {
+    type: jsPsychHtmlSliderResponse,
+    stimulus: scenarioStimulus({
+      index,
+      total,
+      paragraphs,
+      observedAction,
+      leadIn: `${lead}, ${leadInQuestion}`,
+    }),
+    slider_width: SLIDER_WIDTH,
+    slider_min: 0,
+    slider_max: 100,
+    step: 1,
+    require_movement: true,
+    labels,
+    button_label: "Continue",
+    data: {
+      response_type: "response",
+      stage,
+      stimulus_index: index,
+      scenario_label: stimulus.scenario_label,
+      action_condition: stimulus.action_condition,
+      ...data,
+    },
+  };
 }

@@ -6,7 +6,7 @@
 // makeTwoSliderForm({ preamble, sliders, data, buttonLabel }):
 //   - preamble:    scenario HTML shown above the sliders.
 //   - sliders:     array of { name, prompt, labels: [html, ...], min=0, max=100,
-//                  step=1, start=50, width=900 }. The trial's response is an
+//                  step=1, start=50, width=SLIDER_WIDTH }. The trial's response is an
 //                  object keyed by each slider's `name`, e.g. {desire: "60",
 //                  effort: "30"} (stored in `data.response`).
 //   - data:        jsPsych data attached to the trial.
@@ -14,6 +14,8 @@
 //
 // require_movement is emulated to match the single-slider trials: the Continue
 // button stays disabled until every slider on the page has been moved.
+
+import { SLIDER_WIDTH } from "./scenario.js";
 
 function oneSliderHtml({
   name,
@@ -23,7 +25,7 @@ function oneSliderHtml({
   max = 100,
   step = 1,
   start = 50,
-  width = 900,
+  width = SLIDER_WIDTH,
 }) {
   const cells = labels
     .map((label) => `<div class="two-slider-label">${label}</div>`)
