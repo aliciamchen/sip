@@ -1,6 +1,6 @@
 """Counterbalancing for food_inv_desire.
 
-Study 3b — Desire inference (knowns = effort + intimacy).
+Study 1a — Desire inference (knowns = effort + intimacy).
 Cells: effort × intimacy × action = 2 × 4 × 3 = 24 cells.
 
 Each participant sees all 16 scenarios (one trial each); since there are 24
@@ -11,8 +11,7 @@ exactly 8 of 12 rounds (so 16 cells per round, 192 cell-round picks total =
 24 × 8). With 16 story-rotations per round, every cell appears in exactly
 8 × 16 = 128 trial slots.
 
-Produces 12 × 16 = 192 condition_assignment sequences (matching the legacy
-food_inv_intimacy_effort_alt counterbalancing layout).
+Produces 12 × 16 = 192 condition_assignment sequences.
 """
 
 import json
