@@ -97,13 +97,38 @@ async function createExperiment({
   // Spread the assigned sequence's per-scenario factor fields onto each
   // stimulus. The counterbalancing file determines which factor fields exist
   // (action_condition, desire_condition, effort_condition, intimacy_condition
-  // — whichever subset applies to this study).
+  // — whichever subset applies to this study). stimuli.json and
+  // full_counterbalancing.json are generated separately, so guard against drift:
+  // every stimulus must match exactly one sequence entry (and vice versa), or we
+  // would silently run trials with undefined conditions / a missing observed
+  // action. Fail loudly instead.
   const stimuliWithConditions = stimuli.map((stimulus) => {
     const sequenceItem = assignedSequence.find(
       (item) => item.scenario_label === stimulus.scenario_label
     );
-    return sequenceItem ? { ...stimulus, ...sequenceItem } : stimulus;
+    if (!sequenceItem) {
+      throw new Error(
+        `Counterbalancing drift: no sequence entry for scenario "${stimulus.scenario_label}" ` +
+          `(sequence_index ${sequence_index}). stimuli.json and full_counterbalancing.json are out of sync.`
+      );
+    }
+    return { ...stimulus, ...sequenceItem };
   });
+
+  const stimulusLabels = new Set(stimuli.map((s) => s.scenario_label));
+  const orphanLabels = [
+    ...new Set(
+      assignedSequence
+        .map((item) => item.scenario_label)
+        .filter((label) => !stimulusLabels.has(label))
+    ),
+  ];
+  if (orphanLabels.length > 0) {
+    throw new Error(
+      `Counterbalancing drift: sequence_index ${sequence_index} references scenarios ` +
+        `not present in stimuli.json: ${orphanLabels.join(", ")}.`
+    );
+  }
 
   const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithConditions);
 
