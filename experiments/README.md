@@ -36,7 +36,7 @@ Archived; their experiments are no longer active. Each is still generated from i
 
 ### Inverse planning (3-action set)
 
-All four use `scenarios.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the food ("how much do Carissa and Josh both want to eat the hot dog?", not-at-all → extremely), effort as a continuous 0–100 rating between two states, and intimacy on a 0–100 numeric scale. Each experiment dir's `README.md` documents the design spec.
+All four use `scenarios.csv` and follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the food ("how much do Carissa and Josh both want to eat the hot dog?", not at all → moderately → extremely), effort as a continuous 0–100 rating between two states, and intimacy on a 0–100 numeric scale. Each experiment dir's `README.md` documents the design spec.
 
 - [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy. Design 2 × 4 × 3.
 - [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
@@ -54,7 +54,7 @@ The four non-food inverse stubs (`nonfood_inv_*`), scaffolded against the obsole
 
 ## Counterbalancing
 
-Each experiment dir has `python/generate_counterbalancing.py` which produces `json/full_counterbalancing.json` — an array of N "sequences," each a 16-trial assignment of factor cells to the 16 scenarios. `experiment.js` reads a per-participant `condition_assignment` from jsPsychPipe and selects `counterbalancing[condition_assignment]`. Cells are distributed across the 16 slots as evenly as possible; when the cell space exceeds 16 (Study 1a has 2 × 4 × 3 = 24 cells), each participant samples a 16-cell subset and the cells balance across participants. The number of sequences is `n_cells × 16` rotations (e.g. Study 2b's 6 cells → 96 sequences).
+Each experiment dir has `python/generate_counterbalancing.py` which produces `json/full_counterbalancing.json` — an array of N "sequences," each a 16-trial assignment of factor cells to the 16 scenarios. `experiment.js` reads a per-participant `condition_assignment` from jsPsychPipe and selects `counterbalancing[condition_assignment]`. Each script builds `n_rounds` rounds and rotates which scenario gets which cell within a round, for `n_rounds × 16` sequences total — 192 for Studies 1a/1b/2a (12 rounds) and 96 for Study 2b (6 rounds). Cells are distributed across the 16 slots by a balanced design so that every factor cell ends up in the same number of trial slots overall: when the cell space exceeds 16 (Study 1a has 2 × 4 × 3 = 24 cells) each round carries a balanced 16-cell subset (every cell in 8 of 12 rounds → 128 slots each); when it is at most 16 (Studies 1b/2a have 12 cells, 2b has 6) each round carries every cell once or twice plus a balanced set of extra slots (256 slots each). Rounds are interleaved by rotation index so sequential `condition_assignment` values spread early participants across all rounds rather than clustering them on one round's cell choices.
 
 ## Shared experiment code
 
