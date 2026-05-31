@@ -34,8 +34,8 @@ Convert experiment JSON output to CSV:
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
 # active experiments: food_inv_desire, food_inv_joint_de, food_inv_intimacy, food_inv_joint_ie
-#   (json_to_csv.py currently has a config only for food_inv_desire among these;
-#    configs for joint_de / intimacy / joint_ie are added at data-collection time)
+#   (all four have configs; the two-slider studies joint_de/joint_ie split the
+#    survey-html-form response into desire_rating/intimacy_rating + effort_rating)
 # legacy forwards still processable per-slug: food_forw_intimacy_desire, etc.
 ```
 

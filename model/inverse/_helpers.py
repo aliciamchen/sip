@@ -614,8 +614,8 @@ def load_joint_de_data(slug="food_inv_joint_de"):
     """Study 1b — observer knows intimacy, jointly infers (reward, effort).
 
     Each posterior trial contributes two slider responses: `desire_rating` (the
-    continuous 0-100 desire DV) and `p_effort_high_rating` (the 0-100 effort
-    slider).
+    continuous 0-100 desire DV) and `effort_rating` (the 0-100 effort slider,
+    "which effort situation is more likely"; 0 = effort_low ... 100 = effort_high).
     """
     data = _load_3act_long(slug)
     print(f"Loading {slug} data...")
@@ -623,7 +623,7 @@ def load_joint_de_data(slug="food_inv_joint_de"):
     scenario_idx = jnp.array(data["scenario_idx"].values)
     relationship_condition = jnp.array(data["intimacy_idx_4"].values)
     resp_reward = jnp.array(data["desire_rating"].values)  # 0-100
-    resp_effort = jnp.array(data["p_effort_high_rating"].values)  # 0-100
+    resp_effort = jnp.array(data["effort_rating"].values)  # 0-100
     print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
     return data, action, scenario_idx, relationship_condition, resp_reward, resp_effort
 
@@ -632,7 +632,7 @@ def load_joint_ie_data(slug="food_inv_joint_ie"):
     """Study 2b — observer knows desire, jointly infers (intimacy, effort).
 
     Each posterior trial contributes two slider responses; expects columns
-    `intimacy_rating` (0-100) and `p_effort_high_rating` (0-100).
+    `intimacy_rating` (0-100) and `effort_rating` (0-100).
     """
     data = _load_3act_long(slug)
     print(f"Loading {slug} data...")
@@ -640,7 +640,7 @@ def load_joint_ie_data(slug="food_inv_joint_ie"):
     scenario_idx = jnp.array(data["scenario_idx"].values)
     reward_condition = jnp.array(data["reward_condition"].values)
     resp_intimacy = jnp.array(data["intimacy_rating"].values)
-    resp_effort = jnp.array(data["p_effort_high_rating"].values)
+    resp_effort = jnp.array(data["effort_rating"].values)
     print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
     return data, action, scenario_idx, reward_condition, resp_intimacy, resp_effort
 
