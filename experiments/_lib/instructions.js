@@ -37,7 +37,7 @@ const INFERENCE_NOTE =
 // food itself (liking, hunger, appeal), distinct from what they decide to do.
 // Shown in the desire-DV studies (1a, 1b).
 const DESIRE_NOTE =
-  '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — not whether you think they will actually eat it. Two people might both want the food a lot but still not end up eating it, because of other aspects of the situation, so please rate how much they want the food itself rather than what they decide to do.</p></div>';
+  '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — separate from what they decide to do and from other aspects of the situation. For example, in some situations, people might both want the food a lot but still not end up eating it, for other reasons.</p></div>';
 
 // Explains the desire slider: one end means "not at all", the other "extremely",
 // the middle a moderate amount. Shown in the desire-DV studies (1a, 1b).
@@ -91,7 +91,7 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>For each scenario, we will ask you to rate how much you think the two people want to eat the food.</p>",
+      "<p>In each scenario, we will ask you to rate how much you think the two people want to eat the food.</p>",
       DESIRE_SLIDER_NOTE,
       TIMING_NOTE_ONE,
       DESIRE_NOTE,
@@ -104,7 +104,7 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>For each scenario, we will ask you two questions. The first question asks how much you think the two people want to eat the food. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people want to eat the food. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
       DESIRE_SLIDER_NOTE,
       SITUATION_SLIDER_NOTE,
       TIMING_NOTE_TWO,
@@ -118,7 +118,7 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>For each scenario, we will ask you to evaluate what kind of social relationship you think the two people are in.</p>",
+      "<p>In each scenario, we will ask you to evaluate what kind of social relationship you think the two people are in.</p>",
       RELATIONSHIP_SLIDER_NOTE,
       TIMING_NOTE_ONE,
     ]),
@@ -130,7 +130,7 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>For each scenario, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think the two people are in. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      "<p>In each scenario, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think the two people are in. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
       RELATIONSHIP_SLIDER_NOTE,
       SITUATION_SLIDER_NOTE,
       TIMING_NOTE_TWO,

@@ -19,12 +19,12 @@ export const getEffortText = (stim) =>
     : stim.low_risk_share_effort_high;
 
 // The desire-elicitation question, naming both characters and the scenario-
-// specific food (e.g. "How much do Carissa and Josh both want to eat the hot
-// dog?"). The "want to ___" completion is the per-scenario `desire_phrase` from
-// scenarios.csv. Asked in Studies 1a and 1b; 1a embeds it (lowercased) after a
-// prior/posterior framing clause, so it takes a `lowercase` option.
+// specific food (e.g. "How much do you think Carissa and Josh both want to eat
+// the hot dog?"). The "want to ___" completion is the per-scenario `desire_phrase`
+// from scenarios.csv. Asked in Studies 1a and 1b; 1a embeds it (lowercased) after
+// a prior/posterior framing clause, so it takes a `lowercase` option.
 export const desireQuestion = (stim, { lowercase = false } = {}) =>
-  `${lowercase ? "how much" : "How much"} do ${stim.name_0} and ${stim.name_1} both want to ${stim.desire_phrase}?`;
+  `${lowercase ? "how much" : "How much"} do you think ${stim.name_0} and ${stim.name_1} both want to ${stim.desire_phrase}?`;
 
 // "Consider X and Y, who would describe their relationship as Z." — shown when
 // intimacy is given (Studies 1a, 1b).
