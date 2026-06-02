@@ -1,0 +1,20 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+abc1cbf8-80c9-5c0d-9340-cdd45b806c3c,nonconforming,31,yes,no,True,2
+8d4611c7-4b4c-5029-9495-3a7692aa4740,male,28,yes,,True,3
+554a9fe7-1d50-5df1-a61e-a90d111a7cfe,male,65,yes,,True,2
+38382711-d865-5c1d-bb0a-daaea937fce3,female,40,yes,This was legitimately the hardest survey I've taken in nearly 500 surveys; but I think that is because I am autistic. Thank you for the work you do <3,True,2
+2a8de26a-3667-550e-8003-fa890a948d81,male,57,yes,,True,2
+63b9f8ca-b052-5327-9c11-ab383928e74e,male,47,yes,,True,3
+e3546e79-c5ce-5297-9ff9-fff6c2933dc4,male,21,yes,,True,2
+d66b8793-7ea0-58e4-9c22-01e9d372dcc4,male,32,yes,"The second question on each scenario seems to be entirely up to personal experience because if  you have never been to a game, fair, large party etc you wouldnt know what the layout normally is.",True,2
+c99d85bb-bcdb-59f3-a45e-4b2405ca8991,male,27,yes,,True,1
+5b4ae415-72bf-5fd8-af70-28cdb02941d4,male,29,yes,,True,2
+7cff4246-ab16-53a5-8901-29dbd2f76a08,female,26,yes,,True,3
+fbe96180-7e10-5683-8b77-1c809f4cdb2f,female,51,yes,,True,1
+30fe631a-3cb6-5fa0-93f0-0130be899393,female,30,yes,I enjoyed this activity! ,True,3
+3a88927f-3568-5995-9baf-02032f83a7cb,male,46,yes,"No, none. Thank you.",True,2
+8b480d82-f425-52bb-949d-5549a3859283,female,48,yes,,True,3
+848e7612-4cc9-5431-9fd4-57ee55515262,male,38,yes,nothing additional to add.,True,3
+c42c5bcb-f9ed-5d7c-af3a-6b5ea9d84371,male,34,yes,,True,3
+cd701704-fb2a-55aa-881b-bf891945f131,female,21,yes,,True,3
+2161e622-fafd-5813-a70d-2b92d544c31f,male,31,yes,,True,2

@@ -1,0 +1,20 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+86ab0311-6c42-5e7c-b376-5a17dbf6a265,male,41,yes,"Very interesting research! I studied anthropology of food cultures in college, so this was right up my alley. I can't believe that person did not eat any of the birthday cake! :)",True,2
+baaf79df-1bf5-57ac-a61b-816dc8340840,male,35,yes,Thank you,True,3
+13b79675-e2fa-5b84-82da-20c27d18a6f4,male,19,yes,No.,True,3
+8cf8bd63-c0f2-520f-82d4-1b8a1fd8a9a8,male,38,yes,,True,3
+0a283641-a4ec-513d-90ad-acb5733873f2,female,45,yes,,True,3
+2e2d488a-5fd2-52c7-906e-a4aec7ff6ca1,female,37,yes,fun survey,True,2
+dab5254a-3338-52af-b268-f17f2bd4fe4f,male,61,yes,N/A,True,2
+49f85ecf-0efa-5388-9f3e-24b9fdce2c84,female,31,yes,,True,2
+384e9055-4845-5c57-8a6b-2ce8b8d8a58a,male,48,yes,,True,3
+3f2e7fe0-99fb-5bba-ae84-ddcb3598a7b7,female,50,yes,,True,3
+029e03cc-75d9-5504-875f-75525b986ae1,nonconforming,26,yes,,True,2
+07040771-5b5f-5014-8aec-5c244699021b,female,24,yes,it was hard to remember whether it was Tony or Alvin who packed the granola bars!,True,3
+32be2b5c-b945-5824-aabf-904b3bf646be,male,50,yes,tricky instructions but understable,True,2
+d0fff3b7-1f91-578b-925b-a1832eb52550,female,40,yes,NA,True,2
+cb500589-e409-571e-8728-70dc1cbec429,female,37,yes,,True,2
+f384dab1-5e72-53a8-9a5c-a5779bc339bf,male,68,yes,,True,3
+fb91e0a3-6b6b-5dbf-a8b1-5a402bbaa959,male,20,yes,,True,0
+4797b81b-bf06-5823-a0a6-59cb2c8c6b6c,female,77,yes,,True,2
+f97e6bba-56f0-533f-b68b-87f97df2bb79,male,58,yes,,True,2

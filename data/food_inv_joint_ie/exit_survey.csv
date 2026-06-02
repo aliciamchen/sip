@@ -1,0 +1,21 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
+3edc3400-eafd-549a-a73c-90e6e4264151,female,38,yes,,True,3
+90982d01-2bbf-501a-83d6-705621d4d66b,male,28,yes,,True,2
+0ebda6af-9169-5a68-b814-c58103c568ee,male,33,yes,I think I failed trying to remember the hikers' names. I suck at remembering names. ,True,2
+39cb3c2d-aca3-5b95-b095-37569cb7496f,female,32,yes,,True,1
+b8ee9490-4287-5ad7-a540-02afda5eff8f,female,39,yes,,True,3
+b9bd4ac6-ec8e-56d5-b6c6-c1d32da5a3b9,male,29,yes,,True,2
+ec123df0-d4c9-51c4-b1df-f07282756f97,male,52,yes,,True,3
+0237861e-84c3-5585-990e-7eb012f44e78,male,34,yes,,True,1
+3dd55207-2f7b-5fa3-83fb-f83cb1a9cde9,female,31,yes,,True,3
+506bd41e-f168-5592-bd36-c68483c6f9f9,male,48,yes,none,True,1
+074fce94-1a0f-566d-bff6-c18c9c896824,male,30,yes,,True,3
+9b0ecec2-9a6c-5806-ab88-4577187268b3,nonconforming,34,yes,Using memory checks mid study to validate/invalidate responses from a Prolific participant is against the Prolific TOS if it is going to be used to reject the study.,True,3
+ebc1ff7c-d6d1-5417-be38-4b2ae152a538,female,67,yes,,True,3
+c8ffad1f-21b9-5f2e-aa9e-d31a8bcdc455,female,51,yes,,True,3
+7c845a6d-5b1a-558d-94fd-562cb25ac4af,female,38,yes,,True,3
+843d879e-b36d-591d-9bda-f05df9732b9b,female,25,yes,,True,2
+6c199cc3-8056-5bd2-89f2-925fe93b06b2,male,49,yes,,True,3
+09b109fd-bacf-5b89-b188-b84b6430e8eb,male,33,yes,,True,3
+c96e1d34-1649-5e89-8f9f-5f28acd2353e,male,36,yes,None,True,2
+474e5c53-5656-517e-9a8b-40b2c239cfd3,male,40,yes,,True,3
