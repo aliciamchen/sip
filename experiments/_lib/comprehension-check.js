@@ -73,13 +73,13 @@ const INTIMACY_SCALE_Q = {
     "When we ask about the two people's relationship, what does the scale measure?",
   name: "intimacy_scale",
   options: [
-    "How formal or intimate the relationship is — from maximally formal (like a shopkeeper or new acquaintance) to maximally intimate (like a romantic partner or best friend).",
+    "How formal or intimate the relationship is — from maximally formal to maximally intimate.",
     "How much the two people would like the food.",
     "How much physical effort their action would take.",
     "How long the two people have known each other, in years.",
   ],
   correct:
-    "How formal or intimate the relationship is — from maximally formal (like a shopkeeper or new acquaintance) to maximally intimate (like a romantic partner or best friend).",
+    "How formal or intimate the relationship is — from maximally formal to maximally intimate.",
 };
 
 // Negative-format item: three things the joint task really asks for (the
