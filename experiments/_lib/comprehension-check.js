@@ -74,7 +74,7 @@ const INTIMACY_SCALE_Q = {
   name: "intimacy_scale",
   options: [
     "How formal or intimate the relationship is — from maximally formal (like a shopkeeper or new acquaintance) to maximally intimate (like a romantic partner or best friend).",
-    "How much the two people want to eat the food.",
+    "How much the two people would like the food.",
     "How much physical effort their action would take.",
     "How long the two people have known each other, in years.",
   ],
