@@ -17,6 +17,11 @@ function instructionsPage(paragraphs) {
 
 // --- Paragraphs shared across studies ---------------------------------------
 
+// Up-front notice that the instructions are followed by a comprehension check,
+// so participants read carefully. Shown first on page 1 of every study.
+const READ_CAREFULLY_NOTICE =
+  "<p><strong>Please read the instructions carefully! There is a comprehension check at the end.</strong></p>";
+
 // Opening paragraph that frames the task around relationships (1a, 1b, 2b).
 // Study 2a uses its own intro (see below).
 const INTRO_NOTE =
@@ -89,7 +94,7 @@ const INFERENCE_PAGE = instructionsPage([INFERENCE_NOTE]);
 export const STUDY_INSTRUCTIONS = {
   // Study 1a — infer desire (one slider).
   food_inv_desire: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    instructionsPage([READ_CAREFULLY_NOTICE, INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
       "<p>In each scenario, we will ask you to rate how much you think the two people would like the food.</p>",
@@ -102,7 +107,7 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 1b — jointly infer desire and effort (two sliders).
   food_inv_joint_de: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    instructionsPage([READ_CAREFULLY_NOTICE, INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
       "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people would like the food. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
@@ -116,7 +121,7 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 2a — infer intimacy (one slider).
   food_inv_intimacy: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    instructionsPage([READ_CAREFULLY_NOTICE, INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
       "<p>In each scenario, we will ask you to evaluate what kind of social relationship you think the two people are in.</p>",
@@ -128,7 +133,7 @@ export const STUDY_INSTRUCTIONS = {
 
   // Study 2b — jointly infer intimacy and effort (two sliders).
   food_inv_joint_ie: [
-    instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
+    instructionsPage([READ_CAREFULLY_NOTICE, INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
       "<p>In each scenario, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think the two people are in. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
