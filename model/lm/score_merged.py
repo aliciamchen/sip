@@ -300,7 +300,9 @@ def _score_scenario(client, scenario_row, alt_rows_for_scenario, system_prompts,
     g_agg, g_n_runs, g_n_fail = _score_one_call(
         client,
         system_prompts["g"],
-        format_g_prompt_variable(scenario_row["vignette"], merged),
+        format_g_prompt_variable(
+            scenario_row["vignette"], merged, scenario_row["desire_object"]
+        ),
         n_actions,
         label=f"{scenario}/merged/g",
     )
@@ -320,22 +322,24 @@ def _score_scenario(client, scenario_row, alt_rows_for_scenario, system_prompts,
     # the inferred-desire studies (1a, 1b) desire is the latent and is skipped.
     desire = {}
     if cfg.get("desire_given", False):
-        for desire in DESIRES:
-            state = scenario_row[f"desire_{desire}"]
-            print(f"  desire (state={desire})...", flush=True)
+        for desire_cond in DESIRES:
+            state = scenario_row[f"desire_{desire_cond}"]
+            print(f"  desire (state={desire_cond})...", flush=True)
             ratings, d_n_fail = get_ratings_concurrent(
                 client,
                 DESIRE_SYSTEM_PROMPT,
-                desire_user_prompt(scenario_row["vignette"], state),
+                desire_user_prompt(
+                    scenario_row["vignette"], state, scenario_row["desire_object"]
+                ),
                 parse_desire_response,
                 max_tokens=64,
                 response_format=numeric_desire_schema(),
-                label=f"{scenario}/merged/desire[{desire}]",
+                label=f"{scenario}/merged/desire[{desire_cond}]",
             )
             vals = [r for r in ratings if r is not None]
             d_mean = float(np.mean(vals)) if vals else np.nan
             d_std = float(np.std(vals)) if vals else np.nan
-            desire[desire] = {
+            desire[desire_cond] = {
                 "raw": d_mean,
                 "raw_std": d_std,
                 "n_runs": len(ratings),
@@ -401,11 +405,11 @@ def _build_canonical_g_row(scenario, action_idx, canonical_norm, g):
     }
 
 
-def _build_canonical_desire_row(scenario, desire, desire):
-    val = desire[desire]
+def _build_canonical_desire_row(scenario, desire_cond, desire):
+    val = desire[desire_cond]
     return {
         "scenario_label": scenario,
-        "desire_condition": desire,
+        "desire_condition": desire_cond,
         "desire_raw": val["raw"],
         "desire_raw_std": val["raw_std"],
         # desire is rated directly on 0-100; the model uses the [0, 1] scale.
@@ -655,9 +659,9 @@ def main(study):
             )
         # Canonical desire scalars (16 × 2 = 32; given-desire studies only).
         if desire_given:
-            for desire in DESIRES:
+            for desire_cond in DESIRES:
                 canonical_desire_records.append(
-                    _build_canonical_desire_row(scenario, desire, desire)
+                    _build_canonical_desire_row(scenario, desire_cond, desire)
                 )
 
         # Alts features rows. When effort is inferred (effort not a generation
@@ -669,9 +673,7 @@ def main(study):
             else:
                 effort_conds = [alt_row["effort_condition"]]
             for ec in effort_conds:
-                r = _build_alt_features_row(
-                    alt_row, risk, effort, cfg["cell_cols"], ec
-                )
+                r = _build_alt_features_row(alt_row, risk, effort, cfg["cell_cols"], ec)
                 if r is not None:
                     alt_features_records.append(r)
 

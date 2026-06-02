@@ -32,11 +32,13 @@ def format_effort_prompt_variable(vignette, action_texts):
     return build_user_prompt("effort", vignette, action_texts)
 
 
-def format_g_prompt_variable(vignette, action_texts):
+def format_g_prompt_variable(vignette, action_texts, desire_object=None):
     """Goal-satisfaction g prompt: how fully each action delivers the outcome.
     Desire-free (no state paragraph) — desire enters the utility separately as
-    the multiplier in w_v · desire · g."""
-    return build_user_prompt("g", vignette, action_texts)
+    the multiplier in w_v · desire · g. `desire_object` names the resource at
+    stake so the instruction reads "getting or consuming the hot dog" rather
+    than the generic "the thing at stake"."""
+    return build_user_prompt("g", vignette, action_texts, desire_object=desire_object)
 
 
 # ==============================================================================

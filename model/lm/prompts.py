@@ -353,7 +353,7 @@ def system_prompt(rating_type, n_actions=None):
     return f"{_PREAMBLE_RATING}\n\n{body}\n\n{json_block}"
 
 
-def user_prompt(rating_type, vignette, action_texts, state=None):
+def user_prompt(rating_type, vignette, action_texts, state=None, desire_object=None):
     """Build the user prompt for a rating call.
 
     vignette is whatever scene-description text the LM should see (the caller
@@ -363,12 +363,20 @@ def user_prompt(rating_type, vignette, action_texts, state=None):
     as "Action 0: ...", "Action 1: ...", etc.
     state is the actor's desire-state paragraph (e.g. `desire_high` or
     `desire_low`). Required for rating_type="v"; ignored for risk/effort.
+    desire_object names the specific resource at stake (e.g. "the hot dog");
+    when given for rating_type="g" it makes the instruction concrete instead
+    of the generic "the thing at stake". Ignored for the other rating types.
     """
     if rating_type not in _USER_INSTRUCTIONS:
         raise ValueError(f"unknown rating_type: {rating_type}")
     if rating_type == "v" and state is None:
         raise ValueError("rating_type='v' requires a `state` paragraph")
     instr = _USER_INSTRUCTIONS[rating_type]
+    if rating_type == "g" and desire_object is not None:
+        instr = (
+            "Rate how much each action results in the two people actually "
+            f"getting or consuming {desire_object} (0-6 scale):"
+        )
     actions_block = "\n".join(
         f"Action {i}: {txt}" for i, txt in enumerate(action_texts)
     )
@@ -555,16 +563,19 @@ DESIRE_SYSTEM_PROMPT = (
 )
 
 
-def desire_user_prompt(vignette, state):
+def desire_user_prompt(vignette, state, desire_object):
     """Build the user prompt for the scenario-level desire rating.
 
     `state` is the actor's desire-state paragraph (the scenario's
-    `desire_low` or `desire_high` text). Returns one 0-100 desire magnitude.
+    `desire_low` or `desire_high` text). `desire_object` names the specific
+    resource at stake (e.g. "the hot dog"), matching the object the human
+    participant is asked about in the desire DV question
+    (`experiments/_lib/scenario.js`). Returns one 0-100 desire magnitude.
     """
     return (
         f"Scenario: {vignette}\n\n"
         f"State: {state}\n\n"
-        "On a scale from 0 to 100, how much would the two people like the thing "
-        "at stake in this scenario, given their state? Respond with "
+        f"On a scale from 0 to 100, how much would the two people like "
+        f"{desire_object}, given their state? Respond with "
         '{"desire": <number>}.'
     )
