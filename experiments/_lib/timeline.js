@@ -50,6 +50,15 @@ export function makeExitSurvey(jsPsych, exitSurveyHtml) {
         .filter({ response_type: "memory_check" })
         .select("memory_correct_count")
         .sum();
+      // Only participants who passed the comprehension check reach the exit
+      // survey, so this records which attempt they passed on (1..max) as a
+      // quality signal, not an exclusion field.
+      const comprehensionAttempts = jsPsych.data
+        .get()
+        .filter({ response_type: "comprehension_check" })
+        .select("comprehension_attempt").values;
+      data.comprehension_attempt =
+        comprehensionAttempts[comprehensionAttempts.length - 1];
       data.response_type = "exit_survey";
     },
   };

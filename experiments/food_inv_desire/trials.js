@@ -11,6 +11,7 @@ import { makeAttentionCheckSingleSlider } from "../_lib/attention-check.js";
 import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 import { makeConfig } from "../_lib/config.js";
 import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
+import { STUDY_COMPREHENSION_CHECKS } from "../_lib/comprehension-check.js";
 import {
   intimacyDescriptor,
   getEffortText,
@@ -23,6 +24,7 @@ import {
 
 export const CONFIG = makeConfig("food_inv_desire");
 export const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_desire;
+export const COMPREHENSION_QUESTIONS = STUDY_COMPREHENSION_CHECKS.food_inv_desire;
 
 function desireSlider(stimulus, index, total, stage, observedAction) {
   return singleSliderTrial({

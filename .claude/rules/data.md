@@ -24,7 +24,7 @@ Participants are excluded if either is true:
 - Failed attention check (`attention_passed != True`)
 - Got 0 correct on memory check (`memory_correct_count == 0`)
 
-`main_trials_long.csv` reflects exclusions; `main_trials.csv` does not.
+`main_trials_long.csv` reflects exclusions; `main_trials.csv` does not. There is no comprehension-check exclusion: participants who fail the comprehension check (3 attempts) are ended via `jsPsych.abortExperiment` before the DataPipe save, so they never appear in `raw_data/`. The `exit_survey` rows carry `comprehension_attempt` (1–3) as a quality signal for the participants who did pass.
 
 ## Anonymization
 
