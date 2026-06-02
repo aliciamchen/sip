@@ -315,7 +315,7 @@ Do NOT rate how intimate or awkward the action would feel, and do NOT rate the p
 # scalar rated by `desire_user_prompt`). g replaces the old signed-valence V.
 _G_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate how much it results in the two people actually obtaining or consuming the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. This is about whether the action delivers the goal, NOT about how much the people want it (a separate question), and NOT about the physical effort or the interpersonal exposure the action involves (also separate questions).
+For each action, evaluate how much it results in the two people actually obtaining or consuming the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. This is about whether the action delivers the goal, NOT about how much the people would like it (a separate question), and NOT about the physical effort or the interpersonal exposure the action involves (also separate questions).
 
 An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low. How they get it — directly, or via a safer indirect route — does not matter here; only how fully they end up with it.
 
@@ -531,10 +531,12 @@ def alternatives_user_prompt_3act(
 # ==============================================================================
 # When desire is observer-visible context rather than the inferred latent, the
 # actor utility needs a numeric desire magnitude. The LM reads the scenario plus
-# the shown desire-state paragraph (reward_low / reward_high) and rates how much
-# the two people want the thing on the same 0-100 scale the human participant
-# uses. This is one rating per (scenario, desire condition) — it is NOT
-# per-action (g already carries the action dependence).
+# the shown desire-state paragraph (desire_low / desire_high) and rates how much
+# the two people would like the thing on the same 0-100 scale the human
+# participant uses. The wording mirrors the human DV ("how much would they like
+# the thing" = how much obtaining/consuming it would satisfy their current
+# state — its appeal). This is one rating per (scenario, desire condition) — it
+# is NOT per-action (g already carries the action dependence).
 
 DESIRE_SYSTEM_PROMPT = (
     "You are a participant in a human study. Respond as if you were a regular "
@@ -542,11 +544,12 @@ DESIRE_SYSTEM_PROMPT = (
     "In this survey, you will read a vignette about two people in a situation "
     "where some resource — food, an object, a physical space, or a piece of "
     "information — could be shared between them, along with a short description "
-    "of their current state. Judge how much the two people want the thing at "
-    "stake in the scenario, given that state, on a scale from 0 (do not want it "
-    "at all) to 100 (want it extremely). Rate only how much they want it — not "
-    "what they end up doing, how much effort it takes, or how the two people are "
-    "related.\n\n"
+    "of their current state. Judge how much the two people would like the thing "
+    "at stake in the scenario, given that state — that is, how much obtaining or "
+    "consuming it would satisfy the state they are in right now (its appeal to "
+    "them) — on a scale from 0 (would not like it at all) to 100 (would like it "
+    "extremely). Rate only how much they would like it — not what they end up "
+    "doing, how much effort it takes, or how the two people are related.\n\n"
     "Respond with a JSON object in this format only, no explanation:\n"
     '{"desire": 65}'
 )
@@ -556,11 +559,12 @@ def desire_user_prompt(vignette, state):
     """Build the user prompt for the scenario-level desire rating.
 
     `state` is the actor's motivational-state paragraph (the scenario's
-    `reward_low` or `reward_high` text). Returns one 0-100 desire magnitude.
+    `desire_low` or `desire_high` text). Returns one 0-100 desire magnitude.
     """
     return (
         f"Scenario: {vignette}\n\n"
         f"State: {state}\n\n"
-        "On a scale from 0 to 100, how much do the two people want the thing at "
-        'stake in this scenario? Respond with {"desire": <number>}.'
+        "On a scale from 0 to 100, how much would the two people like the thing "
+        "at stake in this scenario, given their state? Respond with "
+        '{"desire": <number>}.'
     )

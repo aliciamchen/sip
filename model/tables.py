@@ -23,8 +23,8 @@ actions = jnp.array([0, 1, 2, 3])
 IntimacyLevels = jnp.arange(0, 1.01, 0.01)
 
 # Continuous desire latent (Studies 1a/1b infer it). ψ(d) ∈ [0, 1]: 0 = "not at
-# all want the food", 1 = "extremely". Read out to the 1–7 human scale as
-# 1 + 6·d. Same 101-bin grid as IntimacyLevels so the inferred-desire observers
+# all like the food", 1 = "extremely". Read out to the 0–100 human scale as
+# 100·d. Same 101-bin grid as IntimacyLevels so the inferred-desire observers
 # reuse the continuous-intimacy machinery. Enters the utility as the reward
 # multiplier w_v · desire · g(a|s), where g is the desire-free goal-satisfaction
 # of the action (see load_lm_g_3act / the padded g loaders below).
@@ -878,9 +878,9 @@ def load_lm_scenario_desire_3act(domain="food", filepath=None):
     (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`).
 
     When desire is observer-visible context, the LM reads the scenario + the
-    shown desire paragraph and rates how much the two people want the food on the
-    [0, 1] scale (1–7 read out as 1 + 6·d). That scalar plugs into the actor
-    utility as the constant `desire` in w_v · desire · g.
+    shown desire paragraph and rates how much the two people would like the food
+    on the [0, 1] scale (the 0–100 rating divided by 100). That scalar plugs into
+    the actor utility as the constant `desire` in w_v · desire · g.
 
     Returns a jnp.array of shape (16, 2) indexed by
     (scenario, reward_condition), or None if the CSV is missing.
@@ -1000,7 +1000,7 @@ def load_padded_lm_tables_3act_desire(
     valid_mask = np.zeros(shape_5d, dtype=bool)
 
     intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
-    observed_str_to_idx = {f"action_{i}": i for i in range(n_observed)}
+    observed_str_to_idx = ACTION_LABEL_TO_IDX
 
     # Canonical (slot 0): access/effort depend on scenario + effort + action
     # (3-act CSV layout); broadcast across intimacy. g depends on scenario +

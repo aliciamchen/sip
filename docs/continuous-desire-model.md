@@ -8,7 +8,7 @@ settled against it.
 ## Motivation
 
 The desire dependent variable is a continuous **0–100** rating ("how much do the
-two people want the food?", not-at-all → extremely) — the same scale as the
+two people would like the food?", not-at-all → extremely) — the same scale as the
 other two DVs (effort and intimacy are both 0–100); none are Likert. An earlier
 version of the model inferred a **binary** latent `reward_condition ∈ {LOW,
 HIGH}`, produced a posterior probability `P(reward = HIGH)`, and mapped it onto
@@ -86,7 +86,7 @@ the given-desire studies.
 In the inferred case `d` is never elicited — the observer recovers it, and the
 low/high desire paragraphs only define the endpoints of the human's rating
 scale. In the given case the LM reads the scenario + the shown desire paragraph
-and rates how much the two people want the food, on the same scale; that scalar
+and rates how much the two people would like the food, on the same scale; that scalar
 plugs into the actor utility as a constant. Putting both on the same scale gives
 a cross-study coherence check: the `d` 1a recovers from "the action a high-desire
 dyad would take" should land near the `d` the LM assigns the high-desire
@@ -99,8 +99,8 @@ condition in 2a.
   getting/eating the food." Shared across all four studies. Drops V's
   per-motivation axis (cheaper: one prompt per scenario instead of two).
 - **`desire` scalar** (given-desire studies only). One rating per
-  (scenario, desire condition) = 16 × 2 = 32: "given this state, how much do the
-  two people want the food," on the 0–100 scale (stored as [0,1] = rating/100).
+  (scenario, desire condition) = 16 × 2 = 32: "given this state, how much would
+  the two people like the food," on the 0–100 scale (stored as [0,1] = rating/100).
 - Alternative *generation* is unchanged (it never used V).
 - Output CSV changes: `lm_scenario_v_3act.csv → lm_scenario_g_3act.csv`
   (drop `motivation`); `lm_alternatives_v_<slug>.csv →

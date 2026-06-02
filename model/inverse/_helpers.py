@@ -70,7 +70,7 @@ def compute_desire_nll(posterior, response):
     Desire is a continuous latent inferred over the 101-bin DesireLevels grid
     ([0, 1] = "not at all" → "extremely"). `posterior` is the (101,) posterior
     over that grid; `response` is the participant's 0-100 rating ("how much do
-    the two people want the food?"). The response maps directly onto the grid
+    the two people would like the food?"). The response maps directly onto the grid
     bin, an exact parallel of `compute_intimacy_nll`.
     """
     epsilon = 1e-8
@@ -586,8 +586,8 @@ def load_intimacy_data(slug="food_inv_intimacy"):
 def load_desire_data(slug="food_inv_desire"):
     """Study 1a — observer knows (effort, intimacy), infers desire.
 
-    The desire DV is a continuous 0-100 rating ("how much do the two people want
-    the food?"); the `response` column holds the posterior 0-100 rating. The fit
+    The desire DV is a continuous 0-100 rating ("how much do the two people would
+    like the food?"); the `response` column holds the posterior 0-100 rating. The fit
     scores it against the observer's 101-bin desire posterior with
     `compute_desire_nll`.
     """

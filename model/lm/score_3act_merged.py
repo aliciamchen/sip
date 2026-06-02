@@ -316,7 +316,7 @@ def _score_scenario(client, scenario_row, alt_rows_for_scenario, system_prompts,
 
     # --- desire: 1 scalar per (scenario, reward_condition), given-desire only ---
     # In the given-desire studies (2a, 2b) desire is observer-visible context, so
-    # the LM rates how much the two people want the thing under each state. In
+    # the LM rates how much the two people would like the thing under each state. In
     # the inferred-desire studies (1a, 1b) desire is the latent and is skipped.
     desire = {}
     if cfg.get("desire_given", False):
