@@ -82,20 +82,21 @@ const INTIMACY_SCALE_Q = {
     "How formal or intimate the relationship is — from maximally formal (like a shopkeeper or new acquaintance) to maximally intimate (like a romantic partner or best friend).",
 };
 
-// The second question is "which situation is more likely" (tracks
-// SITUATION_SLIDER_NOTE). Shown in the joint studies (1b, 2b). The stem quotes
-// the actual slider prompt rather than a vague "first/second question" label.
+// Negative-format item: three things the joint task really asks for (the
+// "which situation is more likely" slider, the before/after timing, and using
+// judgment about unstated details) plus one thing it never asks for, which is
+// the answer. Shown in the joint studies (1b, 2b); the "which situation is more
+// likely" option is only a real task action in these two studies.
 const SECOND_QUESTION_Q = {
-  prompt:
-    'In each scenario you answer two slider questions. One of them asks, "Which situation do you think is more likely?" What does that question ask you to do?',
-  name: "second_question",
+  prompt: "Which of these will you NOT be asked to do in this task?",
+  name: "not_asked",
   options: [
-    "Judge which of two possible situations you think is more likely to be true.",
-    "Rate how difficult or effortful the action would be.",
-    "Choose which of the two people you agree with more.",
-    "Describe what you would have done in their place.",
+    "Judge which of two possible situations is more likely.",
+    "Predict what the two people will do next.",
+    "Give your answers both before and after seeing what the two people decide.",
+    "Base your answers on your best judgment, since some details are not stated.",
   ],
-  correct: "Judge which of two possible situations you think is more likely to be true.",
+  correct: "Predict what the two people will do next.",
 };
 
 // --- Per-study comprehension checks -----------------------------------------
