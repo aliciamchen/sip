@@ -19,7 +19,7 @@ U(a|s, I, d) = w_v · d · g(a)
 
 Intimacy `I` scales the risk-discomfort term (bodily/spatial/informational exposure) through a power-law modulator `(1 − I)^γ`: at high intimacy the penalty shrinks toward zero, so higher-risk actions become relatively more attractive. The exponent γ is a free parameter (initialized at 1.0; γ = 1 reproduces the linear-intimacy special case). Empirically food prefers γ < 1 (late relaxation) and non-food prefers γ > 1 (early relaxation).
 
-The reward term is `w_v · d · g(a)`: `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (read out to the 0–100 human rating as `100·d`), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action (how fully it delivers the outcome; desire-free, LM-elicited). This replaces the old signed-valence `V`: desire is now a continuous quantity that *scales* a stable per-action value rather than a binary desire state selecting one of two elicited V columns. `d` is the **inferred latent** in Studies 1a/1b (over the 101-bin `DesireLevels` grid) and observer-visible **given context** in 2a/2b (an LM-rated scalar per (scenario, desire_condition); see `load_lm_scenario_desire`). Three ablations are fit and compared:
+The reward term is `w_v · d · g(a)`: `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (read out to the 0–100 human rating as `100·d`), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action (how fully it delivers the outcome; desire-free, LM-elicited). Desire *scales* this stable per-action value. `d` is the **inferred latent** in Studies 1a/1b (over the 101-bin `DesireLevels` grid) and observer-visible **given context** in 2a/2b (an LM-rated scalar per (scenario, desire_condition); see `load_lm_scenario_desire`). Three ablations are fit and compared:
 
 - **full** — the full utility above (the main Full model)
 - **discomfort_only** — only the risk-discomfort term (`−w_d · risk · (1 − I)^γ`); drops the reward term and effort (Discomfort-only)
@@ -42,7 +42,7 @@ Desire is inferred as a continuous latent in 1a/1b (over the 101-bin `DesireLeve
 
 ### Per-study padded table shapes
 
-The alternative set is indexed by the **cell grid** = (scenario, observed_action, + the variables the observer sees). A feature gains an extra axis when the variable it depends on is *inferred* (the alt set is shared across that variable's hypotheses, but the feature value differs): effort gains an `effort_condition` axis when effort is inferred. `g` (goal-satisfaction) is desire-free, so — unlike the old `V` — it carries **no** desire axis and has the same shape as `risk` (risk is intimacy- and effort-independent so it's only indexed by the cell grid + slot). With `S = MAX_ACTIONS`:
+The alternative set is indexed by the **cell grid** = (scenario, observed_action, + the variables the observer sees). A feature gains an extra axis when the variable it depends on is *inferred* (the alt set is shared across that variable's hypotheses, but the feature value differs): effort gains an `effort_condition` axis when effort is inferred. `g` (goal-satisfaction) is desire-free, so it carries **no** desire axis and has the same shape as `risk` (risk is intimacy- and effort-independent so it's only indexed by the cell grid + slot). With `S = MAX_ACTIONS`:
 
 - **1a desire** — risk (16,3,2,4,S), effort (16,3,2,4,S), g (16,3,2,4,S), prior (16,3,2,4,S)
 - **1b joint_de** — risk (16,3,4,S), effort (16,3,4,2,S), g (16,3,4,S), prior (16,3,4,S)
@@ -51,7 +51,7 @@ The alternative set is indexed by the **cell grid** = (scenario, observed_action
 
 ### DV likelihoods
 
-- **desire** (1a, 1b) → continuous 0–100 rating. `compute_desire_nll`: NLL over the 101-bin `DesireLevels` posterior at the response bin (an exact parallel of `compute_intimacy_nll`). Desire is inferred as a continuous latent, not a binary state mapped to the scale.
+- **desire** (1a, 1b) → continuous 0–100 rating. `compute_desire_nll`: NLL over the 101-bin `DesireLevels` posterior at the response bin (an exact parallel of `compute_intimacy_nll`).
 - **effort** (1b, 2b) → 0–100 continuous rating. `compute_effort_nll`: binary cross-entropy on `P(effort=HIGH)`.
 - **intimacy** (2a, 2b) → 0–100 numeric. `compute_intimacy_nll`: NLL over the 101-bin posterior at the response bin.
 
@@ -86,7 +86,7 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 - `score_merged.py --study <slug>` — scores the unified [canonical + unique alts] list per scenario on risk (effort-marginal), effort (per effort_condition), and goal-satisfaction g (one desire-free prompt), so slot 0 and slots 1..k share one comparative frame. For the given-desire studies (2a, 2b) it additionally rates the per-(scenario, desire_condition) desire scalar. Writes the shared canonical CSVs (`lm_scenario_g.csv`, and `lm_scenario_desire.csv` for 2a/2b) + per-study `lm_alternatives_features_<slug>.csv` and `lm_alternatives_g_<slug>.csv`. For studies whose observer **infers** effort (1b, 2b), each alt's effort feature is emitted for both effort conditions (effort is a feature axis, not a generation axis).
 - `_features_dispatcher.py` — internal multi-mode helper for the canonical scorers.
 
-**Three design choices in merged scoring:** (1) canonical + alts scored together (shared comparative frame); (2) risk is effort-marginal — risk(a|s) is formally intimacy- and effort-independent (modulated by `(1-I)^γ` in the utility), so it's elicited without the effort paragraph and broadcast; (3) the reward term is `w_v · desire · g`, where g (goal-satisfaction) is LM-elicited desire-free per action (one prompt, no desire axis) and `desire` is the inferred latent (1a/1b) or an LM-rated per-condition scalar (2a/2b); `is_share` is preserved only as diagnostic metadata. Note: the journal manuscript at `SIP_journal/main.tex` still describes a signed-valence `V(a|s,m)` derived from / elicited per desire — that's out of date and should be updated to the `w_v · desire · g` form (see `docs/continuous-desire-model.md`).
+**Three design choices in merged scoring:** (1) canonical + alts scored together (shared comparative frame); (2) risk is effort-marginal — risk(a|s) is formally intimacy- and effort-independent (modulated by `(1-I)^γ` in the utility), so it's elicited without the effort paragraph and broadcast; (3) the reward term is `w_v · desire · g`, where g (goal-satisfaction) is LM-elicited desire-free per action (one prompt, no desire axis) and `desire` is the inferred latent (1a/1b) or an LM-rated per-condition scalar (2a/2b); `is_share` is preserved only as diagnostic metadata. (If the journal manuscript at `SIP_journal/main.tex` still describes a signed-valence `V`, the code is ahead of it — the code uses `w_v · desire · g`; see `docs/continuous-desire-model.md`.)
 
 ### Inverse planning (`model/inverse/`)
 
@@ -111,14 +111,11 @@ Per `outputs/<slug>/`:
 - `cv_folds.csv` — per-fold fit results from LOSO CV.
 - `cv_preds_summary.csv` — held-out per-condition summary.
 
-(Archived legacy experiment data is under `data/legacy/`; its model code was removed in the June 2026 cleanup.)
-
 LM-elicited tables live in `outputs/lm/` (`lm_scenario_*`, `lm_alternatives_*`). Preregistration documents are in `preregs/` at the repo root. Sandboxed/experimental code is in `model/sandbox/`.
 
-### Terminology: g, desire, reward, risk
+### Terminology
 
-- **g** (goal-satisfaction) is how fully an action delivers the outcome, in `[0, 1]`; desire-free. **desire** (`d`, in `[0, 1]`) is how much the dyad wants the outcome. They enter the utility together as the reward term `w_v · desire · g`. `g` replaced the old signed-valence `V`, which was legacy and is gone.
-- `desire_condition` is the observed 2-level desire **condition** for the given-desire studies (2a/2b), indexing `desire_table`; in 1a/1b desire is the inferred continuous latent (`DesireLevels`) instead. The one "reward"-flavored name kept is the weight `w_v` / `param_w_v` (on the `w_v · desire · g` term). The per-action discomfort feature is **risk** (`w_d` its weight; renamed from `access`).
+`desire_condition` is the observed 2-level desire **condition** for the given-desire studies (2a/2b), indexing `desire_table`; in 1a/1b desire is the inferred continuous latent (`DesireLevels`). The fitted reward-term weight is `w_v` / `param_w_v` (not `w_d`, the risk weight) — keep it named `w_v`. The per-action discomfort feature is **risk** (weight `w_d`).
 
 ## Commands
 
