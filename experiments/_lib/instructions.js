@@ -22,8 +22,8 @@ function instructionsPage(paragraphs) {
 const READ_CAREFULLY_NOTICE =
   "<p><strong>Please read the instructions carefully! There is a comprehension check at the end.</strong></p>";
 
-// Opening paragraph that frames the task around relationships (1a, 1b, 2b).
-// Study 2a uses its own intro (see below).
+// Opening paragraph that frames the task around relationships. Shown on page 1
+// of every study.
 const INTRO_NOTE =
   "<p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding how to eat different kinds of food in different situations.</p>";
 
