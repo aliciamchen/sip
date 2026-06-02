@@ -192,3 +192,19 @@ export function makeComprehensionGate(
     loop_function: () => !passed && attempts < maxAttempts,
   };
 }
+
+// Confirmation shown once after the participant passes the gate, just before the
+// trials begin. Goes in the timeline right after the gate — participants who fail
+// are ended inside the gate (abortExperiment) and never reach this page.
+export function makeComprehensionPassPage() {
+  return {
+    type: jsPsychHtmlKeyboardResponse,
+    choices: "ALL_KEYS",
+    stimulus: `
+      <div class="instructions-container">
+        <h2>Congrats, you have passed the comprehension check!</h2>
+        <p>Press any key to begin the experiment.</p>
+      </div>
+    `,
+  };
+}

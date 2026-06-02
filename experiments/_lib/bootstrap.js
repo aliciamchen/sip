@@ -26,7 +26,10 @@ import {
   makeSaveData,
   makeThankYou,
 } from "./timeline.js";
-import { makeComprehensionGate } from "./comprehension-check.js";
+import {
+  makeComprehensionGate,
+  makeComprehensionPassPage,
+} from "./comprehension-check.js";
 
 export function runExperiment({
   config,
@@ -142,17 +145,21 @@ async function createExperiment({
 
   // When the study supplies comprehension questions, gate entry on them: the
   // instructions are shown inside the gate (and re-shown on each retry), so this
-  // replaces the standalone instructions screen rather than adding to it.
-  const instructionsStage = comprehensionQuestions
-    ? makeComprehensionGate(jsPsych, {
-        instructionsPages,
-        questions: comprehensionQuestions,
-      })
-    : makeInstructionsScreen(instructionsPages);
+  // replaces the standalone instructions screen. Passing the gate leads into a
+  // confirmation page; failing it ends the experiment before that page is reached.
+  const introStages = comprehensionQuestions
+    ? [
+        makeComprehensionGate(jsPsych, {
+          instructionsPages,
+          questions: comprehensionQuestions,
+        }),
+        makeComprehensionPassPage(),
+      ]
+    : [makeInstructionsScreen(instructionsPages)];
 
   const timeline = [
     makeConsentScreen(consentHtml),
-    instructionsStage,
+    ...introStages,
     ...makeStimulusTrials(jsPsych, shuffledStimuli),
     makeExitSurvey(jsPsych, exitSurveyHtml),
     makeSaveData(jsPsych, config.PIPE_EXPERIMENT_ID, subject_id),
