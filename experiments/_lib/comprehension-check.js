@@ -115,16 +115,20 @@ export const STUDY_COMPREHENSION_CHECKS = {
 const INTRO_PREAMBLE = `
   <div>
     <h3>Comprehension check</h3>
-    <p>Before you begin, please answer the following questions about the task. You must answer all of them correctly to start the study.</p>
+    <p>Please answer the following questions about the task. You must answer all of them correctly to begin the study.</p>
   </div>
 `;
 
-function retryPreamble(remaining) {
+// Full-page notice shown at the start of each retry (attempts > 0), before the
+// instructions are re-shown, so the participant knows why they're back and how
+// many attempts remain.
+function retryNoticeHtml(remaining) {
   const tries = remaining === 1 ? "attempt" : "attempts";
   return `
-    <div>
-      <h3>Comprehension check</h3>
-      <p>One or more of your answers was incorrect. Please review the instructions and try again. You have <strong>${remaining} ${tries}</strong> remaining.</p>
+    <div class="instructions-container">
+      <h2>Not quite — let's try again</h2>
+      <p>One or more of your answers was incorrect. Please read the instructions again carefully. You have <strong>${remaining} ${tries}</strong> remaining.</p>
+      <p>Press any key to review the instructions.</p>
     </div>
   `;
 }
@@ -149,14 +153,27 @@ export function makeComprehensionGate(
   jsPsych,
   { instructionsPages, questions, maxAttempts = COMPREHENSION_MAX_ATTEMPTS },
 ) {
-  // Closure state shared between the check trial and the loop_function.
+  // Closure state shared between the retry notice, the check trial, and the
+  // loop_function.
   let attempts = 0;
   let passed = false;
 
+  // Shown only on retries (attempts > 0), at the top of the loop before the
+  // instructions are re-shown. conditional_function is re-evaluated each loop.
+  const retryNotice = {
+    timeline: [
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        choices: "ALL_KEYS",
+        stimulus: () => retryNoticeHtml(maxAttempts - attempts),
+      },
+    ],
+    conditional_function: () => attempts > 0,
+  };
+
   const checkTrial = {
     type: jsPsychSurveyMultiChoice,
-    preamble: () =>
-      attempts === 0 ? INTRO_PREAMBLE : retryPreamble(maxAttempts - attempts),
+    preamble: INTRO_PREAMBLE,
     questions: questions.map((q) => ({
       prompt: q.prompt,
       name: q.name,
@@ -188,7 +205,11 @@ export function makeComprehensionGate(
   };
 
   return {
-    timeline: [makeInstructionsScreen(instructionsPages), checkTrial],
+    timeline: [
+      retryNotice,
+      makeInstructionsScreen(instructionsPages),
+      checkTrial,
+    ],
     loop_function: () => !passed && attempts < maxAttempts,
   };
 }
