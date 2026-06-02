@@ -77,7 +77,7 @@ function finalInstructionsPage(leadIn) {
   return instructionsPage([
     `<p>${leadIn} 🙂 You will receive $5 if you successfully complete the survey.</p>`,
     "<p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>",
-    "<p>Press next to proceed to the comprehension check.</p>",
+    "<p>This is the end of the instructions. Press next to proceed to the comprehension check.</p>",
   ]);
 }
 
