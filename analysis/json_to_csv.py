@@ -260,9 +260,11 @@ EXPERIMENT_CONFIGS = {
             "comments",
             "attention_passed",
             "memory_correct_count",
+            "comprehension_attempt",
         ],
         "has_closeness": False,
         "has_attention_memory": True,
+        "has_comprehension": True,
     },
     "food_inv_joint_de": {
         "description": "Study 1b — joint desire + effort inference under known intimacy (3-action set)",
@@ -283,9 +285,11 @@ EXPERIMENT_CONFIGS = {
             "comments",
             "attention_passed",
             "memory_correct_count",
+            "comprehension_attempt",
         ],
         "has_closeness": False,
         "has_attention_memory": True,
+        "has_comprehension": True,
     },
     "food_inv_intimacy": {
         "description": "Study 2a — intimacy inference under known desire + effort (3-action set)",
@@ -306,9 +310,11 @@ EXPERIMENT_CONFIGS = {
             "comments",
             "attention_passed",
             "memory_correct_count",
+            "comprehension_attempt",
         ],
         "has_closeness": False,
         "has_attention_memory": True,
+        "has_comprehension": True,
     },
     "food_inv_joint_ie": {
         "description": "Study 2b — joint intimacy + effort inference under known desire (3-action set)",
@@ -329,9 +335,11 @@ EXPERIMENT_CONFIGS = {
             "comments",
             "attention_passed",
             "memory_correct_count",
+            "comprehension_attempt",
         ],
         "has_closeness": False,
         "has_attention_memory": True,
+        "has_comprehension": True,
     },
 }
 
@@ -591,6 +599,14 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                         )
                         survey_data["memory_correct_count"] = trial.get(
                             "memory_correct_count", ""
+                        )
+
+                    # Which attempt (1-3) the participant passed the comprehension
+                    # check on. Everyone in the data passed; failers are ended
+                    # before the save, so they never produce a raw JSON.
+                    if config.get("has_comprehension"):
+                        survey_data["comprehension_attempt"] = trial.get(
+                            "comprehension_attempt", ""
                         )
 
                     exit_survey_data.append(survey_data)

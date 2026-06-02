@@ -12,6 +12,10 @@
 //   - makeStimulusTrials(jsPsych, stimuli): returns the study's per-scenario
 //     trial array (slid in between the instructions and the exit survey)
 //   - instructionsPages: the study's instructions pages (from STUDY_INSTRUCTIONS)
+//   - comprehensionQuestions: the study's comprehension-check questions (from
+//     STUDY_COMPREHENSION_CHECKS); when present, the instructions screen is
+//     replaced by a gated instructions + comprehension check (3 attempts, then
+//     the experiment ends asking the participant to return the study)
 //   - consentTemplate: filename (without extension) under _lib/consent/;
 //     the active experiments all use "food-inverse"
 
@@ -22,11 +26,16 @@ import {
   makeSaveData,
   makeThankYou,
 } from "./timeline.js";
+import {
+  makeComprehensionGate,
+  makeComprehensionPassPage,
+} from "./comprehension-check.js";
 
 export function runExperiment({
   config,
   makeStimulusTrials,
   instructionsPages,
+  comprehensionQuestions,
   consentTemplate,
 }) {
   Promise.all([
@@ -40,6 +49,7 @@ export function runExperiment({
         config,
         makeStimulusTrials,
         instructionsPages,
+        comprehensionQuestions,
         stimuli,
         counterbalancing,
         consentHtml,
@@ -56,6 +66,7 @@ async function createExperiment({
   config,
   makeStimulusTrials,
   instructionsPages,
+  comprehensionQuestions,
   stimuli,
   counterbalancing,
   consentHtml,
@@ -132,9 +143,23 @@ async function createExperiment({
 
   const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithConditions);
 
+  // When the study supplies comprehension questions, gate entry on them: the
+  // instructions are shown inside the gate (and re-shown on each retry), so this
+  // replaces the standalone instructions screen. Passing the gate leads into a
+  // confirmation page; failing it ends the experiment before that page is reached.
+  const introStages = comprehensionQuestions
+    ? [
+        makeComprehensionGate(jsPsych, {
+          instructionsPages,
+          questions: comprehensionQuestions,
+        }),
+        makeComprehensionPassPage(),
+      ]
+    : [makeInstructionsScreen(instructionsPages)];
+
   const timeline = [
     makeConsentScreen(consentHtml),
-    makeInstructionsScreen(instructionsPages),
+    ...introStages,
     ...makeStimulusTrials(jsPsych, shuffledStimuli),
     makeExitSurvey(jsPsych, exitSurveyHtml),
     makeSaveData(jsPsych, config.PIPE_EXPERIMENT_ID, subject_id),

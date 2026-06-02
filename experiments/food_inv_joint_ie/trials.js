@@ -9,6 +9,7 @@ import { makeMemoryCheckForStimulus } from "../_lib/memory-checks.js";
 import { makeConfig } from "../_lib/config.js";
 import { makeTwoSliderForm } from "../_lib/two-slider.js";
 import { STUDY_INSTRUCTIONS } from "../_lib/instructions.js";
+import { STUDY_COMPREHENSION_CHECKS } from "../_lib/comprehension-check.js";
 import {
   getDesireText,
   INTIMACY_SLIDER_LABELS,
@@ -19,6 +20,7 @@ import {
 
 export const CONFIG = makeConfig("food_inv_joint_ie");
 export const INSTRUCTIONS_PAGES = STUDY_INSTRUCTIONS.food_inv_joint_ie;
+export const COMPREHENSION_QUESTIONS = STUDY_COMPREHENSION_CHECKS.food_inv_joint_ie;
 
 function preamble(stimulus, index, total, stage, observedAction) {
   const leadIn =

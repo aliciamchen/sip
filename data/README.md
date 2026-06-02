@@ -19,6 +19,7 @@ Internal variable names use "reward" (e.g., `p_high_reward`, `reward_condition`)
 | `comments` | Free-text comments |
 | `attention_passed` | Whether participant passed attention check (True/False) |
 | `memory_correct_count` | Number of correct responses on memory check (0-3) |
+| `comprehension_attempt` | Which attempt (1–3) the participant passed the comprehension check on. Everyone in the data passed (those who failed all three attempts are ended before data is saved and never appear in `raw_data/`), so this is a quality signal, not an exclusion field. |
 
 ## Forward planning
 
@@ -155,5 +156,7 @@ Design: 2 (effort) × 3 (action). Observer jointly infers desire and intimacy; t
 Participants are excluded from analysis if:
 - `attention_passed != True`
 - `memory_correct_count == 0`
+
+(There is no comprehension-check exclusion: participants who fail the comprehension check after three attempts are ended before any data is saved, so they never appear in `raw_data/`.)
 
 `main_trials_long.csv` reflects exclusions; `main_trials.csv` does not. `analysis/utils.R`'s `report_demographics()` reports both the total recruited and the count surviving exclusions.
