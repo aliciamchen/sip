@@ -50,19 +50,20 @@ const TIMING_Q = {
     "Twice — once before and once after we show you what the two people decide to do.",
 };
 
-// "Wanting the food" means liking/hunger, separate from the decision (tracks
-// DESIRE_NOTE). Shown in the desire studies (1a, 1b).
+// "Liking the food" is about the food's appeal / their current motivational
+// state (hunger, interest), separate from what they decide to do and from how
+// hard the food is to get (tracks DESIRE_NOTE). Shown in the desire studies (1a, 1b).
 const DESIRE_MEANING_Q = {
-  prompt: "When we ask how much the two people want the food, what do we mean?",
+  prompt: "When we ask how much the two people would like the food, what do we mean?",
   name: "desire_meaning",
   options: [
-    "How much they would like to eat it — for example because they like it or are hungry — regardless of what they decide to do.",
+    "How much they would enjoy eating it right now — for example because they are hungry or like that kind of food — separate from what they decide to do.",
     "Whether they actually end up eating the food.",
-    "How healthy or nutritious the food is.",
+    "How easy or hard it would be for them to get or eat the food.",
     "How close or formal the two people's relationship is.",
   ],
   correct:
-    "How much they would like to eat it — for example because they like it or are hungry — regardless of what they decide to do.",
+    "How much they would enjoy eating it right now — for example because they are hungry or like that kind of food — separate from what they decide to do.",
 };
 
 // The relationship scale runs formal -> intimate (tracks RELATIONSHIP_SLIDER_NOTE
