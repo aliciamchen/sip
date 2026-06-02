@@ -17,9 +17,6 @@ Active inverse studies (3-action set):
     - food_inv_joint_de (Study 1b): joint desire + effort; two sliders per trial
     - food_inv_intimacy (Study 2a): infer intimacy; single 0-100 intimacy slider
     - food_inv_joint_ie (Study 2b): joint intimacy + effort; two sliders per trial
-
-Legacy forward + pre-3-action inverse experiments are also handled (see
-EXPERIMENT_CONFIGS for the full list).
 """
 
 import argparse
@@ -39,208 +36,6 @@ from utils import get_project_root
 
 # Experiment configurations
 EXPERIMENT_CONFIGS = {
-    "food_forw_intimacy_desire": {
-        "description": "Experiment with probability sliders for action ratings",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "intimacy_condition",
-            "reward_condition",
-            "action_0",
-            "action_1",
-            "action_2",
-            "action_3",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": True,
-        "has_attention_memory": True,
-    },
-    "nonfood_forw_intimacy_desire": {
-        "description": "Non-food forward planning, same schema as food_forw_intimacy_desire",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "intimacy_condition",
-            "reward_condition",
-            "action_0",
-            "action_1",
-            "action_2",
-            "action_3",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": True,
-        "has_attention_memory": True,
-    },
-    "food_inv_intimacy_desire_alt": {
-        "description": "Inverse planning experiment measuring intimacy ratings before and after observing actions (alternatives shown)",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "reward_condition",
-            "stage",
-            "intimacy_rating",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": False,
-        "has_attention_memory": True,
-    },
-    "food_inv_intimacy_desire_noalt": {
-        "description": "Inverse planning intimacy inference where action alternatives are hidden from participants",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "reward_condition",
-            "stage",
-            "intimacy_rating",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": False,
-        "has_attention_memory": True,
-    },
-    "food_inv_desire_intimacy_alt": {
-        "description": "Inverse planning experiment measuring desire likelihood ratings before and after observing actions (alternatives shown)",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "intimacy_condition",
-            "stage",
-            "response",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": False,
-        "has_attention_memory": True,
-    },
-    "food_inv_desire_intimacy_noalt": {
-        "description": "Inverse planning desire inference where action alternatives are hidden from participants",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "intimacy_condition",
-            "stage",
-            "response",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": False,
-        "has_attention_memory": True,
-    },
-    "food_forw_intimacy_effort": {
-        "description": "Forward planning with intimacy x effort manipulation (2 actions, reward fixed high)",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "intimacy_condition",
-            "effort_condition",
-            "action_1",
-            "action_2",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": True,
-        "has_attention_memory": True,
-    },
-    "food_inv_intimacy_effort_alt": {
-        "description": "Inverse planning intimacy inference with observed-action x effort manipulation (2 actions)",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "effort_condition",
-            "stage",
-            "intimacy_rating",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": False,
-        "has_attention_memory": True,
-    },
-    "food_inv_effort_intimacy_alt": {
-        "description": "Inverse planning effort inference with observed-action x intimacy manipulation (2 actions)",
-        "main_trial_fields": [
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "intimacy_condition",
-            "stage",
-            "response",
-        ],
-        "exit_survey_fields": [
-            "subject_id",
-            "gender",
-            "age",
-            "understood",
-            "comments",
-            "attention_passed",
-            "memory_correct_count",
-        ],
-        "has_closeness": False,
-        "has_attention_memory": True,
-    },
     "food_inv_desire": {
         "description": "Study 1a — desire inference under known effort + intimacy (3-action set)",
         "main_trial_fields": [
@@ -406,112 +201,7 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                     scenario_label = trial.get("scenario_label", "")
 
                     # Handle different experiment types
-                    if experiment_name in (
-                        "food_forw_intimacy_desire",
-                        "nonfood_forw_intimacy_desire",
-                    ):
-                        # Extract action probabilities from probs field
-                        probs = trial.get("probs", [])
-                        action_0 = probs[0] if len(probs) > 0 else ""
-                        action_1 = probs[1] if len(probs) > 1 else ""
-                        action_2 = probs[2] if len(probs) > 2 else ""
-                        action_3 = probs[3] if len(probs) > 3 else ""
-
-                        # Build trial data dictionary
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_0": action_0,
-                            "action_1": action_1,
-                            "action_2": action_2,
-                            "action_3": action_3,
-                        }
-
-                        # Add intimacy and reward conditions if this experiment has them
-                        if config["has_closeness"]:
-                            trial_data["intimacy_condition"] = trial.get(
-                                "intimacy_condition", ""
-                            )
-                            trial_data["reward_condition"] = trial.get(
-                                "reward_condition", ""
-                            )
-
-                    elif experiment_name in (
-                        "food_inv_intimacy_desire_alt",
-                        "food_inv_intimacy_desire_noalt",
-                    ):
-                        # Extract intimacy rating and stage information
-                        intimacy_rating = trial.get("response", "")
-                        stage = trial.get("stage", "")
-                        action_condition = trial.get("action_condition", "")
-                        reward_condition = trial.get("reward_condition", "")
-
-                        # Build trial data dictionary
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": action_condition,
-                            "reward_condition": reward_condition,
-                            "stage": stage,
-                            "intimacy_rating": intimacy_rating,
-                        }
-
-                    elif experiment_name in (
-                        "food_inv_desire_intimacy_alt",
-                        "food_inv_desire_intimacy_noalt",
-                    ):
-                        # Extract reward likelihood rating and stage information
-                        response = trial.get("response", "")
-                        stage = trial.get("stage", "")
-                        action_condition = trial.get("action_condition", "")
-                        intimacy_condition = trial.get("intimacy_condition", "")
-
-                        # Build trial data dictionary
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": action_condition,
-                            "intimacy_condition": intimacy_condition,
-                            "stage": stage,
-                            "response": response,
-                        }
-
-                    elif experiment_name == "food_forw_intimacy_effort":
-                        # Two-action probability-slider response; probs[0]=action_1, probs[1]=action_2
-                        probs = trial.get("probs", [])
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "intimacy_condition": trial.get("intimacy_condition", ""),
-                            "effort_condition": trial.get("effort_condition", ""),
-                            "action_1": probs[0] if len(probs) > 0 else "",
-                            "action_2": probs[1] if len(probs) > 1 else "",
-                        }
-
-                    elif experiment_name == "food_inv_intimacy_effort_alt":
-                        # Prior/posterior intimacy slider response
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": trial.get("action_condition", ""),
-                            "effort_condition": trial.get("effort_condition", ""),
-                            "stage": trial.get("stage", ""),
-                            "intimacy_rating": trial.get("response", ""),
-                        }
-
-                    elif experiment_name == "food_inv_effort_intimacy_alt":
-                        # Prior/posterior effort-likelihood slider response
-                        # response is the slider value 0-100, encoding P(effort_high)
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": trial.get("action_condition", ""),
-                            "intimacy_condition": trial.get("intimacy_condition", ""),
-                            "stage": trial.get("stage", ""),
-                            "response": trial.get("response", ""),
-                        }
-
-                    elif experiment_name == "food_inv_desire":
+                    if experiment_name == "food_inv_desire":
                         # Prior/posterior desire slider response under known
                         # effort + intimacy. response is the continuous 0-100
                         # rating ("how much do they want to eat the food?",
@@ -638,325 +328,6 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
             print("No exit survey data found")
 
 
-def create_food_forw_intimacy_desire_long(output_dir):
-    """
-    Create main_trials_long.csv for food_forw_intimacy_desire experiment.
-
-    This pivots action_0-3 columns to long format and filters out participants
-    who failed attention check or got 0 correct on memory check.
-
-    Args:
-        output_dir (str): Path to directory containing main_trials.csv and exit_survey.csv
-    """
-    output_path = Path(output_dir)
-
-    # Read the data
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    # Find participants to exclude:
-    # - attention_passed is False (or not True)
-    # - memory_correct_count is 0
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    # Filter out excluded participants
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    # Pivot to long format
-    main_trials_long = main_trials_filtered.melt(
-        id_vars=[
-            "subject_id",
-            "scenario_label",
-            "intimacy_condition",
-            "reward_condition",
-        ],
-        value_vars=["action_0", "action_1", "action_2", "action_3"],
-        var_name="action",
-        value_name="p_action",
-    )
-
-    # Clean up action column (remove 'action_' prefix)
-    main_trials_long["action"] = (
-        main_trials_long["action"].str.replace("action_", "").astype(int)
-    )
-
-    # Rename columns to match existing analysis expectations
-    main_trials_long = main_trials_long.rename(
-        columns={"intimacy_condition": "intimacy", "reward_condition": "motivation"}
-    )
-
-    # Sort for consistent output
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action"]
-    ).reset_index(drop=True)
-
-    # Save
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_intimacy_long(output_dir):
-    """
-    Create main_trials_long.csv for the food_inv_intimacy_desire_alt / food_inv_intimacy_desire_noalt experiments.
-
-    Filters out participants who failed attention check or got 0 correct on memory check.
-
-    Args:
-        output_dir (str): Path to directory containing main_trials.csv and exit_survey.csv
-    """
-    output_path = Path(output_dir)
-
-    # Read the data
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    # Find participants to exclude:
-    # - attention_passed is False (or not True)
-    # - memory_correct_count is 0
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    # Filter out excluded participants
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    # Rename columns for consistency with food_forw_intimacy_desire
-    main_trials_long = main_trials_filtered.rename(
-        columns={"reward_condition": "motivation"}
-    )
-
-    # Sort for consistent output
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    # Save
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_forw_intimacy_effort_long(output_dir):
-    """
-    Create main_trials_long.csv for food_forw_intimacy_effort experiment.
-
-    Pivots action_1 / action_2 columns to long format and filters out
-    participants who failed the attention check or got 0 correct on the
-    memory check. Renames intimacy_condition -> intimacy and
-    effort_condition -> effort for analysis consistency.
-    """
-    output_path = Path(output_dir)
-
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    main_trials_long = main_trials_filtered.melt(
-        id_vars=[
-            "subject_id",
-            "scenario_label",
-            "intimacy_condition",
-            "effort_condition",
-        ],
-        value_vars=["action_1", "action_2"],
-        var_name="action",
-        value_name="p_action",
-    )
-
-    main_trials_long["action"] = (
-        main_trials_long["action"].str.replace("action_", "").astype(int)
-    )
-
-    main_trials_long = main_trials_long.rename(
-        columns={"intimacy_condition": "intimacy", "effort_condition": "effort"}
-    )
-
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action"]
-    ).reset_index(drop=True)
-
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_intimacy_effort_alt_long(output_dir):
-    """
-    Create main_trials_long.csv for food_inv_intimacy_effort_alt experiment.
-
-    Filters out participants who failed attention or got 0 correct on memory.
-    Renames effort_condition -> effort for analysis consistency.
-    """
-    output_path = Path(output_dir)
-
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    main_trials_long = main_trials_filtered.rename(
-        columns={"effort_condition": "effort"}
-    )
-
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_effort_intimacy_alt_long(output_dir):
-    """
-    Create main_trials_long.csv for the food_inv_effort_intimacy_alt experiment.
-
-    Filters out participants who failed attention or got 0 correct on memory.
-    Renames intimacy_condition -> intimacy for analysis consistency.
-    """
-    output_path = Path(output_dir)
-
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    main_trials_long = main_trials_filtered.rename(
-        columns={"intimacy_condition": "intimacy"}
-    )
-
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_desire_intimacy_long(output_dir):
-    """
-    Create main_trials_long.csv for the food_inv_desire_intimacy_alt / food_inv_desire_intimacy_noalt experiments.
-
-    Filters out participants who failed attention check or got 0 correct on memory check.
-
-    Args:
-        output_dir (str): Path to directory containing main_trials.csv and exit_survey.csv
-    """
-    output_path = Path(output_dir)
-
-    # Read the data
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    # Find participants to exclude:
-    # - attention_passed is False (or not True)
-    # - memory_correct_count is 0
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    # Filter out excluded participants
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    # Rename columns for consistency with food_forw_intimacy_desire
-    main_trials_long = main_trials_filtered.rename(
-        columns={"intimacy_condition": "intimacy"}
-    )
-
-    # Sort for consistent output
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    # Save
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
 def create_food_inv_desire_long(output_dir):
     """
     Create main_trials_long.csv for the food_inv_desire experiment.
@@ -1044,12 +415,12 @@ def create_food_inv_joint_de_long(output_dir):
     )
 
 
-def create_food_inv_intimacy_3act_long(output_dir):
+def create_food_inv_intimacy_long(output_dir):
     """
     Create main_trials_long.csv for the food_inv_intimacy experiment (Study 2a).
 
     Desire and effort are the given conditions; intimacy is inferred via a single
-    slider. Renames desire_condition -> motivation and effort_condition -> effort
+    slider. Renames desire_condition -> desire and effort_condition -> effort
     and keeps the intimacy_rating column. Filters out participants who failed
     attention or got 0 correct on memory.
     """
@@ -1074,7 +445,7 @@ def create_food_inv_intimacy_3act_long(output_dir):
     ]
 
     main_trials_long = main_trials_filtered.rename(
-        columns={"desire_condition": "motivation", "effort_condition": "effort"}
+        columns={"desire_condition": "desire", "effort_condition": "effort"}
     )
 
     main_trials_long = main_trials_long.sort_values(
@@ -1093,7 +464,7 @@ def create_food_inv_joint_ie_long(output_dir):
     Create main_trials_long.csv for the food_inv_joint_ie experiment (Study 2b).
 
     Desire is the given condition; intimacy and effort are jointly inferred via
-    two sliders. Renames desire_condition -> motivation and keeps the
+    two sliders. Renames desire_condition -> desire and keeps the
     intimacy_rating / effort_rating slider columns. Filters out participants who
     failed attention or got 0 correct on memory.
     """
@@ -1118,7 +489,7 @@ def create_food_inv_joint_ie_long(output_dir):
     ]
 
     main_trials_long = main_trials_filtered.rename(
-        columns={"desire_condition": "motivation"}
+        columns={"desire_condition": "desire"}
     )
 
     main_trials_long = main_trials_long.sort_values(
@@ -1143,12 +514,6 @@ Active inverse studies (3-action set):
   food_inv_joint_de   Study 1b -- joint desire + effort (two sliders)
   food_inv_intimacy   Study 2a -- infer intimacy (single 0-100 intimacy slider)
   food_inv_joint_ie   Study 2b -- joint intimacy + effort (two sliders)
-
-Legacy (forward + pre-3-action inverse), processable per-slug:
-  food_forw_intimacy_desire, nonfood_forw_intimacy_desire, food_forw_intimacy_effort,
-  food_inv_intimacy_desire_alt, food_inv_intimacy_desire_noalt,
-  food_inv_desire_intimacy_alt, food_inv_desire_intimacy_noalt,
-  food_inv_intimacy_effort_alt, food_inv_effort_intimacy_alt
 
 Examples:
   python json_to_csv.py food_inv_desire
@@ -1185,31 +550,7 @@ Examples:
     process_json_files(input_dir, output_dir, config, args.experiment)
 
     # Create long format with exclusions
-    if args.experiment in ("food_forw_intimacy_desire", "nonfood_forw_intimacy_desire"):
-        print("\nCreating long format with exclusions...")
-        create_food_forw_intimacy_desire_long(output_dir)
-    elif args.experiment in (
-        "food_inv_intimacy_desire_alt",
-        "food_inv_intimacy_desire_noalt",
-    ):
-        print("\nCreating long format with exclusions...")
-        create_food_inv_intimacy_long(output_dir)
-    elif args.experiment in (
-        "food_inv_desire_intimacy_alt",
-        "food_inv_desire_intimacy_noalt",
-    ):
-        print("\nCreating long format with exclusions...")
-        create_food_inv_desire_intimacy_long(output_dir)
-    elif args.experiment == "food_forw_intimacy_effort":
-        print("\nCreating long format with exclusions...")
-        create_food_forw_intimacy_effort_long(output_dir)
-    elif args.experiment == "food_inv_intimacy_effort_alt":
-        print("\nCreating long format with exclusions...")
-        create_food_inv_intimacy_effort_alt_long(output_dir)
-    elif args.experiment == "food_inv_effort_intimacy_alt":
-        print("\nCreating long format with exclusions...")
-        create_food_inv_effort_intimacy_alt_long(output_dir)
-    elif args.experiment == "food_inv_desire":
+    if args.experiment == "food_inv_desire":
         print("\nCreating long format with exclusions...")
         create_food_inv_desire_long(output_dir)
     elif args.experiment == "food_inv_joint_de":
@@ -1217,7 +558,7 @@ Examples:
         create_food_inv_joint_de_long(output_dir)
     elif args.experiment == "food_inv_intimacy":
         print("\nCreating long format with exclusions...")
-        create_food_inv_intimacy_3act_long(output_dir)
+        create_food_inv_intimacy_long(output_dir)
     elif args.experiment == "food_inv_joint_ie":
         print("\nCreating long format with exclusions...")
         create_food_inv_joint_ie_long(output_dir)

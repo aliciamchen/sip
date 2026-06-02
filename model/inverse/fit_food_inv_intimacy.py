@@ -1,6 +1,6 @@
 """Fit observer + actor utility weights for food_inv_intimacy.
 
-Study 2 — observer knows (reward, effort), infers intimacy. Each variant jointly
+Study 2a — observer knows (desire, effort), infers intimacy. Each variant jointly
 fits its utility weights and alpha_observer from this experiment's posterior data
 (no transfer from the forward fit). Writes outputs/food_inv_intimacy/fit_results.csv.
 """
@@ -46,7 +46,7 @@ def main():
     print("Fitting utility weights + alpha_observer per variant")
     print("=" * 60)
 
-    data, action, scenario_idx, reward_condition, effort_condition, response = (
+    data, action, scenario_idx, desire_condition, effort_condition, response = (
         load_intimacy_data(EXPERIMENT_SLUG)
     )
 
@@ -60,7 +60,7 @@ def main():
             utility_param_names=utility_names,
             action=action,
             scenario_idx=scenario_idx,
-            reward_condition=reward_condition,
+            desire_condition=desire_condition,
             effort_condition=effort_condition,
             response=response,
             table_kwargs=intimacy_table_kwargs(uses_v),

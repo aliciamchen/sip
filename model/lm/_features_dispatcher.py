@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Generate LLM-derived scenario-specific parameters for the access-based models.
+Generate LLM-derived scenario-specific parameters for the risk-based models.
 
 Uses Together AI's Llama-3.3-70B-Instruct-Turbo to estimate, for each of the 16
 scenarios in experiments/scenarios.csv:
 
-- access(a): physical / informational / spatial exposure per action  (0-6 -> [0, 2])
+- risk(a): physical / informational / spatial exposure per action  (0-6 -> [0, 2])
 - effort(a): physical / logistical cost per action                   (0-6 -> [0, 1])
 
-Reward is NOT elicited from the LLM — it's stipulated in `model/utility.py`
+Desire is NOT elicited from the LLM — it's stipulated in `model/utility.py`
 as a binary goal-satisfaction gate (V=1 iff the action satisfies the active
-goal: sharing under HIGH motivation, not-sharing under LOW motivation).
+goal: sharing under HIGH desire, not-sharing under LOW desire).
 
 10 runs per parameter-type per scenario, aggregated to mean/std.
 
@@ -88,9 +88,9 @@ from prompts import system_prompt as build_system_prompt
 from prompts import user_prompt as build_user_prompt
 
 
-# Reward is stipulated in model/utility.py as a binary goal-satisfaction
+# Desire is stipulated in model/utility.py as a binary goal-satisfaction
 # gate (V=1 iff the action satisfies the active goal: sharing under HIGH
-# motivation, not-sharing under LOW motivation). Not elicited from the LLM.
+# desire, not-sharing under LOW desire). Not elicited from the LLM.
 
 
 # ==============================================================================
@@ -109,21 +109,21 @@ def _action_texts_4(row):
     return [row[f"action_{i}"] for i in range(4)]
 
 
-def format_access_prompt(row):
-    return build_user_prompt("access", row["vignette"], _action_texts_4(row))
+def format_risk_prompt(row):
+    return build_user_prompt("risk", row["vignette"], _action_texts_4(row))
 
 
 def format_effort_prompt(row):
     return build_user_prompt("effort", row["vignette"], _action_texts_4(row))
 
 
-def format_v_prompt(row, motivation):
-    """Build the V prompt for a (scenario, motivation) pair.
+def format_v_prompt(row, desire):
+    """Build the V prompt for a (scenario, desire) pair.
 
-    motivation: 'low' or 'high'. Selects which reward_* paragraph is used
+    desire: 'low' or 'high'. Selects which desire_* paragraph is used
     as the actor's state.
     """
-    state_col = f"reward_{motivation}"
+    state_col = f"desire_{desire}"
     return build_user_prompt(
         "v",
         row["vignette"],
@@ -164,8 +164,8 @@ def parse_action_response(response_text):
 # ==============================================================================
 
 
-def normalize_access(value, target_max=2.0):
-    """0-6 -> [0, target_max]. Matches the [0, 2] range of the fixed access vector."""
+def normalize_risk(value, target_max=2.0):
+    """0-6 -> [0, target_max]. Matches the [0, 2] range of the fixed risk vector."""
     return value * (target_max / 6.0)
 
 
@@ -222,16 +222,16 @@ def main(domain="food"):
 
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
 
-        print("  Getting access ratings (concurrent, structured)...", flush=True)
-        access_ratings, access_failures = get_ratings_concurrent(
+        print("  Getting risk ratings (concurrent, structured)...", flush=True)
+        risk_ratings, risk_failures = get_ratings_concurrent(
             client,
-            build_system_prompt("access", n_actions=4),
-            format_access_prompt(row),
+            build_system_prompt("risk", n_actions=4),
+            format_risk_prompt(row),
             parse_action_response,
             response_format=numeric_action_schema(4),
-            label=f"{scenario}/access",
+            label=f"{scenario}/risk",
         )
-        access_agg = aggregate_action_ratings(access_ratings, n_actions=4)
+        risk_agg = aggregate_action_ratings(risk_ratings, n_actions=4)
 
         print("  Getting effort ratings (concurrent, structured)...", flush=True)
         effort_ratings, effort_failures = get_ratings_concurrent(
@@ -246,32 +246,32 @@ def main(domain="food"):
 
         for action in range(4):
             key = f"action_{action}"
-            a_mean, a_std = access_agg[key]
+            a_mean, a_std = risk_agg[key]
             e_mean, e_std = effort_agg[key]
             results.append(
                 {
                     "scenario_label": scenario,
                     "action": action,
-                    "access_raw": a_mean,
-                    "access_raw_std": a_std,
+                    "risk_raw": a_mean,
+                    "risk_raw_std": a_std,
                     "effort_raw": e_mean,
                     "effort_raw_std": e_std,
-                    "access": normalize_access(a_mean)
+                    "risk": normalize_risk(a_mean)
                     if not np.isnan(a_mean)
                     else np.nan,
                     "effort": normalize_effort(e_mean)
                     if not np.isnan(e_mean)
                     else np.nan,
-                    "n_runs_access": len(access_ratings),
+                    "n_runs_risk": len(risk_ratings),
                     "n_runs_effort": len(effort_ratings),
-                    "n_failures_access": access_failures,
+                    "n_failures_risk": risk_failures,
                     "n_failures_effort": effort_failures,
                 }
             )
 
-        acc_str = [f"{access_agg[f'action_{i}'][0]:.1f}" for i in range(4)]
+        acc_str = [f"{risk_agg[f'action_{i}'][0]:.1f}" for i in range(4)]
         eff_str = [f"{effort_agg[f'action_{i}'][0]:.1f}" for i in range(4)]
-        print(f"  Access (raw): {acc_str}", flush=True)
+        print(f"  Risk (raw): {acc_str}", flush=True)
         print(f"  Effort (raw): {eff_str}", flush=True)
 
         # Checkpoint after each scenario.
@@ -282,7 +282,7 @@ def main(domain="food"):
 
     print("\n=== Summary ===")
     print(f"Total rows: {len(results_df)}")
-    for col, target in [("access", "[0, 2]"), ("effort", "[0, 1]")]:
+    for col, target in [("risk", "[0, 2]"), ("effort", "[0, 1]")]:
         print(
             f"\n{col.capitalize()} (normalized, target {target}):"
             f"\n  Mean: {results_df[col].mean():.2f}, Std: {results_df[col].std():.2f}"
@@ -297,8 +297,8 @@ def main(domain="food"):
 # ==============================================================================
 
 
-def format_access_prompt_variable(vignette, action_texts):
-    return build_user_prompt("access", vignette, action_texts)
+def format_risk_prompt_variable(vignette, action_texts):
+    return build_user_prompt("risk", vignette, action_texts)
 
 
 def format_effort_prompt_variable(vignette, action_texts):
@@ -360,7 +360,7 @@ def parse_desire_response(response_text):
 # inside score_alternatives_main once the --domain flag is known. The two
 # constants below remain (food-domain) for any external caller that may have
 # imported them — they are not used internally.
-VARIABLE_ACCESS_SYSTEM_PROMPT = build_system_prompt("access", n_actions=None)
+VARIABLE_RISK_SYSTEM_PROMPT = build_system_prompt("risk", n_actions=None)
 VARIABLE_EFFORT_SYSTEM_PROMPT = build_system_prompt("effort", n_actions=None)
 
 
@@ -395,11 +395,11 @@ def _max_tokens_for(n_actions):
 
 
 def score_alternatives_main(domain="food"):
-    """Score access/effort for LM-generated alternatives, batched by scenario.
+    """Score risk/effort for LM-generated alternatives, batched by scenario.
 
     Within each scenario, unique action strings (case-insensitive) are scored
-    once via a single access-prompt + effort-prompt (each with NUM_RUNS runs),
-    then features are broadcast back to every (observed_action, motivation,
+    once via a single risk-prompt + effort-prompt (each with NUM_RUNS runs),
+    then features are broadcast back to every (observed_action, desire,
     alt_idx) row that used that action text. This is ~8x fewer API calls than
     per-cell batching. Features depend on the full per-scenario action set
     rather than the cell-level subset, which is more internally consistent.
@@ -411,7 +411,7 @@ def score_alternatives_main(domain="food"):
     """
     api_key = load_api_key()
 
-    access_system_prompt = build_system_prompt("access", n_actions=None)
+    risk_system_prompt = build_system_prompt("risk", n_actions=None)
     effort_system_prompt = build_system_prompt("effort", n_actions=None)
 
     print(f"Loading scenarios and LM alternatives (domain={domain})...", flush=True)
@@ -425,14 +425,14 @@ def score_alternatives_main(domain="food"):
     )
     if not alt_path.exists():
         print(
-            f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.",
+            f"Error: {alt_path} not found. Run lm/generate_alternatives_desire.py first.",
             flush=True,
         )
         sys.exit(1)
     alt_df = pd.read_csv(alt_path)
     alt_df["action_norm"] = alt_df["action_text"].str.lower().str.strip()
     n_cells = alt_df.groupby(
-        ["scenario_label", "observed_action", "motivation"]
+        ["scenario_label", "observed_action", "desire"]
     ).ngroups
     print(
         f"Loaded {len(alt_df)} alternatives across {n_cells} cells "
@@ -487,17 +487,17 @@ def score_alternatives_main(domain="food"):
         if n_unique == 0:
             continue
 
-        print("  scoring access (concurrent, structured)...", flush=True)
-        access_ratings, access_failures = get_ratings_concurrent(
+        print("  scoring risk (concurrent, structured)...", flush=True)
+        risk_ratings, risk_failures = get_ratings_concurrent(
             client,
-            access_system_prompt,
-            format_access_prompt_variable(vignette, unique_actions),
+            risk_system_prompt,
+            format_risk_prompt_variable(vignette, unique_actions),
             lambda t: parse_action_response_variable(t, n_unique),
             max_tokens=_max_tokens_for(n_unique),
             response_format=numeric_action_schema(n_unique),
-            label=f"{scenario}/alts/access",
+            label=f"{scenario}/alts/risk",
         )
-        access_agg = aggregate_action_ratings(access_ratings, n_unique)
+        risk_agg = aggregate_action_ratings(risk_ratings, n_unique)
 
         print("  scoring effort (concurrent, structured)...", flush=True)
         effort_ratings, effort_failures = get_ratings_concurrent(
@@ -511,26 +511,26 @@ def score_alternatives_main(domain="food"):
         )
         effort_agg = aggregate_action_ratings(effort_ratings, n_unique)
 
-        # Build lookup from action_norm → (access, effort, ...)
+        # Build lookup from action_norm → (risk, effort, ...)
         feats_by_norm = {}
         for i, norm in enumerate(unique_norms):
             key = f"action_{i}"
-            a_mean, a_std = access_agg[key]
+            a_mean, a_std = risk_agg[key]
             e_mean, e_std = effort_agg[key]
             feats_by_norm[norm] = {
-                "access_raw": a_mean,
-                "access_raw_std": a_std,
+                "risk_raw": a_mean,
+                "risk_raw_std": a_std,
                 "effort_raw": e_mean,
                 "effort_raw_std": e_std,
-                "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                "risk": normalize_risk(a_mean) if not np.isnan(a_mean) else np.nan,
                 "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
-                "n_runs_access": len(access_ratings),
+                "n_runs_risk": len(risk_ratings),
                 "n_runs_effort": len(effort_ratings),
-                "n_failures_access": access_failures,
+                "n_failures_risk": risk_failures,
                 "n_failures_effort": effort_failures,
             }
 
-        # Emit one row per original (scenario, observed, motivation, alt_idx)
+        # Emit one row per original (scenario, observed, desire, alt_idx)
         new_rows = 0
         for _, row in sc_group.iterrows():
             f = feats_by_norm.get(row["action_norm"])
@@ -540,7 +540,7 @@ def score_alternatives_main(domain="food"):
                 {
                     "scenario_label": scenario,
                     "observed_action": row["observed_action"],
-                    "motivation": row["motivation"],
+                    "desire": row["desire"],
                     "alt_idx": int(row["alt_idx"]),
                     **f,
                 }
@@ -564,15 +564,15 @@ def score_v_alternatives_main(domain="food"):
     """Score signed-valence V for LM-generated alternatives, per scenario.
 
     For each scenario, dedupes alternative-action texts (case-insensitive),
-    then asks the LM for V under each motivation state (`reward_high`,
-    `reward_low`). 10 runs per (scenario, motivation_state). Output schema:
-        scenario_label, observed_action, motivation, alt_idx, motivation_query,
+    then asks the LM for V under each desire state (`desire_high`,
+    `desire_low`). 10 runs per (scenario, desire_state). Output schema:
+        scenario_label, observed_action, desire, alt_idx, desire_query,
         v_raw, v_raw_std, v, n_runs
 
-    `motivation` is the motivation context the alternative was generated under
-    (matches lm_alternatives_food_inv_intimacy_desire_noalt.csv); `motivation_query` is the state we ask V
-    against. We compute V for both motivation_query values for every alt so
-    the desire-noalt observer (which infers motivation as latent) has both.
+    `desire` is the desire context the alternative was generated under
+    (matches lm_alternatives_food_inv_intimacy_desire_noalt.csv); `desire_query` is the state we ask V
+    against. We compute V for both desire_query values for every alt so
+    the desire-noalt observer (which infers desire as latent) has both.
 
     Checkpoints to disk after each scenario; resumes from existing file.
     """
@@ -591,7 +591,7 @@ def score_v_alternatives_main(domain="food"):
     )
     if not alt_path.exists():
         print(
-            f"Error: {alt_path} not found. Run lm/generate_alternatives_motivation.py first.",
+            f"Error: {alt_path} not found. Run lm/generate_alternatives_desire.py first.",
             flush=True,
         )
         sys.exit(1)
@@ -645,12 +645,12 @@ def score_v_alternatives_main(domain="food"):
             continue
 
         v_by_norm_by_query = {}
-        for motivation_query in ("low", "high"):
+        for desire_query in ("low", "high"):
             print(
-                f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...",
+                f"  scoring V (desire_query={desire_query}, concurrent, structured)...",
                 flush=True,
             )
-            state = sc_meta[f"reward_{motivation_query}"]
+            state = sc_meta[f"desire_{desire_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
                 v_system_prompt,
@@ -658,13 +658,13 @@ def score_v_alternatives_main(domain="food"):
                 lambda t: parse_action_response_variable(t, n_unique),
                 max_tokens=_max_tokens_for(n_unique),
                 response_format=numeric_action_schema(n_unique),
-                label=f"{scenario}/alts/V[{motivation_query}]",
+                label=f"{scenario}/alts/V[{desire_query}]",
             )
             agg = aggregate_action_ratings(ratings, n_unique)
             for i, norm in enumerate(unique_norms):
                 key = f"action_{i}"
                 v_mean, v_std = agg[key]
-                v_by_norm_by_query.setdefault(norm, {})[motivation_query] = {
+                v_by_norm_by_query.setdefault(norm, {})[desire_query] = {
                     "v_raw": v_mean,
                     "v_raw_std": v_std,
                     "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
@@ -672,20 +672,20 @@ def score_v_alternatives_main(domain="food"):
                     "n_failures": n_failures,
                 }
 
-        # Emit one row per (scenario, observed, motivation, alt_idx, motivation_query).
+        # Emit one row per (scenario, observed, desire, alt_idx, desire_query).
         new_rows = 0
         for _, row in sc_group.iterrows():
-            for motivation_query in ("low", "high"):
-                f = v_by_norm_by_query.get(row["action_norm"], {}).get(motivation_query)
+            for desire_query in ("low", "high"):
+                f = v_by_norm_by_query.get(row["action_norm"], {}).get(desire_query)
                 if f is None:
                     continue
                 results.append(
                     {
                         "scenario_label": scenario,
                         "observed_action": row["observed_action"],
-                        "motivation": row["motivation"],
+                        "desire": row["desire"],
                         "alt_idx": int(row["alt_idx"]),
-                        "motivation_query": motivation_query,
+                        "desire_query": desire_query,
                         **f,
                     }
                 )
@@ -703,18 +703,18 @@ def score_v_alternatives_main(domain="food"):
 
 
 def score_alternatives_relationship_main(domain="food"):
-    """Score access/effort for relationship-conditioned LM-generated alternatives.
+    """Score risk/effort for relationship-conditioned LM-generated alternatives.
 
     Mirrors score_alternatives_main but reads from lm_alternatives_food_inv_desire_intimacy_noalt.csv
-    (keyed by relationship_condition instead of motivation) and writes to
+    (keyed by relationship_condition instead of desire) and writes to
     lm_alternatives_features_food_inv_desire_intimacy_noalt.csv. Dedupe is per scenario across all
     (observed_action, relationship_condition, alt_idx) cells, identical to the
-    motivation-keyed pass — access and effort are properties of the action and
+    desire-keyed pass — risk and effort are properties of the action and
     don't depend on the conditioning axis.
     """
     api_key = load_api_key()
 
-    access_system_prompt = build_system_prompt("access", n_actions=None)
+    risk_system_prompt = build_system_prompt("risk", n_actions=None)
     effort_system_prompt = build_system_prompt("effort", n_actions=None)
 
     print(
@@ -792,17 +792,17 @@ def score_alternatives_relationship_main(domain="food"):
         if n_unique == 0:
             continue
 
-        print("  scoring access (concurrent, structured)...", flush=True)
-        access_ratings, access_failures = get_ratings_concurrent(
+        print("  scoring risk (concurrent, structured)...", flush=True)
+        risk_ratings, risk_failures = get_ratings_concurrent(
             client,
-            access_system_prompt,
-            format_access_prompt_variable(vignette, unique_actions),
+            risk_system_prompt,
+            format_risk_prompt_variable(vignette, unique_actions),
             lambda t: parse_action_response_variable(t, n_unique),
             max_tokens=_max_tokens_for(n_unique),
             response_format=numeric_action_schema(n_unique),
-            label=f"{scenario}/alts_rel/access",
+            label=f"{scenario}/alts_rel/risk",
         )
-        access_agg = aggregate_action_ratings(access_ratings, n_unique)
+        risk_agg = aggregate_action_ratings(risk_ratings, n_unique)
 
         print("  scoring effort (concurrent, structured)...", flush=True)
         effort_ratings, effort_failures = get_ratings_concurrent(
@@ -819,18 +819,18 @@ def score_alternatives_relationship_main(domain="food"):
         feats_by_norm = {}
         for i, norm in enumerate(unique_norms):
             key = f"action_{i}"
-            a_mean, a_std = access_agg[key]
+            a_mean, a_std = risk_agg[key]
             e_mean, e_std = effort_agg[key]
             feats_by_norm[norm] = {
-                "access_raw": a_mean,
-                "access_raw_std": a_std,
+                "risk_raw": a_mean,
+                "risk_raw_std": a_std,
                 "effort_raw": e_mean,
                 "effort_raw_std": e_std,
-                "access": normalize_access(a_mean) if not np.isnan(a_mean) else np.nan,
+                "risk": normalize_risk(a_mean) if not np.isnan(a_mean) else np.nan,
                 "effort": normalize_effort(e_mean) if not np.isnan(e_mean) else np.nan,
-                "n_runs_access": len(access_ratings),
+                "n_runs_risk": len(risk_ratings),
                 "n_runs_effort": len(effort_ratings),
-                "n_failures_access": access_failures,
+                "n_failures_risk": risk_failures,
                 "n_failures_effort": effort_failures,
             }
 
@@ -867,10 +867,10 @@ def score_v_alternatives_relationship_main(domain="food"):
 
     Mirrors score_v_alternatives_main but reads from lm_alternatives_food_inv_desire_intimacy_noalt.csv
     (keyed by relationship_condition) and writes to lm_alternatives_v_food_inv_desire_intimacy_noalt.csv.
-    Each unique action is still scored under both motivation_query ∈ {low, high}
-    because V depends on motivation regardless of the conditioning axis. Output:
+    Each unique action is still scored under both desire_query ∈ {low, high}
+    because V depends on desire regardless of the conditioning axis. Output:
         scenario_label, observed_action, relationship_condition, alt_idx,
-        motivation_query, v_raw, v_raw_std, v, n_runs
+        desire_query, v_raw, v_raw_std, v, n_runs
     """
     api_key = load_api_key()
 
@@ -945,12 +945,12 @@ def score_v_alternatives_relationship_main(domain="food"):
             continue
 
         v_by_norm_by_query = {}
-        for motivation_query in ("low", "high"):
+        for desire_query in ("low", "high"):
             print(
-                f"  scoring V (motivation_query={motivation_query}, concurrent, structured)...",
+                f"  scoring V (desire_query={desire_query}, concurrent, structured)...",
                 flush=True,
             )
-            state = sc_meta[f"reward_{motivation_query}"]
+            state = sc_meta[f"desire_{desire_query}"]
             ratings, n_failures = get_ratings_concurrent(
                 client,
                 v_system_prompt,
@@ -958,13 +958,13 @@ def score_v_alternatives_relationship_main(domain="food"):
                 lambda t: parse_action_response_variable(t, n_unique),
                 max_tokens=_max_tokens_for(n_unique),
                 response_format=numeric_action_schema(n_unique),
-                label=f"{scenario}/alts_rel/V[{motivation_query}]",
+                label=f"{scenario}/alts_rel/V[{desire_query}]",
             )
             agg = aggregate_action_ratings(ratings, n_unique)
             for i, norm in enumerate(unique_norms):
                 key = f"action_{i}"
                 v_mean, v_std = agg[key]
-                v_by_norm_by_query.setdefault(norm, {})[motivation_query] = {
+                v_by_norm_by_query.setdefault(norm, {})[desire_query] = {
                     "v_raw": v_mean,
                     "v_raw_std": v_std,
                     "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
@@ -974,8 +974,8 @@ def score_v_alternatives_relationship_main(domain="food"):
 
         new_rows = 0
         for _, row in sc_group.iterrows():
-            for motivation_query in ("low", "high"):
-                f = v_by_norm_by_query.get(row["action_norm"], {}).get(motivation_query)
+            for desire_query in ("low", "high"):
+                f = v_by_norm_by_query.get(row["action_norm"], {}).get(desire_query)
                 if f is None:
                     continue
                 results.append(
@@ -984,7 +984,7 @@ def score_v_alternatives_relationship_main(domain="food"):
                         "observed_action": row["observed_action"],
                         "relationship_condition": int(row["relationship_condition"]),
                         "alt_idx": int(row["alt_idx"]),
-                        "motivation_query": motivation_query,
+                        "desire_query": desire_query,
                         **f,
                     }
                 )
@@ -1002,11 +1002,11 @@ def score_v_alternatives_relationship_main(domain="food"):
 
 
 def score_v_main(domain="food"):
-    """Generate signed-valence (V) ratings for each (scenario, action, motivation).
+    """Generate signed-valence (V) ratings for each (scenario, action, desire).
 
-    Two LM passes per scenario — once with the scenario's reward_high paragraph
-    as the actor's state, once with reward_low. Same 10-run averaging as
-    access/effort. Output schema: scenario_label, action, motivation, v_raw,
+    Two LM passes per scenario — once with the scenario's desire_high paragraph
+    as the actor's state, once with desire_low. Same 10-run averaging as
+    risk/effort. Output schema: scenario_label, action, desire, v_raw,
     v_raw_std, v (normalized to [-1,+1]), n_runs, n_failures.
     """
     api_key = load_api_key()
@@ -1046,18 +1046,18 @@ def score_v_main(domain="food"):
 
         print(f"\nProcessing {idx + 1}/{len(scenarios_df)}: {scenario}", flush=True)
 
-        for motivation in ("low", "high"):
+        for desire in ("low", "high"):
             print(
-                f"  Getting V ratings (motivation={motivation}, concurrent, structured)...",
+                f"  Getting V ratings (desire={desire}, concurrent, structured)...",
                 flush=True,
             )
             v_ratings, n_failures = get_ratings_concurrent(
                 client,
                 build_system_prompt("v", n_actions=4),
-                format_v_prompt(row, motivation),
+                format_v_prompt(row, desire),
                 parse_action_response,
                 response_format=numeric_action_schema(4),
-                label=f"{scenario}/V[{motivation}]",
+                label=f"{scenario}/V[{desire}]",
             )
             v_agg = aggregate_action_ratings(v_ratings, n_actions=4)
 
@@ -1068,7 +1068,7 @@ def score_v_main(domain="food"):
                     {
                         "scenario_label": scenario,
                         "action": action,
-                        "motivation": motivation,
+                        "desire": desire,
                         "v_raw": v_mean,
                         "v_raw_std": v_std,
                         "v": normalize_v(v_mean) if not np.isnan(v_mean) else np.nan,
@@ -1078,7 +1078,7 @@ def score_v_main(domain="food"):
                 )
 
             v_str = [f"{v_agg[f'action_{i}'][0]:+.1f}" for i in range(4)]
-            print(f"  V {motivation} (raw): {v_str}", flush=True)
+            print(f"  V {desire} (raw): {v_str}", flush=True)
 
         # Checkpoint after each scenario
         pd.DataFrame(results).to_csv(output_path, index=False)
@@ -1089,9 +1089,9 @@ def score_v_main(domain="food"):
     results_df = pd.DataFrame(results)
     print(f"Total rows: {len(results_df)}")
     for mot in ("low", "high"):
-        sub = results_df[results_df["motivation"] == mot]
+        sub = results_df[results_df["desire"] == mot]
         print(
-            f"\nV (normalized, motivation={mot}, target [-1, +1]):"
+            f"\nV (normalized, desire={mot}, target [-1, +1]):"
             f"\n  Mean: {sub['v'].mean():+.2f}, Std: {sub['v'].std():.2f}"
             f"\n  Range: [{sub['v'].min():+.2f}, {sub['v'].max():+.2f}]"
         )
@@ -1103,24 +1103,24 @@ if __name__ == "__main__":
     parser.add_argument(
         "--score-alternatives",
         action="store_true",
-        help="Score access/effort for LM-generated alternatives in lm_alternatives_food_inv_intimacy_desire_noalt.csv",
+        help="Score risk/effort for LM-generated alternatives in lm_alternatives_food_inv_intimacy_desire_noalt.csv",
     )
     parser.add_argument(
         "--feature",
         choices=(
-            "access_effort",
+            "risk_effort",
             "v",
             "v_alternatives",
-            "access_effort_alternatives_relationship",
+            "risk_effort_alternatives_relationship",
             "v_alternatives_relationship",
         ),
-        default="access_effort",
+        default="risk_effort",
         help=(
-            "Which feature(s) to elicit. 'access_effort' (default) generates "
-            "the canonical access+effort tables. 'v' generates signed-valence "
-            "ratings per (scenario, action, motivation). 'v_alternatives' "
-            "generates V for motivation-conditioned LM-generated alternatives. "
-            "'access_effort_alternatives_relationship' and "
+            "Which feature(s) to elicit. 'risk_effort' (default) generates "
+            "the canonical risk+effort tables. 'v' generates signed-valence "
+            "ratings per (scenario, action, desire). 'v_alternatives' "
+            "generates V for desire-conditioned LM-generated alternatives. "
+            "'risk_effort_alternatives_relationship' and "
             "'v_alternatives_relationship' do the equivalent for "
             "relationship-conditioned alternatives (requires "
             "lm_alternatives_food_inv_desire_intimacy_noalt.csv). The feature flags are mutually "
@@ -1139,7 +1139,7 @@ if __name__ == "__main__":
         ),
     )
     args = parser.parse_args()
-    if args.score_alternatives and args.feature != "access_effort":
+    if args.score_alternatives and args.feature != "risk_effort":
         parser.error(
             f"--score-alternatives is incompatible with --feature {args.feature}"
         )
@@ -1149,7 +1149,7 @@ if __name__ == "__main__":
         score_v_main(args.domain)
     elif args.feature == "v_alternatives":
         score_v_alternatives_main(args.domain)
-    elif args.feature == "access_effort_alternatives_relationship":
+    elif args.feature == "risk_effort_alternatives_relationship":
         score_alternatives_relationship_main(args.domain)
     elif args.feature == "v_alternatives_relationship":
         score_v_alternatives_relationship_main(args.domain)

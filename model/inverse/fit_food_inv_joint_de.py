@@ -1,6 +1,6 @@
 """Fit observer + actor utility weights for food_inv_joint_de.
 
-Study 4a — joint over (reward, effort) given intimacy. Each variant jointly fits
+Study 1b — joint over (desire, effort) given intimacy. Each variant jointly fits
 its utility weights and alpha_observer from this experiment's posterior data
 (no transfer from the forward fit). Writes outputs/food_inv_joint_de/fit_results.csv.
 """
@@ -46,7 +46,7 @@ def main():
     print("Fitting utility weights + alpha_observer per variant")
     print("=" * 60)
 
-    data, action, scenario_idx, relationship_condition, resp_reward, resp_effort = (
+    data, action, scenario_idx, relationship_condition, resp_desire, resp_effort = (
         load_joint_de_data(EXPERIMENT_SLUG)
     )
 
@@ -61,7 +61,7 @@ def main():
             action=action,
             scenario_idx=scenario_idx,
             relationship_condition=relationship_condition,
-            response_reward=resp_reward,
+            response_desire=resp_desire,
             response_effort=resp_effort,
             table_kwargs=joint_de_table_kwargs(uses_v),
         )

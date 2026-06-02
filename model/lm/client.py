@@ -4,7 +4,7 @@ elicitation pipelines.
 
 Centralizes what previously lived in three near-duplicate copies across
 ``lm/score_canonical_features.py``, ``lm/score_effort_features.py``, and
-``lm/generate_alternatives_motivation.py``:
+``lm/generate_alternatives_desire.py``:
 
 - ``load_api_key`` — resolve ``TOGETHER_API_KEY`` from env or ``.env``.
 - ``find_json`` / ``find_json_array`` — best-effort JSON extraction.
@@ -208,7 +208,7 @@ def numeric_action_schema(n_actions, name="ratings"):
     """Build a response_format object that constrains the LM to emit
     ``{"action_0": <number>, ..., "action_{n-1}": <number>}``.
 
-    Used by access/effort/V rating calls in both the canonical 4-action and
+    Used by risk/effort/V rating calls in both the canonical 4-action and
     variable-length paths. Note that Together's response_format does not accept
     OpenAI's ``strict: true`` flag — schema enforcement is governed by the
     server. Llama-3.3-70B-Turbo is one of the supported models per the

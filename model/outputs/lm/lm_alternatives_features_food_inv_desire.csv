@@ -1,4 +1,4 @@
-scenario_label,observed_action,effort_condition,intimacy_condition,alt_idx,access_raw,access_raw_std,access,effort_raw,effort_raw_std,effort,n_runs_access,n_runs_effort,n_failures_access,n_failures_effort
+scenario_label,observed_action,effort_condition,intimacy_condition,alt_idx,risk_raw,risk_raw_std,risk,effort_raw,effort_raw_std,effort,n_runs_risk,n_runs_effort,n_failures_risk,n_failures_effort
 basketball,action_0,low,50,0,0.0,0.0,0.0,0.0,0.0,0.0,10,10,0,0
 basketball,action_0,low,50,1,0.0,0.0,0.0,0.0,0.0,0.0,10,10,0,0
 basketball,action_0,low,50,2,3.0,0.0,1.0,0.3,0.45825756949558394,0.049999999999999996,10,10,0,0

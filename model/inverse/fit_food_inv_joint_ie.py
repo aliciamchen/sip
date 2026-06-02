@@ -46,7 +46,7 @@ def main():
     print("Fitting utility weights + alpha_observer per variant")
     print("=" * 60)
 
-    data, action, scenario_idx, reward_condition, resp_intimacy, resp_effort = (
+    data, action, scenario_idx, desire_condition, resp_intimacy, resp_effort = (
         load_joint_ie_data(EXPERIMENT_SLUG)
     )
 
@@ -60,7 +60,7 @@ def main():
             utility_param_names=utility_names,
             action=action,
             scenario_idx=scenario_idx,
-            reward_condition=reward_condition,
+            desire_condition=desire_condition,
             response_intimacy=resp_intimacy,
             response_effort=resp_effort,
             table_kwargs=joint_ie_table_kwargs(uses_v),

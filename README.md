@@ -4,7 +4,7 @@ Cognitive science research on social inference and food sharing: how people deci
 
 The current manuscript organizes the work into four inverse-planning studies, all built on a 3-action food stimulus set (no sharing / low-risk sharing / high-risk sharing) that lets the three latent variables — desire, effort, and intimacy — be crossed and inferred in different combinations. In each study the observer sees a single action and infers one or two of the latent variables: Study 1a infers desire, Study 1b jointly infers desire and effort, Study 2a infers intimacy, and Study 2b jointly infers intimacy and effort. A planned Study 3 will generalize these findings to non-food domains; its exact design is still being decided.
 
-Earlier work is archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md): three forward-planning experiments (the original Studies 1a/1b plus a non-food forward experiment), and six pre-3-action inverse experiments on the older 4-action and 2-action sets. Their model scripts and analysis qmds remain runnable via per-slug Makefile targets, but they are no longer part of the default `make all` pipeline.
+Earlier work is archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md): three forward-planning experiments (the original Studies 1a/1b plus a non-food forward experiment), and six pre-3-action inverse experiments on the older 4-action and 2-action sets. Only the collected data is retained; the legacy model and analysis code was removed in the June 2026 cleanup and is recoverable from git history.
 
 ## Quick start
 
@@ -23,7 +23,7 @@ make help               # list all targets
 
 The processed CSVs are checked into the repo, so `make all` works without raw JSON. Rendered analysis documents land in `_output/analysis/`; figures land in `figures/`.
 
-The `Makefile` exposes per-stage and per-experiment targets (`make fit`, `make cv`, `make analysis-food-forw-intimacy-desire-analysis`, etc.); see `make help`. Underlying script invocations are documented in [Manual pipeline steps](#manual-pipeline-steps) below.
+The `Makefile` exposes per-stage and per-experiment targets (`make fit`, `make cv`, `make analysis-food-inv-desire-analysis`, etc.); see `make help`. Underlying script invocations are documented in [Manual pipeline steps](#manual-pipeline-steps) below.
 
 ## Pipeline at a glance
 
@@ -32,7 +32,7 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → processed CSV
                                                               ↓
 LM elicitation (lm/score_*.py) → scenario tables (model/outputs/lm/)
                                                               ↓
-                                  fit (forward / inverse) → predict → CV
+                                  fit (inverse) → predict → CV
                                                               ↓
                                   R/Quarto analysis (analysis/) → figures
 ```
@@ -56,18 +56,13 @@ A planned **Study 3** will generalize to non-food domains (substance/contact, sh
 
 ### Legacy experiments
 
-Archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md); runnable via per-slug Makefile targets but not part of `make all`:
-
-- **Forward-planning experiments** (real data): `food_forw_intimacy_desire` (4-action, desire × intimacy), `food_forw_intimacy_effort` (2-action effort), and `nonfood_forw_intimacy_desire` (non-food 4-action). These were the manuscript's earlier Studies 1a/1b plus a non-food forward experiment, archived in May 2026 when the manuscript reframed around four inverse studies.
-- **Pre-3-action inverse experiments**: six older 4-action and 2-action inverse experiments, two of which (`food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`) keep runnable model + analysis code.
-- **Study 1a pilot** (`food_inv_desire_pilot`): the original 1a pilot, collected with a 0–100 "probability of two states" slider for desire (rating the relative likelihood of two desire states) rather than the direct 0–100 "how much they would like the food" rating Study 1a now uses. Retained for reference; Study 1a will be re-collected on the corrected DV.
+The **data** from earlier work is archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md): three forward-planning experiments (`food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`), six pre-3-action 4-action/2-action inverse experiments, and the original Study 1a pilot (`food_inv_desire_pilot`, which used a "probability of two states" desire slider rather than the direct 0–100 rating Study 1a now uses). The legacy model and analysis **code** was removed in the June 2026 cleanup; recover it from git history if needed.
 
 ### Scenarios
 
 Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it. Edit the `.py` file and regenerate.
 
 - [`experiments/scenarios.py`](experiments/scenarios.py) → `scenarios.csv` (3-action, the active Studies 1a/1b/2a/2b).
-- The earlier stimulus sets are archived under `experiments/legacy/`: `scenarios.py` → `scenarios.csv` (4-action canonical), `scenarios_effort.py` → `scenarios_effort.csv` (2-action effort), and `scenarios_nonfood.py` → `scenarios_nonfood.csv` (4-action non-food; a basis for the planned Study 3).
 
 See the [experiments README](experiments/README.md) for the column schema.
 
@@ -79,29 +74,29 @@ A joint actor chooses an action by softmaxing over the utility:
 P(a | s, I, d) ∝ exp( U(a | s, I, d) )
 
 U(a | s, I, d) = w_v · d · g(a)
-               − w_d · access(a) · (1 − I)
+               − w_d · risk(a) · (1 − I)
                − w_e · effort(a)
 ```
 
-The reward term is `w_v · d · g(a)`. `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (the 0–100 human rating, divided by 100), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action: how fully it delivers the outcome (e.g. whether the two people end up getting and eating the food), independent of how much they want it. Desire scales a stable per-action value rather than selecting between two motivational states. `access(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space. `effort(a)` is the physical effort of executing the action. Intimacy `I` scales the access-discomfort term: at high intimacy the `−w_d · access · (1 − I)` penalty shrinks toward zero, so higher-access actions become relatively more attractive. At low intimacy the penalty is at full strength, so higher-access actions are costly.
+The reward term is `w_v · d · g(a)`. `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (the 0–100 human rating, divided by 100), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action: how fully it delivers the outcome (e.g. whether the two people end up getting and eating the food), independent of how much they want it. Desire scales a stable per-action value rather than selecting between two desire states. `risk(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space. `effort(a)` is the physical effort of executing the action. Intimacy `I` scales the risk-discomfort term: at high intimacy the `−w_d · risk · (1 − I)` penalty shrinks toward zero, so higher-risk actions become relatively more attractive. At low intimacy the penalty is at full strength, so higher-risk actions are costly.
 
-Desire is the **inferred latent** in the desire studies (recovered as a continuous posterior over a 101-bin grid, the same way intimacy is inferred) and **observer-visible context** in the studies where desire is given (where its magnitude is an LM-rated scalar per scenario and desire condition). Three ablations of this utility are fit and compared for both the forward-planning (actor) and inverse-planning (observer) models:
+Desire is the **inferred latent** in the desire studies (recovered as a continuous posterior over a 101-bin grid, the same way intimacy is inferred) and **observer-visible context** in the studies where desire is given (where its magnitude is an LM-rated scalar per scenario and desire condition). Three ablations of this utility are fit and compared for the inverse-planning (observer) models:
 
-- **Full** (`full`) — the full utility above: the reward term, the access-discomfort term, and effort (the main model).
-- **Discomfort-only** (`discomfort_only`) — only the access-discomfort term `−w_d · access · (1 − I)`; drops the reward term and effort to ask whether the access signal alone can account for behavior.
+- **Full** (`full`) — the full utility above: the reward term, the risk-discomfort term, and effort (the main model).
+- **Discomfort-only** (`discomfort_only`) — only the risk-discomfort term `−w_d · risk · (1 − I)`; drops the reward term and effort to ask whether the risk signal alone can account for behavior.
 - **Base** (`base`) — `w_v · d · g − w_e · effort`; no relational structure.
 
 ### Where the utility values come from
 
-The action-level utility components — goal-satisfaction, access, effort — are **LLM-generated per scenario** because they genuinely vary by scenario (a wedding meal differs from a basketball hot dog in bodily exposure, logistical effort, and how fully each available action delivers the food). The LLM is Llama-3.3-70B via Together AI (10 runs averaged, mean ± std saved):
+The action-level utility components — goal-satisfaction, risk, effort — are **LLM-generated per scenario** because they genuinely vary by scenario (a wedding meal differs from a basketball hot dog in bodily exposure, logistical effort, and how fully each available action delivers the food). The LLM is Llama-3.3-70B via Together AI (10 runs averaged, mean ± std saved):
 
-- `g` (goal-satisfaction): how fully each action results in the two people getting/consuming the thing at stake, on a 0-6 scale normalized to [0, 1]. Desire-free — desire enters the reward term separately as the multiplier `w_v · d · g`. Produced for the active 3-action pipeline by `model/lm/score_3act_merged.py`. (The legacy forward experiments instead used a signed-valence `V ∈ [-1, +1]` per (scenario, action, motivation) from `model/lm/score_canonical_v.py`; `g` replaces it.)
-- `access`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both — on a 0-6 scale normalized to [0, 2]. Produced by `model/lm/score_canonical_features.py` → `model/outputs/lm/lm_scenario_params.csv`.
+- `g` (goal-satisfaction): how fully each action results in the two people getting/consuming the thing at stake, on a 0-6 scale normalized to [0, 1]. Desire-free — desire enters the reward term separately as the multiplier `w_v · d · g`. Produced by `model/lm/score_merged.py`. (`g` replaced the old signed-valence `V`, which was legacy and is no longer used.)
+- `risk`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both — on a 0-6 scale normalized to [0, 2]. Produced by `model/lm/score_features.py` → `model/outputs/lm/lm_scenario_params.csv`.
 - `effort`: physical, logistical, and time cost of executing the action, on a 0-6 scale normalized to [0, 1]. Produced by the same script.
 
-The desire magnitude `d` is not an action feature. In the desire-inference studies it is the latent the observer recovers; in the studies where desire is given context, the LM rates it once per (scenario, desire condition) on the 0–100 scale (`model/lm/score_3act_merged.py` → `lm_scenario_desire_3act.csv`).
+The desire magnitude `d` is not an action feature. In the desire-inference studies it is the latent the observer recovers; in the studies where desire is given context, the LM rates it once per (scenario, desire condition) on the 0–100 scale (`model/lm/score_merged.py` → `lm_scenario_desire.csv`).
 
-A single prompt set in `model/lm/prompts.py` is used for both the food and non-food pipelines. The access rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios.
+A single prompt set in `model/lm/prompts.py` is used for both the food and non-food pipelines. The risk rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios.
 
 The Together AI calls go through `model/lm/client.py`, which fans the 10 runs across a thread pool, constrains the output to a JSON schema via Together's `response_format`, retries transient errors, and checkpoints to disk after each scenario. Output rows record both `n_runs_*` (successful runs) and `n_failures_*` so it's clear how many of the 10 runs returned parseable output.
 
@@ -109,24 +104,24 @@ Generating LM tables requires `TOGETHER_API_KEY` in `.env`. The fitting and pred
 
 ### LM-generated alternatives and merged scoring
 
-Study 1a (`food_inv_desire`) goes further than the fixed-action design: rather than scoring goal-satisfaction/access/effort on the 3 canonical actions, the LM **generates** plausible counterfactual actions per (scenario, observed_action, effort, intimacy) cell — 16 × 3 × 2 × 4 = 384 cells — and then canonical actions + generated alternatives are scored together on goal-satisfaction/access/effort. The observer's actor softmaxes over `{observed_action} ∪ generated_alts`, padded to a fixed slot count (`MAX_ACTIONS_3ACT = 12`) with the observed canonical action in slot 0 and null padding on unused slots (epsilon-weighted prior so the softmax stays differentiable). The alternatives are model-internal only — participants never see them; they exist solely inside the observer's model of how the actor chose.
+Study 1a (`food_inv_desire`) goes further than the fixed-action design: rather than scoring goal-satisfaction/risk/effort on the 3 canonical actions, the LM **generates** plausible counterfactual actions per (scenario, observed_action, effort, intimacy) cell — 16 × 3 × 2 × 4 = 384 cells — and then canonical actions + generated alternatives are scored together on goal-satisfaction/risk/effort. The observer's actor softmaxes over `{observed_action} ∪ generated_alts`, padded to a fixed slot count (`MAX_ACTIONS = 12`) with the observed canonical action in slot 0 and null padding on unused slots (epsilon-weighted prior so the softmax stays differentiable). The alternatives are model-internal only — participants never see them; they exist solely inside the observer's model of how the actor chose.
 
 The pipeline is two stages. First, alternatives are generated per cell. Second, a single merged scoring script rates the canonical actions and the unique alts together — putting slot 0 and slots 1..k on the same comparative scale by construction:
 
 ```bash
-uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire
-uv run python model/lm/score_3act_merged.py          --study food_inv_desire
+uv run python model/lm/generate_alternatives.py --study food_inv_desire
+uv run python model/lm/score_merged.py          --study food_inv_desire
 ```
 
-The alternative-generation prompt (`prompts.py:alternatives_user_prompt_3act`) mirrors what the human participant sees in the trial — vignette + effort paragraph + relationship descriptor + observed action — per the principle that the LM should be prompted with one condition at a time. The merged scoring script makes three design choices, each chosen to align with what the formal model treats each feature as varying with:
+The alternative-generation prompt (`prompts.py:alternatives_user_prompt`) mirrors what the human participant sees in the trial — vignette + effort paragraph + relationship descriptor + observed action — per the principle that the LM should be prompted with one condition at a time. The merged scoring script makes three design choices, each chosen to align with what the formal model treats each feature as varying with:
 
 - **Canonical and alternative actions are scored together** in the same prompt per scenario, so slot 0 and slots 1..k are calibrated against a shared comparative reference frame rather than being scored in separate prompts with potentially mismatched anchors.
-- **Access is effort-marginal**: the access scoring prompt omits the effort paragraph and a single access rating per action is broadcast across both effort conditions in the output CSVs. The model already modulates access by intimacy via `(1−I)^γ` in the utility, so access(a|s) is formally intimacy- and effort-independent; eliciting access without the effort paragraph avoids double-counting context that the utility formula handles separately. Effort is still elicited per (scenario, effort_condition).
-- **Goal-satisfaction `g` is LM-elicited desire-free**, not derived from the `is_share` flag. Each action gets one continuous LM-rated `g ∈ [0, 1]` ("how fully does this deliver the outcome"), with no motivation axis — desire enters the reward term separately as the multiplier `w_v · d · g`. For the studies where desire is given context, the LM additionally rates the desire magnitude `d` once per (scenario, desire condition). The `is_share` field is preserved in the alternatives CSV as diagnostic metadata.
+- **Risk is effort-marginal**: the risk scoring prompt omits the effort paragraph and a single risk rating per action is broadcast across both effort conditions in the output CSVs. The model already modulates risk by intimacy via `(1−I)^γ` in the utility, so risk(a|s) is formally intimacy- and effort-independent; eliciting risk without the effort paragraph avoids double-counting context that the utility formula handles separately. Effort is still elicited per (scenario, effort_condition).
+- **Goal-satisfaction `g` is LM-elicited desire-free**, not derived from the `is_share` flag. Each action gets one continuous LM-rated `g ∈ [0, 1]` ("how fully does this deliver the outcome"), with no desire axis — desire enters the reward term separately as the multiplier `w_v · d · g`. For the studies where desire is given context, the LM additionally rates the desire magnitude `d` once per (scenario, desire condition). The `is_share` field is preserved in the alternatives CSV as diagnostic metadata.
 
-The merged scoring writes the canonical tables `lm_scenario_params_3act{,_marginal}.csv` (access + effort) and `lm_scenario_g_3act.csv` (goal-satisfaction g), the per-study `lm_alternatives_features_<slug>.csv` (alts access + effort) and `lm_alternatives_g_<slug>.csv` (alts g), and — for the given-desire studies — `lm_scenario_desire_3act.csv` (the per-condition desire scalar). `tables.py:load_padded_lm_tables_3act_desire` assembles these into the padded access/effort/g/prior tables the Study 1a memo observer indexes into.
+The merged scoring writes the canonical tables `lm_scenario_params{,_marginal}.csv` (risk + effort) and `lm_scenario_g.csv` (goal-satisfaction g), the per-study `lm_alternatives_features_<slug>.csv` (alts risk + effort) and `lm_alternatives_g_<slug>.csv` (alts g), and — for the given-desire studies — `lm_scenario_desire.csv` (the per-condition desire scalar). `tables.py:load_padded_lm_tables_desire` assembles these into the padded risk/effort/g/prior tables the Study 1a memo observer indexes into.
 
-Studies 1b, 2a, and 2b use the same merged padded-alts pipeline as Study 1a; each follows the Study 1a template: padded actor and observer memos, utility and prior helpers, a padded table loader sized for that study's conditioning structure (the access/effort/g table shapes depend on which variables the observer sees), joint-fit helpers, fit/predict/CV scripts, and registry entries in `generate_alternatives_3act.py` and `score_3act_merged.py`. The merged scoring's per-scenario logic generalizes — only the `_STUDY_CONFIG` entries differ between studies.
+Studies 1b, 2a, and 2b use the same merged padded-alts pipeline as Study 1a; each follows the Study 1a template: padded actor and observer memos, utility and prior helpers, a padded table loader sized for that study's conditioning structure (the risk/effort/g table shapes depend on which variables the observer sees), joint-fit helpers, fit/predict/CV scripts, and registry entries in `generate_alternatives.py` and `score_merged.py`. The merged scoring's per-scenario logic generalizes — only the `_STUDY_CONFIG` entries differ between studies.
 
 ## Repository structure
 
@@ -135,7 +130,6 @@ analysis/          R/Quarto analysis scripts and data processing
 data/              Processed experiment data (one folder per experiment slug)
 experiments/       jsPsych experiment code + scenario definitions
 model/             Computational models
-  forward/         Per-experiment forward-planning fit/predict scripts
   inverse/         Per-experiment inverse-planning fit/predict scripts
   cv/              Per-experiment LOSO cross-validation scripts
   lm/              LM-elicitation scripts (Together AI)
@@ -182,28 +176,18 @@ Generate LLM-derived scenario parameters (prerequisite for all model fits; requi
 
 ```bash
 # active 3-action pipeline (Studies 1a/1b/2a/2b)
-uv run python model/lm/score_3act_features.py                       # access + effort
-uv run python model/lm/score_3act_v.py                              # signed-valence V
-uv run python model/lm/generate_alternatives_3act.py --study food_inv_desire  # Study 1a: LM-generated alternatives per cell
-uv run python model/lm/score_3act_merged.py          --study food_inv_desire  # Study 1a: merged canonical + alts scoring (access-marginal, effort-conditional, V LM-elicited)
-# legacy tables (back the legacy forward experiments)
-uv run python model/lm/score_canonical_features.py                  # 4-action canonical access + effort
-uv run python model/lm/score_canonical_features.py --domain nonfood # non-food access + effort
-uv run python model/lm/score_canonical_v.py                         # 4-action canonical V
-uv run python model/lm/score_canonical_v.py --domain nonfood        # non-food V
-uv run python model/lm/score_effort_features.py                     # 2-action effort set
+uv run python model/lm/score_features.py                       # risk + effort
+uv run python model/lm/generate_alternatives.py --study food_inv_desire  # Study 1a: LM-generated alternatives per cell
+uv run python model/lm/score_merged.py          --study food_inv_desire  # Study 1a: merged canonical + alts scoring (risk-marginal, effort-conditional, g LM-elicited)
 ```
 
-Each fit/predict/CV script is named after the experiment it serves and lives in `model/inverse/` (active studies) or `model/forward/` (legacy forwards), with CV in `model/cv/`. Run `fit_<slug>.py`, then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`.
+Each fit/predict/CV script is named after the experiment it serves and lives in `model/inverse/`, with CV in `model/cv/`. Run `fit_<slug>.py`, then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`.
 
 ```bash
 # active inverse (Studies 1a/1b/2a/2b)
 uv run python model/inverse/fit_food_inv_desire.py
 uv run python model/inverse/predict_food_inv_desire.py
 uv run python model/cv/cv_food_inv_desire.py
-# legacy forward (per-slug only)
-uv run python model/forward/fit_food_forw_intimacy_desire.py
-uv run python model/cv/cv_food_forw_intimacy_desire.py
 ```
 
 Each inverse experiment jointly fits its own actor utility weights ($w_v, w_d, w_e, \gamma$) and $\alpha_\mathrm{observer}$ from its own posterior data, rather than transferring actor weights between studies. The joint Studies 1b/2b sum two per-slider losses per trial: Study 1b sums an NLL over the 101-bin desire posterior (for the continuous 0–100 desire rating) and binary cross-entropy on the 0–100 effort slider; Study 2b sums the intimacy posterior NLL (over the 101-bin response) and the same effort cross-entropy.

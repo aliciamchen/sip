@@ -18,7 +18,7 @@ import pandas as pd  # noqa: E402
 
 from _helpers import (  # noqa: E402
     intimacy_table_kwargs,
-    load_3act_fit_results,
+    load_fit_results,
 )
 from observers import (  # noqa: E402
     observer_intimacy_base,
@@ -45,7 +45,7 @@ def main():
     print(f"Generating predictions: {EXPERIMENT_SLUG}")
     print("=" * 60)
 
-    fit_params = load_3act_fit_results(EXPERIMENT_SLUG)
+    fit_params = load_fit_results(EXPERIMENT_SLUG)
     output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
 

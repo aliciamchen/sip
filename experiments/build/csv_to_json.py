@@ -11,10 +11,8 @@ import json
 from pathlib import Path
 
 # Each scenario CSV maps to the experiment directories under experiments/ that
-# consume it. Active inverse experiments (Studies 1a, 1b, 2a, 2b) read
-# scenarios.csv and live at experiments/<slug>/. Legacy experiments live at
-# experiments/legacy/<slug>/ and are referenced with a "legacy/" prefix; they're
-# kept regenerate-able but are not part of `make all`. A slug is silently skipped
+# consume it. The inverse experiments (Studies 1a, 1b, 2a, 2b) read
+# scenarios.csv and live at experiments/<slug>/. A slug is silently skipped
 # if its experiment dir has no json/ subdir.
 SOURCES = [
     # Active: the 3-action stimulus set (experiments/scenarios.csv).
@@ -25,28 +23,6 @@ SOURCES = [
             "food_inv_desire",
             "food_inv_joint_de",
             "food_inv_joint_ie",
-        ],
-    ),
-    # Legacy stimulus sets live under experiments/legacy/ (4-action canonical,
-    # 2-action effort, non-food); kept regenerate-able for the legacy experiments.
-    (
-        "legacy/scenarios.csv",
-        [
-            "legacy/food_forw_intimacy_desire",
-            "legacy/food_inv_intimacy_desire_noalt",
-            "legacy/food_inv_desire_intimacy_noalt",
-        ],
-    ),
-    (
-        "legacy/scenarios_effort.csv",
-        [
-            "legacy/food_forw_intimacy_effort",
-        ],
-    ),
-    (
-        "legacy/scenarios_nonfood.csv",
-        [
-            "legacy/nonfood_forw_intimacy_desire",
         ],
     ),
 ]
@@ -66,8 +42,7 @@ def clean_text(text):
     """Strip surrounding whitespace from a scenario field.
 
     No text substitutions: the source-of-truth `.py` files are the place to fix
-    typos, so the CSV and the emitted JSON stay identical. (The active scenario
-    set is typo-clean; a legacy CSV may still carry its original spellings.)
+    typos, so the CSV and the emitted JSON stay identical. (The scenario set is typo-clean.)
     """
     return text.strip()
 

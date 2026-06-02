@@ -2,18 +2,18 @@
 
 All system prompts and user-prompt formatters live here so they're easy to
 compare and edit together. This module has no LM-call logic — see
-`lm/score_canonical_features.py` and `lm/generate_alternatives_motivation.py` for that.
+`lm/score_canonical_features.py` and `lm/generate_alternatives_desire.py` for that.
 
 Three rating types share the same overall structure (preamble + intro line +
 rating-specific body + JSON format block):
 
-  - **access**: bodily, physical-contact, or informational exposure of an
+  - **risk**: bodily, physical-contact, or informational exposure of an
     action between the two people in the scenario.
   - **effort**: physical, logistical, and time cost of executing an action.
   - **v**: signed valence of an action with respect to the actor's
-    motivational state — strongly counterproductive (-3) to strongly
+    desire state — strongly counterproductive (-3) to strongly
     serving the state (+3). Requires a `state` paragraph (the scenario's
-    `reward_high` or `reward_low` text) at call time, since the same
+    `desire_high` or `desire_low` text) at call time, since the same
     action receives different valences under different states.
 
 Each rating type can be requested with a fixed action count (4 for the
@@ -28,7 +28,7 @@ The prompts are domain-general: they cover food sharing as well as the
 three non-food sub-types in `scenarios_nonfood.csv` — *substance*
 (chapstick, towel, hairbrush, harmonica, sunscreen), *space* (blanket,
 sleeping-bag, bed, locker-room, sauna), and *privacy* (breakup, payment,
-gossip, home, navigation). The access rubric covers three channel types
+gossip, home, navigation). The risk rubric covers three channel types
 (bodily-substance, direct physical-contact, informational/private-resource);
 the effort rubric covers physical work, equipment/setup, time cost, and
 coordination/bookkeeping. The original food-only prompts were retired in
@@ -61,7 +61,7 @@ _NUMBER_WORD = {
 # Sample JSON values used in the system prompt's example block. Different
 # rating types use different sample values (preserved from the originals).
 _JSON_EXAMPLE_VALUES = {
-    "access": [0.5, 1.2, 3.8, 5.5],
+    "risk": [0.5, 1.2, 3.8, 5.5],
     "effort": [0.5, 3.2, 2.1, 1.5],
     "v": [-1.5, 0.5, 2.0, 2.8],
     "g": [0.5, 3.0, 5.5, 4.0],
@@ -70,7 +70,7 @@ _JSON_EXAMPLE_VALUES = {
 # 2-action JSON examples differ from the first 2 entries of the 4-action
 # examples (different illustrative values were used in the original prompts).
 _JSON_EXAMPLE_VALUES_2 = {
-    "access": [0.5, 3.8],
+    "risk": [0.5, 3.8],
     "effort": [0.5, 3.2],
     "v": [-1.5, 2.0],
     "g": [0.5, 5.5],
@@ -127,7 +127,7 @@ def _json_format_block(rating_type, n_actions):
 # Rating-type-specific bodies
 # ==============================================================================
 
-# _ACCESS_BODY draws on four established literatures. The prompt body itself
+# _RISK_BODY draws on four established literatures. The prompt body itself
 # stays jargon-free (the LM is prompted "as a participant"), but the
 # conceptual content of each channel is grounded as follows; cite these in
 # the manuscript when defending the construct.
@@ -155,7 +155,7 @@ def _json_format_block(rating_type, n_actions):
 #     Direct evidence that saliva-sharing is read as a thick-relationship cue,
 #     separable from other positive social interactions.
 
-_ACCESS_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+_RISK_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
 For each action, evaluate: how much does this action open one person up to the other? Three kinds of opening are possible — each is a channel through which something passes from one person's side to the other:
 
@@ -187,7 +187,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 #     Gweon, H., Schulz, L. E., & Tenenbaum, J. B. (2016). "The naïve
 #     utility calculus: Computational principles underlying commonsense
 #     psychology." Trends in Cognitive Sciences 20(8): 589–604. Defines
-#     cost formally as what an agent weighs against reward — the framework
+#     cost formally as what an agent weighs against desire — the framework
 #     this project's inverse-planning model instantiates.
 #
 #   - Single-scalar physical cost (integrating across physical sub-types)
@@ -199,9 +199,9 @@ Use this scale from 0 to 6 (continuous values allowed):
 #     equipment, and time onto one 0-6 scale and motivates restricting
 #     the construct to physical cost features (rather than cognitive ones).
 #
-#   - Effort as a perceptible quantity separable from reward —
+#   - Effort as a perceptible quantity separable from desire —
 #     Jara-Ettinger, J., Gweon, H., Tenenbaum, J. B., & Schulz, L. E.
-#     (2015). "Children's understanding of the costs and rewards underlying
+#     (2015). "Children's understanding of the costs and desires underlying
 #     rational action." Cognition 140: 14–23. Establishes that children at
 #     4–6 can estimate action cost as distinct from goal value and agent
 #     competence — grounds the assumption that an "LM-as-participant" can
@@ -226,7 +226,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 # Per-rating-type instructions used in the user prompt (the line just above
 # the numbered actions).
 _USER_INSTRUCTIONS = {
-    "access": (
+    "risk": (
         "Rate how much each action opens each person up to the other — "
         "physically, informationally, or both (0-6 scale):"
     ),
@@ -236,7 +236,7 @@ _USER_INSTRUCTIONS = {
         "(0-6 scale):"
     ),
     "v": (
-        "Rate how each action affects the actor in their motivational state "
+        "Rate how each action affects the actor in their desire state "
         "— from -3 (strongly counterproductive for the state) through 0 "
         "(neutral) to +3 (strongly serves the state):"
     ),
@@ -247,24 +247,24 @@ _USER_INSTRUCTIONS = {
 }
 
 
-# _V_BODY is the reward component of the project's Bayesian inverse-planning
+# _V_BODY is the desire component of the project's Bayesian inverse-planning
 # model — the signed valence of an action with respect to the actor's
-# motivational state. The prompt body stays jargon-free, but the rating
+# desire state. The prompt body stays jargon-free, but the rating
 # dimension draws on the following established literatures:
 #
-#   - Formal anchor (V as reward in inverse planning) — Baker, C. L.,
+#   - Formal anchor (V as desire in inverse planning) — Baker, C. L.,
 #     Saxe, R., & Tenenbaum, J. B. (2009). "Action understanding as
 #     inverse planning." Cognition 113(3): 329–349. The foundational
 #     Bayesian model where action understanding is treated as inverse
-#     inference over a (goal, reward, cost) model of the actor. V in
-#     this project is literally the reward in that formalism.
+#     inference over a (goal, desire, cost) model of the actor. V in
+#     this project is literally the desire in that formalism.
 #
-#   - Reward as signed and separable from cost — Jara-Ettinger, J.,
+#   - Desire as signed and separable from cost — Jara-Ettinger, J.,
 #     Gweon, H., Schulz, L. E., & Tenenbaum, J. B. (2016). "The naïve
 #     utility calculus: Computational principles underlying commonsense
 #     psychology." Trends in Cognitive Sciences 20(8): 589–604. Grounds
 #     the −3 to +3 range and the formal distinction between "irrelevant
-#     action" (reward = 0) and "thwarting action" (reward < 0).
+#     action" (desire = 0) and "thwarting action" (desire < 0).
 #
 #   - Teleological interpretation of actions — Gergely, G. & Csibra, G.
 #     (2003). "Teleological reasoning in infancy: The naïve theory of
@@ -278,18 +278,18 @@ _USER_INSTRUCTIONS = {
 #     — Wellman, H. M. & Liu, D. (2004). "Scaling of theory-of-mind tasks."
 #     Child Development 75(2): 523–541. "Diverse Desires" is the FIRST
 #     step in their ToM developmental scale — before belief understanding.
-#     Grounds the claim that conditional-on-motivational-state valence
+#     Grounds the claim that conditional-on-desire-state valence
 #     judgments are a basic capacity the LM-as-participant can perform.
 #
-#   - Observers infer reward from action choices — Liu, S., Ullman, T. D.,
+#   - Observers infer desire from action choices — Liu, S., Ullman, T. D.,
 #     Tenenbaum, J. B., & Spelke, E. S. (2017). "Ten-month-old infants
 #     infer the value of goals from the costs of actions." Science 358:
 #     1038–1041. Empirical anchor that V exists as a separable, inferable
-#     quantity — observers reason about reward from choices even in infancy.
+#     quantity — observers reason about desire from choices even in infancy.
 
 _V_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each scenario, one of the two people is in a particular motivational state — for example, wanting something (hungry, in pain, in urgent need) or wanting to avoid something (full, comfortable, wanting privacy). The state will be given to you explicitly. The same action can serve one motivational state and thwart another — your rating should be conditional on the state you are given, not on the actor's overall well-being or what you yourself would prioritize.
+For each scenario, one of the two people is in a particular desire state — for example, wanting something (hungry, in pain, in urgent need) or wanting to avoid something (full, comfortable, wanting privacy). The state will be given to you explicitly. The same action can serve one desire state and thwart another — your rating should be conditional on the state you are given, not on the actor's overall well-being or what you yourself would prioritize.
 
 For each action, evaluate how that action affects the actor *given the state they are in*. Does the action serve what the actor wants in this moment? Or does it actively work against it?
 
@@ -302,14 +302,14 @@ Use this scale from -3 to +3 (continuous values allowed):
 
 Important: "doesn't help" and "actively harms" are different things. An action that simply fails to address the state — that's irrelevant to what the actor wants — should be rated near 0. Reserve negative ratings for actions that actively move the actor away from the state they want (eating when full, sharing when wanting privacy, etc.).
 
-Do NOT rate how intimate or awkward the action would feel, and do NOT rate the physical effort of carrying it out — those are separate dimensions handled by other questions in this study. Here we want only how the action sits with the actor's current motivational state."""
+Do NOT rate how intimate or awkward the action would feel, and do NOT rate the physical effort of carrying it out — those are separate dimensions handled by other questions in this study. Here we want only how the action sits with the actor's current desire state."""
 
 
-# _G_BODY is the goal-satisfaction component of the reward term. In the
-# continuous-desire model the reward enters the utility as w_v · desire · g(a|s),
+# _G_BODY is the goal-satisfaction component of the desire term. In the
+# continuous-desire model the desire enters the utility as w_v · desire · g(a|s),
 # where desire is the latent magnitude (how much the dyad wants the outcome) and
 # g(a|s) is this desire-free rating of how fully the action delivers the outcome.
-# Splitting reward this way is what lets desire be inferred as a continuous
+# Splitting desire this way is what lets desire be inferred as a continuous
 # latent: g is a stable, elicitable property of the action, while desire is the
 # free quantity the observer recovers (or, in the given-desire studies, the
 # scalar rated by `desire_user_prompt`). g replaces the old signed-valence V.
@@ -326,7 +326,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 
 
 _BODIES = {
-    "access": _ACCESS_BODY,
+    "risk": _RISK_BODY,
     "effort": _EFFORT_BODY,
     "v": _V_BODY,
     "g": _G_BODY,
@@ -334,14 +334,14 @@ _BODIES = {
 
 
 # ==============================================================================
-# Public API: rating prompts (access / effort)
+# Public API: rating prompts (risk / effort)
 # ==============================================================================
 
 
 def system_prompt(rating_type, n_actions=None):
     """Build the system prompt for a rating call.
 
-    rating_type: one of "access", "effort".
+    rating_type: one of "risk", "effort".
     n_actions: 2 or 4 for fixed-length rating, or None for the variable-length
         case used by no-alt alternative scoring.
     """
@@ -361,8 +361,8 @@ def user_prompt(rating_type, vignette, action_texts, state=None):
     `effort_low` / `effort_high`).
     action_texts is an ordered list of action descriptions; they're rendered
     as "Action 0: ...", "Action 1: ...", etc.
-    state is the actor's motivational-state paragraph (e.g. `reward_high` or
-    `reward_low`). Required for rating_type="v"; ignored for access/effort.
+    state is the actor's desire-state paragraph (e.g. `desire_high` or
+    `desire_low`). Required for rating_type="v"; ignored for risk/effort.
     """
     if rating_type not in _USER_INSTRUCTIONS:
         raise ValueError(f"unknown rating_type: {rating_type}")
@@ -386,7 +386,7 @@ def user_prompt(rating_type, vignette, action_texts, state=None):
 # open-world inverse-planning move: rather than reasoning over a fixed
 # action set, the LM proposes a small, scenario-specific set of plausible
 # counterfactual actions that then feed into the formal inverse-planning
-# model with their LM-elicited utility features (access, effort, V). The
+# model with their LM-elicited utility features (risk, effort, V). The
 # prompt body stays jargon-free; the methodological choice is anchored
 # as follows.
 #
@@ -398,7 +398,7 @@ def user_prompt(rating_type, vignette, action_texts, state=None):
 #     knowledge with formal probabilistic inference. Cited in the
 #     manuscript as `wong2025modeling`.
 #
-#   - Frame-problem motivation — Dennett, D. C. (1984). "Cognitive wheels:
+#   - Frame-problem desire — Dennett, D. C. (1984). "Cognitive wheels:
 #     The frame problem of AI." In C. Hookway (Ed.), Minds, machines, and
 #     evolution. Cambridge University Press. The classic philosophical
 #     statement of why an observer cannot reason over all possible actions
@@ -431,12 +431,12 @@ Respond ONLY with a JSON array in this exact format, no explanation:
 ]"""
 
 
-def alternatives_user_prompt(vignette, reward_text, observed_action_text):
+def alternatives_user_prompt(vignette, desire_text, observed_action_text):
     """Build the user prompt for the alternative-generation call (used by
     the no-alt experiment to generate counterfactuals)."""
     return (
         f"Scenario: {vignette}\n"
-        f"{reward_text}\n\n"
+        f"{desire_text}\n\n"
         f"The two people took the following action:\n"
         f"{observed_action_text}\n\n"
         "List the set of plausible alternative ways the two people could "
@@ -462,7 +462,7 @@ def alternatives_user_prompt_relationship(
     vignette, relationship_level, observed_action_text
 ):
     """Build the user prompt for the alternative-generation call when
-    conditioning on relationship instead of motivation (desire-noalt observer).
+    conditioning on relationship instead of desire (desire-noalt observer).
 
     `relationship_level` is one of {0, 50, 75, 100}, matching the experiment's
     intimacy slider conditions.
@@ -480,13 +480,13 @@ def alternatives_user_prompt_relationship(
     )
 
 
-def alternatives_user_prompt_3act(
+def alternatives_user_prompt(
     vignette,
     observed_action_text,
     *,
     effort_text=None,
     intimacy_level=None,
-    reward_text=None,
+    desire_text=None,
 ):
     """Build the user prompt for the alternative-generation call in the 3-action
     inverse experiments (Studies 1a, 1b, 2a, 2b).
@@ -496,8 +496,8 @@ def alternatives_user_prompt_3act(
 
       - Study 1a (`food_inv_desire`):     effort_text + intimacy_level
       - Study 1b (`food_inv_joint_de`):   intimacy_level
-      - Study 2a (`food_inv_intimacy`):   reward_text + effort_text
-      - Study 2b (`food_inv_joint_ie`):   reward_text
+      - Study 2a (`food_inv_intimacy`):   desire_text + effort_text
+      - Study 2b (`food_inv_joint_ie`):   desire_text
 
     Mirrors how the human participant sees the trial (vignette + revealed
     condition paragraphs + observed action), per `feedback_llm_as_participant`.
@@ -506,8 +506,8 @@ def alternatives_user_prompt_3act(
     qualitative descriptor humans see.
     """
     parts = [f"Scenario: {vignette}"]
-    if reward_text is not None:
-        parts.append(reward_text)
+    if desire_text is not None:
+        parts.append(desire_text)
     if effort_text is not None:
         parts.append(effort_text)
     if intimacy_level is not None:
@@ -558,7 +558,7 @@ DESIRE_SYSTEM_PROMPT = (
 def desire_user_prompt(vignette, state):
     """Build the user prompt for the scenario-level desire rating.
 
-    `state` is the actor's motivational-state paragraph (the scenario's
+    `state` is the actor's desire-state paragraph (the scenario's
     `desire_low` or `desire_high` text). Returns one 0-100 desire magnitude.
     """
     return (

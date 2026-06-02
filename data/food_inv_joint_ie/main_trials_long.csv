@@ -1,4 +1,4 @@
-subject_id,scenario_label,action_condition,motivation,stage,intimacy_rating,effort_rating
+subject_id,scenario_label,action_condition,desire,stage,intimacy_rating,effort_rating
 0237861e-84c3-5585-990e-7eb012f44e78,apples,high_risk_share,high,posterior,75,30
 0237861e-84c3-5585-990e-7eb012f44e78,apples,high_risk_share,high,prior,59,40
 0237861e-84c3-5585-990e-7eb012f44e78,basketball,no_share,low,posterior,49,49

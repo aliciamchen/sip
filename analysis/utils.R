@@ -10,7 +10,7 @@ library(ragg)
 # Legends on right add to width, so widths are increased accordingly
 FIG_WIDTH_LARGE <- 14
 FIG_WIDTH_STANDARD <- 12
-FIG_HEIGHT_TALL <- 5      # For grid layouts (e.g., motivation × model)
+FIG_HEIGHT_TALL <- 5      # For grid layouts (e.g., desire × model)
 FIG_HEIGHT_STANDARD <- 4  # For single-row faceted plots
 FIG_HEIGHT_SHORT <- 3.5   # For correlation plots
 
@@ -45,15 +45,15 @@ scale_color_intimacy <- function() {
 MOTIVATION_LEVELS <- c("Low", "High")
 MOTIVATION_COLORS <- c("Low" = "#C9A8B0", "High" = "#7A4A5A")
 
-scale_fill_motivation <- function() {
+scale_fill_desire <- function() {
   scale_fill_manual(values = MOTIVATION_COLORS)
 }
 
-scale_color_motivation <- function() {
+scale_color_desire <- function() {
   scale_color_manual(values = MOTIVATION_COLORS)
 }
 
-# Effort color scales (discrete) - sage green, distinct from motivation (pink)
+# Effort color scales (discrete) - sage green, distinct from desire (pink)
 # and intimacy (cividis blue→yellow)
 EFFORT_LEVELS <- c("Low effort", "High effort")
 EFFORT_COLORS <- c("Low effort" = "#B5C9A8", "High effort" = "#4A7A4A")
@@ -66,7 +66,7 @@ scale_color_effort <- function() {
   scale_color_manual(values = EFFORT_COLORS)
 }
 
-# Combined condition colors for inv-plan-combined-correlation (motivation + intimacy)
+# Combined condition colors for inv-plan-combined-correlation (desire + intimacy)
 .intimacy_levels <- c(0, 50, 75, 100)
 .intimacy_colors <- viridisLite::viridis(
   n = length(.intimacy_levels),
@@ -155,7 +155,7 @@ save_figure <- function(plot, filename, width = 12, height = 5, ...) {
          device = cairo_pdf, ...)
 }
 
-# Reusable jitter+dodge for risk/access scatter panels
+# Reusable jitter+dodge for risk scatter panels
 POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
                                           dodge.width = 0.06, seed = 67)
 

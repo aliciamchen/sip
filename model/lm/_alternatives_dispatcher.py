@@ -5,13 +5,13 @@ inverse-planning variants.
 
 Two conditioning modes are supported via `--conditioning`:
 
-  * `motivation` (default): conditions alternatives on (observed_action,
-    motivation). Used by `food_inv_intimacy_desire_noalt` (observer sees motivation,
-    infers intimacy). 16 scenarios × 4 actions × 2 motivations = 128 cells.
+  * `desire` (default): conditions alternatives on (observed_action,
+    desire). Used by `food_inv_intimacy_desire_noalt` (observer sees desire,
+    infers intimacy). 16 scenarios × 4 actions × 2 desires = 128 cells.
 
   * `relationship`: conditions alternatives on (observed_action,
     relationship_condition). Used by `food_inv_desire_intimacy_noalt` (observer sees
-    relationship, infers motivation). 16 scenarios × 4 actions × 4 relationship
+    relationship, infers desire). 16 scenarios × 4 actions × 4 relationship
     levels = 256 cells.
 
 The general design rule: alternatives are conditioned on what the observer
@@ -21,16 +21,16 @@ matches what a human observer would entertain.
 For each cell, prompt Llama-3.3-70B-Instruct-Turbo to list the set of plausible
 alternative actions the actor could have taken instead of the observed action.
 The LM decides set size; no fixed quota. Each alternative is tagged with a
-binary is_share flag so the V/access/effort scoring downstream can be applied.
+binary is_share flag so the V/risk/effort scoring downstream can be applied.
 
 Output:
-    --conditioning motivation, --domain food   → model/outputs/lm_alternatives_food_inv_intimacy_desire_noalt.csv
-    --conditioning motivation, --domain nonfood → model/outputs/lm_alternatives_nonfood.csv
+    --conditioning desire, --domain food   → model/outputs/lm_alternatives_food_inv_intimacy_desire_noalt.csv
+    --conditioning desire, --domain nonfood → model/outputs/lm_alternatives_nonfood.csv
     --conditioning relationship, --domain food → model/outputs/lm_alternatives_food_inv_desire_intimacy_noalt.csv
     --conditioning relationship, --domain nonfood → model/outputs/lm_alternatives_relationship_nonfood.csv
 
 Usage:
-    uv run python model/lm/generate_alternatives_motivation.py
+    uv run python model/lm/generate_alternatives_desire.py
     uv run python model/lm/generate_alternatives_relationship.py
 
 Requires:
@@ -68,7 +68,7 @@ TEMPERATURE = 1.0
 MAX_TOKENS = 800
 MAX_PARSE_RETRIES = 5
 ACTION_COLS = ["action_0", "action_1", "action_2", "action_3"]
-MOTIVATIONS = ["low", "high"]
+DESIRES = ["low", "high"]
 RELATIONSHIPS = [0, 50, 75, 100]
 
 # How many cells to elicit concurrently. One LM call per cell (with up to
@@ -83,11 +83,11 @@ CHECKPOINT_EVERY = 16
 # filenames) to use; --conditioning selects which axis the alternatives are
 # split along.
 _DOMAIN_PATHS = {
-    ("food", "motivation"): {
+    ("food", "desire"): {
         "scenarios": "scenarios.csv",
         "output": "lm_alternatives_food_inv_intimacy_desire_noalt.csv",
     },
-    ("nonfood", "motivation"): {
+    ("nonfood", "desire"): {
         "scenarios": "scenarios_nonfood.csv",
         "output": "lm_alternatives_nonfood.csv",
     },
@@ -103,7 +103,7 @@ _DOMAIN_PATHS = {
 
 
 from prompts import ALTERNATIVES_SYSTEM_PROMPT
-from prompts import alternatives_user_prompt as format_motivation_user_prompt
+from prompts import alternatives_user_prompt as format_desire_user_prompt
 from prompts import (
     alternatives_user_prompt_relationship as format_relationship_user_prompt,
 )
@@ -202,9 +202,9 @@ def main(domain, conditioning):
     print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
     client = Together(api_key=api_key)
 
-    if conditioning == "motivation":
-        levels = MOTIVATIONS
-        level_label = "motivation"
+    if conditioning == "desire":
+        levels = DESIRES
+        level_label = "desire"
     else:
         levels = RELATIONSHIPS
         level_label = "relationship_condition"
@@ -240,10 +240,10 @@ def main(domain, conditioning):
             for level in levels:
                 if (scenario, observed_col, level) in done_cells:
                     continue
-                if conditioning == "motivation":
-                    reward_text = row[f"reward_{level}"]
-                    user_prompt = format_motivation_user_prompt(
-                        vignette, reward_text, observed_action_text
+                if conditioning == "desire":
+                    desire_text = row[f"desire_{level}"]
+                    user_prompt = format_desire_user_prompt(
+                        vignette, desire_text, observed_action_text
                     )
                 else:
                     user_prompt = format_relationship_user_prompt(
@@ -324,13 +324,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--conditioning",
-        choices=("motivation", "relationship"),
-        default="motivation",
+        choices=("desire", "relationship"),
+        default="desire",
         help=(
-            "Which axis to condition alternatives on. 'motivation' (default) "
-            "is used by food_inv_intimacy_desire_noalt (observer sees motivation, "
+            "Which axis to condition alternatives on. 'desire' (default) "
+            "is used by food_inv_intimacy_desire_noalt (observer sees desire, "
             "infers intimacy); 'relationship' is used by food_inv_desire_intimacy_noalt "
-            "(observer sees relationship, infers motivation)."
+            "(observer sees relationship, infers desire)."
         ),
     )
     args = parser.parse_args()

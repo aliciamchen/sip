@@ -1,7 +1,7 @@
 """Generate predictions for food_inv_desire.
 
 Reads jointly-fit utility weights + alpha_observer from this experiment's own
-fit_results.csv (NOT from the forward fit), runs the reward observer on a
+fit_results.csv (NOT from the forward fit), runs the desire observer on a
 per-scenario grid, and writes preds_<variant>.npy + preds_summary.csv.
 """
 
@@ -18,7 +18,7 @@ import pandas as pd  # noqa: E402
 
 from _helpers import (  # noqa: E402
     desire_table_kwargs,
-    load_3act_fit_results,
+    load_fit_results,
 )
 from observers import (  # noqa: E402
     observer_desire_base,
@@ -41,7 +41,7 @@ def main():
     print(f"Generating predictions: {EXPERIMENT_SLUG}")
     print("=" * 60)
 
-    fit_params = load_3act_fit_results(EXPERIMENT_SLUG)
+    fit_params = load_fit_results(EXPERIMENT_SLUG)
     output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
 

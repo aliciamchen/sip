@@ -15,9 +15,9 @@ through the corresponding `cv/cv_food_inv_*.py` thin wrapper.
 The experiments differ in which latent the observer infers and how
 many slider responses participants give per trial:
 
-  Study 2a (`food_inv_intimacy`)   — infer intimacy given (reward, effort)
-  Study 1a (`food_inv_desire`)     — infer reward given (effort, intimacy)
-  Study 1b (`food_inv_joint_de`)   — joint over (reward, effort) given intimacy
+  Study 2a (`food_inv_intimacy`)   — infer intimacy given (desire, effort)
+  Study 1a (`food_inv_desire`)     — infer desire given (effort, intimacy)
+  Study 1b (`food_inv_joint_de`)   — joint over (desire, effort) given intimacy
 
 All share the joint-fit logic in `model/inverse/_helpers.py` — there is
 no transfer between studies.
@@ -67,7 +67,7 @@ from tables import (  # noqa: E402
     DesireLevels,
     IntimacyLevels,
     SCENARIO_LABELS,
-    actions_3act,
+    actions,
 )
 from utils import get_project_root  # noqa: E402
 
@@ -76,7 +76,7 @@ N_SCENARIOS = len(SCENARIO_LABELS)
 INTIMACY_GRID_100 = np.asarray(IntimacyLevels) * 100.0
 DESIRE_GRID_100 = np.asarray(DesireLevels) * 100.0
 INTIMACY_IDX_TO_LEVEL = {0: 0, 1: 50, 2: 75, 3: 100}
-N_ACTIONS = int(len(actions_3act))
+N_ACTIONS = int(len(actions))
 
 
 # Per-variant (observer_fn, utility_param_names, uses_v). Each registry pairs
@@ -186,12 +186,12 @@ def _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test):
 
 
 # ==============================================================================
-# Study 2 — infer intimacy given (reward, effort)
+# Study 2a — infer intimacy given (desire, effort)
 # ==============================================================================
 
 
 def _loso_intimacy(slug):
-    data, action, scenario_idx, reward_condition, effort_condition, response = (
+    data, action, scenario_idx, desire_condition, effort_condition, response = (
         load_intimacy_data(slug)
     )
     scenario_idx_np = np.asarray(scenario_idx)
@@ -212,19 +212,19 @@ def _loso_intimacy(slug):
                 utility_param_names=utility_names,
                 action=action[train_mask],
                 scenario_idx=scenario_idx[train_mask],
-                reward_condition=reward_condition[train_mask],
+                desire_condition=desire_condition[train_mask],
                 effort_condition=effort_condition[train_mask],
                 response=response[train_mask],
                 table_kwargs=tk,
                 verbose=False,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Padded shape: (padded_slot, scenario, observed_action, reward, effort, intimacy_101)
+            # Padded shape: (padded_slot, scenario, observed_action, desire, effort, intimacy_101)
             # The observed action sits in slot 0.
 
             held_out = table[
                 0, fold, :, :, :, :
-            ]  # (observed_action, reward, effort, 101)
+            ]  # (observed_action, desire, effort, 101)
             for a_idx in range(N_ACTIONS):
                 for r in (0, 1):
                     for e in (0, 1):
@@ -234,7 +234,7 @@ def _loso_intimacy(slug):
                             {
                                 "scenario_label": scenario_label,
                                 "action": a_idx,
-                                "reward_condition": "low" if r == 0 else "high",
+                                "desire_condition": "low" if r == 0 else "high",
                                 "effort_condition": "low" if e == 0 else "high",
                                 "expected_intimacy": expected_intimacy,
                                 "model": variant,
@@ -247,7 +247,7 @@ def _loso_intimacy(slug):
                     0,
                     int(scenario_idx[i]),
                     int(action[i]),
-                    int(reward_condition[i]),
+                    int(desire_condition[i]),
                     int(effort_condition[i]),
                     :,
                 ]
@@ -282,7 +282,7 @@ def main_intimacy():
 
 
 # ==============================================================================
-# Study 3b — infer reward (desire) given (effort, intimacy)
+# Study 1a — infer desire given (effort, intimacy)
 # ==============================================================================
 
 
@@ -315,7 +315,7 @@ def _loso_desire(slug):
                 verbose=False,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Shape: (padded_slot, scenario, observed_action, effort, intimacy, reward)
+            # Shape: (padded_slot, scenario, observed_action, effort, intimacy, desire)
             # The canonical observed action sits in slot 0; slots 1..k are LM alts.
 
             held_out = table[
@@ -380,9 +380,9 @@ def main_desire():
 
 
 # ==============================================================================
-# Study 4a — joint over (reward, effort) given intimacy
+# Study 1b — joint over (desire, effort) given intimacy
 # ==============================================================================
-# Two slider responses per trial: P(reward=HIGH) and P(effort=HIGH). Per-trial
+# Two slider responses per trial: P(desire=HIGH) and P(effort=HIGH). Per-trial
 # test NLL sums the two binary cross-entropies, matching the training loss.
 
 
@@ -392,7 +392,7 @@ def _loso_joint_de(slug):
         action,
         scenario_idx,
         relationship_condition,
-        response_reward,
+        response_desire,
         response_effort,
     ) = load_joint_de_data(slug)
     scenario_idx_np = np.asarray(scenario_idx)
@@ -414,14 +414,14 @@ def _loso_joint_de(slug):
                 action=action[train_mask],
                 scenario_idx=scenario_idx[train_mask],
                 relationship_condition=relationship_condition[train_mask],
-                response_reward=response_reward[train_mask],
+                response_desire=response_desire[train_mask],
                 response_effort=response_effort[train_mask],
                 table_kwargs=tk,
                 verbose=False,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Padded shape: (padded_slot, scenario, observed_action, relationship_4, reward, effort)
-            # joint over (reward, effort); observed action sits in slot 0.
+            # Padded shape: (padded_slot, scenario, observed_action, relationship_4, desire, effort)
+            # joint over (desire, effort); observed action sits in slot 0.
 
             held_out = table[
                 0, fold, :, :, :, :
@@ -458,7 +458,7 @@ def _loso_joint_de(slug):
                 desire_post = joint.sum(axis=1)
                 p_e_high = float(joint[:, 1].sum())
                 # desire: NLL of the response bin under the 101-bin posterior
-                resp_idx = int(np.clip(round(float(response_reward[i])), 0, 100))
+                resp_idx = int(np.clip(round(float(response_desire[i])), 0, 100))
                 test_nll += -float(np.log(max(float(desire_post[resp_idx]), 1e-8)))
                 # effort: binary cross-entropy on the 0-100 slider
                 p_human = float(response_effort[i]) / 100.0
@@ -496,7 +496,7 @@ def main_joint_de():
 
 
 # ==============================================================================
-# Study 2b — joint over (intimacy, effort) given reward
+# Study 2b — joint over (intimacy, effort) given desire
 # ==============================================================================
 
 
@@ -505,7 +505,7 @@ def _loso_joint_ie(slug):
         data,
         action,
         scenario_idx,
-        reward_condition,
+        desire_condition,
         response_intimacy,
         response_effort,
     ) = load_joint_ie_data(slug)
@@ -527,19 +527,19 @@ def _loso_joint_ie(slug):
                 utility_param_names=utility_names,
                 action=action[train_mask],
                 scenario_idx=scenario_idx[train_mask],
-                reward_condition=reward_condition[train_mask],
+                desire_condition=desire_condition[train_mask],
                 response_intimacy=response_intimacy[train_mask],
                 response_effort=response_effort[train_mask],
                 table_kwargs=tk,
                 verbose=False,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Padded shape: (padded_slot, scenario, observed_action, reward, intimacy_101, effort)
+            # Padded shape: (padded_slot, scenario, observed_action, desire, intimacy_101, effort)
             # joint over (intimacy, effort); observed action sits in slot 0.
 
             held_out = table[
                 0, fold, :, :, :, :
-            ]  # (observed_action, reward, intimacy_101, effort)
+            ]  # (observed_action, desire, intimacy_101, effort)
             for a_idx in range(N_ACTIONS):
                 for r in (0, 1):
                     joint = held_out[a_idx, r, :, :]  # (101, 2)
@@ -550,7 +550,7 @@ def _loso_joint_ie(slug):
                         {
                             "scenario_label": scenario_label,
                             "action": a_idx,
-                            "reward_condition": "low" if r == 0 else "high",
+                            "desire_condition": "low" if r == 0 else "high",
                             "expected_intimacy": expected_intimacy,
                             "p_effort_high": p_effort_high,
                             "model": variant,
@@ -563,7 +563,7 @@ def _loso_joint_ie(slug):
                     0,
                     int(scenario_idx[i]),
                     int(action[i]),
-                    int(reward_condition[i]),
+                    int(desire_condition[i]),
                     :,
                     :,
                 ]

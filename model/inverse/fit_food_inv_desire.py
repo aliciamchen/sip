@@ -1,6 +1,6 @@
 """Fit observer + actor utility weights for food_inv_desire.
 
-Study 3b — observer knows (effort, intimacy), infers desire. Each variant jointly
+Study 1a — observer knows (effort, intimacy), infers desire. Each variant jointly
 fits its utility weights and alpha_observer from this experiment's posterior data
 (no transfer from the forward fit). Writes outputs/food_inv_desire/fit_results.csv.
 """

@@ -2,7 +2,7 @@
 
 ## Terminology note
 
-The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`desire_high` scenario paragraphs and the `desire_condition` factor). The model's internal variables and the processed-data column still use "reward"/"motivation" (e.g., `p_high_reward`, and the `motivation` column that `json_to_csv.py` writes) — the same concept under an older name that predates the switch to "desire" on the experiment side. A later, larger change will rename "reward"/"motivation" to "desire" on the model side too (the fitting, CV, and table code); it's deferred for now.
+The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`desire_high` scenario paragraphs and the `desire_condition` factor). The model's internal variables and the processed-data column still use "reward"/"desire" (e.g., `p_high_reward`, and the `desire` column that `json_to_csv.py` writes) — the same concept under an older name that predates the switch to "desire" on the experiment side. A later, larger change will rename "reward"/"desire" to "desire" on the model side too (the fitting, CV, and table code); it's deferred for now.
 
 ## Stimulus sources
 
@@ -24,17 +24,9 @@ The stimulus set for all four active inverse-planning experiments. Carries the e
 | `low_risk_share` | Low-risk (non-saliva) sharing — the effort cost lives in the `low_risk_share_effort_*` paragraph, not the action text |
 | `high_risk_share` | High-risk (saliva) sharing |
 
-### Legacy stimulus sets (`experiments/legacy/`)
-
-Archived; their experiments are no longer active. Each is still generated from its `.py` source and regenerate-able via `build/csv_to_json.py` (legacy routing):
-
-- `legacy/scenarios.csv` — 4-action canonical (no-share / no-risk / moderate-risk / high-risk; `action_0`…`action_3`), the original forward Study 1a + archived inverse experiments.
-- `legacy/scenarios_effort.csv` — 2-action effort set (non-saliva `action_1` vs saliva `action_2`, with `effort_low`/`effort_high` paragraphs; reward fixed high), the original forward Study 1b.
-- `legacy/scenarios_nonfood.csv` — non-food parallel of the 4-action set across substance / shared-space / privacy categories (adds a `scenario_type` column); a basis for the planned Study 3.
-
 ## Build scripts
 
-The generators that turn source files into the artifacts each experiment loads are in [`experiments/build/`](build/) (never deployed — the deploy only pushes `_lib/` and the per-experiment dirs). The authored scenario data stays at `experiments/scenarios.py` (and `legacy/`).
+The generators that turn source files into the artifacts each experiment loads are in [`experiments/build/`](build/) (never deployed — the deploy only pushes `_lib/` and the per-experiment dirs). The authored scenario data stays at `experiments/scenarios.py`.
 
 - `csv_to_json.py` — scenario CSV → each experiment's `json/stimuli.json` (routing in its `SOURCES` table).
 - `counterbalancing.py` — per-study `json/full_counterbalancing.json` (designs in its `STUDY_CONFIGS` registry; `--study <slug>` for one).
@@ -54,14 +46,9 @@ All four use `scenarios.csv` and follow the noalt-style presentation: the partic
 - [food_inv_intimacy](food_inv_intimacy/README.md) — **Study 2a**: infer intimacy under known desire + effort. Design 2 × 2 × 3.
 - [food_inv_joint_ie](food_inv_joint_ie/README.md) — **Study 2b**: joint inference over intimacy and effort given desire. Design 2 × 3, two sliders per trial (intimacy on the 0–100 scale, effort with paragraph endpoints).
 
-## Legacy experiment dirs
+## Legacy
 
-Legacy experiment code lives under [`experiments/legacy/`](legacy/); their model scripts and analysis qmds still run against the archived data under `data/legacy/` (outputs land in `model/outputs/legacy/`), via the Makefile's per-slug `LEGACY_FORWARD` / `LEGACY_INVERSE` targets.
-
-- **Forward planning** (real data): `food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire` — the manuscript's earlier Studies 1a/1b plus a non-food forward, demoted to legacy in the May 2026 roster refactor.
-- **Pre-3-action inverse**: `food_inv_intimacy_desire_alt`, `food_inv_desire_intimacy_alt`, `food_inv_intimacy_desire_noalt`, `food_inv_desire_intimacy_noalt`, `food_inv_intimacy_effort_alt`, `food_inv_effort_intimacy_alt`. The two `_noalt` dirs retain runnable model code; the `_alt` dirs are data-only (their model code was removed earlier).
-
-The four non-food inverse stubs (`nonfood_inv_*`), scaffolded against the obsolete 4-action design and never run, were deleted in the May 2026 cleanup.
+The **data** from earlier experiments is archived under [`data/legacy/`](../data/legacy/); the legacy experiment code, scenario sets, and analysis were removed in the June 2026 cleanup (recoverable from git history).
 
 ## Counterbalancing
 

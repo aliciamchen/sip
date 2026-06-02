@@ -1,4 +1,4 @@
-"""LOSO CV for food_inv_desire (Study 3b).
+"""LOSO CV for food_inv_desire (Study 1a).
 
 Each fold jointly refits the actor utility weights + alpha_observer on 15
 scenarios, then predicts the held-out scenario. See `_inverse_dispatcher`
