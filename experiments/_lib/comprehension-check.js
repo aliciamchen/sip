@@ -83,17 +83,19 @@ const INTIMACY_SCALE_Q = {
 };
 
 // The second question is "which situation is more likely" (tracks
-// SITUATION_SLIDER_NOTE). Shown in the joint studies (1b, 2b).
+// SITUATION_SLIDER_NOTE). Shown in the joint studies (1b, 2b). The stem quotes
+// the actual slider prompt rather than a vague "first/second question" label.
 const SECOND_QUESTION_Q = {
-  prompt: "Besides the first question, what does the second question ask you to do?",
+  prompt:
+    'In each scenario you answer two slider questions. One of them asks, "Which situation do you think is more likely?" What does that question ask you to do?',
   name: "second_question",
   options: [
-    "Judge which of two described situations you think is more likely.",
-    "Rate how difficult the action was to carry out.",
+    "Judge which of two possible situations you think is more likely to be true.",
+    "Rate how difficult or effortful the action would be.",
     "Choose which of the two people you agree with more.",
     "Describe what you would have done in their place.",
   ],
-  correct: "Judge which of two described situations you think is more likely.",
+  correct: "Judge which of two possible situations you think is more likely to be true.",
 };
 
 // --- Per-study comprehension checks -----------------------------------------
