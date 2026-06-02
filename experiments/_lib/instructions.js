@@ -33,16 +33,17 @@ const INFERENCE_NOTE =
   "<p>In each scenario, two people decide what to do in a situation involving food.</p>" +
   "<p>The descriptions we give you leave out some information — about the characters or about the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
 
-// Clarifies that the desire rating is about how much the two people want the
-// food itself (liking, hunger, appeal), distinct from what they decide to do.
-// Shown in the desire-DV studies (1a, 1b).
+// Clarifies that the desire rating is about how much eating the food would
+// satisfy the two people's current motivational state (appeal, hunger, craving,
+// interest), distinct from what they decide to do and from how easy or hard it is
+// to get it. Shown in the desire-DV studies (1a, 1b).
 const DESIRE_NOTE =
-  '<div class="side-note"><p>By how much the two people <strong>want the food</strong>, we mean how much they would like to eat it — for example because they like that kind of food or are hungry — separate from what they decide to do and from other aspects of the situation. For example, in some situations, people might both want the food a lot but still not end up eating it because of other reasons.</p></div>';
+  '<div class="side-note"><p>By how much the two people <strong>would like the food</strong>, we mean how much eating it would satisfy the motivational state they are in right now — for example, how hungry they are, or how much they like or are interested in that kind of food. This is about the appeal of the food itself, separate from what they decide to do and from how easy or hard it is to get or eat the food. For example, in some situations people might like the food a lot but still not end up eating it for other reasons.</p></div>';
 
 // Explains the desire slider: one end means "not at all", the other "extremely",
 // the middle a moderate amount. Shown in the desire-DV studies (1a, 1b).
 const DESIRE_SLIDER_NOTE =
-  "<p>For the question about how much the two people want the food, sliding the slider all the way to one end means you think they do not want it at all, and all the way to the other end means they want it extremely. Positions in between indicate how much they want it, with the middle meaning a moderate amount.</p>";
+  "<p>For the question about how much the two people would like the food, sliding the slider all the way to one end means you think they would not like it at all, and all the way to the other end means they would like it extremely. Positions in between indicate how much they would like it, with the middle meaning a moderate amount.</p>";
 
 // Explains the relationship slider: the ends mean maximally formal / maximally
 // intimate, the middle means neither, and positions in between are somewhere
@@ -91,7 +92,7 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>In each scenario, we will ask you to rate how much you think the two people want to eat the food.</p>",
+      "<p>In each scenario, we will ask you to rate how much you think the two people would like the food.</p>",
       DESIRE_SLIDER_NOTE,
       TIMING_NOTE_ONE,
       DESIRE_NOTE,
@@ -104,7 +105,7 @@ export const STUDY_INSTRUCTIONS = {
     instructionsPage([INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
     instructionsPage([
-      "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people want to eat the food. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people would like the food. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
       DESIRE_SLIDER_NOTE,
       SITUATION_SLIDER_NOTE,
       TIMING_NOTE_TWO,

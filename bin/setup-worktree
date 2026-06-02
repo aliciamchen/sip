@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Set up a freshly-created git worktree so it can render the analysis qmds and run
+# the data pipeline.
+#
+# renv/library (R packages) and .venv (uv/Python) are gitignored, so they live only in
+# the primary checkout and do NOT come across into a new worktree. Both restore quickly
+# from their global caches, so this is fast on a warm machine. (Raw data is carried in
+# automatically via .worktreeinclude; this script handles only the environments.)
+#
+# Usage, from inside the worktree:
+#   bin/setup-worktree
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+echo "==> Python deps (uv sync)"
+uv sync
+
+echo "==> R deps (renv::restore)"
+Rscript -e 'renv::restore(prompt = FALSE)'
+
+echo "==> Done. This worktree can now render analysis qmds and run analysis/json_to_csv.py."

@@ -15,6 +15,7 @@ Dependency layer 2: imports from `tables.py` (enums, axes) and `utility.py`
 from memo import memo
 
 from tables import (
+    DesireLevels,
     EffortConditions,
     IntimacyLevels,
     ObservedActions,
@@ -902,7 +903,7 @@ def actor_discrete_3act_full_padded_desire[
     observed_action: ObservedActions3Act,
     effort_condition: EffortConditions,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
 ](
     alpha,
     w_v,
@@ -911,7 +912,7 @@ def actor_discrete_3act_full_padded_desire[
     gamma,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor]
@@ -919,7 +920,7 @@ def actor_discrete_3act_full_padded_desire[
     actor: knows(observed_action)
     actor: knows(effort_condition)
     actor: knows(relationship_condition)
-    actor: knows(reward_condition)
+    actor: knows(desire)
     actor: chooses(
         padded_slot in PaddedActionSlots3Act,
         wpp=get_prior_padded_3act_desire(
@@ -937,7 +938,7 @@ def actor_discrete_3act_full_padded_desire[
                 observed_action,
                 effort_condition,
                 relationship_condition,
-                reward_condition,
+                desire,
                 alpha,
                 w_v,
                 w_d,
@@ -945,7 +946,7 @@ def actor_discrete_3act_full_padded_desire[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
             )
         ),
     )
@@ -959,7 +960,7 @@ def actor_discrete_3act_discomfort_only_padded_desire[
     observed_action: ObservedActions3Act,
     effort_condition: EffortConditions,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
 ](
     alpha,
     w_d,
@@ -973,7 +974,7 @@ def actor_discrete_3act_discomfort_only_padded_desire[
     actor: knows(observed_action)
     actor: knows(effort_condition)
     actor: knows(relationship_condition)
-    actor: knows(reward_condition)
+    actor: knows(desire)
     actor: chooses(
         padded_slot in PaddedActionSlots3Act,
         wpp=get_prior_padded_3act_desire(
@@ -991,7 +992,7 @@ def actor_discrete_3act_discomfort_only_padded_desire[
                 observed_action,
                 effort_condition,
                 relationship_condition,
-                reward_condition,
+                desire,
                 alpha,
                 w_d,
                 gamma,
@@ -1010,14 +1011,14 @@ def actor_discrete_3act_base_padded_desire[
     observed_action: ObservedActions3Act,
     effort_condition: EffortConditions,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
 ](
     alpha,
     w_v,
     w_e,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor]
@@ -1025,7 +1026,7 @@ def actor_discrete_3act_base_padded_desire[
     actor: knows(observed_action)
     actor: knows(effort_condition)
     actor: knows(relationship_condition)
-    actor: knows(reward_condition)
+    actor: knows(desire)
     actor: chooses(
         padded_slot in PaddedActionSlots3Act,
         wpp=get_prior_padded_3act_desire(
@@ -1043,13 +1044,13 @@ def actor_discrete_3act_base_padded_desire[
                 observed_action,
                 effort_condition,
                 relationship_condition,
-                reward_condition,
+                desire,
                 alpha,
                 w_v,
                 w_e,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
             )
         ),
     )
@@ -1073,7 +1074,7 @@ def actor_discrete_3act_full_padded_joint_de[
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
     effort_condition: EffortConditions,
 ](
     alpha,
@@ -1083,14 +1084,14 @@ def actor_discrete_3act_full_padded_joint_de[
     gamma,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
     actor: knows(relationship_condition)
-    actor: knows(reward_condition)
+    actor: knows(desire)
     actor: knows(effort_condition)
     actor: chooses(
         padded_slot in PaddedActionSlots3Act,
@@ -1107,7 +1108,7 @@ def actor_discrete_3act_full_padded_joint_de[
                 scenario_idx,
                 observed_action,
                 relationship_condition,
-                reward_condition,
+                desire,
                 effort_condition,
                 alpha,
                 w_v,
@@ -1116,7 +1117,7 @@ def actor_discrete_3act_full_padded_joint_de[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
             )
         ),
     )
@@ -1129,14 +1130,14 @@ def actor_discrete_3act_discomfort_only_padded_joint_de[
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
     effort_condition: EffortConditions,
 ](alpha, w_d, gamma, access_table: ..., effort_table: ..., prior_table: ...):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
     actor: knows(relationship_condition)
-    actor: knows(reward_condition)
+    actor: knows(desire)
     actor: knows(effort_condition)
     actor: chooses(
         padded_slot in PaddedActionSlots3Act,
@@ -1153,7 +1154,7 @@ def actor_discrete_3act_discomfort_only_padded_joint_de[
                 scenario_idx,
                 observed_action,
                 relationship_condition,
-                reward_condition,
+                desire,
                 effort_condition,
                 alpha,
                 w_d,
@@ -1172,7 +1173,7 @@ def actor_discrete_3act_base_padded_joint_de[
     scenario_idx: Scenarios,
     observed_action: ObservedActions3Act,
     relationship_condition: RelationshipConditions,
-    reward_condition: RewardConditions,
+    desire: DesireLevels,
     effort_condition: EffortConditions,
 ](
     alpha,
@@ -1180,14 +1181,14 @@ def actor_discrete_3act_base_padded_joint_de[
     w_e,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
     actor: knows(relationship_condition)
-    actor: knows(reward_condition)
+    actor: knows(desire)
     actor: knows(effort_condition)
     actor: chooses(
         padded_slot in PaddedActionSlots3Act,
@@ -1204,14 +1205,14 @@ def actor_discrete_3act_base_padded_joint_de[
                 scenario_idx,
                 observed_action,
                 relationship_condition,
-                reward_condition,
+                desire,
                 effort_condition,
                 alpha,
                 w_v,
                 w_e,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
             )
         ),
     )
@@ -1237,8 +1238,9 @@ def actor_continuous_3act_full_padded_intimacy[
     gamma,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -1271,7 +1273,8 @@ def actor_continuous_3act_full_padded_intimacy[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
+                desire_table,
             )
         ),
     )
@@ -1336,8 +1339,9 @@ def actor_continuous_3act_base_padded_intimacy[
     w_e,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -1368,7 +1372,8 @@ def actor_continuous_3act_base_padded_intimacy[
                 w_e,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
+                desire_table,
             )
         ),
     )
@@ -1394,8 +1399,9 @@ def actor_continuous_3act_full_padded_joint_ie[
     gamma,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -1423,7 +1429,8 @@ def actor_continuous_3act_full_padded_joint_ie[
                 gamma,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
+                desire_table,
             )
         ),
     )
@@ -1483,8 +1490,9 @@ def actor_continuous_3act_base_padded_joint_ie[
     w_e,
     access_table: ...,
     effort_table: ...,
-    v_padded_table: ...,
+    g_padded_table: ...,
     prior_table: ...,
+    desire_table: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -1510,7 +1518,8 @@ def actor_continuous_3act_base_padded_joint_ie[
                 w_e,
                 access_table,
                 effort_table,
-                v_padded_table,
+                g_padded_table,
+                desire_table,
             )
         ),
     )

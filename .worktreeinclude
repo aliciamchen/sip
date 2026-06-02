@@ -1,3 +1,5 @@
 .env
 data/pilots/
 experiments/pilots/
+# Active-layout raw pilot data (gitignored, small, not regenerable) — carry into worktrees.
+data/*/raw_data/
