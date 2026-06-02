@@ -342,7 +342,7 @@ def intimacy_table_kwargs(uses_g, domain="food"):
         uses_g,
         "Study 2a",
         "food_inv_intimacy",
-        desire_loader=load_lm_scenario_desire,
+        desire_loader=lambda: load_lm_scenario_desire("food_inv_intimacy"),
     )
 
 
@@ -379,7 +379,7 @@ def joint_ie_table_kwargs(uses_g, domain="food"):
         uses_g,
         "Study 2b",
         "food_inv_joint_ie",
-        desire_loader=load_lm_scenario_desire,
+        desire_loader=lambda: load_lm_scenario_desire("food_inv_joint_ie"),
     )
 
 

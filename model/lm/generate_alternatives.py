@@ -17,8 +17,8 @@ besides scenario + observed_action), and the resulting cell count:
 One LM elicitation per cell (parse-retries up to MAX_PARSE_RETRIES); each call
 returns a JSON array of variable-length alternatives.
 
-Output:
-    --study food_inv_desire  →  model/outputs/lm/lm_alternatives_food_inv_desire.csv
+Output (one folder per study slug):
+    --study food_inv_desire  →  model/outputs/lm/food_inv_desire/lm_alternatives.csv
 
 Usage:
     uv run python model/lm/generate_alternatives.py --study food_inv_desire
@@ -75,25 +75,25 @@ ALT_GEN_TEMPERATURE = 0.2
 _STUDY_CONFIG = {
     "food_inv_desire": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives_food_inv_desire.csv",
+        "output": "lm_alternatives.csv",
         "show": ("effort", "intimacy"),
         "cell_cols": ("effort_condition", "intimacy_condition"),
     },
     "food_inv_joint_de": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives_food_inv_joint_de.csv",
+        "output": "lm_alternatives.csv",
         "show": ("intimacy",),
         "cell_cols": ("intimacy_condition",),
     },
     "food_inv_intimacy": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives_food_inv_intimacy.csv",
+        "output": "lm_alternatives.csv",
         "show": ("desire", "effort"),
         "cell_cols": ("desire_condition", "effort_condition"),
     },
     "food_inv_joint_ie": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives_food_inv_joint_ie.csv",
+        "output": "lm_alternatives.csv",
         "show": ("desire",),
         "cell_cols": ("desire_condition",),
     },
@@ -178,8 +178,8 @@ def main(study):
     print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
     client = Together(api_key=api_key)
 
-    output_dir = get_project_root() / "model" / "outputs" / "lm"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = get_project_root() / "model" / "outputs" / "lm" / study
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / cfg["output"]
 
     cell_cols = cfg["cell_cols"]

@@ -6,10 +6,10 @@ food_inv_joint_ie). Pick the study with --study.
 
 For each scenario, builds a unified action list combining (i) the 3 canonical
 actions from `scenarios.csv` and (ii) the unique LM-generated alternatives
-from the study's `lm_alternatives_<slug>.csv` (deduped case-insensitively).
-The LM then rates this single unified list on risk, effort, and V in
-separate prompts — so slot 0 (canonical observed action) and slots 1..k (alts)
-end up on the same comparative scale by construction.
+from the study's `outputs/lm/<slug>/lm_alternatives.csv` (deduped
+case-insensitively). The LM then rates this single unified list on risk, effort,
+and g in separate prompts — so slot 0 (canonical observed action) and slots
+1..k (alts) end up on the same comparative scale by construction.
 
 Three design choices baked in:
 
@@ -33,7 +33,7 @@ the desire-free goal-satisfaction of the action (replaces the old signed-valence
 V); desire is the inferred latent in 1a/1b, and an LM-rated per-condition scalar
 in the given-desire studies 2a/2b.
 
-Outputs:
+Outputs — all written into the study's own folder, outputs/lm/<slug>/:
   - lm_scenario_params.csv (canonical risk + effort; risk broadcast
     across effort_condition)
   - lm_scenario_params_marginal.csv (canonical risk only, no effort_
@@ -41,31 +41,32 @@ Outputs:
   - lm_scenario_g.csv (canonical g per (scenario, action); desire-free)
   - lm_scenario_desire.csv (per (scenario, desire_condition) desire scalar;
     given-desire studies 2a/2b only)
-  - lm_alternatives_features_<slug>.csv (alts risk + effort; risk broadcast
+  - lm_alternatives_features.csv (alts risk + effort; risk broadcast
     across effort_condition; the row's cell columns are the study's generation
     cell, plus an effort_condition feature column. For studies whose observer
     INFERS effort, effort is not a generation axis, so each alt gets a feature
     row for BOTH effort conditions.)
-  - lm_alternatives_g_<slug>.csv (alts g per (scenario, observed, <cell cols>,
+  - lm_alternatives_g.csv (alts g per (scenario, observed, <cell cols>,
     alt_idx); desire-free, no desire axis)
 
 Cost (per study, NUM_RUNS=10 per prompt): risk 16 × 10 = 160 calls; effort
 16 × 2 × 10 = 320; g 16 × 10 = 160; desire (2a/2b only) 16 × 2 × 10 = 320;
 ~640-960 calls per study.
 
-Note on the canonical CSV scope: this script writes the SHARED canonical tables
-(lm_scenario_params.csv, lm_scenario_g.csv) that all four active
-inverse studies read. Each study's run re-scores the canonical actions with that
-study's alt set as comparative context. For final results, run a sweep with the
-union of all studies' alts as the comparative reference set.
+Canonical-table scope: the canonical actions are re-scored per study, in the
+comparative frame of that study's own alternative set, and written into the
+study's folder (NOT a single shared file). This is deliberate — within a study,
+canonical and alts share one comparative scale (what the actor softmax needs);
+across studies the canonical values may differ by frame, so they are kept
+separate rather than overwriting one shared table.
 
 Usage:
     uv run python model/lm/score_merged.py --study food_inv_desire
 
 Requires:
     - TOGETHER_API_KEY in env or .env
-    - lm_alternatives_food_inv_desire.csv produced by
-      generate_alternatives.py
+    - outputs/lm/<slug>/lm_alternatives.csv produced by
+      generate_alternatives.py --study <slug>
 """
 
 import argparse
@@ -105,12 +106,19 @@ from prompts import system_prompt as build_system_prompt
 
 
 N_ACTIONS = 3
+# Canonical action names (the scenarios.csv columns), in slot order. The output
+# CSVs label the `action` column with these instead of the integer index 0/1/2,
+# so the saved tables are traceable to the experiment's variables. The LM-facing
+# protocol stays neutral (positional action_0/1/2) to avoid leaking the risk
+# level into the ratings.
+CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 EFFORT_CONDITIONS = ["low", "high"]
 DESIRES = ["low", "high"]
 
-# All studies write the shared canonical CSVs (re-scored with that study's alt
-# set as comparative context). `cell_cols` are the generation-cell key columns
-# in the study's alternatives CSV (besides scenario_label + observed_action);
+# Each study writes its own canonical CSVs into outputs/lm/<slug>/ (re-scored in
+# that study's alt set as comparative context). `cell_cols` are the
+# generation-cell key columns in the study's alternatives CSV (besides
+# scenario_label + observed_action);
 # the alt feature/V rows carry these. `effort_inferred` flags studies whose
 # observer infers effort: their generation cell does NOT include effort, so the
 # alt's effort feature is emitted for BOTH effort conditions (the effort feature
@@ -123,50 +131,50 @@ DESIRES = ["low", "high"]
 _STUDY_CONFIG = {
     "food_inv_desire": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives_food_inv_desire.csv",
+        "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
         "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
-        "alternatives_features_output": "lm_alternatives_features_food_inv_desire.csv",
-        "alternatives_g_output": "lm_alternatives_g_food_inv_desire.csv",
+        "alternatives_features_output": "lm_alternatives_features.csv",
+        "alternatives_g_output": "lm_alternatives_g.csv",
         "cell_cols": ("effort_condition", "intimacy_condition"),
         "effort_inferred": False,
         "desire_given": False,
     },
     "food_inv_joint_de": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives_food_inv_joint_de.csv",
+        "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
         "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
-        "alternatives_features_output": "lm_alternatives_features_food_inv_joint_de.csv",
-        "alternatives_g_output": "lm_alternatives_g_food_inv_joint_de.csv",
+        "alternatives_features_output": "lm_alternatives_features.csv",
+        "alternatives_g_output": "lm_alternatives_g.csv",
         "cell_cols": ("intimacy_condition",),
         "effort_inferred": True,
         "desire_given": False,
     },
     "food_inv_intimacy": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives_food_inv_intimacy.csv",
+        "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
         "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
         "canonical_desire_output": "lm_scenario_desire.csv",
-        "alternatives_features_output": "lm_alternatives_features_food_inv_intimacy.csv",
-        "alternatives_g_output": "lm_alternatives_g_food_inv_intimacy.csv",
+        "alternatives_features_output": "lm_alternatives_features.csv",
+        "alternatives_g_output": "lm_alternatives_g.csv",
         "cell_cols": ("desire_condition", "effort_condition"),
         "effort_inferred": False,
         "desire_given": True,
     },
     "food_inv_joint_ie": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives_food_inv_joint_ie.csv",
+        "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
         "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
         "canonical_desire_output": "lm_scenario_desire.csv",
-        "alternatives_features_output": "lm_alternatives_features_food_inv_joint_ie.csv",
-        "alternatives_g_output": "lm_alternatives_g_food_inv_joint_ie.csv",
+        "alternatives_features_output": "lm_alternatives_features.csv",
+        "alternatives_g_output": "lm_alternatives_g.csv",
         "cell_cols": ("desire_condition",),
         "effort_inferred": True,
         "desire_given": True,
@@ -192,9 +200,7 @@ def _build_merged_actions(scenario_row, alt_rows_for_scenario):
       - alt_norms_in_order: list[str] of length n_unique_alts (normalized alt
         texts in the order they appear in merged_action_texts)
     """
-    canonical_actions = [
-        scenario_row[c] for c in ("no_share", "low_risk_share", "high_risk_share")
-    ]
+    canonical_actions = [scenario_row[c] for c in CANONICAL_ACTIONS]
     canonical_norms = [_norm(a) for a in canonical_actions]
     canonical_norm_set = set(canonical_norms)
 
@@ -365,7 +371,7 @@ def _build_canonical_params_row(
     return {
         "scenario_label": scenario,
         "effort_condition": effort_cond,
-        "action": action_idx,
+        "action": CANONICAL_ACTIONS[action_idx],
         "risk_raw": a["raw"],
         "risk_raw_std": a["raw_std"],
         "risk": normalize_risk(a["raw"]) if not np.isnan(a["raw"]) else np.nan,
@@ -383,7 +389,7 @@ def _build_canonical_marginal_row(scenario, action_idx, canonical_norm, risk):
     a = risk[canonical_norm]
     return {
         "scenario_label": scenario,
-        "action": action_idx,
+        "action": CANONICAL_ACTIONS[action_idx],
         "risk_raw": a["raw"],
         "risk_raw_std": a["raw_std"],
         "risk": normalize_risk(a["raw"]) if not np.isnan(a["raw"]) else np.nan,
@@ -396,7 +402,7 @@ def _build_canonical_g_row(scenario, action_idx, canonical_norm, g):
     val = g[canonical_norm]
     return {
         "scenario_label": scenario,
-        "action": action_idx,
+        "action": CANONICAL_ACTIONS[action_idx],
         "g_raw": val["raw"],
         "g_raw_std": val["raw_std"],
         "g": normalize_g(val["raw"]) if not np.isnan(val["raw"]) else np.nan,
@@ -512,11 +518,11 @@ def main(study):
     cfg = _STUDY_CONFIG[study]
     api_key = load_api_key()
 
-    # Load scenarios + alternatives.
+    # Load scenarios + alternatives. All LM outputs for a study live in that
+    # study's folder, outputs/lm/<slug>/.
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
-    alts_path = (
-        get_project_root() / "model" / "outputs" / "lm" / cfg["alternatives_input"]
-    )
+    study_dir = get_project_root() / "model" / "outputs" / "lm" / study
+    alts_path = study_dir / cfg["alternatives_input"]
     if not alts_path.exists():
         raise SystemExit(
             f"Alternatives CSV not found at {alts_path}. "
@@ -530,8 +536,8 @@ def main(study):
         flush=True,
     )
 
-    output_dir = get_project_root() / "model" / "outputs" / "lm"
-    output_dir.mkdir(exist_ok=True)
+    output_dir = study_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
     desire_given = cfg.get("desire_given", False)
     paths = {
         "canonical_params": output_dir / cfg["canonical_params_output"],

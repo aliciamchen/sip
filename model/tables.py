@@ -200,7 +200,7 @@ def load_lm_scenario_params(filepath=None):
     for _, row in df.iterrows():
         s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        a_idx = int(row["action"])
+        a_idx = ACTION_LABEL_TO_IDX[row["action"]]
         risk[s_idx, e_idx, a_idx] = row["risk"]
         effort[s_idx, e_idx, a_idx] = row["effort"]
     return {"risk": jnp.array(risk), "effort": jnp.array(effort)}
@@ -230,7 +230,7 @@ def load_lm_scenario_params_marginal(filepath=None):
     flat = np.zeros((n_scen, n_act), dtype=np.float32)
     for _, row in df.iterrows():
         s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
-        a_idx = int(row["action"])
+        a_idx = ACTION_LABEL_TO_IDX[row["action"]]
         flat[s_idx, a_idx] = row["risk"]
     broadcast = np.broadcast_to(flat[:, None, :], (n_scen, N_EFFORT_CONDITIONS, n_act))
     return jnp.array(broadcast)
@@ -264,12 +264,12 @@ def load_lm_g(domain="food", filepath=None):
     g = np.zeros((len(scenario_to_idx), N_ACTIONS), dtype=np.float32)
     for _, row in df.iterrows():
         s = scenario_to_idx[row["scenario_label"]]
-        a = int(row["action"])
+        a = ACTION_LABEL_TO_IDX[row["action"]]
         g[s, a] = row["g"]
     return jnp.array(g)
 
 
-def load_lm_scenario_desire(domain="food", filepath=None):
+def load_lm_scenario_desire(slug, filepath=None):
     """Load the per-condition desire scalar for the given-desire studies
     (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`).
 
@@ -278,19 +278,20 @@ def load_lm_scenario_desire(domain="food", filepath=None):
     on the [0, 1] scale (the 0–100 rating divided by 100). That scalar plugs into
     the actor utility as the constant `desire` in w_v · desire · g.
 
+    `slug` selects the study folder `outputs/lm/<slug>/lm_scenario_desire.csv`.
+
     Returns a jnp.array of shape (16, 2) indexed by
     (scenario, desire_condition), or None if the CSV is missing.
     """
-    if domain == "food":
-        scenario_to_idx = SCENARIO_TO_IDX
-        filename = "lm_scenario_desire.csv"
-    elif domain == "nonfood":
-        scenario_to_idx = NONFOOD_SCENARIO_TO_IDX
-        filename = "lm_scenario_desire_nonfood.csv"
-    else:
-        raise ValueError(f"Unknown domain: {domain!r}")
+    scenario_to_idx = SCENARIO_TO_IDX
     if filepath is None:
-        filepath = Path(__file__).resolve().parent / "outputs" / "lm" / filename
+        filepath = (
+            Path(__file__).resolve().parent
+            / "outputs"
+            / "lm"
+            / slug
+            / "lm_scenario_desire.csv"
+        )
     if not Path(filepath).exists():
         return None
     df = pd.read_csv(filepath)
@@ -345,29 +346,23 @@ def load_padded_lm_tables_desire(
     g from `lm_scenario_g.csv` (depends on scenario + action, broadcasts
     across effort and intimacy).
 
-    Slots 1..k hold the LM-generated alternatives for that cell, from
-    `lm_alternatives_food_inv_desire.csv`,
-    `lm_alternatives_features_food_inv_desire.csv`, and
-    `lm_alternatives_g_food_inv_desire.csv`. Remaining slots are null-padded
-    (risk/effort/g = 0; prior = NULL_EPSILON to keep the softmax
+    Slots 1..k hold the LM-generated alternatives for that cell, from this
+    study's folder `outputs/lm/food_inv_desire/`: `lm_alternatives.csv`,
+    `lm_alternatives_features.csv`, and `lm_alternatives_g.csv`. Remaining slots
+    are null-padded (risk/effort/g = 0; prior = NULL_EPSILON to keep the softmax
     differentiable).
 
     Returns a dict {risk, effort, g, prior} of jnp.arrays, or None if any
     required CSV is missing.
     """
-    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
+    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_desire"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
-    alternatives_path = (
-        alternatives_path or outputs_dir / "lm_alternatives_food_inv_desire.csv"
-    )
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
     alternatives_features_path = (
-        alternatives_features_path
-        or outputs_dir / "lm_alternatives_features_food_inv_desire.csv"
+        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
-    alternatives_g_path = (
-        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_desire.csv"
-    )
+    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
 
     required = [
         canonical_path,
@@ -403,12 +398,12 @@ def load_padded_lm_tables_desire(
     canon_ae_lookup = {}
     for _, row in canonical_df.iterrows():
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        canon_ae_lookup[(row["scenario_label"], e_idx, int(row["action"]))] = (
+        canon_ae_lookup[(row["scenario_label"], e_idx, ACTION_LABEL_TO_IDX[row["action"]])] = (
             float(row["risk"]),
             float(row["effort"]),
         )
     canon_g_lookup = {
-        (row["scenario_label"], int(row["action"])): float(row["g"])
+        (row["scenario_label"], ACTION_LABEL_TO_IDX[row["action"]]): float(row["g"])
         for _, row in canonical_g_df.iterrows()
     }
 
@@ -507,13 +502,14 @@ LLM_TABLES_DESIRE_PADDED = load_padded_lm_tables_desire()
 # when any required CSV is missing, so imports stay clean before LM elicitation
 # has been run for that study.
 #
-# Expected CSV schema (produced by score_merged.py --study <slug>):
+# Expected CSV schema (produced by score_merged.py --study <slug>, written into
+# that study's folder outputs/lm/<slug>/):
 #   - canonical risk/effort: lm_scenario_params.csv
 #       (scenario_label, effort_condition, action, risk, effort)
 #   - canonical g: lm_scenario_g.csv (scenario_label, action, g)
-#   - alts features: lm_alternatives_features_<slug>.csv keyed by the study's
+#   - alts features: lm_alternatives_features.csv keyed by the study's
 #       generation cell + effort_condition + alt_idx, columns risk, effort
-#   - alts g: lm_alternatives_g_<slug>.csv keyed by gen cell + alt_idx, column g
+#   - alts g: lm_alternatives_g.csv keyed by gen cell + alt_idx, column g
 
 
 def _canonical_lookups(canonical_path, canonical_g_path):
@@ -525,12 +521,12 @@ def _canonical_lookups(canonical_path, canonical_g_path):
     ae = {}
     for _, row in canonical_df.iterrows():
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        ae[(row["scenario_label"], e_idx, int(row["action"]))] = (
+        ae[(row["scenario_label"], e_idx, ACTION_LABEL_TO_IDX[row["action"]])] = (
             float(row["risk"]),
             float(row["effort"]),
         )
     g = {
-        (row["scenario_label"], int(row["action"])): float(row["g"])
+        (row["scenario_label"], ACTION_LABEL_TO_IDX[row["action"]]): float(row["g"])
         for _, row in canonical_g_df.iterrows()
     }
     return ae, g
@@ -552,16 +548,15 @@ def load_padded_lm_tables_joint_de(
       g:      (16, 3, 4, S)        [scenario, obs, relationship, slot]
       prior:  (16, 3, 4, S)
     """
-    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
+    outputs_dir = (
+        Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_de"
+    )
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
     alternatives_features_path = (
-        alternatives_features_path
-        or outputs_dir / "lm_alternatives_features_food_inv_joint_de.csv"
+        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
-    alternatives_g_path = (
-        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_joint_de.csv"
-    )
+    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
     required = [
         canonical_path,
         canonical_g_path,
@@ -667,16 +662,15 @@ def load_padded_lm_tables_intimacy(
       g:      (16, 3, 2, 2, S)     [scenario, obs, desire, effort, slot]
       prior:  (16, 3, 2, 2, S)
     """
-    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
+    outputs_dir = (
+        Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_intimacy"
+    )
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
     alternatives_features_path = (
-        alternatives_features_path
-        or outputs_dir / "lm_alternatives_features_food_inv_intimacy.csv"
+        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
-    alternatives_g_path = (
-        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_intimacy.csv"
-    )
+    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
     required = [
         canonical_path,
         canonical_g_path,
@@ -779,16 +773,15 @@ def load_padded_lm_tables_joint_ie(
       g:      (16, 3, 2, S)        [scenario, obs, desire, slot]
       prior:  (16, 3, 2, S)
     """
-    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm"
+    outputs_dir = (
+        Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_ie"
+    )
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
     alternatives_features_path = (
-        alternatives_features_path
-        or outputs_dir / "lm_alternatives_features_food_inv_joint_ie.csv"
+        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
-    alternatives_g_path = (
-        alternatives_g_path or outputs_dir / "lm_alternatives_g_food_inv_joint_ie.csv"
-    )
+    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
     required = [
         canonical_path,
         canonical_g_path,

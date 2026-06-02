@@ -59,7 +59,7 @@ Joint studies sum the two appropriate per-slider losses. Each study fits its own
 
 ## Stimulus sets and LM table families
 
-The studies use the **3-action** set (`scenarios.csv`). Fixed-action tables: `LLM_TABLES` (risk/effort, (16, 2, 3)) and `load_lm_g()` (goal-satisfaction g, (16, 3)). The given-desire studies (2a/2b) also load `load_lm_scenario_desire()` (per-condition desire scalar, (16, 2)). Each study also has a padded LM-alternatives table family loaded by `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}` (built from per-study `lm_alternatives_{,features_,g_}<slug>.csv` + the shared canonical CSVs).
+The studies use the **3-action** set (`scenarios.csv`). All LM `risk`/`effort`/`g` ratings are on a 0-6 scale normalized to `[0, 1]` (the absolute scale is absorbed by the freely-fitted weight, so all three share one range). Each study's LM tables live in **its own folder**, `outputs/lm/<slug>/`. The padded LM-alternatives table family is loaded by `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading from `outputs/lm/<slug>/`: the canonical `lm_scenario_{params,g}.csv` (re-scored in that study's own comparative frame — NOT shared across studies) plus that study's `lm_alternatives{,_features,_g}.csv`. The given-desire studies (2a/2b) also load `load_lm_scenario_desire(slug)` (per-condition desire scalar, (16, 2)) from the same folder. (`LLM_TABLES` / `load_lm_g()` are a study-independent fixed-action reference produced by `score_features.py`; they are not on the fit path.)
 
 All LM table loaders return `None` when their CSV is missing, so imports stay clean before elicitation has been run.
 
@@ -81,9 +81,9 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 
 - `client.py` — shared LM-call infrastructure (`get_ratings_concurrent`, schema helpers, JSON parsing, `load_api_key`).
 - `prompts.py` — prompt templates; `alternatives_user_prompt` composes only the observer-visible condition paragraphs per study.
-- `score_features.py` — fixed-action risk + effort (16 × 2 effort × 3 actions) plus a marginal risk table. → `outputs/lm/lm_scenario_params{,_marginal}.csv`.
-- `generate_alternatives.py --study <slug>` — LM-generated counterfactual alternatives per cell. → `outputs/lm/lm_alternatives_<slug>.csv`. The `_STUDY_CONFIG` registry covers all four active studies; each iterates scenario × observed_action over only the observer-visible axes (cell counts: 1a 384, 1b 192, 2a 192, 2b 96).
-- `score_merged.py --study <slug>` — scores the unified [canonical + unique alts] list per scenario on risk (effort-marginal), effort (per effort_condition), and goal-satisfaction g (one desire-free prompt), so slot 0 and slots 1..k share one comparative frame. For the given-desire studies (2a, 2b) it additionally rates the per-(scenario, desire_condition) desire scalar. Writes the shared canonical CSVs (`lm_scenario_g.csv`, and `lm_scenario_desire.csv` for 2a/2b) + per-study `lm_alternatives_features_<slug>.csv` and `lm_alternatives_g_<slug>.csv`. For studies whose observer **infers** effort (1b, 2b), each alt's effort feature is emitted for both effort conditions (effort is a feature axis, not a generation axis).
+- `score_features.py` — study-independent fixed-action risk + effort (16 × 2 effort × 3 actions) plus a marginal risk table. → top-level `outputs/lm/lm_scenario_params{,_marginal}.csv`. This is a reference table; the fits read the per-study merged canonical from `score_merged.py`, not this.
+- `generate_alternatives.py --study <slug>` — LM-generated counterfactual alternatives per cell. → `outputs/lm/<slug>/lm_alternatives.csv`. The `_STUDY_CONFIG` registry covers all four active studies; each iterates scenario × observed_action over only the observer-visible axes (cell counts: 1a 384, 1b 192, 2a 192, 2b 96).
+- `score_merged.py --study <slug>` — scores the unified [canonical + unique alts] list per scenario on risk (effort-marginal), effort (per effort_condition), and goal-satisfaction g (one desire-free prompt), so slot 0 and slots 1..k share one comparative frame. For the given-desire studies (2a, 2b) it additionally rates the per-(scenario, desire_condition) desire scalar. Writes everything into the study's own folder `outputs/lm/<slug>/`: the canonical `lm_scenario_{params,params_marginal,g}.csv` (re-scored in that study's frame, NOT shared across studies; + `lm_scenario_desire.csv` for 2a/2b) and `lm_alternatives_{features,g}.csv`. For studies whose observer **infers** effort (1b, 2b), each alt's effort feature is emitted for both effort conditions (effort is a feature axis, not a generation axis).
 - `_features_dispatcher.py` — internal multi-mode helper for the canonical scorers.
 
 **Three design choices in merged scoring:** (1) canonical + alts scored together (shared comparative frame); (2) risk is effort-marginal — risk(a|s) is formally intimacy- and effort-independent (modulated by `(1-I)^γ` in the utility), so it's elicited without the effort paragraph and broadcast; (3) the reward term is `w_v · desire · g`, where g (goal-satisfaction) is LM-elicited desire-free per action (one prompt, no desire axis) and `desire` is the inferred latent (1a/1b) or an LM-rated per-condition scalar (2a/2b); `is_share` is preserved only as diagnostic metadata. (If the journal manuscript at `SIP_journal/main.tex` still describes a signed-valence `V`, the code is ahead of it — the code uses `w_v · desire · g`; see `docs/continuous-desire-model.md`.)
@@ -111,7 +111,7 @@ Per `outputs/<slug>/`:
 - `cv_folds.csv` — per-fold fit results from LOSO CV.
 - `cv_preds_summary.csv` — held-out per-condition summary.
 
-LM-elicited tables live in `outputs/lm/` (`lm_scenario_*`, `lm_alternatives_*`). Preregistration documents are in `preregs/` at the repo root. Sandboxed/experimental code is in `model/sandbox/`.
+LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_scenario_*`, `lm_alternatives_*`). Preregistration documents are in `preregs/` at the repo root. Sandboxed/experimental code is in `model/sandbox/`.
 
 ### Terminology
 

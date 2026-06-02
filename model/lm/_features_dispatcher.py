@@ -4,8 +4,8 @@ Shared LM-scoring helpers for the feature / goal-satisfaction elicitation
 scripts (`score_features.py`, `score_merged.py`).
 
 Pure functions only: prompt formatters for the variable-length (LM-alternatives)
-scoring calls, 0-6 → model-scale normalizers (risk → [0, 2], effort → [0, 1],
-g → [0, 1]), response parsers, and small schema/token helpers. The scripts that
+scoring calls, 0-6 → model-scale normalizers (risk, effort, g all → [0, 1]),
+response parsers, and small schema/token helpers. The scripts that
 import these own the actual LM calls and CSV writing.
 """
 
@@ -46,8 +46,11 @@ def format_g_prompt_variable(vignette, action_texts, desire_object=None):
 # ==============================================================================
 
 
-def normalize_risk(value, target_max=2.0):
-    """0-6 -> [0, target_max]. Matches the [0, 2] range of the fixed risk vector."""
+def normalize_risk(value, target_max=1.0):
+    """0-6 -> [0, 1]. On the same scale as effort and g. The absolute scale is
+    non-identifiable in the fit (the free, unregularized weight w_d absorbs any
+    constant factor), so all three features share [0, 1] for comparability rather
+    than carrying feature-specific ranges."""
     return value * (target_max / 6.0)
 
 

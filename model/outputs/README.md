@@ -4,8 +4,16 @@ Outputs are grouped by experiment slug:
 
 ```
 outputs/
-├── lm/                                # LM-elicited tables (lm_*.csv)
-└── <slug>/                            # one folder per inverse study
+├── lm/                                # LM-elicited tables, one folder per study slug
+│   └── <slug>/
+│       ├── lm_scenario_params.csv         # canonical risk + effort (this study's frame)
+│       ├── lm_scenario_params_marginal.csv
+│       ├── lm_scenario_g.csv              # canonical goal-satisfaction g
+│       ├── lm_scenario_desire.csv         # per-condition desire scalar (2a/2b only)
+│       ├── lm_alternatives.csv            # LM-generated counterfactual actions per cell
+│       ├── lm_alternatives_features.csv   # risk + effort for the alts
+│       └── lm_alternatives_g.csv          # goal-satisfaction g for the alts
+└── <slug>/                            # one folder per inverse study (fits/predictions/CV)
     ├── fit_results.csv
     ├── preds_<variant>.npy            # raw posterior arrays per variant (gitignored)
     ├── preds_summary.csv              # summary scalars (gitignored)
@@ -32,27 +40,37 @@ though the concept is desire), `desire` the desire magnitude, `g` the LM-elicite
 goal-satisfaction. The per-action discomfort feature is `risk` (weight `w_d`). See
 [`model/README.md`](../README.md) for the full terminology.
 
-## LM-elicited tables (`outputs/lm/`)
+## LM-elicited tables (`outputs/lm/<slug>/`)
 
-### `lm_scenario_params.csv` — fixed-action risk + effort
+Every study keeps its LM tables in its own folder. The canonical actions are re-scored in the
+comparative frame of that study's own alternative set, so each study's `lm_scenario_*.csv` can
+differ — keeping them per-folder means no study's run overwrites another's. All `risk`, `effort`,
+and `g` columns are LM ratings on a 0-6 scale normalized to `[0, 1]`.
+
+### `<slug>/lm_scenario_params.csv` — canonical risk + effort
 
 Per (scenario, effort_condition, action) risk and effort ratings for the 3-action set, 96
 rows (16 × 2 × 3). Columns: `scenario_label`, `effort_condition`, `action`, plus
 `risk`/`risk_raw`/`risk_raw_std`, `effort`/`effort_raw`/`effort_raw_std`, and the
-`n_runs_*` / `n_failures_*` run-count columns. Produced by `model/lm/score_features.py`.
+`n_runs_*` / `n_failures_*` run-count columns. (`*_raw` are the 0-6 ratings; `risk`/`effort`
+are normalized to `[0, 1]`.) Produced by `model/lm/score_merged.py`.
 
-### `lm_scenario_params_marginal.csv` — effort-marginal risk
+### `<slug>/lm_scenario_params_marginal.csv` — effort-marginal risk
 
 Risk ratings elicited without the effort paragraph (risk is intimacy- and effort-independent
 in the utility, modulated by `(1−I)^γ`). Same schema minus the effort columns.
 
-### Per-study padded LM-alternatives tables
+### `<slug>/lm_alternatives*.csv` — padded LM-alternatives tables
 
-`generate_alternatives.py --study <slug>` writes `lm_alternatives_<slug>.csv` (the
+`generate_alternatives.py --study <slug>` writes `<slug>/lm_alternatives.csv` (the
 LM-generated counterfactual actions per cell), and `score_merged.py --study <slug>` writes
-`lm_alternatives_features_<slug>.csv` (risk + effort for the alts), `lm_alternatives_g_<slug>.csv`
-(goal-satisfaction g), the shared canonical `lm_scenario_g.csv`, and — for the given-desire
-studies (2a/2b) — `lm_scenario_desire.csv` (per-condition desire scalar).
+`<slug>/lm_alternatives_features.csv` (risk + effort for the alts), `<slug>/lm_alternatives_g.csv`
+(goal-satisfaction g), the canonical `<slug>/lm_scenario_g.csv`, and — for the given-desire
+studies (2a/2b) — `<slug>/lm_scenario_desire.csv` (per-condition desire scalar).
+
+(`model/lm/score_features.py` produces a separate, study-independent fixed-action
+`outputs/lm/lm_scenario_params{,_marginal}.csv` at the top level; it is a reference table and
+is not read by the fits, which use the per-study merged-frame canonical above.)
 
 ## Per-study outputs (`<slug>/`)
 

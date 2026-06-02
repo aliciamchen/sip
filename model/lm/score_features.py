@@ -5,7 +5,7 @@ Score risk + effort features for the 3-action set (Studies 1a, 1b, 2a, 2b).
 For each of the 16 scenarios in experiments/scenarios.csv, estimates per
 (effort_condition, action):
 
-- risk(a): physical / informational / spatial exposure  (0-6 -> [0, 2])
+- risk(a): physical / informational / spatial exposure  (0-6 -> [0, 1])
 - effort(a): physical / logistical cost                   (0-6 -> [0, 1])
 
 Same elicitation pattern as score_effort_features.py — the LM is prompted with
@@ -54,6 +54,10 @@ from prompts import user_prompt as build_user_prompt
 
 
 N_ACTIONS = 3
+# Canonical action names (the scenarios.csv columns), in slot order. The output
+# CSV labels the `action` column with these instead of the integer index 0/1/2.
+# The LM-facing protocol stays neutral (positional action_0/1/2).
+CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 EFFORT_CONDITIONS = ["low", "high"]
 
 RISK_SYSTEM_PROMPT = build_system_prompt("risk", n_actions=N_ACTIONS)
@@ -66,7 +70,7 @@ def load_scenarios():
 
 
 def _action_texts_3(row):
-    return [row[c] for c in ("no_share", "low_risk_share", "high_risk_share")]
+    return [row[c] for c in CANONICAL_ACTIONS]
 
 
 def format_full_vignette(row, effort_condition):
@@ -173,7 +177,7 @@ def run_effort_conditional(client, scenarios_df, output_path):
                     {
                         "scenario_label": scenario,
                         "effort_condition": effort_condition,
-                        "action": action,
+                        "action": CANONICAL_ACTIONS[action],
                         "risk_raw": a_mean,
                         "risk_raw_std": a_std,
                         "effort_raw": e_mean,
@@ -203,15 +207,15 @@ def run_effort_conditional(client, scenarios_df, output_path):
     print(
         f"Total rows: {len(results_df)} (expected 96 = 16 scenarios × 2 effort × 3 actions)"
     )
-    for col, target in [("risk", "[0, 2]"), ("effort", "[0, 1]")]:
+    for col, target in [("risk", "[0, 1]"), ("effort", "[0, 1]")]:
         print(
             f"\n{col.capitalize()} (normalized, target {target}):"
             f"\n  Mean: {results_df[col].mean():.2f}, Std: {results_df[col].std():.2f}"
             f"\n  Range: [{results_df[col].min():.2f}, {results_df[col].max():.2f}]"
         )
 
-    print("\n=== Effort manipulation sanity (action_1 effort: low vs high) ===")
-    act1 = results_df[results_df["action"] == 1]
+    print("\n=== Effort manipulation sanity (low_risk_share effort: low vs high) ===")
+    act1 = results_df[results_df["action"] == "low_risk_share"]
     wide = act1.pivot(
         index="scenario_label", columns="effort_condition", values="effort"
     )
@@ -269,9 +273,7 @@ def run_marginal_risk(client, scenarios_df, output_path):
                     "action": action,
                     "risk_raw": a_mean,
                     "risk_raw_std": a_std,
-                    "risk": normalize_risk(a_mean)
-                    if not np.isnan(a_mean)
-                    else np.nan,
+                    "risk": normalize_risk(a_mean) if not np.isnan(a_mean) else np.nan,
                     "n_runs_risk": len(risk_ratings),
                     "n_failures_risk": risk_failures,
                 }
@@ -286,7 +288,7 @@ def run_marginal_risk(client, scenarios_df, output_path):
     print(f"\nSaved effort-marginal risk to {output_path}")
     print(f"Total rows: {len(results_df)} (expected 48 = 16 scenarios × 3 actions)")
     print(
-        f"\nRisk (normalized, target [0, 2]):"
+        f"\nRisk (normalized, target [0, 1]):"
         f"\n  Mean: {results_df['risk'].mean():.2f}, Std: {results_df['risk'].std():.2f}"
         f"\n  Range: [{results_df['risk'].min():.2f}, {results_df['risk'].max():.2f}]"
     )
