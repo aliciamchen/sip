@@ -474,6 +474,19 @@ def _load_existing(path, key_cols):
     return records, done
 
 
+def _scored_scenarios(path):
+    """Scenarios in a canonical/alternatives CSV that are actually SCORED — i.e.
+    have a non-null `g`. Mere presence isn't enough: a migrated risk/effort-only
+    table has `g`=NaN and must be re-scored, and a row only ever gets `g` once the
+    whole feature set was written for it."""
+    if not Path(path).exists():
+        return set()
+    df = pd.read_csv(path)
+    if "g" not in df.columns or df.empty:
+        return set()
+    return set(df[df["g"].notna()]["scenario_label"])
+
+
 def main(study, scenario_workers=SCENARIO_WORKERS):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
@@ -521,13 +534,11 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
         flush=True,
     )
 
-    # Resume: a scenario is done when it's scored in every output table. The alts
-    # table mixes scored scenarios (non-null risk) with not-yet-scored stage-1
-    # rows, so 'done' there means its rows carry a non-null risk.
-    canonical_records, done_canonical = _load_existing(
-        canonical_path, ("scenario_label",)
-    )
-    done_canonical = {t[0] for t in done_canonical}
+    # Resume: a scenario is done only when it's actually SCORED in every output
+    # table — keyed on a non-null `g`, NOT mere presence. (The migrated
+    # risk/effort-only tables have rows with `g`=NaN; those must re-score.)
+    canonical_records, _ = _load_existing(canonical_path, ("scenario_label",))
+    done_canonical = _scored_scenarios(canonical_path)
     if desire_given:
         desire_records, done_desire = _load_existing(desire_path, ("scenario_label",))
         done_desire = {t[0] for t in done_desire}
@@ -535,8 +546,8 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
         desire_records, done_desire = [], None
 
     scored_alts_by_scenario = {}
-    if "risk" in alts_df.columns:
-        for s, grp in alts_df[alts_df["risk"].notna()].groupby("scenario_label"):
+    if "g" in alts_df.columns:
+        for s, grp in alts_df[alts_df["g"].notna()].groupby("scenario_label"):
             scored_alts_by_scenario[s] = grp.to_dict("records")
     done_alts = set(scored_alts_by_scenario)
 
