@@ -268,10 +268,14 @@ def _score_scenario(client, scenario_row, alt_rows_for_scenario, system_prompts,
         }
 
     # --- effort: 1 prompt per (scenario, effort_condition) ---
+    # The effort manipulation lives on the low_risk_share action's paragraph
+    # (`low_risk_share_effort_{low,high}` in scenarios.csv), the same column
+    # generate_alternatives.py appends as the effort context.
     effort = {}
     for effort_cond in EFFORT_CONDITIONS:
         vignette_with_effort = (
-            f"{scenario_row['vignette']} {scenario_row[f'effort_{effort_cond}']}"
+            f"{scenario_row['vignette']} "
+            f"{scenario_row[f'low_risk_share_effort_{effort_cond}']}"
         )
         print(f"  effort (effort={effort_cond}, n_actions={n_actions})...", flush=True)
         effort_agg, eff_n_runs, eff_n_fail = _score_one_call(
