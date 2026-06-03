@@ -7,7 +7,6 @@ outputs/
 ├── lm/                                # LM-elicited tables, one folder per study slug
 │   └── <slug>/
 │       ├── lm_scenario_params.csv         # canonical risk + effort (this study's frame)
-│       ├── lm_scenario_params_marginal.csv
 │       ├── lm_scenario_g.csv              # canonical goal-satisfaction g
 │       ├── lm_scenario_desire.csv         # per-condition desire scalar (2a/2b only)
 │       ├── lm_alternatives.csv            # LM-generated counterfactual actions per cell
@@ -53,12 +52,10 @@ Per (scenario, effort_condition, action) risk and effort ratings for the 3-actio
 rows (16 × 2 × 3). Columns: `scenario_label`, `effort_condition`, `action`, plus
 `risk`/`risk_raw`/`risk_raw_std`, `effort`/`effort_raw`/`effort_raw_std`, and the
 `n_runs_*` / `n_failures_*` run-count columns. (`*_raw` are the 0-6 ratings; `risk`/`effort`
-are normalized to `[0, 1]`.) Produced by `model/lm/score_merged.py`.
-
-### `<slug>/lm_scenario_params_marginal.csv` — effort-marginal risk
-
-Risk ratings elicited without the effort paragraph (risk is intimacy- and effort-independent
-in the utility, modulated by `(1−I)^γ`). Same schema minus the effort columns.
+are normalized to `[0, 1]`.) Risk is scored **effort-marginally** (vignette only, no effort
+paragraph — risk is intimacy- and effort-independent in the utility, modulated by `(1−I)^γ`)
+and the same value is broadcast across both `effort_condition` rows; effort is scored per
+condition. Produced by `model/lm/score_merged.py`.
 
 ### `<slug>/lm_alternatives*.csv` — padded LM-alternatives tables
 
@@ -69,7 +66,7 @@ LM-generated counterfactual actions per cell), and `score_merged.py --study <slu
 studies (2a/2b) — `<slug>/lm_scenario_desire.csv` (per-condition desire scalar).
 
 (`model/lm/score_features.py` produces a separate, study-independent fixed-action
-`outputs/lm/lm_scenario_params{,_marginal}.csv` at the top level; it is a reference table and
+`outputs/lm/lm_scenario_params.csv` at the top level; it is a reference table and
 is not read by the fits, which use the per-study merged-frame canonical above.)
 
 ## Per-study outputs (`<slug>/`)

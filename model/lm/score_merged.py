@@ -34,10 +34,9 @@ V); desire is the inferred latent in 1a/1b, and an LM-rated per-condition scalar
 in the given-desire studies 2a/2b.
 
 Outputs — all written into the study's own folder, outputs/lm/<slug>/:
-  - lm_scenario_params.csv (canonical risk + effort; risk broadcast
+  - lm_scenario_params.csv (canonical risk + effort; risk is scored
+    effort-marginally — vignette only, no effort paragraph — then broadcast
     across effort_condition)
-  - lm_scenario_params_marginal.csv (canonical risk only, no effort_
-    condition column — same values as above, kept for the effort-marginal loader)
   - lm_scenario_g.csv (canonical g per (scenario, action); desire-free)
   - lm_scenario_desire.csv (per (scenario, desire_condition) desire scalar;
     given-desire studies 2a/2b only)
@@ -133,7 +132,6 @@ _STUDY_CONFIG = {
         "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
         "alternatives_features_output": "lm_alternatives_features.csv",
         "alternatives_g_output": "lm_alternatives_g.csv",
@@ -145,7 +143,6 @@ _STUDY_CONFIG = {
         "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
         "alternatives_features_output": "lm_alternatives_features.csv",
         "alternatives_g_output": "lm_alternatives_g.csv",
@@ -157,7 +154,6 @@ _STUDY_CONFIG = {
         "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
         "canonical_desire_output": "lm_scenario_desire.csv",
         "alternatives_features_output": "lm_alternatives_features.csv",
@@ -170,7 +166,6 @@ _STUDY_CONFIG = {
         "scenarios": "scenarios.csv",
         "alternatives_input": "lm_alternatives.csv",
         "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_params_marginal_output": "lm_scenario_params_marginal.csv",
         "canonical_g_output": "lm_scenario_g.csv",
         "canonical_desire_output": "lm_scenario_desire.csv",
         "alternatives_features_output": "lm_alternatives_features.csv",
@@ -385,19 +380,6 @@ def _build_canonical_params_row(
     }
 
 
-def _build_canonical_marginal_row(scenario, action_idx, canonical_norm, risk):
-    a = risk[canonical_norm]
-    return {
-        "scenario_label": scenario,
-        "action": CANONICAL_ACTIONS[action_idx],
-        "risk_raw": a["raw"],
-        "risk_raw_std": a["raw_std"],
-        "risk": normalize_risk(a["raw"]) if not np.isnan(a["raw"]) else np.nan,
-        "n_runs_risk": a["n_runs"],
-        "n_failures_risk": a["n_failures"],
-    }
-
-
 def _build_canonical_g_row(scenario, action_idx, canonical_norm, g):
     val = g[canonical_norm]
     return {
@@ -541,7 +523,6 @@ def main(study):
     desire_given = cfg.get("desire_given", False)
     paths = {
         "canonical_params": output_dir / cfg["canonical_params_output"],
-        "canonical_marginal": output_dir / cfg["canonical_params_marginal_output"],
         "canonical_g": output_dir / cfg["canonical_g_output"],
         "alt_features": output_dir / cfg["alternatives_features_output"],
         "alt_g": output_dir / cfg["alternatives_g_output"],
@@ -552,9 +533,6 @@ def main(study):
     # Per-scenario resumability: skip scenarios present in ALL output CSVs.
     canonical_params_records, done_canonical_params = _load_existing(
         paths["canonical_params"], ("scenario_label",)
-    )
-    canonical_marginal_records, _ = _load_existing(
-        paths["canonical_marginal"], ("scenario_label",)
     )
     canonical_g_records, done_canonical_g = _load_existing(
         paths["canonical_g"], ("scenario_label",)
@@ -595,7 +573,6 @@ def main(study):
         return [r for r in records if r["scenario_label"] in fully_done_scalars]
 
     canonical_params_records = _keep_done(canonical_params_records)
-    canonical_marginal_records = _keep_done(canonical_marginal_records)
     canonical_g_records = _keep_done(canonical_g_records)
     alt_features_records = _keep_done(alt_features_records)
     alt_g_records = _keep_done(alt_g_records)
@@ -649,13 +626,6 @@ def main(study):
                         effort,
                     )
                 )
-        # Marginal risk rows (16 × 3 = 48 rows for full table).
-        for action_idx in range(N_ACTIONS):
-            canonical_marginal_records.append(
-                _build_canonical_marginal_row(
-                    scenario, action_idx, canonical_norms[action_idx], risk
-                )
-            )
         # Canonical g rows (16 × 3 = 48 for full table; desire-free).
         for action_idx in range(N_ACTIONS):
             canonical_g_records.append(
@@ -692,9 +662,6 @@ def main(study):
         # Checkpoint after each scenario.
         pd.DataFrame(canonical_params_records).to_csv(
             paths["canonical_params"], index=False
-        )
-        pd.DataFrame(canonical_marginal_records).to_csv(
-            paths["canonical_marginal"], index=False
         )
         pd.DataFrame(canonical_g_records).to_csv(paths["canonical_g"], index=False)
         pd.DataFrame(alt_features_records).to_csv(paths["alt_features"], index=False)

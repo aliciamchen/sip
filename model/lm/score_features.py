@@ -8,17 +8,15 @@ For each of the 16 scenarios in experiments/scenarios.csv, estimates per
 - risk(a): physical / informational / spatial exposure  (0-6 -> [0, 1])
 - effort(a): physical / logistical cost                   (0-6 -> [0, 1])
 
-Same elicitation pattern as score_effort_features.py — the LM is prompted with
-the full (vignette + effort_paragraph) text so the effort manipulation shows
-up in the ratings — but with 3 actions instead of 2.
+The LM is prompted with the full (vignette + effort_paragraph) text so the
+effort manipulation shows up in the ratings, on the fixed 3 canonical actions.
 
-Also produces an effort-marginal risk table (vignette without effort
-paragraph) for studies where the observer infers effort and so does not
-see the effort context.
+This is a study-independent fixed-action reference table; it is NOT on the fit
+path. The fits read the per-study, merged-frame canonical tables written by
+score_merged.py (where risk is scored effort-marginally, unlike here).
 
 Outputs:
 - model/outputs/lm/lm_scenario_params.csv         (96 rows: 16 x 2 efforts x 3 actions)
-- model/outputs/lm/lm_scenario_params_marginal.csv (48 rows: 16 x 3 actions)
 
 10 runs per parameter-type per (scenario, effort_condition), aggregated to
 mean/std. Resumes per scenario if the output CSV already exists.
@@ -83,10 +81,6 @@ def format_risk_prompt(row, effort_condition):
         format_full_vignette(row, effort_condition),
         _action_texts_3(row),
     )
-
-
-def format_risk_prompt_marginal(row):
-    return build_user_prompt("risk", row["vignette"], _action_texts_3(row))
 
 
 def format_effort_prompt(row, effort_condition):
@@ -226,74 +220,6 @@ def run_effort_conditional(client, scenarios_df, output_path):
     )
 
 
-def run_marginal_risk(client, scenarios_df, output_path):
-    """One row per (scenario, action) — 48 rows total."""
-    results = []
-    already_done = set()
-    if output_path.exists():
-        existing = pd.read_csv(output_path)
-        already_done = set(existing["scenario_label"].unique())
-        results = existing.to_dict("records")
-        print(
-            f"Found existing {output_path.name} with "
-            f"{len(already_done)} scenarios already scored — resuming.",
-            flush=True,
-        )
-
-    for idx, row in scenarios_df.iterrows():
-        scenario = row["scenario_label"]
-        if scenario in already_done:
-            print(
-                f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} — already scored, skipping.",
-                flush=True,
-            )
-            continue
-
-        print(
-            f"\n[{idx + 1}/{len(scenarios_df)}] {scenario} (effort-marginal risk)",
-            flush=True,
-        )
-
-        risk_ratings, risk_failures = get_ratings_concurrent(
-            client,
-            RISK_SYSTEM_PROMPT,
-            format_risk_prompt_marginal(row),
-            parse_action_response,
-            response_format=numeric_action_schema(N_ACTIONS),
-            label=f"{scenario}/marginal/risk",
-        )
-        risk_agg = aggregate_action_ratings(risk_ratings, n_actions=N_ACTIONS)
-
-        for action in range(N_ACTIONS):
-            key = f"action_{action}"
-            a_mean, a_std = risk_agg[key]
-            results.append(
-                {
-                    "scenario_label": scenario,
-                    "action": action,
-                    "risk_raw": a_mean,
-                    "risk_raw_std": a_std,
-                    "risk": normalize_risk(a_mean) if not np.isnan(a_mean) else np.nan,
-                    "n_runs_risk": len(risk_ratings),
-                    "n_failures_risk": risk_failures,
-                }
-            )
-
-        acc_str = [f"{risk_agg[f'action_{i}'][0]:.1f}" for i in range(N_ACTIONS)]
-        print(f"  Risk (raw): {acc_str}", flush=True)
-
-        pd.DataFrame(results).to_csv(output_path, index=False)
-
-    results_df = pd.DataFrame(results)
-    print(f"\nSaved effort-marginal risk to {output_path}")
-    print(f"Total rows: {len(results_df)} (expected 48 = 16 scenarios × 3 actions)")
-    print(
-        f"\nRisk (normalized, target [0, 1]):"
-        f"\n  Mean: {results_df['risk'].mean():.2f}, Std: {results_df['risk'].std():.2f}"
-        f"\n  Range: [{results_df['risk'].min():.2f}, {results_df['risk'].max():.2f}]"
-    )
-
-
 def main():
     api_key = load_api_key()
 
@@ -307,13 +233,9 @@ def main():
     output_dir = get_project_root() / "model" / "outputs" / "lm"
     output_dir.mkdir(exist_ok=True)
     cond_path = output_dir / "lm_scenario_params.csv"
-    marg_path = output_dir / "lm_scenario_params_marginal.csv"
 
     print("\n=== Effort-conditional pass (3 actions) ===")
     run_effort_conditional(client, scenarios_df, cond_path)
-
-    print("\n=== Effort-marginal risk pass (3 actions) ===")
-    run_marginal_risk(client, scenarios_df, marg_path)
 
     print("\nDone!")
 

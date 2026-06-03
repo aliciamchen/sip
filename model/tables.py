@@ -206,36 +206,6 @@ def load_lm_scenario_params(filepath=None):
     return {"risk": jnp.array(risk), "effort": jnp.array(effort)}
 
 
-def load_lm_scenario_params_marginal(filepath=None):
-    """Load effort-marginal risk ratings for the 3-action design.
-
-    Risk is effort-independent in the utility, so it's elicited without the
-    effort paragraph; broadcasting it across effort_condition keeps the indexing
-    pattern `risk[scenario, effort, action]` unchanged for the actor inside the
-    observer's `thinks[...]` block.
-
-    Returns a jnp.array of shape (16, 2, 3) or None if the CSV is missing.
-    """
-    if filepath is None:
-        filepath = (
-            Path(__file__).resolve().parent
-            / "outputs"
-            / "lm"
-            / "lm_scenario_params_marginal.csv"
-        )
-    if not Path(filepath).exists():
-        return None
-    df = pd.read_csv(filepath)
-    n_scen, n_act = len(SCENARIO_LABELS), N_ACTIONS
-    flat = np.zeros((n_scen, n_act), dtype=np.float32)
-    for _, row in df.iterrows():
-        s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
-        a_idx = ACTION_LABEL_TO_IDX[row["action"]]
-        flat[s_idx, a_idx] = row["risk"]
-    broadcast = np.broadcast_to(flat[:, None, :], (n_scen, N_EFFORT_CONDITIONS, n_act))
-    return jnp.array(broadcast)
-
-
 def load_lm_g(domain="food", filepath=None):
     """Load goal-satisfaction g table for the 3-action design.
 
@@ -308,7 +278,6 @@ def load_lm_scenario_desire(slug, filepath=None):
 
 
 LLM_TABLES = load_lm_scenario_params()
-_risk_marg = load_lm_scenario_params_marginal()
 
 
 # ==============================================================================
@@ -325,7 +294,6 @@ _risk_marg = load_lm_scenario_params_marginal()
 def load_padded_lm_tables_desire(
     canonical_path=None,
     canonical_g_path=None,
-    alternatives_path=None,
     alternatives_features_path=None,
     alternatives_g_path=None,
 ):
@@ -346,11 +314,12 @@ def load_padded_lm_tables_desire(
     g from `lm_scenario_g.csv` (depends on scenario + action, broadcasts
     across effort and intimacy).
 
-    Slots 1..k hold the LM-generated alternatives for that cell, from this
-    study's folder `outputs/lm/food_inv_desire/`: `lm_alternatives.csv`,
-    `lm_alternatives_features.csv`, and `lm_alternatives_g.csv`. Remaining slots
-    are null-padded (risk/effort/g = 0; prior = NULL_EPSILON to keep the softmax
-    differentiable).
+    Slots 1..k hold the LM-generated alternatives for that cell, scored in this
+    study's folder `outputs/lm/food_inv_desire/`: `lm_alternatives_features.csv`
+    and `lm_alternatives_g.csv` (both keyed by alt_idx, which is all the loader
+    needs — the raw `lm_alternatives.csv` action texts are a `score_merged` input,
+    not a model input). Remaining slots are null-padded (risk/effort/g = 0;
+    prior = NULL_EPSILON to keep the softmax differentiable).
 
     Returns a dict {risk, effort, g, prior} of jnp.arrays, or None if any
     required CSV is missing.
@@ -358,7 +327,6 @@ def load_padded_lm_tables_desire(
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_desire"
     canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
     canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
     alternatives_features_path = (
         alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
     )
@@ -367,7 +335,6 @@ def load_padded_lm_tables_desire(
     required = [
         canonical_path,
         canonical_g_path,
-        alternatives_path,
         alternatives_features_path,
         alternatives_g_path,
     ]
@@ -398,7 +365,9 @@ def load_padded_lm_tables_desire(
     canon_ae_lookup = {}
     for _, row in canonical_df.iterrows():
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        canon_ae_lookup[(row["scenario_label"], e_idx, ACTION_LABEL_TO_IDX[row["action"]])] = (
+        canon_ae_lookup[
+            (row["scenario_label"], e_idx, ACTION_LABEL_TO_IDX[row["action"]])
+        ] = (
             float(row["risk"]),
             float(row["effort"]),
         )

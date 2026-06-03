@@ -9,9 +9,9 @@ The roster is four inverse-planning studies, all on the 3-action stimulus set an
 ```
 LM elicitation  (model/lm/)
     generate_alternatives.py --study <slug>  →  outputs/lm/<slug>/lm_alternatives.csv          (per-study counterfactuals)
-    score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_scenario_{params,params_marginal,g}.csv  (canonical, this study's frame)
-                                                outputs/lm/<slug>/lm_alternatives_{features,g}.csv            (alts; + lm_scenario_desire.csv for 2a/2b)
-    score_features.py   →  outputs/lm/lm_scenario_params{,_marginal}.csv  (study-independent fixed-action risk + effort; not on the fit path)
+    score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_scenario_{params,g}.csv  (canonical, this study's frame)
+                                                outputs/lm/<slug>/lm_alternatives_{features,g}.csv     (alts; + lm_scenario_desire.csv for 2a/2b)
+    score_features.py   →  outputs/lm/lm_scenario_params.csv  (study-independent fixed-action risk + effort; not on the fit path)
         ↓
 Inverse planning  (model/inverse/)       Studies 1a, 1b, 2a, 2b
     fit_<slug>.py     → outputs/<slug>/fit_results.csv
