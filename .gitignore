@@ -31,5 +31,11 @@ notes/
 model/outputs/*/preds.csv
 model/outputs/*/preds_full.csv
 model/outputs/*/preds_summary.csv
+
+# Non-fitted model-behavior visualizations (parameter sweeps + belief-update
+# plots at hand-picked params). Exploratory and not part of the fit pipeline;
+# regenerate from the scripts in model/model_viz_nonfit/. Kept local.
+model/model_viz_nonfit/
+
 .positai
 .claude/worktrees/ 
