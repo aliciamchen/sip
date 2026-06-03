@@ -124,7 +124,12 @@ LM tables (require `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 
 # per-study LM-generated alternatives + merged scoring (one of the 4 slugs):
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
+# or all four at once (sequential), or in parallel processes:
+make lm-alternatives                               # all 4, sequential
+make -j4 lm-alternatives SCENARIO_WORKERS=1        # 4 studies in parallel
 ```
+
+`score_merged` scores `--scenario-workers` scenarios concurrently (default 4; each still fans its `NUM_RUNS` calls out internally, so in-flight requests ≈ `scenario_workers × NUM_RUNS`). Tune to the Together tier's concurrency/RPM limit; lower it when also parallelizing studies with `-j` so `studies × scenario_workers × NUM_RUNS` stays under the cap.
 
 
 Active inverse fits + predictions + CV:

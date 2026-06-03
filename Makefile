@@ -27,6 +27,7 @@ ANALYSIS_QMDS := \
         cv cv-inverse \
         analysis \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
+        $(addprefix lm-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix fit-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix predict-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix cv-,$(EXPERIMENTS_INVERSE)) \
@@ -56,10 +57,11 @@ help:
 	@echo ""
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, predict-inverse, cv-inverse"
-	@echo "  lm, lm-alternatives"
+	@echo "  lm, lm-alternatives   (lm-alternatives does all 4 studies;"
+	@echo "                         'make -j4 lm-alternatives SCENARIO_WORKERS=1' runs them in parallel)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
-	@echo "  fit-<slug>, predict-<slug>, cv-<slug>, data-<slug>"
+	@echo "  lm-<slug>, fit-<slug>, predict-<slug>, cv-<slug>, data-<slug>"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -112,12 +114,24 @@ $(addprefix data-,$(EXPERIMENTS_ALL)): data-%:
 
 lm: lm-alternatives
 
-# LM-generated alternative actions + merged scoring for the padded-action
-# pipeline. Study 1a (food_inv_desire) is migrated; the other active studies'
-# --study entries are added as they are migrated.
-lm-alternatives:
-	uv run python model/lm/generate_alternatives.py --study food_inv_desire
-	uv run python model/lm/score_merged.py          --study food_inv_desire
+# Per-study LM-generated alternatives + merged scoring for the padded-action
+# pipeline. `make lm-alternatives` runs all four studies; the per-study
+# `lm-<slug>` targets let you run one, and `make -j4 lm-alternatives` runs the
+# four studies as PARALLEL processes (each writes to its own outputs/lm/<slug>/
+# folder, so no contention). Within a study, generation must finish before
+# scoring, so those stay ordered.
+#
+# SCENARIO_WORKERS controls how many scenarios score_merged scores concurrently
+# (in-flight requests ≈ SCENARIO_WORKERS × NUM_RUNS). When parallelizing studies
+# with -j, lower it so 4 × SCENARIO_WORKERS × NUM_RUNS stays under your Together
+# tier's limit, e.g.  make -j4 lm-alternatives SCENARIO_WORKERS=1
+SCENARIO_WORKERS ?= 4
+
+lm-alternatives: $(addprefix lm-,$(EXPERIMENTS_INVERSE))
+
+$(addprefix lm-,$(EXPERIMENTS_INVERSE)): lm-%:
+	uv run python model/lm/generate_alternatives.py --study $*
+	uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
 # Fits → outputs/<slug>/fit_results.csv

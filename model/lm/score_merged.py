@@ -67,6 +67,7 @@ Requires:
 
 import argparse
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -92,6 +93,7 @@ from _features_dispatcher import (
 )
 from client import (
     MODEL_ID,
+    NUM_RUNS,
     aggregate_action_ratings,
     get_ratings_concurrent,
     load_api_key,
@@ -110,6 +112,13 @@ N_ACTIONS = 3
 CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 EFFORT_CONDITIONS = ["low", "high"]
 DESIRES = ["low", "high"]
+
+# How many scenarios to score concurrently. Each scenario still fans its NUM_RUNS
+# calls out internally, so the in-flight request count is ~SCENARIO_WORKERS ×
+# NUM_RUNS. Tune to your Together tier with --scenario-workers; if you also run
+# several studies as parallel processes, lower this so the product stays under
+# the tier's concurrency / RPM limit.
+SCENARIO_WORKERS = 4
 
 # Each study writes its own canonical table (lm_scenario.csv) into
 # outputs/lm/<slug>/ (re-scored in that study's alt set as comparative context),
@@ -465,7 +474,7 @@ def _load_existing(path, key_cols):
     return records, done
 
 
-def main(study):
+def main(study, scenario_workers=SCENARIO_WORKERS):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Supported: {sorted(_STUDY_CONFIG.keys())}"
@@ -574,67 +583,71 @@ def main(study):
     scenarios_to_run = [s for s in scenarios_df.index if s not in fully_done]
     print(
         f"\n{len(scenarios_to_run)} scenarios to score "
-        f"(total: {len(scenarios_df)}; already done: {len(fully_done)}).",
+        f"(total: {len(scenarios_df)}; already done: {len(fully_done)}; "
+        f"{scenario_workers} scenarios concurrent × {NUM_RUNS} runs each).",
         flush=True,
     )
 
-    for sc_idx, scenario in enumerate(scenarios_to_run, start=1):
+    def _process_scenario(scenario):
+        """Score one scenario and RETURN its rows. Does NOT touch shared state,
+        so it's safe to run on a worker thread; aggregation + checkpointing happen
+        on the main thread as results arrive."""
         scenario_row = scenarios_df.loc[scenario]
         alt_rows = stage1_df[stage1_df["scenario_label"] == scenario]
-        n_unique_alts = (
-            alt_rows["action_text"].str.lower().str.strip().drop_duplicates().shape[0]
-        )
-        print(
-            f"\n[{sc_idx}/{len(scenarios_to_run)}] {scenario} "
-            f"({len(alt_rows)} alt rows, ~{n_unique_alts} unique)",
-            flush=True,
-        )
-
         result = _score_scenario(client, scenario_row, alt_rows, system_prompts, cfg)
-        risk = result["risk"]
-        effort = result["effort"]
-        g = result["g"]
-        desire = result["desire"]
+        risk, effort, g, desire = (
+            result["risk"],
+            result["effort"],
+            result["g"],
+            result["desire"],
+        )
         canonical_norms = result["canonical_norms"]
-
         # Canonical (slot-0) rows -> lm_scenario.csv (risk + effort + g, 96 rows).
-        for effort_cond in EFFORT_CONDITIONS:
-            for action_idx in range(N_ACTIONS):
-                canonical_records.append(
-                    _build_canonical_row(
-                        scenario,
-                        effort_cond,
-                        action_idx,
-                        canonical_norms[action_idx],
-                        risk,
-                        effort,
-                        g,
-                    )
-                )
+        canon_rows = [
+            _build_canonical_row(scenario, ec, ai, canonical_norms[ai], risk, effort, g)
+            for ec in EFFORT_CONDITIONS
+            for ai in range(N_ACTIONS)
+        ]
         # Per-condition desire scalars (given-desire studies only).
-        if desire_given:
-            for desire_cond in DESIRES:
-                desire_records.append(
-                    _build_canonical_desire_row(scenario, desire_cond, desire)
-                )
-
+        desire_rows = (
+            [_build_canonical_desire_row(scenario, dc, desire) for dc in DESIRES]
+            if desire_given
+            else []
+        )
         # Scored alternatives (Long): when effort is inferred, emit a row per
         # effort_condition (effort is a feature axis); otherwise one row at the
         # cell's observed effort_condition. risk/g repeat across effort rows.
-        rows = []
+        alt_out = []
         for _, alt_row in alt_rows.iterrows():
-            if cfg["effort_inferred"]:
-                effort_conds = list(EFFORT_CONDITIONS)
-            else:
-                effort_conds = [alt_row["effort_condition"]]
+            effort_conds = (
+                list(EFFORT_CONDITIONS)
+                if cfg["effort_inferred"]
+                else [alt_row["effort_condition"]]
+            )
             for ec in effort_conds:
                 r = _build_alt_row(alt_row, risk, effort, g, cfg["cell_cols"], ec)
                 if r is not None:
-                    rows.append(r)
-        scored_alts_by_scenario[scenario] = rows
+                    alt_out.append(r)
+        return scenario, canon_rows, desire_rows, alt_out
 
-        _write_checkpoint()
-        print("  checkpointed", flush=True)
+    # Score up to `scenario_workers` scenarios concurrently (each still fans its
+    # NUM_RUNS calls out internally). Aggregate + checkpoint on the main thread as
+    # each scenario completes, so no lock is needed on the shared records.
+    done_count = 0
+    with ThreadPoolExecutor(max_workers=max(1, scenario_workers)) as ex:
+        futures = {ex.submit(_process_scenario, s): s for s in scenarios_to_run}
+        for fut in as_completed(futures):
+            scenario, canon_rows, desire_rows, alt_out = fut.result()
+            canonical_records.extend(canon_rows)
+            if desire_given:
+                desire_records.extend(desire_rows)
+            scored_alts_by_scenario[scenario] = alt_out
+            done_count += 1
+            _write_checkpoint()
+            print(
+                f"  [{done_count}/{len(scenarios_to_run)}] {scenario} done — checkpointed",
+                flush=True,
+            )
 
     print("\n=== Done ===")
     print("Wrote:")
@@ -652,5 +665,15 @@ if __name__ == "__main__":
         choices=tuple(_STUDY_CONFIG.keys()),
         default="food_inv_desire",
     )
+    parser.add_argument(
+        "--scenario-workers",
+        type=int,
+        default=SCENARIO_WORKERS,
+        help=(
+            "How many scenarios to score concurrently (in-flight requests ≈ this "
+            f"× NUM_RUNS={NUM_RUNS}). Lower it if running several studies in "
+            "parallel so the total stays under your Together tier's limit."
+        ),
+    )
     args = parser.parse_args()
-    main(args.study)
+    main(args.study, scenario_workers=args.scenario_workers)
