@@ -11,7 +11,6 @@ LM elicitation  (model/lm/)
     generate_alternatives.py --study <slug>  →  outputs/lm/<slug>/lm_alternatives.csv          (per-study counterfactuals)
     score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_scenario.csv      (canonical risk+effort+g, this study's frame)
                                                 outputs/lm/<slug>/lm_alternatives.csv  (the alt list + its risk/effort/g; + lm_scenario_desire.csv for 2a/2b)
-    score_features.py   →  outputs/lm/lm_scenario_params.csv  (study-independent fixed-action risk + effort; not on the fit path)
         ↓
 Inverse planning  (model/inverse/)       Studies 1a, 1b, 2a, 2b
     fit_<slug>.py     → outputs/<slug>/fit_results.csv
@@ -42,7 +41,7 @@ Logic shared across experiments (the LOSO loops in `cv/`, the multi-mode helpers
 
 ## Core math (one copy, shared across all experiments)
 
-- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the fixed-action tables (`LLM_TABLES` = risk/effort, `load_lm_g`, `load_lm_scenario_desire`), and the per-study padded LM-alternatives loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`).
+- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the per-study padded LM-alternatives loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_scenario.csv` + `lm_alternatives.csv`), and `load_lm_scenario_desire` (per-condition desire scalar for 2a/2b).
 - `utility.py` — jit-compiled utility functions: the padded families `get_utility_{full,discomfort_only,base}_padded_{desire,joint_de,intimacy,joint_ie}` plus their `get_prior_padded_*` and `get_lm_g_padded_*` helpers. The reward term is `w_v · desire · g`.
 - `actors.py` — actor memo models: the padded inverse actors `actor_discrete_*_padded_{desire,joint_de}` (discrete observed intimacy) and `actor_continuous_*_padded_{intimacy,joint_ie}` (continuous inferred intimacy), used inside the observers' `thinks[...]` blocks.
 - `observers.py` — observer memos, one family per study, each in `_full` / `_discomfort_only` / `_base`:

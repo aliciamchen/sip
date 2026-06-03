@@ -21,7 +21,7 @@ ANALYSIS_QMDS := \
   food-inv-joint-ie-analysis
 
 .PHONY: all help test clean \
-        data lm lm-fixed lm-alternatives \
+        data lm lm-alternatives \
         fit fit-inverse \
         predict predict-inverse \
         cv cv-inverse \
@@ -56,7 +56,7 @@ help:
 	@echo ""
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, predict-inverse, cv-inverse"
-	@echo "  lm-fixed, lm-alternatives"
+	@echo "  lm, lm-alternatives"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  fit-<slug>, predict-<slug>, cv-<slug>, data-<slug>"
@@ -110,11 +110,7 @@ $(addprefix data-,$(EXPERIMENTS_ALL)): data-%:
 # LM elicitation (Llama-3.3-70B via Together AI; needs TOGETHER_API_KEY in .env)
 # =============================================================================
 
-lm: lm-fixed lm-alternatives
-
-# Fixed-action tables (risk/effort) for the 3-action set.
-lm-fixed:
-	uv run python model/lm/score_features.py
+lm: lm-alternatives
 
 # LM-generated alternative actions + merged scoring for the padded-action
 # pipeline. Study 1a (food_inv_desire) is migrated; the other active studies'

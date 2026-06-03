@@ -64,10 +64,6 @@ each alternative gets a row per `effort_condition` (with `risk`/`g` repeated). F
 given-desire studies (2a/2b), `score_merged` also writes `<slug>/lm_scenario_desire.csv`
 (per-condition desire scalar).
 
-(`model/lm/score_features.py` produces a separate, study-independent fixed-action
-`outputs/lm/lm_scenario_params.csv` at the top level; it is a reference table and
-is not read by the fits, which use the per-study merged-frame canonical above.)
-
 ## Per-study outputs (`<slug>/`)
 
 ### `<slug>/fit_results.csv`

@@ -175,8 +175,7 @@ uv run python analysis/json_to_csv.py <experiment_slug>
 Generate LLM-derived scenario parameters (prerequisite for all model fits; requires `TOGETHER_API_KEY`):
 
 ```bash
-# active 3-action pipeline (Studies 1a/1b/2a/2b)
-uv run python model/lm/score_features.py                       # risk + effort
+# active 3-action pipeline (Studies 1a/1b/2a/2b), per study slug:
 uv run python model/lm/generate_alternatives.py --study food_inv_desire  # Study 1a: LM-generated alternatives per cell
 uv run python model/lm/score_merged.py          --study food_inv_desire  # Study 1a: merged canonical + alts scoring (risk-marginal, effort-conditional, g LM-elicited)
 ```

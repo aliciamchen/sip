@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Shared LM-scoring helpers for the feature / goal-satisfaction elicitation
-scripts (`score_features.py`, `score_merged.py`).
+Shared LM-scoring helpers for the merged feature / goal-satisfaction scorer
+(`score_merged.py`).
 
 Pure functions only: prompt formatters for the variable-length (LM-alternatives)
 scoring calls, 0-6 → model-scale normalizers (risk, effort, g all → [0, 1]),

@@ -27,14 +27,14 @@ IntimacyLevels = jnp.arange(0, 1.01, 0.01)
 # 100·d. Same 101-bin grid as IntimacyLevels so the inferred-desire observers
 # reuse the continuous-intimacy machinery. Enters the utility as the desire
 # multiplier w_v · desire · g(a|s), where g is the desire-free goal-satisfaction
-# of the action (see load_lm_g / the padded g loaders below).
+# of the action (see the padded LM-table loaders below).
 DesireLevels = jnp.arange(0, 1.01, 0.01)
 
 # Three-action canonical set used by the inverse-planning experiments. Action 0
 # = no sharing, action 1 = low-risk sharing, action 2 = high-risk sharing.
-# Stimulus set is `experiments/scenarios.csv`; LM tables live in
-# `outputs/lm/lm_scenario_params.csv` (risk + effort, shaped (16, 2, 3)
-# over scenario × effort_condition × action).
+# Stimulus set is `experiments/scenarios.csv`; LM tables live per study in
+# `outputs/lm/<slug>/lm_scenario.csv` (canonical risk/effort/g) +
+# `lm_alternatives.csv` (the alternatives' risk/effort/g).
 actions = jnp.array([0, 1, 2])
 N_ACTIONS = 3
 # The 3 canonical actions in index order. Experiment data and LM CSVs label the
@@ -173,70 +173,10 @@ NONFOOD_SCENARIO_TO_IDX = {
 # ==============================================================================
 # Three-action LM-derived scenario parameter tables
 # ==============================================================================
-# Used by the inverse-planning experiments. Tables are scenario ×
-# effort_condition × action for risk and effort.
-
-
-def load_lm_scenario_params(filepath=None):
-    """Load risk and effort tables for the 3-action design.
-
-    Returns a dict {"risk": (16, 2, 3), "effort": (16, 2, 3)} or None if the
-    CSV is missing (the LM elicitation step that produces it is currently
-    deferred — see plan step 4).
-    """
-    if filepath is None:
-        filepath = (
-            Path(__file__).resolve().parent
-            / "outputs"
-            / "lm"
-            / "lm_scenario_params.csv"
-        )
-    if not Path(filepath).exists():
-        return None
-    df = pd.read_csv(filepath)
-    shape = (len(SCENARIO_LABELS), N_EFFORT_CONDITIONS, N_ACTIONS)
-    risk = np.zeros(shape, dtype=np.float32)
-    effort = np.zeros(shape, dtype=np.float32)
-    for _, row in df.iterrows():
-        s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
-        e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        a_idx = ACTION_LABEL_TO_IDX[row["action"]]
-        risk[s_idx, e_idx, a_idx] = row["risk"]
-        effort[s_idx, e_idx, a_idx] = row["effort"]
-    return {"risk": jnp.array(risk), "effort": jnp.array(effort)}
-
-
-def load_lm_g(domain="food", filepath=None):
-    """Load goal-satisfaction g table for the 3-action design.
-
-    g(a|s) is the desire-free LM rating of how much an action results in the two
-    people getting/eating the food, normalized to [0, 1]. It replaces the old
-    per-desire signed-valence V: desire now enters the utility as the
-    continuous multiplier w_v · desire · g (see DesireLevels). Because g is
-    desire-free it has NO desire axis.
-
-    Returns a jnp.array of shape (16, 3) indexed by (scenario, action), or None
-    if the CSV is missing.
-    """
-    if domain == "food":
-        scenario_to_idx = SCENARIO_TO_IDX
-        filename = "lm_scenario_g.csv"
-    elif domain == "nonfood":
-        scenario_to_idx = NONFOOD_SCENARIO_TO_IDX
-        filename = "lm_scenario_g_nonfood.csv"
-    else:
-        raise ValueError(f"Unknown domain: {domain!r}")
-    if filepath is None:
-        filepath = Path(__file__).resolve().parent / "outputs" / "lm" / filename
-    if not Path(filepath).exists():
-        return None
-    df = pd.read_csv(filepath)
-    g = np.zeros((len(scenario_to_idx), N_ACTIONS), dtype=np.float32)
-    for _, row in df.iterrows():
-        s = scenario_to_idx[row["scenario_label"]]
-        a = ACTION_LABEL_TO_IDX[row["action"]]
-        g[s, a] = row["g"]
-    return jnp.array(g)
+# Per-study canonical risk/effort/g and the padded LM-alternatives action spaces
+# are loaded by the `load_padded_lm_tables_*` functions below (each reading
+# `outputs/lm/<slug>/lm_scenario.csv` + `lm_alternatives.csv`). The per-condition
+# desire scalar for the given-desire studies is loaded by load_lm_scenario_desire.
 
 
 def load_lm_scenario_desire(slug, filepath=None):
@@ -275,9 +215,6 @@ def load_lm_scenario_desire(slug, filepath=None):
         r = desire_to_idx[row["desire_condition"]]
         d[s, r] = row["desire"]
     return jnp.array(d)
-
-
-LLM_TABLES = load_lm_scenario_params()
 
 
 # ==============================================================================

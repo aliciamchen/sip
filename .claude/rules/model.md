@@ -59,7 +59,7 @@ Joint studies sum the two appropriate per-slider losses. Each study fits its own
 
 ## Stimulus sets and LM table families
 
-The studies use the **3-action** set (`scenarios.csv`). All LM `risk`/`effort`/`g` ratings are on a 0-6 scale normalized to `[0, 1]` (the absolute scale is absorbed by the freely-fitted weight, so all three share one range). Each study's LM tables live in **its own folder**, `outputs/lm/<slug>/`. The padded LM-alternatives table family is loaded by `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading two CSVs from `outputs/lm/<slug>/`: the canonical `lm_scenario.csv` (risk+effort+g for the 3 canonical actions, re-scored in that study's own comparative frame — NOT shared across studies) plus that study's `lm_alternatives.csv` (the alt list with its risk/effort/g columns). The given-desire studies (2a/2b) also load `load_lm_scenario_desire(slug)` (per-condition desire scalar, (16, 2)) from the same folder. (`LLM_TABLES` / `load_lm_g()` are a study-independent fixed-action reference produced by `score_features.py`; they are not on the fit path.)
+The studies use the **3-action** set (`scenarios.csv`). All LM `risk`/`effort`/`g` ratings are on a 0-6 scale normalized to `[0, 1]` (the absolute scale is absorbed by the freely-fitted weight, so all three share one range). Each study's LM tables live in **its own folder**, `outputs/lm/<slug>/`. The padded LM-alternatives table family is loaded by `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading two CSVs from `outputs/lm/<slug>/`: the canonical `lm_scenario.csv` (risk+effort+g for the 3 canonical actions, re-scored in that study's own comparative frame — NOT shared across studies) plus that study's `lm_alternatives.csv` (the alt list with its risk/effort/g columns). The given-desire studies (2a/2b) also load `load_lm_scenario_desire(slug)` (per-condition desire scalar, (16, 2)) from the same folder.
 
 All LM table loaders return `None` when their CSV is missing, so imports stay clean before elicitation has been run.
 
@@ -71,7 +71,7 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 
 ### Core math (one copy, shared across all experiments)
 
-- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the fixed-action loaders (`LLM_TABLES`, `load_lm_g`, `load_lm_scenario_desire`), and the per-study padded loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`).
+- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, `load_lm_scenario_desire` (per-condition desire scalar for 2a/2b), and the per-study padded loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_scenario.csv` + `lm_alternatives.csv`).
 - `utility.py` — jit-compiled utility functions. Active: the padded families `get_utility_{full,discomfort_only,base}_padded_{desire,joint_de,intimacy,joint_ie}` plus their `get_prior_padded_*` and `get_lm_g_padded_*` helpers (the full/base reward term is `w_v · desire · g`; the given-desire studies also take a `desire_table`).
 - `actors.py` — actor memos. Active: the padded inverse actors `actor_discrete_*_padded_{desire,joint_de}` (discrete observed intimacy) and `actor_continuous_*_padded_{intimacy,joint_ie}` (continuous inferred intimacy), used inside the observers' `thinks[...]` blocks.
 - `observers.py` — observer memos, one family per active study (`observer_desire_*`, `observer_joint_de_*`, `observer_intimacy_*`, `observer_joint_ie_*`), each in `_full` / `_discomfort_only` / `_base`.
@@ -81,10 +81,9 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 
 - `client.py` — shared LM-call infrastructure (`get_ratings_concurrent`, schema helpers, JSON parsing, `load_api_key`).
 - `prompts.py` — prompt templates; `alternatives_user_prompt` composes only the observer-visible condition paragraphs per study.
-- `score_features.py` — study-independent fixed-action risk + effort (16 × 2 effort × 3 actions). → top-level `outputs/lm/lm_scenario_params.csv`. This is a reference table; the fits read the per-study merged canonical from `score_merged.py`, not this.
 - `generate_alternatives.py --study <slug>` — LM-generated counterfactual alternatives per cell. → `outputs/lm/<slug>/lm_alternatives.csv`. The `_STUDY_CONFIG` registry covers all four active studies; each iterates scenario × observed_action over only the observer-visible axes (cell counts: 1a 384, 1b 192, 2a 192, 2b 96).
 - `score_merged.py --study <slug>` — scores the unified [canonical + unique alts] list per scenario on risk (effort-marginal), effort (per effort_condition), and goal-satisfaction g (one desire-free prompt), so slot 0 and slots 1..k share one comparative frame. For the given-desire studies (2a, 2b) it additionally rates the per-(scenario, desire_condition) desire scalar. Writes two tables into the study's own folder `outputs/lm/<slug>/`: the canonical `lm_scenario.csv` (risk+effort+g, re-scored in that study's frame, NOT shared across studies; + `lm_scenario_desire.csv` for 2a/2b) and `lm_alternatives.csv` — the same file `generate_alternatives.py` wrote, now with the alternatives' risk/effort/g columns filled in. For studies whose observer **infers** effort (1b, 2b), each alt gets a row per effort_condition (effort is a feature axis); risk/g repeat across those rows.
-- `_features_dispatcher.py` — internal multi-mode helper for the canonical scorers.
+- `_features_dispatcher.py` — internal helper for `score_merged.py` (prompt formatters, 0-6 → [0,1] normalizers, response parsers).
 
 **Three design choices in merged scoring:** (1) canonical + alts scored together (shared comparative frame); (2) risk is effort-marginal — risk(a|s) is formally intimacy- and effort-independent (modulated by `(1-I)^γ` in the utility), so it's elicited without the effort paragraph and broadcast; (3) the reward term is `w_v · desire · g`, where g (goal-satisfaction) is LM-elicited desire-free per action (one prompt, no desire axis) and `desire` is the inferred latent (1a/1b) or an LM-rated per-condition scalar (2a/2b); `is_share` is preserved only as diagnostic metadata. (If the journal manuscript at `SIP_journal/main.tex` still describes a signed-valence `V`, the code is ahead of it — the code uses `w_v · desire · g`; see `docs/continuous-desire-model.md`.)
 
@@ -122,7 +121,6 @@ LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_scenario_
 LM tables (require `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged). Active 3-action pipeline:
 
 ```bash
-uv run python model/lm/score_features.py    # → lm_scenario_params.csv (fixed-action reference, off the fit path)
 # per-study LM-generated alternatives + merged scoring (one of the 4 slugs):
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
