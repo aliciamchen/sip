@@ -33,20 +33,17 @@ the desire-free goal-satisfaction of the action (replaces the old signed-valence
 V); desire is the inferred latent in 1a/1b, and an LM-rated per-condition scalar
 in the given-desire studies 2a/2b.
 
-Outputs — all written into the study's own folder, outputs/lm/<slug>/:
-  - lm_scenario_params.csv (canonical risk + effort; risk is scored
-    effort-marginally — vignette only, no effort paragraph — then broadcast
-    across effort_condition)
-  - lm_scenario_g.csv (canonical g per (scenario, action); desire-free)
+Outputs — two tables, written into the study's own folder, outputs/lm/<slug>/:
+  - lm_scenario.csv (the 3 canonical actions: risk + effort + g in one row per
+    (scenario, effort_condition, action). risk is scored effort-marginally —
+    vignette only, no effort paragraph — then broadcast across effort_condition;
+    g is desire-free, repeated across effort_condition.)
+  - lm_alternatives.csv (the SAME file generate_alternatives.py wrote, now with
+    the alternatives' risk/effort/g columns filled in alongside action_text /
+    is_share. effort is a feature axis: for studies whose observer INFERS effort,
+    each alternative gets a row for BOTH effort conditions, with risk/g repeated.)
   - lm_scenario_desire.csv (per (scenario, desire_condition) desire scalar;
     given-desire studies 2a/2b only)
-  - lm_alternatives_features.csv (alts risk + effort; risk broadcast
-    across effort_condition; the row's cell columns are the study's generation
-    cell, plus an effort_condition feature column. For studies whose observer
-    INFERS effort, effort is not a generation axis, so each alt gets a feature
-    row for BOTH effort conditions.)
-  - lm_alternatives_g.csv (alts g per (scenario, observed, <cell cols>,
-    alt_idx); desire-free, no desire axis)
 
 Cost (per study, NUM_RUNS=10 per prompt): risk 16 × 10 = 160 calls; effort
 16 × 2 × 10 = 320; g 16 × 10 = 160; desire (2a/2b only) 16 × 2 × 10 = 320;
@@ -114,14 +111,14 @@ CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 EFFORT_CONDITIONS = ["low", "high"]
 DESIRES = ["low", "high"]
 
-# Each study writes its own canonical CSVs into outputs/lm/<slug>/ (re-scored in
-# that study's alt set as comparative context). `cell_cols` are the
+# Each study writes its own canonical table (lm_scenario.csv) into
+# outputs/lm/<slug>/ (re-scored in that study's alt set as comparative context),
+# plus the scored alternatives back into lm_alternatives.csv. `cell_cols` are the
 # generation-cell key columns in the study's alternatives CSV (besides
-# scenario_label + observed_action);
-# the alt feature/V rows carry these. `effort_inferred` flags studies whose
-# observer infers effort: their generation cell does NOT include effort, so the
-# alt's effort feature is emitted for BOTH effort conditions (the effort feature
-# is always scored per condition; it is a feature axis, not a generation axis).
+# scenario_label + observed_action); the scored alt rows carry these.
+# `effort_inferred` flags studies whose observer infers effort: their generation
+# cell does NOT include effort, so each alt gets a scored row for BOTH effort
+# conditions (effort is a feature axis, not a generation axis; risk/g repeat).
 # `desire_given` flags the studies where desire is observer-visible context
 # (2a, 2b): for those the LM additionally rates a per-(scenario, desire
 # condition) desire scalar -> lm_scenario_desire.csv. For the inferred-
@@ -130,46 +127,34 @@ DESIRES = ["low", "high"]
 _STUDY_CONFIG = {
     "food_inv_desire": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives.csv",
-        "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_g_output": "lm_scenario_g.csv",
-        "alternatives_features_output": "lm_alternatives_features.csv",
-        "alternatives_g_output": "lm_alternatives_g.csv",
+        "alternatives": "lm_alternatives.csv",
+        "canonical_output": "lm_scenario.csv",
         "cell_cols": ("effort_condition", "intimacy_condition"),
         "effort_inferred": False,
         "desire_given": False,
     },
     "food_inv_joint_de": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives.csv",
-        "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_g_output": "lm_scenario_g.csv",
-        "alternatives_features_output": "lm_alternatives_features.csv",
-        "alternatives_g_output": "lm_alternatives_g.csv",
+        "alternatives": "lm_alternatives.csv",
+        "canonical_output": "lm_scenario.csv",
         "cell_cols": ("intimacy_condition",),
         "effort_inferred": True,
         "desire_given": False,
     },
     "food_inv_intimacy": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives.csv",
-        "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_g_output": "lm_scenario_g.csv",
+        "alternatives": "lm_alternatives.csv",
+        "canonical_output": "lm_scenario.csv",
         "canonical_desire_output": "lm_scenario_desire.csv",
-        "alternatives_features_output": "lm_alternatives_features.csv",
-        "alternatives_g_output": "lm_alternatives_g.csv",
         "cell_cols": ("desire_condition", "effort_condition"),
         "effort_inferred": False,
         "desire_given": True,
     },
     "food_inv_joint_ie": {
         "scenarios": "scenarios.csv",
-        "alternatives_input": "lm_alternatives.csv",
-        "canonical_params_output": "lm_scenario_params.csv",
-        "canonical_g_output": "lm_scenario_g.csv",
+        "alternatives": "lm_alternatives.csv",
+        "canonical_output": "lm_scenario.csv",
         "canonical_desire_output": "lm_scenario_desire.csv",
-        "alternatives_features_output": "lm_alternatives_features.csv",
-        "alternatives_g_output": "lm_alternatives_g.csv",
         "cell_cols": ("desire_condition",),
         "effort_inferred": True,
         "desire_given": True,
@@ -358,11 +343,15 @@ def _score_scenario(client, scenario_row, alt_rows_for_scenario, system_prompts,
     }
 
 
-def _build_canonical_params_row(
-    scenario, effort_cond, action_idx, canonical_norm, risk, effort
+def _build_canonical_row(
+    scenario, effort_cond, action_idx, canonical_norm, risk, effort, g
 ):
+    """One canonical (slot-0 reference) row for lm_scenario.csv: risk + effort
+    (per effort_condition) + goal-satisfaction g. g is desire-free, so the same
+    value is written into both effort_condition rows of an action."""
     a = risk[canonical_norm]
     e = effort[(effort_cond, canonical_norm)]
+    gv = g[canonical_norm]
     return {
         "scenario_label": scenario,
         "effort_condition": effort_cond,
@@ -373,23 +362,15 @@ def _build_canonical_params_row(
         "effort_raw": e["raw"],
         "effort_raw_std": e["raw_std"],
         "effort": normalize_effort(e["raw"]) if not np.isnan(e["raw"]) else np.nan,
+        "g_raw": gv["raw"],
+        "g_raw_std": gv["raw_std"],
+        "g": normalize_g(gv["raw"]) if not np.isnan(gv["raw"]) else np.nan,
         "n_runs_risk": a["n_runs"],
         "n_runs_effort": e["n_runs"],
+        "n_runs_g": gv["n_runs"],
         "n_failures_risk": a["n_failures"],
         "n_failures_effort": e["n_failures"],
-    }
-
-
-def _build_canonical_g_row(scenario, action_idx, canonical_norm, g):
-    val = g[canonical_norm]
-    return {
-        "scenario_label": scenario,
-        "action": CANONICAL_ACTIONS[action_idx],
-        "g_raw": val["raw"],
-        "g_raw_std": val["raw_std"],
-        "g": normalize_g(val["raw"]) if not np.isnan(val["raw"]) else np.nan,
-        "n_runs": val["n_runs"],
-        "n_failures": val["n_failures"],
+        "n_failures_g": gv["n_failures"],
     }
 
 
@@ -417,22 +398,26 @@ def _cell_col_values(alt_row, cell_cols):
     return out
 
 
-def _build_alt_features_row(alt_row, risk, effort, cell_cols, effort_cond):
-    """Build an alts-features CSV row for a given effort_condition (the effort
-    feature axis). risk is effort-marginal (looked up per action_norm);
-    effort is looked up at (effort_cond, action_norm). Copies the study's
-    generation-cell columns plus an explicit `effort_condition` feature column.
+def _build_alt_row(alt_row, risk, effort, g, cell_cols, effort_cond):
+    """One scored alternatives row for lm_alternatives.csv at a given
+    effort_condition (the effort feature axis): the alternative's text + is_share
+    plus risk/effort/g, all on one row. risk and g are effort-marginal /
+    desire-free (the same value across effort rows); effort is looked up at
+    (effort_cond, action_norm). Copies the study's generation-cell columns plus
+    an explicit `effort_condition` feature column.
 
     If the alt's action_norm matches a canonical action (rare but possible — the
     LM occasionally proposes an alternative coinciding with a canonical text
     under case-insensitive match), the lookup hits the canonical's rating, which
-    is correct: same physical action, same rating.
+    is correct: same physical action, same rating. Returns None if the action
+    wasn't in the scored merged list (shouldn't happen).
     """
     norm = _norm(alt_row["action_text"])
     a = risk.get(norm)
     e = effort.get((effort_cond, norm))
-    if a is None or e is None:
-        return None  # action not in the merged list this scenario — shouldn't happen
+    gv = g.get(norm)
+    if a is None or e is None or gv is None:
+        return None
     row = {
         "scenario_label": alt_row["scenario_label"],
         "observed_action": alt_row["observed_action"],
@@ -440,6 +425,12 @@ def _build_alt_features_row(alt_row, risk, effort, cell_cols, effort_cond):
     row.update(_cell_col_values(alt_row, cell_cols))
     row["effort_condition"] = effort_cond  # feature axis (may equal a cell col)
     row["alt_idx"] = int(alt_row["alt_idx"])
+    row["action_text"] = alt_row["action_text"]
+    row["is_share"] = (
+        int(alt_row["is_share"])
+        if not pd.isna(alt_row["is_share"])
+        else alt_row["is_share"]
+    )
     row.update(
         {
             "risk_raw": a["raw"],
@@ -448,33 +439,15 @@ def _build_alt_features_row(alt_row, risk, effort, cell_cols, effort_cond):
             "effort_raw": e["raw"],
             "effort_raw_std": e["raw_std"],
             "effort": normalize_effort(e["raw"]) if not np.isnan(e["raw"]) else np.nan,
+            "g_raw": gv["raw"],
+            "g_raw_std": gv["raw_std"],
+            "g": normalize_g(gv["raw"]) if not np.isnan(gv["raw"]) else np.nan,
             "n_runs_risk": a["n_runs"],
             "n_runs_effort": e["n_runs"],
+            "n_runs_g": gv["n_runs"],
             "n_failures_risk": a["n_failures"],
             "n_failures_effort": e["n_failures"],
-        }
-    )
-    return row
-
-
-def _build_alt_g_row(alt_row, g, cell_cols):
-    norm = _norm(alt_row["action_text"])
-    val = g.get(norm)
-    if val is None:
-        return None
-    row = {
-        "scenario_label": alt_row["scenario_label"],
-        "observed_action": alt_row["observed_action"],
-    }
-    row.update(_cell_col_values(alt_row, cell_cols))
-    row["alt_idx"] = int(alt_row["alt_idx"])
-    row.update(
-        {
-            "g_raw": val["raw"],
-            "g_raw_std": val["raw_std"],
-            "g": normalize_g(val["raw"]) if not np.isnan(val["raw"]) else np.nan,
-            "n_runs": val["n_runs"],
-            "n_failures": val["n_failures"],
+            "n_failures_g": gv["n_failures"],
         }
     )
     return row
@@ -500,11 +473,15 @@ def main(study):
     cfg = _STUDY_CONFIG[study]
     api_key = load_api_key()
 
-    # Load scenarios + alternatives. All LM outputs for a study live in that
-    # study's folder, outputs/lm/<slug>/.
+    # All LM tables for a study live in its folder, outputs/lm/<slug>/. The
+    # alternatives table is both the stage-1 input (action texts from
+    # generate_alternatives.py) and the stage-2 output (this script fills in the
+    # risk/effort/g columns), so we read it, recover the action list, score, and
+    # write it back with the feature columns.
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
-    alts_path = study_dir / cfg["alternatives_input"]
+    study_dir.mkdir(parents=True, exist_ok=True)
+    alts_path = study_dir / cfg["alternatives"]
     if not alts_path.exists():
         raise SystemExit(
             f"Alternatives CSV not found at {alts_path}. "
@@ -513,90 +490,97 @@ def main(study):
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
     alts_df = pd.read_csv(alts_path)
 
+    desire_given = cfg.get("desire_given", False)
+    canonical_path = study_dir / cfg["canonical_output"]
+    desire_path = study_dir / cfg["canonical_desire_output"] if desire_given else None
+
+    # Recover the stage-1 action list (texts), robust to a prior scoring run that
+    # added feature columns / doubled effort rows: select the generation-cell key
+    # columns + action_text/is_share and drop duplicates.
+    cell_cols = list(cfg["cell_cols"])
+    stage1_cols = [
+        "scenario_label",
+        "observed_action",
+        *cell_cols,
+        "alt_idx",
+        "action_text",
+        "is_share",
+    ]
+    stage1_df = alts_df[stage1_cols].drop_duplicates()
     print(
-        f"Loaded {len(scenarios_df)} scenarios; {len(alts_df)} alternative rows",
+        f"Loaded {len(scenarios_df)} scenarios; {len(stage1_df)} alternative actions",
         flush=True,
     )
 
-    output_dir = study_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
-    desire_given = cfg.get("desire_given", False)
-    paths = {
-        "canonical_params": output_dir / cfg["canonical_params_output"],
-        "canonical_g": output_dir / cfg["canonical_g_output"],
-        "alt_features": output_dir / cfg["alternatives_features_output"],
-        "alt_g": output_dir / cfg["alternatives_g_output"],
+    # Resume: a scenario is done when it's scored in every output table. The alts
+    # table mixes scored scenarios (non-null risk) with not-yet-scored stage-1
+    # rows, so 'done' there means its rows carry a non-null risk.
+    canonical_records, done_canonical = _load_existing(
+        canonical_path, ("scenario_label",)
+    )
+    done_canonical = {t[0] for t in done_canonical}
+    if desire_given:
+        desire_records, done_desire = _load_existing(desire_path, ("scenario_label",))
+        done_desire = {t[0] for t in done_desire}
+    else:
+        desire_records, done_desire = [], None
+
+    scored_alts_by_scenario = {}
+    if "risk" in alts_df.columns:
+        for s, grp in alts_df[alts_df["risk"].notna()].groupby("scenario_label"):
+            scored_alts_by_scenario[s] = grp.to_dict("records")
+    done_alts = set(scored_alts_by_scenario)
+
+    fully_done = done_canonical & done_alts
+    if desire_given:
+        fully_done = fully_done & done_desire
+
+    # Drop partials from an interrupted prior run so we re-score them cleanly.
+    canonical_records = [
+        r for r in canonical_records if r["scenario_label"] in fully_done
+    ]
+    if desire_given:
+        desire_records = [
+            r for r in desire_records if r["scenario_label"] in fully_done
+        ]
+    scored_alts_by_scenario = {
+        s: rows for s, rows in scored_alts_by_scenario.items() if s in fully_done
     }
-    if desire_given:
-        paths["canonical_desire"] = output_dir / cfg["canonical_desire_output"]
 
-    # Per-scenario resumability: skip scenarios present in ALL output CSVs.
-    canonical_params_records, done_canonical_params = _load_existing(
-        paths["canonical_params"], ("scenario_label",)
-    )
-    canonical_g_records, done_canonical_g = _load_existing(
-        paths["canonical_g"], ("scenario_label",)
-    )
-    alt_features_records, done_alt_features = _load_existing(
-        paths["alt_features"], ("scenario_label",)
-    )
-    alt_g_records, done_alt_g = _load_existing(paths["alt_g"], ("scenario_label",))
-    if desire_given:
-        canonical_desire_records, done_canonical_desire = _load_existing(
-            paths["canonical_desire"], ("scenario_label",)
-        )
-    else:
-        canonical_desire_records, done_canonical_desire = [], None
-
-    fully_done = (
-        done_canonical_params & done_canonical_g & done_alt_features & done_alt_g
-    )
-    if desire_given:
-        fully_done = fully_done & done_canonical_desire
-    if fully_done:
-        # Convert from tuple to bare scalar (since key_cols is single)
-        fully_done_scalars = {t[0] for t in fully_done}
-        print(
-            f"{len(fully_done_scalars)} scenarios already complete in all output CSVs — resuming.",
-            flush=True,
-        )
-    else:
-        fully_done_scalars = set()
-
-    # Filter records lists to only keep rows for scenarios that are already
-    # fully done across all output CSVs. This drops stale rows from a prior run
-    # (e.g. canonical CSVs from an OLD-prompt elicitation) before we append
-    # new merged-scoring rows. Without this filter, records from old runs
-    # accumulate in-memory and produce CSVs with duplicate (scenario, ...)
-    # keys after the next checkpoint write.
-    def _keep_done(records):
-        return [r for r in records if r["scenario_label"] in fully_done_scalars]
-
-    canonical_params_records = _keep_done(canonical_params_records)
-    canonical_g_records = _keep_done(canonical_g_records)
-    alt_features_records = _keep_done(alt_features_records)
-    alt_g_records = _keep_done(alt_g_records)
-    canonical_desire_records = _keep_done(canonical_desire_records)
+    def _write_checkpoint():
+        pd.DataFrame(canonical_records).to_csv(canonical_path, index=False)
+        if desire_given:
+            pd.DataFrame(desire_records).to_csv(desire_path, index=False)
+        # lm_alternatives.csv = scored rows (done scenarios, with features) +
+        # stage-1 rows (texts only) for scenarios not yet scored.
+        scored_rows = [r for rows in scored_alts_by_scenario.values() for r in rows]
+        pending = stage1_df[~stage1_df["scenario_label"].isin(scored_alts_by_scenario)]
+        frames = []
+        if scored_rows:
+            frames.append(pd.DataFrame(scored_rows))
+        if len(pending):
+            frames.append(pending)
+        out = pd.concat(frames, ignore_index=True) if frames else stage1_df.iloc[0:0]
+        out.to_csv(alts_path, index=False)
 
     print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
     client = Together(api_key=api_key)
-
     system_prompts = {
         "risk": build_system_prompt("risk", n_actions=None),
         "effort": build_system_prompt("effort", n_actions=None),
         "g": build_system_prompt("g", n_actions=None),
     }
 
-    scenarios_to_run = [s for s in scenarios_df.index if s not in fully_done_scalars]
+    scenarios_to_run = [s for s in scenarios_df.index if s not in fully_done]
     print(
         f"\n{len(scenarios_to_run)} scenarios to score "
-        f"(total: {len(scenarios_df)}; already done: {len(fully_done_scalars)}).",
+        f"(total: {len(scenarios_df)}; already done: {len(fully_done)}).",
         flush=True,
     )
 
     for sc_idx, scenario in enumerate(scenarios_to_run, start=1):
         scenario_row = scenarios_df.loc[scenario]
-        alt_rows = alts_df[alts_df["scenario_label"] == scenario]
+        alt_rows = stage1_df[stage1_df["scenario_label"] == scenario]
         n_unique_alts = (
             alt_rows["action_text"].str.lower().str.strip().drop_duplicates().shape[0]
         )
@@ -613,68 +597,49 @@ def main(study):
         desire = result["desire"]
         canonical_norms = result["canonical_norms"]
 
-        # Build canonical params rows (16 × 2 × 3 = 96 rows for full table).
+        # Canonical (slot-0) rows -> lm_scenario.csv (risk + effort + g, 96 rows).
         for effort_cond in EFFORT_CONDITIONS:
             for action_idx in range(N_ACTIONS):
-                canonical_params_records.append(
-                    _build_canonical_params_row(
+                canonical_records.append(
+                    _build_canonical_row(
                         scenario,
                         effort_cond,
                         action_idx,
                         canonical_norms[action_idx],
                         risk,
                         effort,
+                        g,
                     )
                 )
-        # Canonical g rows (16 × 3 = 48 for full table; desire-free).
-        for action_idx in range(N_ACTIONS):
-            canonical_g_records.append(
-                _build_canonical_g_row(
-                    scenario, action_idx, canonical_norms[action_idx], g
-                )
-            )
-        # Canonical desire scalars (16 × 2 = 32; given-desire studies only).
+        # Per-condition desire scalars (given-desire studies only).
         if desire_given:
             for desire_cond in DESIRES:
-                canonical_desire_records.append(
+                desire_records.append(
                     _build_canonical_desire_row(scenario, desire_cond, desire)
                 )
 
-        # Alts features rows. When effort is inferred (effort not a generation
-        # cell col), emit a row per effort_condition (effort is a feature axis);
-        # otherwise emit one row at the cell's observed effort_condition.
+        # Scored alternatives (Long): when effort is inferred, emit a row per
+        # effort_condition (effort is a feature axis); otherwise one row at the
+        # cell's observed effort_condition. risk/g repeat across effort rows.
+        rows = []
         for _, alt_row in alt_rows.iterrows():
             if cfg["effort_inferred"]:
                 effort_conds = list(EFFORT_CONDITIONS)
             else:
                 effort_conds = [alt_row["effort_condition"]]
             for ec in effort_conds:
-                r = _build_alt_features_row(alt_row, risk, effort, cfg["cell_cols"], ec)
+                r = _build_alt_row(alt_row, risk, effort, g, cfg["cell_cols"], ec)
                 if r is not None:
-                    alt_features_records.append(r)
+                    rows.append(r)
+        scored_alts_by_scenario[scenario] = rows
 
-        # Alts g rows (one per generation cell; desire-free).
-        for _, alt_row in alt_rows.iterrows():
-            r = _build_alt_g_row(alt_row, g, cfg["cell_cols"])
-            if r is not None:
-                alt_g_records.append(r)
-
-        # Checkpoint after each scenario.
-        pd.DataFrame(canonical_params_records).to_csv(
-            paths["canonical_params"], index=False
-        )
-        pd.DataFrame(canonical_g_records).to_csv(paths["canonical_g"], index=False)
-        pd.DataFrame(alt_features_records).to_csv(paths["alt_features"], index=False)
-        pd.DataFrame(alt_g_records).to_csv(paths["alt_g"], index=False)
-        if desire_given:
-            pd.DataFrame(canonical_desire_records).to_csv(
-                paths["canonical_desire"], index=False
-            )
+        _write_checkpoint()
         print("  checkpointed", flush=True)
 
     print("\n=== Done ===")
-    print(f"Wrote:")
-    for p in paths.values():
+    print("Wrote:")
+    out_paths = [canonical_path, alts_path] + ([desire_path] if desire_given else [])
+    for p in out_paths:
         if Path(p).exists():
             n = len(pd.read_csv(p))
             print(f"  {p.name}  ({n} rows)")

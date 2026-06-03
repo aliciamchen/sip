@@ -293,9 +293,7 @@ LLM_TABLES = load_lm_scenario_params()
 
 def load_padded_lm_tables_desire(
     canonical_path=None,
-    canonical_g_path=None,
-    alternatives_features_path=None,
-    alternatives_g_path=None,
+    alternatives_path=None,
 ):
     """Build padded tables for Study 1a's LM-generated alternatives action space.
 
@@ -309,42 +307,31 @@ def load_padded_lm_tables_desire(
         w_v · desire · g, with desire the inferred latent.
 
     Slot 0 of every cell holds the observed canonical action's features:
-    risk/effort from `lm_scenario_params.csv` (depends on scenario +
-    effort_condition + action but not intimacy, so broadcasts across intimacy);
-    g from `lm_scenario_g.csv` (depends on scenario + action, broadcasts
-    across effort and intimacy).
+    risk/effort/g from `lm_scenario.csv` (risk/effort depend on scenario +
+    effort_condition + action, broadcast across intimacy; g depends on scenario +
+    action, broadcast across effort and intimacy).
 
-    Slots 1..k hold the LM-generated alternatives for that cell, scored in this
-    study's folder `outputs/lm/food_inv_desire/`: `lm_alternatives_features.csv`
-    and `lm_alternatives_g.csv` (both keyed by alt_idx, which is all the loader
-    needs — the raw `lm_alternatives.csv` action texts are a `score_merged` input,
-    not a model input). Remaining slots are null-padded (risk/effort/g = 0;
-    prior = NULL_EPSILON to keep the softmax differentiable).
+    Slots 1..k hold the LM-generated alternatives for that cell, read straight
+    off `outputs/lm/food_inv_desire/lm_alternatives.csv` — the one table holding
+    each alternative's text plus its risk/effort/g columns (keyed by alt_idx).
+    Remaining slots are null-padded (risk/effort/g = 0; prior = NULL_EPSILON to
+    keep the softmax differentiable).
 
-    Returns a dict {risk, effort, g, prior} of jnp.arrays, or None if any
-    required CSV is missing.
+    Returns a dict {risk, effort, g, prior} of jnp.arrays, or None if the tables
+    are missing or not yet scored.
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_desire"
-    canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
-    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
-    alternatives_features_path = (
-        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
-    )
-    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
+    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
 
-    required = [
-        canonical_path,
-        canonical_g_path,
-        alternatives_features_path,
-        alternatives_g_path,
-    ]
+    required = [canonical_path, alternatives_path]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canonical_df = pd.read_csv(canonical_path)
-    canonical_g_df = pd.read_csv(canonical_g_path)
-    feats_df = pd.read_csv(alternatives_features_path)
-    alts_g_df = pd.read_csv(alternatives_g_path)
+    alts_df = pd.read_csv(alternatives_path)
+    if not _alts_ready(alts_df):
+        return None
+    canon_ae, canon_g = _canonical_lookups(canonical_path)
 
     n_scenarios = len(SCENARIO_LABELS)
     n_observed = N_ACTIONS
@@ -359,71 +346,35 @@ def load_padded_lm_tables_desire(
     intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
     observed_str_to_idx = ACTION_LABEL_TO_IDX
 
-    # Canonical (slot 0): risk/effort depend on scenario + effort + action
-    # (3-act CSV layout); broadcast across intimacy. g depends on scenario +
-    # action; broadcast across effort and intimacy.
-    canon_ae_lookup = {}
-    for _, row in canonical_df.iterrows():
-        e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        canon_ae_lookup[
-            (row["scenario_label"], e_idx, ACTION_LABEL_TO_IDX[row["action"]])
-        ] = (
-            float(row["risk"]),
-            float(row["effort"]),
-        )
-    canon_g_lookup = {
-        (row["scenario_label"], ACTION_LABEL_TO_IDX[row["action"]]): float(row["g"])
-        for _, row in canonical_g_df.iterrows()
-    }
-
+    # Canonical (slot 0): risk/effort depend on scenario + effort + action,
+    # broadcast across intimacy; g depends on scenario + action.
     for scenario in SCENARIO_LABELS:
         s_idx = SCENARIO_TO_IDX[scenario]
         for observed in range(n_observed):
             for e_idx in range(n_effort):
-                a_risk, a_effort = canon_ae_lookup[(scenario, e_idx, observed)]
+                a_risk, a_effort = canon_ae[(scenario, e_idx, observed)]
                 for i_idx in range(n_intimacy):
                     risk[s_idx, observed, e_idx, i_idx, 0] = a_risk
                     effort[s_idx, observed, e_idx, i_idx, 0] = a_effort
-                    g[s_idx, observed, e_idx, i_idx, 0] = canon_g_lookup[
-                        (scenario, observed)
-                    ]
+                    g[s_idx, observed, e_idx, i_idx, 0] = canon_g[(scenario, observed)]
                     valid_mask[s_idx, observed, e_idx, i_idx, 0] = True
 
-    # LM-generated alternatives (slots 1..k). Index by (scenario,
-    # observed_action, effort_condition, intimacy_condition, alt_idx). g is
-    # desire-free, so no desire_query axis.
-    alt_g_lookup = {
-        (
-            r["scenario_label"],
-            r["observed_action"],
-            r["effort_condition"],
-            int(r["intimacy_condition"]),
-            int(r["alt_idx"]),
-        ): float(r["g"])
-        for _, r in alts_g_df.iterrows()
-    }
-
-    for _, row in feats_df.iterrows():
+    # LM-generated alternatives (slots 1..k), keyed by (scenario, observed,
+    # effort_condition, intimacy_condition, alt_idx); risk/effort/g read straight
+    # off the one merged alts table. Unscored stage-1 rows (NaN risk) are skipped.
+    for _, row in alts_df.iterrows():
+        if pd.isna(row["risk"]):
+            continue
         s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
         o_idx = observed_str_to_idx[row["observed_action"]]
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
         i_idx = intimacy_to_idx[int(row["intimacy_condition"])]
-        alt_idx = int(row["alt_idx"])
-        slot = alt_idx + 1
+        slot = int(row["alt_idx"]) + 1
         if slot >= MAX_ACTIONS:
             continue
         risk[s_idx, o_idx, e_idx, i_idx, slot] = float(row["risk"])
         effort[s_idx, o_idx, e_idx, i_idx, slot] = float(row["effort"])
-        g[s_idx, o_idx, e_idx, i_idx, slot] = alt_g_lookup.get(
-            (
-                row["scenario_label"],
-                row["observed_action"],
-                row["effort_condition"],
-                int(row["intimacy_condition"]),
-                alt_idx,
-            ),
-            0.0,
-        )
+        g[s_idx, o_idx, e_idx, i_idx, slot] = float(row["g"])
         valid_mask[s_idx, o_idx, e_idx, i_idx, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -432,8 +383,9 @@ def load_padded_lm_tables_desire(
         valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
     ).astype(np.float32)
 
+    scored = alts_df[alts_df["risk"].notna()]
     max_alt_count = (
-        feats_df.groupby(
+        scored.groupby(
             [
                 "scenario_label",
                 "observed_action",
@@ -443,6 +395,8 @@ def load_padded_lm_tables_desire(
         )
         .size()
         .max()
+        if len(scored)
+        else 0
     )
     if max_alt_count + 1 > MAX_ACTIONS:
         print(
@@ -459,9 +413,6 @@ def load_padded_lm_tables_desire(
     }
 
 
-LLM_TABLES_DESIRE_PADDED = load_padded_lm_tables_desire()
-
-
 # =============================================================================
 # Padded LM-alternatives loaders for the migrated studies (1b, 2a, 2b)
 # =============================================================================
@@ -473,39 +424,48 @@ LLM_TABLES_DESIRE_PADDED = load_padded_lm_tables_desire()
 #
 # Expected CSV schema (produced by score_merged.py --study <slug>, written into
 # that study's folder outputs/lm/<slug>/):
-#   - canonical risk/effort: lm_scenario_params.csv
-#       (scenario_label, effort_condition, action, risk, effort)
-#   - canonical g: lm_scenario_g.csv (scenario_label, action, g)
-#   - alts features: lm_alternatives_features.csv keyed by the study's
-#       generation cell + effort_condition + alt_idx, columns risk, effort
-#   - alts g: lm_alternatives_g.csv keyed by gen cell + alt_idx, column g
+#   - canonical: lm_scenario.csv
+#       (scenario_label, effort_condition, action, risk, effort, g)
+#   - alternatives: lm_alternatives.csv keyed by the study's generation cell +
+#       effort_condition + alt_idx, with columns action_text, is_share, risk,
+#       effort, g (effort is a feature axis — for effort-inferred studies each
+#       alt has a row per effort_condition; risk/g repeat across them)
 
 
-def _canonical_lookups(canonical_path, canonical_g_path):
-    """Shared canonical (slot-0) lookups: (risk,effort) per
+def _canonical_lookups(canonical_path):
+    """Canonical (slot-0) lookups from lm_scenario.csv: (risk, effort) per
     (scenario, effort_condition, action) and goal-satisfaction g per
-    (scenario, action). g is desire-free, so it has no desire key."""
-    canonical_df = pd.read_csv(canonical_path)
-    canonical_g_df = pd.read_csv(canonical_g_path)
+    (scenario, action). risk/effort/g all live in one row; g is desire-free
+    (repeated across the effort_condition rows, so we read it once per
+    (scenario, action))."""
+    df = pd.read_csv(canonical_path)
     ae = {}
-    for _, row in canonical_df.iterrows():
+    g = {}
+    for _, row in df.iterrows():
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        ae[(row["scenario_label"], e_idx, ACTION_LABEL_TO_IDX[row["action"]])] = (
+        a_idx = ACTION_LABEL_TO_IDX[row["action"]]
+        ae[(row["scenario_label"], e_idx, a_idx)] = (
             float(row["risk"]),
             float(row["effort"]),
         )
-    g = {
-        (row["scenario_label"], ACTION_LABEL_TO_IDX[row["action"]]): float(row["g"])
-        for _, row in canonical_g_df.iterrows()
-    }
+        g[(row["scenario_label"], a_idx)] = float(row["g"])
     return ae, g
+
+
+def _alts_ready(alts_df):
+    """An alternatives table is ready to load only once score_merged has filled
+    the feature columns (risk/effort/g). Until then it's the stage-1 action list
+    (texts only) and the loader returns None."""
+    return (
+        {"risk", "effort", "g"}.issubset(alts_df.columns)
+        and not alts_df["risk"].isna().all()
+        and not alts_df["g"].isna().all()
+    )
 
 
 def load_padded_lm_tables_joint_de(
     canonical_path=None,
-    canonical_g_path=None,
-    alternatives_features_path=None,
-    alternatives_g_path=None,
+    alternatives_path=None,
 ):
     """Study 1b: observer knows intimacy, jointly infers (desire, effort). Cell
     grid is (scenario, observed_action, intimacy_condition). effort inferred ->
@@ -520,24 +480,16 @@ def load_padded_lm_tables_joint_de(
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_de"
     )
-    canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
-    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
-    alternatives_features_path = (
-        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
-    )
-    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
-    required = [
-        canonical_path,
-        canonical_g_path,
-        alternatives_features_path,
-        alternatives_g_path,
-    ]
+    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
+    required = [canonical_path, alternatives_path]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canon_ae, canon_g = _canonical_lookups(canonical_path, canonical_g_path)
-    feats_df = pd.read_csv(alternatives_features_path)
-    alts_g_df = pd.read_csv(alternatives_g_path)
+    canon_ae, canon_g = _canonical_lookups(canonical_path)
+    alts_df = pd.read_csv(alternatives_path)
+    if not _alts_ready(alts_df):
+        return None
 
     n_s, n_o, n_rel, n_eff = (
         len(SCENARIO_LABELS),
@@ -567,19 +519,12 @@ def load_padded_lm_tables_joint_de(
                 g[s, o, rel, 0] = canon_g[(scenario, o)]
                 valid[s, o, rel, 0] = True
 
-    # Alternatives (slots 1..k): features keyed by (scenario, obs, intimacy,
-    # effort_condition, alt_idx). risk is effort-marginal (same across e); g is
-    # desire-free, keyed by (scenario, obs, intimacy, alt_idx).
-    alt_g_lookup = {
-        (
-            r["scenario_label"],
-            r["observed_action"],
-            int(r["intimacy_condition"]),
-            int(r["alt_idx"]),
-        ): float(r["g"])
-        for _, r in alts_g_df.iterrows()
-    }
-    for _, row in feats_df.iterrows():
+    # Alternatives (slots 1..k): risk/effort/g read straight off the merged alts
+    # table. risk/g are effort-marginal/desire-free (repeated across the effort
+    # rows). Unscored stage-1 rows (NaN risk) are skipped.
+    for _, row in alts_df.iterrows():
+        if pd.isna(row["risk"]):
+            continue
         s = SCENARIO_TO_IDX[row["scenario_label"]]
         o = obs_to_idx[row["observed_action"]]
         rel = intimacy_to_idx[int(row["intimacy_condition"])]
@@ -589,15 +534,7 @@ def load_padded_lm_tables_joint_de(
             continue
         risk[s, o, rel, slot] = float(row["risk"])
         effort[s, o, rel, e, slot] = float(row["effort"])
-        g[s, o, rel, slot] = alt_g_lookup.get(
-            (
-                row["scenario_label"],
-                row["observed_action"],
-                int(row["intimacy_condition"]),
-                int(row["alt_idx"]),
-            ),
-            0.0,
-        )
+        g[s, o, rel, slot] = float(row["g"])
         valid[s, o, rel, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -615,9 +552,7 @@ def load_padded_lm_tables_joint_de(
 
 def load_padded_lm_tables_intimacy(
     canonical_path=None,
-    canonical_g_path=None,
-    alternatives_features_path=None,
-    alternatives_g_path=None,
+    alternatives_path=None,
 ):
     """Study 2a: observer knows (desire, effort), infers intimacy. Cell grid is
     (scenario, observed_action, desire_condition, effort_condition). intimacy
@@ -634,24 +569,16 @@ def load_padded_lm_tables_intimacy(
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_intimacy"
     )
-    canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
-    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
-    alternatives_features_path = (
-        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
-    )
-    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
-    required = [
-        canonical_path,
-        canonical_g_path,
-        alternatives_features_path,
-        alternatives_g_path,
-    ]
+    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
+    required = [canonical_path, alternatives_path]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canon_ae, canon_g = _canonical_lookups(canonical_path, canonical_g_path)
-    feats_df = pd.read_csv(alternatives_features_path)
-    alts_g_df = pd.read_csv(alternatives_g_path)
+    canon_ae, canon_g = _canonical_lookups(canonical_path)
+    alts_df = pd.read_csv(alternatives_path)
+    if not _alts_ready(alts_df):
+        return None
 
     n_s, n_o, n_rew, n_eff = (
         len(SCENARIO_LABELS),
@@ -678,19 +605,11 @@ def load_padded_lm_tables_intimacy(
                     g[s, o, rew, e, 0] = canon_g[(scenario, o)]
                     valid[s, o, rew, e, 0] = True
 
-    # Alternatives keyed by (scenario, obs, desire, effort, alt_idx). g is
-    # desire-free, keyed by (scenario, obs, desire, effort, alt_idx).
-    alt_g_lookup = {
-        (
-            r["scenario_label"],
-            r["observed_action"],
-            r["desire_condition"],
-            r["effort_condition"],
-            int(r["alt_idx"]),
-        ): float(r["g"])
-        for _, r in alts_g_df.iterrows()
-    }
-    for _, row in feats_df.iterrows():
+    # Alternatives keyed by (scenario, obs, desire, effort, alt_idx); risk/effort/g
+    # read straight off the merged alts table. Unscored rows (NaN risk) skipped.
+    for _, row in alts_df.iterrows():
+        if pd.isna(row["risk"]):
+            continue
         s = SCENARIO_TO_IDX[row["scenario_label"]]
         o = obs_to_idx[row["observed_action"]]
         rew = rew_to_idx[row["desire_condition"]]
@@ -700,16 +619,7 @@ def load_padded_lm_tables_intimacy(
             continue
         risk[s, o, rew, e, slot] = float(row["risk"])
         effort[s, o, rew, e, slot] = float(row["effort"])
-        g[s, o, rew, e, slot] = alt_g_lookup.get(
-            (
-                row["scenario_label"],
-                row["observed_action"],
-                row["desire_condition"],
-                row["effort_condition"],
-                int(row["alt_idx"]),
-            ),
-            0.0,
-        )
+        g[s, o, rew, e, slot] = float(row["g"])
         valid[s, o, rew, e, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -727,9 +637,7 @@ def load_padded_lm_tables_intimacy(
 
 def load_padded_lm_tables_joint_ie(
     canonical_path=None,
-    canonical_g_path=None,
-    alternatives_features_path=None,
-    alternatives_g_path=None,
+    alternatives_path=None,
 ):
     """Study 2b: observer knows desire, infers (intimacy, effort). Cell grid is
     (scenario, observed_action, desire_condition). intimacy inferred (continuous,
@@ -745,24 +653,16 @@ def load_padded_lm_tables_joint_ie(
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_ie"
     )
-    canonical_path = canonical_path or outputs_dir / "lm_scenario_params.csv"
-    canonical_g_path = canonical_g_path or outputs_dir / "lm_scenario_g.csv"
-    alternatives_features_path = (
-        alternatives_features_path or outputs_dir / "lm_alternatives_features.csv"
-    )
-    alternatives_g_path = alternatives_g_path or outputs_dir / "lm_alternatives_g.csv"
-    required = [
-        canonical_path,
-        canonical_g_path,
-        alternatives_features_path,
-        alternatives_g_path,
-    ]
+    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
+    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
+    required = [canonical_path, alternatives_path]
     if any(not Path(p).exists() for p in required):
         return None
 
-    canon_ae, canon_g = _canonical_lookups(canonical_path, canonical_g_path)
-    feats_df = pd.read_csv(alternatives_features_path)
-    alts_g_df = pd.read_csv(alternatives_g_path)
+    canon_ae, canon_g = _canonical_lookups(canonical_path)
+    alts_df = pd.read_csv(alternatives_path)
+    if not _alts_ready(alts_df):
+        return None
 
     n_s, n_o, n_rew, n_eff = (
         len(SCENARIO_LABELS),
@@ -791,18 +691,11 @@ def load_padded_lm_tables_joint_ie(
                 valid[s, o, rew, 0] = True
 
     # Alternatives keyed by (scenario, obs, desire, effort_condition, alt_idx);
-    # risk effort-marginal. g is desire-free, keyed by
-    # (scenario, obs, desire, alt_idx).
-    alt_g_lookup = {
-        (
-            r["scenario_label"],
-            r["observed_action"],
-            r["desire_condition"],
-            int(r["alt_idx"]),
-        ): float(r["g"])
-        for _, r in alts_g_df.iterrows()
-    }
-    for _, row in feats_df.iterrows():
+    # risk effort-marginal / g desire-free (repeated across the effort rows),
+    # read straight off the merged alts table. Unscored rows (NaN risk) skipped.
+    for _, row in alts_df.iterrows():
+        if pd.isna(row["risk"]):
+            continue
         s = SCENARIO_TO_IDX[row["scenario_label"]]
         o = obs_to_idx[row["observed_action"]]
         rew = rew_to_idx[row["desire_condition"]]
@@ -812,15 +705,7 @@ def load_padded_lm_tables_joint_ie(
             continue
         risk[s, o, rew, slot] = float(row["risk"])
         effort[s, o, rew, e, slot] = float(row["effort"])
-        g[s, o, rew, slot] = alt_g_lookup.get(
-            (
-                row["scenario_label"],
-                row["observed_action"],
-                row["desire_condition"],
-                int(row["alt_idx"]),
-            ),
-            0.0,
-        )
+        g[s, o, rew, slot] = float(row["g"])
         valid[s, o, rew, slot] = True
 
     NULL_EPSILON = 1e-8
@@ -834,8 +719,3 @@ def load_padded_lm_tables_joint_ie(
         "g": jnp.array(g),
         "prior": jnp.array(prior),
     }
-
-
-LLM_TABLES_JOINT_DE_PADDED = load_padded_lm_tables_joint_de()
-LLM_TABLES_INTIMACY_PADDED = load_padded_lm_tables_intimacy()
-LLM_TABLES_JOINT_IE_PADDED = load_padded_lm_tables_joint_ie()
