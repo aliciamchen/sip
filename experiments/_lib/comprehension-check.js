@@ -26,13 +26,13 @@ const INFERENCE_Q = {
     "In each scenario, two people decide what to do in a situation involving food. What will we ask you to do?",
   name: "inference",
   options: [
-    "Use the situation and what they decide to do to judge something the scenario doesn't directly tell us.",
+    "Use the situation and what they decide to do, to judge something the scenario doesn't directly tell us.",
     "Type out everything the scenario said, word for word.",
     "Decide what the two people should have done.",
     "Rate how realistic or well-written the scenario is.",
   ],
   correct:
-    "Use the situation and what they decide to do to judge something the scenario doesn't directly tell us.",
+    "Use the situation and what they decide to do, to judge something the scenario doesn't directly tell us.",
 };
 
 // Each rating is given before and after the decision is revealed (tracks
@@ -54,7 +54,8 @@ const TIMING_Q = {
 // state (hunger, interest), separate from what they decide to do and from how
 // hard the food is to get (tracks DESIRE_NOTE). Shown in the desire studies (1a, 1b).
 const DESIRE_MEANING_Q = {
-  prompt: "When we ask how much the two people would like the food, what do we mean?",
+  prompt:
+    "When we ask how much the two people would like the food, what do we mean?",
   name: "desire_meaning",
   options: [
     "How much they would enjoy eating it right now — for example because they are hungry or like that kind of food — separate from what they decide to do.",
@@ -105,9 +106,19 @@ const SECOND_QUESTION_Q = {
 
 export const STUDY_COMPREHENSION_CHECKS = {
   food_inv_desire: [INFERENCE_Q, DESIRE_MEANING_Q, TIMING_Q],
-  food_inv_joint_de: [INFERENCE_Q, DESIRE_MEANING_Q, SECOND_QUESTION_Q, TIMING_Q],
+  food_inv_joint_de: [
+    INFERENCE_Q,
+    DESIRE_MEANING_Q,
+    SECOND_QUESTION_Q,
+    TIMING_Q,
+  ],
   food_inv_intimacy: [INFERENCE_Q, INTIMACY_SCALE_Q, TIMING_Q],
-  food_inv_joint_ie: [INFERENCE_Q, INTIMACY_SCALE_Q, SECOND_QUESTION_Q, TIMING_Q],
+  food_inv_joint_ie: [
+    INFERENCE_Q,
+    INTIMACY_SCALE_Q,
+    SECOND_QUESTION_Q,
+    TIMING_Q,
+  ],
 };
 
 // --- The gate ---------------------------------------------------------------
