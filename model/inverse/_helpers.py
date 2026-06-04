@@ -63,13 +63,14 @@ def _fit_with_adam(
 
 @jax.jit
 def compute_intimacy_nll(posterior, response):
-    """NLL = -log(P(intimacy = response/100)).
+    """NLL = -log(P(intimacy = response)).
 
-    posterior: shape (101,) over intimacy levels 0-100.
-    response: integer 0-100.
+    posterior: shape (101,) over the [0, 1] IntimacyLevels grid.
+    response: float on the 0-1 scale (the normalized human rating); mapped onto
+    the 101-bin grid as bin `round(response * 100)`.
     """
     epsilon = 1e-8
-    response_idx = jnp.clip(jnp.round(response).astype(int), 0, 100)
+    response_idx = jnp.clip(jnp.round(response * 100).astype(int), 0, 100)
     prob = posterior[response_idx]
     return -jnp.log(jnp.clip(prob, epsilon, 1.0))
 
@@ -78,28 +79,29 @@ def compute_intimacy_nll(posterior, response):
 def compute_effort_nll(p_high, response):
     """Binary cross-entropy NLL for the effort slider (P(effort=HIGH)).
 
-    response is 0-100 (interpreted as P(high)*100). Used for the effort slider
-    in the joint studies (1b, 2b), a continuous 0-100 rating between two states.
+    response is on the 0-1 scale (directly interpreted as P(high)). Used for the
+    effort slider in the joint studies (1b, 2b), a continuous rating between two
+    states.
     """
     epsilon = 1e-8
-    p_human = response / 100.0
+    p_human = response
     p_model = jnp.clip(p_high, epsilon, 1.0 - epsilon)
     return -(p_human * jnp.log(p_model) + (1 - p_human) * jnp.log(1 - p_model))
 
 
 @jax.jit
 def compute_desire_nll(posterior, response):
-    """NLL = -log(P(desire = response/100)) for the continuous 0-100 desire DV
+    """NLL = -log(P(desire = response)) for the continuous desire DV
     (Studies 1a, 1b).
 
     Desire is a continuous latent inferred over the 101-bin DesireLevels grid
     ([0, 1] = "not at all" → "extremely"). `posterior` is the (101,) posterior
-    over that grid; `response` is the participant's 0-100 rating ("how much do
-    the two people would like the food?"). The response maps directly onto the grid
-    bin, an exact parallel of `compute_intimacy_nll`.
+    over that grid; `response` is the participant's normalized 0-1 rating ("how
+    much would the two people like the food?"), mapped onto the grid as bin
+    `round(response * 100)`, an exact parallel of `compute_intimacy_nll`.
     """
     epsilon = 1e-8
-    response_idx = jnp.clip(jnp.round(response).astype(int), 0, 100)
+    response_idx = jnp.clip(jnp.round(response * 100).astype(int), 0, 100)
     prob = posterior[response_idx]
     return -jnp.log(jnp.clip(prob, epsilon, 1.0))
 
@@ -209,10 +211,10 @@ def load_intimacy_data(slug="food_inv_intimacy"):
 def load_desire_data(slug="food_inv_desire"):
     """Study 1a — observer knows (effort, intimacy), infers desire.
 
-    The desire DV is a continuous 0-100 rating ("how much do the two people would
-    like the food?"); the `response` column holds the posterior 0-100 rating. The fit
-    scores it against the observer's 101-bin desire posterior with
-    `compute_desire_nll`.
+    The desire DV is a continuous rating ("how much would the two people like the
+    food?"), normalized to the 0-1 scale in preprocessing; the `response` column
+    holds the posterior 0-1 rating. The fit scores it against the observer's
+    101-bin desire posterior with `compute_desire_nll`.
     """
     data = _load_long(slug)
     print(f"Loading {slug} data...")
@@ -220,7 +222,7 @@ def load_desire_data(slug="food_inv_desire"):
     scenario_idx = jnp.array(data["scenario_idx"].values)
     effort_condition = jnp.array(data["effort_condition"].values)
     relationship_condition = jnp.array(data["intimacy_idx_4"].values)
-    response = jnp.array(data["response"].values)  # 0-100 desire rating
+    response = jnp.array(data["response"].values)  # 0-1 desire rating
     print(f"Loaded {len(data)} posterior data points")
     return (
         data,
@@ -236,16 +238,17 @@ def load_joint_de_data(slug="food_inv_joint_de"):
     """Study 1b — observer knows intimacy, jointly infers (desire, effort).
 
     Each posterior trial contributes two slider responses: `desire_rating` (the
-    continuous 0-100 desire DV) and `effort_rating` (the 0-100 effort slider,
-    "which effort situation is more likely"; 0 = effort_low ... 100 = effort_high).
+    continuous desire DV) and `effort_rating` (the effort slider, "which effort
+    situation is more likely"; 0 = effort_low ... 1 = effort_high). Both are
+    normalized to the 0-1 scale in preprocessing.
     """
     data = _load_long(slug)
     print(f"Loading {slug} data...")
     action = jnp.array(data["action"].values)
     scenario_idx = jnp.array(data["scenario_idx"].values)
     relationship_condition = jnp.array(data["intimacy_idx_4"].values)
-    resp_desire = jnp.array(data["desire_rating"].values)  # 0-100 desire rating
-    resp_effort = jnp.array(data["effort_rating"].values)  # 0-100
+    resp_desire = jnp.array(data["desire_rating"].values)  # 0-1 desire rating
+    resp_effort = jnp.array(data["effort_rating"].values)  # 0-1
     print(f"Loaded {len(data)} posterior data points (with 2 slider responses each)")
     return data, action, scenario_idx, relationship_condition, resp_desire, resp_effort
 
@@ -254,7 +257,8 @@ def load_joint_ie_data(slug="food_inv_joint_ie"):
     """Study 2b — observer knows desire, jointly infers (intimacy, effort).
 
     Each posterior trial contributes two slider responses; expects columns
-    `intimacy_rating` (0-100) and `effort_rating` (0-100).
+    `intimacy_rating` and `effort_rating`, both on the 0-1 scale (normalized in
+    preprocessing).
     """
     data = _load_long(slug)
     print(f"Loading {slug} data...")
@@ -484,14 +488,14 @@ def fit_desire_observer_joint(
     verbose=True,
 ):
     """Study 1a — joint fit of utility weights + α_observer (NLL on the
-    continuous 0-100 desire DV).
+    continuous 0-1 desire DV).
 
     With the LM-generated alternatives pipeline, the observer table is 6-D —
     `(padded_slot, scenario, observed_action, effort, intimacy, desire[101])`. The
     canonical observed action lives in slot 0 by construction, so the per-trial
     desire posterior is `table[0, scenario, action, effort, intimacy, :]` (where
     `action` is the participant-observed action index 0/1/2), scored against the
-    0-100 rating with `compute_desire_nll`.
+    0-1 rating with `compute_desire_nll`.
     """
 
     def nll_trial(table, a, s, e, rel, resp):
@@ -548,9 +552,9 @@ def fit_joint_de_observer_joint(
     Padded observer table is 6-D — (padded_slot, scenario, observed_action,
     relationship, desire[101], effort). The observed action sits in slot 0, so the
     per-trial joint over (desire, effort) is `table[0, scenario, action, relationship, :, :]`.
-    Sums two per-slider losses: NLL of the continuous 0-100 desire rating against
+    Sums two per-slider losses: NLL of the continuous 0-1 desire rating against
     the marginal 101-bin desire posterior (`compute_desire_nll`) and binary
-    cross-entropy on the 0-100 effort slider (P(effort=HIGH)).
+    cross-entropy on the 0-1 effort slider (P(effort=HIGH)).
     """
 
     def nll_trial(table, a, s, rel, r_desire, r_effort):

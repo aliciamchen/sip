@@ -23,11 +23,12 @@ import pandas as pd
 IntimacyLevels = jnp.arange(0, 1.01, 0.01)
 
 # Continuous desire latent (Studies 1a/1b infer it). ψ(d) ∈ [0, 1]: 0 = "not at
-# all like the food", 1 = "extremely". Read out to the 0–100 human scale as
-# 100·d. Same 101-bin grid as IntimacyLevels so the inferred-desire observers
-# reuse the continuous-intimacy machinery. Enters the utility as the desire
-# multiplier w_v · desire · g(a|s), where g is the desire-free goal-satisfaction
-# of the action (see the padded LM-table loaders below).
+# all like the food", 1 = "extremely". Matches the human desire rating, which is
+# also stored on the 0–1 scale (collected 0–100, normalized in preprocessing).
+# Same 101-bin grid as IntimacyLevels so the inferred-desire observers reuse the
+# continuous-intimacy machinery. Enters the utility as the desire multiplier
+# w_v · desire · g(a|s), where g is the desire-free goal-satisfaction of the
+# action (see the padded LM-table loaders below).
 DesireLevels = jnp.arange(0, 1.01, 0.01)
 
 # Three-action canonical set used by the inverse-planning experiments. Action 0

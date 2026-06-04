@@ -73,8 +73,11 @@ from utils import get_project_root  # noqa: E402
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
-INTIMACY_GRID_100 = np.asarray(IntimacyLevels) * 100.0
-DESIRE_GRID_100 = np.asarray(DesireLevels) * 100.0
+# Latent grids are already on the [0, 1] scale (so are the human ratings and
+# the model's predicted ratings / belief updates). The 101-bin index of a 0-1
+# response is round(response * 100).
+INTIMACY_GRID = np.asarray(IntimacyLevels)
+DESIRE_GRID = np.asarray(DesireLevels)
 INTIMACY_IDX_TO_LEVEL = {0: 0, 1: 50, 2: 75, 3: 100}
 N_ACTIONS = int(len(actions))
 
@@ -229,7 +232,7 @@ def _loso_intimacy(slug):
                 for r in (0, 1):
                     for e in (0, 1):
                         density = held_out[a_idx, r, e, :]
-                        expected_intimacy = float(np.sum(INTIMACY_GRID_100 * density))
+                        expected_intimacy = float(np.sum(INTIMACY_GRID * density))
                         pred_rows.append(
                             {
                                 "scenario_label": scenario_label,
@@ -251,7 +254,7 @@ def _loso_intimacy(slug):
                     int(effort_condition[i]),
                     :,
                 ]
-                resp_idx = int(np.clip(round(float(response[i])), 0, 100))
+                resp_idx = int(np.clip(round(float(response[i]) * 100), 0, 100))
                 prob = max(float(post[resp_idx]), 1e-8)
                 test_nll += -float(np.log(prob))
 
@@ -325,7 +328,7 @@ def _loso_desire(slug):
                 for rel_idx in range(4):
                     for e in (0, 1):
                         density = held_out[a_idx, e, rel_idx, :]
-                        expected_desire = float(np.sum(DESIRE_GRID_100 * density))
+                        expected_desire = float(np.sum(DESIRE_GRID * density))
                         pred_rows.append(
                             {
                                 "scenario_label": scenario_label,
@@ -337,7 +340,7 @@ def _loso_desire(slug):
                             }
                         )
 
-            # Desire DV is a continuous 0-100 rating; test loss is the NLL of the
+            # Desire DV is a continuous 0-1 rating; test loss is the NLL of the
             # response bin under the 101-bin desire posterior.
             test_nll = 0.0
             for i in np.where(test_mask)[0]:
@@ -349,7 +352,7 @@ def _loso_desire(slug):
                     int(relationship_condition[i]),
                     :,
                 ]
-                resp_idx = int(np.clip(round(float(response[i])), 0, 100))
+                resp_idx = int(np.clip(round(float(response[i]) * 100), 0, 100))
                 test_nll += -float(np.log(max(float(post[resp_idx]), 1e-8)))
 
             fold_rows.append(
@@ -430,8 +433,8 @@ def _loso_joint_de(slug):
                 for rel_idx in range(4):
                     joint = held_out[a_idx, rel_idx, :, :]  # (101, 2)
                     desire_post = joint.sum(axis=1)  # marginal over effort
-                    expected_desire = float(np.sum(DESIRE_GRID_100 * desire_post))
-                    p_effort_high = float(joint[:, 1].sum()) * 100.0
+                    expected_desire = float(np.sum(DESIRE_GRID * desire_post))
+                    p_effort_high = float(joint[:, 1].sum())
                     pred_rows.append(
                         {
                             "scenario_label": scenario_label,
@@ -443,8 +446,8 @@ def _loso_joint_de(slug):
                         }
                     )
 
-            # Desire slider is a continuous 0-100 rating (NLL over the 101-bin
-            # posterior); effort slider is a 0-100 rating (BCE on P(effort=HIGH)).
+            # Desire slider is a continuous 0-1 rating (NLL over the 101-bin
+            # posterior); effort slider is a 0-1 rating (BCE on P(effort=HIGH)).
             test_nll = 0.0
             for i in np.where(test_mask)[0]:
                 joint = table[
@@ -458,10 +461,10 @@ def _loso_joint_de(slug):
                 desire_post = joint.sum(axis=1)
                 p_e_high = float(joint[:, 1].sum())
                 # desire: NLL of the response bin under the 101-bin posterior
-                resp_idx = int(np.clip(round(float(response_desire[i])), 0, 100))
+                resp_idx = int(np.clip(round(float(response_desire[i]) * 100), 0, 100))
                 test_nll += -float(np.log(max(float(desire_post[resp_idx]), 1e-8)))
-                # effort: binary cross-entropy on the 0-100 slider
-                p_human = float(response_effort[i]) / 100.0
+                # effort: binary cross-entropy on the 0-1 slider
+                p_human = float(response_effort[i])
                 p_m = min(max(p_e_high, 1e-8), 1 - 1e-8)
                 test_nll += -(
                     p_human * float(np.log(p_m))
@@ -544,8 +547,8 @@ def _loso_joint_ie(slug):
                 for r in (0, 1):
                     joint = held_out[a_idx, r, :, :]  # (101, 2)
                     p_intimacy = joint.sum(axis=1)  # marginal over effort
-                    expected_intimacy = float(np.sum(INTIMACY_GRID_100 * p_intimacy))
-                    p_effort_high = float(joint[:, 1].sum()) * 100.0
+                    expected_intimacy = float(np.sum(INTIMACY_GRID * p_intimacy))
+                    p_effort_high = float(joint[:, 1].sum())
                     pred_rows.append(
                         {
                             "scenario_label": scenario_label,
@@ -569,11 +572,11 @@ def _loso_joint_ie(slug):
                 ]
                 # intimacy slider NLL (101-bin posterior)
                 p_intimacy = joint.sum(axis=1)
-                resp_idx = int(np.clip(round(float(response_intimacy[i])), 0, 100))
+                resp_idx = int(np.clip(round(float(response_intimacy[i]) * 100), 0, 100))
                 test_nll += -float(np.log(max(float(p_intimacy[resp_idx]), 1e-8)))
                 # effort slider NLL (binary cross-entropy)
                 p_e_high = float(joint[:, 1].sum())
-                p_human = float(response_effort[i]) / 100.0
+                p_human = float(response_effort[i])
                 p_m = min(max(p_e_high, 1e-8), 1 - 1e-8)
                 test_nll += -(
                     p_human * float(np.log(p_m))
