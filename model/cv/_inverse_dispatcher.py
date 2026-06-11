@@ -1,6 +1,6 @@
 """
 Leave-one-scenario-out (LOSO) CV for the active inverse experiments
-(Studies 1a, 1b, 2a — Study 2b scaffolded separately).
+(Studies 1a, 1b, 2a, 2b).
 
 For each variant (full / discomfort_only / base) and each of the 16 scenarios,
 hold the scenario out, jointly refit the actor utility weights and
@@ -80,6 +80,9 @@ INTIMACY_GRID = np.asarray(IntimacyLevels)
 DESIRE_GRID = np.asarray(DesireLevels)
 INTIMACY_IDX_TO_LEVEL = {0: 0, 1: 50, 2: 75, 3: 100}
 N_ACTIONS = int(len(actions))
+# Multi-start restarts per fold refit — lower than the full fits' default of 5
+# to keep 16 folds x 3 variants x 4 studies tractable.
+N_RESTARTS_CV = 3
 
 
 # Per-variant (observer_fn, utility_param_names, uses_v). Each registry pairs
@@ -210,7 +213,7 @@ def _loso_intimacy(slug):
             n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
             _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
 
-            params, train_nll = fit_intimacy_observer_joint(
+            params, train_nll, _ = fit_intimacy_observer_joint(
                 observer_fn=obs_fn,
                 utility_param_names=utility_names,
                 action=action[train_mask],
@@ -220,6 +223,7 @@ def _loso_intimacy(slug):
                 response=response[train_mask],
                 table_kwargs=tk,
                 verbose=False,
+                n_restarts=N_RESTARTS_CV,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
             # Padded shape: (padded_slot, scenario, observed_action, desire, effort, intimacy_101)
@@ -282,6 +286,7 @@ def main_intimacy():
     print(f"LOSO CV: {slug}")
     print("=" * 60)
     preds_df, folds_df = _loso_intimacy(slug)
+    _write_outputs(slug, preds_df, folds_df)
 
 
 # ==============================================================================
@@ -306,7 +311,7 @@ def _loso_desire(slug):
             n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
             _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
 
-            params, train_nll = fit_desire_observer_joint(
+            params, train_nll, _ = fit_desire_observer_joint(
                 observer_fn=obs_fn,
                 utility_param_names=utility_names,
                 action=action[train_mask],
@@ -316,6 +321,7 @@ def _loso_desire(slug):
                 response=response[train_mask],
                 table_kwargs=tk,
                 verbose=False,
+                n_restarts=N_RESTARTS_CV,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
             # Shape: (padded_slot, scenario, observed_action, effort, intimacy, desire)
@@ -411,7 +417,7 @@ def _loso_joint_de(slug):
             n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
             _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
 
-            params, train_nll = fit_joint_de_observer_joint(
+            params, train_nll, _ = fit_joint_de_observer_joint(
                 observer_fn=obs_fn,
                 utility_param_names=utility_names,
                 action=action[train_mask],
@@ -421,6 +427,7 @@ def _loso_joint_de(slug):
                 response_effort=response_effort[train_mask],
                 table_kwargs=tk,
                 verbose=False,
+                n_restarts=N_RESTARTS_CV,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
             # Padded shape: (padded_slot, scenario, observed_action, relationship_4, desire, effort)
@@ -525,7 +532,7 @@ def _loso_joint_ie(slug):
             n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
             _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
 
-            params, train_nll = fit_joint_ie_observer_joint(
+            params, train_nll, _ = fit_joint_ie_observer_joint(
                 observer_fn=obs_fn,
                 utility_param_names=utility_names,
                 action=action[train_mask],
@@ -535,6 +542,7 @@ def _loso_joint_ie(slug):
                 response_effort=response_effort[train_mask],
                 table_kwargs=tk,
                 verbose=False,
+                n_restarts=N_RESTARTS_CV,
             )
             table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
             # Padded shape: (padded_slot, scenario, observed_action, desire, intimacy_101, effort)
@@ -572,7 +580,9 @@ def _loso_joint_ie(slug):
                 ]
                 # intimacy slider NLL (101-bin posterior)
                 p_intimacy = joint.sum(axis=1)
-                resp_idx = int(np.clip(round(float(response_intimacy[i]) * 100), 0, 100))
+                resp_idx = int(
+                    np.clip(round(float(response_intimacy[i]) * 100), 0, 100)
+                )
                 test_nll += -float(np.log(max(float(p_intimacy[resp_idx]), 1e-8)))
                 # effort slider NLL (binary cross-entropy)
                 p_e_high = float(joint[:, 1].sum())

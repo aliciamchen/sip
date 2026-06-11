@@ -19,6 +19,7 @@ from _helpers import (  # noqa: E402
     desire_table_kwargs,
     fit_desire_observer_joint,
     load_desire_data,
+    restart_records_to_rows,
 )
 from observers import (  # noqa: E402
     observer_desire_base,
@@ -47,11 +48,12 @@ def main():
     )
 
     results = []
+    restart_rows = []
     for variant_name, (obs_fn, utility_names, uses_v) in VARIANTS.items():
         print(
             f"\n{'-' * 40}\nJointly fitting {variant_name} ({len(utility_names)} weights + alpha_observer)...\n{'-' * 40}"
         )
-        params, nll = fit_desire_observer_joint(
+        params, nll, restarts = fit_desire_observer_joint(
             observer_fn=obs_fn,
             utility_param_names=utility_names,
             action=action,
@@ -72,6 +74,11 @@ def main():
         for i, name in enumerate(utility_names):
             row[f"param_{name}"] = float(params[i])
         results.append(row)
+        restart_rows.extend(
+            restart_records_to_rows(
+                EXPERIMENT_SLUG, variant_name, utility_names, restarts
+            )
+        )
 
     output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -81,6 +88,9 @@ def main():
     results_path = output_dir / "fit_results.csv"
     results_df.to_csv(results_path, index=False)
     print(f"\nSaved fit results to {results_path}")
+    restarts_path = output_dir / "fit_restarts.csv"
+    pd.DataFrame(restart_rows).to_csv(restarts_path, index=False)
+    print(f"Saved per-restart fits to {restarts_path}")
 
 
 if __name__ == "__main__":

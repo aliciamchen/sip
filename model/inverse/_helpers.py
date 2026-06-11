@@ -18,6 +18,7 @@ sys.path.insert(0, str(_project_root / "model"))
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import optax
 import pandas as pd
 
@@ -26,34 +27,126 @@ from utils import get_project_root
 
 
 def _fit_with_adam(
-    loss_fn, init_params, lr=0.01, max_steps=5000, verbose=True, label=""
+    loss_fn,
+    init_params,
+    lr=0.01,
+    max_steps=5000,
+    verbose=True,
+    label="",
+    patience=100,
+    tol=1e-6,
 ):
-    """Adam fit loop with non-negativity clipping and NLL monotonicity stop."""
+    """Adam fit loop with non-negativity clipping, best-so-far tracking, and a
+    patience stop.
+
+    Adam is not monotone even on full-batch problems, so the loop keeps the
+    best (params, NLL) seen so far and stops once the best NLL hasn't improved
+    by more than `tol` for `patience` consecutive steps. Returns the tracked
+    best iterate, not the last one.
+    """
     params = jnp.array(init_params)
     grad_fn = jax.value_and_grad(loss_fn)
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
 
-    prev_nll = None
+    best_params = params
+    best_nll = jnp.inf
+    steps_without_improvement = 0
     for step in range(max_steps):
-        nll, grad = grad_fn(params)
-        updates, opt_state = opt.update(grad, opt_state)
-        params = optax.apply_updates(params, updates)
-        params = jnp.clip(params, 1e-6, jnp.inf)
+        nll, grad = grad_fn(params)  # NLL at the current params, pre-update
+        if nll < best_nll - tol:
+            best_nll = nll
+            best_params = params
+            steps_without_improvement = 0
+        else:
+            steps_without_improvement += 1
 
         if verbose and step % 1000 == 0:
             print(f"  Step {step}, NLL: {nll:.4f}, params: {params}")
 
-        if prev_nll is not None and nll > prev_nll + 1e-6:
+        if steps_without_improvement >= patience:
             if verbose:
-                print(f"  NLL increased at step {step}, stopping")
+                print(f"  No improvement for {patience} steps, stopping at step {step}")
             break
-        prev_nll = nll
 
-    best_nll = float(loss_fn(params))
+        updates, opt_state = opt.update(grad, opt_state)
+        params = optax.apply_updates(params, updates)
+        params = jnp.clip(params, 1e-6, jnp.inf)
+
+    best_nll = float(best_nll)
     if verbose:
-        print(f"  {label} final NLL: {best_nll:.4f}, params: {params}")
-    return params, best_nll
+        print(f"  {label} final NLL: {best_nll:.4f}, params: {best_params}")
+    return best_params, best_nll
+
+
+def _fit_multistart(
+    loss_fn,
+    n_params,
+    n_restarts=5,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+    label="",
+):
+    """Run `_fit_with_adam` from several inits and keep the best final NLL.
+
+    Inits are the canonical all-ones vector plus `n_restarts - 1` seeded
+    lognormal(0, 0.5) draws (positive, centered at 1, deterministic via
+    `default_rng(0)`), guarding against local minima from the gamma power law.
+
+    Returns (best_params, best_nll, records) where `records` is one dict per
+    restart {restart, init, final_params, nll} for stability auditing.
+    """
+    rng = np.random.default_rng(0)
+    inits = [jnp.ones(n_params)]
+    for _ in range(max(0, n_restarts - 1)):
+        inits.append(jnp.array(rng.lognormal(mean=0.0, sigma=0.5, size=n_params)))
+
+    best_params, best_nll = None, float("inf")
+    records = []
+    for ri, init in enumerate(inits):
+        params, nll = _fit_with_adam(
+            loss_fn,
+            init,
+            lr=lr,
+            max_steps=max_steps,
+            verbose=verbose,
+            label=f"{label}[restart {ri}]",
+        )
+        records.append(
+            {
+                "restart": ri,
+                "init": np.asarray(init).tolist(),
+                "final_params": np.asarray(params).tolist(),
+                "nll": float(nll),
+            }
+        )
+        if nll < best_nll:
+            best_nll, best_params = float(nll), params
+    return best_params, best_nll, records
+
+
+def restart_records_to_rows(slug, variant, utility_param_names, records):
+    """Flatten `_fit_multistart` records into rows for fit_restarts.csv.
+
+    One row per restart with init_<name> / param_<name> columns (the params
+    layout is [*utility_param_names, alpha_observer]). Variants with different
+    parameter sets just leave the other variants' columns empty.
+    """
+    rows = []
+    names = list(utility_param_names) + ["alpha_observer"]
+    for rec in records:
+        row = {
+            "experiment": slug,
+            "model": variant,
+            "restart": rec["restart"],
+            "nll": rec["nll"],
+        }
+        for i, name in enumerate(names):
+            row[f"init_{name}"] = rec["init"][i]
+            row[f"param_{name}"] = rec["final_params"][i]
+        rows.append(row)
+    return rows
 
 
 # ==============================================================================
@@ -433,6 +526,7 @@ def fit_intimacy_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
+    n_restarts=5,
 ):
     """Study 2a — joint fit of utility weights + α_observer (intimacy NLL).
 
@@ -462,16 +556,16 @@ def fit_intimacy_observer_joint(
             )
         )
 
-    init = jnp.ones(len(utility_param_names) + 1)
-    params, nll = _fit_with_adam(
+    params, nll, restarts = _fit_multistart(
         loss_fn,
-        init,
+        n_params=len(utility_param_names) + 1,
+        n_restarts=n_restarts,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
         label="intimacy_joint",
     )
-    return params, float(nll)
+    return params, float(nll), restarts
 
 
 def fit_desire_observer_joint(
@@ -486,6 +580,7 @@ def fit_desire_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
+    n_restarts=5,
 ):
     """Study 1a — joint fit of utility weights + α_observer (NLL on the
     continuous 0-1 desire DV).
@@ -522,16 +617,16 @@ def fit_desire_observer_joint(
             )
         )
 
-    init = jnp.ones(len(utility_param_names) + 1)
-    params, nll = _fit_with_adam(
+    params, nll, restarts = _fit_multistart(
         loss_fn,
-        init,
+        n_params=len(utility_param_names) + 1,
+        n_restarts=n_restarts,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
         label="desire_joint",
     )
-    return params, float(nll)
+    return params, float(nll), restarts
 
 
 def fit_joint_de_observer_joint(
@@ -546,6 +641,7 @@ def fit_joint_de_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
+    n_restarts=5,
 ):
     """Study 1b — joint fit of utility weights + α_observer.
 
@@ -582,16 +678,16 @@ def fit_joint_de_observer_joint(
             )
         )
 
-    init = jnp.ones(len(utility_param_names) + 1)
-    params, nll = _fit_with_adam(
+    params, nll, restarts = _fit_multistart(
         loss_fn,
-        init,
+        n_params=len(utility_param_names) + 1,
+        n_restarts=n_restarts,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
         label="joint_de_joint",
     )
-    return params, float(nll)
+    return params, float(nll), restarts
 
 
 def fit_joint_ie_observer_joint(
@@ -606,6 +702,7 @@ def fit_joint_ie_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
+    n_restarts=5,
 ):
     """Study 2b — joint fit of utility weights + α_observer.
 
@@ -642,13 +739,13 @@ def fit_joint_ie_observer_joint(
             )
         )
 
-    init = jnp.ones(len(utility_param_names) + 1)
-    params, nll = _fit_with_adam(
+    params, nll, restarts = _fit_multistart(
         loss_fn,
-        init,
+        n_params=len(utility_param_names) + 1,
+        n_restarts=n_restarts,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
         label="joint_ie_joint",
     )
-    return params, float(nll)
+    return params, float(nll), restarts
