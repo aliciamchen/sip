@@ -9,6 +9,10 @@ For each experiment it writes two CSVs under data/<experiment>/:
 It then builds main_trials_long.csv (the model/analysis input), applying the
 standard exclusions (failed attention check or 0 correct memory checks).
 
+If any raw JSON file fails to parse, the script reports every failing file and
+exits without writing CSVs, so a corrupt download can't silently drop a
+participant. Remove or fix the offending files and re-run.
+
 Usage:
     python json_to_csv.py <experiment_name>
 
@@ -22,7 +26,6 @@ Active inverse studies (3-action set):
 import argparse
 import csv
 import json
-import os
 import sys
 import uuid
 from pathlib import Path
@@ -34,10 +37,36 @@ project_root = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(project_root))
 from utils import get_project_root
 
-# Experiment configurations
+
+def _to_unit(raw):
+    """Normalize a raw 0-100 jsPsych slider value to the 0-1 scale.
+
+    All DV ratings are collected on a 0-100 slider but stored, analyzed, and
+    modeled on the 0-1 scale (so belief updates fall in [-1, 1]). Returns "" for
+    blank/non-numeric values so empty cells stay empty in the CSV.
+    """
+    if raw is None or raw == "":
+        return ""
+    try:
+        return float(raw) / 100.0
+    except (TypeError, ValueError):
+        return ""
+
+
+# Experiment configurations. Per-study keys that drive the conversion:
+#   condition_fields — trial keys copied verbatim into main_trials.csv
+#   rating_fields    — output column -> where the rating lives. None means the
+#                      trial's "response" is itself the rating (single-slider
+#                      studies); a string key indexes into the response object
+#                      (two-slider survey-html-form studies). All ratings pass
+#                      through _to_unit.
+#   long_renames     — given-condition columns renamed to bare factor names in
+#                      main_trials_long.csv
 EXPERIMENT_CONFIGS = {
     "food_inv_desire": {
         "description": "Study 1a — desire inference under known effort + intimacy (3-action set)",
+        # response is the continuous desire rating ("how much do they want to
+        # eat the food?", not at all → moderately → extremely).
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -47,6 +76,16 @@ EXPERIMENT_CONFIGS = {
             "stage",
             "response",
         ],
+        "condition_fields": [
+            "action_condition",
+            "effort_condition",
+            "intimacy_condition",
+        ],
+        "rating_fields": {"response": None},
+        "long_renames": {
+            "effort_condition": "effort",
+            "intimacy_condition": "intimacy",
+        },
         "exit_survey_fields": [
             "subject_id",
             "gender",
@@ -57,12 +96,14 @@ EXPERIMENT_CONFIGS = {
             "memory_correct_count",
             "comprehension_attempt",
         ],
-        "has_closeness": False,
         "has_attention_memory": True,
         "has_comprehension": True,
     },
     "food_inv_joint_de": {
         "description": "Study 1b — joint desire + effort inference under known intimacy (3-action set)",
+        # Two sliders on one page; the response is an object {desire, effort}.
+        # desire = continuous "how much do they want the food"; effort = "which
+        # effort situation is more likely" (0 = effort_low ... 1 = effort_high).
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -72,6 +113,9 @@ EXPERIMENT_CONFIGS = {
             "desire_rating",
             "effort_rating",
         ],
+        "condition_fields": ["action_condition", "intimacy_condition"],
+        "rating_fields": {"desire_rating": "desire", "effort_rating": "effort"},
+        "long_renames": {"intimacy_condition": "intimacy"},
         "exit_survey_fields": [
             "subject_id",
             "gender",
@@ -82,12 +126,12 @@ EXPERIMENT_CONFIGS = {
             "memory_correct_count",
             "comprehension_attempt",
         ],
-        "has_closeness": False,
         "has_attention_memory": True,
         "has_comprehension": True,
     },
     "food_inv_intimacy": {
         "description": "Study 2a — intimacy inference under known desire + effort (3-action set)",
+        # Single intimacy slider under known desire + effort.
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -97,6 +141,16 @@ EXPERIMENT_CONFIGS = {
             "stage",
             "intimacy_rating",
         ],
+        "condition_fields": [
+            "action_condition",
+            "desire_condition",
+            "effort_condition",
+        ],
+        "rating_fields": {"intimacy_rating": None},
+        "long_renames": {
+            "desire_condition": "desire",
+            "effort_condition": "effort",
+        },
         "exit_survey_fields": [
             "subject_id",
             "gender",
@@ -107,12 +161,14 @@ EXPERIMENT_CONFIGS = {
             "memory_correct_count",
             "comprehension_attempt",
         ],
-        "has_closeness": False,
         "has_attention_memory": True,
         "has_comprehension": True,
     },
     "food_inv_joint_ie": {
         "description": "Study 2b — joint intimacy + effort inference under known desire (3-action set)",
+        # Two sliders on one page; the response is an object {intimacy, effort}.
+        # effort = "which effort situation is more likely" (0 = effort_low ...
+        # 1 = effort_high).
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
@@ -122,6 +178,9 @@ EXPERIMENT_CONFIGS = {
             "intimacy_rating",
             "effort_rating",
         ],
+        "condition_fields": ["action_condition", "desire_condition"],
+        "rating_fields": {"intimacy_rating": "intimacy", "effort_rating": "effort"},
+        "long_renames": {"desire_condition": "desire"},
         "exit_survey_fields": [
             "subject_id",
             "gender",
@@ -132,14 +191,43 @@ EXPERIMENT_CONFIGS = {
             "memory_correct_count",
             "comprehension_attempt",
         ],
-        "has_closeness": False,
         "has_attention_memory": True,
         "has_comprehension": True,
     },
 }
 
 
-def process_json_files(input_dir, output_dir, config, experiment_name):
+def _extract_main_trial(trial, subject_id, config):
+    """Build one main_trials.csv row from a raw rating trial."""
+    row = {
+        "subject_id": subject_id,
+        "scenario_label": trial.get("scenario_label", ""),
+        "stage": trial.get("stage", ""),
+    }
+    for field in config["condition_fields"]:
+        row[field] = trial.get(field, "")
+    response = trial.get("response", "")
+    for out_col, response_key in config["rating_fields"].items():
+        if response_key is None:
+            row[out_col] = _to_unit(response)
+        else:
+            row[out_col] = _to_unit((response or {}).get(response_key, ""))
+    return row
+
+
+def _write_csv(path, rows, fieldnames):
+    """Write rows to path, refusing to clobber an existing file with nothing."""
+    if not rows:
+        print(f"No rows for {path.name}; existing file left untouched")
+        return
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    print(f"Created {path} with {len(rows)} rows")
+
+
+def process_json_files(input_dir, output_dir, config):
     """
     Process all JSON files in the input directory and create CSV files.
 
@@ -147,13 +235,12 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
         input_dir (str): Path to directory containing JSON files
         output_dir (str): Path to directory where CSV files will be saved
         config (dict): Experiment configuration
-        experiment_name (str): Name of the experiment being processed
+
+    Exits non-zero without writing anything if no JSON files are found or any
+    file fails to process.
     """
     input_path = Path(input_dir)
     output_path = Path(output_dir)
-
-    # Create output directory if it doesn't exist
-    output_path.mkdir(parents=True, exist_ok=True)
 
     # Lists to store data for each CSV
     main_trials_data = []
@@ -171,8 +258,11 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
 
     # Process each JSON file
     json_files = list(input_path.glob("*.json"))
+    if not json_files:
+        sys.exit(f"No JSON files found in {input_path}; nothing written.")
     print(f"Found {len(json_files)} JSON files to process")
 
+    failures = []
     for json_file in json_files:
         print(f"Processing {json_file.name}...")
 
@@ -197,89 +287,20 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                 trial_type = trial.get("response_type", "")
 
                 if trial_type == "response":
-                    # Extract main trial data
-                    scenario_label = trial.get("scenario_label", "")
-
-                    # Handle different experiment types
-                    if experiment_name == "food_inv_desire":
-                        # Prior/posterior desire slider response under known
-                        # effort + intimacy. response is the continuous 0-100
-                        # rating ("how much do they want to eat the food?",
-                        # not at all → moderately → extremely).
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": trial.get("action_condition", ""),
-                            "effort_condition": trial.get("effort_condition", ""),
-                            "intimacy_condition": trial.get("intimacy_condition", ""),
-                            "stage": trial.get("stage", ""),
-                            "response": trial.get("response", ""),
-                        }
-
-                    elif experiment_name == "food_inv_joint_de":
-                        # Two sliders on one page (survey-html-form); the response
-                        # is an object {desire, effort} of 0-100 string values.
-                        # desire = continuous "how much do they want the food";
-                        # effort = "which effort situation is more likely"
-                        # (0 = effort_low ... 100 = effort_high).
-                        response = trial.get("response", {}) or {}
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": trial.get("action_condition", ""),
-                            "intimacy_condition": trial.get("intimacy_condition", ""),
-                            "stage": trial.get("stage", ""),
-                            "desire_rating": response.get("desire", ""),
-                            "effort_rating": response.get("effort", ""),
-                        }
-
-                    elif experiment_name == "food_inv_intimacy":
-                        # Single intimacy slider (0-100) under known desire +
-                        # effort.
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": trial.get("action_condition", ""),
-                            "desire_condition": trial.get("desire_condition", ""),
-                            "effort_condition": trial.get("effort_condition", ""),
-                            "stage": trial.get("stage", ""),
-                            "intimacy_rating": trial.get("response", ""),
-                        }
-
-                    elif experiment_name == "food_inv_joint_ie":
-                        # Two sliders on one page (survey-html-form); the response
-                        # is an object {intimacy, effort} of 0-100 string values.
-                        # effort = "which effort situation is more likely"
-                        # (0 = effort_low ... 100 = effort_high).
-                        response = trial.get("response", {}) or {}
-                        trial_data = {
-                            "subject_id": subject_id,
-                            "scenario_label": scenario_label,
-                            "action_condition": trial.get("action_condition", ""),
-                            "desire_condition": trial.get("desire_condition", ""),
-                            "stage": trial.get("stage", ""),
-                            "intimacy_rating": response.get("intimacy", ""),
-                            "effort_rating": response.get("effort", ""),
-                        }
-
-                    main_trials_data.append(trial_data)
+                    main_trials_data.append(
+                        _extract_main_trial(trial, subject_id, config)
+                    )
 
                 elif trial_type == "exit_survey":
                     # Extract exit survey data
                     response = trial.get("response", {})
 
-                    gender = response.get("gender", "")
-                    age = response.get("age", "")
-                    understood = response.get("understood", "")
-                    comments = response.get("comments", "")
-
-                    # Build survey data dictionary
                     survey_data = {
                         "subject_id": subject_id,
-                        "gender": gender,
-                        "age": age,
-                        "understood": understood,
-                        "comments": comments,
+                        "gender": response.get("gender", ""),
+                        "age": response.get("age", ""),
+                        "understood": response.get("understood", ""),
+                        "comments": response.get("comments", ""),
                     }
 
                     # Add attention and memory data if this experiment has it
@@ -302,39 +323,37 @@ def process_json_files(input_dir, output_dir, config, experiment_name):
                     exit_survey_data.append(survey_data)
 
         except Exception as e:
+            failures.append((json_file.name, e))
             print(f"Error processing {json_file.name}: {e}")
             continue
 
-    # Write main trials CSV
-    main_trials_file = output_path / "main_trials.csv"
-    with open(main_trials_file, "w", newline="", encoding="utf-8") as f:
-        if main_trials_data:
-            writer = csv.DictWriter(f, fieldnames=config["main_trial_fields"])
-            writer.writeheader()
-            writer.writerows(main_trials_data)
-            print(f"Created {main_trials_file} with {len(main_trials_data)} rows")
-        else:
-            print("No main trial data found")
+    if failures:
+        print(f"\n{len(failures)} of {len(json_files)} files failed to process:")
+        for name, err in failures:
+            print(f"  {name}: {err}")
+        sys.exit(
+            "Aborting without writing CSVs so no participant is silently dropped. "
+            "Fix or deliberately remove the files above and re-run."
+        )
 
-    # Write exit survey CSV
-    exit_survey_file = output_path / "exit_survey.csv"
-    with open(exit_survey_file, "w", newline="", encoding="utf-8") as f:
-        if exit_survey_data:
-            writer = csv.DictWriter(f, fieldnames=config["exit_survey_fields"])
-            writer.writeheader()
-            writer.writerows(exit_survey_data)
-            print(f"Created {exit_survey_file} with {len(exit_survey_data)} rows")
-        else:
-            print("No exit survey data found")
+    # Create output directory if it doesn't exist
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    _write_csv(
+        output_path / "main_trials.csv", main_trials_data, config["main_trial_fields"]
+    )
+    _write_csv(
+        output_path / "exit_survey.csv", exit_survey_data, config["exit_survey_fields"]
+    )
 
 
-def create_food_inv_desire_long(output_dir):
+def create_main_trials_long(output_dir, config):
     """
-    Create main_trials_long.csv for the food_inv_desire experiment.
+    Create main_trials_long.csv from main_trials.csv and exit_survey.csv.
 
-    Filters out participants who failed attention or got 0 correct on memory.
-    Renames effort_condition -> effort and intimacy_condition -> intimacy for
-    analysis consistency.
+    Applies the standard exclusions (failed attention check or 0 correct memory
+    checks) and renames the given-condition columns to bare factor names per
+    the config's long_renames (e.g. effort_condition -> effort).
     """
     output_path = Path(output_dir)
 
@@ -356,141 +375,7 @@ def create_food_inv_desire_long(output_dir):
         ~main_trials["subject_id"].isin(excluded_subjects)
     ]
 
-    main_trials_long = main_trials_filtered.rename(
-        columns={"effort_condition": "effort", "intimacy_condition": "intimacy"}
-    )
-
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_joint_de_long(output_dir):
-    """
-    Create main_trials_long.csv for the food_inv_joint_de experiment (Study 1b).
-
-    Intimacy is the given condition; desire and effort are jointly inferred via
-    two sliders. Renames intimacy_condition -> intimacy and keeps the
-    desire_rating / effort_rating slider columns. Filters out participants who
-    failed attention or got 0 correct on memory.
-    """
-    output_path = Path(output_dir)
-
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    main_trials_long = main_trials_filtered.rename(
-        columns={"intimacy_condition": "intimacy"}
-    )
-
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_intimacy_long(output_dir):
-    """
-    Create main_trials_long.csv for the food_inv_intimacy experiment (Study 2a).
-
-    Desire and effort are the given conditions; intimacy is inferred via a single
-    slider. Renames desire_condition -> desire and effort_condition -> effort
-    and keeps the intimacy_rating column. Filters out participants who failed
-    attention or got 0 correct on memory.
-    """
-    output_path = Path(output_dir)
-
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    main_trials_long = main_trials_filtered.rename(
-        columns={"desire_condition": "desire", "effort_condition": "effort"}
-    )
-
-    main_trials_long = main_trials_long.sort_values(
-        ["subject_id", "scenario_label", "action_condition", "stage"]
-    ).reset_index(drop=True)
-
-    output_file = output_path / "main_trials_long.csv"
-    main_trials_long.to_csv(output_file, index=False)
-    print(
-        f"Created {output_file} with {len(main_trials_long)} rows ({main_trials_long['subject_id'].nunique()} participants)"
-    )
-
-
-def create_food_inv_joint_ie_long(output_dir):
-    """
-    Create main_trials_long.csv for the food_inv_joint_ie experiment (Study 2b).
-
-    Desire is the given condition; intimacy and effort are jointly inferred via
-    two sliders. Renames desire_condition -> desire and keeps the
-    intimacy_rating / effort_rating slider columns. Filters out participants who
-    failed attention or got 0 correct on memory.
-    """
-    output_path = Path(output_dir)
-
-    main_trials = pd.read_csv(output_path / "main_trials.csv")
-    exit_survey = pd.read_csv(output_path / "exit_survey.csv")
-
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
-
-    n_excluded = len(excluded_subjects)
-    n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
-    )
-
-    main_trials_filtered = main_trials[
-        ~main_trials["subject_id"].isin(excluded_subjects)
-    ]
-
-    main_trials_long = main_trials_filtered.rename(
-        columns={"desire_condition": "desire"}
-    )
+    main_trials_long = main_trials_filtered.rename(columns=config["long_renames"])
 
     main_trials_long = main_trials_long.sort_values(
         ["subject_id", "scenario_label", "action_condition", "stage"]
@@ -547,21 +432,11 @@ Examples:
     print(f"Output directory: {output_dir}")
 
     # Process the files
-    process_json_files(input_dir, output_dir, config, args.experiment)
+    process_json_files(input_dir, output_dir, config)
 
     # Create long format with exclusions
-    if args.experiment == "food_inv_desire":
-        print("\nCreating long format with exclusions...")
-        create_food_inv_desire_long(output_dir)
-    elif args.experiment == "food_inv_joint_de":
-        print("\nCreating long format with exclusions...")
-        create_food_inv_joint_de_long(output_dir)
-    elif args.experiment == "food_inv_intimacy":
-        print("\nCreating long format with exclusions...")
-        create_food_inv_intimacy_long(output_dir)
-    elif args.experiment == "food_inv_joint_ie":
-        print("\nCreating long format with exclusions...")
-        create_food_inv_joint_ie_long(output_dir)
+    print("\nCreating long format with exclusions...")
+    create_main_trials_long(output_dir, config)
 
     print("\nConversion complete!")
 
