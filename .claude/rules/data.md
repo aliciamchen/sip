@@ -14,7 +14,7 @@ Each experiment folder is named after its slug and contains:
 
 The active roster is four inverse experiments under `data/<slug>/` — `food_inv_desire` (1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b) — none with collected data yet.
 
-`data/legacy/` holds archived data from earlier experiments (forward-planning, pre-3-action inverse, side projects, and the original Study 1a pilot) that are no longer part of the pipeline — their model and analysis code was removed; only the data is kept for reproducibility. It's documented in [data/legacy/README.md](../../data/legacy/README.md) and covered by the `legacy` gitignore rule.
+`data/legacy/` holds archived data from earlier experiments (forward-planning, pre-3-action inverse, side projects, and the original Study 1a pilot) that are no longer part of the pipeline — their model and analysis code was removed; only the data is kept for reproducibility. It's documented in [data/legacy/README.md](../../data/legacy/README.md). The forward-planning and Study 1a pilot CSVs are tracked; the superseded inverse experiments, `pilots/`, and `planning_comm/` are local-only (scoped `data/legacy/*` gitignore rules).
 
 ## Participant exclusion criteria
 

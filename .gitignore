@@ -9,9 +9,6 @@ __pycache__
 /.quarto/
 **/*.quarto_ipynb
 _output
-*test*
-*verify*
-legacy
 sandbox
 *.ai
 .venv/
@@ -31,6 +28,20 @@ notes/
 model/outputs/*/preds.csv
 model/outputs/*/preds_full.csv
 model/outputs/*/preds_summary.csv
+
+# Raw per-variant prediction tensors saved alongside the CSVs. Large, binary,
+# and regenerable from the fit scripts, so they stay local.
+model/outputs/*/*.npy
+
+# Legacy data that deliberately left git history (commit 8a348e6): the six
+# superseded 4-action/2-action inverse experiments, early pilots, and the
+# planning_comm side project. Kept local-only; see data/legacy/README.md.
+# The forward-planning and Study 1a pilot CSVs under data/legacy/ remain
+# tracked.
+data/legacy/*_alt/
+data/legacy/*_noalt/
+data/legacy/pilots/
+data/legacy/planning_comm/
 
 # Non-fitted model-behavior visualizations (parameter sweeps + belief-update
 # plots at hand-picked params). Exploratory and not part of the fit pipeline;
