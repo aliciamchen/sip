@@ -18,6 +18,7 @@ many slider responses participants give per trial:
   Study 2a (`food_inv_intimacy`)   — infer intimacy given (desire, effort)
   Study 1a (`food_inv_desire`)     — infer desire given (effort, intimacy)
   Study 1b (`food_inv_joint_de`)   — joint over (desire, effort) given intimacy
+  Study 2b (`food_inv_joint_ie`)   — joint over (intimacy, effort) given desire
 
 All share the joint-fit logic in `model/inverse/_helpers.py` — there is
 no transfer between studies.

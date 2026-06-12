@@ -110,7 +110,7 @@ Per `outputs/<slug>/`:
 - `cv_folds.csv` — per-fold fit results from LOSO CV.
 - `cv_preds_summary.csv` — held-out per-condition summary.
 
-LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_scenario_*`, `lm_alternatives_*`). Preregistration documents are in `preregs/` at the repo root. Sandboxed/experimental code is in `model/sandbox/`.
+LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_scenario_*`, `lm_alternatives_*`). Preregistration documents are in `preregs/` at the repo root.
 
 ### Terminology
 
