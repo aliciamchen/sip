@@ -36,7 +36,7 @@ function desireSlider(stimulus, index, total, stage, observedAction) {
     paragraphs: [
       intimacyDescriptor(stimulus),
       `<p>${stimulus.vignette}</p>`,
-      `<p><strong>${getEffortText(stimulus)}</strong></p>`,
+      `<p>${getEffortText(stimulus)}</p>`,
     ],
     labels: DESIRE_SLIDER_LABELS,
     leadInQuestion: desireQuestion(stimulus, { lowercase: true }),
