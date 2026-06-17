@@ -4,7 +4,7 @@ Study 1b — Joint inference over desire and effort.
 
 ## Design
 
-**Factor crossing**: 4 (intimacy: 0/50/75/100) × 3 (observed action)
+**Factor crossing**: 4 (intimacy: max_formal/neither/somewhat_intimate/max_intimate) × 3 (observed action)
 
 **Known to participant**: intimacy_condition
 

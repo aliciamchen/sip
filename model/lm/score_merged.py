@@ -402,12 +402,11 @@ def _build_canonical_desire_row(scenario, desire_cond, desire):
 
 
 def _cell_col_values(alt_row, cell_cols):
-    """Copy the study's generation-cell columns off an alt row, normalizing
-    intimacy_condition to int."""
+    """Copy the study's generation-cell columns off an alt row verbatim
+    (intimacy_condition is a verbal slug, not a numeric code)."""
     out = {}
     for col in cell_cols:
-        v = alt_row[col]
-        out[col] = int(v) if col == "intimacy_condition" else v
+        out[col] = alt_row[col]
     return out
 
 

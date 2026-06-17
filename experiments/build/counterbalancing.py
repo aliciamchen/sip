@@ -70,6 +70,10 @@ N_SLOTS = 16  # one trial per scenario
 
 ACTIONS = ("no_share", "low_risk_share", "high_risk_share")
 
+# Intimacy levels, ordered formal -> intimate. A purely verbal manipulation: the
+# condition is identified by a slug (no numeric code is stored anywhere).
+INTIMACY = ("max_formal", "neither", "somewhat_intimate", "max_intimate")
+
 # Per-study design: the manipulated (participant-visible) factors, their levels,
 # the number of rounds, and the RNG seed. `factors` and `levels` are aligned —
 # a cell is `dict(zip(factors, cell_tuple))`.
@@ -78,13 +82,13 @@ STUDY_CONFIGS = {
         "seed": 313,
         "n_rounds": 12,
         "factors": ("effort_condition", "intimacy_condition", "action_condition"),
-        "levels": (("low", "high"), (0, 50, 75, 100), ACTIONS),
+        "levels": (("low", "high"), INTIMACY, ACTIONS),
     },
     "food_inv_joint_de": {  # Study 1b — joint desire + effort (intimacy given)
         "seed": 404,
         "n_rounds": 12,
         "factors": ("intimacy_condition", "action_condition"),
-        "levels": ((0, 50, 75, 100), ACTIONS),
+        "levels": (INTIMACY, ACTIONS),
     },
     "food_inv_intimacy": {  # Study 2a — infer intimacy (desire + effort given)
         "seed": 2202,

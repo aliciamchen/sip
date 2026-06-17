@@ -1,20 +1,20 @@
-subject_id,gender,age,understood,comments,attention_passed,memory_correct_count
-abc1cbf8-80c9-5c0d-9340-cdd45b806c3c,nonconforming,31,yes,no,True,2
-8d4611c7-4b4c-5029-9495-3a7692aa4740,male,28,yes,,True,3
-554a9fe7-1d50-5df1-a61e-a90d111a7cfe,male,65,yes,,True,2
-38382711-d865-5c1d-bb0a-daaea937fce3,female,40,yes,This was legitimately the hardest survey I've taken in nearly 500 surveys; but I think that is because I am autistic. Thank you for the work you do <3,True,2
-2a8de26a-3667-550e-8003-fa890a948d81,male,57,yes,,True,2
-63b9f8ca-b052-5327-9c11-ab383928e74e,male,47,yes,,True,3
-e3546e79-c5ce-5297-9ff9-fff6c2933dc4,male,21,yes,,True,2
-d66b8793-7ea0-58e4-9c22-01e9d372dcc4,male,32,yes,"The second question on each scenario seems to be entirely up to personal experience because if  you have never been to a game, fair, large party etc you wouldnt know what the layout normally is.",True,2
-c99d85bb-bcdb-59f3-a45e-4b2405ca8991,male,27,yes,,True,1
-5b4ae415-72bf-5fd8-af70-28cdb02941d4,male,29,yes,,True,2
-7cff4246-ab16-53a5-8901-29dbd2f76a08,female,26,yes,,True,3
-fbe96180-7e10-5683-8b77-1c809f4cdb2f,female,51,yes,,True,1
-30fe631a-3cb6-5fa0-93f0-0130be899393,female,30,yes,I enjoyed this activity! ,True,3
-3a88927f-3568-5995-9baf-02032f83a7cb,male,46,yes,"No, none. Thank you.",True,2
-8b480d82-f425-52bb-949d-5549a3859283,female,48,yes,,True,3
-848e7612-4cc9-5431-9fd4-57ee55515262,male,38,yes,nothing additional to add.,True,3
-c42c5bcb-f9ed-5d7c-af3a-6b5ea9d84371,male,34,yes,,True,3
-cd701704-fb2a-55aa-881b-bf891945f131,female,21,yes,,True,3
-2161e622-fafd-5813-a70d-2b92d544c31f,male,31,yes,,True,2
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count,comprehension_attempt
+8d9d3bc2-c2b6-5f7c-9cba-e52ce9c01655,female,28,yes,nine,True,2,1
+347e3225-4dca-5c61-8ff4-002d86a369cc,male,35,yes,,True,1,3
+7713b045-925d-5b71-ae83-e3ad039b6f74,male,41,yes,,True,2,1
+e7ccab03-e49c-576d-b9a4-f9774930668d,female,31,yes,,True,2,3
+e8bcb137-b0c8-5d1f-9fe9-9a5c4762b73b,female,39,yes,Enjoyed the study.,True,3,1
+2c363363-7cf4-5e90-87e5-8313d540e3d4,female,33,yes,,True,2,1
+bec06be6-98b9-5043-af6d-47db3a26d0e0,female,60,yes,I enjoyed taking part in this. It was interesting trying to imagine what would happen. ,True,3,1
+238ebf38-6983-5d10-8d88-f4ba306014d6,female,26,yes,,True,2,2
+68012367-fed0-5353-a7ca-2540a6e0accb,male,34,yes,,True,2,1
+32ce0c0f-598d-5abf-9e77-abbe7a794da0,female,23,yes,None at the moment. Thank you!,True,3,1
+d6182725-1425-5302-9093-77ae756d1ee0,male,38,yes,,True,3,1
+3efffde8-02fd-52a0-96c2-0a0c06d299b2,male,37,yes,"None, this survey was very clear and made sense. ",True,3,2
+4ab141a3-9ecb-52ae-a77f-8467816fcea6,male,43,yes,no,True,3,1
+4ab44024-cf6b-53f2-9ac9-9a13eee51d33,male,25,yes,,True,2,1
+f7d5a010-4744-578b-8842-24913951e898,male,20,yes,,True,1,3
+8a7b4965-13ef-56f6-84eb-a90874b002e1,nonconforming,34,yes,,True,3,1
+8e15ebb5-bf70-55e4-8d0a-9c8c0c6a1bab,female,29,yes,,True,0,1
+ded245e7-1b24-5ffd-9784-9f9e54dac39e,male,32,yes,"Thank you for allowing me to participate in this important research study examining how people interpret and make judgments about social situations involving food. The study questions asked were relevant, engaging, interesting, compelling, and highly tailored to the purpose, aim, scope, and objective of the study. The navigation flow provided a seamless transition from one screen to another without any difficulty, pain points, or confusion. 5-stars.
+",True,1,1

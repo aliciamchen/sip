@@ -66,6 +66,7 @@ from observers import (  # noqa: E402
 )
 from tables import (  # noqa: E402
     DesireLevels,
+    INTIMACY_CONDITIONS,
     IntimacyLevels,
     SCENARIO_LABELS,
     actions,
@@ -79,7 +80,10 @@ N_SCENARIOS = len(SCENARIO_LABELS)
 # response is round(response * 100).
 INTIMACY_GRID = np.asarray(IntimacyLevels)
 DESIRE_GRID = np.asarray(DesireLevels)
-INTIMACY_IDX_TO_LEVEL = {0: 0, 1: 50, 2: 75, 3: 100}
+# Map the RelationshipConditions axis index back to the verbal condition slug
+# written into the prediction CSVs (so they merge with the human data, which
+# stores intimacy_condition as a slug — never a numeric code).
+INTIMACY_IDX_TO_LEVEL = dict(enumerate(INTIMACY_CONDITIONS))
 N_ACTIONS = int(len(actions))
 # Multi-start restarts per fold refit — lower than the full fits' default of 5
 # to keep 16 folds x 3 variants x 4 studies tractable.

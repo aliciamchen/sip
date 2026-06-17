@@ -1,5 +1,5 @@
 // Study 1a — Desire inference under known effort + intimacy.
-// Design: 2 (effort) × 4 (intimacy: 0/50/75/100) × 3 (observed action).
+// Design: 2 (effort) × 4 (intimacy: max_formal/neither/somewhat_intimate/max_intimate) × 3 (observed action).
 // Intimacy descriptor preamble, then vignette + effort paragraph + a continuous
 // 0-100 desire slider (scenario-specific question, e.g. "how much do you think
 // Carissa and Josh would like the hot dog?" — see `desire_object` in scenarios.csv;

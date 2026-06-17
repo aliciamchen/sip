@@ -3,11 +3,13 @@
 // pause between the prior and posterior ratings, and the scenario-stimulus HTML
 // builder. Each trials.js composes these into its study-specific trials.
 
+// Intimacy is a purely verbal manipulation: the condition is identified by a
+// slug, and only the verbal descriptor is ever shown or saved (no numeric code).
 export const intimacy_texts = {
-  0: "maximally formal",
-  50: "neither formal nor intimate",
-  75: "somewhat intimate",
-  100: "maximally intimate",
+  max_formal: "maximally formal",
+  neither: "neither formal nor intimate",
+  somewhat_intimate: "somewhat intimate",
+  max_intimate: "maximally intimate",
 };
 
 // Condition paragraphs (shown when the variable is given to the participant).

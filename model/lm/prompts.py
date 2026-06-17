@@ -453,16 +453,17 @@ def alternatives_user_prompt(vignette, desire_text, observed_action_text):
     )
 
 
-# Relationship-condition descriptors used by the desire-noalt observer's
-# alternative-generation pass. Mirrors the slider labels shown to participants
-# in `experiments/food_inv_desire_intimacy_noalt/trials.js` and conveys the relationship
-# context to the LM the same way it's conveyed to humans (numeric label +
-# short qualitative descriptor).
+# Relationship-condition descriptors used by the alternative-generation pass,
+# keyed by the verbal intimacy-condition slug (the experiments store intimacy as
+# a slug, never a numeric code). The descriptor text conveys the relationship
+# context to the LM. NOTE: it still includes an "X out of 100" numeric anchor,
+# whereas participants now see only the qualitative descriptor — see
+# `intimacy_texts`/`intimacyDescriptor` in `experiments/_lib/scenario.js`.
 RELATIONSHIP_DESCRIPTORS = {
-    0: "0 out of 100 (maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader)",
-    50: "50 out of 100 (neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker)",
-    75: "75 out of 100 (somewhat intimate — e.g., the kind of relationship one might have with a close friend)",
-    100: "100 out of 100 (maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend)",
+    "max_formal": "0 out of 100 (maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader)",
+    "neither": "50 out of 100 (neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker)",
+    "somewhat_intimate": "75 out of 100 (somewhat intimate — e.g., the kind of relationship one might have with a close friend)",
+    "max_intimate": "100 out of 100 (maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend)",
 }
 
 
@@ -472,8 +473,9 @@ def alternatives_user_prompt_relationship(
     """Build the user prompt for the alternative-generation call when
     conditioning on relationship instead of desire (desire-noalt observer).
 
-    `relationship_level` is one of {0, 50, 75, 100}, matching the experiment's
-    intimacy slider conditions.
+    `relationship_level` is one of the intimacy-condition slugs (max_formal /
+    neither / somewhat_intimate / max_intimate), matching the experiment's
+    intimacy conditions.
     """
     descriptor = RELATIONSHIP_DESCRIPTORS[relationship_level]
     return (
@@ -509,7 +511,8 @@ def alternatives_user_prompt(
 
     Mirrors how the human participant sees the trial (vignette + revealed
     condition paragraphs + observed action), per `feedback_llm_as_participant`.
-    `intimacy_level` is one of {0, 50, 75, 100} when provided; it's rendered
+    `intimacy_level` is one of the intimacy-condition slugs (max_formal /
+    neither / somewhat_intimate / max_intimate) when provided; it's rendered
     via the shared `RELATIONSHIP_DESCRIPTORS` dict so the LM sees the same
     qualitative descriptor humans see.
     """

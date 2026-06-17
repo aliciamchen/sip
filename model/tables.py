@@ -61,9 +61,17 @@ class EffortConditions(IntEnum):
     HIGH = 1
 
 
+# Intimacy is a purely verbal manipulation in the experiments: the condition is
+# identified by a slug (no numeric code is stored in the data). These slugs, in
+# ascending order (formal -> intimate), index the RelationshipConditions axis.
+INTIMACY_CONDITIONS = ["max_formal", "neither", "somewhat_intimate", "max_intimate"]
+INTIMACY_CONDITION_TO_IDX = {slug: i for i, slug in enumerate(INTIMACY_CONDITIONS)}
+
 # Continuous intimacy values for each RelationshipConditions level — used by
 # the relationship-keyed padded memos to evaluate the (1 - I) risk term
-# without dragging the 101-level IntimacyLevels axis into the memo.
+# without dragging the 101-level IntimacyLevels axis into the memo. These are
+# placeholder magnitudes for each verbal level (pending LM elicitation); they
+# are model-internal and never saved as condition labels.
 RELATIONSHIP_LEVEL_VALUES = jnp.array([0.0, 0.5, 0.75, 1.0])
 
 EFFORT_CONDITION_TO_IDX = {"low": 0, "high": 1}
@@ -281,7 +289,7 @@ def load_padded_lm_tables_desire(
     g = np.zeros(shape_5d, dtype=np.float32)
     valid_mask = np.zeros(shape_5d, dtype=bool)
 
-    intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
+    intimacy_to_idx = INTIMACY_CONDITION_TO_IDX
     observed_str_to_idx = ACTION_LABEL_TO_IDX
 
     # Canonical (slot 0): risk/effort depend on scenario + effort + action,
@@ -306,7 +314,7 @@ def load_padded_lm_tables_desire(
         s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
         o_idx = observed_str_to_idx[row["observed_action"]]
         e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        i_idx = intimacy_to_idx[int(row["intimacy_condition"])]
+        i_idx = intimacy_to_idx[row["intimacy_condition"]]
         slot = int(row["alt_idx"]) + 1
         if slot >= MAX_ACTIONS:
             continue
@@ -440,7 +448,7 @@ def load_padded_lm_tables_joint_de(
     g = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS), dtype=np.float32)
     valid = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS), dtype=bool)
 
-    intimacy_to_idx = {0: 0, 50: 1, 75: 2, 100: 3}
+    intimacy_to_idx = INTIMACY_CONDITION_TO_IDX
     obs_to_idx = ACTION_LABEL_TO_IDX
 
     # Canonical slot 0: risk/effort per (scenario, effort_condition, action),
@@ -465,7 +473,7 @@ def load_padded_lm_tables_joint_de(
             continue
         s = SCENARIO_TO_IDX[row["scenario_label"]]
         o = obs_to_idx[row["observed_action"]]
-        rel = intimacy_to_idx[int(row["intimacy_condition"])]
+        rel = intimacy_to_idx[row["intimacy_condition"]]
         e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
         slot = int(row["alt_idx"]) + 1
         if slot >= MAX_ACTIONS:

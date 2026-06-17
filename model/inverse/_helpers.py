@@ -22,7 +22,13 @@ import numpy as np
 import optax
 import pandas as pd
 
-from tables import ACTION_LABEL_TO_IDX, EFFORT_CONDITION_TO_IDX, SCENARIO_TO_IDX
+from tables import (
+    ACTION_LABEL_TO_IDX,
+    EFFORT_CONDITION_TO_IDX,
+    INTIMACY_CONDITION_TO_IDX,
+    RELATIONSHIP_LEVEL_VALUES,
+    SCENARIO_TO_IDX,
+)
 from utils import get_project_root
 
 
@@ -253,7 +259,7 @@ def _load_long(slug):
       - `action_condition` like 'no_share' / 'low_risk_share' / 'high_risk_share'
       - `desire_condition` (or `desire`) in {'low', 'high'} when present
       - `effort_condition` (or `effort`) in {'low', 'high'} when present
-      - `intimacy` (or `relationship_condition`) in {0, 50, 75, 100} when present
+      - `intimacy` (or `relationship_condition`) in {max_formal, neither, somewhat_intimate, max_intimate} when present
       - `stage` filter on 'posterior'
     """
     filepath = get_project_root() / "data" / slug / "main_trials_long.csv"
@@ -277,13 +283,20 @@ def _load_long(slug):
     ):
         data["effort_condition"] = data["effort_condition"].map(EFFORT_CONDITION_TO_IDX)
 
-    intimacy_map = {0: 0, 50: 1, 75: 2, 100: 3}
+    # Intimacy is stored as a verbal slug (no numeric code). Map it to the
+    # 4-level RelationshipConditions index, and to the 101-bin index of its
+    # placeholder continuous magnitude (RELATIONSHIP_LEVEL_VALUES × 100).
+    intimacy_map = INTIMACY_CONDITION_TO_IDX
+    intimacy_bin_101 = {
+        slug: int(round(float(RELATIONSHIP_LEVEL_VALUES[idx]) * 100))
+        for slug, idx in INTIMACY_CONDITION_TO_IDX.items()
+    }
     if "intimacy" in data.columns:
         data["intimacy_idx_4"] = data["intimacy"].map(intimacy_map)
-        data["intimacy_idx_101"] = data["intimacy"].astype(int)
+        data["intimacy_idx_101"] = data["intimacy"].map(intimacy_bin_101)
     elif "relationship_condition" in data.columns:
         data["intimacy_idx_4"] = data["relationship_condition"].map(intimacy_map)
-        data["intimacy_idx_101"] = data["relationship_condition"].astype(int)
+        data["intimacy_idx_101"] = data["relationship_condition"].map(intimacy_bin_101)
 
     return data
 

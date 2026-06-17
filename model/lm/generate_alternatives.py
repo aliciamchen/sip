@@ -102,7 +102,9 @@ _STUDY_CONFIG = {
 ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
 DESIRE_LEVELS = ["low", "high"]
 EFFORT_LEVELS = ["low", "high"]
-INTIMACY_LEVELS = [0, 50, 75, 100]
+# Intimacy is a purely verbal manipulation: levels are identified by slug
+# (ascending, formal -> intimate), never by a numeric code.
+INTIMACY_LEVELS = ["max_formal", "neither", "somewhat_intimate", "max_intimate"]
 
 
 def load_scenarios(study):
@@ -115,8 +117,7 @@ def _cell_key(cell, cell_cols):
     """Tuple key for resume-dedup, normalized like the output CSV row."""
     key = [cell["scenario_label"], cell["observed_action"]]
     for col in cell_cols:
-        v = cell[col]
-        key.append(int(v) if col == "intimacy_condition" else v)
+        key.append(cell[col])
     return tuple(key)
 
 

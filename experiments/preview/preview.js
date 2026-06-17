@@ -55,10 +55,10 @@ const STUDIES = {
 
 // ----- condition factors -----------------------------------------------------
 const INTIMACY_TEXTS = {
-  0: "maximally formal",
-  50: "neither formal nor intimate",
-  75: "somewhat intimate",
-  100: "maximally intimate",
+  max_formal: "maximally formal",
+  neither: "neither formal nor intimate",
+  somewhat_intimate: "somewhat intimate",
+  max_intimate: "maximally intimate",
 };
 
 const FACTORS = {
@@ -81,12 +81,12 @@ const FACTORS = {
     label: "Intimacy",
     field: "intimacy_condition",
     options: [
-      ["0", "0 — maximally formal"],
-      ["50", "50 — neither"],
-      ["75", "75 — somewhat intimate"],
-      ["100", "100 — maximally intimate"],
+      ["max_formal", "maximally formal"],
+      ["neither", "neither formal nor intimate"],
+      ["somewhat_intimate", "somewhat intimate"],
+      ["max_intimate", "maximally intimate"],
     ],
-    format: (v) => `${v} (${INTIMACY_TEXTS[Number(v)]})`,
+    format: (v) => INTIMACY_TEXTS[v],
   },
   effort: {
     label: "Effort",
@@ -123,7 +123,7 @@ const state = {
   study: "food_inv_desire",
   scenario_label: null,
   action: "high_risk_share",
-  intimacy: "0",
+  intimacy: "max_formal",
   effort: "high",
   desire: "high",
 };
@@ -421,7 +421,7 @@ function render() {
     const stim = {
       ...row,
       action_condition: state.action,
-      intimacy_condition: Number(state.intimacy),
+      intimacy_condition: state.intimacy,
       effort_condition: state.effort,
       desire_condition: state.desire,
     };
