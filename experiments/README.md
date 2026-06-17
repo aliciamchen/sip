@@ -79,8 +79,15 @@ bin/deploy-experiment food_inv_desire           # push _lib/ + the experiment
 bin/deploy-experiment food_inv_desire --dry-run # preview what would change
 bin/deploy-experiment --lib-only                # push only _lib/ (after editing it)
 bin/deploy-experiment --list                    # list the active slugs
+bin/deploy-experiment preview                   # push _lib/ + the trial-preview page
 ```
 
-The script rejects slugs that aren't in the active roster (the four experiments listed under "Active experiments" above), excludes `python/`, `README.md`, `.DS_Store`, and `*.bak` from the push, and runs rsync with `--delete` so stale files from earlier deploys get cleaned up. The server destination is overridable per-invocation with `RSYNC_DEST=user@host:/path`.
+The script rejects slugs that aren't in the active roster (the four experiments listed under "Active experiments" above) — the one exception is the special `preview` target described below. It excludes `python/`, `README.md`, `.DS_Store`, and `*.bak` from the push, and runs rsync with `--delete` so stale files from earlier deploys get cleaned up. The server destination is overridable per-invocation with `RSYNC_DEST=user@host:/path`.
+
+## Previewing trials
+
+[`experiments/preview/`](preview/) is a standalone page for showing collaborators what any trial looks like to a participant. You pick a study, scenario, and condition, and it renders the intro, prior-rating, and posterior-rating screens — including the dependent-variable sliders — along with a panel listing every field of the selected scenario. It builds each screen by calling the same `makeStimulusTrials` functions the live experiments use (importing each study's `trials.js`), so the wording always matches the real study; it never runs jsPsych or records anything.
+
+Because the page uses ES-module imports and `fetch`, it has to be served over HTTP rather than opened from a `file://` path. To view it locally, run `make preview`, which serves the `experiments/` tree at `http://localhost:8000/`, then open `http://localhost:8000/preview/`. To share it with collaborators, deploy it with `bin/deploy-experiment preview` (or `make deploy-preview`) and send them `https://web.mit.edu/aliciach/www/sip/experiments/preview/`. The preview imports the four experiments' `trials.js` and reads one study's `json/stimuli.json`, so it expects those experiments to already be deployed alongside it.
 
 Before an experiment is launched to participants, its real DataPipe experiment ID needs to be filled into the `DATAPIPE_IDS` map in [`_lib/config.js`](_lib/config.js) (keyed by slug); a `TODO_FILL_IN_DATAPIPE_ID` placeholder means data won't save until a real ID is set. The Prolific completion URL is shared across all experiments and already set in the same file.

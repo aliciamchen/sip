@@ -4,6 +4,7 @@
 # Usage:
 #   bin/deploy-experiment <slug>             # push _lib/ then the experiment
 #   bin/deploy-experiment <slug> --dry-run   # show what would be transferred
+#   bin/deploy-experiment preview            # push _lib/ then the trial-preview page
 #   bin/deploy-experiment --lib-only         # push only _lib/ (e.g. after editing it)
 #   bin/deploy-experiment --list             # list active experiment slugs
 #   bin/deploy-experiment --help
@@ -112,6 +113,17 @@ fi
 if [[ -z "$slug" ]]; then
   echo "no experiment slug provided" >&2
   usage 1
+fi
+
+# The trial-preview page (experiments/preview/) is not an experiment slug. It
+# imports each study's trials.js + _lib/ and fetches one study's stimuli.json,
+# so it relies on the four experiments already being deployed alongside it.
+if [[ "$slug" == "preview" ]]; then
+  push_lib
+  push_experiment preview
+  echo
+  echo "done. URL: https://web.mit.edu/aliciach/www/sip/experiments/preview/"
+  exit 0
 fi
 
 if ! is_active "$slug"; then

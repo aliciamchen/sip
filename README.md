@@ -54,6 +54,8 @@ Study 1a uses the LM-generated-alternatives padded-action pipeline; the other th
 
 A planned **Study 3** will generalize to non-food domains (substance/contact, shared space, privacy); its design is not yet finalized, so no Study 3 experiment is in the active roster.
 
+To see what any of these trials looks like to a participant — for sharing scenarios and manipulations with collaborators — there is a standalone preview page at `experiments/preview/`. Run `make preview` and open `http://localhost:8000/preview/`, or use the deployed version. See the [experiments README](experiments/README.md#previewing-trials) for details.
+
 ### Legacy experiments
 
 The **data** from earlier work is archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md): three forward-planning experiments (`food_forw_intimacy_desire`, `food_forw_intimacy_effort`, `nonfood_forw_intimacy_desire`), six pre-3-action 4-action/2-action inverse experiments, and the original Study 1a pilot (`food_inv_desire_pilot`, which used a "probability of two states" desire slider rather than the direct 0–100 rating Study 1a now uses). The legacy model and analysis **code** was removed in the June 2026 cleanup; recover it from git history if needed.

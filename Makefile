@@ -54,6 +54,8 @@ help:
 	@echo "  stimuli           - scenarios.py -> scenarios.csv -> per-experiment stimuli.json"
 	@echo "  counterbalancing  - regenerate every active full_counterbalancing.json"
 	@echo "  entry-files       - sync index.html + experiment.js across active experiments"
+	@echo "  preview           - serve the trial-preview page locally (open /preview/)"
+	@echo "  deploy-preview    - publish the trial-preview page to athena"
 	@echo ""
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, predict-inverse, cv-inverse"
@@ -76,10 +78,23 @@ help:
 # shared entry files change. Not part of `make all`.
 # =============================================================================
 
-.PHONY: experiments stimuli counterbalancing entry-files \
+.PHONY: experiments stimuli counterbalancing entry-files preview deploy-preview \
         $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
 
 experiments: stimuli counterbalancing entry-files
+
+# Trial-preview page (experiments/preview/): a static page to show collaborators
+# what any study/scenario/condition looks like to a participant. It uses ES-module
+# imports + fetch, so it must be served over HTTP (a file:// path won't work).
+# `make preview` serves the experiments/ tree so the page's ../_lib/ and
+# ../food_inv_*/ imports resolve, then open http://localhost:8000/preview/.
+preview:
+	@echo "Serving experiments/ at http://localhost:8000/  (open /preview/)"
+	cd experiments && python3 -m http.server 8000
+
+# Publish the preview page to athena (assumes the four experiments are deployed).
+deploy-preview:
+	bin/deploy-experiment preview
 
 # scenarios.py (source of truth) -> scenarios.csv -> per-experiment stimuli.json.
 stimuli:
