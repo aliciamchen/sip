@@ -56,6 +56,7 @@ help:
 	@echo "  entry-files       - sync index.html + experiment.js across active experiments"
 	@echo "  preview           - serve the trial-preview page locally (open /preview/)"
 	@echo "  deploy-preview    - publish the trial-preview page to athena"
+	@echo "  deploy-all        - publish _lib/ + all experiments + preview to athena (one login)"
 	@echo ""
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, predict-inverse, cv-inverse"
@@ -78,7 +79,8 @@ help:
 # shared entry files change. Not part of `make all`.
 # =============================================================================
 
-.PHONY: experiments stimuli counterbalancing entry-files preview deploy-preview \
+.PHONY: experiments stimuli counterbalancing entry-files preview \
+        deploy-preview deploy-all \
         $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
 
 experiments: stimuli counterbalancing entry-files
@@ -95,6 +97,13 @@ preview:
 # Publish the preview page to athena (assumes the four experiments are deployed).
 deploy-preview:
 	bin/deploy-experiment preview
+
+# Publish everything to athena in one pass — _lib/, all four experiments, and the
+# preview page — entering the athena password once. Use this when experiment code
+# (not just the preview) has changed. Build the assets first with `make experiments`
+# if scenarios/counterbalancing/entry files changed.
+deploy-all:
+	bin/deploy-experiment --all
 
 # scenarios.py (source of truth) -> scenarios.csv -> per-experiment stimuli.json.
 stimuli:

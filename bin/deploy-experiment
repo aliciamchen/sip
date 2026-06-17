@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Deploy a single jsPsych experiment + the shared _lib/ to the athena server.
+# Deploy jsPsych experiments + the shared _lib/ to the athena server.
 #
 # Usage:
 #   bin/deploy-experiment <slug>             # push _lib/ then the experiment
 #   bin/deploy-experiment <slug> --dry-run   # show what would be transferred
+#   bin/deploy-experiment --all              # push _lib/ + every experiment + preview
 #   bin/deploy-experiment preview            # push _lib/ then the trial-preview page
 #   bin/deploy-experiment --lib-only         # push only _lib/ (e.g. after editing it)
 #   bin/deploy-experiment --list             # list active experiment slugs
@@ -43,7 +44,7 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root"
 
 usage() {
-  sed -n '2,14p' "$0" | sed 's/^# \?//'
+  sed -n '2,15p' "$0" | sed 's/^# \?//'
   exit "${1:-0}"
 }
 
@@ -62,12 +63,14 @@ is_active() {
 
 slug=""
 lib_only=false
+deploy_all=false
 dry_run=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -h|--help)   usage 0 ;;
     --list)      list_experiments; exit 0 ;;
     --lib-only)  lib_only=true; shift ;;
+    --all)       deploy_all=true; shift ;;
     --dry-run)   dry_run=true; shift ;;
     -*)          echo "unknown flag: $1" >&2; usage 1 ;;
     *)
@@ -107,6 +110,24 @@ push_experiment() {
 
 if $lib_only; then
   push_lib
+  exit 0
+fi
+
+# Push everything in one SSH session: _lib/ once, then every active experiment,
+# then the preview page. The shared SSH master (above) means the password is
+# entered a single time for the whole sweep.
+if $deploy_all; then
+  push_lib
+  for s in "${ACTIVE_EXPERIMENTS[@]}"; do
+    push_experiment "$s"
+  done
+  push_experiment preview
+  echo
+  echo "done. deployed _lib/, all active experiments, and the preview page:"
+  for s in "${ACTIVE_EXPERIMENTS[@]}"; do
+    echo "  https://web.mit.edu/aliciach/www/sip/experiments/$s/"
+  done
+  echo "  https://web.mit.edu/aliciach/www/sip/experiments/preview/"
   exit 0
 fi
 
