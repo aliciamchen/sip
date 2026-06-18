@@ -34,9 +34,11 @@ sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
 
-# Together AI configuration shared across all rating call sites. Alternative
-# generation overrides ``temperature`` to 1.0 at its call site.
+# Together AI configuration shared across all rating call sites.
 MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+# Default repeat count for `get_ratings_concurrent`. The active K-run pipeline
+# passes num_runs=1 (each elicitation run is scored once; the K runs are the
+# variation axis), so this default is no longer exercised by score_merged.
 NUM_RUNS = 10
 TEMPERATURE = 0.2
 
@@ -108,7 +110,13 @@ def strip_leading_plus(text):
 
 
 def _one_call(
-    client, system_prompt, user_prompt, model_id, max_tokens, temperature, max_retries,
+    client,
+    system_prompt,
+    user_prompt,
+    model_id,
+    max_tokens,
+    temperature,
+    max_retries,
     response_format=None,
 ):
     """Issue one chat-completion call. Returns response text or None on failure.
@@ -133,7 +141,9 @@ def _one_call(
     if response_format is not None:
         kwargs["response_format"] = response_format
     try:
-        resp = client.with_options(max_retries=max_retries).chat.completions.create(**kwargs)
+        resp = client.with_options(max_retries=max_retries).chat.completions.create(
+            **kwargs
+        )
         return resp.choices[0].message.content
     except Exception as e:
         print(f"  call error: {e}", flush=True)

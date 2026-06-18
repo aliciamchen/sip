@@ -255,6 +255,7 @@ def observer_desire_full[
     effort_table: ...,
     g_padded_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -286,6 +287,7 @@ def observer_desire_full[
                 effort_table,
                 g_padded_table,
                 prior_table,
+                relationship_values,
             ),
         ),
     ]
@@ -313,6 +315,7 @@ def observer_desire_discomfort_only[
     risk_table: ...,
     effort_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -334,7 +337,15 @@ def observer_desire_discomfort_only[
                 effort_condition,
                 relationship_condition,
                 desire,
-            ](alpha, w_d, gamma, risk_table, effort_table, prior_table),
+            ](
+                alpha,
+                w_d,
+                gamma,
+                risk_table,
+                effort_table,
+                prior_table,
+                relationship_values,
+            ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot
@@ -442,6 +453,7 @@ def observer_joint_de_full[
     effort_table: ...,
     g_padded_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -475,6 +487,7 @@ def observer_joint_de_full[
                 effort_table,
                 g_padded_table,
                 prior_table,
+                relationship_values,
             ),
         ),
     ]
@@ -507,6 +520,7 @@ def observer_joint_de_discomfort_only[
     risk_table: ...,
     effort_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor, observer]
     observer: knows(scenario_idx)
@@ -530,7 +544,15 @@ def observer_joint_de_discomfort_only[
                 relationship_condition,
                 desire,
                 effort_condition,
-            ](alpha, w_d, gamma, risk_table, effort_table, prior_table),
+            ](
+                alpha,
+                w_d,
+                gamma,
+                risk_table,
+                effort_table,
+                prior_table,
+                relationship_values,
+            ),
         ),
     ]
     observer: observes[actor.padded_slot] is padded_slot

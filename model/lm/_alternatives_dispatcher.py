@@ -75,29 +75,35 @@ def _dedup_alternatives(alts):
     return out
 
 
-def elicit_alternatives(client, user_prompt, temperature=TEMPERATURE):
-    """Elicit alternatives for one cell. Up to MAX_PARSE_RETRIES tries to land
-    a parseable response; transient errors inside each call are retried by the
-    SDK via ``max_retries=MAX_RETRIES``. Returns [] when all parse retries are
+def elicit_alternatives(client, user_prompt, temperature=TEMPERATURE, seed=None):
+    """Elicit alternatives for one (cell, run). Up to MAX_PARSE_RETRIES tries to
+    land a parseable response; transient errors inside each call are retried by
+    the SDK via ``max_retries=MAX_RETRIES``. Returns [] when all parse retries are
     exhausted (rather than raising) so a thread-pool batch can continue.
 
-    ``temperature`` defaults to the module-level TEMPERATURE (1.0); callers can
-    override to a lower value to reduce phrasing variability across cells, which
-    tightens case-insensitive dedup at the scoring stage.
+    ``temperature`` defaults to the module-level TEMPERATURE (1.0). For the K-run
+    pipeline the caller passes a higher T (so independent runs explore genuinely
+    different alternative sets — the run-to-run spread is the point) plus a
+    deterministic per-(cell, run) ``seed`` for reproducibility. Dedup stays WITHIN
+    a run; cross-run repetition is preserved.
     """
     messages = [
         {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt},
     ]
     retrying_client = client.with_options(max_retries=MAX_RETRIES)
+    create_kwargs = dict(
+        model=MODEL_ID,
+        max_tokens=MAX_TOKENS,
+        temperature=temperature,
+        response_format=_ALTERNATIVES_RESPONSE_FORMAT,
+    )
+    if seed is not None:
+        create_kwargs["seed"] = seed
     for attempt in range(MAX_PARSE_RETRIES):
         try:
             response = retrying_client.chat.completions.create(
-                model=MODEL_ID,
-                messages=messages,
-                max_tokens=MAX_TOKENS,
-                temperature=temperature,
-                response_format=_ALTERNATIVES_RESPONSE_FORMAT,
+                messages=messages, **create_kwargs
             )
             parsed = parse_alternatives(response.choices[0].message.content)
             if parsed:

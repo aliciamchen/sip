@@ -3,25 +3,33 @@ Leave-one-scenario-out (LOSO) CV for the active inverse experiments
 (Studies 1a, 1b, 2a, 2b).
 
 For each variant (full / discomfort_only / base) and each of the 16 scenarios,
-hold the scenario out, jointly refit the actor utility weights and
-`alpha_observer` on the remaining 15 scenarios, then predict the held-out
-scenario from that refit. Per-fold rows go to `cv_folds.csv`; held-out
-predictions are aggregated into `cv_preds_summary.csv` (one row per
-held-out cell × variant).
+hold the scenario out, jointly refit the actor utility weights, `alpha_observer`,
+and the response-noise `sigma` on the remaining 15 scenarios, then predict the
+held-out scenario from that refit.
 
-Each `main_*()` runs end-to-end for one experiment and is exposed
-through the corresponding `cv/cv_food_inv_*.py` thin wrapper.
+Outputs per `outputs/<slug>/`:
+  - `cv_trial_ll.jsonl` — the PRIMARY metric: one record per held-out trial with
+    its held-out log-likelihood `log p(u)` under the cross-validated mixture and
+    its `subject_id` (so the analysis can bootstrap the full−ablation difference
+    by participant).
+  - `cv_preds_summary.json` — the secondary descriptive prediction: the model
+    belief update `delta_<latent>` per held-out cell × variant (for the
+    condition-averaged model-vs-human correlation).
+  - `cv_folds.jsonl` — per-fold refit diagnostics (params, train/test NLL).
 
-The experiments differ in which latent the observer infers and how
-many slider responses participants give per trial:
+Each `main_*()` runs end-to-end for one experiment and is exposed through the
+corresponding `cv/cv_food_inv_*.py` thin wrapper.
+
+The experiments differ in which latent the observer infers and how many slider
+responses participants give per trial:
 
   Study 2a (`food_inv_intimacy`)   — infer intimacy given (desire, effort)
   Study 1a (`food_inv_desire`)     — infer desire given (effort, intimacy)
   Study 1b (`food_inv_joint_de`)   — joint over (desire, effort) given intimacy
   Study 2b (`food_inv_joint_ie`)   — joint over (intimacy, effort) given desire
 
-All share the joint-fit logic in `model/inverse/_helpers.py` — there is
-no transfer between studies.
+All share the joint-fit logic in `model/inverse/_helpers.py` — there is no
+transfer between studies.
 """
 
 import sys
@@ -32,11 +40,16 @@ sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
+import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from _helpers import (  # noqa: E402
+    EFFORT_PRIOR_MEAN,
+    GRID,
+    PRIOR_MEAN,
+    _build_observer_tables_runs,
     desire_table_kwargs,
     fit_desire_observer_joint,
     fit_intimacy_observer_joint,
@@ -49,6 +62,10 @@ from _helpers import (  # noqa: E402
     load_intimacy_data,
     load_joint_de_data,
     load_joint_ie_data,
+    mixture_nll_1d,
+    mixture_nll_2d,
+    write_json,
+    write_jsonl,
 )
 from observers import (  # noqa: E402
     observer_intimacy_base,
@@ -65,9 +82,7 @@ from observers import (  # noqa: E402
     observer_desire_full,
 )
 from tables import (  # noqa: E402
-    DesireLevels,
     INTIMACY_CONDITIONS,
-    IntimacyLevels,
     SCENARIO_LABELS,
     actions,
 )
@@ -75,13 +90,11 @@ from utils import get_project_root  # noqa: E402
 
 
 N_SCENARIOS = len(SCENARIO_LABELS)
-# Latent grids are already on the [0, 1] scale (so are the human ratings and
-# the model's predicted ratings / belief updates). The 101-bin index of a 0-1
-# response is round(response * 100).
-INTIMACY_GRID = np.asarray(IntimacyLevels)
-DESIRE_GRID = np.asarray(DesireLevels)
+GRID_NP = np.asarray(GRID)  # 101-bin [0, 1] latent grid
+PRIOR_MEAN_F = float(PRIOR_MEAN)  # model prior mean of a continuous latent (= 0.5)
+EFFORT_PRIOR_MEAN_F = float(EFFORT_PRIOR_MEAN)  # 2-state effort prior mean (= 0.5)
 # Map the RelationshipConditions axis index back to the verbal condition slug
-# written into the prediction CSVs (so they merge with the human data, which
+# written into the prediction outputs (so they merge with the human data, which
 # stores intimacy_condition as a slug — never a numeric code).
 INTIMACY_IDX_TO_LEVEL = dict(enumerate(INTIMACY_CONDITIONS))
 N_ACTIONS = int(len(actions))
@@ -90,55 +103,51 @@ N_ACTIONS = int(len(actions))
 N_RESTARTS_CV = 3
 
 
-# Per-variant (observer_fn, utility_param_names, uses_v). Each registry pairs
-# one of the three ablations with the matching observer for that experiment.
+# Per-variant (observer_fn, utility_param_names). Each registry pairs one of the
+# three ablations with the matching observer for that experiment; which optional
+# LM tables a variant needs is derived from its param names in *_table_kwargs.
 VARIANTS_INTIMACY = {
-    "full": (observer_intimacy_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (
-        observer_intimacy_discomfort_only,
-        ["w_d", "gamma"],
-        False,
-    ),
-    "base": (observer_intimacy_base, ["w_v", "w_e"], True),
+    "full": (observer_intimacy_full, ["w_v", "w_d", "w_e", "gamma"]),
+    "discomfort_only": (observer_intimacy_discomfort_only, ["w_d", "gamma"]),
+    "base": (observer_intimacy_base, ["w_v", "w_e"]),
 }
 VARIANTS_DESIRE = {
-    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"], False),
-    "base": (observer_desire_base, ["w_v", "w_e"], True),
+    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"]),
+    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"]),
+    "base": (observer_desire_base, ["w_v", "w_e"]),
 }
 VARIANTS_JOINT_DE = {
-    "full": (observer_joint_de_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (
-        observer_joint_de_discomfort_only,
-        ["w_d", "gamma"],
-        False,
-    ),
-    "base": (observer_joint_de_base, ["w_v", "w_e"], True),
+    "full": (observer_joint_de_full, ["w_v", "w_d", "w_e", "gamma"]),
+    "discomfort_only": (observer_joint_de_discomfort_only, ["w_d", "gamma"]),
+    "base": (observer_joint_de_base, ["w_v", "w_e"]),
 }
 VARIANTS_JOINT_IE = {
-    "full": (observer_joint_ie_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (
-        observer_joint_ie_discomfort_only,
-        ["w_d", "gamma"],
-        False,
-    ),
-    "base": (observer_joint_ie_base, ["w_v", "w_e"], True),
+    "full": (observer_joint_ie_full, ["w_v", "w_d", "w_e", "gamma"]),
+    "discomfort_only": (observer_joint_ie_discomfort_only, ["w_d", "gamma"]),
+    "base": (observer_joint_ie_base, ["w_v", "w_e"]),
 }
 # ------------------------------------------------------------------------------
-# Helpers shared across the five LOSO mains.
+# Helpers shared across the four LOSO mains.
 # ------------------------------------------------------------------------------
 
 
-def _build_observer_table(obs_fn, params_arr, utility_param_names, table_kwargs):
-    """Reproduce the observer table from a joint-fit parameter array."""
-    actor_kwargs = {"alpha": 1.0}
-    for i, name in enumerate(utility_param_names):
-        actor_kwargs[name] = float(params_arr[i])
-    return obs_fn(
-        **actor_kwargs,
-        alpha_observer=float(params_arr[-1]),
-        **table_kwargs,
+def _held_out_ll_1d(deltas_per_trial, u_per_trial, sigma):
+    """Held-out log-likelihood log p(u) per trial under the 1-D mixture, using
+    the same `mixture_nll_1d` as the fit. `deltas_per_trial` is (n_test, K),
+    `u_per_trial` is (n_test,). Returns a numpy array (n_test,)."""
+    lls = jax.vmap(lambda u, d: -mixture_nll_1d(u, d, sigma))(
+        jnp.asarray(u_per_trial), jnp.asarray(deltas_per_trial)
     )
+    return np.asarray(lls)
+
+
+def _held_out_ll_2d(deltas_per_trial, u_per_trial, sigma):
+    """Held-out log p(u) per trial under the bivariate mixture. `deltas_per_trial`
+    is (n_test, K, 2), `u_per_trial` is (n_test, 2)."""
+    lls = jax.vmap(lambda u, d: -mixture_nll_2d(u, d, sigma))(
+        jnp.asarray(u_per_trial), jnp.asarray(deltas_per_trial)
+    )
+    return np.asarray(lls)
 
 
 def _fold_row(
@@ -158,7 +167,8 @@ def _fold_row(
         "variant": variant,
         "fold": fold,
         "held_out_scenario": scenario_label,
-        "alpha_observer": float(params_arr[-1]),
+        "alpha_observer": float(params_arr[-2]),
+        "sigma": float(params_arr[-1]),
         "train_nll": float(train_nll),
         "test_nll": float(test_nll),
         "n_train": int(n_train),
@@ -169,23 +179,25 @@ def _fold_row(
     return row
 
 
-def _write_outputs(slug, preds_df, folds_df):
+def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
     outputs_dir = get_project_root() / "model" / "outputs" / slug
     outputs_dir.mkdir(parents=True, exist_ok=True)
-    preds_path = outputs_dir / "cv_preds_summary.csv"
-    folds_path = outputs_dir / "cv_folds.csv"
-    preds_df.to_csv(preds_path, index=False)
-    folds_df.to_csv(folds_path, index=False)
-    print(f"\nWrote {preds_path}")
-    print(f"Wrote {folds_path}")
+    write_json(outputs_dir / "cv_preds_summary.json", pred_rows)
+    write_jsonl(outputs_dir / "cv_folds.jsonl", fold_rows)
+    write_jsonl(outputs_dir / "cv_trial_ll.jsonl", trial_ll_rows)
+    print(f"\nWrote {outputs_dir / 'cv_trial_ll.jsonl'} (primary metric)")
+    print(f"Wrote {outputs_dir / 'cv_preds_summary.json'}")
+    print(f"Wrote {outputs_dir / 'cv_folds.jsonl'}")
 
-    print("\n=== Per-variant summary ===")
-    for variant, sub in folds_df.groupby("variant"):
-        per_trial = (sub["test_nll"] / sub["n_test"]).mean()
+    print("\n=== Per-variant summary (held-out log-likelihood) ===")
+    trial_df = pd.DataFrame(trial_ll_rows)
+    folds_df = pd.DataFrame(fold_rows)
+    for variant, sub in trial_df.groupby("model"):
+        fsub = folds_df[folds_df["variant"] == variant]
         print(
-            f"  {variant}: alpha_obs = {sub['alpha_observer'].mean():.3f} "
-            f"+/- {sub['alpha_observer'].std():.3f}, "
-            f"mean test NLL/trial = {per_trial:.4f}"
+            f"  {variant}: mean held-out LL/trial = {sub['held_out_ll'].mean():.4f} "
+            f"(alpha_obs = {fsub['alpha_observer'].mean():.3f}, "
+            f"sigma = {fsub['sigma'].mean():.3f})"
         )
 
 
@@ -206,11 +218,16 @@ def _loso_intimacy(slug):
         load_intimacy_data(slug)
     )
     scenario_idx_np = np.asarray(scenario_idx)
+    action_np = np.asarray(action)
+    desire_np = np.asarray(desire_condition)
+    effort_np = np.asarray(effort_condition)
+    response_np = np.asarray(response)
+    subject_ids = np.asarray(data["subject_id"].values)
 
-    pred_rows, fold_rows = [], []
+    pred_rows, fold_rows, trial_ll_rows = [], [], []
 
-    for variant, (obs_fn, utility_names, uses_v) in VARIANTS_INTIMACY.items():
-        tk = intimacy_table_kwargs(uses_v)
+    for variant, (obs_fn, utility_names) in VARIANTS_INTIMACY.items():
+        tk = intimacy_table_kwargs(utility_names)
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -230,42 +247,56 @@ def _loso_intimacy(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
             )
-            table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Padded shape: (padded_slot, scenario, observed_action, desire, effort, intimacy_101)
-            # The observed action sits in slot 0.
+            sigma = float(params[-1])
+            # (run, slot, scenario, observed_action, desire, effort, intimacy_101)
+            tables = np.asarray(
+                _build_observer_tables_runs(obs_fn, params, utility_names, tk)
+            )
 
-            held_out = table[
-                0, fold, :, :, :, :
-            ]  # (observed_action, desire, effort, 101)
+            # Predicted belief update δ per held-out cell (mean over runs).
             for a_idx in range(N_ACTIONS):
                 for r in (0, 1):
                     for e in (0, 1):
-                        density = held_out[a_idx, r, e, :]
-                        expected_intimacy = float(np.sum(INTIMACY_GRID * density))
+                        density_runs = tables[:, 0, fold, a_idx, r, e, :]  # (K, 101)
+                        deltas = density_runs @ GRID_NP - PRIOR_MEAN_F  # (K,)
                         pred_rows.append(
                             {
                                 "scenario_label": scenario_label,
                                 "action": a_idx,
                                 "desire_condition": "low" if r == 0 else "high",
                                 "effort_condition": "low" if e == 0 else "high",
-                                "expected_intimacy": expected_intimacy,
+                                "delta_intimacy": float(deltas.mean()),
                                 "model": variant,
                             }
                         )
 
-            test_nll = 0.0
-            for i in np.where(test_mask)[0]:
-                post = table[
-                    0,
-                    int(scenario_idx[i]),
-                    int(action[i]),
-                    int(desire_condition[i]),
-                    int(effort_condition[i]),
+            # Per-trial held-out log-likelihood under the mixture.
+            ti = np.where(test_mask)[0]
+            if len(ti):
+                post = tables[
                     :,
-                ]
-                resp_idx = int(np.clip(round(float(response[i]) * 100), 0, 100))
-                prob = max(float(post[resp_idx]), 1e-8)
-                test_nll += -float(np.log(prob))
+                    0,
+                    scenario_idx_np[ti],
+                    action_np[ti],
+                    desire_np[ti],
+                    effort_np[ti],
+                    :,
+                ]  # (K, n_test, 101)
+                deltas_t = (post @ GRID_NP).T - PRIOR_MEAN_F  # (n_test, K)
+                lls = _held_out_ll_1d(deltas_t, response_np[ti], sigma)
+                test_nll = -float(lls.sum())
+                for j, i in enumerate(ti):
+                    trial_ll_rows.append(
+                        {
+                            "experiment": slug,
+                            "model": variant,
+                            "subject_id": str(subject_ids[i]),
+                            "scenario_label": scenario_label,
+                            "held_out_ll": float(lls[j]),
+                        }
+                    )
+            else:
+                test_nll = 0.0
 
             fold_rows.append(
                 _fold_row(
@@ -282,7 +313,7 @@ def _loso_intimacy(slug):
                 )
             )
 
-    return pd.DataFrame(pred_rows), pd.DataFrame(fold_rows)
+    return pred_rows, fold_rows, trial_ll_rows
 
 
 def main_intimacy():
@@ -290,8 +321,7 @@ def main_intimacy():
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    preds_df, folds_df = _loso_intimacy(slug)
-    _write_outputs(slug, preds_df, folds_df)
+    _write_outputs(slug, *_loso_intimacy(slug))
 
 
 # ==============================================================================
@@ -304,11 +334,16 @@ def _loso_desire(slug):
         load_desire_data(slug)
     )
     scenario_idx_np = np.asarray(scenario_idx)
+    action_np = np.asarray(action)
+    effort_np = np.asarray(effort_condition)
+    rel_np = np.asarray(relationship_condition)
+    response_np = np.asarray(response)
+    subject_ids = np.asarray(data["subject_id"].values)
 
-    pred_rows, fold_rows = [], []
+    pred_rows, fold_rows, trial_ll_rows = [], [], []
 
-    for variant, (obs_fn, utility_names, uses_v) in VARIANTS_DESIRE.items():
-        tk = desire_table_kwargs(uses_v)
+    for variant, (obs_fn, utility_names) in VARIANTS_DESIRE.items():
+        tk = desire_table_kwargs(utility_names)
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -328,43 +363,56 @@ def _loso_desire(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
             )
-            table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Shape: (padded_slot, scenario, observed_action, effort, intimacy, desire)
-            # The canonical observed action sits in slot 0; slots 1..k are LM alts.
+            sigma = float(params[-1])
+            # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
+            tables = np.asarray(
+                _build_observer_tables_runs(obs_fn, params, utility_names, tk)
+            )
 
-            held_out = table[
-                0, fold, :, :, :, :
-            ]  # (observed_action, effort, intimacy, desire[101])
             for a_idx in range(N_ACTIONS):
                 for rel_idx in range(4):
                     for e in (0, 1):
-                        density = held_out[a_idx, e, rel_idx, :]
-                        expected_desire = float(np.sum(DESIRE_GRID * density))
+                        density_runs = tables[
+                            :, 0, fold, a_idx, e, rel_idx, :
+                        ]  # (K,101)
+                        deltas = density_runs @ GRID_NP - PRIOR_MEAN_F
                         pred_rows.append(
                             {
                                 "scenario_label": scenario_label,
                                 "action": a_idx,
                                 "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                                 "effort_condition": "low" if e == 0 else "high",
-                                "expected_desire": expected_desire,
+                                "delta_desire": float(deltas.mean()),
                                 "model": variant,
                             }
                         )
 
-            # Desire DV is a continuous 0-1 rating; test loss is the NLL of the
-            # response bin under the 101-bin desire posterior.
-            test_nll = 0.0
-            for i in np.where(test_mask)[0]:
-                post = table[
-                    0,
-                    int(scenario_idx[i]),
-                    int(action[i]),
-                    int(effort_condition[i]),
-                    int(relationship_condition[i]),
+            ti = np.where(test_mask)[0]
+            if len(ti):
+                post = tables[
                     :,
-                ]
-                resp_idx = int(np.clip(round(float(response[i]) * 100), 0, 100))
-                test_nll += -float(np.log(max(float(post[resp_idx]), 1e-8)))
+                    0,
+                    scenario_idx_np[ti],
+                    action_np[ti],
+                    effort_np[ti],
+                    rel_np[ti],
+                    :,
+                ]  # (K, n_test, 101)
+                deltas_t = (post @ GRID_NP).T - PRIOR_MEAN_F
+                lls = _held_out_ll_1d(deltas_t, response_np[ti], sigma)
+                test_nll = -float(lls.sum())
+                for j, i in enumerate(ti):
+                    trial_ll_rows.append(
+                        {
+                            "experiment": slug,
+                            "model": variant,
+                            "subject_id": str(subject_ids[i]),
+                            "scenario_label": scenario_label,
+                            "held_out_ll": float(lls[j]),
+                        }
+                    )
+            else:
+                test_nll = 0.0
 
             fold_rows.append(
                 _fold_row(
@@ -381,7 +429,7 @@ def _loso_desire(slug):
                 )
             )
 
-    return pd.DataFrame(pred_rows), pd.DataFrame(fold_rows)
+    return pred_rows, fold_rows, trial_ll_rows
 
 
 def main_desire():
@@ -389,15 +437,12 @@ def main_desire():
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    preds_df, folds_df = _loso_desire(slug)
-    _write_outputs(slug, preds_df, folds_df)
+    _write_outputs(slug, *_loso_desire(slug))
 
 
 # ==============================================================================
 # Study 1b — joint over (desire, effort) given intimacy
 # ==============================================================================
-# Two slider responses per trial: P(desire=HIGH) and P(effort=HIGH). Per-trial
-# test NLL sums the two binary cross-entropies, matching the training loss.
 
 
 def _loso_joint_de(slug):
@@ -410,11 +455,16 @@ def _loso_joint_de(slug):
         response_effort,
     ) = load_joint_de_data(slug)
     scenario_idx_np = np.asarray(scenario_idx)
+    action_np = np.asarray(action)
+    rel_np = np.asarray(relationship_condition)
+    rd_np = np.asarray(response_desire)
+    re_np = np.asarray(response_effort)
+    subject_ids = np.asarray(data["subject_id"].values)
 
-    pred_rows, fold_rows = [], []
+    pred_rows, fold_rows, trial_ll_rows = [], [], []
 
-    for variant, (obs_fn, utility_names, uses_v) in VARIANTS_JOINT_DE.items():
-        tk = joint_de_table_kwargs(uses_v)
+    for variant, (obs_fn, utility_names) in VARIANTS_JOINT_DE.items():
+        tk = joint_de_table_kwargs(utility_names)
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -434,54 +484,57 @@ def _loso_joint_de(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
             )
-            table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Padded shape: (padded_slot, scenario, observed_action, relationship_4, desire, effort)
-            # joint over (desire, effort); observed action sits in slot 0.
+            sigma = float(params[-1])
+            # (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)
+            tables = np.asarray(
+                _build_observer_tables_runs(obs_fn, params, utility_names, tk)
+            )
 
-            held_out = table[
-                0, fold, :, :, :, :
-            ]  # (observed_action, rel_4, desire[101], effort[2])
             for a_idx in range(N_ACTIONS):
                 for rel_idx in range(4):
-                    joint = held_out[a_idx, rel_idx, :, :]  # (101, 2)
-                    desire_post = joint.sum(axis=1)  # marginal over effort
-                    expected_desire = float(np.sum(DESIRE_GRID * desire_post))
-                    p_effort_high = float(joint[:, 1].sum())
+                    joint_runs = tables[:, 0, fold, a_idx, rel_idx, :, :]  # (K,101,2)
+                    desire_mean = joint_runs.sum(axis=2) @ GRID_NP  # (K,)
+                    p_high = joint_runs[:, :, 1].sum(axis=1)  # (K,)
                     pred_rows.append(
                         {
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
-                            "expected_desire": expected_desire,
-                            "p_effort_high": p_effort_high,
+                            "delta_desire": float((desire_mean - PRIOR_MEAN_F).mean()),
+                            "delta_effort": float(
+                                (p_high - EFFORT_PRIOR_MEAN_F).mean()
+                            ),
                             "model": variant,
                         }
                     )
 
-            # Desire slider is a continuous 0-1 rating (NLL over the 101-bin
-            # posterior); effort slider is a 0-1 rating (BCE on P(effort=HIGH)).
-            test_nll = 0.0
-            for i in np.where(test_mask)[0]:
-                joint = table[
-                    0,
-                    int(scenario_idx[i]),
-                    int(action[i]),
-                    int(relationship_condition[i]),
-                    :,
-                    :,
-                ]
-                desire_post = joint.sum(axis=1)
-                p_e_high = float(joint[:, 1].sum())
-                # desire: NLL of the response bin under the 101-bin posterior
-                resp_idx = int(np.clip(round(float(response_desire[i]) * 100), 0, 100))
-                test_nll += -float(np.log(max(float(desire_post[resp_idx]), 1e-8)))
-                # effort: binary cross-entropy on the 0-1 slider
-                p_human = float(response_effort[i])
-                p_m = min(max(p_e_high, 1e-8), 1 - 1e-8)
-                test_nll += -(
-                    p_human * float(np.log(p_m))
-                    + (1 - p_human) * float(np.log(1 - p_m))
-                )
+            ti = np.where(test_mask)[0]
+            if len(ti):
+                joint_t = tables[
+                    :, 0, scenario_idx_np[ti], action_np[ti], rel_np[ti], :, :
+                ]  # (K, n_test, 101, 2)
+                desire_mean_t = joint_t.sum(axis=3) @ GRID_NP  # (K, n_test)
+                p_high_t = joint_t[:, :, :, 1].sum(axis=2)  # (K, n_test)
+                deltas_t = np.stack(
+                    [desire_mean_t - PRIOR_MEAN_F, p_high_t - EFFORT_PRIOR_MEAN_F],
+                    axis=-1,
+                )  # (K, n_test, 2)
+                deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
+                u_t = np.stack([rd_np[ti], re_np[ti]], axis=1)  # (n_test, 2)
+                lls = _held_out_ll_2d(deltas_t, u_t, sigma)
+                test_nll = -float(lls.sum())
+                for j, i in enumerate(ti):
+                    trial_ll_rows.append(
+                        {
+                            "experiment": slug,
+                            "model": variant,
+                            "subject_id": str(subject_ids[i]),
+                            "scenario_label": scenario_label,
+                            "held_out_ll": float(lls[j]),
+                        }
+                    )
+            else:
+                test_nll = 0.0
 
             fold_rows.append(
                 _fold_row(
@@ -498,7 +551,7 @@ def _loso_joint_de(slug):
                 )
             )
 
-    return pd.DataFrame(pred_rows), pd.DataFrame(fold_rows)
+    return pred_rows, fold_rows, trial_ll_rows
 
 
 def main_joint_de():
@@ -506,8 +559,7 @@ def main_joint_de():
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    preds_df, folds_df = _loso_joint_de(slug)
-    _write_outputs(slug, preds_df, folds_df)
+    _write_outputs(slug, *_loso_joint_de(slug))
 
 
 # ==============================================================================
@@ -525,11 +577,16 @@ def _loso_joint_ie(slug):
         response_effort,
     ) = load_joint_ie_data(slug)
     scenario_idx_np = np.asarray(scenario_idx)
+    action_np = np.asarray(action)
+    desire_np = np.asarray(desire_condition)
+    ri_np = np.asarray(response_intimacy)
+    re_np = np.asarray(response_effort)
+    subject_ids = np.asarray(data["subject_id"].values)
 
-    pred_rows, fold_rows = [], []
+    pred_rows, fold_rows, trial_ll_rows = [], [], []
 
-    for variant, (obs_fn, utility_names, uses_v) in VARIANTS_JOINT_IE.items():
-        tk = joint_ie_table_kwargs(uses_v)
+    for variant, (obs_fn, utility_names) in VARIANTS_JOINT_IE.items():
+        tk = joint_ie_table_kwargs(utility_names)
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -549,54 +606,59 @@ def _loso_joint_ie(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
             )
-            table = np.asarray(_build_observer_table(obs_fn, params, utility_names, tk))
-            # Padded shape: (padded_slot, scenario, observed_action, desire, intimacy_101, effort)
-            # joint over (intimacy, effort); observed action sits in slot 0.
+            sigma = float(params[-1])
+            # (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)
+            tables = np.asarray(
+                _build_observer_tables_runs(obs_fn, params, utility_names, tk)
+            )
 
-            held_out = table[
-                0, fold, :, :, :, :
-            ]  # (observed_action, desire, intimacy_101, effort)
             for a_idx in range(N_ACTIONS):
                 for r in (0, 1):
-                    joint = held_out[a_idx, r, :, :]  # (101, 2)
-                    p_intimacy = joint.sum(axis=1)  # marginal over effort
-                    expected_intimacy = float(np.sum(INTIMACY_GRID * p_intimacy))
-                    p_effort_high = float(joint[:, 1].sum())
+                    joint_runs = tables[:, 0, fold, a_idx, r, :, :]  # (K,101,2)
+                    intimacy_mean = joint_runs.sum(axis=2) @ GRID_NP  # (K,)
+                    p_high = joint_runs[:, :, 1].sum(axis=1)  # (K,)
                     pred_rows.append(
                         {
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "desire_condition": "low" if r == 0 else "high",
-                            "expected_intimacy": expected_intimacy,
-                            "p_effort_high": p_effort_high,
+                            "delta_intimacy": float(
+                                (intimacy_mean - PRIOR_MEAN_F).mean()
+                            ),
+                            "delta_effort": float(
+                                (p_high - EFFORT_PRIOR_MEAN_F).mean()
+                            ),
                             "model": variant,
                         }
                     )
 
-            test_nll = 0.0
-            for i in np.where(test_mask)[0]:
-                joint = table[
-                    0,
-                    int(scenario_idx[i]),
-                    int(action[i]),
-                    int(desire_condition[i]),
-                    :,
-                    :,
-                ]
-                # intimacy slider NLL (101-bin posterior)
-                p_intimacy = joint.sum(axis=1)
-                resp_idx = int(
-                    np.clip(round(float(response_intimacy[i]) * 100), 0, 100)
+            ti = np.where(test_mask)[0]
+            if len(ti):
+                joint_t = tables[
+                    :, 0, scenario_idx_np[ti], action_np[ti], desire_np[ti], :, :
+                ]  # (K, n_test, 101, 2)
+                intimacy_mean_t = joint_t.sum(axis=3) @ GRID_NP  # (K, n_test)
+                p_high_t = joint_t[:, :, :, 1].sum(axis=2)  # (K, n_test)
+                deltas_t = np.stack(
+                    [intimacy_mean_t - PRIOR_MEAN_F, p_high_t - EFFORT_PRIOR_MEAN_F],
+                    axis=-1,
                 )
-                test_nll += -float(np.log(max(float(p_intimacy[resp_idx]), 1e-8)))
-                # effort slider NLL (binary cross-entropy)
-                p_e_high = float(joint[:, 1].sum())
-                p_human = float(response_effort[i])
-                p_m = min(max(p_e_high, 1e-8), 1 - 1e-8)
-                test_nll += -(
-                    p_human * float(np.log(p_m))
-                    + (1 - p_human) * float(np.log(1 - p_m))
-                )
+                deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
+                u_t = np.stack([ri_np[ti], re_np[ti]], axis=1)  # (n_test, 2)
+                lls = _held_out_ll_2d(deltas_t, u_t, sigma)
+                test_nll = -float(lls.sum())
+                for j, i in enumerate(ti):
+                    trial_ll_rows.append(
+                        {
+                            "experiment": slug,
+                            "model": variant,
+                            "subject_id": str(subject_ids[i]),
+                            "scenario_label": scenario_label,
+                            "held_out_ll": float(lls[j]),
+                        }
+                    )
+            else:
+                test_nll = 0.0
 
             fold_rows.append(
                 _fold_row(
@@ -613,7 +675,7 @@ def _loso_joint_ie(slug):
                 )
             )
 
-    return pd.DataFrame(pred_rows), pd.DataFrame(fold_rows)
+    return pred_rows, fold_rows, trial_ll_rows
 
 
 def main_joint_ie():
@@ -621,8 +683,4 @@ def main_joint_ie():
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    preds_df, folds_df = _loso_joint_ie(slug)
-    _write_outputs(slug, preds_df, folds_df)
-
-
-# ==============================================================================
+    _write_outputs(slug, *_loso_joint_ie(slug))

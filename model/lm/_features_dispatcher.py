@@ -103,6 +103,40 @@ def parse_desire_response(response_text):
     return None
 
 
+def numeric_intimacy_schema(name="intimacy"):
+    """response_format constraining the LM to emit ``{"intimacy": <number>}`` for
+    the per-level relationship-intimacy rating in the given-relationship studies."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": name,
+            "schema": {
+                "type": "object",
+                "properties": {"intimacy": {"type": "number"}},
+                "required": ["intimacy"],
+                "additionalProperties": False,
+            },
+        },
+    }
+
+
+def parse_intimacy_response(response_text):
+    """Parse a ``{"intimacy": <number>}`` scalar response (0-100)."""
+    if response_text is None:
+        return None
+    js = find_json(response_text)
+    if js is None:
+        return None
+    js = strip_leading_plus(js)
+    try:
+        d = json.loads(js)
+        if "intimacy" in d:
+            return float(d["intimacy"])
+    except (json.JSONDecodeError, ValueError, TypeError) as e:
+        print(f"  Failed to parse intimacy JSON: {e}")
+    return None
+
+
 def parse_action_response_variable(response_text, n_actions):
     """Parse JSON with action_0..action_{n-1} keys."""
     if response_text is None:

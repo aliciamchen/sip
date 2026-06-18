@@ -1,8 +1,10 @@
-"""Generate predictions for food_inv_desire.
+"""Generate in-sample predictions for food_inv_desire.
 
 Reads jointly-fit utility weights + alpha_observer from this experiment's own
-fit_results.csv (NOT from the forward fit), runs the desire observer on a
-per-scenario grid, and writes preds_<variant>.npy + preds_summary.csv.
+fit_results.json (NOT from the forward fit), runs the desire observer across all
+elicitation runs on the full scenario grid, and writes the model belief update
+`delta_desire` per (scenario, action, effort, intimacy) cell to preds_summary.json.
+(All headline model-vs-human comparisons are out-of-sample — see cv_*.)
 """
 
 import sys
@@ -14,26 +16,34 @@ sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
 import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
 
 from _helpers import (  # noqa: E402
+    GRID,
+    PRIOR_MEAN,
+    _build_observer_tables_runs,
     desire_table_kwargs,
     load_fit_results,
+    params_dict_to_array,
+    write_json,
 )
 from observers import (  # noqa: E402
     observer_desire_base,
     observer_desire_discomfort_only,
     observer_desire_full,
 )
+from tables import INTIMACY_CONDITIONS, N_ACTIONS, SCENARIO_LABELS  # noqa: E402
 
 EXPERIMENT_SLUG = "food_inv_desire"
 
-# (observer_fn, utility_param_names, uses_v)
+# (observer_fn, utility_param_names)
 VARIANTS = {
-    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"], False),
-    "base": (observer_desire_base, ["w_v", "w_e"], True),
+    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"]),
+    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"]),
+    "base": (observer_desire_base, ["w_v", "w_e"]),
 }
+
+GRID_NP = np.asarray(GRID)
+PRIOR_MEAN_F = float(PRIOR_MEAN)
 
 
 def main():
@@ -45,29 +55,39 @@ def main():
     output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    for variant, (obs_fn, utility_names, uses_v) in VARIANTS.items():
+    pred_rows = []
+    for variant, (obs_fn, utility_names) in VARIANTS.items():
         if variant not in fit_params:
             print(f"  (skipping {variant}: no fit row)")
             continue
         p = fit_params[variant]
         print(f"  {variant} (alpha_observer={p['alpha_observer']:.3f})...")
-        kwargs = {"alpha": p["alpha"]}
-        for name in utility_names:
-            kwargs[name] = p[name]
-        kwargs["alpha_observer"] = p["alpha_observer"]
-        result = obs_fn(**kwargs, **desire_table_kwargs(uses_v))
-        np.save(output_dir / f"preds_{variant}.npy", np.asarray(result))
-
-    summary = []
-    for variant in VARIANTS:
-        path = output_dir / f"preds_{variant}.npy"
-        if path.exists():
-            arr = np.load(path)
-            summary.append(
-                {"model": variant, "shape": str(arr.shape), "sum": float(arr.sum())}
+        params_arr = params_dict_to_array(p, utility_names)
+        # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
+        tables = np.asarray(
+            _build_observer_tables_runs(
+                obs_fn, params_arr, utility_names, desire_table_kwargs(utility_names)
             )
-    pd.DataFrame(summary).to_csv(output_dir / "preds_summary.csv", index=False)
-    print(f"\nSaved per-variant prediction arrays to {output_dir}")
+        )
+        for s_idx, scenario_label in enumerate(SCENARIO_LABELS):
+            for a_idx in range(N_ACTIONS):
+                for e in (0, 1):
+                    for rel_idx, level in enumerate(INTIMACY_CONDITIONS):
+                        density_runs = tables[:, 0, s_idx, a_idx, e, rel_idx, :]
+                        delta = float((density_runs @ GRID_NP).mean() - PRIOR_MEAN_F)
+                        pred_rows.append(
+                            {
+                                "scenario_label": scenario_label,
+                                "action": a_idx,
+                                "effort_condition": "low" if e == 0 else "high",
+                                "intimacy_condition": level,
+                                "delta_desire": delta,
+                                "model": variant,
+                            }
+                        )
+
+    write_json(output_dir / "preds_summary.json", pred_rows)
+    print(f"\nSaved per-cell delta predictions to {output_dir / 'preds_summary.json'}")
 
 
 if __name__ == "__main__":

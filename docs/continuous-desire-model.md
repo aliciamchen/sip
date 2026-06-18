@@ -109,13 +109,21 @@ condition in 2a.
 
 ## Likelihood
 
-`compute_desire_nll(posterior, response)` — full-posterior NLL at the response
-bin, mapping the 0–100 rating directly onto the 101-bin [0,1] grid
-(`idx = round(response)`), an exact parallel of `compute_intimacy_nll` (desire
-and intimacy now share the same 0–100 scale and the same likelihood). This makes
-desire and intimacy structurally identical. (A posterior-mean + squared-error
-variant was considered as a smaller change but discards the posterior shape; we
-use the NLL.)
+> **Superseded (June 2026).** The full-posterior categorical NLL described below
+> has been replaced by the manuscript's belief-update Gaussian-mixture likelihood
+> (`mixture_nll_1d`/`mixture_nll_2d` in `inverse/_helpers.py`): the DV is the
+> belief update `posterior − prior`, each elicitation run k contributes a model
+> update `δ_k = posterior mean − prior mean`, and a participant's update is scored
+> under `(1/K) Σ_k N(u | δ_k, σ²)` with a fitted response-noise `σ` (isotropic
+> bivariate for the joint studies). The posterior-mean summary noted parenthetically
+> below is what the current procedure uses. See `rules/model.md` "DV likelihoods".
+
+Historical (pre-mixture): `compute_desire_nll(posterior, response)` — full-posterior
+NLL at the response bin, mapping the 0–100 rating directly onto the 101-bin [0,1]
+grid (`idx = round(response)`), an exact parallel of `compute_intimacy_nll`. (A
+posterior-mean + squared-error variant was considered as a smaller change but
+discards the posterior shape — the mixture procedure above ultimately adopted the
+posterior mean.)
 
 ## Implementation map
 

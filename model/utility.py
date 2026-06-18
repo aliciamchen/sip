@@ -21,8 +21,6 @@ Dependency layer 1: imports from `tables.py` only. `actors.py` and
 import jax
 import jax.numpy as jnp
 
-from tables import RELATIONSHIP_LEVEL_VALUES
-
 
 # ==============================================================================
 # Padded utilities for Study 1a — desire inference with LM-generated alternatives
@@ -97,8 +95,9 @@ def get_utility_full_padded_desire(
     risk_table,
     effort_table,
     g_padded_table,
+    relationship_values,
 ):
-    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    intimacy = relationship_values[relationship_condition]
     risk = risk_table[
         scenario_idx,
         observed_action,
@@ -140,8 +139,9 @@ def get_utility_discomfort_only_padded_desire(
     gamma,
     risk_table,
     effort_table,
+    relationship_values,
 ):
-    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    intimacy = relationship_values[relationship_condition]
     risk = risk_table[
         scenario_idx,
         observed_action,
@@ -253,8 +253,9 @@ def get_utility_full_padded_joint_de(
     risk_table,
     effort_table,
     g_padded_table,
+    relationship_values,
 ):
-    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    intimacy = relationship_values[relationship_condition]
     risk = risk_table[
         scenario_idx, observed_action, relationship_condition, padded_slot
     ]
@@ -291,8 +292,9 @@ def get_utility_discomfort_only_padded_joint_de(
     gamma,
     risk_table,
     effort_table,
+    relationship_values,
 ):
-    intimacy = RELATIONSHIP_LEVEL_VALUES[relationship_condition]
+    intimacy = relationship_values[relationship_condition]
     risk = risk_table[
         scenario_idx, observed_action, relationship_condition, padded_slot
     ]

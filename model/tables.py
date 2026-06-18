@@ -9,6 +9,8 @@ Dependency layer 0: imports nothing from sibling modules. `utility.py`,
 `actors.py`, and `observers.py` all import from here.
 """
 
+import json
+from collections import defaultdict
 from enum import IntEnum
 from pathlib import Path
 
@@ -188,21 +190,54 @@ NONFOOD_SCENARIO_TO_IDX = {
 # desire scalar for the given-desire studies is loaded by load_lm_scenario_desire.
 
 
+def _lm_given(slug):
+    """Parsed `outputs/lm/<slug>/lm_given.json`, or None if absent.
+
+    `lm_given.json` holds a study's *given-magnitude* LM scalars — the values that
+    are observer-visible context rather than inferred latents — in one small,
+    run-independent object:
+      {"desire": {"<scenario>": {"low": float, "high": float}, ...},   # 2a/2b
+       "relationship": {"max_formal": float, ..., "max_intimate": float}}  # 1a/1b
+    A study carries only the key(s) relevant to it.
+    """
+    path = Path(__file__).resolve().parent / "outputs" / "lm" / slug / "lm_given.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        return json.load(f)
+
+
 def load_lm_scenario_desire(slug, filepath=None):
     """Load the per-condition desire scalar for the given-desire studies
     (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`).
 
     When desire is observer-visible context, the LM reads the scenario + the
     shown desire paragraph and rates how much the two people would like the food
-    on the [0, 1] scale (the 0–100 rating divided by 100). That scalar plugs into
-    the actor utility as the constant `desire` in w_v · desire · g.
+    on the [0, 1] scale. That scalar plugs into the actor utility as the constant
+    `desire` in w_v · desire · g.
 
-    `slug` selects the study folder `outputs/lm/<slug>/lm_scenario_desire.csv`.
+    Source: the `desire` block of `outputs/lm/<slug>/lm_given.json`; falls back to
+    the legacy `lm_scenario_desire.csv` so fits run before the JSON regeneration.
 
     Returns a jnp.array of shape (16, 2) indexed by
-    (scenario, desire_condition), or None if the CSV is missing.
+    (scenario, desire_condition), or None if neither source is present.
     """
     scenario_to_idx = SCENARIO_TO_IDX
+    desire_to_idx = {
+        "low": int(DesireConditions.LOW),
+        "high": int(DesireConditions.HIGH),
+    }
+    d = np.zeros((len(scenario_to_idx), 2), dtype=np.float32)
+
+    given = _lm_given(slug)
+    if given is not None and "desire" in given:
+        for scenario, by_cond in given["desire"].items():
+            s = scenario_to_idx[scenario]
+            for cond, val in by_cond.items():
+                d[s, desire_to_idx[cond]] = float(val)
+        return jnp.array(d)
+
+    # Legacy CSV fallback (K=1, pre-regeneration).
     if filepath is None:
         filepath = (
             Path(__file__).resolve().parent
@@ -214,16 +249,33 @@ def load_lm_scenario_desire(slug, filepath=None):
     if not Path(filepath).exists():
         return None
     df = pd.read_csv(filepath)
-    desire_to_idx = {
-        "low": int(DesireConditions.LOW),
-        "high": int(DesireConditions.HIGH),
-    }
-    d = np.zeros((len(scenario_to_idx), 2), dtype=np.float32)
     for _, row in df.iterrows():
         s = scenario_to_idx[row["scenario_label"]]
         r = desire_to_idx[row["desire_condition"]]
         d[s, r] = row["desire"]
     return jnp.array(d)
+
+
+def load_lm_relationship_values(slug):
+    """Continuous intimacy magnitude I ∈ [0, 1] for each of the four
+    RelationshipConditions levels, for the given-relationship studies
+    (1a `food_inv_desire`, 1b `food_inv_joint_de`).
+
+    The manuscript LM-rates the intimacy implied by each (verbal) relationship
+    description, mirroring the desire scalar in 2a/2b. Source: the `relationship`
+    block of `outputs/lm/<slug>/lm_given.json`, ordered by INTIMACY_CONDITIONS.
+    Falls back to the placeholder `RELATIONSHIP_LEVEL_VALUES` so 1a/1b run before
+    the intimacy elicitation exists.
+
+    Returns a jnp.array of shape (4,).
+    """
+    given = _lm_given(slug)
+    if given is not None and "relationship" in given:
+        rel = given["relationship"]
+        return jnp.array(
+            [float(rel[slug_]) for slug_ in INTIMACY_CONDITIONS], dtype=jnp.float32
+        )
+    return RELATIONSHIP_LEVEL_VALUES
 
 
 # ==============================================================================
@@ -263,65 +315,71 @@ def load_padded_lm_tables_desire(
     Remaining slots are null-padded (risk/effort/g = 0; prior = NULL_EPSILON to
     keep the softmax differentiable).
 
-    Returns a dict {risk, effort, g, prior} of jnp.arrays, or None if the tables
-    are missing or not yet scored.
+    The returned arrays carry a leading run axis K (one elicitation run per
+    component of the simulated-observer mixture); K=1 on the legacy single-run
+    CSVs. Returns a dict {risk, effort, g, prior, n_runs} of jnp.arrays, or None
+    if the tables are missing or not yet scored.
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_desire"
-    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
-
-    required = [canonical_path, alternatives_path]
-    if any(not Path(p).exists() for p in required):
+    if canonical_path or alternatives_path:  # explicit-path override (tests)
+        if any(not Path(p).exists() for p in (canonical_path, alternatives_path)):
+            return None
+        alts_df = pd.read_csv(alternatives_path)
+        if not _alts_ready(alts_df):
+            return None
+        runs = [(*_canonical_lookups(canonical_path), alts_df)]
+    else:
+        runs = _run_sources(outputs_dir, ["effort_condition", "intimacy_condition"])
+    if runs is None:
         return None
-
-    alts_df = pd.read_csv(alternatives_path)
-    if not _alts_ready(alts_df):
-        return None
-    canon_ae, canon_g = _canonical_lookups(canonical_path)
+    K = len(runs)
 
     n_scenarios = len(SCENARIO_LABELS)
     n_observed = N_ACTIONS
     n_effort = N_EFFORT_CONDITIONS
     n_intimacy = 4
-    shape_5d = (n_scenarios, n_observed, n_effort, n_intimacy, MAX_ACTIONS)
-    risk = np.zeros(shape_5d, dtype=np.float32)
-    effort = np.zeros(shape_5d, dtype=np.float32)
-    g = np.zeros(shape_5d, dtype=np.float32)
-    valid_mask = np.zeros(shape_5d, dtype=bool)
+    shape = (K, n_scenarios, n_observed, n_effort, n_intimacy, MAX_ACTIONS)
+    risk = np.zeros(shape, dtype=np.float32)
+    effort = np.zeros(shape, dtype=np.float32)
+    g = np.zeros(shape, dtype=np.float32)
+    valid_mask = np.zeros(shape, dtype=bool)
 
     intimacy_to_idx = INTIMACY_CONDITION_TO_IDX
     observed_str_to_idx = ACTION_LABEL_TO_IDX
 
-    # Canonical (slot 0): risk/effort depend on scenario + effort + action,
-    # broadcast across intimacy; g depends on scenario + action.
-    for scenario in SCENARIO_LABELS:
-        s_idx = SCENARIO_TO_IDX[scenario]
-        for observed in range(n_observed):
-            for e_idx in range(n_effort):
-                a_risk, a_effort = canon_ae[(scenario, e_idx, observed)]
-                for i_idx in range(n_intimacy):
-                    risk[s_idx, observed, e_idx, i_idx, 0] = a_risk
-                    effort[s_idx, observed, e_idx, i_idx, 0] = a_effort
-                    g[s_idx, observed, e_idx, i_idx, 0] = canon_g[(scenario, observed)]
-                    valid_mask[s_idx, observed, e_idx, i_idx, 0] = True
+    for k, (canon_ae, canon_g, alts_df) in enumerate(runs):
+        # Canonical (slot 0): risk/effort depend on scenario + effort + action,
+        # broadcast across intimacy; g depends on scenario + action.
+        for scenario in SCENARIO_LABELS:
+            s_idx = SCENARIO_TO_IDX[scenario]
+            for observed in range(n_observed):
+                for e_idx in range(n_effort):
+                    a_risk, a_effort = canon_ae[(scenario, e_idx, observed)]
+                    for i_idx in range(n_intimacy):
+                        risk[k, s_idx, observed, e_idx, i_idx, 0] = a_risk
+                        effort[k, s_idx, observed, e_idx, i_idx, 0] = a_effort
+                        g[k, s_idx, observed, e_idx, i_idx, 0] = canon_g[
+                            (scenario, observed)
+                        ]
+                        valid_mask[k, s_idx, observed, e_idx, i_idx, 0] = True
 
-    # LM-generated alternatives (slots 1..k), keyed by (scenario, observed,
-    # effort_condition, intimacy_condition, alt_idx); risk/effort/g read straight
-    # off the one merged alts table. Unscored stage-1 rows (NaN risk) are skipped.
-    for _, row in alts_df.iterrows():
-        if pd.isna(row["risk"]):
-            continue
-        s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
-        o_idx = observed_str_to_idx[row["observed_action"]]
-        e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        i_idx = intimacy_to_idx[row["intimacy_condition"]]
-        slot = int(row["alt_idx"]) + 1
-        if slot >= MAX_ACTIONS:
-            continue
-        risk[s_idx, o_idx, e_idx, i_idx, slot] = float(row["risk"])
-        effort[s_idx, o_idx, e_idx, i_idx, slot] = float(row["effort"])
-        g[s_idx, o_idx, e_idx, i_idx, slot] = float(row["g"])
-        valid_mask[s_idx, o_idx, e_idx, i_idx, slot] = True
+        # LM-generated alternatives (slots 1..k), keyed by (scenario, observed,
+        # effort_condition, intimacy_condition, alt_idx). Unscored stage-1 rows
+        # (NaN risk) are skipped.
+        for _, row in alts_df.iterrows():
+            if pd.isna(row["risk"]):
+                continue
+            s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
+            o_idx = observed_str_to_idx[row["observed_action"]]
+            e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
+            i_idx = intimacy_to_idx[row["intimacy_condition"]]
+            slot = int(row["alt_idx"]) + 1
+            if slot >= MAX_ACTIONS:
+                continue
+            risk[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["risk"])
+            effort[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["effort"])
+            g[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["g"])
+            valid_mask[k, s_idx, o_idx, e_idx, i_idx, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid_mask.sum(axis=-1, keepdims=True)
@@ -329,33 +387,14 @@ def load_padded_lm_tables_desire(
         valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
     ).astype(np.float32)
 
-    scored = alts_df[alts_df["risk"].notna()]
-    max_alt_count = (
-        scored.groupby(
-            [
-                "scenario_label",
-                "observed_action",
-                "effort_condition",
-                "intimacy_condition",
-            ]
-        )
-        .size()
-        .max()
-        if len(scored)
-        else 0
-    )
-    if max_alt_count + 1 > MAX_ACTIONS:
-        print(
-            f"WARNING: largest cell has {max_alt_count} LM-generated alternatives + "
-            f"1 observed = {max_alt_count + 1} actions, exceeding "
-            f"MAX_ACTIONS={MAX_ACTIONS}. Extra alternatives were truncated."
-        )
+    _warn_truncation(runs, ["effort_condition", "intimacy_condition"])
 
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),
         "g": jnp.array(g),
         "prior": jnp.array(prior_table),
+        "n_runs": K,
     }
 
 
@@ -409,6 +448,118 @@ def _alts_ready(alts_df):
     )
 
 
+def _run_sources(outputs_dir, cell_cols):
+    """Return a list (over elicitation runs) of `(canon_ae, canon_g, alts_df)`,
+    or None if no scored LM tables exist yet.
+
+    This is the single seam between the K-run JSON pipeline and the per-study
+    padded-table loaders below: each loader just iterates the returned list and
+    fills its arrays per run, reusing its existing canonical/alternatives fill
+    logic unchanged (each run's `(canon_ae, canon_g, alts_df)` looks exactly like
+    the legacy single-run inputs).
+
+    Source precedence:
+      - `lm_runs.jsonl` (K runs) if present — one record per (run_id, cell), each
+        carrying its run's scored actions (slot 0 = observed canonical action,
+        slots 1+ = alternatives).
+      - else the legacy `lm_scenario.csv` + `lm_alternatives.csv` as a single run
+        (K=1), the back-compat path so fits run before the JSON regeneration.
+
+    `cell_cols` are the condition columns this study's alternatives fill reads
+    (e.g. ["effort_condition", "intimacy_condition"] for 1a); the JSONL records
+    must carry them so the reconstructed `alts_df` matches the legacy schema.
+    """
+    jsonl = outputs_dir / "lm_runs.jsonl"
+    if jsonl.exists():
+        return _run_sources_jsonl(jsonl, cell_cols)
+
+    canonical_path = outputs_dir / "lm_scenario.csv"
+    alternatives_path = outputs_dir / "lm_alternatives.csv"
+    if not canonical_path.exists() or not alternatives_path.exists():
+        return None
+    alts_df = pd.read_csv(alternatives_path)
+    if not _alts_ready(alts_df):
+        return None
+    canon_ae, canon_g = _canonical_lookups(canonical_path)
+    return [(canon_ae, canon_g, alts_df)]
+
+
+def _run_sources_jsonl(path, cell_cols):
+    """Parse `lm_runs.jsonl` into per-run `(canon_ae, canon_g, alts_df)` triples.
+
+    Each line is one (run_id, cell) record (see the schema in score_merged.py):
+      {"run_id": int, "scenario_label": str, "observed_action": str,
+       <each cell_col>: str, "actions": [
+           {"slot": int, "alt_idx": int|null, "is_canonical": bool,
+            "action_text": str, "is_share": int,
+            "risk": float, "effort": float, "g": float}, ...]}
+    `canon_ae`/`canon_g` are reconstructed from the slot-0 canonical actions
+    (keyed (scenario, effort_idx, action) / (scenario, action), matching
+    `_canonical_lookups`); `alts_df` from the non-canonical actions.
+    """
+    records_by_run = defaultdict(list)
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rec = json.loads(line)
+            records_by_run[int(rec["run_id"])].append(rec)
+
+    runs = []
+    for run_id in sorted(records_by_run):
+        canon_ae, canon_g, alt_rows = {}, {}, []
+        for rec in records_by_run[run_id]:
+            scenario = rec["scenario_label"]
+            o_idx = ACTION_LABEL_TO_IDX[rec["observed_action"]]
+            e_idx = EFFORT_CONDITION_TO_IDX[rec["effort_condition"]]
+            for act in rec["actions"]:
+                if act.get("is_canonical"):
+                    canon_ae[(scenario, e_idx, o_idx)] = (
+                        float(act["risk"]),
+                        float(act["effort"]),
+                    )
+                    canon_g[(scenario, o_idx)] = float(act["g"])
+                else:
+                    row = {
+                        "scenario_label": scenario,
+                        "observed_action": rec["observed_action"],
+                        "alt_idx": int(act["alt_idx"]),
+                        "risk": float(act["risk"]),
+                        "effort": float(act["effort"]),
+                        "g": float(act["g"]),
+                    }
+                    for c in cell_cols:
+                        row[c] = rec[c]
+                    alt_rows.append(row)
+        runs.append((canon_ae, canon_g, pd.DataFrame(alt_rows)))
+    return runs
+
+
+def _warn_truncation(runs, cell_cols):
+    """Warn if any (run, cell) has more LM alternatives than the MAX_ACTIONS - 1
+    non-observed slots, so they would be silently truncated by the loaders."""
+    max_alt_count = 0
+    for _, _, alts_df in runs:
+        if alts_df is None or len(alts_df) == 0 or "risk" not in alts_df.columns:
+            continue
+        scored = alts_df[alts_df["risk"].notna()]
+        if not len(scored):
+            continue
+        cnt = (
+            scored.groupby(["scenario_label", "observed_action", *cell_cols])
+            .size()
+            .max()
+        )
+        max_alt_count = max(max_alt_count, int(cnt))
+    if max_alt_count + 1 > MAX_ACTIONS:
+        print(
+            f"WARNING: largest cell has {max_alt_count} LM-generated alternatives + "
+            f"1 observed = {max_alt_count + 1} actions, exceeding "
+            f"MAX_ACTIONS={MAX_ACTIONS}. Extra alternatives were truncated."
+        )
+
+
 def load_padded_lm_tables_joint_de(
     canonical_path=None,
     alternatives_path=None,
@@ -426,16 +577,19 @@ def load_padded_lm_tables_joint_de(
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_de"
     )
-    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
-    required = [canonical_path, alternatives_path]
-    if any(not Path(p).exists() for p in required):
+    cell_cols = ["intimacy_condition", "effort_condition"]
+    if canonical_path or alternatives_path:  # explicit-path override (tests)
+        if any(not Path(p).exists() for p in (canonical_path, alternatives_path)):
+            return None
+        alts_df = pd.read_csv(alternatives_path)
+        if not _alts_ready(alts_df):
+            return None
+        runs = [(*_canonical_lookups(canonical_path), alts_df)]
+    else:
+        runs = _run_sources(outputs_dir, cell_cols)
+    if runs is None:
         return None
-
-    canon_ae, canon_g = _canonical_lookups(canonical_path)
-    alts_df = pd.read_csv(alternatives_path)
-    if not _alts_ready(alts_df):
-        return None
+    K = len(runs)
 
     n_s, n_o, n_rel, n_eff = (
         len(SCENARIO_LABELS),
@@ -443,56 +597,58 @@ def load_padded_lm_tables_joint_de(
         4,
         N_EFFORT_CONDITIONS,
     )
-    risk = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS), dtype=np.float32)
-    effort = np.zeros((n_s, n_o, n_rel, n_eff, MAX_ACTIONS), dtype=np.float32)
-    g = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS), dtype=np.float32)
-    valid = np.zeros((n_s, n_o, n_rel, MAX_ACTIONS), dtype=bool)
+    risk = np.zeros((K, n_s, n_o, n_rel, MAX_ACTIONS), dtype=np.float32)
+    effort = np.zeros((K, n_s, n_o, n_rel, n_eff, MAX_ACTIONS), dtype=np.float32)
+    g = np.zeros((K, n_s, n_o, n_rel, MAX_ACTIONS), dtype=np.float32)
+    valid = np.zeros((K, n_s, n_o, n_rel, MAX_ACTIONS), dtype=bool)
 
     intimacy_to_idx = INTIMACY_CONDITION_TO_IDX
     obs_to_idx = ACTION_LABEL_TO_IDX
 
-    # Canonical slot 0: risk/effort per (scenario, effort_condition, action),
-    # broadcast across relationship; g per (scenario, action).
-    for scenario in SCENARIO_LABELS:
-        s = SCENARIO_TO_IDX[scenario]
-        for o in range(n_o):
-            for rel in range(n_rel):
-                for e in range(n_eff):
-                    a_risk, a_effort = canon_ae[(scenario, e, o)]
-                    effort[s, o, rel, e, 0] = a_effort
-                    if e == 0:
-                        risk[s, o, rel, 0] = a_risk
-                g[s, o, rel, 0] = canon_g[(scenario, o)]
-                valid[s, o, rel, 0] = True
+    for k, (canon_ae, canon_g, alts_df) in enumerate(runs):
+        # Canonical slot 0: risk/effort per (scenario, effort_condition, action),
+        # broadcast across relationship; g per (scenario, action).
+        for scenario in SCENARIO_LABELS:
+            s = SCENARIO_TO_IDX[scenario]
+            for o in range(n_o):
+                for rel in range(n_rel):
+                    for e in range(n_eff):
+                        a_risk, a_effort = canon_ae[(scenario, e, o)]
+                        effort[k, s, o, rel, e, 0] = a_effort
+                        if e == 0:
+                            risk[k, s, o, rel, 0] = a_risk
+                    g[k, s, o, rel, 0] = canon_g[(scenario, o)]
+                    valid[k, s, o, rel, 0] = True
 
-    # Alternatives (slots 1..k): risk/effort/g read straight off the merged alts
-    # table. risk/g are effort-marginal/desire-free (repeated across the effort
-    # rows). Unscored stage-1 rows (NaN risk) are skipped.
-    for _, row in alts_df.iterrows():
-        if pd.isna(row["risk"]):
-            continue
-        s = SCENARIO_TO_IDX[row["scenario_label"]]
-        o = obs_to_idx[row["observed_action"]]
-        rel = intimacy_to_idx[row["intimacy_condition"]]
-        e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        slot = int(row["alt_idx"]) + 1
-        if slot >= MAX_ACTIONS:
-            continue
-        risk[s, o, rel, slot] = float(row["risk"])
-        effort[s, o, rel, e, slot] = float(row["effort"])
-        g[s, o, rel, slot] = float(row["g"])
-        valid[s, o, rel, slot] = True
+        # Alternatives (slots 1..k): risk/g effort-marginal/desire-free (repeated
+        # across the effort rows). Unscored stage-1 rows (NaN risk) are skipped.
+        for _, row in alts_df.iterrows():
+            if pd.isna(row["risk"]):
+                continue
+            s = SCENARIO_TO_IDX[row["scenario_label"]]
+            o = obs_to_idx[row["observed_action"]]
+            rel = intimacy_to_idx[row["intimacy_condition"]]
+            e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
+            slot = int(row["alt_idx"]) + 1
+            if slot >= MAX_ACTIONS:
+                continue
+            risk[k, s, o, rel, slot] = float(row["risk"])
+            effort[k, s, o, rel, e, slot] = float(row["effort"])
+            g[k, s, o, rel, slot] = float(row["g"])
+            valid[k, s, o, rel, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid.sum(axis=-1, keepdims=True)
     prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
         np.float32
     )
+    _warn_truncation(runs, cell_cols)
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),
         "g": jnp.array(g),
         "prior": jnp.array(prior),
+        "n_runs": K,
     }
 
 
@@ -515,16 +671,19 @@ def load_padded_lm_tables_intimacy(
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_intimacy"
     )
-    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
-    required = [canonical_path, alternatives_path]
-    if any(not Path(p).exists() for p in required):
+    cell_cols = ["desire_condition", "effort_condition"]
+    if canonical_path or alternatives_path:  # explicit-path override (tests)
+        if any(not Path(p).exists() for p in (canonical_path, alternatives_path)):
+            return None
+        alts_df = pd.read_csv(alternatives_path)
+        if not _alts_ready(alts_df):
+            return None
+        runs = [(*_canonical_lookups(canonical_path), alts_df)]
+    else:
+        runs = _run_sources(outputs_dir, cell_cols)
+    if runs is None:
         return None
-
-    canon_ae, canon_g = _canonical_lookups(canonical_path)
-    alts_df = pd.read_csv(alternatives_path)
-    if not _alts_ready(alts_df):
-        return None
+    K = len(runs)
 
     n_s, n_o, n_rew, n_eff = (
         len(SCENARIO_LABELS),
@@ -532,52 +691,55 @@ def load_padded_lm_tables_intimacy(
         2,
         N_EFFORT_CONDITIONS,
     )
-    risk = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
-    effort = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
-    g = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
-    valid = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=bool)
+    risk = np.zeros((K, n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
+    effort = np.zeros((K, n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
+    g = np.zeros((K, n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
+    valid = np.zeros((K, n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=bool)
 
     rew_to_idx = {"low": int(DesireConditions.LOW), "high": int(DesireConditions.HIGH)}
     obs_to_idx = ACTION_LABEL_TO_IDX
 
-    for scenario in SCENARIO_LABELS:
-        s = SCENARIO_TO_IDX[scenario]
-        for o in range(n_o):
-            for rew in range(n_rew):
-                for e in range(n_eff):
-                    a_risk, a_effort = canon_ae[(scenario, e, o)]
-                    risk[s, o, rew, e, 0] = a_risk
-                    effort[s, o, rew, e, 0] = a_effort
-                    g[s, o, rew, e, 0] = canon_g[(scenario, o)]
-                    valid[s, o, rew, e, 0] = True
+    for k, (canon_ae, canon_g, alts_df) in enumerate(runs):
+        for scenario in SCENARIO_LABELS:
+            s = SCENARIO_TO_IDX[scenario]
+            for o in range(n_o):
+                for rew in range(n_rew):
+                    for e in range(n_eff):
+                        a_risk, a_effort = canon_ae[(scenario, e, o)]
+                        risk[k, s, o, rew, e, 0] = a_risk
+                        effort[k, s, o, rew, e, 0] = a_effort
+                        g[k, s, o, rew, e, 0] = canon_g[(scenario, o)]
+                        valid[k, s, o, rew, e, 0] = True
 
-    # Alternatives keyed by (scenario, obs, desire, effort, alt_idx); risk/effort/g
-    # read straight off the merged alts table. Unscored rows (NaN risk) skipped.
-    for _, row in alts_df.iterrows():
-        if pd.isna(row["risk"]):
-            continue
-        s = SCENARIO_TO_IDX[row["scenario_label"]]
-        o = obs_to_idx[row["observed_action"]]
-        rew = rew_to_idx[row["desire_condition"]]
-        e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        slot = int(row["alt_idx"]) + 1
-        if slot >= MAX_ACTIONS:
-            continue
-        risk[s, o, rew, e, slot] = float(row["risk"])
-        effort[s, o, rew, e, slot] = float(row["effort"])
-        g[s, o, rew, e, slot] = float(row["g"])
-        valid[s, o, rew, e, slot] = True
+        # Alternatives keyed by (scenario, obs, desire, effort, alt_idx). Unscored
+        # rows (NaN risk) skipped.
+        for _, row in alts_df.iterrows():
+            if pd.isna(row["risk"]):
+                continue
+            s = SCENARIO_TO_IDX[row["scenario_label"]]
+            o = obs_to_idx[row["observed_action"]]
+            rew = rew_to_idx[row["desire_condition"]]
+            e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
+            slot = int(row["alt_idx"]) + 1
+            if slot >= MAX_ACTIONS:
+                continue
+            risk[k, s, o, rew, e, slot] = float(row["risk"])
+            effort[k, s, o, rew, e, slot] = float(row["effort"])
+            g[k, s, o, rew, e, slot] = float(row["g"])
+            valid[k, s, o, rew, e, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid.sum(axis=-1, keepdims=True)
     prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
         np.float32
     )
+    _warn_truncation(runs, cell_cols)
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),
         "g": jnp.array(g),
         "prior": jnp.array(prior),
+        "n_runs": K,
     }
 
 
@@ -599,16 +761,19 @@ def load_padded_lm_tables_joint_ie(
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_ie"
     )
-    canonical_path = canonical_path or outputs_dir / "lm_scenario.csv"
-    alternatives_path = alternatives_path or outputs_dir / "lm_alternatives.csv"
-    required = [canonical_path, alternatives_path]
-    if any(not Path(p).exists() for p in required):
+    cell_cols = ["desire_condition", "effort_condition"]
+    if canonical_path or alternatives_path:  # explicit-path override (tests)
+        if any(not Path(p).exists() for p in (canonical_path, alternatives_path)):
+            return None
+        alts_df = pd.read_csv(alternatives_path)
+        if not _alts_ready(alts_df):
+            return None
+        runs = [(*_canonical_lookups(canonical_path), alts_df)]
+    else:
+        runs = _run_sources(outputs_dir, cell_cols)
+    if runs is None:
         return None
-
-    canon_ae, canon_g = _canonical_lookups(canonical_path)
-    alts_df = pd.read_csv(alternatives_path)
-    if not _alts_ready(alts_df):
-        return None
+    K = len(runs)
 
     n_s, n_o, n_rew, n_eff = (
         len(SCENARIO_LABELS),
@@ -616,52 +781,55 @@ def load_padded_lm_tables_joint_ie(
         2,
         N_EFFORT_CONDITIONS,
     )
-    risk = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS), dtype=np.float32)
-    effort = np.zeros((n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
-    g = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS), dtype=np.float32)
-    valid = np.zeros((n_s, n_o, n_rew, MAX_ACTIONS), dtype=bool)
+    risk = np.zeros((K, n_s, n_o, n_rew, MAX_ACTIONS), dtype=np.float32)
+    effort = np.zeros((K, n_s, n_o, n_rew, n_eff, MAX_ACTIONS), dtype=np.float32)
+    g = np.zeros((K, n_s, n_o, n_rew, MAX_ACTIONS), dtype=np.float32)
+    valid = np.zeros((K, n_s, n_o, n_rew, MAX_ACTIONS), dtype=bool)
 
     rew_to_idx = {"low": int(DesireConditions.LOW), "high": int(DesireConditions.HIGH)}
     obs_to_idx = ACTION_LABEL_TO_IDX
 
-    for scenario in SCENARIO_LABELS:
-        s = SCENARIO_TO_IDX[scenario]
-        for o in range(n_o):
-            for rew in range(n_rew):
-                for e in range(n_eff):
-                    a_risk, a_effort = canon_ae[(scenario, e, o)]
-                    effort[s, o, rew, e, 0] = a_effort
-                    if e == 0:
-                        risk[s, o, rew, 0] = a_risk
-                g[s, o, rew, 0] = canon_g[(scenario, o)]
-                valid[s, o, rew, 0] = True
+    for k, (canon_ae, canon_g, alts_df) in enumerate(runs):
+        for scenario in SCENARIO_LABELS:
+            s = SCENARIO_TO_IDX[scenario]
+            for o in range(n_o):
+                for rew in range(n_rew):
+                    for e in range(n_eff):
+                        a_risk, a_effort = canon_ae[(scenario, e, o)]
+                        effort[k, s, o, rew, e, 0] = a_effort
+                        if e == 0:
+                            risk[k, s, o, rew, 0] = a_risk
+                    g[k, s, o, rew, 0] = canon_g[(scenario, o)]
+                    valid[k, s, o, rew, 0] = True
 
-    # Alternatives keyed by (scenario, obs, desire, effort_condition, alt_idx);
-    # risk effort-marginal / g desire-free (repeated across the effort rows),
-    # read straight off the merged alts table. Unscored rows (NaN risk) skipped.
-    for _, row in alts_df.iterrows():
-        if pd.isna(row["risk"]):
-            continue
-        s = SCENARIO_TO_IDX[row["scenario_label"]]
-        o = obs_to_idx[row["observed_action"]]
-        rew = rew_to_idx[row["desire_condition"]]
-        e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        slot = int(row["alt_idx"]) + 1
-        if slot >= MAX_ACTIONS:
-            continue
-        risk[s, o, rew, slot] = float(row["risk"])
-        effort[s, o, rew, e, slot] = float(row["effort"])
-        g[s, o, rew, slot] = float(row["g"])
-        valid[s, o, rew, slot] = True
+        # Alternatives keyed by (scenario, obs, desire, effort_condition, alt_idx);
+        # risk effort-marginal / g desire-free (repeated across effort rows).
+        # Unscored rows (NaN risk) skipped.
+        for _, row in alts_df.iterrows():
+            if pd.isna(row["risk"]):
+                continue
+            s = SCENARIO_TO_IDX[row["scenario_label"]]
+            o = obs_to_idx[row["observed_action"]]
+            rew = rew_to_idx[row["desire_condition"]]
+            e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
+            slot = int(row["alt_idx"]) + 1
+            if slot >= MAX_ACTIONS:
+                continue
+            risk[k, s, o, rew, slot] = float(row["risk"])
+            effort[k, s, o, rew, e, slot] = float(row["effort"])
+            g[k, s, o, rew, slot] = float(row["g"])
+            valid[k, s, o, rew, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid.sum(axis=-1, keepdims=True)
     prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
         np.float32
     )
+    _warn_truncation(runs, cell_cols)
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),
         "g": jnp.array(g),
         "prior": jnp.array(prior),
+        "n_runs": K,
     }

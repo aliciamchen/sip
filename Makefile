@@ -145,17 +145,21 @@ lm: lm-alternatives
 # folder, so no contention). Within a study, generation must finish before
 # scoring, so those stay ordered.
 #
-# SCENARIO_WORKERS controls how many scenarios score_merged scores concurrently
-# (in-flight requests ≈ SCENARIO_WORKERS × NUM_RUNS). When parallelizing studies
-# with -j, lower it so 4 × SCENARIO_WORKERS × NUM_RUNS stays under your Together
-# tier's limit, e.g.  make -j4 lm-alternatives SCENARIO_WORKERS=1
+# SCENARIO_WORKERS controls how many (scenario, run) units score_merged scores
+# concurrently. When parallelizing studies with -j, lower it to stay under your
+# Together tier's limit, e.g.  make -j4 lm-alternatives SCENARIO_WORKERS=1
 SCENARIO_WORKERS ?= 4
+# K_RUNS = elicitation runs per cell (the simulated-observer mixture components);
+# ALT_T = generation temperature (nonzero, so runs explore different alternatives).
+# A K=1 smoke test before the full paid run:  make lm-alternatives K_RUNS=1
+K_RUNS ?= 20
+ALT_T ?= 0.7
 
 lm-alternatives: $(addprefix lm-,$(EXPERIMENTS_INVERSE))
 
 $(addprefix lm-,$(EXPERIMENTS_INVERSE)): lm-%:
-	uv run python model/lm/generate_alternatives.py --study $*
-	uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
+	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $*
+	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
 # Fits → outputs/<slug>/fit_results.csv

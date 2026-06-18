@@ -582,3 +582,49 @@ def desire_user_prompt(vignette, state, desire_object):
         f"{desire_object}, given their state? Respond with "
         '{"desire": <number>}.'
     )
+
+
+# ==============================================================================
+# Public API: relationship intimacy scalar (given-relationship studies 1a, 1b)
+# ==============================================================================
+# When intimacy is observer-visible context (the four relationship conditions),
+# the actor utility needs a numeric intimacy magnitude I ∈ [0, 1] per level. The
+# LM rates the intimacy implied by each (verbal) relationship description, the
+# mirror of the per-condition desire scalar in 2a/2b. The descriptions are
+# scenario-independent, so this is one rating per level (4 total).
+#
+# DE-ANCHORED descriptors: unlike RELATIONSHIP_DESCRIPTORS (which embed an
+# "X out of 100" anchor for the generation prompt), these give only the verbal
+# exemplars — rating an anchored descriptor would be circular (the LM would echo
+# the stated number). The verbal exemplars match what human participants see.
+RELATIONSHIP_DESCRIPTORS_NOANCHOR = {
+    "max_formal": "maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader",
+    "neither": "neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker",
+    "somewhat_intimate": "somewhat intimate — e.g., the kind of relationship one might have with a close friend",
+    "max_intimate": "maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend",
+}
+
+INTIMACY_SYSTEM_PROMPT = (
+    "You are a participant in a human study. Respond as if you were a regular "
+    "adult, just going off of your intuition.\n\n"
+    "You will read a short description of a relationship between two people. "
+    "Judge how intimate the relationship is — how much closeness, trust, and "
+    "comfort with physical, emotional, or informational openness it implies — on "
+    "a scale from 0 (maximally formal/distant) to 100 (maximally intimate). Rate "
+    "only the intimacy of the relationship itself.\n\n"
+    "Respond with a JSON object in this format only, no explanation:\n"
+    '{"intimacy": 50}'
+)
+
+
+def relationship_user_prompt(descriptor):
+    """User prompt for the relationship-intimacy rating (given-relationship
+    studies 1a/1b). `descriptor` is a de-anchored verbal relationship descriptor
+    (RELATIONSHIP_DESCRIPTORS_NOANCHOR[level]); returns one 0-100 intimacy
+    magnitude for that level."""
+    return (
+        f"The two people are in a relationship they would describe as "
+        f"{descriptor}.\n\n"
+        "On a scale from 0 to 100, how intimate is this relationship? Respond "
+        'with {"intimacy": <number>}.'
+    )

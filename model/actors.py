@@ -71,6 +71,7 @@ def actor_discrete_full_padded_desire[
     effort_table: ...,
     g_padded_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -104,6 +105,7 @@ def actor_discrete_full_padded_desire[
                 risk_table,
                 effort_table,
                 g_padded_table,
+                relationship_values,
             )
         ),
     )
@@ -125,6 +127,7 @@ def actor_discrete_discomfort_only_padded_desire[
     risk_table: ...,
     effort_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -155,6 +158,7 @@ def actor_discrete_discomfort_only_padded_desire[
                 gamma,
                 risk_table,
                 effort_table,
+                relationship_values,
             )
         ),
     )
@@ -243,6 +247,7 @@ def actor_discrete_full_padded_joint_de[
     effort_table: ...,
     g_padded_table: ...,
     prior_table: ...,
+    relationship_values: ...,
 ):
     cast: [actor]
     actor: knows(scenario_idx)
@@ -275,6 +280,7 @@ def actor_discrete_full_padded_joint_de[
                 risk_table,
                 effort_table,
                 g_padded_table,
+                relationship_values,
             )
         ),
     )
@@ -289,7 +295,15 @@ def actor_discrete_discomfort_only_padded_joint_de[
     relationship_condition: RelationshipConditions,
     desire: DesireLevels,
     effort_condition: EffortConditions,
-](alpha, w_d, gamma, risk_table: ..., effort_table: ..., prior_table: ...):
+](
+    alpha,
+    w_d,
+    gamma,
+    risk_table: ...,
+    effort_table: ...,
+    prior_table: ...,
+    relationship_values: ...,
+):
     cast: [actor]
     actor: knows(scenario_idx)
     actor: knows(observed_action)
@@ -318,6 +332,7 @@ def actor_discrete_discomfort_only_padded_joint_de[
                 gamma,
                 risk_table,
                 effort_table,
+                relationship_values,
             )
         ),
     )

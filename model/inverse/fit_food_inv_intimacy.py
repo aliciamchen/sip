@@ -1,8 +1,9 @@
 """Fit observer + actor utility weights for food_inv_intimacy.
 
 Study 2a — observer knows (desire, effort), infers intimacy. Each variant jointly
-fits its utility weights and alpha_observer from this experiment's posterior data
-(no transfer from the forward fit). Writes outputs/food_inv_intimacy/fit_results.csv.
+fits its utility weights, alpha_observer, and the response-noise sigma from this
+experiment's belief-update data (no transfer from the forward fit). Writes
+outputs/food_inv_intimacy/fit_results.json.
 """
 
 import sys
@@ -20,6 +21,8 @@ from _helpers import (  # noqa: E402
     intimacy_table_kwargs,
     load_intimacy_data,
     restart_records_to_rows,
+    write_json,
+    write_jsonl,
 )
 from observers import (  # noqa: E402
     observer_intimacy_base,
@@ -29,22 +32,19 @@ from observers import (  # noqa: E402
 
 EXPERIMENT_SLUG = "food_inv_intimacy"
 
-# (observer_fn, utility_param_names, uses_v)
+# (observer_fn, utility_param_names); which optional tables a variant needs is
+# derived from its param names inside *_table_kwargs.
 VARIANTS = {
-    "full": (observer_intimacy_full, ["w_v", "w_d", "w_e", "gamma"], True),
-    "discomfort_only": (
-        observer_intimacy_discomfort_only,
-        ["w_d", "gamma"],
-        False,
-    ),
-    "base": (observer_intimacy_base, ["w_v", "w_e"], True),
+    "full": (observer_intimacy_full, ["w_v", "w_d", "w_e", "gamma"]),
+    "discomfort_only": (observer_intimacy_discomfort_only, ["w_d", "gamma"]),
+    "base": (observer_intimacy_base, ["w_v", "w_e"]),
 }
 
 
 def main():
     print("=" * 60)
     print(f"Joint inverse fit: {EXPERIMENT_SLUG}")
-    print("Fitting utility weights + alpha_observer per variant")
+    print("Fitting utility weights + alpha_observer + sigma per variant")
     print("=" * 60)
 
     data, action, scenario_idx, desire_condition, effort_condition, response = (
@@ -53,9 +53,9 @@ def main():
 
     results = []
     restart_rows = []
-    for variant_name, (obs_fn, utility_names, uses_v) in VARIANTS.items():
+    for variant_name, (obs_fn, utility_names) in VARIANTS.items():
         print(
-            f"\n{'-' * 40}\nJointly fitting {variant_name} ({len(utility_names)} weights + alpha_observer)...\n{'-' * 40}"
+            f"\n{'-' * 40}\nJointly fitting {variant_name} ({len(utility_names)} weights + alpha_observer + sigma)...\n{'-' * 40}"
         )
         params, nll, restarts = fit_intimacy_observer_joint(
             observer_fn=obs_fn,
@@ -65,15 +65,16 @@ def main():
             desire_condition=desire_condition,
             effort_condition=effort_condition,
             response=response,
-            table_kwargs=intimacy_table_kwargs(uses_v),
+            table_kwargs=intimacy_table_kwargs(utility_names),
         )
         row = {
             "model": variant_name,
             "experiment": EXPERIMENT_SLUG,
             "nll": nll,
-            "n_params": len(utility_names) + 1,
+            "n_params": len(utility_names) + 2,
             "param_alpha": 1.0,
-            "alpha_observer": float(params[-1]),
+            "alpha_observer": float(params[-2]),
+            "param_sigma": float(params[-1]),
         }
         for i, name in enumerate(utility_names):
             row[f"param_{name}"] = float(params[i])
@@ -86,14 +87,13 @@ def main():
 
     output_dir = _project_root / "model" / "outputs" / EXPERIMENT_SLUG
     output_dir.mkdir(parents=True, exist_ok=True)
-    results_df = pd.DataFrame(results)
     print("\n" + "=" * 60 + "\nRESULTS SUMMARY\n" + "=" * 60)
-    print(results_df.to_string(index=False))
-    results_path = output_dir / "fit_results.csv"
-    results_df.to_csv(results_path, index=False)
+    print(pd.DataFrame(results).to_string(index=False))
+    results_path = output_dir / "fit_results.json"
+    write_json(results_path, results)
     print(f"\nSaved fit results to {results_path}")
-    restarts_path = output_dir / "fit_restarts.csv"
-    pd.DataFrame(restart_rows).to_csv(restarts_path, index=False)
+    restarts_path = output_dir / "fit_restarts.jsonl"
+    write_jsonl(restarts_path, restart_rows)
     print(f"Saved per-restart fits to {restarts_path}")
 
 

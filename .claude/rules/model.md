@@ -25,7 +25,9 @@ The reward term is `w_v · d · g(a)`: `d` is **desire** — how much the dyad w
 - **discomfort_only** — only the risk-discomfort term (`−w_d · risk · (1 − I)^γ`); drops the reward term and effort (Discomfort-only)
 - **base** — `w_v · d · g − w_e · effort`; no relational structure (Base model). Has no intimacy term, so γ does not apply.
 
-Parameters: `w_v` (reward weight), `w_d` (risk-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1) and `alpha_observer` (observer softmax temperature). Each ablation uses only the subset of weights its utility requires; full and discomfort_only fit γ, base does not.
+Parameters: `w_v` (reward weight), `w_d` (risk-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1), `alpha_observer` (observer softmax temperature), and `sigma` (response-noise scale, see DV likelihoods). Each ablation uses only the subset of weights its utility requires; full and discomfort_only fit γ, base does not. The fit param vector is `[*utility weights, alpha_observer, sigma]`.
+
+Intimacy magnitude `I` for the four relationship levels in the given-relationship studies (1a/1b) is **LM-elicited** (mirroring the per-condition desire scalar in 2a/2b) — a global 4-vector loaded by `load_lm_relationship_values` from `lm_given.json` and passed into the desire/joint_de observer memos as `relationship_values`, falling back to the placeholder `RELATIONSHIP_LEVEL_VALUES` until the elicitation has been run.
 
 ## Active roster (four inverse studies, padded LM-alternatives pipeline)
 
@@ -42,28 +44,31 @@ Desire is inferred as a continuous latent in 1a/1b (over the 101-bin `DesireLeve
 
 ### Per-study padded table shapes
 
-The alternative set is indexed by the **cell grid** = (scenario, observed_action, + the variables the observer sees). A feature gains an extra axis when the variable it depends on is *inferred* (the alt set is shared across that variable's hypotheses, but the feature value differs): effort gains an `effort_condition` axis when effort is inferred. `g` (goal-satisfaction) is desire-free, so it carries **no** desire axis and has the same shape as `risk` (risk is intimacy- and effort-independent so it's only indexed by the cell grid + slot). With `S = MAX_ACTIONS`:
+The alternative set is indexed by the **cell grid** = (scenario, observed_action, + the variables the observer sees). A feature gains an extra axis when the variable it depends on is *inferred* (the alt set is shared across that variable's hypotheses, but the feature value differs): effort gains an `effort_condition` axis when effort is inferred. `g` (goal-satisfaction) is desire-free, so it carries **no** desire axis and has the same shape as `risk` (risk is intimacy- and effort-independent so it's only indexed by the cell grid + slot). Every table carries a **leading run axis** `K` (one elicitation run per simulated-observer mixture component; `K=1` on the legacy single-run CSVs). With `S = MAX_ACTIONS`:
 
-- **1a desire** — risk (16,3,2,4,S), effort (16,3,2,4,S), g (16,3,2,4,S), prior (16,3,2,4,S)
-- **1b joint_de** — risk (16,3,4,S), effort (16,3,4,2,S), g (16,3,4,S), prior (16,3,4,S)
-- **2a intimacy** — risk (16,3,2,2,S), effort (16,3,2,2,S), g (16,3,2,2,S), prior (16,3,2,2,S); + `desire_table` (16,2)
-- **2b joint_ie** — risk (16,3,2,S), effort (16,3,2,2,S), g (16,3,2,S), prior (16,3,2,S); + `desire_table` (16,2)
+- **1a desire** — risk (K,16,3,2,4,S), effort (K,16,3,2,4,S), g (K,16,3,2,4,S), prior (K,16,3,2,4,S)
+- **1b joint_de** — risk (K,16,3,4,S), effort (K,16,3,4,2,S), g (K,16,3,4,S), prior (K,16,3,4,S)
+- **2a intimacy** — risk (K,16,3,2,2,S), effort (K,16,3,2,2,S), g (K,16,3,2,2,S), prior (K,16,3,2,2,S); + `desire_table` (16,2)
+- **2b joint_ie** — risk (K,16,3,2,S), effort (K,16,3,2,2,S), g (K,16,3,2,S), prior (K,16,3,2,S); + `desire_table` (16,2)
 
-### DV likelihoods
+The run axis is sliced per-run in the fit loop (`_build_observer_tables_runs`) and the observer memo is run once per run — the run axis is a likelihood-side construct, not a memo axis. `desire_table` / `relationship_values` are run-independent.
 
-- **desire** (1a, 1b) → continuous 0–100 rating. `compute_desire_nll`: NLL over the 101-bin `DesireLevels` posterior at the response bin (an exact parallel of `compute_intimacy_nll`).
-- **effort** (1b, 2b) → 0–100 continuous rating. `compute_effort_nll`: binary cross-entropy on `P(effort=HIGH)`.
-- **intimacy** (2a, 2b) → 0–100 numeric. `compute_intimacy_nll`: NLL over the 101-bin posterior at the response bin.
+### DV likelihoods (belief-update Gaussian mixture)
 
-Joint studies sum the two appropriate per-slider losses. Each study fits its own actor utility weights + `alpha_observer` from its own data — no transfer between studies.
+The DV is the **belief update** `u = posterior rating − prior rating` (per participant per trial), scored against the model's belief update. Each elicitation run k gives a model update `δ_k = posterior mean − prior mean` for the inferred latent (the posterior mean is `post @ grid`; the prior mean is computed from the uniform prior, = 0.5). A participant's update is scored under the K-component mixture `(1/K) Σ_k N(u | δ_k, σ²)`:
+
+- **desire** (1a) / **intimacy** (2a) → `mixture_nll_1d(u, deltas, sigma)`.
+- **joint** (1b desire+effort, 2b intimacy+effort) → `mixture_nll_2d`, a bivariate Gaussian per component with a **single isotropic σ** (covariance σ²·I₂); the cross-dimension correlation comes from the spread of the runs' joint `δ_k`. Effort reduces to `P(effort=HIGH)`, with `δ_effort = P(HIGH) − 0.5`.
+
+`σ` (response-noise scale) is fitted jointly with the weights + `alpha_observer`, per study. Each study fits its own actor utility weights — no transfer between studies. The fit/CV slice **slot 0** (observed action) across all K runs.
 
 ## Stimulus sets and LM table families
 
-The studies use the **3-action** set (`scenarios.csv`). All LM `risk`/`effort`/`g` ratings are on a 0-6 scale normalized to `[0, 1]` (the absolute scale is absorbed by the freely-fitted weight, so all three share one range). Each study's LM tables live in **its own folder**, `outputs/lm/<slug>/`. The padded LM-alternatives table family is loaded by `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading two CSVs from `outputs/lm/<slug>/`: the canonical `lm_scenario.csv` (risk+effort+g for the 3 canonical actions, re-scored in that study's own comparative frame — NOT shared across studies) plus that study's `lm_alternatives.csv` (the alt list with its risk/effort/g columns). The given-desire studies (2a/2b) also load `load_lm_scenario_desire(slug)` (per-condition desire scalar, (16, 2)) from the same folder.
+The studies use the **3-action** set (`scenarios.csv`). All LM `risk`/`effort`/`g` ratings are on a 0-6 scale normalized to `[0, 1]` (the absolute scale is absorbed by the freely-fitted weight, so all three share one range). Each study's LM tables live in **its own folder**, `outputs/lm/<slug>/`. The padded LM-alternatives table family is loaded by `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, which prefer `lm_runs.jsonl` — one record per `(run_id, cell)` holding that run's scored actions (slot 0 = observed canonical action, slots 1..k = alternatives) — and fall back to the legacy single-run `lm_scenario.csv` + `lm_alternatives.csv` (as `K=1`) so fits run before the JSON regeneration. The given-desire studies (2a/2b) load the per-condition desire scalar (16, 2) via `load_lm_scenario_desire(slug)`, and the given-relationship studies (1a/1b) load the per-level intimacy 4-vector via `load_lm_relationship_values(slug)` — both from `lm_given.json` (CSV/placeholder fallback).
 
-All LM table loaders return `None` when their CSV is missing, so imports stay clean before elicitation has been run.
+All LM table loaders return `None` when their source is missing, so imports stay clean before elicitation has been run.
 
-The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUNS calls across a thread pool, constrains output to a JSON schema via `response_format`, retries transient errors, and checkpoints per-scenario; new LM call sites should reuse `get_ratings_concurrent` + the schema helpers rather than calling Together directly. CSV outputs include both `n_runs_*` and `n_failures_*` columns.
+The LM call infrastructure goes through `model/lm/client.py` (`get_ratings_concurrent` + schema helpers, JSON-schema-constrained output, transient-error retries); new LM call sites should reuse it rather than calling Together directly. The K-run pipeline scores each `(scenario, run)` **once** (`num_runs=1`, no inner averaging) — the K runs are the variation axis (both alternatives and feature scores vary run-to-run), which becomes the mixture's spread.
 
 ## Layout
 
@@ -71,7 +76,7 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 
 ### Core math (one copy, shared across all experiments)
 
-- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, `load_lm_scenario_desire` (per-condition desire scalar for 2a/2b), and the per-study padded loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_scenario.csv` + `lm_alternatives.csv`).
+- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the given-magnitude scalar loaders `load_lm_scenario_desire` (2a/2b) / `load_lm_relationship_values` (1a/1b) from `lm_given.json`, and the per-study padded loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_runs.jsonl` with a leading run axis, falling back to the legacy single-run CSVs at K=1).
 - `utility.py` — jit-compiled utility functions. Active: the padded families `get_utility_{full,discomfort_only,base}_padded_{desire,joint_de,intimacy,joint_ie}` plus their `get_prior_padded_*` and `get_lm_g_padded_*` helpers (the full/base reward term is `w_v · desire · g`; the given-desire studies also take a `desire_table`).
 - `actors.py` — actor memos. Active: the padded inverse actors `actor_discrete_*_padded_{desire,joint_de}` (discrete observed intimacy) and `actor_continuous_*_padded_{intimacy,joint_ie}` (continuous inferred intimacy), used inside the observers' `thinks[...]` blocks.
 - `observers.py` — observer memos, one family per active study (`observer_desire_*`, `observer_joint_de_*`, `observer_intimacy_*`, `observer_joint_ie_*`), each in `_full` / `_discomfort_only` / `_base`.
@@ -81,36 +86,35 @@ The LM call infrastructure goes through `model/lm/client.py`, which fans NUM_RUN
 
 - `client.py` — shared LM-call infrastructure (`get_ratings_concurrent`, schema helpers, JSON parsing, `load_api_key`).
 - `prompts.py` — prompt templates; `alternatives_user_prompt` composes only the observer-visible condition paragraphs per study.
-- `generate_alternatives.py --study <slug>` — LM-generated counterfactual alternatives per cell. → `outputs/lm/<slug>/lm_alternatives.csv`. The `_STUDY_CONFIG` registry covers all four active studies; each iterates scenario × observed_action over only the observer-visible axes (cell counts: 1a 384, 1b 192, 2a 192, 2b 96).
-- `score_merged.py --study <slug>` — scores the unified [canonical + unique alts] list per scenario on risk (effort-marginal), effort (per effort_condition), and goal-satisfaction g (one desire-free prompt), so slot 0 and slots 1..k share one comparative frame. For the given-desire studies (2a, 2b) it additionally rates the per-(scenario, desire_condition) desire scalar. Writes two tables into the study's own folder `outputs/lm/<slug>/`: the canonical `lm_scenario.csv` (risk+effort+g, re-scored in that study's frame, NOT shared across studies; + `lm_scenario_desire.csv` for 2a/2b) and `lm_alternatives.csv` — the same file `generate_alternatives.py` wrote, now with the alternatives' risk/effort/g columns filled in. For studies whose observer **infers** effort (1b, 2b), each alt gets a row per effort_condition (effort is a feature axis); risk/g repeat across those rows.
-- `_features_dispatcher.py` — internal helper for `score_merged.py` (prompt formatters, 0-6 → [0,1] normalizers, response parsers).
+- `generate_alternatives.py --study <slug>` — LM-generated counterfactual alternatives per cell, repeated for **K runs** (`K_RUNS` env, default 20; nonzero `ALT_T` so runs differ; deterministic per-(cell, run) seed). → `outputs/lm/<slug>/lm_alternatives.csv` (stage-1 texts, now carrying a `run_id` column). The `_STUDY_CONFIG` registry covers all four active studies; each iterates scenario × observed_action over only the observer-visible axes (cells: 1a 384, 1b 192, 2a 192, 2b 96 — ×K runs).
+- `score_merged.py --study <slug>` — for each `(scenario, run)`, scores that run's unified [canonical + unique alts] list **once** (no inner averaging) on risk (effort-marginal), effort (per effort_condition), and desire-free goal-satisfaction g, so slot 0 and slots 1..k share one comparative frame. Writes `lm_runs.jsonl` (one record per `(run_id, cell)` with the run's scored actions) + `lm_given.json` (the study's given-magnitude scalars: per-(scenario, desire_condition) desire for 2a/2b, and/or the per-level intimacy 4-vector rated from the **de-anchored** relationship descriptors for 1a/1b — both run-independent, scored once).
+- `_features_dispatcher.py` — internal helper for `score_merged.py` (prompt formatters, 0-6 → [0,1] normalizers, response parsers incl. desire/intimacy scalar parsers).
 
-**Three design choices in merged scoring:** (1) canonical + alts scored together (shared comparative frame); (2) risk is effort-marginal — risk(a|s) is formally intimacy- and effort-independent (modulated by `(1-I)^γ` in the utility), so it's elicited without the effort paragraph and broadcast; (3) the reward term is `w_v · desire · g`, where g (goal-satisfaction) is LM-elicited desire-free per action (one prompt, no desire axis) and `desire` is the inferred latent (1a/1b) or an LM-rated per-condition scalar (2a/2b); `is_share` is preserved only as diagnostic metadata. (If the journal manuscript at `SIP_journal/main.tex` still describes a signed-valence `V`, the code is ahead of it — the code uses `w_v · desire · g`; see `docs/continuous-desire-model.md`.)
+**Three design choices in merged scoring:** (1) canonical + alts scored together (shared comparative frame); (2) risk is effort-marginal — risk(a|s) is formally intimacy- and effort-independent (modulated by `(1-I)^γ` in the utility), so it's elicited without the effort paragraph and broadcast; (3) the reward term is `w_v · desire · g`, where g (goal-satisfaction) is LM-elicited desire-free per action and `desire` is the inferred latent (1a/1b) or an LM-rated per-condition scalar (2a/2b); `is_share` is preserved only as diagnostic metadata.
 
 ### Inverse planning (`model/inverse/`)
 
 Four active experiments, each with its own `fit_<slug>.py` + `predict_<slug>.py` (thin wrappers that define the three variants and call the shared helpers).
 
-- `_helpers.py` — NLLs (`compute_intimacy_nll`, `compute_effort_nll`, `compute_desire_nll`); per-study data loaders (`load_{desire,joint_de,intimacy,joint_ie}_data`); padded table-kwargs builders (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`, all raising a clear `FileNotFoundError` until the study's LM CSVs exist); and the joint-fit helpers (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`) that build the observer table from `{utility weights, α_observer}`, slice slot 0, and minimize the study's DV loss with Adam.
-- `fit_<slug>.py` — for each ablation, jointly fits the actor utility weights + `α_observer` from this experiment's posterior data. Writes `outputs/<slug>/fit_results.csv`.
-- `predict_<slug>.py` — reads its own `fit_results.csv` via `load_fit_results`, runs the observer, writes `outputs/<slug>/preds_<variant>.npy` + a summary CSV.
+- `_helpers.py` — the belief-update Gaussian-mixture losses (`mixture_nll_1d`, `mixture_nll_2d`) + `posterior_mean` / `PRIOR_MEAN` / `EFFORT_PRIOR_MEAN`; per-study data loaders (`load_{desire,joint_de,intimacy,joint_ie}_data`, returning per-trial belief updates); padded table-kwargs builders (`{desire,joint_de,intimacy,joint_ie}_table_kwargs`, which take the variant's `utility_param_names` and derive which optional tables to include); `_build_observer_tables_runs` (runs the observer per run, stacks on a leading K axis); and the joint-fit helpers (`fit_{...}_observer_joint`) that build the K-run observer tables, slice slot 0, compute per-run δ_k, and minimize the mixture NLL (params `[*weights, alpha_observer, sigma]`) with Adam.
+- `fit_<slug>.py` — for each ablation, jointly fits the utility weights + `α_observer` + `σ` from this experiment's belief-update data. Writes `outputs/<slug>/fit_results.json` (+ `fit_restarts.jsonl`).
+- `predict_<slug>.py` — reads its own `fit_results.json` via `load_fit_results`, runs the observer across runs, writes the per-cell model belief update `delta_<latent>` to `outputs/<slug>/preds_summary.json`.
 
 ### Cross-validation (`model/cv/`)
 
-All model-vs-human correlations in the analysis qmds are out-of-sample, from leave-one-scenario-out (LOSO) CV (`outputs/<slug>/cv_preds_summary.csv`).
+The PRIMARY model-comparison metric is **per-trial held-out log-likelihood** under leave-one-scenario-out (LOSO) CV (`outputs/<slug>/cv_trial_ll.jsonl`, keyed by `subject_id` for the participant bootstrap); the condition-averaged model-vs-human correlation (`cv_preds_summary.json`) is secondary/descriptive.
 
-- `_inverse_dispatcher.py` — LOSO logic for the four inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`. Each loops over 16 scenarios, refits utility weights + `alpha_observer` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario, and computes the per-trial test loss (the study's DV loss: desire NLL over the 101-bin posterior, BCE on the 0–100 effort slider, intimacy NLL over the 101-bin posterior; joint studies sum the two).
+- `_inverse_dispatcher.py` — LOSO logic for the four inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`. Each loops over 16 scenarios, refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions.
 - `cv_<slug>.py` — one per experiment, a thin wrapper around the dispatcher main.
 
 ### Outputs (`model/outputs/`)
 
-Per `outputs/<slug>/`:
-- `fit_results.csv` — fitted parameters + AIC/BIC/r per ablation.
-- `preds_<variant>.npy`, `preds_summary.csv` — per-variant prediction arrays and a summary CSV.
-- `cv_folds.csv` — per-fold fit results from LOSO CV.
-- `cv_preds_summary.csv` — held-out per-condition summary.
+Per `outputs/<slug>/` (JSON / JSON Lines):
+- `fit_results.json` — fitted parameters per ablation (incl. `param_sigma`); `fit_restarts.jsonl` — per-restart diagnostics.
+- `preds_summary.json` — per-cell model belief update `delta_<latent>` (+ `delta_effort` for joint studies).
+- `cv_trial_ll.jsonl` — per-trial held-out log-likelihood keyed by `subject_id` (**primary** metric); `cv_preds_summary.json` — held-out per-cell `delta_*` (secondary correlation); `cv_folds.jsonl` — per-fold refit diagnostics.
 
-LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_scenario_*`, `lm_alternatives_*`). Preregistration documents are in `preregs/` at the repo root.
+LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_runs.jsonl`, `lm_given.json`). Preregistration documents are in `preregs/` at the repo root.
 
 ### Terminology
 
@@ -118,18 +122,19 @@ LM-elicited tables live in per-study folders `outputs/lm/<slug>/` (`lm_scenario_
 
 ## Commands
 
-LM tables (require `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI, 10 runs averaged). Active 3-action pipeline:
+LM tables (require `TOGETHER_API_KEY` in `.env`; Llama-3.3-70B via Together AI; `K_RUNS` elicitation runs per cell, each scored once). Active 3-action pipeline:
 
 ```bash
-# per-study LM-generated alternatives + merged scoring (one of the 4 slugs):
+# per-study LM-generated alternatives + per-run scoring (one of the 4 slugs):
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 # or all four at once (sequential), or in parallel processes:
-make lm-alternatives                               # all 4, sequential
+make lm-alternatives                               # all 4, sequential, K=20
+make lm-alternatives K_RUNS=1                      # cheap K=1 smoke test first
 make -j4 lm-alternatives SCENARIO_WORKERS=1        # 4 studies in parallel
 ```
 
-`score_merged` scores `--scenario-workers` scenarios concurrently (default 4; each still fans its `NUM_RUNS` calls out internally, so in-flight requests ≈ `scenario_workers × NUM_RUNS`). Tune to the Together tier's concurrency/RPM limit; lower it when also parallelizing studies with `-j` so `studies × scenario_workers × NUM_RUNS` stays under the cap.
+`K_RUNS` (default 20) sets the elicitation runs per cell (the mixture components); `ALT_T` (default 0.7) the generation temperature. `score_merged` scores `--scenario-workers` `(scenario, run)` units concurrently; tune to the Together tier's RPM limit, lowering it when also parallelizing studies with `-j`. After regenerating, the table loaders read `lm_runs.jsonl` automatically (no fit-code change).
 
 
 Active inverse fits + predictions + CV:

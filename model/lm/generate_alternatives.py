@@ -29,6 +29,7 @@ Requires:
 """
 
 import argparse
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -50,16 +51,15 @@ from client import MODEL_ID, load_api_key
 from prompts import alternatives_user_prompt
 
 
-# Temperature for alternative generation in the 3-act pipeline. The legacy
-# noalt pipeline (`_alternatives_dispatcher.TEMPERATURE = 1.0`) uses higher T
-# to encourage diverse phrasing, but in the 3-act setting this produces many
-# semantically-equivalent alternatives with different surface forms (e.g.
-# "cut the hot dog in half with a knife" vs "use a plastic knife to slice
-# the hot dog"), which case-insensitive dedup at the scoring stage doesn't
-# catch. T=0.2 tightens phrasing variability so dedup catches more of the
-# semantic overlap, keeping per-scenario unique-alt counts in a range the
-# rating prompt can compare reliably.
-ALT_GEN_TEMPERATURE = 0.2
+# The K-run simulated-observer pipeline: for each (scenario × condition) cell we
+# repeat the full elicitation K_RUNS times (each run = its own alternatives set +
+# feature scores), and the run-to-run spread becomes part of the model's
+# predicted distribution of human responses. Cross-run *diversity* is the point,
+# so generation uses a nonzero ALT_T (higher than the legacy single-run 0.2,
+# which was tuned to *suppress* phrasing variation for cross-cell dedup). Dedup
+# stays WITHIN a run. Both are env-overridable so the Makefile can tune them.
+N_RUNS_ALT = int(os.environ.get("K_RUNS", "20"))
+ALT_GEN_TEMPERATURE = float(os.environ.get("ALT_T", "0.7"))
 
 
 # Per-study conditioning. `show` lists which condition paragraphs the observer
@@ -113,12 +113,20 @@ def load_scenarios(study):
     return pd.read_csv(scenarios_path)
 
 
-def _cell_key(cell, cell_cols):
-    """Tuple key for resume-dedup, normalized like the output CSV row."""
+def _cell_key(cell, cell_cols, run_id=None):
+    """Tuple key for resume-dedup, normalized like the output CSV row. Includes
+    run_id so a resumed job skips completed (cell, run) units, not whole cells."""
     key = [cell["scenario_label"], cell["observed_action"]]
     for col in cell_cols:
         key.append(cell[col])
+    if run_id is not None:
+        key.append(int(run_id))
     return tuple(key)
+
+
+def _run_seed(cell, cell_cols, run_id):
+    """Deterministic per-(cell, run) seed so reruns reproduce."""
+    return (hash(_cell_key(cell, cell_cols)) ^ (int(run_id) * 0x9E3779B1)) & 0x7FFFFFFF
 
 
 def _build_cells(scenarios_df, cfg):
@@ -185,44 +193,57 @@ def main(study):
 
     cell_cols = cfg["cell_cols"]
 
-    # Resume: skip cells already in the output CSV.
-    done_cells = set()
+    # Resume: skip (cell, run) units already in the output CSV.
+    done_units = set()
     results = []
     if output_path.exists():
         existing = pd.read_csv(output_path)
-        done_cells = set(_cell_key(r, cell_cols) for _, r in existing.iterrows())
+        if "run_id" in existing.columns:
+            done_units = set(
+                _cell_key(r, cell_cols, r["run_id"]) for _, r in existing.iterrows()
+            )
         results = existing.to_dict("records")
         print(
-            f"Found existing {output_path.name} with {len(done_cells)} cells "
-            f"already elicited — resuming.",
+            f"Found existing {output_path.name} with {len(done_units)} (cell, run) "
+            f"units already elicited — resuming.",
             flush=True,
         )
 
-    # Build work list, drop done cells.
+    # Build work list as (cell, run) units, dropping done ones.
     all_cells = _build_cells(scenarios_df, cfg)
-    pending = [c for c in all_cells if _cell_key(c, cell_cols) not in done_cells]
-    total = len(all_cells)
+    pending = [
+        (c, run)
+        for c in all_cells
+        for run in range(N_RUNS_ALT)
+        if _cell_key(c, cell_cols, run) not in done_units
+    ]
+    total = len(all_cells) * N_RUNS_ALT
     print(
-        f"\n{len(pending)} cells to elicit "
-        f"(total expected: {total}; {len(done_cells)} already done).",
+        f"\n{len(pending)} (cell, run) units to elicit at T={ALT_GEN_TEMPERATURE} "
+        f"(K={N_RUNS_ALT} runs/cell; total expected: {total}; "
+        f"{len(done_units)} already done).",
         flush=True,
     )
 
     completed = 0
     with ThreadPoolExecutor(max_workers=MAX_CELL_WORKERS) as ex:
-        future_to_cell = {
+        future_to_unit = {
             ex.submit(
-                elicit_alternatives, client, c["user_prompt"], ALT_GEN_TEMPERATURE
-            ): c
-            for c in pending
+                elicit_alternatives,
+                client,
+                c["user_prompt"],
+                ALT_GEN_TEMPERATURE,
+                _run_seed(c, cell_cols, run),
+            ): (c, run)
+            for c, run in pending
         }
-        for fut in as_completed(future_to_cell):
-            cell = future_to_cell[fut]
+        for fut in as_completed(future_to_unit):
+            cell, run = future_to_unit[fut]
             alts = fut.result()
             completed += 1
             cond_str = " | ".join(f"{c}={cell[c]}" for c in cell_cols)
             print(
-                f"[{completed}/{len(pending)}] {cell['scenario_label']} | "
+                f"[{completed}/{len(pending)}] run {run} | {cell['scenario_label']} | "
                 f"observed={cell['observed_action']} | {cond_str} | "
                 f"elicited {len(alts)}",
                 flush=True,
@@ -234,6 +255,7 @@ def main(study):
                 }
                 for col in cell_cols:
                     row[col] = cell[col]
+                row["run_id"] = run
                 row["alt_idx"] = alt_idx
                 row["action_text"] = alt["action"]
                 row["is_share"] = alt["is_share"]
@@ -250,13 +272,13 @@ def main(study):
     print(f"\nSaved {len(results_df)} alternatives to {output_path}", flush=True)
 
     print("\n=== Summary ===")
-    per_cell = results_df.groupby(
-        ["scenario_label", "observed_action", *cell_cols]
+    per_unit = results_df.groupby(
+        ["scenario_label", "observed_action", *cell_cols, "run_id"]
     ).size()
-    print(f"Total cells: {len(per_cell)} (expected {total})")
+    print(f"Total (cell, run) units: {len(per_unit)} (expected {total})")
     print(
-        f"Alternatives per cell — min: {per_cell.min()}, max: {per_cell.max()}, "
-        f"mean: {per_cell.mean():.1f}, median: {per_cell.median():.0f}"
+        f"Alternatives per (cell, run) — min: {per_unit.min()}, max: {per_unit.max()}, "
+        f"mean: {per_unit.mean():.1f}, median: {per_unit.median():.0f}"
     )
 
 

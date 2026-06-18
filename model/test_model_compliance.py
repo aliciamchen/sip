@@ -17,7 +17,7 @@ import jax.numpy as jnp
 import numpy as np
 
 from observers import observer_desire_full
-from tables import MAX_ACTIONS, N_ACTIONS, SCENARIO_LABELS
+from tables import MAX_ACTIONS, N_ACTIONS, RELATIONSHIP_LEVEL_VALUES, SCENARIO_LABELS
 from utility import (
     get_utility_base_padded_desire,
     get_utility_discomfort_only_padded_desire,
@@ -56,6 +56,9 @@ def _synthetic_desire_tables():
 _CELL = (1, 0, 2, 1, 2)  # padded_slot, scenario, observed, effort, relationship
 _DESIRE = 0.6
 _ALPHA, _W_V, _W_D, _W_E, _GAMMA = 1.0, 1.2, 0.7, 0.5, 1.0
+# LM-rated intimacy magnitude per relationship level (the full/discomfort_only
+# desire utilities + observer now take this as a param; placeholder here).
+_REL = RELATIONSHIP_LEVEL_VALUES
 
 
 def test_utility_ablation_algebra():
@@ -64,7 +67,7 @@ def test_utility_ablation_algebra():
 
     u_full_wd0 = float(
         get_utility_full_padded_desire(
-            *_CELL, _DESIRE, _ALPHA, _W_V, 0.0, _W_E, _GAMMA, risk, effort, g
+            *_CELL, _DESIRE, _ALPHA, _W_V, 0.0, _W_E, _GAMMA, risk, effort, g, _REL
         )
     )
     u_base = float(
@@ -78,12 +81,12 @@ def test_utility_ablation_algebra():
 
     u_full_only = float(
         get_utility_full_padded_desire(
-            *_CELL, _DESIRE, _ALPHA, 0.0, _W_D, 0.0, _GAMMA, risk, effort, g
+            *_CELL, _DESIRE, _ALPHA, 0.0, _W_D, 0.0, _GAMMA, risk, effort, g, _REL
         )
     )
     u_disc = float(
         get_utility_discomfort_only_padded_desire(
-            *_CELL, _DESIRE, _ALPHA, _W_D, _GAMMA, risk, effort
+            *_CELL, _DESIRE, _ALPHA, _W_D, _GAMMA, risk, effort, _REL
         )
     )
     assert abs(u_full_only - u_disc) < 1e-6, (
@@ -97,12 +100,12 @@ def test_discomfort_only_invariant_to_desire():
     risk, effort, _, _ = _synthetic_desire_tables()
     u_low = float(
         get_utility_discomfort_only_padded_desire(
-            *_CELL, 0.2, _ALPHA, _W_D, _GAMMA, risk, effort
+            *_CELL, 0.2, _ALPHA, _W_D, _GAMMA, risk, effort, _REL
         )
     )
     u_high = float(
         get_utility_discomfort_only_padded_desire(
-            *_CELL, 0.9, _ALPHA, _W_D, _GAMMA, risk, effort
+            *_CELL, 0.9, _ALPHA, _W_D, _GAMMA, risk, effort, _REL
         )
     )
     assert abs(u_low - u_high) < 1e-9, (
@@ -116,7 +119,7 @@ def test_observer_desire_posterior_sums_to_one():
     (the observed canonical action), across a sample of cells."""
     risk, effort, g, prior = _synthetic_desire_tables()
     result = observer_desire_full(
-        _ALPHA, _W_V, _W_D, _W_E, _GAMMA, 1.0, risk, effort, g, prior
+        _ALPHA, _W_V, _W_D, _W_E, _GAMMA, 1.0, risk, effort, g, prior, _REL
     )
     # shape: (padded_slot, scenario, observed_action, effort, relationship, desire)
     for s in [0, 8, 15]:
