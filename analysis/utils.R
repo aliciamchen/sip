@@ -4,6 +4,7 @@ library(here)
 library(tidyverse)
 library(tidyboot)
 library(ragg)
+library(jsonlite)
 
 # Figure dimension constants for consistent sizing across all outputs
 # Use FIG_WIDTH_LARGE for 4+ facets or grids, FIG_WIDTH_STANDARD for 2-3 facets
@@ -21,7 +22,9 @@ PLOT_ALPHA <- 0.95
 INTIMACY_PALETTE <- "cividis"
 INTIMACY_BEGIN <- 0.1
 INTIMACY_END <- 0.85
-INTIMACY_LEVELS <- c(0, 50, 75, 100)
+# Intimacy is a purely verbal manipulation: the condition is stored as a slug
+# (ascending, formal -> intimate), never a numeric code.
+INTIMACY_LEVELS <- c("max_formal", "neither", "somewhat_intimate", "max_intimate")
 
 # Generate discrete intimacy colors
 INTIMACY_COLORS <- viridisLite::viridis(
@@ -32,13 +35,23 @@ INTIMACY_COLORS <- viridisLite::viridis(
 )
 names(INTIMACY_COLORS) <- as.character(INTIMACY_LEVELS)
 
-# Intimacy color scales (discrete)
+# Verbal labels for the intimacy levels (the experiment's relationship
+# descriptors; see experiments/_lib/scenario.js). Keyed by the condition slug so
+# the scales display readable text in the legend.
+INTIMACY_LABELS <- c(
+  "max_formal"        = "Maximally formal",
+  "neither"           = "Neither formal nor intimate",
+  "somewhat_intimate" = "Somewhat intimate",
+  "max_intimate"      = "Maximally intimate"
+)
+
+# Intimacy color scales (discrete) — numeric levels mapped to verbal labels
 scale_fill_intimacy <- function() {
-  scale_fill_manual(values = INTIMACY_COLORS)
+  scale_fill_manual(values = INTIMACY_COLORS, labels = INTIMACY_LABELS)
 }
 
 scale_color_intimacy <- function() {
-  scale_color_manual(values = INTIMACY_COLORS)
+  scale_color_manual(values = INTIMACY_COLORS, labels = INTIMACY_LABELS)
 }
 
 # Motivation color scales (discrete)
@@ -67,7 +80,7 @@ scale_color_effort <- function() {
 }
 
 # Combined condition colors for inv-plan-combined-correlation (desire + intimacy)
-.intimacy_levels <- c(0, 50, 75, 100)
+.intimacy_levels <- INTIMACY_LEVELS
 .intimacy_colors <- viridisLite::viridis(
   n = length(.intimacy_levels),
   begin = INTIMACY_BEGIN,
@@ -100,8 +113,8 @@ setup_analysis <- function() {
   set.seed(67)
 }
 
-# Bootstrap correlation with 95% CI
-# Used in: food-inv-intimacy-desire-alt, food-inv-desire-intimacy-alt, inv-plan-combined-correlation
+# Bootstrap correlation with 95% CI; used via format_correlation_labels in the
+# model-vs-human panels
 boot_cor <- function(x, y, n_boot = 1000) {
   complete <- complete.cases(x, y)
   x <- x[complete]
@@ -124,6 +137,23 @@ boot_cor <- function(x, y, n_boot = 1000) {
   )
 }
 
+# Read the model pipeline's JSON / JSON Lines outputs into a tibble. The model
+# code writes JSON (small structured artifacts: fit_results, *_preds_summary) and
+# JSON Lines (per-record logs: cv_trial_ll, fit_restarts). Use these to consume
+# model predictions in the model-vs-human panels:
+#   - cv_trial_ll.jsonl   — per-trial held-out log-likelihood (primary metric),
+#     keyed by subject_id (bootstrap the full-vs-ablation difference by participant)
+#   - cv_preds_summary.json / preds_summary.json — per-cell model belief update
+#     delta_<latent> (+ delta_effort for joint studies) for the model-vs-human
+#     correlation
+read_model_json <- function(path) {
+  as_tibble(jsonlite::fromJSON(path, flatten = TRUE))
+}
+
+read_model_jsonl <- function(path) {
+  as_tibble(jsonlite::stream_in(file(path), verbose = FALSE))
+}
+
 # Calculate belief updates for prior/posterior data
 # rating_col: name of the rating column (e.g., "intimacy_rating", "p_high_reward")
 calculate_belief_update <- function(df, rating_col) {
@@ -133,27 +163,37 @@ calculate_belief_update <- function(df, rating_col) {
     ungroup()
 }
 
-# Create coord_fixed with symmetric x and y limits
-# Calculates shared range from data and applies to both axes
-coord_fixed_symmetric <- function(x, y, expand = 0.06) {
-  range_val <- range(c(x, y), na.rm = TRUE)
-  padding <- diff(range_val) * expand
-  limits <- c(range_val[1] - padding, range_val[2] + padding)
-  coord_fixed(xlim = limits, ylim = limits)
+# Cluster bootstrap (resampling subjects with replacement) of per-cell means
+# for one or more update columns. Used by the joint belief-update plots in the
+# two-slider studies (food-inv-joint-de, food-inv-joint-ie), where each cell
+# needs a CI on both axes. Returns one row per group with the observed mean
+# per column plus <col>_ci_lower / <col>_ci_upper.
+boot_cluster_means <- function(df, update_cols, group_vars, n_boot = 1000) {
+  subjects <- unique(df$subject_id)
+  boot_means <- map_dfr(seq_len(n_boot), function(i) {
+    tibble(subject_id = sample(subjects, length(subjects), replace = TRUE)) |>
+      inner_join(df, by = "subject_id", relationship = "many-to-many") |>
+      group_by(across(all_of(group_vars))) |>
+      summarize(across(all_of(update_cols), \(x) mean(x, na.rm = TRUE)),
+                .groups = "drop")
+  })
+  observed <- df |>
+    group_by(across(all_of(group_vars))) |>
+    summarize(across(all_of(update_cols), \(x) mean(x, na.rm = TRUE)),
+              .groups = "drop")
+  cis <- boot_means |>
+    group_by(across(all_of(group_vars))) |>
+    summarize(
+      across(all_of(update_cols),
+             list(ci_lower = \(x) quantile(x, 0.025, na.rm = TRUE),
+                  ci_upper = \(x) quantile(x, 0.975, na.rm = TRUE))),
+      .groups = "drop"
+    )
+  left_join(observed, cis, by = group_vars)
 }
 
-# Save plot to figures directory (creates directory if needed)
-# Uses cairo_pdf for better font handling (supports Arial Nova)
-# Requires XQuartz on macOS: brew install --cask xquartz
-# Use standardized widths (10" or 12") for consistent font scaling
-save_figure <- function(plot, filename, width = 12, height = 5, ...) {
-  fig_dir <- here("figures")
-  if (!dir.exists(fig_dir)) {
-    dir.create(fig_dir, recursive = TRUE)
-  }
-  ggsave(here("figures", filename), plot = plot, width = width, height = height,
-         device = cairo_pdf, ...)
-}
+# Shared shape mapping for observed actions in the joint belief-update plots
+ACTION_SHAPES <- c("No share" = 16, "Low-risk share" = 17, "High-risk share" = 15)
 
 # Reusable jitter+dodge for risk scatter panels
 POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
@@ -209,42 +249,11 @@ format_correlation_labels <- function(df, x, y, group_vars = NULL) {
     select(-boot_result)
 }
 
-# Add AIC and (optionally) BIC columns to a fit-results table.
-# n_obs: required for BIC; if NULL, only AIC is added.
-add_aic_bic <- function(fit_results, n_obs = NULL) {
-  out <- fit_results |>
-    mutate(AIC = 2 * n_params + 2 * nll)
-  if (!is.null(n_obs)) {
-    out <- out |> mutate(BIC = n_params * log(n_obs) + 2 * nll)
-  }
-  out
-}
-
-# One-shot model-comparison kable for the inverse-planning notebooks.
-# Computes AIC (if absent), delta_AIC from the min, and renders a kable
-# with the standard column ordering and labels.
-kable_aic_table <- function(fit_results,
-                            caption = "Model comparison (lower AIC is better)",
-                            model_col = "model_label",
-                            model_col_label = "Model") {
-  if (!"AIC" %in% names(fit_results)) {
-    fit_results <- add_aic_bic(fit_results)
-  }
-  fit_results |>
-    mutate(delta_AIC = AIC - min(AIC)) |>
-    select(all_of(model_col), nll, n_params, AIC, delta_AIC) |>
-    arrange(AIC) |>
-    knitr::kable(
-      digits = 2,
-      caption = caption,
-      col.names = c(model_col_label, "NLL", "n_params", "AIC", "ΔAIC")
-    )
-}
-
 # Rescale a tidyboot summary (empirical_stat, ci_lower, ci_upper) by `scale`
-# and rename empirical_stat to belief_update. Default scale = 100 maps
-# 0-100 ratings to 0-1 belief updates.
-rescale_belief_update <- function(df, scale = 100) {
+# and rename empirical_stat to belief_update. DV ratings are now stored on the
+# 0-1 scale (belief updates already fall in [-1, 1]), so the default scale = 1 is
+# an identity; pass scale = 100 only for legacy 0-100 ratings.
+rescale_belief_update <- function(df, scale = 1) {
   df |>
     mutate(
       belief_update = empirical_stat / scale,

@@ -17,7 +17,7 @@ setup_analysis()
 
 # Study 1a — Desire inference
 
-Observer infers the actors' desire from a single observed action, given known effort and intimacy. Design: 2 (effort: low / high) × 4 (intimacy: 0 / 50 / 75 / 100) × 3 (observed action). The desire DV is a continuous 0–100 rating ("how much do they want to eat the food?", from "not at all" to "extremely"). The model's observer reasons over an LM-generated alternative-action set per cell (see `model/lm/generate_alternatives.py`).
+Observer infers the actors' desire from a single observed action, given known effort and intimacy. Design: 2 (effort: low / high) × 4 (intimacy: 0 / 50 / 75 / 100) × 3 (observed action). The desire DV is a continuous rating ("how much would they like to eat the food?", from "not at all" to "extremely"), collected on a 0–100 slider and stored on the 0–1 scale. The model's observer reasons over an LM-generated alternative-action set per cell (see `model/lm/generate_alternatives.py`).
 
 **Status:** Scaffolding stub. The original pilot — which used a 0–100
 "probability of two states" desire slider — is archived at
@@ -51,17 +51,57 @@ if (file.exists(data_path)) {
 
 ## Belief update
 
-```{r belief-update, eval=FALSE}
-# Desire DV is a continuous 0-100 rating; belief update = posterior - prior on the 0-100 scale.
-# Uses calculate_belief_update() from utils.R on the response column.
+The desire DV is a continuous rating on the 0–1 scale; the belief update is
+posterior − prior on that scale (so it falls in [−1, 1]), via
+`calculate_belief_update()`, aggregated by observed action × intimacy × effort
+with a bootstrap 95% CI.
+
+```{r belief-update}
+#| fig-width: 11
+#| fig-height: 5.5
+if (exists("df")) {
+  bu <- calculate_belief_update(df, "response") |>
+    filter(stage == "posterior") |>
+    mutate(
+      action = factor(action_condition,
+                      levels = c("no_share", "low_risk_share", "high_risk_share"),
+                      labels = c("No share", "Low-risk share", "High-risk share")),
+      intimacy = factor(intimacy, levels = INTIMACY_LEVELS),
+      effort = factor(effort, levels = c("low", "high"),
+                      labels = c("Low effort", "High effort"))
+    )
+
+  agg <- bu |>
+    group_by(action, intimacy, effort) |>
+    tidyboot_mean(column = belief_update) |>
+    ungroup()
+
+  pd <- position_dodge(width = 0.3)
+  p <- ggplot(agg, aes(action, empirical_stat, color = intimacy, linetype = effort,
+                       group = interaction(intimacy, effort))) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+    geom_line(position = pd, linewidth = 0.8) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0,
+                  position = pd, alpha = 0.7) +
+    geom_point(position = pd, size = 2.4) +
+    scale_color_intimacy() +
+    labs(
+      title = "Desire belief update by action, intimacy, and effort",
+      x = "Observed action", y = "Belief update",
+      color = "Intimacy", linetype = "Effort of low-risk share"
+    )
+  print(p)
+} else {
+  cat("No data yet for food_inv_desire.\n")
+}
 ```
 
 ## Model predictions
 
 ```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.csv")
+preds_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.json")
 if (file.exists(preds_path)) {
-  preds <- read_csv(preds_path, show_col_types = FALSE)
+  preds <- read_model_json(preds_path)
   glimpse(preds)
 } else {
   cat("No CV predictions yet — run `make cv-food_inv_desire` once a fit + data exist.\n")
@@ -72,7 +112,8 @@ if (file.exists(preds_path)) {
 
 ```{r model-vs-human, eval=FALSE}
 # TODO: wire up once both data and model predictions exist.
-# Model predicts P(high desire); map to the 0-100 rating via pred_desire = 100 * P(high).
+# Model predicts a posterior over the 0–1 desire grid; the predicted rating is its
+# mean (0–1 scale), matching the human DV.
 # Standard pattern: aggregate human + model by cell, scatter, bootstrap Pearson.
 ```
 

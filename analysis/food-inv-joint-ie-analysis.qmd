@@ -47,18 +47,74 @@ if (file.exists(data_path)) {
 
 ## Belief update
 
-```{r belief-update, eval=FALSE}
-# Compute belief update (posterior - prior) per (subject, scenario)
-# Uses calculate_belief_update() from utils.R with the appropriate rating column.
-# TODO: fill in the right rating column once data lands. Currently expected: intimacy_rating + p_effort_high_rating
+Each trial yields two belief updates (posterior − prior): intimacy on the
+numeric scale and effort on the paragraph-endpoint scale, where higher values
+mean the low-risk share option takes more effort. Both ratings are collected on
+0–100 sliders and stored on the 0–1 scale, so updates fall in [−1, 1]. The
+joint plot below shows the mean update per observed action × given desire cell,
+with crosshairs giving 95% cluster-bootstrap CIs (resampling subjects) on each
+axis.
+
+```{r belief-update}
+#| fig-width: 11
+#| fig-height: 7
+if (exists("df")) {
+  bu <- df |>
+    calculate_belief_update("intimacy_rating") |>
+    rename(intimacy_update = belief_update) |>
+    calculate_belief_update("effort_rating") |>
+    rename(effort_update = belief_update) |>
+    filter(stage == "posterior") |>
+    mutate(
+      action = factor(action_condition,
+                      levels = c("no_share", "low_risk_share", "high_risk_share"),
+                      labels = c("No share", "Low-risk share", "High-risk share")),
+      desire = factor(desire, levels = c("low", "high"), labels = c("Low", "High"))
+    )
+
+  agg <- boot_cluster_means(bu, c("intimacy_update", "effort_update"),
+                            c("action", "desire"))
+
+  # Symmetric, origin-centered, equal x/y limits (a vector plot needs equal units
+  # on both axes), including the crosshair CI extents.
+  lim <- max(abs(c(agg$intimacy_update, agg$effort_update,
+                   agg$intimacy_update_ci_lower, agg$intimacy_update_ci_upper,
+                   agg$effort_update_ci_lower, agg$effort_update_ci_upper)),
+             na.rm = TRUE) * 1.08
+
+  p <- ggplot(agg, aes(intimacy_update, effort_update,
+                       color = desire, shape = action)) +
+    geom_hline(yintercept = 0, linetype = "dotted", color = "grey70") +
+    geom_vline(xintercept = 0, linetype = "dotted", color = "grey70") +
+    geom_segment(aes(xend = intimacy_update, yend = effort_update), x = 0, y = 0,
+                 alpha = 0.6, linewidth = 0.5) +
+    geom_errorbar(aes(ymin = effort_update_ci_lower, ymax = effort_update_ci_upper),
+                  width = 0, alpha = 0.7) +
+    geom_errorbar(aes(xmin = intimacy_update_ci_lower, xmax = intimacy_update_ci_upper),
+                  width = 0, alpha = 0.7, orientation = "y") +
+    geom_point(size = 3) +
+    scale_color_desire() +
+    scale_shape_manual(values = ACTION_SHAPES) +
+    coord_fixed() +
+    labs(
+      title = "Joint belief update by action and given desire",
+      subtitle = "Color = given desire, shape = observed action; crosshairs 95% cluster-bootstrap CIs",
+      x = "Intimacy belief update",
+      y = "Effort belief update (low-risk share)",
+      color = "Desire", shape = "Observed action"
+    )
+  print(p)
+} else {
+  cat("No data yet for food_inv_joint_ie.\n")
+}
 ```
 
 ## Model predictions
 
 ```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_joint_ie", "cv_preds_summary.csv")
+preds_path <- here::here("model", "outputs", "food_inv_joint_ie", "cv_preds_summary.json")
 if (file.exists(preds_path)) {
-  preds <- read_csv(preds_path, show_col_types = FALSE)
+  preds <- read_model_json(preds_path)
   glimpse(preds)
 } else {
   cat("No CV predictions yet — run `make cv-food_inv_joint_ie` once a fit + data exist.\n")

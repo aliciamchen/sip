@@ -56,9 +56,9 @@ if (file.exists(data_path)) {
 ## Model predictions
 
 ```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_intimacy", "cv_preds_summary.csv")
+preds_path <- here::here("model", "outputs", "food_inv_intimacy", "cv_preds_summary.json")
 if (file.exists(preds_path)) {
-  preds <- read_csv(preds_path, show_col_types = FALSE)
+  preds <- read_model_json(preds_path)
   glimpse(preds)
 } else {
   cat("No CV predictions yet — run `make cv-food_inv_intimacy` once a forward fit + data exist.\n")
