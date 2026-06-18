@@ -59,11 +59,13 @@ from _helpers import (  # noqa: E402
     joint_de_table_kwargs,
     joint_ie_table_kwargs,
     load_desire_data,
+    load_fit_results,
     load_intimacy_data,
     load_joint_de_data,
     load_joint_ie_data,
     mixture_nll_1d,
     mixture_nll_2d,
+    params_dict_to_array,
     write_json,
     write_jsonl,
 )
@@ -98,9 +100,11 @@ EFFORT_PRIOR_MEAN_F = float(EFFORT_PRIOR_MEAN)  # 2-state effort prior mean (= 0
 # stores intimacy_condition as a slug — never a numeric code).
 INTIMACY_IDX_TO_LEVEL = dict(enumerate(INTIMACY_CONDITIONS))
 N_ACTIONS = int(len(actions))
-# Multi-start restarts per fold refit — lower than the full fits' default of 5
-# to keep 16 folds x 3 variants x 4 studies tractable.
-N_RESTARTS_CV = 3
+# Restarts per fold refit. Each refit warm-starts from the full-data fit (see
+# `full_fit` below) — a leave-one-scenario-out refit only perturbs it slightly —
+# so a single restart from that warm init converges fast and reliably, replacing
+# the old 3 cold restarts. Falls back to a cold start if no full fit exists.
+N_RESTARTS_CV = 1
 
 
 # Per-variant (observer_fn, utility_param_names). Each registry pairs one of the
@@ -223,11 +227,24 @@ def _loso_intimacy(slug):
     effort_np = np.asarray(effort_condition)
     response_np = np.asarray(response)
     subject_ids = np.asarray(data["subject_id"].values)
+    # Warm-start source: the full-data fit (refits perturb it only slightly).
+    full_fit = (
+        load_fit_results(slug)
+        if (
+            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+        ).exists()
+        else {}
+    )
 
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_INTIMACY.items():
         tk = intimacy_table_kwargs(utility_names)
+        warm = (
+            params_dict_to_array(full_fit[variant], utility_names)
+            if variant in full_fit
+            else None
+        )
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -246,6 +263,7 @@ def _loso_intimacy(slug):
                 table_kwargs=tk,
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
+                init_params=warm,
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, desire, effort, intimacy_101)
@@ -339,11 +357,24 @@ def _loso_desire(slug):
     rel_np = np.asarray(relationship_condition)
     response_np = np.asarray(response)
     subject_ids = np.asarray(data["subject_id"].values)
+    # Warm-start source: the full-data fit (refits perturb it only slightly).
+    full_fit = (
+        load_fit_results(slug)
+        if (
+            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+        ).exists()
+        else {}
+    )
 
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_DESIRE.items():
         tk = desire_table_kwargs(utility_names)
+        warm = (
+            params_dict_to_array(full_fit[variant], utility_names)
+            if variant in full_fit
+            else None
+        )
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -362,6 +393,7 @@ def _loso_desire(slug):
                 table_kwargs=tk,
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
+                init_params=warm,
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
@@ -460,11 +492,24 @@ def _loso_joint_de(slug):
     rd_np = np.asarray(response_desire)
     re_np = np.asarray(response_effort)
     subject_ids = np.asarray(data["subject_id"].values)
+    # Warm-start source: the full-data fit (refits perturb it only slightly).
+    full_fit = (
+        load_fit_results(slug)
+        if (
+            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+        ).exists()
+        else {}
+    )
 
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_DE.items():
         tk = joint_de_table_kwargs(utility_names)
+        warm = (
+            params_dict_to_array(full_fit[variant], utility_names)
+            if variant in full_fit
+            else None
+        )
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -483,6 +528,7 @@ def _loso_joint_de(slug):
                 table_kwargs=tk,
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
+                init_params=warm,
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)
@@ -582,11 +628,24 @@ def _loso_joint_ie(slug):
     ri_np = np.asarray(response_intimacy)
     re_np = np.asarray(response_effort)
     subject_ids = np.asarray(data["subject_id"].values)
+    # Warm-start source: the full-data fit (refits perturb it only slightly).
+    full_fit = (
+        load_fit_results(slug)
+        if (
+            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+        ).exists()
+        else {}
+    )
 
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_IE.items():
         tk = joint_ie_table_kwargs(utility_names)
+        warm = (
+            params_dict_to_array(full_fit[variant], utility_names)
+            if variant in full_fit
+            else None
+        )
         for fold in range(N_SCENARIOS):
             scenario_label = SCENARIO_LABELS[fold]
             train_mask = scenario_idx_np != fold
@@ -605,6 +664,7 @@ def _loso_joint_ie(slug):
                 table_kwargs=tk,
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
+                init_params=warm,
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)

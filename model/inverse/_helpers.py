@@ -96,19 +96,28 @@ def _fit_multistart(
     max_steps=1000,
     verbose=True,
     label="",
+    init_params=None,
 ):
     """Run `_fit_with_adam` from several inits and keep the best final NLL.
 
-    Inits are the canonical all-ones vector plus `n_restarts - 1` seeded
-    lognormal(0, 0.5) draws (positive, centered at 1, deterministic via
-    `default_rng(0)`), guarding against local minima from the gamma power law.
+    Without `init_params`, inits are the canonical all-ones vector plus
+    `n_restarts - 1` seeded lognormal(0, 0.5) draws (positive, centered at 1,
+    deterministic via `default_rng(0)`), guarding against local minima from the
+    gamma power law. When `init_params` is given (a warm start — e.g. CV refits
+    seeded from the full-data fit, which a leave-one-scenario-out refit only
+    perturbs slightly), it is the first init, and only `n_restarts - 1` cold
+    draws are added; with `n_restarts=1` the fit is a single warm start.
 
     Returns (best_params, best_nll, records) where `records` is one dict per
     restart {restart, init, final_params, nll} for stability auditing.
     """
     rng = np.random.default_rng(0)
-    inits = [jnp.ones(n_params)]
-    for _ in range(max(0, n_restarts - 1)):
+    inits = [
+        jnp.asarray(init_params, dtype=jnp.float32)
+        if init_params is not None
+        else jnp.ones(n_params)
+    ]
+    while len(inits) < n_restarts:
         inits.append(jnp.array(rng.lognormal(mean=0.0, sigma=0.5, size=n_params)))
 
     best_params, best_nll = None, float("inf")
@@ -673,6 +682,7 @@ def fit_intimacy_observer_joint(
     max_steps=1000,
     verbose=True,
     n_restarts=5,
+    init_params=None,
 ):
     """Study 2a — joint fit of utility weights + α_observer + σ on the intimacy
     belief update via the K-run Gaussian mixture.
@@ -706,6 +716,7 @@ def fit_intimacy_observer_joint(
         loss_fn,
         n_params=len(utility_param_names) + 2,
         n_restarts=n_restarts,
+        init_params=init_params,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
@@ -727,6 +738,7 @@ def fit_desire_observer_joint(
     max_steps=1000,
     verbose=True,
     n_restarts=5,
+    init_params=None,
 ):
     """Study 1a — joint fit of utility weights + α_observer + σ on the desire
     belief update via the K-run Gaussian mixture.
@@ -760,6 +772,7 @@ def fit_desire_observer_joint(
         loss_fn,
         n_params=len(utility_param_names) + 2,
         n_restarts=n_restarts,
+        init_params=init_params,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
@@ -781,6 +794,7 @@ def fit_joint_de_observer_joint(
     max_steps=1000,
     verbose=True,
     n_restarts=5,
+    init_params=None,
 ):
     """Study 1b — joint fit of utility weights + α_observer + σ on the joint
     (desire, effort) belief update via the K-run bivariate Gaussian mixture
@@ -824,6 +838,7 @@ def fit_joint_de_observer_joint(
         loss_fn,
         n_params=len(utility_param_names) + 2,
         n_restarts=n_restarts,
+        init_params=init_params,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
@@ -845,6 +860,7 @@ def fit_joint_ie_observer_joint(
     max_steps=1000,
     verbose=True,
     n_restarts=5,
+    init_params=None,
 ):
     """Study 2b — joint fit of utility weights + α_observer + σ on the joint
     (intimacy, effort) belief update via the K-run bivariate Gaussian mixture
@@ -888,6 +904,7 @@ def fit_joint_ie_observer_joint(
         loss_fn,
         n_params=len(utility_param_names) + 2,
         n_restarts=n_restarts,
+        init_params=init_params,
         lr=lr,
         max_steps=max_steps,
         verbose=verbose,
