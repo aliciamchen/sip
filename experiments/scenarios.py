@@ -20,10 +20,6 @@ The 3 actions per scenario are:
   action text.
 - `high_risk_share` = the high-risk sharing action.
 
-The earlier 4-action canonical, 2-action effort, and non-food stimulus sets are
-archived under `experiments/legacy/` (`scenarios.py`, `scenarios_effort.py`,
-`scenarios_nonfood.py`).
-
 Edit this file to change scenarios; the CSV is a generated artifact.
 Regenerate with: `uv run python experiments/scenarios.py`
 """
@@ -72,11 +68,11 @@ rows = [
         name_1="Mitchell",
         vignette="Lio and Mitchell are at a birthday party. The cake served is a dark chocolate cake with a raspberry sauce. After everyone sings happy birthday, the birthday person cuts the cake into slices and puts the slices on plates with forks. The slices are really large, and Lio and Mitchell both don't think they can finish a full slice.",
         desire_object="the cake",
-        desire_low="Lio feels neutral about dark chocolate raspberry cake, while Mitchell really likes it.",
+        desire_low="Lio and Mitchell both feel neutral about dark chocolate raspberry cake.",
         desire_high="Lio and Mitchell both really like dark chocolate raspberry cake.",
         low_risk_share_effort_low="Extra forks and empty plates have been laid out on the cake table for anyone who wants to share a slice.",
         low_risk_share_effort_high="All the extra forks and plates have already been cleared back to the kitchen, and getting them would require walking to the kitchen and looking through the cabinets.",
-        no_share="Lio does not eat any cake. Mitchell eats the portion of one slice that he can finish, and then throws the rest away.",
+        no_share="Neither Lio nor Mitchell takes a slice of cake, since neither wants to take a whole large slice they can't finish.",
         low_risk_share="They decide to share one slice. They get an extra fork and plate, cut the slice in half, put each half on its own plate, and each eat their own half.",
         high_risk_share="They decide to share one slice, and share the single fork provided to eat the slice together from the same plate.",
     ),
@@ -86,11 +82,11 @@ rows = [
         name_1="Dana",
         vignette="Allison and Dana meet at a brunch restaurant together on Saturday morning. They each select their own dishes and then discuss what else to order. One intriguing choice is to also order a stack of the restaurant's famous pancakes, to eat for dessert after they eat their main dishes. They decide to wait until they have finished their main dishes, to decide whether to order the pancakes.",
         desire_object="the pancakes",
-        desire_low="After eating their main dishes, Allison is mostly full, while Dana is still hungry.",
+        desire_low="After eating their main dishes, they are both pretty full.",
         desire_high="After eating their main dishes, they are both still hungry.",
         low_risk_share_effort_low="There is a box of extra utensils on their table.",
         low_risk_share_effort_high="To get extra utensils, they would need to walk to the utensils station on the opposite side of the restaurant.",
-        no_share="Dana orders the pancakes for herself. She eats from the stack, and when she gets full she asks for a box so that she can take the remaining portion home.",
+        no_share="They decide not to order the pancakes.",
         low_risk_share="They order the pancakes. They get extra utensils and use them to cut portions of the stack onto their own plates and eat from their own plates.",
         high_risk_share="They order the pancakes. They use their own utensils, which they have already eaten with, to eat directly from the shared stack.",
     ),
@@ -100,11 +96,11 @@ rows = [
         name_1="Elizabeth",
         vignette="Emily and Elizabeth are at a conference for work. After a long day of events, they get back to the conference hotel. It is late and all the nearby places are closed, so they decide to order chicken tenders delivered to the hotel. When they open the bag, they see that the restaurant has only included one container of honey mustard dipping sauce. They look in the bag and see if the restaurant has included anything else, and see that the restaurant has included several ketchup packets.",
         desire_object="the honey mustard sauce",
-        desire_low="Elizabeth likes both ketchup and honey mustard, while Emily prefers honey mustard sauce to ketchup.",
+        desire_low="Neither Emily nor Elizabeth minds whether they use ketchup or honey mustard.",
         desire_high="Both Emily and Elizabeth prefer honey mustard sauce to ketchup.",
         low_risk_share_effort_low="The takeout came with extra sauce containers that they can use to pour out and divide the sauce.",
         low_risk_share_effort_high="The takeout didn't come with extra sauce containers or a surface they can pour the sauce onto, so to get them they need to go to the hotel restaurant downstairs.",
-        no_share="Emily and Elizabeth do not share the honey mustard sauce. Emily dips from the honey mustard sauce container, while Elizabeth uses the ketchup packets.",
+        no_share="Emily and Elizabeth each use the ketchup packets and leave the single honey mustard container unopened.",
         low_risk_share="They get a sauce container and pour half of the honey mustard into it so that each person has their own dipping portion. Each person only dips from their own portion.",
         high_risk_share="They both dip their own chicken tenders into the single honey mustard container, double-dipping the same tenders back into the sauce after each bite.",
     ),
@@ -112,15 +108,15 @@ rows = [
         scenario_label="cooking",
         name_0="Liana",
         name_1="Serina",
-        vignette="Liana and Serina are both major foodies who love cooking. They go to Serina's house in the evening to cook a new pasta recipe together. They plan to enjoy their dinner while watching an episode of a TV show in the living room.",
+        vignette="Liana and Serina are both major foodies who love cooking. They spend the evening cooking a big batch of a new pasta recipe to bring to an event the next day. While the pasta is still warm, they consider eating some for their own dinner tonight.",
         desire_object="the pasta",
-        desire_low="When the pasta is done, Serina realizes that she doesn't particularly want to eat the pasta anymore.",
-        desire_high="When the pasta is done, it looks so good that they both want to dig in immediately.",
+        desire_low="Neither of them is particularly hungry, so they don't especially feel like having any of it tonight.",
+        desire_high="The pasta smells amazing and they're both hungry, so they're both tempted to have some tonight.",
         low_risk_share_effort_low="There are clean plates and a clean serving spoon in the cabinets, ready to use.",
         low_risk_share_effort_high="All the plates and the serving spoon are mid-cycle in the dishwasher — getting them out clean would require waiting for the cycle to finish.",
-        no_share="Liana and Serina watch the TV show in the living room, but they do not share the pasta. Liana eats the pasta while Serina eats a boxed salad from the fridge.",
-        low_risk_share="They get clean plates and a serving spoon, use the spoon to transfer pasta from the pot onto their individual plates, and carry their plates to the living room to eat with their own forks.",
-        high_risk_share="They bring the pot to the living room and eat the pasta together by taking bites directly from the shared pot.",
+        no_share="Liana and Serina don't have any pasta themselves tonight; they keep the whole batch for the party and each have a boxed salad from the fridge instead.",
+        low_risk_share="They get clean plates and a serving spoon, use the spoon to serve some pasta from the pot onto their individual plates, and carry their plates to the living room to eat with their own forks.",
+        high_risk_share="They spoon a shared portion from the pot into a single bowl and both eat from that bowl together with the same fork.",
     ),
     dict(
         scenario_label="apples",
