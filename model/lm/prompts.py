@@ -61,9 +61,7 @@ _PREAMBLE_RATING = (
 
 
 def _intro_line():
-    """Build the 'You will see a set of alternative actions ...' intro line.
-
-    Each scoring call covers a single scenario, so the wording is singular. The
+    """Build the 'You will see a set of alternative actions ...' intro line. The
     scored action set is variable-length: the LM sees the observed action plus
     however many alternatives that run generated.
     """
@@ -72,11 +70,8 @@ def _intro_line():
 
 def _json_format_block():
     """Build the trailing 'Respond with your numerical ratings ...' block.
-
     The example illustrates only the JSON shape for 3 actions; the real call has
-    as many keys as actions given. The values are shown as `<number>`
-    placeholders rather than concrete digits so the example cannot anchor the
-    ratings.
+    as many keys as actions given.
     """
     return """Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Use whatever values your judgments warrant. The example below shows only the format (one key per action), not suggested values. Example for 3 actions:
 {"action_0": <number>, "action_1": <number>, "action_2": <number>}"""
@@ -139,17 +134,17 @@ _RISK_BODY = """In this survey, you will read a vignette about two people in a s
 For each action, evaluate how much it makes one person interpersonally vulnerable to the other — how much it exposes them, opens them up, or lowers the boundary between them, letting something normally kept to oneself pass from one person's side to the other. This interpersonal vulnerability can take multiple forms, and a single action may involve more than one:
 
 - Bodily / substance exposure: bodily substances (saliva, breath, skin oils, sweat) from one person reach the other, either directly or via a shared vessel or item that's been on the first person's body. Even brief contact counts — the substance doesn't have to remain visible for the exposure to be real.
-- Physical contact or shared space: the two people's bodies physically touch, or they share close physical space — sustained proximity within a bounded space such as a bed, blanket, small room, or vehicle. The extent of contact or proximity and the body region involved both matter — brief incidental touch or passing nearness is a small exposure; sustained skin contact, sharing a confined space, or contact with body regions normally restricted to close relationships is a large one.
-- Private or emotional disclosure: private, sensitive, or emotional information (personal details, or feelings one would not voice publicly), or access to personal resources (a private space, a personal item, a confidential record), from one person becomes accessible to the other — content or access someone would not grant a stranger or a passing acquaintance.
+- Physical contact or shared space: the two people's bodies physically touch, or they share close physical space — sustained proximity within a bounded space such as a bed, blanket, small room, or vehicle. The extent of contact or proximity and the body region involved both matter — brief incidental touch or passing nearness is a small exposure; sustained skin contact, sharing a confined space, or contact with normally restricted body regions is a large one.
+- Private or emotional disclosure: private, sensitive, or emotional information (personal details, or feelings one would not voice publicly), or access to personal resources (a private space, a personal item, a confidential record), from one person becomes accessible to the other.
 
-Co-presence without substance transfer, contact, close shared space, or disclosure does NOT by itself make one person vulnerable to the other — for example, two people each handling their own separate utensils, sitting apart in a large or public room, or keeping a conversation to surface-level topics. These should be rated near zero.
+Here we are asking what the action does, in terms of the interpersonal risk or vulnerablility it creates, independent of the relationship between the two people.
 
-Rate the interpersonal vulnerability the action itself creates — the exposure, contact, or disclosure involved — not how intimate or awkward it would feel. Here we are asking what the action does, independent of their relationship.
+Co-presence without substance transfer, contact, close shared space, or disclosure does NOT by itself make one person vulnerable to the other — for example, two people each handling their own separate utensils, sitting close together in a public space like an elevator, or keeping a conversation to surface-level topics. These should be rated near zero.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No interpersonal vulnerability (the two people stay fully separate; no exchange of substance, no contact or shared space, no disclosure)
-3 = Limited or indirect vulnerability (e.g. using a shared item after cleaning or with a barrier, sitting near each other without touching, sharing surface-level information anyone could ask about)
-6 = Strong, direct vulnerability (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, sharing a bed or other close confined space, or disclosing private details one would not tell a stranger)"""
+0 = No interpersonal vulnerability (the two people stay fully separate; no exchange of substance, no contact or shared interpersonal space, no disclosure)
+3 = Limited or indirect vulnerability
+6 = Strong, direct vulnerability (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, sharing a bed or other close confined space, or disclosing private details)"""
 
 
 # _EFFORT_BODY is grounded in the Naïve Utility Calculus (NUC) framework
@@ -197,9 +192,9 @@ For each action, evaluate the *physical* cost the actor would weigh against the 
 Do NOT rate social awkwardness, relational discomfort, or how intimate or appropriate the action would feel — those are separate dimensions that we are not asking about here. Here we want only the physical effort of carrying the action out.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No physical effort (acting independently or doing the simplest direct thing — no bodily work beyond the basic motion, no extra items, no waiting)
+0 = No physical effort (no bodily work, no extra items, no waiting)
 3 = Moderate physical effort (a few bodily steps, such as setting out a clean utensil, dividing a portion, or briefly waiting; or a small handful of extra items to obtain)
-6 = High physical effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, preparing food from scratch, or cleaning and assembling many separate items)"""
+6 = High physical effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, waiting for a long time, or cleaning and assembling many separate items)"""
 
 
 # Per-rating-type instructions used in the user prompt (the line just above
@@ -229,7 +224,7 @@ _USER_INSTRUCTIONS = {
 # Splitting desire this way is what lets desire be inferred as a continuous
 # latent: g is a stable, elicitable property of the action, while desire is the
 # free quantity the observer recovers (or, in the given-desire studies, the
-# scalar rated by `desire_user_prompt`). g replaces the old signed-valence V.
+# scalar rated by `desire_user_prompt`).
 _G_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
 For each action, evaluate how fully it results in the two people ending up with the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Do not let how much the people would like it, the physical effort involved, or how "shared" or close the action looks change this rating — those are separate dimensions that we are not asking about here, and an action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route.
@@ -239,7 +234,7 @@ An action that ends with both people getting and consuming the thing should be r
 Use this scale from 0 to 6 (continuous values allowed):
 0 = The thing is not obtained (the action forgoes or abandons it)
 3 = Partially obtained (a reduced portion, only one person, or an incomplete version)
-6 = Fully obtained (both people end up getting and consuming the thing)"""
+6 = Fully obtained (both people end up getting or consuming the thing)"""
 
 
 _BODIES = {
@@ -333,18 +328,18 @@ ALTERNATIVES_SYSTEM_PROMPT = (
     + "\n\n"
     + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
-Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between. The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
+Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between.
 
-Aim for a small, focused set — typically 3 to 5 strong alternatives. Up to 10 is allowed only if you're confident each one is salient. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. Better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
+The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
 
-For each alternative, tag it with is_share ∈ {0, 1}:
-- is_share = 1 if both people end up engaging with the shared resource together (whether through divided portions, shared use of the same item, shared physical space, or mutual disclosure of information)
-- is_share = 0 if only one person engages with it, or neither does (e.g. refusing, abandoning the resource, one person handling it entirely alone, or keeping the topic off-limits)
+Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, or sharing the same physical space. The options may differ in how much physical closeness or direct contact they involve.
+
+Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. Better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
 Respond ONLY with a JSON array in this exact format, no explanation:
 [
-  {"action": "short description of alternative 1", "is_share": 0 or 1},
-  {"action": "short description of alternative 2", "is_share": 0 or 1}
+  {"action": "short description of alternative 1"},
+  {"action": "short description of alternative 2"}
 ]"""
 )
 
@@ -358,10 +353,10 @@ Respond ONLY with a JSON array in this exact format, no explanation:
 # see and the intimacy rating is not circular. See `intimacy_texts` /
 # `intimacyDescriptor` in `experiments/_lib/scenario.js`.
 RELATIONSHIP_DESCRIPTORS = {
-    "max_formal": "maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader",
-    "neither": "neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker",
-    "somewhat_intimate": "somewhat intimate — e.g., the kind of relationship one might have with a close friend",
-    "max_intimate": "maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend",
+    "max_formal": "maximally formal",
+    "neither": "neither formal nor intimate",
+    "somewhat_intimate": "somewhat intimate",
+    "max_intimate": "maximally intimate",
 }
 
 
@@ -406,8 +401,7 @@ def alternatives_user_prompt(
     )
     parts.append(
         "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Tag each with "
-        "is_share ∈ {0, 1}. Do not include the action they actually took."
+        "have handled the situation instead. Do not include the action they actually took."
     )
     return "\n".join(parts)
 
@@ -427,9 +421,9 @@ def alternatives_user_prompt(
 DESIRE_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
     + "\n\n"
-    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, along with a short description of their current state. Judge how much the two people would like the thing at stake in the scenario, given that state — that is, how much obtaining or consuming it would satisfy the state they are in right now (its appeal to them) — on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they end up doing, how much effort it takes, or how the two people are related.
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, along with a short description of their current state. Judge how much the two people would like the thing at stake in the scenario, given that state — that is, how much obtaining or consuming it would satisfy the state they are in right now — on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they end up doing, how much effort it takes, or how the two people are related.
 
-Respond with a JSON object in this exact format, no explanation. The `<number>` is a placeholder for the format only — replace it with the value your judgment warrants, anywhere on the 0–100 scale:
+Respond with a JSON object in this exact format, no explanation:
 {"desire": <number>}"""
 )
 
@@ -471,7 +465,7 @@ INTIMACY_SYSTEM_PROMPT = (
     + "\n\n"
     + """You will read a short description of a relationship between two people. Judge how intimate the relationship is on a scale from 0 (maximally formal) to 100 (maximally intimate). Rate only the intimacy of the relationship itself.
 
-Respond with a JSON object in this exact format, no explanation. The `<number>` is a placeholder for the format only — replace it with the value your judgment warrants, anywhere on the 0–100 scale:
+Respond with a JSON object in this exact format, no explanation:
 {"intimacy": <number>}"""
 )
 
