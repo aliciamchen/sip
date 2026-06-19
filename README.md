@@ -17,7 +17,7 @@ uv sync
 
 # Quarto (https://quarto.org/docs/get-started/) is needed to render the analysis docs
 
-make all                # full pipeline: fit → predict → CV → render qmds
+make all                # full pipeline: fit → CV → render qmds
 make help               # list all targets
 ```
 
@@ -96,7 +96,7 @@ The action-level utility components — goal-satisfaction, risk, effort — are 
 - `risk`: how much each action opens each person up to the other — physically (bodily substance transfer, skin contact, spatial proximity), informationally, or both — on a 0-6 scale normalized to [0, 1], the same scale as effort and g. (The absolute scale of any feature is not separately identifiable — the freely-fitted weight absorbs a constant factor — so all three features share [0, 1].) Elicited by `model/lm/score_merged.py` into the same `lm_runs.jsonl` records.
 - `effort`: physical, logistical, and time cost of executing the action, on a 0-6 scale normalized to [0, 1]. Elicited by the same script.
 
-The desire magnitude `d` is not an action feature. In the desire-inference studies it is the latent the observer recovers; in the studies where desire is given context, the LM rates it once per (scenario, desire condition) on the 0–100 scale. The given-relationship studies (1a/1b) likewise have the LM rate the intimacy implied by each of the four (de-anchored) relationship descriptions. Both are run-independent and written to `model/outputs/lm/<slug>/lm_given.json`.
+The desire magnitude `d` is not an action feature. In the desire-inference studies it is the latent the observer recovers; in the studies where desire is given context, the LM rates it per (scenario, desire condition) on the 0–100 scale. The given-relationship studies (1a/1b) likewise have the LM rate the intimacy implied by each of the four (de-anchored) relationship descriptions. Both are rated per elicitation run — so they vary run-to-run alongside the action features — and folded into each `lm_runs.jsonl` record (`desire` for the given-desire studies, `intimacy` for the given-relationship studies).
 
 A single prompt set in `model/lm/prompts.py` is used for both the food and non-food pipelines. The risk rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios.
 
@@ -119,11 +119,11 @@ The alternative-generation prompt (`prompts.py:alternatives_user_prompt`) mirror
 
 - **Canonical and alternative actions are scored together** in the same prompt per scenario, so slot 0 and slots 1..k are calibrated against a shared comparative reference frame rather than being scored in separate prompts with potentially mismatched anchors.
 - **Risk is effort-marginal**: the risk scoring prompt omits the effort paragraph and a single risk rating per action is broadcast across both effort conditions in the output CSVs. The model already modulates risk by intimacy via `(1−I)^γ` in the utility, so risk(a|s) is formally intimacy- and effort-independent; eliciting risk without the effort paragraph avoids double-counting context that the utility formula handles separately. Effort is still elicited per (scenario, effort_condition).
-- **Goal-satisfaction `g` is LM-elicited desire-free**, not derived from the `is_share` flag. Each action gets one continuous LM-rated `g ∈ [0, 1]` ("how fully does this deliver the outcome"), with no desire axis — desire enters the reward term separately as the multiplier `w_v · d · g`. For the studies where desire is given context, the LM additionally rates the desire magnitude `d` once per (scenario, desire condition). The `is_share` field is preserved in the alternatives CSV as diagnostic metadata.
+- **Goal-satisfaction `g` is LM-elicited desire-free**, not derived from the `is_share` flag. Each action gets one continuous LM-rated `g ∈ [0, 1]` ("how fully does this deliver the outcome"), with no desire axis — desire enters the reward term separately as the multiplier `w_v · d · g`. For the studies where desire is given context, the LM additionally rates the desire magnitude `d` per (scenario, desire condition) in each run. The `is_share` field is preserved in the alternatives records as diagnostic metadata.
 
-The merged scoring writes `lm_runs.jsonl` into the study's own folder, `model/outputs/lm/<slug>/` — one record per `(run_id, cell)`, holding that run's scored actions (slot 0 = the observed canonical action, slots 1..k = the run's alternatives, each with its `risk`/`effort`/`g`/`is_share`) — plus `lm_given.json` for the given-magnitude scalars (the per-condition desire scalar for the given-desire studies, the per-level intimacy vector for the given-relationship studies). Keeping each study's tables in its own folder means the canonical actions, which are re-scored per run in the comparative frame of that run's own alternative set, are never overwritten by another study's run. `tables.py:load_padded_lm_tables_desire` assembles these into the padded risk/effort/g/prior tables — now carrying a leading run axis — that the Study 1a memo observer indexes into (per run). It falls back to the legacy single-run CSVs (as K=1) until the JSONL regeneration has been run.
+The merged scoring writes `lm_runs.jsonl` into the study's own folder, `model/outputs/lm/<slug>/` — one record per `(run_id, cell)`, holding that run's scored actions (slot 0 = the observed canonical action, slots 1..k = the run's alternatives, each with its `risk`/`effort`/`g`/`is_share`) plus that run's given-magnitude scalar for the cell (the per-condition `desire` for the given-desire studies, the per-level `intimacy` for the given-relationship studies). Keeping each study's tables in its own folder means the canonical actions, which are re-scored per run in the comparative frame of that run's own alternative set, are never overwritten by another study's run. `tables.py:load_padded_lm_tables_desire` assembles these into the padded risk/effort/g/prior tables — now carrying a leading run axis — that the Study 1a memo observer indexes into (per run), and `load_lm_scenario_desire` / `load_lm_relationship_values` read the per-run given magnitudes from the same records. It falls back to the legacy single-run CSVs (as K=1) until the JSONL regeneration has been run.
 
-Studies 1b, 2a, and 2b use the same merged padded-alts pipeline as Study 1a; each follows the Study 1a template: padded actor and observer memos, utility and prior helpers, a padded table loader sized for that study's conditioning structure (the risk/effort/g table shapes depend on which variables the observer sees), joint-fit helpers, fit/predict/CV scripts, and registry entries in `generate_alternatives.py` and `score_merged.py`. The merged scoring's per-scenario logic generalizes — only the `_STUDY_CONFIG` entries differ between studies.
+Studies 1b, 2a, and 2b use the same merged padded-alts pipeline as Study 1a; each follows the Study 1a template: padded actor and observer memos, utility and prior helpers, a padded table loader sized for that study's conditioning structure (the risk/effort/g table shapes depend on which variables the observer sees), joint-fit helpers, fit/CV scripts, and registry entries in `generate_alternatives.py` and `score_merged.py`. The merged scoring's per-scenario logic generalizes — only the `_STUDY_CONFIG` entries differ between studies.
 
 ## Repository structure
 
@@ -132,10 +132,10 @@ analysis/          R/Quarto analysis scripts and data processing
 data/              Processed experiment data (one folder per experiment slug)
 experiments/       jsPsych experiment code + scenario definitions
 model/             Computational models
-  inverse/         Per-experiment inverse-planning fit/predict scripts
-  cv/              Per-experiment LOSO cross-validation scripts
+  inverse/         Per-experiment inverse-planning fit scripts
+  cv/              Per-experiment LOSO cross-validation scripts (the model's predictions)
   lm/              LM-elicitation scripts (Together AI)
-  outputs/         Fitted parameters, predictions, CV results
+  outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
     lm/            LM-elicited scenario tables
     <slug>/        Per-experiment outputs
 preregs/           AsPredicted-format preregistration documents (one per active experiment slug)
@@ -182,16 +182,15 @@ uv run python model/lm/generate_alternatives.py --study food_inv_desire  # Study
 uv run python model/lm/score_merged.py          --study food_inv_desire  # Study 1a: merged canonical + alts scoring (risk-marginal, effort-conditional, g LM-elicited)
 ```
 
-Each fit/predict/CV script is named after the experiment it serves and lives in `model/inverse/`, with CV in `model/cv/`. Run `fit_<slug>.py`, then `predict_<slug>.py`; for cross-validation run `cv_<slug>.py`.
+Each fit/CV script is named after the experiment it serves: fits live in `model/inverse/`, CV in `model/cv/`. Run `fit_<slug>.py`, then `cv_<slug>.py` (CV produces the out-of-sample predictions — there is no separate in-sample predict step).
 
 ```bash
 # active inverse (Studies 1a/1b/2a/2b)
 uv run python model/inverse/fit_food_inv_desire.py
-uv run python model/inverse/predict_food_inv_desire.py
 uv run python model/cv/cv_food_inv_desire.py
 ```
 
-Each inverse experiment jointly fits its own actor utility weights ($w_v, w_d, w_e, \gamma$) and $\alpha_\mathrm{observer}$ from its own posterior data, rather than transferring actor weights between studies. The joint Studies 1b/2b sum two per-slider losses per trial: Study 1b sums an NLL over the 101-bin desire posterior (for the continuous 0–100 desire rating) and binary cross-entropy on the 0–100 effort slider; Study 2b sums the intimacy posterior NLL (over the 101-bin response) and the same effort cross-entropy.
+Each inverse experiment jointly fits its own actor utility weights ($w_v, w_d, w_e, \gamma$), $\alpha_\mathrm{observer}$, and a response-noise scale $\sigma$ from its own data, rather than transferring actor weights between studies. The dependent measure is the **belief update** (posterior − prior rating), scored against the model's belief update (posterior mean − prior mean) under the K-component simulated-observer Gaussian mixture $\frac{1}{K}\sum_k \mathcal{N}(u \mid \delta_k, \sigma^2)$. The joint Studies 1b/2b score the (desire, effort) / (intimacy, effort) updates jointly with a bivariate Gaussian per component (a single isotropic $\sigma$, with the cross-dimension correlation carried by the spread of the runs' joint $\delta_k$), the effort update being $P(\text{effort}=\text{high}) - 0.5$. The primary model-comparison metric is per-trial held-out log-likelihood.
 
 All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 LOSO folds. CV refits the actor utility weights ($w_v, w_d, w_e, \gamma$) and $\alpha_\mathrm{obs}$ per fold.
 

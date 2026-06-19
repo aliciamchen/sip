@@ -18,7 +18,9 @@ One LM elicitation per cell (parse-retries up to MAX_PARSE_RETRIES); each call
 returns a JSON array of variable-length alternatives.
 
 Output (one folder per study slug):
-    --study food_inv_desire  →  model/outputs/lm/food_inv_desire/lm_alternatives.csv
+    --study food_inv_desire  →  model/outputs/lm/food_inv_desire/lm_alternatives.jsonl
+        (one JSON record per generated alternative — the stage-1 texts; the
+        feature scores are added by score_merged.py into lm_runs.jsonl)
 
 Usage:
     uv run python model/lm/generate_alternatives.py --study food_inv_desire
@@ -29,6 +31,7 @@ Requires:
 """
 
 import argparse
+import json
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -66,7 +69,7 @@ ALT_GEN_TEMPERATURE = float(os.environ.get("ALT_T", "0.7"))
 # (and hence the LM) sees on each trial — only the observer-visible variables,
 # so the alternative set does not leak the latent being inferred. `cell_cols`
 # are the resulting cell-key columns (besides scenario_label + observed_action)
-# written to the output CSV; the downstream merged-scoring + padded-table loader
+# written to the output JSONL; the downstream merged-scoring + padded-table loader
 # key on these.
 #   1a desire    — visible: effort, intimacy        (infers desire)
 #   1b joint_de  — visible: intimacy                (infers desire + effort)
@@ -75,25 +78,25 @@ ALT_GEN_TEMPERATURE = float(os.environ.get("ALT_T", "0.7"))
 _STUDY_CONFIG = {
     "food_inv_desire": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives.csv",
+        "output": "lm_alternatives.jsonl",
         "show": ("effort", "intimacy"),
         "cell_cols": ("effort_condition", "intimacy_condition"),
     },
     "food_inv_joint_de": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives.csv",
+        "output": "lm_alternatives.jsonl",
         "show": ("intimacy",),
         "cell_cols": ("intimacy_condition",),
     },
     "food_inv_intimacy": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives.csv",
+        "output": "lm_alternatives.jsonl",
         "show": ("desire", "effort"),
         "cell_cols": ("desire_condition", "effort_condition"),
     },
     "food_inv_joint_ie": {
         "scenarios": "scenarios.csv",
-        "output": "lm_alternatives.csv",
+        "output": "lm_alternatives.jsonl",
         "show": ("desire",),
         "cell_cols": ("desire_condition",),
     },
@@ -111,6 +114,13 @@ def load_scenarios(study):
     cfg = _STUDY_CONFIG[study]
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
     return pd.read_csv(scenarios_path)
+
+
+def _write_jsonl(path, rows):
+    """Write the flat per-alternative rows as JSON Lines (one record per line)."""
+    with open(path, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
 
 
 def _cell_key(cell, cell_cols, run_id=None):
@@ -193,16 +203,14 @@ def main(study):
 
     cell_cols = cfg["cell_cols"]
 
-    # Resume: skip (cell, run) units already in the output CSV.
+    # Resume: skip (cell, run) units already in the output JSONL.
     done_units = set()
     results = []
     if output_path.exists():
-        existing = pd.read_csv(output_path)
-        if "run_id" in existing.columns:
-            done_units = set(
-                _cell_key(r, cell_cols, r["run_id"]) for _, r in existing.iterrows()
-            )
-        results = existing.to_dict("records")
+        with open(output_path) as f:
+            results = [json.loads(line) for line in f if line.strip()]
+        if results and "run_id" in results[0]:
+            done_units = set(_cell_key(r, cell_cols, r["run_id"]) for r in results)
         print(
             f"Found existing {output_path.name} with {len(done_units)} (cell, run) "
             f"units already elicited — resuming.",
@@ -261,17 +269,17 @@ def main(study):
                 row["is_share"] = alt["is_share"]
                 results.append(row)
             if completed % CHECKPOINT_EVERY == 0:
-                pd.DataFrame(results).to_csv(output_path, index=False)
+                _write_jsonl(output_path, results)
                 print(
                     f"  checkpoint written ({len(results)} rows total)",
                     flush=True,
                 )
 
-    results_df = pd.DataFrame(results)
-    results_df.to_csv(output_path, index=False)
-    print(f"\nSaved {len(results_df)} alternatives to {output_path}", flush=True)
+    _write_jsonl(output_path, results)
+    print(f"\nSaved {len(results)} alternatives to {output_path}", flush=True)
 
     print("\n=== Summary ===")
+    results_df = pd.DataFrame(results)
     per_unit = results_df.groupby(
         ["scenario_label", "observed_action", *cell_cols, "run_id"]
     ).size()

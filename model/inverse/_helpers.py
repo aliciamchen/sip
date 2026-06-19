@@ -1,12 +1,13 @@
 """
-Shared infrastructure for inverse-planning fit + predict scripts.
+Shared infrastructure for the inverse-planning fit scripts.
 
-Each experiment has its own thin fit/predict script that imports the helpers
-it needs from this module. Shared concerns:
+Each experiment has its own thin fit script that imports the helpers it needs
+from this module (CV reuses the same helpers via the dispatcher; there is no
+separate predict step). Shared concerns:
 
-  - Loss functions (intimacy NLL, effort BCE NLL, desire NLL)
-  - Observer fit loops (joint padded utility weights + α_observer)
-  - Data loaders (per experiment)
+  - Loss functions (the belief-update Gaussian-mixture NLLs mixture_nll_1d / _2d)
+  - Observer fit loops (joint padded utility weights + α_observer + σ)
+  - Data loaders (per experiment, returning per-trial belief updates)
 """
 
 import json
@@ -506,8 +507,9 @@ def _padded_table_kwargs(
                 )
             kw["desire_table"] = desire
     if uses_intimacy and relationship_loader is not None:
-        # LM-rated intimacy magnitude per relationship level (falls back to the
-        # placeholder RELATIONSHIP_LEVEL_VALUES until lm_given.json exists).
+        # Per-run LM-rated intimacy magnitude per relationship level, shape (K, 4)
+        # (falls back to the placeholder RELATIONSHIP_LEVEL_VALUES as K=1 until the
+        # per-run `intimacy` field exists in lm_runs.jsonl).
         kw["relationship_values"] = relationship_loader()
     return kw
 
@@ -625,15 +627,24 @@ def joint_ie_table_kwargs(utility_param_names, domain="food"):
 # held at α=1 (same convention as the legacy padded joint fits).
 
 # Padded LM feature tables that carry a leading elicitation-run axis (see
-# tables.py). The run-independent tables (desire_table, relationship_values) do
-# not, so they are passed to the observer whole.
-_RUN_AXIS_TABLES = ("risk_table", "effort_table", "g_padded_table", "prior_table")
+# tables.py). The given-magnitude tables (desire_table, relationship_values) are
+# scored per run too, so they carry the same leading axis and are sliced per run
+# alongside the features (the observer memo still sees one run's slice).
+_RUN_AXIS_TABLES = (
+    "risk_table",
+    "effort_table",
+    "g_padded_table",
+    "prior_table",
+    "desire_table",
+    "relationship_values",
+)
 
 
 def params_dict_to_array(params, utility_param_names):
     """Reconstruct the optimizer's parameter vector [*utility, alpha_observer,
-    sigma] from a `load_fit_results` dict, for re-running the observer in predict.
-    sigma defaults to 1.0 if absent (it doesn't affect the observer build)."""
+    sigma] from a `load_fit_results` dict, for re-running the observer (e.g. the
+    CV warm-start). sigma defaults to 1.0 if absent (it doesn't affect the
+    observer build)."""
     return jnp.array(
         [params[name] for name in utility_param_names]
         + [params["alpha_observer"], params.get("sigma", 1.0)]

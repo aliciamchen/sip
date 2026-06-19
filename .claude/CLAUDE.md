@@ -4,10 +4,10 @@ Guidance for Claude Code sessions working in this repository. Project overview, 
 
 ## Naming and structure conventions
 
-- The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/predict/cv scripts can also be imported as modules if needed.
+- The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/cv scripts can also be imported as modules if needed.
 - The active roster is four inverse-planning studies, all on the 3-action set: `food_inv_desire` (Study 1a), `food_inv_joint_de` (Study 1b), `food_inv_intimacy` (Study 2a), `food_inv_joint_ie` (Study 2b).
 - Per-experiment scripts (e.g. `model/inverse/fit_food_inv_intimacy.py`) are thin wrappers that import shared logic from `_inverse_dispatcher.py` (cv/) or `_helpers.py` (inverse/) and call its main with their hardcoded slug. To trace what a script does, follow the import.
-- The active experiment roster lives in `Makefile`'s `EXPERIMENTS_INVERSE` variable; `make all` runs fit → predict → cv → analysis across all four.
+- The active experiment roster lives in `Makefile`'s `EXPERIMENTS_INVERSE` variable; `make all` runs fit → cv → analysis across all four (CV produces the out-of-sample predictions; there is no separate predict stage).
 
 ## Legacy data
 

@@ -185,56 +185,70 @@ NONFOOD_SCENARIO_TO_IDX = {
 # Three-action LM-derived scenario parameter tables
 # ==============================================================================
 # Per-study canonical risk/effort/g and the padded LM-alternatives action spaces
-# are loaded by the `load_padded_lm_tables_*` functions below (each reading
-# `outputs/lm/<slug>/lm_scenario.csv` + `lm_alternatives.csv`). The per-condition
-# desire scalar for the given-desire studies is loaded by load_lm_scenario_desire.
+# are loaded by the `load_padded_lm_tables_*` functions below (preferring the
+# K-run `outputs/lm/<slug>/lm_runs.jsonl`, falling back to the legacy single-run
+# `lm_scenario.csv` + `lm_alternatives.csv`). The *given-magnitude* scalars are
+# now folded per-run into `lm_runs.jsonl` (a `desire` field on each record for the
+# given-desire studies, an `intimacy` field for the given-relationship studies),
+# loaded by load_lm_scenario_desire / load_lm_relationship_values below — both
+# carrying the same leading run axis as the padded tables.
 
 
-def _lm_given(slug):
-    """Parsed `outputs/lm/<slug>/lm_given.json`, or None if absent.
+def _runs_jsonl_path(slug):
+    return Path(__file__).resolve().parent / "outputs" / "lm" / slug / "lm_runs.jsonl"
 
-    `lm_given.json` holds a study's *given-magnitude* LM scalars — the values that
-    are observer-visible context rather than inferred latents — in one small,
-    run-independent object:
-      {"desire": {"<scenario>": {"low": float, "high": float}, ...},   # 2a/2b
-       "relationship": {"max_formal": float, ..., "max_intimate": float}}  # 1a/1b
-    A study carries only the key(s) relevant to it.
-    """
-    path = Path(__file__).resolve().parent / "outputs" / "lm" / slug / "lm_given.json"
-    if not path.exists():
-        return None
+
+def _read_runs_jsonl(path):
+    """Group `lm_runs.jsonl` records by run_id. Returns a dict run_id -> [records];
+    sorting its keys gives the canonical run order (k = 0..K-1) shared with the
+    padded-table loaders, so per-run given magnitudes align with their run slice."""
+    records_by_run = defaultdict(list)
     with open(path) as f:
-        return json.load(f)
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            rec = json.loads(line)
+            records_by_run[int(rec["run_id"])].append(rec)
+    return records_by_run
 
 
 def load_lm_scenario_desire(slug, filepath=None):
-    """Load the per-condition desire scalar for the given-desire studies
+    """Load the per-run, per-condition desire scalar for the given-desire studies
     (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`).
 
     When desire is observer-visible context, the LM reads the scenario + the
     shown desire paragraph and rates how much the two people would like the food
     on the [0, 1] scale. That scalar plugs into the actor utility as the constant
-    `desire` in w_v · desire · g.
+    `desire` in w_v · desire · g. It is scored per elicitation run (folded into
+    each `lm_runs.jsonl` record's `desire` field), so it carries a leading run
+    axis aligned with the padded feature tables.
 
-    Source: the `desire` block of `outputs/lm/<slug>/lm_given.json`; falls back to
-    the legacy `lm_scenario_desire.csv` so fits run before the JSON regeneration.
+    Source: the per-record `desire` field of `outputs/lm/<slug>/lm_runs.jsonl`;
+    falls back to the legacy single-run `lm_scenario_desire.csv` (as K=1) so fits
+    run before the JSON regeneration.
 
-    Returns a jnp.array of shape (16, 2) indexed by
-    (scenario, desire_condition), or None if neither source is present.
+    Returns a jnp.array of shape (K, 16, 2) indexed by
+    (run, scenario, desire_condition), or None if neither source is present.
     """
     scenario_to_idx = SCENARIO_TO_IDX
     desire_to_idx = {
         "low": int(DesireConditions.LOW),
         "high": int(DesireConditions.HIGH),
     }
-    d = np.zeros((len(scenario_to_idx), 2), dtype=np.float32)
+    n_scenarios = len(scenario_to_idx)
 
-    given = _lm_given(slug)
-    if given is not None and "desire" in given:
-        for scenario, by_cond in given["desire"].items():
-            s = scenario_to_idx[scenario]
-            for cond, val in by_cond.items():
-                d[s, desire_to_idx[cond]] = float(val)
+    runs_path = _runs_jsonl_path(slug)
+    if filepath is None and runs_path.exists():
+        records_by_run = _read_runs_jsonl(runs_path)
+        run_ids = sorted(records_by_run)
+        d = np.zeros((len(run_ids), n_scenarios, 2), dtype=np.float32)
+        for k, rid in enumerate(run_ids):
+            for rec in records_by_run[rid]:
+                if rec.get("desire") is None:
+                    continue
+                s = scenario_to_idx[rec["scenario_label"]]
+                d[k, s, desire_to_idx[rec["desire_condition"]]] = float(rec["desire"])
         return jnp.array(d)
 
     # Legacy CSV fallback (K=1, pre-regeneration).
@@ -249,33 +263,44 @@ def load_lm_scenario_desire(slug, filepath=None):
     if not Path(filepath).exists():
         return None
     df = pd.read_csv(filepath)
+    d = np.zeros((n_scenarios, 2), dtype=np.float32)
     for _, row in df.iterrows():
         s = scenario_to_idx[row["scenario_label"]]
         r = desire_to_idx[row["desire_condition"]]
         d[s, r] = row["desire"]
-    return jnp.array(d)
+    return jnp.array(d)[None, :, :]
 
 
 def load_lm_relationship_values(slug):
-    """Continuous intimacy magnitude I ∈ [0, 1] for each of the four
+    """Per-run continuous intimacy magnitude I ∈ [0, 1] for each of the four
     RelationshipConditions levels, for the given-relationship studies
     (1a `food_inv_desire`, 1b `food_inv_joint_de`).
 
-    The manuscript LM-rates the intimacy implied by each (verbal) relationship
-    description, mirroring the desire scalar in 2a/2b. Source: the `relationship`
-    block of `outputs/lm/<slug>/lm_given.json`, ordered by INTIMACY_CONDITIONS.
-    Falls back to the placeholder `RELATIONSHIP_LEVEL_VALUES` so 1a/1b run before
-    the intimacy elicitation exists.
+    The LM rates the intimacy implied by each (de-anchored, verbal) relationship
+    description, mirroring the desire scalar in 2a/2b. It is scored per elicitation
+    run (folded into each `lm_runs.jsonl` record's `intimacy` field), so it carries
+    a leading run axis aligned with the padded feature tables.
 
-    Returns a jnp.array of shape (4,).
+    Source: the per-record `intimacy` field of `outputs/lm/<slug>/lm_runs.jsonl`,
+    placed by INTIMACY_CONDITION_TO_IDX. Falls back to the placeholder
+    `RELATIONSHIP_LEVEL_VALUES` (as K=1) so 1a/1b run before the elicitation exists.
+
+    Returns a jnp.array of shape (K, 4).
     """
-    given = _lm_given(slug)
-    if given is not None and "relationship" in given:
-        rel = given["relationship"]
-        return jnp.array(
-            [float(rel[slug_]) for slug_ in INTIMACY_CONDITIONS], dtype=jnp.float32
-        )
-    return RELATIONSHIP_LEVEL_VALUES
+    runs_path = _runs_jsonl_path(slug)
+    if runs_path.exists():
+        records_by_run = _read_runs_jsonl(runs_path)
+        run_ids = sorted(records_by_run)
+        out = np.zeros((len(run_ids), 4), dtype=np.float32)
+        for k, rid in enumerate(run_ids):
+            for rec in records_by_run[rid]:
+                if rec.get("intimacy") is None:
+                    continue
+                out[k, INTIMACY_CONDITION_TO_IDX[rec["intimacy_condition"]]] = float(
+                    rec["intimacy"]
+                )
+        return jnp.array(out)
+    return RELATIONSHIP_LEVEL_VALUES[None, :]
 
 
 # ==============================================================================

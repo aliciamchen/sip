@@ -181,6 +181,6 @@ rather than changed as part of the code refactor.
   cost; not run yet. For 1b/2a/2b this also needs their alternative sets
   generated first (`generate_alternatives.py`).
 - **Pending — fits:** the active studies have no collected human data yet, so
-  `fit/predict/cv` cannot be run end-to-end against data. Re-collect Study 1a on
+  `fit`/`cv` cannot be run end-to-end against data. Re-collect Study 1a on
   the continuous DV first.
 - **Pending — manuscript:** update the three passages above.

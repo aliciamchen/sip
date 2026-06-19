@@ -21,18 +21,6 @@ design_exploration
 SIP_journal
 notes/
 
-# Non-CV prediction outputs — written by model/{forward,inverse}/predict_*.py
-# but never read by downstream code (analysis qmds use cv_preds[_summary].csv
-# instead). Keep the writers so they can be regenerated for debugging,
-# but don't track the outputs.
-model/outputs/*/preds.csv
-model/outputs/*/preds_full.csv
-model/outputs/*/preds_summary.csv
-
-# Raw per-variant prediction tensors saved alongside the CSVs. Large, binary,
-# and regenerable from the fit scripts, so they stay local.
-model/outputs/*/*.npy
-
 # Legacy data that deliberately left git history (commit 8a348e6): the six
 # superseded 4-action/2-action inverse experiments, early pilots, and the
 # planning_comm side project. Kept local-only; see data/legacy/README.md.

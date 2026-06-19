@@ -1,6 +1,8 @@
 # Makefile for saliva-inverse-planning
 #
-# Pipeline: data → LM elicitation → fit → predict → CV → analysis (qmds)
+# Pipeline: data → LM elicitation → fit → CV → analysis (qmds)
+# (CV is the sole source of model predictions — all reported model-vs-human
+#  numbers are out-of-sample; there is no separate in-sample predict stage.)
 #
 # Processed CSVs are checked into the repo, so the model + analysis stages
 # work without re-running data processing or LM elicitation.
@@ -23,31 +25,28 @@ ANALYSIS_QMDS := \
 .PHONY: all help test clean \
         data lm lm-alternatives \
         fit fit-inverse \
-        predict predict-inverse \
         cv cv-inverse \
         analysis \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix fit-,$(EXPERIMENTS_INVERSE)) \
-        $(addprefix predict-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix cv-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
 
-all: fit predict cv analysis
+all: fit cv analysis
 
 help:
 	@echo "Saliva inverse planning pipeline"
 	@echo ""
 	@echo "Aggregates (active experiments only):"
-	@echo "  all        - fit + predict + cv + analysis"
+	@echo "  all        - fit + cv + analysis"
 	@echo "  fit        - fit all active experiments"
-	@echo "  predict    - generate predictions for all active experiments"
-	@echo "  cv         - leave-one-scenario-out CV for all active experiments"
+	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate all LM-elicited CSVs (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance tests"
-	@echo "  clean      - remove fit/predict/CV outputs"
+	@echo "  clean      - remove fit + CV outputs"
 	@echo ""
 	@echo "Experiment assets (jsPsych build, run before deploying):"
 	@echo "  experiments       - regenerate stimuli + counterbalancing + entry files"
@@ -59,12 +58,12 @@ help:
 	@echo "  deploy-all        - publish _lib/ + all experiments + preview to athena (one login)"
 	@echo ""
 	@echo "Per-stage aggregates:"
-	@echo "  fit-inverse, predict-inverse, cv-inverse"
+	@echo "  fit-inverse, cv-inverse"
 	@echo "  lm, lm-alternatives   (lm-alternatives does all 4 studies;"
 	@echo "                         'make -j4 lm-alternatives SCENARIO_WORKERS=1' runs them in parallel)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
-	@echo "  lm-<slug>, fit-<slug>, predict-<slug>, cv-<slug>, data-<slug>"
+	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -162,7 +161,7 @@ $(addprefix lm-,$(EXPERIMENTS_INVERSE)): lm-%:
 	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
-# Fits → outputs/<slug>/fit_results.csv
+# Fits → outputs/<slug>/fit_results.json (+ fit_restarts.jsonl)
 # =============================================================================
 
 fit: fit-inverse
@@ -172,17 +171,9 @@ $(addprefix fit-,$(EXPERIMENTS_INVERSE)): fit-%:
 	uv run python model/inverse/fit_$*.py
 
 # =============================================================================
-# Predicts → outputs/<slug>/preds_<variant>.npy + preds_summary.csv
-# =============================================================================
-
-predict: predict-inverse
-predict-inverse: $(addprefix predict-,$(EXPERIMENTS_INVERSE))
-
-$(addprefix predict-,$(EXPERIMENTS_INVERSE)): predict-%:
-	uv run python model/inverse/predict_$*.py
-
-# =============================================================================
-# Leave-one-scenario-out CV → outputs/<slug>/cv_folds.csv + cv_preds_summary.csv
+# Leave-one-scenario-out CV → outputs/<slug>/cv_trial_ll.jsonl (primary metric)
+# + cv_preds_summary.json + cv_folds.jsonl. CV is the sole source of model
+# predictions — every reported model-vs-human number is out-of-sample.
 # =============================================================================
 
 cv: cv-inverse
@@ -208,6 +199,5 @@ test:
 	uv run python model/test_model_compliance.py
 
 clean:
-	rm -f model/outputs/*/fit_results.csv
-	rm -f model/outputs/*/preds*.csv
-	rm -f model/outputs/*/cv_*.csv
+	rm -f model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl
+	rm -f model/outputs/*/cv_trial_ll.jsonl model/outputs/*/cv_preds_summary.json model/outputs/*/cv_folds.jsonl
