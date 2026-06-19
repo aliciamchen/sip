@@ -61,32 +61,25 @@ _PREAMBLE_RATING = (
 
 
 def _intro_line():
-    """Build the 'For each scenario, you will read about ...' intro line.
+    """Build the 'You will see a set of alternative actions ...' intro line.
 
-    The scored action set is variable-length: the LM sees the observed action
-    plus however many alternatives that run generated.
+    Each scoring call covers a single scenario, so the wording is singular. The
+    scored action set is variable-length: the LM sees the observed action plus
+    however many alternatives that run generated.
     """
-    return (
-        "For each scenario, you will read about a set of alternative "
-        "actions the two people could take."
-    )
+    return "You will see a set of alternative actions the two people could take."
 
 
 def _json_format_block():
     """Build the trailing 'Respond with your numerical ratings ...' block.
 
-    The example illustrates the JSON shape for 3 actions; the real call has as
-    many keys as actions given. The example numbers are arbitrary placeholders
-    (not a suggested distribution) so they don't anchor the ratings.
+    The example illustrates only the JSON shape for 3 actions; the real call has
+    as many keys as actions given. The values are shown as `<number>`
+    placeholders rather than concrete digits so the example cannot anchor the
+    ratings.
     """
-    return (
-        "Respond with your numerical ratings as a JSON object whose keys "
-        'are "action_0", "action_1", ... matching the number of actions '
-        "given, no explanation needed. The numbers below just show the format "
-        "— they are arbitrary placeholders, not a suggested pattern; use "
-        "whatever values your judgments warrant. Example for 3 actions:\n"
-        '{"action_0": 4.0, "action_1": 1.5, "action_2": 3.0}'
-    )
+    return """Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Use whatever values your judgments warrant. The example below shows only the format (one key per action), not suggested values. Example for 3 actions:
+{"action_0": <number>, "action_1": <number>, "action_2": <number>}"""
 
 
 # ==============================================================================
@@ -141,7 +134,7 @@ def _json_format_block():
 #     Direct evidence that saliva-sharing is read as a thick-relationship cue,
 #     separable from other positive social interactions.
 
-_RISK_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+_RISK_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
 For each action, evaluate how much it makes one person interpersonally vulnerable to the other — how much it exposes them, opens them up, or lowers the boundary between them, letting something normally kept to oneself pass from one person's side to the other. This interpersonal vulnerability can take multiple forms, and a single action may involve more than one:
 
@@ -193,7 +186,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 #     competence — grounds the assumption that an "LM-as-participant" can
 #     rate physical effort with the instruction below.
 
-_EFFORT_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+_EFFORT_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
 For each action, evaluate the *physical* cost the actor would weigh against the benefit of the action — the bodily, material, and temporal cost of carrying it out. The three cost types below all count; integrate across them into a single rating:
 
@@ -201,7 +194,7 @@ For each action, evaluate the *physical* cost the actor would weigh against the 
 - Equipment and preparation cost: whether the action needs extra items or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces) that someone has to obtain, set up, or take care of.
 - Time cost: how long the action takes — waiting for something to dry, sequential rather than simultaneous use, an extended preparation.
 
-Do NOT rate social awkwardness, relational discomfort, or how intimate or appropriate the action would feel — those are separate dimensions handled by other questions in this study. Here we want only the physical effort of carrying the action out.
+Do NOT rate social awkwardness, relational discomfort, or how intimate or appropriate the action would feel — those are separate dimensions that we are not asking about here. Here we want only the physical effort of carrying the action out.
 
 Use this scale from 0 to 6 (continuous values allowed):
 0 = No physical effort (acting independently or doing the simplest direct thing — no bodily work beyond the basic motion, no extra items, no waiting)
@@ -237,9 +230,9 @@ _USER_INSTRUCTIONS = {
 # latent: g is a stable, elicitable property of the action, while desire is the
 # free quantity the observer recovers (or, in the given-desire studies, the
 # scalar rated by `desire_user_prompt`). g replaces the old signed-valence V.
-_G_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
+_G_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate how fully it results in the two people ending up with the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Do not let how much the people would like it, the physical effort involved, or how "shared" or close the action looks change this rating — those are separate questions, and an action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route.
+For each action, evaluate how fully it results in the two people ending up with the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Do not let how much the people would like it, the physical effort involved, or how "shared" or close the action looks change this rating — those are separate dimensions that we are not asking about here, and an action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route.
 
 An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low.
 
@@ -335,9 +328,10 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 # method") that the formal inverse-planning model could not consume
 # sensibly. The current wording rules those out at generation time.
 
-ALTERNATIVES_SYSTEM_PROMPT = """You are a participant in a human study. Respond as if you were a regular adult, just going off of your intuition.
-
-In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
+ALTERNATIVES_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
 Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between. The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
 
@@ -352,6 +346,7 @@ Respond ONLY with a JSON array in this exact format, no explanation:
   {"action": "short description of alternative 1", "is_share": 0 or 1},
   {"action": "short description of alternative 2", "is_share": 0 or 1}
 ]"""
+)
 
 
 # Relationship-condition descriptors keyed by the verbal intimacy-condition slug
@@ -430,20 +425,12 @@ def alternatives_user_prompt(
 # is NOT per-action (g already carries the action dependence).
 
 DESIRE_SYSTEM_PROMPT = (
-    "You are a participant in a human study. Respond as if you were a regular "
-    "adult, just going off of your intuition.\n\n"
-    "In this survey, you will read a vignette about two people in a situation "
-    "where some resource — food, an object, a physical space, or a piece of "
-    "information — could be shared between them, along with a short description "
-    "of their current state. Judge how much the two people would like the thing "
-    "at stake in the scenario, given that state — that is, how much obtaining or "
-    "consuming it would satisfy the state they are in right now (its appeal to "
-    "them) — on a scale from 0 (would not like it at all) to 100 (would like it "
-    "extremely). Rate only how much they would like it — not what they end up "
-    "doing, how much effort it takes, or how the two people are related.\n\n"
-    "Respond with a JSON object in this exact format, no explanation "
-    "(the number is just a placeholder showing the format):\n"
-    '{"desire": 50}'
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, along with a short description of their current state. Judge how much the two people would like the thing at stake in the scenario, given that state — that is, how much obtaining or consuming it would satisfy the state they are in right now (its appeal to them) — on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they end up doing, how much effort it takes, or how the two people are related.
+
+Respond with a JSON object in this exact format, no explanation. The `<number>` is a placeholder for the format only — replace it with the value your judgment warrants, anywhere on the 0–100 scale:
+{"desire": <number>}"""
 )
 
 
@@ -480,15 +467,12 @@ def desire_user_prompt(vignette, state, desire_object):
 # LM would echo the stated number).
 
 INTIMACY_SYSTEM_PROMPT = (
-    "You are a participant in a human study. Respond as if you were a regular "
-    "adult, just going off of your intuition.\n\n"
-    "You will read a short description of a relationship between two people. "
-    "Judge how intimate the relationship is on "
-    "a scale from 0 (maximally formal) to 100 (maximally intimate). Rate "
-    "only the intimacy of the relationship itself.\n\n"
-    "Respond with a JSON object in this exact format, no explanation "
-    "(the number is just a placeholder showing the format):\n"
-    '{"intimacy": 50}'
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """You will read a short description of a relationship between two people. Judge how intimate the relationship is on a scale from 0 (maximally formal) to 100 (maximally intimate). Rate only the intimacy of the relationship itself.
+
+Respond with a JSON object in this exact format, no explanation. The `<number>` is a placeholder for the format only — replace it with the value your judgment warrants, anywhere on the 0–100 scale:
+{"intimacy": <number>}"""
 )
 
 

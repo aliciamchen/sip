@@ -20,6 +20,12 @@ Design choices carried over from the single-run pipeline:
   2. Risk is effort-marginal (vignette only, no effort paragraph), broadcast
      across effort_condition.
   3. Effort is effort-conditional; g is desire-free. Neither shows intimacy.
+  4. Actions are presented to the LM in a per-call randomized order (the merged
+     list is otherwise always no_share / low_risk_share / high_risk_share /
+     alts...), and the ratings are mapped back to canonical order before storage,
+     so the canonical actions don't sit in fixed slots and LLM position/primacy
+     bias can't systematically favor the observed action (slot 0 downstream). The
+     order is deterministic given (scenario, run, feature) — see `_perm_for`.
 
 Given-magnitude scalars are scored PER RUN (folded into each lm_runs.jsonl
 record, alongside the action features) rather than once run-independently — so the
@@ -49,6 +55,7 @@ Requires:
 """
 
 import argparse
+import hashlib
 import itertools
 import json
 import sys
@@ -188,67 +195,123 @@ def _score_one_call(client, system_prompt, user_prompt, n_actions, label):
     return agg, n_failures
 
 
-def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts):
+def _perm_for(scenario, run_id, tag, n):
+    """Deterministic permutation of ``range(n)`` for one scoring call, seeded
+    from (scenario, run_id, feature tag).
+
+    The presented action order is randomized per call so the canonical actions
+    don't always occupy the same slots (the merged list is otherwise always
+    no_share / low_risk_share / high_risk_share / alternatives...). LLM raters
+    have position/primacy biases, so a fixed order would bias the canonical
+    actions' features — and the fit/CV slice slot 0 (the observed action), so any
+    such bias would land squarely on the modeled quantity. Seeding from a stable
+    SHA-256 hash (not Python's salted ``hash``) keeps the order reproducible
+    across reruns/processes; varying ``tag`` per feature (risk / effort_low /
+    effort_high / g) decorrelates positions across features so no action sits in
+    a fixed slot across all of them."""
+    key = f"{scenario}|{int(run_id)}|{tag}".encode()
+    seed = int.from_bytes(hashlib.sha256(key).digest()[:8], "little")
+    return np.random.default_rng(seed).permutation(n)
+
+
+def _score_feature_shuffled(
+    client,
+    system_prompt,
+    build_user_prompt,
+    merged,
+    all_norms,
+    normalize_fn,
+    scenario,
+    run_id,
+    tag,
+):
+    """Score one feature on the merged action list, presenting the actions to the
+    LM in a per-call randomized order (see ``_perm_for``) and mapping the ratings
+    back to the canonical (``all_norms``) order.
+
+    ``build_user_prompt`` takes the ordered list of action texts to present and
+    returns the user prompt. Returns dict[norm] -> normalized [0,1] value (NaN if
+    the call failed for that action)."""
+    n = len(merged)
+    perm = _perm_for(scenario, run_id, tag, n)
+    presented = [merged[p] for p in perm]
+    agg, _ = _score_one_call(
+        client,
+        system_prompt,
+        build_user_prompt(presented),
+        n,
+        label=f"{scenario}/{tag}",
+    )
+    out = {}
+    for presented_slot, orig in enumerate(perm):
+        v = agg[f"action_{presented_slot}"][0]
+        out[all_norms[orig]] = normalize_fn(v) if not np.isnan(v) else np.nan
+    return out
+
+
+def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_id):
     """Score risk / effort / g on one (scenario, run)'s merged action list.
+
+    Each feature is scored in a single LM pass, with the actions presented to the
+    LM in a randomized order (deterministic given scenario/run/feature; see
+    ``_perm_for``) and the ratings mapped back to the canonical order, so the
+    canonical actions are not always shown in the same slots.
 
     Returns {merged_actions, canonical_norms, alt_norms_in_order, risk, effort, g}
     where risk/g are dict[norm] -> normalized [0,1] value (single value per
     action) and effort is dict[(effort_cond, norm)] -> normalized [0,1]."""
     scenario = scenario_row["scenario_label"]
+    vignette = scenario_row["vignette"]
     merged, canonical_norms, alt_norms = _build_merged_actions(
         scenario_row, alt_rows_for_run
     )
-    n_actions = len(merged)
     all_norms = canonical_norms + alt_norms
 
     # risk: one prompt, vignette only (effort-marginal).
-    risk_agg, _ = _score_one_call(
+    risk = _score_feature_shuffled(
         client,
         system_prompts["risk"],
-        format_risk_prompt_variable(scenario_row["vignette"], merged),
-        n_actions,
-        label=f"{scenario}/risk",
+        lambda acts: format_risk_prompt_variable(vignette, acts),
+        merged,
+        all_norms,
+        normalize_risk,
+        scenario,
+        run_id,
+        "risk",
     )
-    risk = {
-        norm: normalize_risk(risk_agg[f"action_{i}"][0])
-        if not np.isnan(risk_agg[f"action_{i}"][0])
-        else np.nan
-        for i, norm in enumerate(all_norms)
-    }
 
     # effort: one prompt per effort_condition (effort paragraph appended).
     effort = {}
     for ec in EFFORT_CONDITIONS:
-        vignette_eff = (
-            f"{scenario_row['vignette']} {scenario_row[f'low_risk_share_effort_{ec}']}"
-        )
-        eff_agg, _ = _score_one_call(
+        vignette_eff = f"{vignette} {scenario_row[f'low_risk_share_effort_{ec}']}"
+        eff_by_norm = _score_feature_shuffled(
             client,
             system_prompts["effort"],
-            format_effort_prompt_variable(vignette_eff, merged),
-            n_actions,
-            label=f"{scenario}/effort[{ec}]",
+            lambda acts, v=vignette_eff: format_effort_prompt_variable(v, acts),
+            merged,
+            all_norms,
+            normalize_effort,
+            scenario,
+            run_id,
+            f"effort_{ec}",
         )
-        for i, norm in enumerate(all_norms):
-            v = eff_agg[f"action_{i}"][0]
-            effort[(ec, norm)] = normalize_effort(v) if not np.isnan(v) else np.nan
+        for norm, val in eff_by_norm.items():
+            effort[(ec, norm)] = val
 
     # g: one prompt, desire-free goal-satisfaction.
-    g_agg, _ = _score_one_call(
+    g = _score_feature_shuffled(
         client,
         system_prompts["g"],
-        format_g_prompt_variable(
-            scenario_row["vignette"], merged, scenario_row["desire_object"]
+        lambda acts: format_g_prompt_variable(
+            vignette, acts, scenario_row["desire_object"]
         ),
-        n_actions,
-        label=f"{scenario}/g",
+        merged,
+        all_norms,
+        normalize_g,
+        scenario,
+        run_id,
+        "g",
     )
-    g = {
-        norm: normalize_g(g_agg[f"action_{i}"][0])
-        if not np.isnan(g_agg[f"action_{i}"][0])
-        else np.nan
-        for i, norm in enumerate(all_norms)
-    }
 
     return {
         "merged_actions": merged,
@@ -499,7 +562,9 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
         run_alt_rows = alts_df[
             (alts_df["scenario_label"] == scenario) & (alts_df["run_id"] == run_id)
         ]
-        scored = _score_actions(client, scenario_row, run_alt_rows, system_prompts)
+        scored = _score_actions(
+            client, scenario_row, run_alt_rows, system_prompts, run_id
+        )
         given_desire = (
             _rate_desire_for_scenario(client, scenario_row)
             if cfg["desire_given"]
