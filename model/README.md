@@ -7,24 +7,25 @@ The roster is four inverse-planning studies, all on the 3-action stimulus set an
 ## Pipeline at a glance
 
 ```
-LM elicitation  (model/lm/)
-    generate_alternatives.py --study <slug>  →  outputs/lm/<slug>/lm_alternatives.csv          (per-study counterfactuals)
-    score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_scenario.csv      (canonical risk+effort+g, this study's frame)
-                                                outputs/lm/<slug>/lm_alternatives.csv  (the alt list + its risk/effort/g; + lm_scenario_desire.csv for 2a/2b)
+LM elicitation  (model/lm/)   — K independent runs per cell (the simulated-observer mixture)
+    generate_alternatives.py --study <slug>  →  outputs/lm/<slug>/lm_alternatives.csv  (per-run counterfactuals; run_id column)
+    score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_runs.jsonl  (one record per run × cell: every action's risk/effort/g, scored once)
+                                                outputs/lm/<slug>/lm_given.json  (given-magnitude scalars: desire for 2a/2b, intimacy 4-vector for 1a/1b)
         ↓
 Inverse planning  (model/inverse/)       Studies 1a, 1b, 2a, 2b
-    fit_<slug>.py     → outputs/<slug>/fit_results.csv
-    predict_<slug>.py → outputs/<slug>/preds_<variant>.npy + preds_summary.csv
+    fit_<slug>.py     → outputs/<slug>/fit_results.json  (+ fit_restarts.jsonl)
+    predict_<slug>.py → outputs/<slug>/preds_summary.json  (per-cell model belief update delta_<latent>)
         ↓
 Cross-validation  (model/cv/)
-    cv_<slug>.py → outputs/<slug>/cv_folds.csv + cv_preds_summary.csv
+    cv_<slug>.py → outputs/<slug>/cv_trial_ll.jsonl  (primary metric: per-trial held-out log-likelihood, keyed by subject_id)
+                   + cv_preds_summary.json (per-cell delta_<latent>) + cv_folds.jsonl
         ↓
 Analysis qmds   (analysis/<slug>-analysis.qmd)
 ```
 
 ## Per-experiment files
 
-All four studies infer one or two latent variables from a single observed action; the observer reasons over a padded action space (`{observed action} ∪ LM-generated alternatives`) and the fit/CV slice slot 0.
+All four studies infer one or two latent variables from a single observed action; the observer reasons over a padded action space (`{observed action} ∪ LM-generated alternatives`) and the fit/CV slice slot 0. The dependent measure is the **belief update** (posterior − prior rating). Each elicitation run k yields a model update `δ_k = posterior mean − prior mean`, and a participant's update is scored under the K-component Gaussian mixture `(1/K) Σ_k N(u | δ_k, σ²)` with a fitted response-noise `σ` (a single isotropic σ for the joint studies). The fitted parameters are the utility weights, `α_observer`, and `σ`; the primary model-comparison metric is per-trial held-out log-likelihood under leave-one-scenario-out CV.
 
 | Slug | Study | Infers | Fit | Predict | CV |
 |---|---|---|---|---|---|
@@ -41,7 +42,7 @@ Logic shared across experiments (the LOSO loops in `cv/`, the multi-mode helpers
 
 ## Core math (one copy, shared across all experiments)
 
-- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the per-study padded LM-alternatives loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_scenario.csv` + `lm_alternatives.csv`), and `load_lm_scenario_desire` (per-condition desire scalar for 2a/2b).
+- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the per-study padded LM-alternatives loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_runs.jsonl` into tables that carry a leading elicitation-run axis, falling back to the legacy single-run `lm_scenario.csv` + `lm_alternatives.csv` at K=1), and the given-magnitude scalar loaders `load_lm_scenario_desire` (per-condition desire, 2a/2b) / `load_lm_relationship_values` (per-level intimacy, 1a/1b) from `lm_given.json`.
 - `utility.py` — jit-compiled utility functions: the padded families `get_utility_{full,discomfort_only,base}_padded_{desire,joint_de,intimacy,joint_ie}` plus their `get_prior_padded_*` and `get_lm_g_padded_*` helpers. The reward term is `w_v · desire · g`.
 - `actors.py` — actor memo models: the padded inverse actors `actor_discrete_*_padded_{desire,joint_de}` (discrete observed intimacy) and `actor_continuous_*_padded_{intimacy,joint_ie}` (continuous inferred intimacy), used inside the observers' `thinks[...]` blocks.
 - `observers.py` — observer memos, one family per study, each in `_full` / `_discomfort_only` / `_base`:
@@ -55,12 +56,13 @@ Logic shared across experiments (the LOSO loops in `cv/`, the multi-mode helpers
 ### Terminology: g, desire, reward, risk
 
 - **g** (goal-satisfaction) is how fully an action delivers the outcome, in `[0, 1]`; desire-free. **desire** (`d`, in `[0, 1]`) is how much the dyad wants the outcome. They enter the utility together as the reward term `w_v · desire · g`. `g` replaced the old signed-valence `V`, which was legacy and is gone.
-- The code, data, and paper all use **desire** (the June 2026 cleanup renamed the model-side `reward_condition` → `desire_condition`, the `RewardConditions` enum → `DesireConditions`, and the processed-CSV `motivation` column → `desire`). The one name kept is the fitted weight `w_v` (and `param_w_v` in `fit_results.csv`) — the weight on the `w_v · desire · g` term, left as `w_v` to avoid colliding with `w_d`.
-- The per-action discomfort feature is **risk** (`w_d` is its weight; renamed from `access` in the same cleanup).
+- The code, data, and paper all use **desire** (the June 2026 cleanup renamed the model-side `reward_condition` → `desire_condition`, the `RewardConditions` enum → `DesireConditions`, and the processed-CSV `motivation` column → `desire`). The one name kept is the fitted weight `w_v` (and `param_w_v` in `fit_results.json`) — the weight on the `w_v · desire · g` term, left as `w_v` to avoid colliding with `w_d`.
+- The per-action discomfort feature is **risk** (`w_d` is its weight; renamed from `access` in the same cleanup). Intimacy `I` modulates it via `(1 − I)^γ`.
+- **Intimacy magnitude** `I ∈ [0, 1]` for the four relationship levels is LM-elicited (`load_lm_relationship_values` ← `lm_given.json`), mirroring the per-condition desire scalar in 2a/2b; it's passed into the desire/joint_de observer memos as `relationship_values`, falling back to the placeholder `RELATIONSHIP_LEVEL_VALUES` until the elicitation has been run.
 
 ## Shared infrastructure
 
-- `inverse/_helpers.py` — `_fit_with_adam`, NLL functions (`compute_intimacy_nll`, `compute_effort_nll`, `compute_desire_nll`), per-study data loaders, the joint observer fit loops (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`), and the padded table-kwargs helpers (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`).
+- `inverse/_helpers.py` — `_fit_with_adam` / `_fit_multistart` (with optional warm-start `init_params`), the belief-update Gaussian-mixture losses (`mixture_nll_1d`, `mixture_nll_2d`) plus `posterior_mean` / `PRIOR_MEAN` / `EFFORT_PRIOR_MEAN`, per-study data loaders (returning per-trial belief updates), `_build_observer_tables_runs` (runs the observer once per elicitation run and stacks the posteriors on a leading K axis), the joint observer fit loops (`fit_{desire,joint_de,intimacy,joint_ie}_observer_joint`, fitting weights + `α_observer` + `σ`), and the padded table-kwargs helpers (`desire_table_kwargs`, `joint_de_table_kwargs`, `intimacy_table_kwargs`, `joint_ie_table_kwargs`).
 - `cv/_inverse_dispatcher.py` — LOSO logic for the four inverse studies (`main_{desire,joint_de,intimacy,joint_ie}`).
 - `lm/_features_dispatcher.py`, `lm/_alternatives_dispatcher.py` — multi-mode internals shared by the scorers / alternative generation; `lm/client.py`, `lm/prompts.py` — LM-call infrastructure and prompt templates.
 
