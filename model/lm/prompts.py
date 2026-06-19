@@ -2,36 +2,43 @@
 
 All system prompts and user-prompt formatters live here so they're easy to
 compare and edit together. This module has no LM-call logic — see
-`lm/score_canonical_features.py` and `lm/generate_alternatives_desire.py` for that.
+`lm/score_merged.py` and `lm/generate_alternatives.py` for that.
 
-Three rating types share the same overall structure (preamble + intro line +
-rating-specific body + JSON format block):
+The pipeline has two elicitation steps (see the manuscript Methods):
 
-  - **risk**: bodily, physical-contact, or informational exposure of an
-    action between the two people in the scenario.
-  - **effort**: physical, logistical, and time cost of executing an action.
-  - **v**: signed valence of an action with respect to the actor's
-    desire state — strongly counterproductive (-3) to strongly
-    serving the state (+3). Requires a `state` paragraph (the scenario's
-    `desire_high` or `desire_low` text) at call time, since the same
-    action receives different valences under different states.
+  1. **Counterfactual action generation** (`G_LM`): given the scenario and the
+     observed action, the LM proposes a small set of plausible alternative
+     actions the dyad could have taken (`ALTERNATIVES_SYSTEM_PROMPT` /
+     `alternatives_user_prompt`).
+  2. **Utility-feature scoring** (the feature map `phi_tau`): the observed
+     action and the generated alternatives are scored together, variable-length,
+     on three features, each on a 0–6 scale (rescaled to [0, 1] downstream):
 
-Each rating type can be requested with a fixed action count (4 for the
-canonical experiments, 2 for the effort experiments) or with a variable
-action count (used by the no-alt alternative-scoring path, where the LM
-sees a different number of LM-generated alternatives per cell).
+       - **risk**: bodily, spatial, or informational exposure an action creates
+         between the two people — the relationship-independent
+         interpersonal-vulnerability feature (discomfort = risk · (1−I)^γ).
+       - **effort**: physical, material, and time cost of executing an action.
+       - **g**: desire-free goal-satisfaction — how fully the action delivers
+         the outcome at stake. The reward term is `w_v · desire · g`, so desire
+         scales this stable per-action value (g replaced the old signed-valence
+         rating).
 
-A third call type, **alternatives generation**, has its own system prompt
-and user-prompt formatter at the bottom of the file.
+Two further call types supply the magnitude of a variable that is *given*
+rather than inferred in a study: a scenario-level **desire** scalar (0–100,
+`DESIRE_SYSTEM_PROMPT` / `desire_user_prompt`) for the given-desire studies,
+and a per-level **intimacy** scalar (0–100, `INTIMACY_SYSTEM_PROMPT` /
+`relationship_user_prompt`) for the given-relationship studies. Both are at the
+bottom of the file.
 
 The prompts are domain-general: they cover food sharing as well as the
 three non-food sub-types in `scenarios_nonfood.csv` — *substance*
 (chapstick, towel, hairbrush, harmonica, sunscreen), *space* (blanket,
 sleeping-bag, bed, locker-room, sauna), and *privacy* (breakup, payment,
 gossip, home, navigation). The risk rubric covers three channel types
-(bodily-substance, direct physical-contact, informational/private-resource);
-the effort rubric covers physical work, equipment/setup, time cost, and
-coordination/bookkeeping. The original food-only prompts were retired in
+(bodily-substance transfer, physical-contact / shared-space, and
+informational / private-resource); the effort rubric covers physical motor
+work, equipment / setup, and time cost (physical cost only — not coordination
+or other cognitive costs). The original food-only prompts were retired in
 favor of this single set after a side-by-side comparison showed the
 unified prompts produced equal or slightly better fits on the food data.
 
@@ -52,74 +59,33 @@ _PREAMBLE_RATING = (
     "regular adult, just going off of your intuition."
 )
 
-_NUMBER_WORD = {
-    2: "two",
-    3: "three",
-    4: "four",
-}
 
-# Sample JSON values used in the system prompt's example block. Different
-# rating types use different sample values (preserved from the originals).
-_JSON_EXAMPLE_VALUES = {
-    "risk": [0.5, 1.2, 3.8, 5.5],
-    "effort": [0.5, 3.2, 2.1, 1.5],
-    "v": [-1.5, 0.5, 2.0, 2.8],
-    "g": [0.5, 3.0, 5.5, 4.0],
-}
-
-# 2-action JSON examples differ from the first 2 entries of the 4-action
-# examples (different illustrative values were used in the original prompts).
-_JSON_EXAMPLE_VALUES_2 = {
-    "risk": [0.5, 3.8],
-    "effort": [0.5, 3.2],
-    "v": [-1.5, 2.0],
-    "g": [0.5, 5.5],
-}
-
-
-def _intro_line(n_actions):
+def _intro_line():
     """Build the 'For each scenario, you will read about ...' intro line.
 
-    Pass an int for fixed-length action sets, or None for the variable-length
-    case used by no-alt alternative scoring.
+    The scored action set is variable-length: the LM sees the observed action
+    plus however many alternatives that run generated.
     """
-    if n_actions is None:
-        return (
-            "For each scenario, you will read about a set of alternative "
-            "actions the two people could take. The number of actions varies."
-        )
     return (
-        f"For each scenario, you will read about {_NUMBER_WORD[n_actions]} "
-        "different actions the two people can take."
+        "For each scenario, you will read about a set of alternative "
+        "actions the two people could take."
     )
 
 
-def _json_format_block(rating_type, n_actions):
-    """Build the trailing 'Respond with your numerical ratings ...' block."""
-    if n_actions is None:
-        # Variable-length — examples shown for 3 actions.
-        example = '{"action_0": 0.5, "action_1": 1.2, "action_2": 3.8}'
-        if rating_type == "effort":
-            example = '{"action_0": 0.5, "action_1": 3.2, "action_2": 2.1}'
-        elif rating_type == "v":
-            example = '{"action_0": -1.5, "action_1": 0.5, "action_2": 2.8}'
-        elif rating_type == "g":
-            example = '{"action_0": 0.5, "action_1": 3.0, "action_2": 5.5}'
-        return (
-            "Respond with your numerical ratings as a JSON object whose keys "
-            'are "action_0", "action_1", ... matching the number of actions '
-            "given, no explanation needed. Example for 3 actions:\n"
-            f"{example}"
-        )
-    if n_actions == 2:
-        vals = _JSON_EXAMPLE_VALUES_2[rating_type]
-    else:
-        vals = _JSON_EXAMPLE_VALUES[rating_type][:n_actions]
-    keyvals = ", ".join(f'"action_{i}": {v}' for i, v in enumerate(vals))
+def _json_format_block():
+    """Build the trailing 'Respond with your numerical ratings ...' block.
+
+    The example illustrates the JSON shape for 3 actions; the real call has as
+    many keys as actions given. The example numbers are arbitrary placeholders
+    (not a suggested distribution) so they don't anchor the ratings.
+    """
     return (
-        "Respond with your numerical ratings in this JSON format only, "
-        "no explanation needed:\n"
-        f"{{{keyvals}}}"
+        "Respond with your numerical ratings as a JSON object whose keys "
+        'are "action_0", "action_1", ... matching the number of actions '
+        "given, no explanation needed. The numbers below just show the format "
+        "— they are arbitrary placeholders, not a suggested pattern; use "
+        "whatever values your judgments warrant. Example for 3 actions:\n"
+        '{"action_0": 4.0, "action_1": 1.5, "action_2": 3.0}'
     )
 
 
@@ -127,23 +93,43 @@ def _json_format_block(rating_type, n_actions):
 # Rating-type-specific bodies
 # ==============================================================================
 
-# _RISK_BODY draws on four established literatures. The prompt body itself
-# stays jargon-free (the LM is prompted "as a participant"), but the
-# conceptual content of each channel is grounded as follows; cite these in
-# the manuscript when defending the construct.
+# _RISK_BODY operationalizes the model's `risk(a)` feature: the interpersonal
+# vulnerability an action creates — the degree to which it exposes one person to
+# the other, opening them up or lowering the boundary between them. This is a
+# relationship-INDEPENDENT property of the action (the model modulates it by
+# intimacy separately, via (1−I)^γ), so the prompt asks for the exposure the
+# action creates, not how uncomfortable it would feel given the relationship.
+#
+# Treating bodily, spatial, and informational/emotional exposure as one graded
+# vulnerability dimension is itself theoretically motivated, not just a modeling
+# convenience: across the relationship literature, closeness develops through —
+# and is read from — graded self-exposure that lowers interpersonal boundaries,
+# the same logic recurring across domains. Social-penetration theory frames
+# relationship development as progressive, boundary-lowering self-disclosure
+# (Altman, I. & Taylor, D. A. (1973). "Social Penetration: The Development of
+# Interpersonal Relationships." Holt, Rinehart & Winston; see also Prager 1997
+# on intimacy as mutual vulnerability); in the bodily domain the parallel is
+# consubstantiation, the partial merging of selves through shared substance
+# (Carsten 1995; Thomas et al. 2022). Intimacy is the graded state that lowers
+# the discomfort of such vulnerable actions — exactly the role `risk(a)` plays in
+# the utility. The three forms this vulnerability takes are each grounded in
+# their own literature; the prompt body stays jargon-free (the LM is prompted
+# "as a participant"), but the conceptual content of each is grounded as follows:
 #
 #   - Substance-transmission channels — Rozin, P. & Fallon, A. E. (1987).
 #     "A perspective on disgust." Psychological Review 94(1): 23–41.
 #     Establishes contamination via bodily-substance transfer as the core
 #     domain of disgust; even brief contact transmits.
 #
-#   - Direct-contact channels — Suvilehto, J. T., Glerean, E., Dunbar, R. I. M.,
-#     Hari, R., & Nummenmaa, L. (2015). "Topography of social touching depends
-#     on emotional bonds between humans." PNAS 112(45): 13811–13816.
-#     Body-map permissions for touch are graded by relational closeness across
-#     cultures; grounds why contact extent and body region both matter.
+#   - Direct-contact / shared-space channels — Suvilehto, J. T., Glerean, E.,
+#     Dunbar, R. I. M., Hari, R., & Nummenmaa, L. (2015). "Topography of social
+#     touching depends on emotional bonds between humans." PNAS 112(45):
+#     13811–13816 (touch permissions graded by closeness; grounds why contact
+#     extent and body region matter). For the shared-space / proximity part,
+#     Hall, E. T. (1966). "The Hidden Dimension." Doubleday — interpersonal
+#     distance zones are governed by relational closeness.
 #
-#   - Informational / disclosure channels — Reis, H. T. & Shaver, P. (1988).
+#   - Informational / emotional-disclosure channels — Reis, H. T. & Shaver, P. (1988).
 #     "Intimacy as an interpersonal process." In S. Duck (Ed.), Handbook of
 #     Personal Relationships, Wiley. Self-disclosure + partner responsiveness
 #     defines intimacy at the level of individual interactions; co-presence
@@ -157,20 +143,20 @@ def _json_format_block(rating_type, n_actions):
 
 _RISK_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate: how much does this action open one person up to the other? Three kinds of opening are possible — each is a channel through which something passes from one person's side to the other:
+For each action, evaluate how much it makes one person interpersonally vulnerable to the other — how much it exposes them, opens them up, or lowers the boundary between them, letting something normally kept to oneself pass from one person's side to the other. This interpersonal vulnerability can take multiple forms, and a single action may involve more than one:
 
-- Substance-transmission channels: bodily substances (saliva, breath, skin oils, sweat) from one person reach the other, either directly or via a shared vessel or item that's been on the first person's body. Even brief contact counts — the substance doesn't have to remain visible for the transmission to be real.
-- Direct-contact channels: the two people's bodies physically touch each other, or come into very close proximity. The extent of contact and the body region involved both matter — brief incidental touch is a small channel; sustained skin contact, or contact with body regions normally restricted to close relationships, is a larger channel.
-- Informational or private-resource channels: private information, sensitive personal details, or personal resources (a private space, a personal item, a confidential record) from one person become accessible to the other — content that someone would not share with a stranger or a passing acquaintance.
+- Bodily / substance exposure: bodily substances (saliva, breath, skin oils, sweat) from one person reach the other, either directly or via a shared vessel or item that's been on the first person's body. Even brief contact counts — the substance doesn't have to remain visible for the exposure to be real.
+- Physical contact or shared space: the two people's bodies physically touch, or they share close physical space — sustained proximity within a bounded space such as a bed, blanket, small room, or vehicle. The extent of contact or proximity and the body region involved both matter — brief incidental touch or passing nearness is a small exposure; sustained skin contact, sharing a confined space, or contact with body regions normally restricted to close relationships is a large one.
+- Private or emotional disclosure: private, sensitive, or emotional information (personal details, or feelings one would not voice publicly), or access to personal resources (a private space, a personal item, a confidential record), from one person becomes accessible to the other — content or access someone would not grant a stranger or a passing acquaintance.
 
-Co-presence without substance transmission, contact, or disclosure does NOT by itself create a channel — for example, two people each handling their own separate utensils, sitting in the same room without interacting, or keeping a conversation to surface-level topics. These should be rated near zero.
+Co-presence without substance transfer, contact, close shared space, or disclosure does NOT by itself make one person vulnerable to the other — for example, two people each handling their own separate utensils, sitting apart in a large or public room, or keeping a conversation to surface-level topics. These should be rated near zero.
 
-Rate the action's physical, contact, or informational opening — the channel itself — not how emotionally intimate or awkward it would feel. The emotional reading depends on who the two people are; here we're asking what the action does, independent of relationship.
+Rate the interpersonal vulnerability the action itself creates — the exposure, contact, or disclosure involved — not how intimate or awkward it would feel. Here we are asking what the action does, independent of their relationship.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No channel between the two people (they remain fully separate; the action involves no exchange of substance, contact, or disclosure)
-3 = Indirect or limited channel (e.g. using a shared item after cleaning or with a barrier, sitting near each other without touching, sharing surface-level information anyone could ask about)
-6 = Direct channel (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, or sharing private details one would not disclose to a stranger)"""
+0 = No interpersonal vulnerability (the two people stay fully separate; no exchange of substance, no contact or shared space, no disclosure)
+3 = Limited or indirect vulnerability (e.g. using a shared item after cleaning or with a barrier, sitting near each other without touching, sharing surface-level information anyone could ask about)
+6 = Strong, direct vulnerability (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, sharing a bed or other close confined space, or disclosing private details one would not tell a stranger)"""
 
 
 # _EFFORT_BODY is grounded in the Naïve Utility Calculus (NUC) framework
@@ -227,82 +213,20 @@ Use this scale from 0 to 6 (continuous values allowed):
 # the numbered actions).
 _USER_INSTRUCTIONS = {
     "risk": (
-        "Rate how much each action opens each person up to the other — "
-        "physically, informationally, or both (0-6 scale):"
+        "Rate how much each action makes one person interpersonally vulnerable "
+        "to the other — through bodily exposure, physical contact or shared "
+        "space, or private disclosure (0-6 scale):"
     ),
     "effort": (
         "Rate the physical and logistical cost of executing each action — "
         "how much physical work, preparation, or extra equipment is required "
         "(0-6 scale):"
     ),
-    "v": (
-        "Rate how each action affects the actor in their desire state "
-        "— from -3 (strongly counterproductive for the state) through 0 "
-        "(neutral) to +3 (strongly serves the state):"
-    ),
     "g": (
         "Rate how much each action results in the two people actually getting "
         "or consuming the thing at stake (0-6 scale):"
     ),
 }
-
-
-# _V_BODY is the desire component of the project's Bayesian inverse-planning
-# model — the signed valence of an action with respect to the actor's
-# desire state. The prompt body stays jargon-free, but the rating
-# dimension draws on the following established literatures:
-#
-#   - Formal anchor (V as desire in inverse planning) — Baker, C. L.,
-#     Saxe, R., & Tenenbaum, J. B. (2009). "Action understanding as
-#     inverse planning." Cognition 113(3): 329–349. The foundational
-#     Bayesian model where action understanding is treated as inverse
-#     inference over a (goal, desire, cost) model of the actor. V in
-#     this project is literally the desire in that formalism.
-#
-#   - Desire as signed and separable from cost — Jara-Ettinger, J.,
-#     Gweon, H., Schulz, L. E., & Tenenbaum, J. B. (2016). "The naïve
-#     utility calculus: Computational principles underlying commonsense
-#     psychology." Trends in Cognitive Sciences 20(8): 589–604. Grounds
-#     the −3 to +3 range and the formal distinction between "irrelevant
-#     action" (desire = 0) and "thwarting action" (desire < 0).
-#
-#   - Teleological interpretation of actions — Gergely, G. & Csibra, G.
-#     (2003). "Teleological reasoning in infancy: The naïve theory of
-#     rational action." Trends in Cognitive Sciences 7(7): 287–292.
-#     Foundational claim that observers represent actions in relation
-#     to goal-states under a principle of rational action — grounds the
-#     question "does this action serve what the actor wants?" as a
-#     psychologically natural one to ask.
-#
-#   - Diverse desires as a basic, early-emerging mental state attribution
-#     — Wellman, H. M. & Liu, D. (2004). "Scaling of theory-of-mind tasks."
-#     Child Development 75(2): 523–541. "Diverse Desires" is the FIRST
-#     step in their ToM developmental scale — before belief understanding.
-#     Grounds the claim that conditional-on-desire-state valence
-#     judgments are a basic capacity the LM-as-participant can perform.
-#
-#   - Observers infer desire from action choices — Liu, S., Ullman, T. D.,
-#     Tenenbaum, J. B., & Spelke, E. S. (2017). "Ten-month-old infants
-#     infer the value of goals from the costs of actions." Science 358:
-#     1038–1041. Empirical anchor that V exists as a separable, inferable
-#     quantity — observers reason about desire from choices even in infancy.
-
-_V_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
-
-For each scenario, one of the two people is in a particular desire state — for example, wanting something (hungry, in pain, in urgent need) or wanting to avoid something (full, comfortable, wanting privacy). The state will be given to you explicitly. The same action can serve one desire state and thwart another — your rating should be conditional on the state you are given, not on the actor's overall well-being or what you yourself would prioritize.
-
-For each action, evaluate how that action affects the actor *given the state they are in*. Does the action serve what the actor wants in this moment? Or does it actively work against it?
-
-Use this scale from -3 to +3 (continuous values allowed):
-+3 = Strongly serves the state (the action straightforwardly fulfills what the actor needs or wants)
-+1 = Mildly helps (the action partially satisfies the state)
- 0 = Neutral (the action neither helps nor harms — it's irrelevant to the active state, or it neither achieves nor violates the goal)
--1 = Mildly counterproductive (the action partially works against the state, e.g. eating a small bite when full, declining a small amount of needed help)
--3 = Strongly counterproductive (the action actively makes the state worse — e.g. eating heartily when already painfully full, refusing urgently needed information when the actor is in distress)
-
-Important: "doesn't help" and "actively harms" are different things. An action that simply fails to address the state — that's irrelevant to what the actor wants — should be rated near 0. Reserve negative ratings for actions that actively move the actor away from the state they want (eating when full, sharing when wanting privacy, etc.).
-
-Do NOT rate how intimate or awkward the action would feel, and do NOT rate the physical effort of carrying it out — those are separate dimensions handled by other questions in this study. Here we want only how the action sits with the actor's current desire state."""
 
 
 # _G_BODY is the goal-satisfaction component of the desire term. In the
@@ -315,9 +239,9 @@ Do NOT rate how intimate or awkward the action would feel, and do NOT rate the p
 # scalar rated by `desire_user_prompt`). g replaces the old signed-valence V.
 _G_BODY = """In this survey, you will read vignettes about two people in different situations where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate how much it results in the two people actually obtaining or consuming the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. This is about whether the action delivers the goal, NOT about how much the people would like it (a separate question), and NOT about the physical effort or the interpersonal exposure the action involves (also separate questions).
+For each action, evaluate how fully it results in the two people ending up with the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Do not let how much the people would like it, the physical effort involved, or how "shared" or close the action looks change this rating — those are separate questions, and an action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route.
 
-An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low. How they get it — directly, or via a safer indirect route — does not matter here; only how fully they end up with it.
+An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low.
 
 Use this scale from 0 to 6 (continuous values allowed):
 0 = The thing is not obtained (the action forgoes or abandons it)
@@ -328,49 +252,42 @@ Use this scale from 0 to 6 (continuous values allowed):
 _BODIES = {
     "risk": _RISK_BODY,
     "effort": _EFFORT_BODY,
-    "v": _V_BODY,
     "g": _G_BODY,
 }
 
 
 # ==============================================================================
-# Public API: rating prompts (risk / effort)
+# Public API: feature-scoring prompts (risk / effort / g)
 # ==============================================================================
 
 
-def system_prompt(rating_type, n_actions=None):
-    """Build the system prompt for a rating call.
+def system_prompt(rating_type):
+    """Build the system prompt for a feature-scoring call.
 
-    rating_type: one of "risk", "effort".
-    n_actions: 2 or 4 for fixed-length rating, or None for the variable-length
-        case used by no-alt alternative scoring.
+    rating_type: one of "risk", "effort", "g". The scored action set is
+    variable-length (the observed action plus that run's alternatives).
     """
     if rating_type not in _BODIES:
         raise ValueError(f"unknown rating_type: {rating_type}")
-    intro = _intro_line(n_actions)
-    body = _BODIES[rating_type].format(INTRO=intro)
-    json_block = _json_format_block(rating_type, n_actions)
+    body = _BODIES[rating_type].format(INTRO=_intro_line())
+    json_block = _json_format_block()
     return f"{_PREAMBLE_RATING}\n\n{body}\n\n{json_block}"
 
 
-def user_prompt(rating_type, vignette, action_texts, state=None, desire_object=None):
-    """Build the user prompt for a rating call.
+def user_prompt(rating_type, vignette, action_texts, desire_object=None):
+    """Build the user prompt for a feature-scoring call.
 
     vignette is whatever scene-description text the LM should see (the caller
     is responsible for choosing whether to include condition paragraphs like
     `effort_low` / `effort_high`).
     action_texts is an ordered list of action descriptions; they're rendered
     as "Action 0: ...", "Action 1: ...", etc.
-    state is the actor's desire-state paragraph (e.g. `desire_high` or
-    `desire_low`). Required for rating_type="v"; ignored for risk/effort.
     desire_object names the specific resource at stake (e.g. "the hot dog");
     when given for rating_type="g" it makes the instruction concrete instead
     of the generic "the thing at stake". Ignored for the other rating types.
     """
     if rating_type not in _USER_INSTRUCTIONS:
         raise ValueError(f"unknown rating_type: {rating_type}")
-    if rating_type == "v" and state is None:
-        raise ValueError("rating_type='v' requires a `state` paragraph")
     instr = _USER_INSTRUCTIONS[rating_type]
     if rating_type == "g" and desire_object is not None:
         instr = (
@@ -380,8 +297,6 @@ def user_prompt(rating_type, vignette, action_texts, state=None, desire_object=N
     actions_block = "\n".join(
         f"Action {i}: {txt}" for i, txt in enumerate(action_texts)
     )
-    if rating_type == "v":
-        return f"Scenario: {vignette}\n\nState: {state}\n\n{instr}\n\n{actions_block}"
     return f"Scenario: {vignette}\n\n{instr}\n\n{actions_block}"
 
 
@@ -394,7 +309,7 @@ def user_prompt(rating_type, vignette, action_texts, state=None, desire_object=N
 # open-world inverse-planning move: rather than reasoning over a fixed
 # action set, the LM proposes a small, scenario-specific set of plausible
 # counterfactual actions that then feed into the formal inverse-planning
-# model with their LM-elicited utility features (risk, effort, V). The
+# model with their LM-elicited utility features (risk, effort, g). The
 # prompt body stays jargon-free; the methodological choice is anchored
 # as follows.
 #
@@ -439,55 +354,20 @@ Respond ONLY with a JSON array in this exact format, no explanation:
 ]"""
 
 
-def alternatives_user_prompt(vignette, desire_text, observed_action_text):
-    """Build the user prompt for the alternative-generation call (used by
-    the no-alt experiment to generate counterfactuals)."""
-    return (
-        f"Scenario: {vignette}\n"
-        f"{desire_text}\n\n"
-        f"The two people took the following action:\n"
-        f"{observed_action_text}\n\n"
-        "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Tag each with "
-        "is_share ∈ {0, 1}. Do not include the action they actually took."
-    )
-
-
-# Relationship-condition descriptors used by the alternative-generation pass,
-# keyed by the verbal intimacy-condition slug (the experiments store intimacy as
-# a slug, never a numeric code). The descriptor text conveys the relationship
-# context to the LM. NOTE: it still includes an "X out of 100" numeric anchor,
-# whereas participants now see only the qualitative descriptor — see
-# `intimacy_texts`/`intimacyDescriptor` in `experiments/_lib/scenario.js`.
+# Relationship-condition descriptors keyed by the verbal intimacy-condition slug
+# (the experiments store intimacy as a slug, never a numeric code). These are the
+# de-anchored verbal exemplars human participants see — no "X out of 100" numeric
+# anchor. The same descriptors are used both to condition alternative generation
+# (here, via `alternatives_user_prompt`) and to elicit the per-level intimacy
+# magnitude (`relationship_user_prompt`), so the LM sees exactly what participants
+# see and the intimacy rating is not circular. See `intimacy_texts` /
+# `intimacyDescriptor` in `experiments/_lib/scenario.js`.
 RELATIONSHIP_DESCRIPTORS = {
-    "max_formal": "0 out of 100 (maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader)",
-    "neither": "50 out of 100 (neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker)",
-    "somewhat_intimate": "75 out of 100 (somewhat intimate — e.g., the kind of relationship one might have with a close friend)",
-    "max_intimate": "100 out of 100 (maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend)",
+    "max_formal": "maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader",
+    "neither": "neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker",
+    "somewhat_intimate": "somewhat intimate — e.g., the kind of relationship one might have with a close friend",
+    "max_intimate": "maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend",
 }
-
-
-def alternatives_user_prompt_relationship(
-    vignette, relationship_level, observed_action_text
-):
-    """Build the user prompt for the alternative-generation call when
-    conditioning on relationship instead of desire (desire-noalt observer).
-
-    `relationship_level` is one of the intimacy-condition slugs (max_formal /
-    neither / somewhat_intimate / max_intimate), matching the experiment's
-    intimacy conditions.
-    """
-    descriptor = RELATIONSHIP_DESCRIPTORS[relationship_level]
-    return (
-        f"Scenario: {vignette}\n"
-        f"The two people are in a relationship they would describe as "
-        f"{descriptor}.\n\n"
-        f"The two people took the following action:\n"
-        f"{observed_action_text}\n\n"
-        "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Tag each with "
-        "is_share ∈ {0, 1}. Do not include the action they actually took."
-    )
 
 
 def alternatives_user_prompt(
@@ -561,8 +441,9 @@ DESIRE_SYSTEM_PROMPT = (
     "them) — on a scale from 0 (would not like it at all) to 100 (would like it "
     "extremely). Rate only how much they would like it — not what they end up "
     "doing, how much effort it takes, or how the two people are related.\n\n"
-    "Respond with a JSON object in this format only, no explanation:\n"
-    '{"desire": 65}'
+    "Respond with a JSON object in this exact format, no explanation "
+    "(the number is just a placeholder showing the format):\n"
+    '{"desire": 50}'
 )
 
 
@@ -593,26 +474,20 @@ def desire_user_prompt(vignette, state, desire_object):
 # mirror of the per-condition desire scalar in 2a/2b. The descriptions are
 # scenario-independent, so this is one rating per level (4 total).
 #
-# DE-ANCHORED descriptors: unlike RELATIONSHIP_DESCRIPTORS (which embed an
-# "X out of 100" anchor for the generation prompt), these give only the verbal
-# exemplars — rating an anchored descriptor would be circular (the LM would echo
-# the stated number). The verbal exemplars match what human participants see.
-RELATIONSHIP_DESCRIPTORS_NOANCHOR = {
-    "max_formal": "maximally formal — e.g., the kind of relationship one might have with a new acquaintance, a shopkeeper, or a religious leader",
-    "neither": "neither formal nor intimate — e.g., the kind of relationship one might have with a casual friend or a coworker",
-    "somewhat_intimate": "somewhat intimate — e.g., the kind of relationship one might have with a close friend",
-    "max_intimate": "maximally intimate — e.g., the kind of relationship one might have with a romantic partner or best friend",
-}
+# The level is rated from the de-anchored verbal descriptors in
+# RELATIONSHIP_DESCRIPTORS (defined above) — the same exemplars participants and
+# the generation prompt see. A numeric anchor would make the rating circular (the
+# LM would echo the stated number).
 
 INTIMACY_SYSTEM_PROMPT = (
     "You are a participant in a human study. Respond as if you were a regular "
     "adult, just going off of your intuition.\n\n"
     "You will read a short description of a relationship between two people. "
-    "Judge how intimate the relationship is — how much closeness, trust, and "
-    "comfort with physical, emotional, or informational openness it implies — on "
-    "a scale from 0 (maximally formal/distant) to 100 (maximally intimate). Rate "
+    "Judge how intimate the relationship is on "
+    "a scale from 0 (maximally formal) to 100 (maximally intimate). Rate "
     "only the intimacy of the relationship itself.\n\n"
-    "Respond with a JSON object in this format only, no explanation:\n"
+    "Respond with a JSON object in this exact format, no explanation "
+    "(the number is just a placeholder showing the format):\n"
     '{"intimacy": 50}'
 )
 
@@ -620,7 +495,7 @@ INTIMACY_SYSTEM_PROMPT = (
 def relationship_user_prompt(descriptor):
     """User prompt for the relationship-intimacy rating (given-relationship
     studies 1a/1b). `descriptor` is a de-anchored verbal relationship descriptor
-    (RELATIONSHIP_DESCRIPTORS_NOANCHOR[level]); returns one 0-100 intimacy
+    (RELATIONSHIP_DESCRIPTORS[level]); returns one 0-100 intimacy
     magnitude for that level."""
     return (
         f"The two people are in a relationship they would describe as "

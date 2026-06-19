@@ -21,18 +21,22 @@ Design choices carried over from the single-run pipeline:
      across effort_condition.
   3. Effort is effort-conditional; g is desire-free. Neither shows intimacy.
 
-Given-magnitude scalars (run-independent, scored once):
-  - given-desire studies (2a, 2b): per-(scenario, desire_condition) desire scalar.
-  - given-relationship studies (1a, 1b): per-level intimacy scalar, rated from the
-    DE-ANCHORED relationship descriptors (rating the anchored descriptor would be
-    circular). Scenario-independent → 4 values.
+Given-magnitude scalars are scored PER RUN (folded into each lm_runs.jsonl
+record, alongside the action features) rather than once run-independently — so the
+run-to-run spread of the given magnitudes joins the same simulated-observer
+mixture as the alternatives and the feature scores:
+  - given-desire studies (2a, 2b): a per-(scenario, desire_condition) desire
+    scalar, scored inside each (scenario, run) unit → each record's `desire`.
+  - given-relationship studies (1a, 1b): a per-level intimacy scalar, rated from
+    the DE-ANCHORED relationship descriptors (rating the anchored descriptor would
+    be circular). Scenario-independent → 4 values scored once per run and reused
+    across that run's scenarios → each record's `intimacy`.
 
 Output (one folder per study, outputs/lm/<slug>/):
   - lm_runs.jsonl — one record per (run_id, cell), each carrying the run's scored
-    actions (slot 0 canonical + slots 1..k alternatives). Consumed by the run-axis
+    actions (slot 0 canonical + slots 1..k alternatives) and the run's given
+    magnitude (`desire` for 2a/2b, `intimacy` for 1a/1b). Consumed by the run-axis
     table loaders in model/tables.py.
-  - lm_given.json — the study's given-magnitude scalars (`desire` and/or
-    `relationship`).
 
 Usage:
     uv run python model/lm/score_merged.py --study food_inv_desire
@@ -40,8 +44,8 @@ Usage:
 
 Requires:
     - TOGETHER_API_KEY in env or .env
-    - outputs/lm/<slug>/lm_alternatives.csv produced by
-      generate_alternatives.py --study <slug> (now carrying a run_id column)
+    - outputs/lm/<slug>/lm_alternatives.jsonl produced by
+      generate_alternatives.py --study <slug> (carrying a run_id field)
 """
 
 import argparse
@@ -84,7 +88,7 @@ from client import (
 from prompts import (
     DESIRE_SYSTEM_PROMPT,
     INTIMACY_SYSTEM_PROMPT,
-    RELATIONSHIP_DESCRIPTORS_NOANCHOR,
+    RELATIONSHIP_DESCRIPTORS,
     desire_user_prompt,
     relationship_user_prompt,
 )
@@ -107,12 +111,12 @@ _LEVELS = {
 SCENARIO_WORKERS = 4
 
 # Per-study config. `cell_cols` are the generation-cell key columns in the
-# alternatives CSV (besides scenario_label + observed_action + run_id).
+# alternatives JSONL (besides scenario_label + observed_action + run_id).
 # `effort_inferred` flags studies whose observer infers effort: their generation
 # cell does NOT include effort, so each cell emits a record for BOTH effort
 # conditions (effort is a feature axis; risk/g repeat). `desire_given` /
-# `relationship_given` select which given-magnitude scalar block lm_given.json
-# carries.
+# `relationship_given` select which per-run given-magnitude scalar each record
+# carries (`desire` for 2a/2b, `intimacy` for 1a/1b).
 _STUDY_CONFIG = {
     "food_inv_desire": {
         "cell_cols": ("effort_condition", "intimacy_condition"),
@@ -256,13 +260,27 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts):
     }
 
 
-def _build_run_records(study, scenario_row, run_id, run_alt_rows, scored, cfg):
+def _build_run_records(
+    study,
+    scenario_row,
+    run_id,
+    run_alt_rows,
+    scored,
+    cfg,
+    given_desire=None,
+    given_relationship=None,
+):
     """Assemble the per-(run, cell) JSONL records for one (scenario, run).
 
     Enumerates the full generation cell grid (observed_action × generation
     condition levels) so every cell gets a record with its canonical slot 0,
     even cells whose run produced zero alternatives. For effort-inferred studies
     each cell emits one record per effort_condition (the effort feature axis).
+
+    `given_desire` (dict desire_condition -> scalar, this scenario's run) and
+    `given_relationship` (dict level -> scalar, this run) are the per-run given
+    magnitudes, folded into each record by its condition: `desire` for 2a/2b,
+    `intimacy` for 1a/1b.
     """
     scenario = scenario_row["scenario_label"]
     risk, effort, g = scored["risk"], scored["effort"], scored["g"]
@@ -320,6 +338,13 @@ def _build_run_records(study, scenario_row, run_id, run_alt_rows, scored, cfg):
                 }
                 record.update(cond)
                 record["effort_condition"] = ec  # loader keys canon on this
+                # Per-run given magnitude, folded in by the cell's condition.
+                if given_desire is not None:
+                    record["desire"] = given_desire.get(cond["desire_condition"])
+                if given_relationship is not None:
+                    record["intimacy"] = given_relationship.get(
+                        cond["intimacy_condition"]
+                    )
                 record["actions"] = actions
                 records.append(record)
     return records
@@ -333,38 +358,42 @@ def _f(x):
     return None if np.isnan(x) else x
 
 
-def _rate_desire_scalars(client, scenarios_df):
-    """Per-(scenario, desire_condition) desire scalar in [0, 1] (run-independent).
-    Single scoring pass per (scenario, condition)."""
+def _rate_desire_for_scenario(client, scenario_row):
+    """Per-desire_condition desire scalar in [0, 1] for one scenario, scored in
+    one run's pass (folded into that (scenario, run)'s records). The K runs are
+    the variation axis, so this is a single scoring pass per (scenario, condition,
+    run) at the elicitation temperature."""
+    scenario = scenario_row["scenario_label"]
     out = {}
-    for scenario, row in scenarios_df.iterrows():
-        out[scenario] = {}
-        for dc in DESIRES:
-            ratings, _ = get_ratings_concurrent(
-                client,
-                DESIRE_SYSTEM_PROMPT,
-                desire_user_prompt(
-                    row["vignette"], row[f"desire_{dc}"], row["desire_object"]
-                ),
-                parse_desire_response,
-                num_runs=1,
-                max_tokens=64,
-                response_format=numeric_desire_schema(),
-                label=f"{scenario}/desire[{dc}]",
-            )
-            out[scenario][dc] = (float(ratings[0]) / 100.0) if ratings else None
+    for dc in DESIRES:
+        ratings, _ = get_ratings_concurrent(
+            client,
+            DESIRE_SYSTEM_PROMPT,
+            desire_user_prompt(
+                scenario_row["vignette"],
+                scenario_row[f"desire_{dc}"],
+                scenario_row["desire_object"],
+            ),
+            parse_desire_response,
+            num_runs=1,
+            max_tokens=64,
+            response_format=numeric_desire_schema(),
+            label=f"{scenario}/desire[{dc}]",
+        )
+        out[dc] = (float(ratings[0]) / 100.0) if ratings else None
     return out
 
 
 def _rate_relationship_values(client):
     """Per-level intimacy scalar in [0, 1] from the de-anchored relationship
-    descriptors (scenario-independent → 4 values). Single scoring pass per level."""
+    descriptors (scenario-independent → 4 values). Single scoring pass per level,
+    per run (the K runs are the variation axis)."""
     out = {}
     for level in INTIMACY_LEVELS:
         ratings, _ = get_ratings_concurrent(
             client,
             INTIMACY_SYSTEM_PROMPT,
-            relationship_user_prompt(RELATIONSHIP_DESCRIPTORS_NOANCHOR[level]),
+            relationship_user_prompt(RELATIONSHIP_DESCRIPTORS[level]),
             parse_intimacy_response,
             num_runs=1,
             max_tokens=64,
@@ -386,42 +415,29 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
     scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     study_dir.mkdir(parents=True, exist_ok=True)
-    alts_path = study_dir / "lm_alternatives.csv"
+    alts_path = study_dir / "lm_alternatives.jsonl"
     runs_path = study_dir / "lm_runs.jsonl"
-    given_path = study_dir / "lm_given.json"
     if not alts_path.exists():
         raise SystemExit(
-            f"Alternatives CSV not found at {alts_path}. Run "
+            f"Alternatives JSONL not found at {alts_path}. Run "
             f"model/lm/generate_alternatives.py --study {study} first."
         )
 
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
-    alts_df = pd.read_csv(alts_path)
+    alts_df = pd.read_json(alts_path, lines=True)
     if "run_id" not in alts_df.columns:
         raise SystemExit(
-            f"{alts_path} has no run_id column — re-run generate_alternatives.py "
+            f"{alts_path} has no run_id field — re-run generate_alternatives.py "
             "with the K-run pipeline first."
         )
 
     print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
     client = Together(api_key=api_key)
 
-    # Given-magnitude scalars (run-independent, scored once) -> lm_given.json.
-    given = {}
-    if cfg["desire_given"]:
-        print("Rating per-(scenario, condition) desire scalars...", flush=True)
-        given["desire"] = _rate_desire_scalars(client, scenarios_df)
-    if cfg["relationship_given"]:
-        print("Rating per-level relationship intimacy (de-anchored)...", flush=True)
-        given["relationship"] = _rate_relationship_values(client)
-    with open(given_path, "w") as f:
-        json.dump(given, f, indent=2)
-    print(f"Wrote {given_path}", flush=True)
-
     system_prompts = {
-        "risk": build_system_prompt("risk", n_actions=None),
-        "effort": build_system_prompt("effort", n_actions=None),
-        "g": build_system_prompt("g", n_actions=None),
+        "risk": build_system_prompt("risk"),
+        "effort": build_system_prompt("effort"),
+        "g": build_system_prompt("g"),
     }
 
     # Resume: skip (scenario, run) units already written to lm_runs.jsonl.
@@ -442,6 +458,29 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
         )
 
     run_ids = sorted(alts_df["run_id"].dropna().unique().astype(int))
+
+    # Per-run given magnitudes (folded into each record). Relationship intimacy
+    # (1a/1b) is scenario-independent, so it's scored ONCE per run and reused
+    # across that run's scenario units; on resume, runs that already have records
+    # are reconstructed from them (any completed (scenario, run) unit covers all 4
+    # levels) so they aren't re-scored with different values. Desire (2a/2b) is
+    # per (scenario, desire_condition) and is scored inside each unit below.
+    relationship_by_run = {}
+    if cfg["relationship_given"]:
+        for rec in existing_records:
+            if rec.get("intimacy") is not None:
+                relationship_by_run.setdefault(int(rec["run_id"]), {})[
+                    rec["intimacy_condition"]
+                ] = float(rec["intimacy"])
+        for rid in run_ids:
+            have = relationship_by_run.get(int(rid), {})
+            if not all(lvl in have for lvl in INTIMACY_LEVELS):
+                print(
+                    f"Rating per-level relationship intimacy (de-anchored), run {rid}...",
+                    flush=True,
+                )
+                relationship_by_run[int(rid)] = _rate_relationship_values(client)
+
     units = [
         (s, r)
         for s in scenarios_df.index
@@ -461,8 +500,23 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
             (alts_df["scenario_label"] == scenario) & (alts_df["run_id"] == run_id)
         ]
         scored = _score_actions(client, scenario_row, run_alt_rows, system_prompts)
+        given_desire = (
+            _rate_desire_for_scenario(client, scenario_row)
+            if cfg["desire_given"]
+            else None
+        )
+        given_relationship = (
+            relationship_by_run.get(int(run_id)) if cfg["relationship_given"] else None
+        )
         return _build_run_records(
-            study, scenario_row, run_id, run_alt_rows, scored, cfg
+            study,
+            scenario_row,
+            run_id,
+            run_alt_rows,
+            scored,
+            cfg,
+            given_desire=given_desire,
+            given_relationship=given_relationship,
         )
 
     all_records = list(existing_records)
@@ -484,7 +538,6 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
 
     print("\n=== Done ===")
     print(f"  {runs_path.name}  ({len(all_records)} records)")
-    print(f"  {given_path.name}  (keys: {sorted(given.keys())})")
 
 
 if __name__ == "__main__":

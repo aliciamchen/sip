@@ -134,19 +134,19 @@ def build_content():
     out.append(
         box(
             "System prompt --- goal-satisfaction $g_{\\tau}(a)$",
-            prompts.system_prompt("g", n_actions=None),
+            prompts.system_prompt("g"),
         )
     )
     out.append(
         box(
             "System prompt --- physical effort $\\mathrm{effort}_{\\tau}(a)$",
-            prompts.system_prompt("effort", n_actions=None),
+            prompts.system_prompt("effort"),
         )
     )
     out.append(
         box(
             "System prompt --- interpersonal risk $\\mathrm{risk}_{\\tau}(a)$",
-            prompts.system_prompt("risk", n_actions=None),
+            prompts.system_prompt("risk"),
         )
     )
     # The three feature user prompts are identical except for one instruction
@@ -203,12 +203,12 @@ def build_content():
         )
     )
     # The four relationship descriptors (de-anchored form shown to participants
-    # and used for the intimacy rating).
-    width = max(len(k) for k in prompts.RELATIONSHIP_DESCRIPTORS_NOANCHOR)
+    # and used for both alternative generation and the intimacy rating).
+    width = max(len(k) for k in prompts.RELATIONSHIP_DESCRIPTORS)
     descr_lines = []
     for level in ("max_formal", "neither", "somewhat_intimate", "max_intimate"):
         descr_lines.append(
-            f"{level.ljust(width)}  {prompts.RELATIONSHIP_DESCRIPTORS_NOANCHOR[level]}"
+            f"{level.ljust(width)}  {prompts.RELATIONSHIP_DESCRIPTORS[level]}"
         )
     out.append(
         box(
