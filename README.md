@@ -65,8 +65,11 @@ The **data** from earlier work is archived under `data/legacy/` and described in
 Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it. Edit the `.py` file and regenerate.
 
 - [`experiments/scenarios.py`](experiments/scenarios.py) → `scenarios.csv` (3-action, the active Studies 1a/1b/2a/2b).
+- [`experiments/scenarios_nonfood.py`](experiments/scenarios_nonfood.py) → `scenarios_nonfood.csv` (the non-food set).
 
 See the [experiments README](experiments/README.md) for the column schema.
+
+The scenario tables reproduced in the paper's supplementary material are generated from these CSVs by [`experiments/export_scenarios_latex.py`](experiments/export_scenarios_latex.py), which renders the food and non-food sets as LaTeX tables. This is a reporting step that does not feed back into the modeling pipeline, so the source of truth for the stimuli remains the `.py` files.
 
 ## Utility model
 
@@ -98,7 +101,7 @@ The action-level utility components — goal-satisfaction, risk, effort — are 
 
 The desire magnitude `d` is not an action feature. In the desire-inference studies it is the latent the observer recovers; in the studies where desire is given context, the LM rates it per (scenario, desire condition) on the 0–100 scale. The given-relationship studies (1a/1b) likewise have the LM rate the intimacy implied by each of the four (de-anchored) relationship descriptions. Both are rated per elicitation run — so they vary run-to-run alongside the action features — and folded into each `lm_runs.jsonl` record (`desire` for the given-desire studies, `intimacy` for the given-relationship studies).
 
-A single prompt set in `model/lm/prompts.py` is used for both the food and non-food pipelines. The risk rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios.
+A single prompt set in `model/lm/prompts.py` is used for both the food and non-food pipelines. The risk rubric covers three channel types — bodily-substance transfer, direct physical contact, and informational/private-resource disclosure — so the same prompt works for food sharing, shared objects, shared physical space, and privacy or information-disclosure scenarios. For the paper, [`model/lm/export_prompts_latex.py`](model/lm/export_prompts_latex.py) renders these templates verbatim into the prompt boxes reproduced in the supplementary material, so the prompts shown there are generated from `prompts.py` rather than transcribed by hand.
 
 The Together AI calls go through `model/lm/client.py`, which constrains the output to a JSON schema via Together's `response_format`, retries transient errors, and checkpoints to disk as `(scenario, run)` units complete. The number of runs (`K_RUNS`, default 20) and the generation temperature (`ALT_T`) are environment-overridable; a cheap `make lm-alternatives K_RUNS=1` smoke test is worth running before the full paid K=20 regeneration.
 

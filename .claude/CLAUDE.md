@@ -34,6 +34,13 @@ The current journal version is in `SIP_journal/` (gitignored; its own git repo s
 
 The camera-ready CogSci 2026 fork is in `cogsci-cr/` (gitignored; its own repo, with the LaTeX in the nested `cogsci-cr/cogsci-2026/` synced to Overleaf). It's a self-contained subset with its own slimmed `model/`, data, analysis, and paper, using hand-stipulated utility tables instead of the LM pipeline. Keep any changes isolated to that subfolder — don't edit HEAD code to make `cogsci-cr/` work. Conference reviews: `cogsci-cr/cogsci-2026/cogsci-2026-reviews.md`.
 
+## Generated SI artifacts (don't hand-edit)
+
+The Supplementary Material `\input`s LaTeX files that are generated from the code. Don't read or edit these `.tex` files to inspect or change a prompt or scenario — read the source and regenerate. Each carries an "AUTO-GENERATED — do not edit by hand" header.
+
+- `SIP_journal/si_prompts.tex` ← `model/lm/export_prompts_latex.py`, rendered from `model/lm/prompts.py`. To read or change a prompt, go to `prompts.py` and re-run the script.
+- `SIP_journal/si_scenarios_food.tex`, `si_scenarios_nonfood.tex` ← `experiments/export_scenarios_latex.py`, rendered from `experiments/scenarios.csv` / `scenarios_nonfood.csv`. Those CSVs are themselves generated from `experiments/scenarios.py` / `scenarios_nonfood.py` (see the experiments rules), so the scenarios' source of truth is the `.py` files — to change a scenario, edit the `.py`, regenerate the CSV, then re-run the table export.
+
 ## Workflow
 
 ```

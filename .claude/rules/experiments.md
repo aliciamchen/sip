@@ -31,7 +31,9 @@ Deploys go through [`bin/deploy-experiment`](../../bin/deploy-experiment), which
 
 ## Scenario CSVs are generated from Python
 
-The scenario CSVs are generated artifacts. Their source of truth is the corresponding `.py` file, which holds the scenario data as Python dicts and writes the CSV when run. Edit the `.py` file and regenerate with `uv run python experiments/<file>.py` — never edit the CSVs directly, since the next regeneration will overwrite the edits. The active set is `experiments/scenarios.py` → `scenarios.csv` (3-action).
+The scenario CSVs are generated artifacts. Their source of truth is the corresponding `.py` file, which holds the scenario data as Python dicts and writes the CSV when run. Edit the `.py` file and regenerate with `uv run python experiments/<file>.py` — never edit the CSVs directly, since the next regeneration will overwrite the edits. The active set is `experiments/scenarios.py` → `scenarios.csv` (3-action); the non-food set is `experiments/scenarios_nonfood.py` → `scenarios_nonfood.csv`.
+
+The paper's SI scenario tables are a further generated artifact downstream of the CSVs: `experiments/export_scenarios_latex.py` renders `scenarios.csv` / `scenarios_nonfood.csv` into `SIP_journal/si_scenarios_food.tex` / `si_scenarios_nonfood.tex` (each with an "AUTO-GENERATED — do not edit by hand" header). Don't read or edit those `.tex` files to inspect or change scenarios — go to the `.py` source, regenerate the CSV, then re-run the table export.
 
 `scenarios.csv` is the 3-action canonical set for the inverse-planning experiments (Studies 1a, 1b, 2a, 2b). It carries the low_risk_share_effort_low/low_risk_share_effort_high paragraphs alongside the desire and intimacy framing so all three latent variables — desire, effort, intimacy — can be manipulated alongside the observed action. The three action columns are `no_share` / `low_risk_share` / `high_risk_share`.
 
