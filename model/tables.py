@@ -437,7 +437,7 @@ def load_padded_lm_tables_desire(
 #   - canonical: lm_scenario.csv
 #       (scenario_label, effort_condition, action, risk, effort, g)
 #   - alternatives: lm_alternatives.csv keyed by the study's generation cell +
-#       effort_condition + alt_idx, with columns action_text, is_share, risk,
+#       effort_condition + alt_idx, with columns action_text, risk,
 #       effort, g (effort is a feature axis — for effort-inferred studies each
 #       alt has a row per effort_condition; risk/g repeat across them)
 
@@ -509,6 +509,12 @@ def _run_sources(outputs_dir, cell_cols):
     return [(canon_ae, canon_g, alts_df)]
 
 
+def _nan_if_none(v):
+    """A failed LM rating is serialized as null (see score_merged._f); load it as
+    NaN rather than crashing on float(None)."""
+    return float("nan") if v is None else float(v)
+
+
 def _run_sources_jsonl(path, cell_cols):
     """Parse `lm_runs.jsonl` into per-run `(canon_ae, canon_g, alts_df)` triples.
 
@@ -516,7 +522,7 @@ def _run_sources_jsonl(path, cell_cols):
       {"run_id": int, "scenario_label": str, "observed_action": str,
        <each cell_col>: str, "actions": [
            {"slot": int, "alt_idx": int|null, "is_canonical": bool,
-            "action_text": str, "is_share": int,
+            "action_text": str,
             "risk": float, "effort": float, "g": float}, ...]}
     `canon_ae`/`canon_g` are reconstructed from the slot-0 canonical actions
     (keyed (scenario, effort_idx, action) / (scenario, action), matching
@@ -539,20 +545,26 @@ def _run_sources_jsonl(path, cell_cols):
             o_idx = ACTION_LABEL_TO_IDX[rec["observed_action"]]
             e_idx = EFFORT_CONDITION_TO_IDX[rec["effort_condition"]]
             for act in rec["actions"]:
+                # Failed ratings are null -> NaN (not a crash). NaN alternatives are
+                # skipped by the padded-table loaders (pd.isna(risk) -> continue); a
+                # NaN canonical leaves that (run, scenario) slot-0 feature NaN, so
+                # that cell drops out of that run's downstream contribution.
+                rk, ef, gg = (
+                    _nan_if_none(act["risk"]),
+                    _nan_if_none(act["effort"]),
+                    _nan_if_none(act["g"]),
+                )
                 if act.get("is_canonical"):
-                    canon_ae[(scenario, e_idx, o_idx)] = (
-                        float(act["risk"]),
-                        float(act["effort"]),
-                    )
-                    canon_g[(scenario, o_idx)] = float(act["g"])
+                    canon_ae[(scenario, e_idx, o_idx)] = (rk, ef)
+                    canon_g[(scenario, o_idx)] = gg
                 else:
                     row = {
                         "scenario_label": scenario,
                         "observed_action": rec["observed_action"],
                         "alt_idx": int(act["alt_idx"]),
-                        "risk": float(act["risk"]),
-                        "effort": float(act["effort"]),
-                        "g": float(act["g"]),
+                        "risk": rk,
+                        "effort": ef,
+                        "g": gg,
                     }
                     for c in cell_cols:
                         row[c] = rec[c]

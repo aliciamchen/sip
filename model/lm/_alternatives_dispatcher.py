@@ -5,8 +5,7 @@ LM elicitation of counterfactual alternative action sets, one cell at a time.
 `elicit_alternatives(client, user_prompt, temperature)` prompts
 Llama-3.3-70B-Instruct-Turbo to list the plausible alternative actions the actor
 could have taken instead of the observed action (the LM decides set size; no
-fixed quota). Each alternative is tagged with a binary `is_share` flag. The
-caller (`generate_alternatives.py`) builds the per-cell prompt and runs cells
+fixed quota). The caller (`generate_alternatives.py`) builds the per-cell prompt and runs cells
 through a thread pool; this module handles one cell's call + parse + dedup.
 
 Requires TOGETHER_API_KEY (in .env) and the `together` package.
@@ -57,10 +56,9 @@ def parse_alternatives(response_text):
         if not isinstance(item, dict):
             continue
         action = item.get("action")
-        is_share = item.get("is_share")
-        if not isinstance(action, str) or is_share not in (0, 1, True, False):
+        if not isinstance(action, str):
             continue
-        out.append({"action": action.strip(), "is_share": int(bool(is_share))})
+        out.append({"action": action.strip()})
     return out if out else None
 
 

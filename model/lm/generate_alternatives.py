@@ -266,7 +266,6 @@ def main(study):
                 row["run_id"] = run
                 row["alt_idx"] = alt_idx
                 row["action_text"] = alt["action"]
-                row["is_share"] = alt["is_share"]
                 results.append(row)
             if completed % CHECKPOINT_EVERY == 0:
                 _write_jsonl(output_path, results)

@@ -242,8 +242,8 @@ def numeric_action_schema(n_actions, name="ratings"):
 def alternatives_array_schema(name="alternatives"):
     """response_format for the alternative-generation calls.
 
-    Constrains the LM to emit a JSON array of objects with ``action`` (string)
-    and ``is_share`` (0 or 1)."""
+    Constrains the LM to emit a JSON array of objects with an ``action``
+    (string) field."""
     return {
         "type": "json_schema",
         "json_schema": {
@@ -254,9 +254,8 @@ def alternatives_array_schema(name="alternatives"):
                     "type": "object",
                     "properties": {
                         "action": {"type": "string"},
-                        "is_share": {"type": "integer", "minimum": 0, "maximum": 1},
                     },
-                    "required": ["action", "is_share"],
+                    "required": ["action"],
                     "additionalProperties": False,
                 },
             },

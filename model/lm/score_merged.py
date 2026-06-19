@@ -103,8 +103,6 @@ from prompts import system_prompt as build_system_prompt
 
 N_ACTIONS = 3
 CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
-# is_share for the canonical actions (no_share is the one non-sharing action).
-CANONICAL_IS_SHARE = {"no_share": 0, "low_risk_share": 1, "high_risk_share": 1}
 EFFORT_CONDITIONS = ["low", "high"]
 DESIRES = ["low", "high"]
 INTIMACY_LEVELS = ["max_formal", "neither", "somewhat_intimate", "max_intimate"]
@@ -372,7 +370,6 @@ def _build_run_records(
                         "slot": 0,
                         "is_canonical": True,
                         "action_text": scenario_row[observed_action],
-                        "is_share": CANONICAL_IS_SHARE[observed_action],
                         "risk": _f(risk.get(obs_norm)),
                         "effort": _f(effort.get((ec, obs_norm))),
                         "g": _f(g.get(obs_norm)),
@@ -386,9 +383,6 @@ def _build_run_records(
                             "alt_idx": int(alt["alt_idx"]),
                             "is_canonical": False,
                             "action_text": alt["action_text"],
-                            "is_share": int(alt["is_share"])
-                            if not pd.isna(alt["is_share"])
-                            else None,
                             "risk": _f(risk.get(a_norm)),
                             "effort": _f(effort.get((ec, a_norm))),
                             "g": _f(g.get(a_norm)),
