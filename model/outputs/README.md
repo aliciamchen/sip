@@ -12,8 +12,7 @@ outputs/
 ├── lm/                                   # LM-elicited tables, one folder per study slug
 │   └── <slug>/
 │       ├── lm_runs.jsonl                     # scored actions + per-run given magnitude, one record per (run, cell)  ← primary
-│       ├── lm_alternatives.jsonl             # stage-1 generated alternative texts (one record per alt)
-│       └── lm_scenario*.csv                  # legacy single-run CSVs (read only as the K=1 fallback)
+│       └── lm_alternatives.jsonl             # stage-1 generated alternative texts (one record per alt)
 └── <slug>/                               # one folder per inverse study (fits + CV)
     ├── fit_results.json                      # fitted params per ablation (incl. param_sigma)
     ├── fit_restarts.jsonl                    # per-restart fit diagnostics
@@ -29,9 +28,12 @@ Slugs (the four inverse studies, all on the 3-action set): `food_inv_desire` (St
 sole source of model predictions, because every reported model-vs-human number is
 out-of-sample.
 
-The LM input tables (`lm_alternatives.jsonl`, `lm_scenario*.csv`) are tracked in git so the
-model runs on a fresh clone; the fit/CV outputs are regenerated locally by the pipeline rather
-than committed.
+The LM tables are no longer tracked in git: the legacy single-run CSVs that used to ship as a
+K=1 fallback were removed once the JSONL pipeline was validated, and the `lm_*.jsonl` are
+regenerated locally by the LM scripts. So a fresh clone — or any study without its own
+`lm_runs.jsonl` — has no LM tables until you run `generate_alternatives.py` + `score_merged.py`
+for it; until then that study's loaders return `None` and its fit raises a clear
+`FileNotFoundError`. The fit/CV outputs are likewise regenerated locally rather than committed.
 
 (Earlier forward-planning and pre-3-action inverse outputs were removed in the June 2026
 cleanup; only the collected participant data is archived under `data/legacy/`.)
@@ -108,17 +110,21 @@ and read back by `score_merged.py`. One record per generated alternative, with f
 `scenario_label`, `observed_action`, the study's generation-cell condition columns, `run_id`,
 `alt_idx`, `action_text`, and `is_share`. The feature scores (`risk`/`effort`/`g`) are *not*
 here — scoring happens in `score_merged.py` and lands in `lm_runs.jsonl`. This is the stage-1
-input to scoring, distinct from the legacy combined `lm_alternatives.csv` below.
+input to scoring, distinct from the legacy combined `lm_alternatives.csv` (the old scored
+fallback, now removed — see below).
 
-### Legacy K=1 fallback (`lm_scenario.csv`, `lm_alternatives.csv`, `lm_scenario_desire.csv`)
+### Legacy K=1 fallback (removed)
 
-Pre-refactor single-run snapshots that already carry their feature scores: `lm_scenario.csv`
-(canonical risk/effort/g), `lm_alternatives.csv` (the old combined alternatives-with-features
-table), and, for 2a/2b, `lm_scenario_desire.csv` (per-condition desire scalar). The table
-loaders read these as a single run (`K=1`) **only when `lm_runs.jsonl` is absent**, so the
-fitting code runs on today's data before the paid K=20 regeneration. The current pipeline no
-longer writes them — they are frozen inputs, kept tracked in git so a fresh clone can fit
-immediately, and can be deleted once `lm_runs.jsonl` exists.
+Before the JSONL pipeline, each study shipped pre-scored single-run CSVs — `lm_scenario.csv`
+(canonical risk/effort/g), `lm_alternatives.csv` (the combined alternatives-with-features
+table), and, for 2a/2b, `lm_scenario_desire.csv` (per-condition desire scalar) — and the table
+loaders read them as a single run (`K=1`) when `lm_runs.jsonl` was absent, so fits ran before
+the paid K=20 regeneration. **These files were removed once the pipeline was validated.** The
+loaders still contain the CSV fallback *code path* (it activates only if such files are
+present), but none ship anymore, so a study with no `lm_runs.jsonl` returns `None` — a clear
+"run the LM scripts first" error — until it is regenerated. (`load_lm_relationship_values`
+additionally falls back to the in-code placeholder `RELATIONSHIP_LEVEL_VALUES`, but that is
+moot while the padded tables are `None`.)
 
 ## Per-study fit and CV outputs (`<slug>/`)
 
