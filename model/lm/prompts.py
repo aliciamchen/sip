@@ -225,9 +225,20 @@ _USER_INSTRUCTIONS = {
 # latent: g is a stable, elicitable property of the action, while desire is the
 # free quantity the observer recovers (or, in the given-desire studies, the
 # scalar rated by `desire_user_prompt`).
+#
+# g is scored on the outcome an action reaches once carried through to
+# completion: a multi-step route (fetching a utensil, taking a longer path,
+# acquiring something first) is credited for the end state it arrives at, not
+# docked for being unfinished partway through. The cost of those steps is
+# captured by `effort`, not g, so the two features stay orthogonal. Without this
+# the LM oscillates run-to-run on journey-phrased actions ("go get a knife, then
+# cut the hot dog" scored anywhere from 0 to 1), since the bare rubric is silent
+# on whether to credit the completed outcome.
 _G_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate how fully it results in the two people ending up with the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn. Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Do not let how much the people would like it, the physical effort involved, or how "shared" or close the action looks change this rating — those are separate dimensions that we are not asking about here, and an action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route.
+For each action, evaluate how fully it results in the two people ending up with the thing at stake in the scenario — the food they could eat, the object they could use, the space they could occupy, the information they could learn.
+
+Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Judge each action by the outcome it leads to once it is carried through to completion. An action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route. If an action involves extra steps along the way — going to fetch a utensil, taking a longer route, acquiring something first — rate it by the end state those steps arrive at, not by the fact that it is still unfinished partway through. How much work or time those steps take is a separate dimension (effort) that we are not asking about here.
 
 An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low.
 
@@ -315,13 +326,6 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 #     statement of why an observer cannot reason over all possible actions
 #     but must construct a smaller, context-sensitive comparison set —
 #     what this prompt operationalizes.
-#
-# The explicit "preserve the scenario's central goal" paragraph and its
-# negative examples address an empirical failure mode: an earlier
-# underspecified version of this prompt produced scenario-shifting
-# alternatives ("find a different food vendor," "pay with a different
-# method") that the formal inverse-planning model could not consume
-# sensibly. The current wording rules those out at generation time.
 
 ALTERNATIVES_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
