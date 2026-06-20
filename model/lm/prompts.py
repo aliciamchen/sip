@@ -342,8 +342,8 @@ Aim for a small, focused set. If you're not confident an alternative is somethin
 
 Respond ONLY with a JSON array in this exact format, no explanation:
 [
-  {"action": "short description of alternative 1"},
-  {"action": "short description of alternative 2"}
+  {"action": "description of alternative 1"},
+  {"action": "description of alternative 2"}
 ]"""
 )
 
