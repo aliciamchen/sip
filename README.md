@@ -50,7 +50,7 @@ The active experiments use a 3-action stimulus set (no sharing / low-risk sharin
 - **Study 2a — Inverse intimacy** (`food_inv_intimacy/`) — known: desire + effort. Inferred: intimacy. Design: 2 × 2 × 3.
 - **Study 2b — Joint inference (intimacy + effort)** (`food_inv_joint_ie/`) — known: desire. Inferred jointly: intimacy and effort. Design: 2 × 3. Two sliders per trial.
 
-Study 1a uses the LM-generated-alternatives padded-action pipeline; the other three are being migrated to it (they currently use the fixed 3-action choice set). None of the experiments show the alternative actions to participants — the alternatives exist only inside the observer's model of how the actor chose.
+All four studies use the LM-generated-alternatives padded-action pipeline. None of the experiments show the alternative actions to participants — the alternatives exist only inside the observer's model of how the actor chose.
 
 A planned **Study 3** will generalize to non-food domains (substance/contact, shared space, privacy); its design is not yet finalized, so no Study 3 experiment is in the active roster.
 
@@ -79,16 +79,16 @@ A joint actor chooses an action by softmaxing over the utility:
 P(a | s, I, d) ∝ exp( U(a | s, I, d) )
 
 U(a | s, I, d) = w_v · d · g(a)
-               − w_d · risk(a) · (1 − I)
+               − w_d · risk(a) · (1 − I)^γ
                − w_e · effort(a)
 ```
 
-The reward term is `w_v · d · g(a)`. `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (the 0–100 human rating, divided by 100), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action: how fully it delivers the outcome (e.g. whether the two people end up getting and eating the food), independent of how much they want it. Desire scales a stable per-action value rather than selecting between two desire states. `risk(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space. `effort(a)` is the physical effort of executing the action. Intimacy `I` scales the risk-discomfort term: at high intimacy the `−w_d · risk · (1 − I)` penalty shrinks toward zero, so higher-risk actions become relatively more attractive. At low intimacy the penalty is at full strength, so higher-risk actions are costly.
+The reward term is `w_v · d · g(a)`. `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (the 0–100 human rating, divided by 100), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action: how fully it delivers the outcome (e.g. whether the two people end up getting and eating the food), independent of how much they want it. Desire scales a stable per-action value rather than selecting between two desire states. `risk(a)` is a graded measure of how much an action opens the actor up to the other person — their body, private information, and physical space. `effort(a)` is the physical effort of executing the action. Intimacy `I` scales the risk-discomfort term through a power-law modulator `(1 − I)^γ`, whose exponent γ is a free parameter (initialized at 1.0; γ = 1 is the linear special case): at high intimacy the `−w_d · risk · (1 − I)^γ` penalty shrinks toward zero, so higher-risk actions become relatively more attractive. At low intimacy the penalty is at full strength, so higher-risk actions are costly.
 
 Desire is the **inferred latent** in the desire studies (recovered as a continuous posterior over a 101-bin grid, the same way intimacy is inferred) and **observer-visible context** in the studies where desire is given (where its magnitude is an LM-rated scalar per scenario and desire condition). Three ablations of this utility are fit and compared for the inverse-planning (observer) models:
 
 - **Full** (`full`) — the full utility above: the reward term, the risk-discomfort term, and effort (the main model).
-- **Discomfort-only** (`discomfort_only`) — only the risk-discomfort term `−w_d · risk · (1 − I)`; drops the reward term and effort to ask whether the risk signal alone can account for behavior.
+- **Discomfort-only** (`discomfort_only`) — only the risk-discomfort term `−w_d · risk · (1 − I)^γ`; drops the reward term and effort to ask whether the risk signal alone can account for behavior.
 - **Base** (`base`) — `w_v · d · g − w_e · effort`; no relational structure.
 
 ### Where the utility values come from

@@ -46,7 +46,7 @@ In `main_trials_long.csv` the given-condition columns are renamed to bare factor
 | Column | Description |
 |--------|-------------|
 | `effort_condition` | "low" or "high" |
-| `intimacy_condition` | 0, 50, 75, or 100 |
+| `intimacy_condition` | "max_formal", "somewhat_formal", "somewhat_intimate", or "max_intimate" |
 | `response` | Desire rating ("how much do they want the food?"), stored 0–1 |
 
 ### Study 1b — joint desire + effort (`food_inv_joint_de/`)
@@ -55,7 +55,7 @@ Two sliders per page (a `survey-html-form` trial), so each row carries both rati
 
 | Column | Description |
 |--------|-------------|
-| `intimacy_condition` | 0, 50, 75, or 100 |
+| `intimacy_condition` | "max_formal", "somewhat_formal", "somewhat_intimate", or "max_intimate" |
 | `desire_rating` | Desire rating, stored 0–1 |
 | `effort_rating` | Which effort situation is more likely, stored 0–1 (0 = effort-low paragraph, 1 = effort-high paragraph) |
 

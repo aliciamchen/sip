@@ -51,11 +51,10 @@ not raw-posterior space, and every fit carries `param_sigma` alongside the utili
 
 ## Terminology note
 
-The reward term is `w_v · desire · g`: `w_v` is the fitted weight (kept under that name even
-though the concept is desire), `desire` is the desire magnitude, and `g` is the LM-elicited,
-desire-free goal-satisfaction. The per-action discomfort feature is `risk` (weight `w_d`),
-modulated by intimacy through `(1 − I)^γ`. See [`model/README.md`](../README.md) for the full
-terminology.
+The utility model and its terminology — the `w_v · desire · g` reward term, the `risk` feature
+(weight `w_d`) modulated by intimacy through `(1 − I)^γ`, and the `w_v`-kept-name convention —
+are defined in [README.md](../../README.md#utility-model) and [`model/README.md`](../README.md).
+The `param_*` fields documented below use that naming.
 
 ## LM-elicited tables (`outputs/lm/<slug>/`)
 

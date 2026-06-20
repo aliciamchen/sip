@@ -57,9 +57,8 @@ Logic shared across experiments (the LOSO loops in `cv/`, the multi-mode helpers
 
 ### Terminology: g, desire, reward, risk
 
-- **g** (goal-satisfaction) is how fully an action delivers the outcome, in `[0, 1]`; desire-free. **desire** (`d`, in `[0, 1]`) is how much the dyad wants the outcome. They enter the utility together as the reward term `w_v · desire · g`. `g` replaced the old signed-valence `V`, which was legacy and is gone.
-- The code, data, and paper all use **desire** (the June 2026 cleanup renamed the model-side `reward_condition` → `desire_condition`, the `RewardConditions` enum → `DesireConditions`, and the processed-CSV `motivation` column → `desire`). The one name kept is the fitted weight `w_v` (and `param_w_v` in `fit_results.json`) — the weight on the `w_v · desire · g` term, left as `w_v` to avoid colliding with `w_d`.
-- The per-action discomfort feature is **risk** (`w_d` is its weight; renamed from `access` in the same cleanup). Intimacy `I` modulates it via `(1 − I)^γ`.
+The utility model and the meaning of `g`, `desire`, `risk`, and the `w_v · desire · g` reward term are defined in [README.md](../README.md#utility-model); the `w_v`-vs-`w_d` naming convention (`w_v` kept even though the concept is desire) is in [`.claude/CLAUDE.md`](../.claude/CLAUDE.md). One model-implementation detail not in those:
+
 - **Intimacy magnitude** `I ∈ [0, 1]` for the four relationship levels is LM-elicited per run (`load_lm_relationship_values` ← the per-record `intimacy` field of `lm_runs.jsonl`), mirroring the per-condition desire scalar in 2a/2b; it's passed into the desire/joint_de observer memos as `relationship_values` (sliced per run), falling back to the placeholder `RELATIONSHIP_LEVEL_VALUES` until the elicitation has been run.
 
 ## Shared infrastructure

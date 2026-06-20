@@ -9,25 +9,12 @@ Models are built using the `memo` DSL with a JAX backend. The roster is four inv
 
 ## Utility
 
-```
-P(a | s, I, d) ∝ exp( U(a|s, I, d) )
+The canonical (and public-facing) statement of the utility model — the equation, the `w_v · d · g` reward term, the `risk` / `(1 − I)^γ` discomfort term, and the three ablations (`full` / `discomfort_only` / `base`) — is in [README.md](../../README.md#utility-model); the in-code form is the `utility.py` docstring. Implementation details not in README:
 
-U(a|s, I, d) = w_v · d · g(a)
-             − w_d · risk(a) · (1 − I)^γ
-             − w_e · effort(a)
-```
-
-Intimacy `I` scales the risk-discomfort term (bodily/spatial/informational exposure) through a power-law modulator `(1 − I)^γ`: at high intimacy the penalty shrinks toward zero, so higher-risk actions become relatively more attractive. The exponent γ is a free parameter (initialized at 1.0; γ = 1 reproduces the linear-intimacy special case). Empirically food prefers γ < 1 (late relaxation) and non-food prefers γ > 1 (early relaxation).
-
-The reward term is `w_v · d · g(a)`: `d` is **desire** — how much the dyad wants the outcome — on a [0, 1] scale (read out to the 0–100 human rating as `100·d`), and `g(a|s) ∈ [0, 1]` is the **goal-satisfaction** of the action (how fully it delivers the outcome; desire-free, LM-elicited). Desire *scales* this stable per-action value. `d` is the **inferred latent** in Studies 1a/1b (over the 101-bin `DesireLevels` grid) and observer-visible **given context** in 2a/2b (an LM-rated scalar per (scenario, desire_condition); see `load_lm_scenario_desire`). Three ablations are fit and compared:
-
-- **full** — the full utility above (the main Full model)
-- **discomfort_only** — only the risk-discomfort term (`−w_d · risk · (1 − I)^γ`); drops the reward term and effort (Discomfort-only)
-- **base** — `w_v · d · g − w_e · effort`; no relational structure (Base model). Has no intimacy term, so γ does not apply.
-
-Parameters: `w_v` (reward weight), `w_d` (risk-discomfort weight), `w_e` (effort weight), `gamma` (intimacy power-law exponent, free, init 1.0, clipped ≥ 1e-6 by the optimizer's clip), plus `alpha` (actor softmax temperature, fixed to 1), `alpha_observer` (observer softmax temperature), and `sigma` (response-noise scale, see DV likelihoods). Each ablation uses only the subset of weights its utility requires; full and discomfort_only fit γ, base does not. The fit param vector is `[*utility weights, alpha_observer, sigma]`.
-
-Intimacy magnitude `I` for the four relationship levels in the given-relationship studies (1a/1b) is **LM-elicited per run** (mirroring the per-condition desire scalar in 2a/2b) — a `(K, 4)` array (one value per level per elicitation run) loaded by `load_lm_relationship_values` from the per-record `intimacy` field of `lm_runs.jsonl`, sliced per run into the desire/joint_de observer memos as `relationship_values`, falling back to the placeholder `RELATIONSHIP_LEVEL_VALUES` (as K=1) until the elicitation has been run.
+- **γ (intimacy exponent)** is a free parameter, initialized at 1.0 (γ = 1 is the linear special case), clipped ≥ 1e-6 by the optimizer. Empirically food prefers γ < 1 (late relaxation) and non-food prefers γ > 1 (early relaxation). `full` and `discomfort_only` fit γ; `base` has no intimacy term, so γ does not apply.
+- **Fit param vector** is `[*utility weights, alpha_observer, sigma]`: `alpha` (actor softmax temperature) is fixed to 1, `alpha_observer` is the observer softmax temperature, and `sigma` is the response-noise scale (see DV likelihoods). Each ablation fits only the weights its utility requires.
+- **Desire `d`** is the inferred continuous latent in 1a/1b (over the 101-bin `DesireLevels` grid) and observer-visible given context in 2a/2b (an LM-rated scalar per (scenario, desire_condition); see `load_lm_scenario_desire`).
+- **Intimacy magnitude `I`** for the four relationship levels in the given-relationship studies (1a/1b) is **LM-elicited per run** (mirroring the per-condition desire scalar in 2a/2b) — a `(K, 4)` array (one value per level per elicitation run) loaded by `load_lm_relationship_values` from the per-record `intimacy` field of `lm_runs.jsonl`, sliced per run into the desire/joint_de observer memos as `relationship_values`, falling back to the placeholder `RELATIONSHIP_LEVEL_VALUES` (as K=1) until the elicitation has been run.
 
 ## Active roster (four inverse studies, padded LM-alternatives pipeline)
 
