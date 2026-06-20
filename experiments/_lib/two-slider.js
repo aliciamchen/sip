@@ -15,7 +15,7 @@
 // require_movement is emulated to match the single-slider trials: the Continue
 // button stays disabled until every slider on the page has been moved.
 
-import { SLIDER_WIDTH } from "./scenario.js";
+import { SLIDER_WIDTH, revealRatingOnKeypress } from "./scenario.js";
 
 function oneSliderHtml({
   name,
@@ -68,6 +68,17 @@ export function makeTwoSliderForm({
           if (moved.size === ranges.length) next.disabled = false;
         });
       });
+      // Build the prior screen up gradually: hide the rating UI until the
+      // participant has read the scenario and pressed a key (prior stage only).
+      if (data && data.stage === "prior") {
+        revealRatingOnKeypress({
+          hideSelectors: [
+            "#lead-in",
+            ".two-slider-block",
+            "#jspsych-survey-html-form-next",
+          ],
+        });
+      }
     },
   };
 }

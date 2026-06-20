@@ -106,9 +106,47 @@ export function scenarioStimulus({
       <div class="vignette-text">
         ${paragraphs.join("\n        ")}
       </div>${observed}
-      <p><strong>${leadIn}</strong></p>
+      <p id="lead-in"><strong>${leadIn}</strong></p>
     </div>
   `;
+}
+
+// Build up a rating screen gradually: hide the rating UI (lead-in question,
+// slider(s), continue button) behind a centered "Press any key to continue."
+// prompt so the participant reads the scenario text first, then reveal it all on
+// the first keydown. Called from a trial's `on_load` (the prior stage only) so
+// participants can't slide before they've read the scenario. `hideSelectors` are
+// the elements to hide; the prompt is inserted just before `insertBeforeSelector`
+// (the lead-in's slot by default). Slider/survey trials have no jsPsych keyboard
+// handler, so a one-shot document keydown listener is safe here.
+export function revealRatingOnKeypress({
+  hideSelectors,
+  insertBeforeSelector = "#lead-in",
+  promptText = "Press any key to continue.",
+}) {
+  const anchor = document.querySelector(insertBeforeSelector);
+  const prompt = document.createElement("p");
+  prompt.style.textAlign = "center";
+  prompt.innerHTML = `<em>${promptText}</em>`;
+  if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(prompt, anchor);
+  const hidden = hideSelectors.flatMap((sel) =>
+    Array.from(document.querySelectorAll(sel)),
+  );
+  hidden.forEach((elem) => (elem.style.display = "none"));
+  // Attach on the next tick: the keypress that advanced the *previous* screen
+  // (e.g. the intimacy intro page in 1a/1b) is still propagating to `document`
+  // when this runs, so attaching synchronously would let that same key instantly
+  // fire the reveal. Deferring waits until that keypress is fully done.
+  setTimeout(() => {
+    document.addEventListener(
+      "keydown",
+      () => {
+        prompt.remove();
+        hidden.forEach((elem) => (elem.style.display = ""));
+      },
+      { once: true },
+    );
+  }, 0);
 }
 
 // A single-slider rating trial (Studies 1a, 2a): the scenario stimulus with a
@@ -147,6 +185,16 @@ export function singleSliderTrial({
     require_movement: true,
     labels,
     button_label: "Continue",
+    on_load: () => {
+      if (stage !== "prior") return;
+      revealRatingOnKeypress({
+        hideSelectors: [
+          "#lead-in",
+          ".jspsych-html-slider-response-container",
+          "#jspsych-html-slider-response-next",
+        ],
+      });
+    },
     data: {
       response_type: "response",
       stage,
