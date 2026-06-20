@@ -9,31 +9,26 @@ dependencies = [
     "numpy>=2.3.0",
     "scipy>=1.16.0",
     "pandas>=2.3.0",
-
     # JAX ecosystem
     "jax>=0.7.2",
     "jaxlib>=0.7.2",
     "optax>=0.2.6",
     "chex>=0.1.91",
     "ml-dtypes>=0.5.3",
-
     # Probabilistic programming
     "memo-lang>=1.2.4",
-
     # Visualization
     "matplotlib>=3.10.0",
     "seaborn>=0.13.0",
     "pillow>=11.0.0",
-
     # Jupyter/IPython
     "ipython>=9.0.0",
     "ipykernel>=6.30.0",
-
     # Utilities (transitive deps, but pinning for reproducibility)
     "tqdm>=4.60.0",
-
     # LLM API client (used across model/lm/; embeddings need the v2 SDK)
     "together>=2.0.0",
+    "umap-learn>=0.5.12",
 ]
 
 [dependency-groups]
