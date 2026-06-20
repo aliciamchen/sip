@@ -76,6 +76,7 @@ def numeric_desire_schema(name="desire"):
         "type": "json_schema",
         "json_schema": {
             "name": name,
+            "strict": True,
             "schema": {
                 "type": "object",
                 "properties": {"desire": {"type": "number"}},
@@ -110,6 +111,7 @@ def numeric_intimacy_schema(name="intimacy"):
         "type": "json_schema",
         "json_schema": {
             "name": name,
+            "strict": True,
             "schema": {
                 "type": "object",
                 "properties": {"intimacy": {"type": "number"}},

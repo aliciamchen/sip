@@ -21,10 +21,14 @@ scenario) and a thread pool keeps callers as plain ``def`` rather than forcing
 ``async def`` propagation up every call stack.
 """
 
+import hashlib
+import json
 import os
 import re
+import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -118,6 +122,7 @@ def _one_call(
     temperature,
     max_retries,
     response_format=None,
+    seed=None,
 ):
     """Issue one chat-completion call. Returns response text or None on failure.
 
@@ -127,7 +132,10 @@ def _one_call(
 
     ``response_format`` is forwarded to Together's structured-output API. Pass
     e.g. ``{"type": "json_schema", "json_schema": {"name": "ratings", "schema": ...}}``
-    to constrain the output to a JSON schema."""
+    to constrain the output to a JSON schema.
+
+    ``seed`` is forwarded for best-effort reproducibility (same seed + prompt +
+    model + params → same output, per the Together docs)."""
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
@@ -140,6 +148,8 @@ def _one_call(
     )
     if response_format is not None:
         kwargs["response_format"] = response_format
+    if seed is not None:
+        kwargs["seed"] = seed
     try:
         resp = client.with_options(max_retries=max_retries).chat.completions.create(
             **kwargs
@@ -165,6 +175,7 @@ def get_ratings_concurrent(
     min_success_ratio=0.7,
     label=None,
     response_format=None,
+    seed=None,
 ):
     """Fan out ``num_runs`` calls across a thread pool. Returns
     ``(successful_parses, n_failures)``.
@@ -173,7 +184,11 @@ def get_ratings_concurrent(
     ``None`` to mark the run as a failure). Failed runs do not appear in the
     success list but are counted; a warning prints when success rate drops
     below ``min_success_ratio``. ``label`` is shown in the warning so callers
-    can identify which (scenario, rating-type) the warning belongs to."""
+    can identify which (scenario, rating-type) the warning belongs to.
+
+    ``seed``, when given, is offset by the call index (``seed + i``) so a
+    ``num_runs > 1`` fan-out stays varied while remaining reproducible; with the
+    active ``num_runs=1`` pipeline this just pins the single call to ``seed``."""
     workers = min(max_workers, num_runs)
     successes = []
     failures = 0
@@ -189,8 +204,9 @@ def get_ratings_concurrent(
                 temperature,
                 max_retries,
                 response_format,
+                (seed + i) if seed is not None else None,
             )
-            for _ in range(num_runs)
+            for i in range(num_runs)
         ]
         for fut in as_completed(futures):
             text = fut.result()
@@ -219,14 +235,14 @@ def numeric_action_schema(n_actions, name="ratings"):
     ``{"action_0": <number>, ..., "action_{n-1}": <number>}``.
 
     Used by risk/effort/V rating calls in both the canonical 4-action and
-    variable-length paths. Note that Together's response_format does not accept
-    OpenAI's ``strict: true`` flag — schema enforcement is governed by the
-    server. Llama-3.3-70B-Turbo is one of the supported models per the
-    Together AI JSON-mode docs."""
+    variable-length paths. ``strict: true`` makes the server enforce exact schema
+    adherence (Together accepts it for Llama-3.3-70B-Turbo); the schema is
+    strict-compatible — every property required, ``additionalProperties`` closed."""
     return {
         "type": "json_schema",
         "json_schema": {
             "name": name,
+            "strict": True,
             "schema": {
                 "type": "object",
                 "properties": {
@@ -242,22 +258,32 @@ def numeric_action_schema(n_actions, name="ratings"):
 def alternatives_array_schema(name="alternatives"):
     """response_format for the alternative-generation calls.
 
-    Constrains the LM to emit a JSON array of objects with an ``action``
-    (string) field."""
+    Constrains the LM to emit ``{"alternatives": [{"action": <string>}, ...]}``.
+    The array is wrapped in an object (rather than a bare top-level array) because
+    ``strict: true`` requires an object root; the wrapper also lets the parser read
+    a single object instead of regex-extracting an array."""
     return {
         "type": "json_schema",
         "json_schema": {
             "name": name,
+            "strict": True,
             "schema": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "action": {"type": "string"},
+                "type": "object",
+                "properties": {
+                    "alternatives": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "action": {"type": "string"},
+                            },
+                            "required": ["action"],
+                            "additionalProperties": False,
+                        },
                     },
-                    "required": ["action"],
-                    "additionalProperties": False,
                 },
+                "required": ["alternatives"],
+                "additionalProperties": False,
             },
         },
     }
@@ -279,3 +305,60 @@ def aggregate_action_ratings(ratings_list, n_actions):
         values = [r[key] for r in ratings_list if key in r]
         result[key] = (np.mean(values), np.std(values)) if values else (np.nan, np.nan)
     return result
+
+
+# ==============================================================================
+# Run-provenance manifest
+# ==============================================================================
+
+
+def _git_sha():
+    """Repo HEAD short SHA, or None outside a git checkout / on any error."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=str(get_project_root()),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return out.stdout.strip() or None
+    except Exception:
+        return None
+
+
+def _prompts_sha():
+    """Short SHA-256 of prompts.py, so a tweaked prompt yields a different
+    manifest even when the model and config are unchanged."""
+    try:
+        prompts_path = Path(__file__).resolve().parent / "prompts.py"
+        return hashlib.sha256(prompts_path.read_bytes()).hexdigest()[:12]
+    except Exception:
+        return None
+
+
+def write_run_manifest(output_path, stage, study, extra=None):
+    """Write a small provenance sidecar next to a stage's JSONL output.
+
+    The whole point of the elicitation artifacts is that the values are
+    LM-generated, so two regenerations (a different model, a tweaked prompt, more
+    runs) must be distinguishable. This records how the file was produced — model,
+    prompt + code version, timestamp — next to the data file it describes
+    (``lm_runs.jsonl`` → ``lm_runs.manifest.json``). ``extra`` carries
+    stage-specific config (K runs, temperature, record counts). Mirrors the
+    plain-JSON style of embed_alternatives.py's lm_clusters.json."""
+    manifest = {
+        "stage": stage,
+        "study": study,
+        "model": MODEL_ID,
+        "prompts_sha256": _prompts_sha(),
+        "git_sha": _git_sha(),
+        "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
+    if extra:
+        manifest.update(extra)
+    output_path = Path(output_path)
+    manifest_path = output_path.with_name(output_path.stem + ".manifest.json")
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
+    return manifest_path

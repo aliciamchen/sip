@@ -87,10 +87,12 @@ from _features_dispatcher import (
 )
 from client import (
     MODEL_ID,
+    TEMPERATURE,
     aggregate_action_ratings,
     get_ratings_concurrent,
     load_api_key,
     numeric_action_schema,
+    write_run_manifest,
 )
 from prompts import (
     DESIRE_SYSTEM_PROMPT,
@@ -176,9 +178,10 @@ def _build_merged_actions(scenario_row, alt_rows_for_run):
     return merged, canonical_norms, alt_norms_in_order
 
 
-def _score_one_call(client, system_prompt, user_prompt, n_actions, label):
+def _score_one_call(client, system_prompt, user_prompt, n_actions, label, seed=None):
     """Single LM scoring pass (num_runs=1, no inner averaging) returning per-action
-    ratings. The K elicitation runs are the variation axis, not repeated calls."""
+    ratings. The K elicitation runs are the variation axis, not repeated calls.
+    ``seed`` pins the call for reproducible re-scoring."""
     ratings, n_failures = get_ratings_concurrent(
         client,
         system_prompt,
@@ -188,9 +191,25 @@ def _score_one_call(client, system_prompt, user_prompt, n_actions, label):
         max_tokens=_max_tokens_for(n_actions),
         response_format=numeric_action_schema(n_actions),
         label=label,
+        seed=seed,
     )
     agg = aggregate_action_ratings(ratings, n_actions)
     return agg, n_failures
+
+
+def _seed_for(scenario, run_id, tag):
+    """Stable 64-bit seed for one scoring call, from (scenario, run_id, feature
+    tag). SHA-256 (not Python's salted ``hash``) so it's reproducible across
+    reruns/processes; varying ``tag`` per feature decorrelates uses."""
+    key = f"{scenario}|{int(run_id)}|{tag}".encode()
+    return int.from_bytes(hashlib.sha256(key).digest()[:8], "little")
+
+
+def _lm_seed_for(scenario, run_id, tag):
+    """The same stable seed masked to a non-negative 31-bit int for the Together
+    ``seed`` parameter, so re-running scoring reproduces the LM's feature ratings
+    (best-effort per the docs) while each (scenario, run, feature) stays distinct."""
+    return _seed_for(scenario, run_id, tag) & 0x7FFFFFFF
 
 
 def _perm_for(scenario, run_id, tag, n):
@@ -207,9 +226,7 @@ def _perm_for(scenario, run_id, tag, n):
     across reruns/processes; varying ``tag`` per feature (risk / effort_low /
     effort_high / g) decorrelates positions across features so no action sits in
     a fixed slot across all of them."""
-    key = f"{scenario}|{int(run_id)}|{tag}".encode()
-    seed = int.from_bytes(hashlib.sha256(key).digest()[:8], "little")
-    return np.random.default_rng(seed).permutation(n)
+    return np.random.default_rng(_seed_for(scenario, run_id, tag)).permutation(n)
 
 
 def _score_feature_shuffled(
@@ -239,6 +256,7 @@ def _score_feature_shuffled(
         build_user_prompt(presented),
         n,
         label=f"{scenario}/{tag}",
+        seed=_lm_seed_for(scenario, run_id, tag),
     )
     out = {}
     for presented_slot, orig in enumerate(perm):
@@ -415,11 +433,11 @@ def _f(x):
     return None if np.isnan(x) else x
 
 
-def _rate_desire_for_scenario(client, scenario_row):
+def _rate_desire_for_scenario(client, scenario_row, run_id):
     """Per-desire_condition desire scalar in [0, 1] for one scenario, scored in
     one run's pass (folded into that (scenario, run)'s records). The K runs are
     the variation axis, so this is a single scoring pass per (scenario, condition,
-    run) at the elicitation temperature."""
+    run) at the elicitation temperature; ``run_id`` seeds it for reproducibility."""
     scenario = scenario_row["scenario_label"]
     out = {}
     for dc in DESIRES:
@@ -436,15 +454,17 @@ def _rate_desire_for_scenario(client, scenario_row):
             max_tokens=64,
             response_format=numeric_desire_schema(),
             label=f"{scenario}/desire[{dc}]",
+            seed=_lm_seed_for(scenario, run_id, f"desire_{dc}"),
         )
         out[dc] = (float(ratings[0]) / 100.0) if ratings else None
     return out
 
 
-def _rate_relationship_values(client):
+def _rate_relationship_values(client, run_id):
     """Per-level intimacy scalar in [0, 1] from the de-anchored relationship
     descriptors (scenario-independent → 4 values). Single scoring pass per level,
-    per run (the K runs are the variation axis)."""
+    per run (the K runs are the variation axis); ``run_id`` seeds it so re-runs
+    reproduce."""
     out = {}
     for level in INTIMACY_LEVELS:
         ratings, _ = get_ratings_concurrent(
@@ -456,6 +476,7 @@ def _rate_relationship_values(client):
             max_tokens=64,
             response_format=numeric_intimacy_schema(),
             label=f"relationship[{level}]",
+            seed=_lm_seed_for("__relationship__", run_id, f"intimacy_{level}"),
         )
         out[level] = (float(ratings[0]) / 100.0) if ratings else None
     return out
@@ -536,7 +557,7 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
                     f"Rating per-level relationship intimacy (de-anchored), run {rid}...",
                     flush=True,
                 )
-                relationship_by_run[int(rid)] = _rate_relationship_values(client)
+                relationship_by_run[int(rid)] = _rate_relationship_values(client, rid)
 
     units = [
         (s, r)
@@ -560,7 +581,7 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
             client, scenario_row, run_alt_rows, system_prompts, run_id
         )
         given_desire = (
-            _rate_desire_for_scenario(client, scenario_row)
+            _rate_desire_for_scenario(client, scenario_row, run_id)
             if cfg["desire_given"]
             else None
         )
@@ -595,8 +616,21 @@ def main(study, scenario_workers=SCENARIO_WORKERS):
                 flush=True,
             )
 
+    manifest_path = write_run_manifest(
+        runs_path,
+        stage="score_merged",
+        study=study,
+        extra={
+            "k_runs": len(run_ids),
+            "score_temperature": TEMPERATURE,
+            "n_scenarios": len(scenarios_df),
+            "n_records": len(all_records),
+        },
+    )
+
     print("\n=== Done ===")
     print(f"  {runs_path.name}  ({len(all_records)} records)")
+    print(f"  {manifest_path.name}  (provenance manifest)")
 
 
 if __name__ == "__main__":

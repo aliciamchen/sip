@@ -21,6 +21,7 @@ from client import (
     MAX_RETRIES,
     MODEL_ID,
     alternatives_array_schema,
+    find_json,
     find_json_array,
 )
 from prompts import ALTERNATIVES_SYSTEM_PROMPT
@@ -41,14 +42,29 @@ CHECKPOINT_EVERY = 16
 
 
 def parse_alternatives(response_text):
-    js = find_json_array(response_text)
-    if js is None:
+    if response_text is None:
         return None
-    try:
-        arr = json.loads(js)
-    except (json.JSONDecodeError, ValueError) as e:
-        print(f"  Failed to parse JSON: {e}")
-        return None
+    # The schema is now an object {"alternatives": [{"action": ...}, ...]}; read
+    # that. Fall back to a bare top-level array for robustness (e.g. an older
+    # response, or a non-strict retry).
+    arr = None
+    js = find_json(response_text)
+    if js is not None:
+        try:
+            obj = json.loads(js)
+            if isinstance(obj, dict):
+                arr = obj.get("alternatives")
+        except (json.JSONDecodeError, ValueError):
+            arr = None
+    if not isinstance(arr, list):
+        js = find_json_array(response_text)
+        if js is None:
+            return None
+        try:
+            arr = json.loads(js)
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"  Failed to parse JSON: {e}")
+            return None
     if not isinstance(arr, list):
         return None
     out = []

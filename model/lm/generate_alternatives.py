@@ -50,7 +50,7 @@ from _alternatives_dispatcher import (
     MAX_CELL_WORKERS,
     elicit_alternatives,
 )
-from client import MODEL_ID, load_api_key
+from client import MODEL_ID, load_api_key, write_run_manifest
 from prompts import alternatives_user_prompt
 
 
@@ -276,6 +276,19 @@ def main(study):
 
     _write_jsonl(output_path, results)
     print(f"\nSaved {len(results)} alternatives to {output_path}", flush=True)
+
+    manifest_path = write_run_manifest(
+        output_path,
+        stage="generate_alternatives",
+        study=study,
+        extra={
+            "k_runs": N_RUNS_ALT,
+            "gen_temperature": ALT_GEN_TEMPERATURE,
+            "n_cells": len(all_cells),
+            "n_alternatives": len(results),
+        },
+    )
+    print(f"Wrote provenance manifest to {manifest_path}", flush=True)
 
     print("\n=== Summary ===")
     results_df = pd.DataFrame(results)
