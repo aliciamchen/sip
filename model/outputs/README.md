@@ -83,7 +83,7 @@ given magnitudes), all stacking the runs on a leading `K` axis.
   "run_id": 0,
   "scenario_label": "apples",
   "observed_action": "no_share",
-  "intimacy_condition": "neither",
+  "intimacy_condition": "somewhat_formal",
   "effort_condition": "low",
   "intimacy": 0.48,
   "actions": [

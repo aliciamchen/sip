@@ -24,7 +24,7 @@ INTIMACY_BEGIN <- 0.1
 INTIMACY_END <- 0.85
 # Intimacy is a purely verbal manipulation: the condition is stored as a slug
 # (ascending, formal -> intimate), never a numeric code.
-INTIMACY_LEVELS <- c("max_formal", "neither", "somewhat_intimate", "max_intimate")
+INTIMACY_LEVELS <- c("max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate")
 
 # Generate discrete intimacy colors
 INTIMACY_COLORS <- viridisLite::viridis(
@@ -40,7 +40,7 @@ names(INTIMACY_COLORS) <- as.character(INTIMACY_LEVELS)
 # the scales display readable text in the legend.
 INTIMACY_LABELS <- c(
   "max_formal"        = "Maximally formal",
-  "neither"           = "Neither formal nor intimate",
+  "somewhat_formal"   = "Somewhat formal",
   "somewhat_intimate" = "Somewhat intimate",
   "max_intimate"      = "Maximally intimate"
 )

@@ -56,7 +56,7 @@ const STUDIES = {
 // ----- condition factors -----------------------------------------------------
 const INTIMACY_TEXTS = {
   max_formal: "maximally formal",
-  neither: "neither formal nor intimate",
+  somewhat_formal: "somewhat formal",
   somewhat_intimate: "somewhat intimate",
   max_intimate: "maximally intimate",
 };
@@ -82,7 +82,7 @@ const FACTORS = {
     field: "intimacy_condition",
     options: [
       ["max_formal", "maximally formal"],
-      ["neither", "neither formal nor intimate"],
+      ["somewhat_formal", "somewhat formal"],
       ["somewhat_intimate", "somewhat intimate"],
       ["max_intimate", "maximally intimate"],
     ],

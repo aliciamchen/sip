@@ -92,7 +92,7 @@ ACTIONS = ("no_share", "low_risk_share", "high_risk_share")
 
 # Intimacy levels, ordered formal -> intimate. A purely verbal manipulation: the
 # condition is identified by a slug (no numeric code is stored anywhere).
-INTIMACY = ("max_formal", "neither", "somewhat_intimate", "max_intimate")
+INTIMACY = ("max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate")
 
 # Per-study design: the manipulated (participant-visible) factors, their levels,
 # the number of rounds, and the RNG seed. `factors` and `levels` are aligned —

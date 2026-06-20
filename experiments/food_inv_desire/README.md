@@ -4,7 +4,7 @@ Study 1a — Desire inference.
 
 ## Design
 
-**Factor crossing**: 2 (effort: low/high) × 4 (intimacy: max_formal/neither/somewhat_intimate/max_intimate) × 3 (observed action)
+**Factor crossing**: 2 (effort: low/high) × 4 (intimacy: max_formal/somewhat_formal/somewhat_intimate/max_intimate) × 3 (observed action)
 
 **Known to participant**: effort_condition, intimacy_condition
 

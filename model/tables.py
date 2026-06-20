@@ -52,10 +52,10 @@ class DesireConditions(IntEnum):
 
 
 class RelationshipConditions(IntEnum):
-    ZERO = 0
-    FIFTY = 1
-    SEVENTY_FIVE = 2
-    ONE_HUNDRED = 3
+    MAX_FORMAL = 0
+    SOMEWHAT_FORMAL = 1
+    SOMEWHAT_INTIMATE = 2
+    MAX_INTIMATE = 3
 
 
 class EffortConditions(IntEnum):
@@ -66,15 +66,22 @@ class EffortConditions(IntEnum):
 # Intimacy is a purely verbal manipulation in the experiments: the condition is
 # identified by a slug (no numeric code is stored in the data). These slugs, in
 # ascending order (formal -> intimate), index the RelationshipConditions axis.
-INTIMACY_CONDITIONS = ["max_formal", "neither", "somewhat_intimate", "max_intimate"]
+INTIMACY_CONDITIONS = [
+    "max_formal",
+    "somewhat_formal",
+    "somewhat_intimate",
+    "max_intimate",
+]
 INTIMACY_CONDITION_TO_IDX = {slug: i for i, slug in enumerate(INTIMACY_CONDITIONS)}
 
 # Continuous intimacy values for each RelationshipConditions level — used by
 # the relationship-keyed padded memos to evaluate the (1 - I) risk term
 # without dragging the 101-level IntimacyLevels axis into the memo. These are
 # placeholder magnitudes for each verbal level (pending LM elicitation); they
-# are model-internal and never saved as condition labels.
-RELATIONSHIP_LEVEL_VALUES = jnp.array([0.0, 0.5, 0.75, 1.0])
+# are model-internal and never saved as condition labels. Evenly spaced to match
+# the symmetric four-level scale (max_formal / somewhat_formal / somewhat_intimate
+# / max_intimate); the elicited values override these.
+RELATIONSHIP_LEVEL_VALUES = jnp.array([0.0, 0.33, 0.67, 1.0])
 
 EFFORT_CONDITION_TO_IDX = {"low": 0, "high": 1}
 N_EFFORT_CONDITIONS = 2

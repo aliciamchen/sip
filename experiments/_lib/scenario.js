@@ -7,7 +7,7 @@
 // slug, and only the verbal descriptor is ever shown or saved (no numeric code).
 export const intimacy_texts = {
   max_formal: "maximally formal",
-  neither: "neither formal nor intimate",
+  somewhat_formal: "somewhat formal",
   somewhat_intimate: "somewhat intimate",
   max_intimate: "maximally intimate",
 };

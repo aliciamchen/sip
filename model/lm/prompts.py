@@ -354,7 +354,7 @@ Respond ONLY with a JSON array in this exact format, no explanation:
 # `intimacyDescriptor` in `experiments/_lib/scenario.js`.
 RELATIONSHIP_DESCRIPTORS = {
     "max_formal": "maximally formal",
-    "neither": "neither formal nor intimate",
+    "somewhat_formal": "somewhat formal",
     "somewhat_intimate": "somewhat intimate",
     "max_intimate": "maximally intimate",
 }
@@ -382,7 +382,7 @@ def alternatives_user_prompt(
     Mirrors how the human participant sees the trial (vignette + revealed
     condition paragraphs + observed action), per `feedback_llm_as_participant`.
     `intimacy_level` is one of the intimacy-condition slugs (max_formal /
-    neither / somewhat_intimate / max_intimate) when provided; it's rendered
+    somewhat_formal / somewhat_intimate / max_intimate) when provided; it's rendered
     via the shared `RELATIONSHIP_DESCRIPTORS` dict so the LM sees the same
     qualitative descriptor humans see.
     """

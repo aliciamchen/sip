@@ -206,7 +206,7 @@ def build_content():
     # and used for both alternative generation and the intimacy rating).
     width = max(len(k) for k in prompts.RELATIONSHIP_DESCRIPTORS)
     descr_lines = []
-    for level in ("max_formal", "neither", "somewhat_intimate", "max_intimate"):
+    for level in ("max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate"):
         descr_lines.append(
             f"{level.ljust(width)}  {prompts.RELATIONSHIP_DESCRIPTORS[level]}"
         )

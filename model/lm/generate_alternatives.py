@@ -107,7 +107,7 @@ DESIRE_LEVELS = ["low", "high"]
 EFFORT_LEVELS = ["low", "high"]
 # Intimacy is a purely verbal manipulation: levels are identified by slug
 # (ascending, formal -> intimate), never by a numeric code.
-INTIMACY_LEVELS = ["max_formal", "neither", "somewhat_intimate", "max_intimate"]
+INTIMACY_LEVELS = ["max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate"]
 
 
 def load_scenarios(study):

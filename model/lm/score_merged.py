@@ -105,7 +105,7 @@ N_ACTIONS = 3
 CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 EFFORT_CONDITIONS = ["low", "high"]
 DESIRES = ["low", "high"]
-INTIMACY_LEVELS = ["max_formal", "neither", "somewhat_intimate", "max_intimate"]
+INTIMACY_LEVELS = ["max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate"]
 # Levels for each generation-cell condition column, used to enumerate cells.
 _LEVELS = {
     "desire_condition": DESIRES,

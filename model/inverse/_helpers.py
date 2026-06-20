@@ -317,7 +317,7 @@ def _load_long(slug):
       - `action_condition` like 'no_share' / 'low_risk_share' / 'high_risk_share'
       - `desire_condition` (or `desire`) in {'low', 'high'} when present
       - `effort_condition` (or `effort`) in {'low', 'high'} when present
-      - `intimacy` (or `relationship_condition`) in {max_formal, neither, somewhat_intimate, max_intimate} when present
+      - `intimacy` (or `relationship_condition`) in {max_formal, somewhat_formal, somewhat_intimate, max_intimate} when present
       - `stage` in {'prior', 'posterior'}
     """
     filepath = get_project_root() / "data" / slug / "main_trials_long.csv"
