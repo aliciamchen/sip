@@ -17,7 +17,7 @@ manuscript:
      that varies across the three features.
   3. **Given-magnitude ratings**: the scalar desire and relationship-intimacy
      ratings used in the studies where those variables are given rather than
-     inferred, plus the four relationship descriptors.
+     inferred.
 
 Each prompt is rendered verbatim (no paraphrase). Variable content that the
 pipeline fills in per trial -- the scenario vignette, the motivational-state
@@ -200,20 +200,6 @@ def build_content():
         box(
             "User prompt (template) --- relationship intimacy $I$",
             prompts.relationship_user_prompt(RELATIONSHIP),
-        )
-    )
-    # The four relationship descriptors (de-anchored form shown to participants
-    # and used for both alternative generation and the intimacy rating).
-    width = max(len(k) for k in prompts.RELATIONSHIP_DESCRIPTORS)
-    descr_lines = []
-    for level in ("max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate"):
-        descr_lines.append(
-            f"{level.ljust(width)}  {prompts.RELATIONSHIP_DESCRIPTORS[level]}"
-        )
-    out.append(
-        box(
-            "Relationship descriptors (four levels)",
-            "\n\n".join(descr_lines),
         )
     )
 

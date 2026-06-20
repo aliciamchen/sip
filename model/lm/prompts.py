@@ -73,7 +73,7 @@ def _json_format_block():
     The example illustrates only the JSON shape for 3 actions; the real call has
     as many keys as actions given.
     """
-    return """Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Use whatever values your judgments warrant. The example below shows only the format (one key per action), not suggested values. Example for 3 actions:
+    return """Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Use whatever values your judgments warrant. Example for 3 actions:
 {"action_0": <number>, "action_1": <number>, "action_2": <number>}"""
 
 
@@ -467,7 +467,7 @@ def desire_user_prompt(vignette, state, desire_object):
 INTIMACY_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
     + "\n\n"
-    + """You will read a short description of a relationship between two people. Judge how intimate the relationship is on a scale from 0 (maximally formal) to 100 (maximally intimate). Rate only the intimacy of the relationship itself.
+    + """You will read a short description of a relationship between two people. Judge how intimate the relationship is on a scale from 0 (maximally formal) to 100 (maximally intimate).
 
 Respond with a JSON object in this exact format, no explanation:
 {"intimacy": <number>}"""
