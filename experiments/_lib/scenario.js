@@ -49,8 +49,10 @@ export const effortLabels = (stim) => [
 ];
 
 // Shared pixel width for every rating slider (single-slider 1a/2a and the
-// two-slider 1b/2b form), so the width lives in one place.
-export const SLIDER_WIDTH = 900;
+// two-slider 1b/2b form), so the width lives in one place. Kept a bit narrower
+// than the 720px text-content width (.vignette-text) so the slider sits inside
+// the text column rather than overhanging it.
+export const SLIDER_WIDTH = 680;
 
 // A "press any key to continue" page showing the given preamble HTML.
 export function pressAnyKeyPage(preambleHtml, index, total) {
