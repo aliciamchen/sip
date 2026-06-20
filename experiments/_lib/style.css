@@ -152,6 +152,7 @@ h3 {
   flex: 0 1 30%;
   text-align: center;
   font-size: 80%;
+  line-height: 1.35;
 }
 /* Center the endpoint labels ON the track ends (each label centered under the
    point it refers to). translateX shifts them visually without affecting flow,
