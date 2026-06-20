@@ -67,6 +67,7 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Project instructions
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
+- For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
 - When changing CLAUDE.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 
 ## Utility helpers
