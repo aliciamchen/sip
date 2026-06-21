@@ -68,17 +68,16 @@ export function makeTwoSliderForm({
           if (moved.size === ranges.length) next.disabled = false;
         });
       });
-      // Build the prior screen up gradually: hide the rating UI until the
-      // participant has read the scenario and pressed a key (prior stage only).
-      if (data && data.stage === "prior") {
-        revealRatingOnKeypress({
-          hideSelectors: [
-            "#lead-in",
-            ".two-slider-block",
-            "#jspsych-survey-html-form-next",
-          ],
-        });
-      }
+      // Build the screen up gradually: hide the rating UI until the participant
+      // has read the scenario — and, on the posterior, the observed action — and
+      // pressed a key.
+      revealRatingOnKeypress({
+        hideSelectors: [
+          "#lead-in",
+          ".two-slider-block",
+          "#jspsych-survey-html-form-next",
+        ],
+      });
     },
   };
 }

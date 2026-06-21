@@ -114,8 +114,9 @@ export function scenarioStimulus({
 // Build up a rating screen gradually: hide the rating UI (lead-in question,
 // slider(s), continue button) behind a centered "Press any key to continue."
 // prompt so the participant reads the scenario text first, then reveal it all on
-// the first keydown. Called from a trial's `on_load` (the prior stage only) so
-// participants can't slide before they've read the scenario. `hideSelectors` are
+// the first keydown. Called from a rating trial's `on_load` so participants can't
+// slide before they've read the scenario — and, on the posterior, the observed
+// action shown above the (hidden) sliders. `hideSelectors` are
 // the elements to hide; the prompt is inserted just before `insertBeforeSelector`
 // (the lead-in's slot by default). Slider/survey trials have no jsPsych keyboard
 // handler, so a one-shot document keydown listener is safe here.
@@ -186,7 +187,6 @@ export function singleSliderTrial({
     labels,
     button_label: "Continue",
     on_load: () => {
-      if (stage !== "prior") return;
       revealRatingOnKeypress({
         hideSelectors: [
           "#lead-in",

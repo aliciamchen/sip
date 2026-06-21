@@ -81,7 +81,7 @@ h3 {
 .vignette-text.vignette-observed {
   margin-top: 15px;
   margin-bottom: 30px;
-  background-color: #e8f4e8;
+  /* same gray as the regular vignette box (inherits .vignette-text #f9f9f9) */
 }
 
 .vignette-text p {
