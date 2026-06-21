@@ -7,7 +7,8 @@ For each experiment it writes two CSVs under data/<experiment>/:
 2. exit_survey.csv - demographics + attention/memory summary, one row per participant
 
 It then builds main_trials_long.csv (the model/analysis input), applying the
-standard exclusions (failed attention check or 0 correct memory checks).
+standard exclusions (failed the attention check and answered 0 memory checks
+correctly).
 
 If any raw JSON file fails to parse, the script reports every failing file and
 exits without writing CSVs, so a corrupt download can't silently drop a
@@ -351,8 +352,8 @@ def create_main_trials_long(output_dir, config):
     """
     Create main_trials_long.csv from main_trials.csv and exit_survey.csv.
 
-    Applies the standard exclusions (failed attention check or 0 correct memory
-    checks) and renames the given-condition columns to bare factor names per
+    Applies the standard exclusions (failed the attention check and answered 0
+    memory checks correctly) and renames the given-condition columns to bare factor names per
     the config's long_renames (e.g. effort_condition -> effort).
     """
     output_path = Path(output_dir)
@@ -362,13 +363,13 @@ def create_main_trials_long(output_dir, config):
 
     excluded_subjects = exit_survey[
         (exit_survey["attention_passed"] != True)
-        | (exit_survey["memory_correct_count"] == 0)
+        & (exit_survey["memory_correct_count"] == 0)
     ]["subject_id"].tolist()
 
     n_excluded = len(excluded_subjects)
     n_total = exit_survey["subject_id"].nunique()
     print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention or 0 memory correct)"
+        f"Excluding {n_excluded} of {n_total} participants (failed attention and 0 memory correct)"
     )
 
     main_trials_filtered = main_trials[

@@ -18,9 +18,11 @@ The active roster is four inverse experiments under `data/<slug>/` — `food_inv
 
 ## Participant exclusion criteria
 
-Participants are excluded if either is true:
+Participants are excluded only if **both** are true (i.e. they failed every check):
 - Failed attention check (`attention_passed != True`)
 - Got 0 correct on memory check (`memory_correct_count == 0`)
+
+So the exclusion filter is `(attention_passed != True) & (memory_correct_count == 0)`; anyone who passes attention or answers at least one memory check correctly is retained.
 
 `main_trials_long.csv` reflects exclusions; `main_trials.csv` does not. There is no comprehension-check exclusion: participants who fail the comprehension check (3 attempts) are ended via `jsPsych.abortExperiment` before the DataPipe save, so they never appear in `raw_data/`. The `exit_survey` rows carry `comprehension_attempt` (1–3) as a quality signal for the participants who did pass.
 

@@ -207,11 +207,14 @@ report_demographics <- function(data_dir) {
   }
   df_exit <- read_csv(path, show_col_types = FALSE)
   n_total <- nrow(df_exit)
+  # Exclusion rule: drop only participants who fail the attention check AND
+  # both memory checks (0 correct); retain everyone who passes attention or
+  # answers at least one memory check correctly.
   n_passed <- df_exit |>
-    filter(attention_passed == TRUE, memory_correct_count > 0) |>
+    filter(attention_passed == TRUE | memory_correct_count > 0) |>
     nrow()
   cat("Total participants recruited:", n_total, "\n")
-  cat("Passed attention + memory checks:", n_passed, "\n")
+  cat("Retained after exclusions:", n_passed, "\n")
   cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
       "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
       "Min age:", min(df_exit$age, na.rm = TRUE),
