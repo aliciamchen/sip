@@ -18,7 +18,7 @@ We predict that (1) observing sharing actions will lead to higher inferred desir
 
 ## 3) **Dependent variable. Describe the key dependent variable(s) specifying how they will be measured.**
 
-Desire is measured with a continuous slider (1-100) on which participants rate how much they think the two characters would like the relevant food in the scenario, from "Not at all" (0) to "Extremely" (100) with "Moderately" at the midpoint. Participants provide this rating twice for each scenario: once before observing the action (prior) and once after observing the action (posterior). The primrary dependent variable is belief update (posterior rating minus prior rating).
+Desire is measured with a continuous slider (0-100) on which participants rate how much they think the two characters would like the relevant food in the scenario, from "Not at all" (0) to "Extremely" (100) with "Moderately" at the midpoint. Participants provide this rating twice for each scenario: once before observing the action (prior) and once after observing the action (posterior). The primary dependent variable is belief update (posterior rating minus prior rating).
 
 ## 4) **Conditions. How many and which conditions will participants be assigned to?**
 
@@ -26,7 +26,7 @@ Participants read 16 vignettes describing different situations in US cultural co
 
 We manipulate three variables. First, the physical effort required to share the food in a low-risk way, such as dividing the food into separate portions ('low' vs. 'high'). Second, how the characters int he scenario would describe their relationship (maximally formal, somewhat formal, somewhat intimate, or maximally intimate). Third, which action the characters are observed to take: 'no share', 'low-risk share', or 'high-risk share', where 'risk' here corresponds to the likelihood of saliva transfer associated with the action. 
 
-Therefore, the design is 2 (Effort: low vs. high) × 4 (Intimacy: maximally formal, somewhat formal, somewhat intimate, maximally intimate) × 3 (Action: no sharing, low-risk sharing, high-risk sharing). Each participant sees all 16 scenarios, each scenario in a different condition, and the assignment of condition to scenario is balanced across participants.
+Therefore, the design is 2 (Effort: low vs. high) × 4 (Intimacy: maximally formal, somewhat formal, somewhat intimate, maximally intimate) × 3 (Action: no sharing, low-risk sharing, high-risk sharing). Each participant sees all 16 scenarios, each scenario in one of the 24 conditions pseudo-randomly assigned, and the assignment of condition to scenario is balanced across participants.
 
 ## 5) **Analyses. Specify exactly which analyses you will conduct to examine the main question/hypothesis.**
 
@@ -42,7 +42,7 @@ P(d | a, I, e) \propto P(a | d, I, e) · P(d | I, e)
 
 The two alternative models are lesioned versions of the full model. The "discomfort only" model includes only the risk-discomfort term. The "base" model includes the reward and effort terms but drops the risk-discomfort term, removing all relational structure. Our main hypothesis is that the full model — which integrates desire, physical effort, and relationship-modulated discomfort within a single generative model of action selection — will best capture human desire inferences.
 
-The set of alternative actions the characters could plausibly have taken, and the features of those actions (goal-satisfaction, risk, effort) are estimated using queries to a language model that capture how these concepts are described in the prior literature. 
+The set of alternative actions the characters could plausibly have taken, and the features of those actions (goal-satisfaction, risk, effort) are estimated using queries to a language model that capture how these concepts are described in the prior literature. The intimacy I ∈ [0, 1] is also estimated given the verbal description of the relationship. 
 
 *Planned model fitting and comparison*
 
@@ -52,23 +52,23 @@ Note that one purpose of this study is to support the development of the model p
 
 The language-model pipeline is run multiple times for each scenario × condition cell, and we treat each run as a simulated observer that supplies its own set of counterfactual actions, feature values that enter into a cognitive model and generate a resulting predicted belief update δ_k. We set uniform priors over desire. 
 
-We model a participant's belief update u as a drawn from a mixture over these simulated observers. We fit the free parameters for each model by scoring the model performance under this likelihood. Across models, we fit the actor's softmax to 1 for identifiability, and additionally fit an observer softmax temperature α_obs that captures how sharply observers weigh higher-likelihood states. We will evaluate performance out of sample using leave-one-scenario-out cross-validation: parameters are estimated on 15 of the 16 scenarios and used to predict the held-out scenario. As a secondary descriptive metric we will also report the out-of-sample correlation between each model's predictions and participants' belief updates. We will capture uncertainty over these metrics by bootstrapping resampling over participants. 
+We model a participant's belief update u as a drawn from a mixture over these simulated observers. We fit the free parameters for each model by scoring the model performance under this likelihood. Across models, we fix the actor's softmax to 1 for identifiability, and additionally fit an observer softmax temperature α_obs that captures how sharply observers weigh higher-likelihood states. We will evaluate performance out of sample using leave-one-scenario-out cross-validation: parameters are estimated on 15 of the 16 scenarios and used to predict the held-out scenario. Our primary model-comparison metric is the per-trial held-out log-likelihood under the cross-validated fits, with the difference between the 'full' and 'base' models reported with 95% bootstrap CIs (resampling participants). As a secondary descriptive metric we will also report the out-of-sample correlation between each model's predictions and participants' belief updates. 
 
-6) **Outliers and Exclusions. Describe exactly how outliers will be defined and handled, and your precise rule(s) for excluding observations.**
+## 6) **Outliers and Exclusions. Describe exactly how outliers will be defined and handled, and your precise rule(s) for excluding observations.**
 
-We include an attention check and two memory checks (the memory checks involve recalling details about the previous vignette: the names of the characters and what food they ate). We will exclude participants if they fail the attention check and both memory checks. 
+Participants who do not pass the comprehension check on the instructions in 3 tries will be told to return the study. Additionally, we include an attention check and two memory checks (the memory checks involve recalling details about the previous vignette: the names of the characters and what food they ate). We will exclude participants if they fail the attention check and both memory checks. We will check the robustness of this decision and also rerun the analyses retaining only the participants who passed both memory checks. 
 
-7) **Sample Size. How many observations will be collected or what will determine sample size? (No need to justify the decision, but be precise about exactly how the number will be determined.)**
+## 7) **Sample Size. How many observations will be collected or what will determine sample size? (No need to justify the decision, but be precise about exactly how the number will be determined.)**
 
 We will recruit 480 participants (pre-exclusions), to achieve approximately 20 participants per scenario x condition combination. 
 
-**Other. Anything else you would like to pre-register? (e.g., secondary analyses, variables collected for exploratory purposes, unusual analyses planned?)**
+## **Other. Anything else you would like to pre-register? (e.g., secondary analyses, variables collected for exploratory purposes, unusual analyses planned?)**
 
-**Name. Give a title for this AsPredicted pre-registration (Suggestion: use the name of the project, followed by study description.)**
+## **Name. Give a title for this AsPredicted pre-registration (Suggestion: use the name of the project, followed by study description.)**
 
 Inferring desire from food-sharing actions based on intimacy and physical effort
 
- **Finally. For record keeping purposes, please tell us the type of study you are pre-registering.**
+## **Finally. For record keeping purposes, please tell us the type of study you are pre-registering.**
 
 1)  Class project or assignment  
    2)  **Experiment**  
