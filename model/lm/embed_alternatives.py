@@ -39,6 +39,10 @@ Outputs (one folder per study, outputs/lm/<slug>/):
   - lm_clusters.json — {model, k_per_scenario, dup_threshold, clusters:
     [{scenario, cluster, size, exemplars}]}, the per-scenario action types with
     nearest-centroid exemplar texts for interpretation.
+  - lm_embeddings.npz — the mean-centered, normalized embeddings: `alt_emb` (aligned
+    row-for-row with lm_alternatives_semantic.jsonl) + `canon_emb` with parallel
+    `canon_scenario`/`canon_action` labels. Consumed by model/lm/plot_alternatives.py,
+    which runs the UMAP projection and renders the figures.
 
 Usage:
     uv run python model/lm/embed_alternatives.py --study food_inv_desire
@@ -223,8 +227,11 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
 
     # Per (scenario, alt text): the per-scenario cluster id, the nearest canonical
     # action (scenario-invariant action-type label for the anchoring view), and the
-    # cosine to it (for the near-paraphrase check).
+    # cosine to it (for the near-paraphrase check). `alt_emb` collects each row's
+    # embedding in the SAME order as `records`, so the plotting script can index-
+    # align lm_alternatives_semantic.jsonl rows with lm_embeddings.npz.
     records = []
+    alt_emb = []
     for _, row in alt_pairs.iterrows():
         s, text = row["scenario_label"], row["action_text"]
         canon_mat = np.vstack([emb[t] for t in canon_texts[s]])
@@ -239,11 +246,31 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
                 "sim_to_canonical": float(np.max(sims)),
             }
         )
+        alt_emb.append(emb[text])
 
     sem_path = study_dir / "lm_alternatives_semantic.jsonl"
     with open(sem_path, "w") as f:
         for rec in records:
             f.write(json.dumps(rec) + "\n")
+
+    # Persist the embeddings (mean-centered, normalized) for the plotting script,
+    # which runs the UMAP projection itself. `alt_emb` aligns row-for-row with
+    # sem_path; canonical embeddings are stored with parallel scenario/action labels
+    # so they can be placed in the same projection (as anchor points).
+    canon_emb, canon_scenario, canon_action = [], [], []
+    for s in scenarios_df.index:
+        for ci, c in enumerate(CANONICAL_ACTIONS):
+            canon_emb.append(emb[canon_texts[s][ci]])
+            canon_scenario.append(s)
+            canon_action.append(c)
+    emb_path = study_dir / "lm_embeddings.npz"
+    np.savez(
+        emb_path,
+        alt_emb=np.asarray(alt_emb, dtype=np.float32),
+        canon_emb=np.asarray(canon_emb, dtype=np.float32),
+        canon_scenario=np.array(canon_scenario),
+        canon_action=np.array(canon_action),
+    )
 
     cluster_summary.sort(key=lambda d: (d["scenario"], -d["size"]))
     clusters_path = study_dir / "lm_clusters.json"
@@ -265,6 +292,10 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
     print(
         f"  {clusters_path.name}  ({len(cluster_summary)} per-scenario types "
         f"across {len(scenario_clusters)} scenarios)"
+    )
+    print(
+        f"  {emb_path.name}  ({len(alt_emb)} alt + {len(canon_emb)} canonical "
+        f"embeddings for plotting)"
     )
     print(
         f"  near-paraphrases of a canonical (cos >= {dup_threshold}): "

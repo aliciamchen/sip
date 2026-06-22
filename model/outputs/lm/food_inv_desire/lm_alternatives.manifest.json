@@ -1,0 +1,12 @@
+{
+  "stage": "generate_alternatives",
+  "study": "food_inv_desire",
+  "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  "prompts_sha256": "7870a1e6be0a",
+  "git_sha": "582ffb7",
+  "created_utc": "2026-06-22T02:20:17+00:00",
+  "k_runs": 20,
+  "gen_temperature": 0.7,
+  "n_cells": 384,
+  "n_alternatives": 24696
+}
