@@ -2,7 +2,7 @@
 
 Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. No multi-experiment dispatchers in script names; no `--feature` flags hiding what a script does.
 
-The roster is four inverse-planning studies, all on the 3-action stimulus set and all using the LM-generated-alternatives padded-action pipeline: `food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b). (Earlier forward-planning and pre-3-action inverse code was removed in the June 2026 cleanup; only the collected data is archived under `data/legacy/`.)
+The roster is four inverse-planning studies, all on the 3-action stimulus set and all using the LM-generated-alternatives padded-action pipeline: `food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b).
 
 ## Pipeline at a glance
 
@@ -44,7 +44,7 @@ Logic shared across experiments (the LOSO loops in `cv/`, the multi-mode helpers
 
 ## Core math (one copy, shared across all experiments)
 
-- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the per-study padded LM-alternatives loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_runs.jsonl` into tables that carry a leading elicitation-run axis; a legacy single-run `lm_scenario.csv` + `lm_alternatives.csv` fallback code path remains but those CSVs were removed), and the given-magnitude scalar loaders `load_lm_scenario_desire` (per-condition desire, 2a/2b) / `load_lm_relationship_values` (per-level intimacy, 1a/1b), both reading the per-record given field of `lm_runs.jsonl` with the same leading run axis, so the given magnitudes vary run-to-run alongside the features.
+- `tables.py` — enums (`Scenarios`, `DesireConditions`, `RelationshipConditions`, `EffortConditions`, `IntimacyLevels`, `DesireLevels`, `PaddedActionSlots`, `ObservedActions`), the `actions` array, `SCENARIO_LABELS`, the per-study padded LM-alternatives loaders (`load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}`, each reading `lm_runs.jsonl` into tables that carry a leading elicitation-run axis), and the given-magnitude scalar loaders `load_lm_scenario_desire` (per-condition desire, 2a/2b) / `load_lm_relationship_values` (per-level intimacy, 1a/1b), both reading the per-record given field of `lm_runs.jsonl` with the same leading run axis, so the given magnitudes vary run-to-run alongside the features.
 - `utility.py` — jit-compiled utility functions: the padded families `get_utility_{full,discomfort_only,base}_padded_{desire,joint_de,intimacy,joint_ie}` plus their `get_prior_padded_*` and `get_lm_g_padded_*` helpers. The reward term is `w_v · desire · g`.
 - `actors.py` — actor memo models: the padded inverse actors `actor_discrete_*_padded_{desire,joint_de}` (discrete observed intimacy) and `actor_continuous_*_padded_{intimacy,joint_ie}` (continuous inferred intimacy), used inside the observers' `thinks[...]` blocks.
 - `observers.py` — observer memos, one family per study, each in `_full` / `_discomfort_only` / `_base`:

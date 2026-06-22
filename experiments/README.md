@@ -1,9 +1,5 @@
 # Experiments
 
-## Terminology note
-
-The experiment code and the data it saves use "desire" (e.g., the `desire_low`/`desire_high` scenario paragraphs and the `desire_condition` factor). The model's internal variables and the processed-data column still use "reward"/"desire" (e.g., `p_high_reward`, and the `desire` column that `json_to_csv.py` writes) — the same concept under an older name that predates the switch to "desire" on the experiment side. A later, larger change will rename "reward"/"desire" to "desire" on the model side too (the fitting, CV, and table code); it's deferred for now.
-
 ## Stimulus sources
 
 The active stimulus set is one scenario CSV, generated from a Python source of truth. Edit the `.py` file and regenerate with `uv run python experiments/scenarios.py` — never edit the CSV directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/build/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`. The earlier 4-action / 2-action / non-food sets are archived under `experiments/legacy/` (see below).
@@ -48,7 +44,7 @@ All four use `scenarios.csv` and follow the noalt-style presentation: the partic
 
 ## Legacy
 
-The **data** from earlier experiments is archived under [`data/legacy/`](../data/legacy/); the legacy experiment code, scenario sets, and analysis were removed in the June 2026 cleanup (recoverable from git history).
+The **data** from earlier experiments is archived under [`data/legacy/`](../data/legacy/); the legacy experiment code, scenario sets, and analysis are in git history.
 
 ## Counterbalancing
 

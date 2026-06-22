@@ -16,7 +16,7 @@ Each trial shows: intimacy-descriptor preamble page, then vignette + effort para
 
 Slider responses: one continuous slider (0–100, endpoints "not at all" / "extremely"), rating "how much do {name_0} and {name_1} want to eat the food?" with the scenario's two character names.
 
-Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 24 cells (each participant samples 16 of 24). The shared counterbalancing generator (`experiments/build/counterbalancing.py`) produces 192 sequences (12 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
+Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 24 cells (each participant samples 16 of 24). The shared counterbalancing generator (`experiments/build/counterbalancing.py`) produces 480 sequences (30 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
 
 The trial flow follows the "noalt" pattern from `food_inv_intimacy_desire_noalt` / `food_inv_desire_intimacy_noalt`: no candidate action list shown to the participant, only the single observed action at the posterior stage. The participant sees an intimacy-descriptor preamble page first (since intimacy is a known frame for this study), then the prior slider.
 

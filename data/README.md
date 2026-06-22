@@ -13,7 +13,7 @@ Data from earlier experiments (forward-planning, the superseded 4-action/2-actio
 
 ## Terminology note
 
-The active CSVs use the current "desire" naming (e.g., `desire_condition`). The archived CSVs under `legacy/` predate the rename of "reward"/"motivation" to "desire" and keep the older column names (e.g., `reward_condition`, `motivation`); see [legacy/README.md](legacy/README.md).
+The active CSVs use the current "desire" naming (e.g., `desire_condition`); the archived CSVs under `legacy/` keep older column names (see [legacy/README.md](legacy/README.md)).
 
 ## Exit survey (all experiments)
 

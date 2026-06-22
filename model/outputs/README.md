@@ -1,9 +1,7 @@
 # Model outputs codebook
 
-Outputs are grouped by experiment slug. Everything the pipeline writes is now JSON or
-JSON Lines — the June 2026 fitting refactor (belief-update Gaussian-mixture likelihood,
-K-run LM elicitation) replaced the earlier `fit_results.csv` / `preds_*.npy` / `cv_*.csv`
-outputs. JSON Lines is used for the large, append/resume-friendly per-record logs (per-run LM
+Outputs are grouped by experiment slug. Everything the pipeline writes is JSON or JSON
+Lines. JSON Lines is used for the large, append/resume-friendly per-record logs (per-run LM
 scores, stage-1 alternatives, per-restart and per-fold fit diagnostics, per-trial held-out
 likelihoods); plain JSON is used for the smaller structured summaries.
 
@@ -28,15 +26,11 @@ Slugs (the four inverse studies, all on the 3-action set): `food_inv_desire` (St
 sole source of model predictions, because every reported model-vs-human number is
 out-of-sample.
 
-The LM tables are no longer tracked in git: the legacy single-run CSVs that used to ship as a
-K=1 fallback were removed once the JSONL pipeline was validated, and the `lm_*.jsonl` are
-regenerated locally by the LM scripts. So a fresh clone — or any study without its own
-`lm_runs.jsonl` — has no LM tables until you run `generate_alternatives.py` + `score_merged.py`
-for it; until then that study's loaders return `None` and its fit raises a clear
-`FileNotFoundError`. The fit/CV outputs are likewise regenerated locally rather than committed.
-
-(Earlier forward-planning and pre-3-action inverse outputs were removed in the June 2026
-cleanup; only the collected participant data is archived under `data/legacy/`.)
+The LM tables aren't tracked in git; the `lm_*.jsonl` are regenerated locally by the LM
+scripts. So a fresh clone — or any study without its own `lm_runs.jsonl` — has no LM tables
+until you run `generate_alternatives.py` + `score_merged.py` for it; until then that study's
+loaders return `None` and its fit raises a clear `FileNotFoundError`. The fit/CV outputs are
+likewise regenerated locally rather than committed.
 
 ## What the numbers mean
 
@@ -109,21 +103,7 @@ and read back by `score_merged.py`. One record per generated alternative, with f
 `scenario_label`, `observed_action`, the study's generation-cell condition columns, `run_id`,
 `alt_idx`, `action_text`, and `is_share`. The feature scores (`risk`/`effort`/`g`) are *not*
 here — scoring happens in `score_merged.py` and lands in `lm_runs.jsonl`. This is the stage-1
-input to scoring, distinct from the legacy combined `lm_alternatives.csv` (the old scored
-fallback, now removed — see below).
-
-### Legacy K=1 fallback (removed)
-
-Before the JSONL pipeline, each study shipped pre-scored single-run CSVs — `lm_scenario.csv`
-(canonical risk/effort/g), `lm_alternatives.csv` (the combined alternatives-with-features
-table), and, for 2a/2b, `lm_scenario_desire.csv` (per-condition desire scalar) — and the table
-loaders read them as a single run (`K=1`) when `lm_runs.jsonl` was absent, so fits ran before
-the paid K=20 regeneration. **These files were removed once the pipeline was validated.** The
-loaders still contain the CSV fallback *code path* (it activates only if such files are
-present), but none ship anymore, so a study with no `lm_runs.jsonl` returns `None` — a clear
-"run the LM scripts first" error — until it is regenerated. (`load_lm_relationship_values`
-additionally falls back to the in-code placeholder `RELATIONSHIP_LEVEL_VALUES`, but that is
-moot while the padded tables are `None`.)
+input to scoring.
 
 ## Per-study fit and CV outputs (`<slug>/`)
 
