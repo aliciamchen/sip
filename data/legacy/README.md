@@ -22,9 +22,11 @@ Three experiments in which participants allocated probabilities across all avail
 
 `main_trials_long.csv` is one row per action: `subject_id`, `scenario_label`, `intimacy`, `motivation` or `effort`, `action` (index), `p_action`.
 
-## Study 1a pilot (tracked)
+## Study 1a pilots (tracked)
 
 `food_inv_desire_pilot/` holds the original pilot for manuscript Study 1a, with the same design as the active `food_inv_desire` (2 effort × 4 intimacy × 3 action) and the same column schema. The difference is the desire DV: the pilot collected a 0–100 "probability of two motivational states" slider, whereas Study 1a now uses a direct 0–100 desire rating.
+
+`food_inv_desire_pilot_jun2026/` holds a second, later pilot (N = 20, collected 2026-06-17) that already used the current direct 0–100 desire rating, so it is closer to the final Study 1a design than the original pilot. It is archived here rather than retained in the active directory because it predates the 2026-06-19 intimacy-label rename: its `intimacy_condition` column still uses the old `neither` slug in place of `somewhat_formal`. Pooling it with the full sample would therefore split one intimacy level across two label strings, so it was moved aside before the full-sample run. It keeps the same column schema as the active study.
 
 ## Superseded inverse-planning experiments (local-only)
 
