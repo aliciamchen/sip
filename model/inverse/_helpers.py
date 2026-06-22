@@ -102,6 +102,7 @@ def _fit_multistart(
     verbose=True,
     label="",
     init_params=None,
+    patience=100,
 ):
     """Run `_fit_with_adam` from several inits and keep the best final NLL.
 
@@ -135,6 +136,7 @@ def _fit_multistart(
             max_steps=max_steps,
             verbose=verbose,
             label=f"{label}[restart {ri}]",
+            patience=patience,
         )
         records.append(
             {
@@ -772,6 +774,7 @@ def fit_desire_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    patience=100,
 ):
     """Study 1a — joint fit of utility weights + α_observer + σ on the desire
     belief update via the K-run Gaussian mixture.
@@ -810,6 +813,7 @@ def fit_desire_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="desire_joint",
+        patience=patience,
     )
     return params, float(nll), restarts
 

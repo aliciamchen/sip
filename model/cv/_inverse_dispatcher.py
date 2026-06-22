@@ -32,7 +32,11 @@ All share the joint-fit logic in `model/inverse/_helpers.py` — there is no
 transfer between studies.
 """
 
+import functools
+import multiprocessing as mp
+import os
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 _project_root = Path(__file__).resolve().parent.parent.parent
@@ -347,16 +351,144 @@ def main_intimacy():
 # ==============================================================================
 
 
-def _loso_desire(slug):
+# Worker-process state for the parallel desire CV: the full (numpy) data arrays
+# are shared into each worker once via the pool initializer, so per-fold jobs ship
+# only the small (variant, fold, warm-params) tuple. The sequential path sets it
+# in-process.
+_DESIRE_W = {}
+
+
+def _desire_worker_init(slug, action, scenario, effort, rel, response, subject_ids):
+    _DESIRE_W.update(
+        slug=slug,
+        action=action,
+        scenario=scenario,
+        effort=effort,
+        rel=rel,
+        response=response,
+        subj=subject_ids,
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def _desire_tk_cached(variant):
+    """Per-process cache of a variant's LM table kwargs (the lm_runs.jsonl load is
+    a few MB, so build it once per worker per variant, not once per fold)."""
+    _, utility_names = VARIANTS_DESIRE[variant]
+    return desire_table_kwargs(utility_names, base=(variant == "base"))
+
+
+def _desire_cv_fold(variant, fold, warm, patience):
+    """One leave-one-scenario-out refit + held-out scoring for the desire CV.
+
+    Reads the shared data from `_DESIRE_W`. Returns this fold's
+    (pred_rows, fold_row, trial_ll_rows). Top-level + picklable so a
+    ProcessPoolExecutor can run folds concurrently; fully deterministic given
+    (variant, fold, warm, patience), so the parallel output equals the sequential.
+    """
+    obs_fn, utility_names = VARIANTS_DESIRE[variant]
+    tk = _desire_tk_cached(variant)
+    slug = _DESIRE_W["slug"]
+    sc, act = _DESIRE_W["scenario"], _DESIRE_W["action"]
+    eff, rel = _DESIRE_W["effort"], _DESIRE_W["rel"]
+    resp, subj = _DESIRE_W["response"], _DESIRE_W["subj"]
+    scenario_label = SCENARIO_LABELS[fold]
+    train_mask, test_mask = sc != fold, sc == fold
+    n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
+
+    params, train_nll, _ = fit_desire_observer_joint(
+        observer_fn=obs_fn,
+        utility_param_names=utility_names,
+        action=jnp.asarray(act[train_mask]),
+        scenario_idx=jnp.asarray(sc[train_mask]),
+        effort_condition=jnp.asarray(eff[train_mask]),
+        relationship_condition=jnp.asarray(rel[train_mask]),
+        response=jnp.asarray(resp[train_mask]),
+        table_kwargs=tk,
+        verbose=False,
+        n_restarts=N_RESTARTS_CV,
+        init_params=warm,
+        patience=patience,
+    )
+    sigma = float(params[-1])
+    # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
+    tables = np.asarray(_build_observer_tables_runs(obs_fn, params, utility_names, tk))
+
+    pred_rows = []
+    for a_idx in range(N_ACTIONS):
+        for rel_idx in range(4):
+            for e in (0, 1):
+                deltas = (
+                    tables[:, 0, fold, a_idx, e, rel_idx, :] @ GRID_NP - PRIOR_MEAN_F
+                )
+                pred_rows.append(
+                    {
+                        "scenario_label": scenario_label,
+                        "action": a_idx,
+                        "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
+                        "effort_condition": "low" if e == 0 else "high",
+                        "delta_desire": float(deltas.mean()),
+                        "model": variant,
+                    }
+                )
+
+    trial_ll_rows = []
+    ti = np.where(test_mask)[0]
+    if len(ti):
+        post = tables[:, 0, sc[ti], act[ti], eff[ti], rel[ti], :]  # (K, n_test, 101)
+        deltas_t = (post @ GRID_NP).T - PRIOR_MEAN_F
+        lls = _held_out_ll_1d(deltas_t, resp[ti], sigma)
+        test_nll = -float(lls.sum())
+        for j, i in enumerate(ti):
+            trial_ll_rows.append(
+                {
+                    "experiment": slug,
+                    "model": variant,
+                    "subject_id": str(subj[i]),
+                    "scenario_label": scenario_label,
+                    "held_out_ll": float(lls[j]),
+                }
+            )
+    else:
+        test_nll = 0.0
+
+    fold_row = _fold_row(
+        slug,
+        variant,
+        fold,
+        scenario_label,
+        params,
+        utility_names,
+        train_nll,
+        test_nll,
+        n_train,
+        n_test,
+    )
+    return pred_rows, fold_row, trial_ll_rows
+
+
+def _loso_desire(slug, workers=None, patience=None):
+    """Desire LOSO CV. Runs the (variant × fold) refits concurrently when
+    `workers` > 1 (env `CV_WORKERS`, default 1): folds are independent and each
+    refit is deterministic, so the output is identical to the sequential run —
+    only the execution overlaps. `patience` (env `CV_PATIENCE`, default 100) trims
+    the Adam no-improvement tail of each warm-started refit."""
+    workers = workers if workers is not None else int(os.environ.get("CV_WORKERS", "1"))
+    patience = (
+        patience if patience is not None else int(os.environ.get("CV_PATIENCE", "100"))
+    )
     data, action, scenario_idx, effort_condition, relationship_condition, response = (
         load_desire_data(slug)
     )
-    scenario_idx_np = np.asarray(scenario_idx)
-    action_np = np.asarray(action)
-    effort_np = np.asarray(effort_condition)
-    rel_np = np.asarray(relationship_condition)
-    response_np = np.asarray(response)
-    subject_ids = np.asarray(data["subject_id"].values)
+    init_args = (
+        slug,
+        np.asarray(action),
+        np.asarray(scenario_idx),
+        np.asarray(effort_condition),
+        np.asarray(relationship_condition),
+        np.asarray(response),
+        np.asarray(data["subject_id"].values),
+    )
     # Warm-start source: the full-data fit (refits perturb it only slightly).
     full_fit = (
         load_fit_results(slug)
@@ -365,102 +497,39 @@ def _loso_desire(slug):
         ).exists()
         else {}
     )
-
-    pred_rows, fold_rows, trial_ll_rows = [], [], []
-
-    for variant, (obs_fn, utility_names) in VARIANTS_DESIRE.items():
-        tk = desire_table_kwargs(utility_names, base=(variant == "base"))
-        warm = (
-            params_dict_to_array(full_fit[variant], utility_names)
-            if variant in full_fit
+    warms = {
+        v: (
+            np.asarray(params_dict_to_array(full_fit[v], util))
+            if v in full_fit
             else None
         )
-        for fold in range(N_SCENARIOS):
-            scenario_label = SCENARIO_LABELS[fold]
-            train_mask = scenario_idx_np != fold
-            test_mask = scenario_idx_np == fold
-            n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
-            _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
+        for v, (_, util) in VARIANTS_DESIRE.items()
+    }
+    jobs = [(v, f) for v in VARIANTS_DESIRE for f in range(N_SCENARIOS)]
 
-            params, train_nll, _ = fit_desire_observer_joint(
-                observer_fn=obs_fn,
-                utility_param_names=utility_names,
-                action=action[train_mask],
-                scenario_idx=scenario_idx[train_mask],
-                effort_condition=effort_condition[train_mask],
-                relationship_condition=relationship_condition[train_mask],
-                response=response[train_mask],
-                table_kwargs=tk,
-                verbose=False,
-                n_restarts=N_RESTARTS_CV,
-                init_params=warm,
-            )
-            sigma = float(params[-1])
-            # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
-            tables = np.asarray(
-                _build_observer_tables_runs(obs_fn, params, utility_names, tk)
-            )
+    if workers and workers > 1:
+        print(f"  parallel desire CV: {workers} workers, patience={patience}")
+        with ProcessPoolExecutor(
+            max_workers=workers,
+            mp_context=mp.get_context("spawn"),
+            initializer=_desire_worker_init,
+            initargs=init_args,
+        ) as ex:
+            futs = {
+                ex.submit(_desire_cv_fold, v, f, warms[v], patience): (v, f)
+                for v, f in jobs
+            }
+            results = {futs[fu]: fu.result() for fu in futs}
+    else:
+        _desire_worker_init(*init_args)
+        results = {(v, f): _desire_cv_fold(v, f, warms[v], patience) for v, f in jobs}
 
-            for a_idx in range(N_ACTIONS):
-                for rel_idx in range(4):
-                    for e in (0, 1):
-                        density_runs = tables[
-                            :, 0, fold, a_idx, e, rel_idx, :
-                        ]  # (K,101)
-                        deltas = density_runs @ GRID_NP - PRIOR_MEAN_F
-                        pred_rows.append(
-                            {
-                                "scenario_label": scenario_label,
-                                "action": a_idx,
-                                "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
-                                "effort_condition": "low" if e == 0 else "high",
-                                "delta_desire": float(deltas.mean()),
-                                "model": variant,
-                            }
-                        )
-
-            ti = np.where(test_mask)[0]
-            if len(ti):
-                post = tables[
-                    :,
-                    0,
-                    scenario_idx_np[ti],
-                    action_np[ti],
-                    effort_np[ti],
-                    rel_np[ti],
-                    :,
-                ]  # (K, n_test, 101)
-                deltas_t = (post @ GRID_NP).T - PRIOR_MEAN_F
-                lls = _held_out_ll_1d(deltas_t, response_np[ti], sigma)
-                test_nll = -float(lls.sum())
-                for j, i in enumerate(ti):
-                    trial_ll_rows.append(
-                        {
-                            "experiment": slug,
-                            "model": variant,
-                            "subject_id": str(subject_ids[i]),
-                            "scenario_label": scenario_label,
-                            "held_out_ll": float(lls[j]),
-                        }
-                    )
-            else:
-                test_nll = 0.0
-
-            fold_rows.append(
-                _fold_row(
-                    slug,
-                    variant,
-                    fold,
-                    scenario_label,
-                    params,
-                    utility_names,
-                    train_nll,
-                    test_nll,
-                    n_train,
-                    n_test,
-                )
-            )
-
+    pred_rows, fold_rows, trial_ll_rows = [], [], []
+    for key in jobs:  # deterministic order — matches the sequential run
+        pr, fr, tr = results[key]
+        pred_rows.extend(pr)
+        fold_rows.append(fr)
+        trial_ll_rows.extend(tr)
     return pred_rows, fold_rows, trial_ll_rows
 
 
