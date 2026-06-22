@@ -324,6 +324,9 @@ def load_lm_relationship_values(slug):
 def load_padded_lm_tables_desire(
     canonical_path=None,
     alternatives_path=None,
+    *,
+    runs_filename="lm_runs.jsonl",
+    broadcast_relationship=False,
 ):
     """Build padded tables for Study 1a's LM-generated alternatives action space.
 
@@ -351,8 +354,22 @@ def load_padded_lm_tables_desire(
     component of the simulated-observer mixture); K=1 on the legacy single-run
     CSVs. Returns a dict {risk, effort, g, prior, n_runs} of jnp.arrays, or None
     if the tables are missing or not yet scored.
+
+    `runs_filename` / `broadcast_relationship` support the base-model alternative
+    set: the `base` ablation has no intimacy term, so its alternatives are elicited
+    without the relationship paragraph (`lm_runs_base.jsonl`, keyed by effort only).
+    With `broadcast_relationship=True` the same alt set is written to every one of
+    the 4 relationship indices, so the table is identical across that axis and the
+    base model's predictions are relationship-invariant.
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_desire"
+    # The base alt set drops intimacy_condition (relationship-free), so it's keyed
+    # on effort only and broadcast across the relationship axis below.
+    cell_cols = (
+        ["effort_condition"]
+        if broadcast_relationship
+        else ["effort_condition", "intimacy_condition"]
+    )
     if canonical_path or alternatives_path:  # explicit-path override (tests)
         if any(not Path(p).exists() for p in (canonical_path, alternatives_path)):
             return None
@@ -361,7 +378,7 @@ def load_padded_lm_tables_desire(
             return None
         runs = [(*_canonical_lookups(canonical_path), alts_df)]
     else:
-        runs = _run_sources(outputs_dir, ["effort_condition", "intimacy_condition"])
+        runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
     if runs is None:
         return None
     K = len(runs)
@@ -404,14 +421,21 @@ def load_padded_lm_tables_desire(
             s_idx = SCENARIO_TO_IDX[row["scenario_label"]]
             o_idx = observed_str_to_idx[row["observed_action"]]
             e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-            i_idx = intimacy_to_idx[row["intimacy_condition"]]
             slot = int(row["alt_idx"]) + 1
             if slot >= MAX_ACTIONS:
                 continue
-            risk[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["risk"])
-            effort[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["effort"])
-            g[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["g"])
-            valid_mask[k, s_idx, o_idx, e_idx, i_idx, slot] = True
+            # Base alts are relationship-free: broadcast across all intimacy indices
+            # (like the canonical slot 0 above); otherwise place at the row's level.
+            rel_indices = (
+                range(n_intimacy)
+                if broadcast_relationship
+                else [intimacy_to_idx[row["intimacy_condition"]]]
+            )
+            for i_idx in rel_indices:
+                risk[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["risk"])
+                effort[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["effort"])
+                g[k, s_idx, o_idx, e_idx, i_idx, slot] = float(row["g"])
+                valid_mask[k, s_idx, o_idx, e_idx, i_idx, slot] = True
 
     NULL_EPSILON = 1e-8
     n_valid = valid_mask.sum(axis=-1, keepdims=True)
@@ -419,7 +443,7 @@ def load_padded_lm_tables_desire(
         valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
     ).astype(np.float32)
 
-    _warn_truncation(runs, ["effort_condition", "intimacy_condition"])
+    _warn_truncation(runs, cell_cols)
 
     return {
         "risk": jnp.array(risk),
@@ -480,7 +504,7 @@ def _alts_ready(alts_df):
     )
 
 
-def _run_sources(outputs_dir, cell_cols):
+def _run_sources(outputs_dir, cell_cols, runs_filename="lm_runs.jsonl"):
     """Return a list (over elicitation runs) of `(canon_ae, canon_g, alts_df)`,
     or None if no scored LM tables exist yet.
 
@@ -501,7 +525,7 @@ def _run_sources(outputs_dir, cell_cols):
     (e.g. ["effort_condition", "intimacy_condition"] for 1a); the JSONL records
     must carry them so the reconstructed `alts_df` matches the legacy schema.
     """
-    jsonl = outputs_dir / "lm_runs.jsonl"
+    jsonl = outputs_dir / runs_filename
     if jsonl.exists():
         return _run_sources_jsonl(jsonl, cell_cols)
 

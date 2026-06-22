@@ -102,6 +102,24 @@ _STUDY_CONFIG = {
     },
 }
 
+# Base-model override (the `--base` mode). The `base` ablation has no intimacy
+# term, so its alternative set should NOT be conditioned on the relationship — we
+# drop intimacy from `show`/`cell_cols` and write to a separate file that coexists
+# with the relationship-conditioned `lm_alternatives.jsonl` used by full/
+# discomfort_only. Only the given-relationship studies (1a/1b) have a relationship
+# paragraph to drop; 2a/2b infer intimacy and never show one, so they're excluded.
+#   1a desire   — (effort, intimacy) -> (effort,)   = 16×3×2   = 96 cells
+_BASE_OVERRIDE = {
+    "food_inv_desire": {
+        "output": "lm_alternatives_base.jsonl",
+        "show": ("effort",),
+        "cell_cols": ("effort_condition",),
+    },
+    # 1b later (effort is inferred, so generation shows neither effort nor intimacy):
+    #   "food_inv_joint_de": {"output": "lm_alternatives_base.jsonl",
+    #                         "show": (), "cell_cols": ()},  # 16×3 = 48 cells
+}
+
 ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
 DESIRE_LEVELS = ["low", "high"]
 EFFORT_LEVELS = ["low", "high"]
@@ -181,13 +199,20 @@ def _build_cells(scenarios_df, cfg):
     return cells
 
 
-def main(study):
+def main(study, base=False):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Currently supported: "
             f"{sorted(_STUDY_CONFIG.keys())}"
         )
-    cfg = _STUDY_CONFIG[study]
+    cfg = dict(_STUDY_CONFIG[study])
+    if base:
+        if study not in _BASE_OVERRIDE:
+            raise SystemExit(
+                f"--base is only defined for {sorted(_BASE_OVERRIDE)} (the studies "
+                f"with a relationship paragraph to drop); {study!r} has none."
+            )
+        cfg.update(_BASE_OVERRIDE[study])
     api_key = load_api_key()
 
     print(f"Loading scenarios (study={study})...", flush=True)
@@ -310,5 +335,12 @@ if __name__ == "__main__":
         default="food_inv_desire",
         help="Which 3-act inverse experiment to elicit alternatives for.",
     )
+    parser.add_argument(
+        "--base",
+        action="store_true",
+        help="Base-model mode: elicit alternatives WITHOUT the relationship "
+        "paragraph (given-relationship studies only), writing a separate "
+        "lm_alternatives_base.jsonl.",
+    )
     args = parser.parse_args()
-    main(args.study)
+    main(args.study, base=args.base)

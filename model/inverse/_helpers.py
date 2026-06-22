@@ -55,7 +55,11 @@ def _fit_with_adam(
     best iterate, not the last one.
     """
     params = jnp.array(init_params)
-    grad_fn = jax.value_and_grad(loss_fn)
+    # jit the value+grad so the whole per-step graph (K-run observer build →
+    # mixture NLL → backward) compiles once and reruns fast, instead of being
+    # re-dispatched eagerly every Adam step. Compile cost amortizes over the
+    # fit's steps; the heavy joint observers stay compute-bound (see note).
+    grad_fn = jax.jit(jax.value_and_grad(loss_fn))
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
 
@@ -514,23 +518,40 @@ def _padded_table_kwargs(
     return kw
 
 
-def desire_table_kwargs(utility_param_names, domain="food"):
+def desire_table_kwargs(utility_param_names, domain="food", base=False):
     """Padded LM tables for Study 1a (food_inv_desire). Observer's actor
     softmaxes over LM-generated alternatives per (scenario, observed_action,
     effort, intimacy) cell. Desire is inferred (no desire scalar); intimacy is
-    given, so full/discomfort_only get the LM-rated `relationship_values`."""
+    given, so full/discomfort_only get the LM-rated `relationship_values`.
+
+    `base=True` (the base ablation, which has no intimacy term) loads the
+    relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
+    across the relationship axis, so the base table — and the base model's
+    predictions — are relationship-invariant. full/discomfort_only keep the
+    relationship-conditioned `lm_runs.jsonl`."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_desire
 
     if domain != "food":
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
+    loader = (
+        (
+            lambda: load_padded_lm_tables_desire(
+                runs_filename="lm_runs_base.jsonl", broadcast_relationship=True
+            )
+        )
+        if base
+        else load_padded_lm_tables_desire
+    )
     return _padded_table_kwargs(
-        load_padded_lm_tables_desire,
+        loader,
         utility_param_names,
         "Study 1a",
-        "food_inv_desire",
-        relationship_loader=lambda: load_lm_relationship_values("food_inv_desire"),
+        "food_inv_desire" + (" --base" if base else ""),
+        relationship_loader=(
+            None if base else (lambda: load_lm_relationship_values("food_inv_desire"))
+        ),
     )
 
 
@@ -655,29 +676,30 @@ def _build_observer_tables_runs(observer_fn, params, utility_param_names, table_
     """Run the observer once per elicitation run and stack the posteriors on a
     leading K axis → (K, *observer_dims).
 
-    Slices each run k out of the run-axis feature tables and calls the
-    (run-agnostic) observer memo, keeping the run axis a likelihood-side
-    construct rather than a memo dimension. K=1 (legacy single-run tables)
-    reproduces the pre-mixture single-component behavior. σ (`params[-1]`) is a
-    likelihood param and is *not* passed to the observer.
+    Vectorized over the K elicitation runs with `jax.vmap` (one batched observer
+    eval over the run axis instead of a Python loop), keeping the run axis a
+    likelihood-side construct rather than a memo dimension. K=1 (legacy single-run
+    tables) reproduces the pre-mixture single-component behavior. σ (`params[-1]`)
+    is a likelihood param and is *not* passed to the observer.
     """
     actor_kwargs = {"alpha": 1.0}
     for i, name in enumerate(utility_param_names):
         actor_kwargs[name] = params[i]
     alpha_observer = params[-2]
-    K = int(table_kwargs["risk_table"].shape[0])
-    per_run = [
-        observer_fn(
+    # Tables carrying the leading run axis are mapped over (axis 0); any others
+    # (none today) are broadcast unchanged.
+    run_tables = {k: v for k, v in table_kwargs.items() if k in _RUN_AXIS_TABLES}
+    fixed_tables = {k: v for k, v in table_kwargs.items() if k not in _RUN_AXIS_TABLES}
+
+    def _run_one(run_slice):
+        return observer_fn(
             **actor_kwargs,
             alpha_observer=alpha_observer,
-            **{
-                key: (val[k] if key in _RUN_AXIS_TABLES else val)
-                for key, val in table_kwargs.items()
-            },
+            **run_slice,
+            **fixed_tables,
         )
-        for k in range(K)
-    ]
-    return jnp.stack(per_run, axis=0)
+
+    return jax.vmap(_run_one)(run_tables)
 
 
 def fit_intimacy_observer_joint(

@@ -369,7 +369,7 @@ def _loso_desire(slug):
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_DESIRE.items():
-        tk = desire_table_kwargs(utility_names)
+        tk = desire_table_kwargs(utility_names, base=(variant == "base"))
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit

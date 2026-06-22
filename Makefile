@@ -16,6 +16,11 @@ EXPERIMENTS_INVERSE := food_inv_desire food_inv_joint_de \
                        food_inv_intimacy food_inv_joint_ie
 EXPERIMENTS_ALL := $(EXPERIMENTS_INVERSE)
 
+# Studies that get a relationship-free base-model alternative set (the `--base`
+# elicitation mode): the given-relationship studies only (2a/2b infer intimacy, so
+# they never show a relationship paragraph). Add food_inv_joint_de when 1b is wired.
+EXPERIMENTS_BASE := food_inv_desire
+
 ANALYSIS_QMDS := \
   food-inv-desire-analysis \
   food-inv-joint-de-analysis \
@@ -23,12 +28,13 @@ ANALYSIS_QMDS := \
   food-inv-joint-ie-analysis
 
 .PHONY: all help test clean \
-        data lm lm-alternatives \
+        data lm lm-alternatives lm-base \
         fit fit-inverse \
         cv cv-inverse \
         analysis \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_INVERSE)) \
+        $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix fit-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix cv-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
@@ -68,6 +74,8 @@ help:
 	@echo "  fit-inverse, cv-inverse"
 	@echo "  lm, lm-alternatives   (lm-alternatives does all 4 studies;"
 	@echo "                         'make -j4 lm-alternatives SCENARIO_WORKERS=1' runs them in parallel)"
+	@echo "  lm-base               (relationship-free alternatives for the base model;"
+	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>"
@@ -174,6 +182,17 @@ lm-alternatives: $(addprefix lm-,$(EXPERIMENTS_INVERSE))
 $(addprefix lm-,$(EXPERIMENTS_INVERSE)): lm-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $*
 	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
+
+# Base-model alternatives: same two-stage pipeline with --base, so the LM is NOT
+# shown the relationship description (the base ablation has no intimacy term). Writes
+# lm_alternatives_base.jsonl / lm_runs_base.jsonl alongside the relationship-
+# conditioned files; the base fit/CV loads them via desire_table_kwargs(base=True).
+# `make lm-base K_RUNS=1` smoke first, then `make lm-base` for the full K=20.
+lm-base: $(addprefix lm-base-,$(EXPERIMENTS_BASE))
+
+$(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
+	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $* --base
+	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
 # Fits → outputs/<slug>/fit_results.json (+ fit_restarts.jsonl)

@@ -65,7 +65,9 @@ def main():
             effort_condition=effort_condition,
             relationship_condition=relationship_condition,
             response=response,
-            table_kwargs=desire_table_kwargs(utility_names),
+            table_kwargs=desire_table_kwargs(
+                utility_names, base=(variant_name == "base")
+            ),
         )
         row = {
             "model": variant_name,

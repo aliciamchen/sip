@@ -151,6 +151,23 @@ _STUDY_CONFIG = {
     },
 }
 
+# Base-model override (the `--base` mode). Scores the relationship-free alternative
+# set written by `generate_alternatives.py --base`. Feature scoring (risk/effort/g)
+# is already relationship-free, so the only changes are: read/write the base files,
+# drop intimacy_condition from the cell grid, and skip the per-run intimacy scalar
+# (the base utility has no intimacy term). Mirrors _BASE_OVERRIDE in
+# generate_alternatives.py; given-relationship studies only.
+_BASE_OVERRIDE = {
+    "food_inv_desire": {
+        "cell_cols": ("effort_condition",),
+        "relationship_given": False,
+        "alternatives": "lm_alternatives_base.jsonl",
+        "runs": "lm_runs_base.jsonl",
+    },
+    # 1b later: "food_inv_joint_de": {"cell_cols": (), "relationship_given": False,
+    #     "alternatives": "lm_alternatives_base.jsonl", "runs": "lm_runs_base.jsonl"},
+}
+
 
 def _norm(text):
     return text.lower().strip()
@@ -482,23 +499,31 @@ def _rate_relationship_values(client, run_id):
     return out
 
 
-def main(study, scenario_workers=SCENARIO_WORKERS):
+def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Supported: {sorted(_STUDY_CONFIG.keys())}"
         )
-    cfg = _STUDY_CONFIG[study]
+    cfg = dict(_STUDY_CONFIG[study])
+    if base:
+        if study not in _BASE_OVERRIDE:
+            raise SystemExit(
+                f"--base is only defined for {sorted(_BASE_OVERRIDE)}; "
+                f"{study!r} has no relationship paragraph."
+            )
+        cfg.update(_BASE_OVERRIDE[study])
     api_key = load_api_key()
 
     scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     study_dir.mkdir(parents=True, exist_ok=True)
-    alts_path = study_dir / "lm_alternatives.jsonl"
-    runs_path = study_dir / "lm_runs.jsonl"
+    alts_path = study_dir / cfg.get("alternatives", "lm_alternatives.jsonl")
+    runs_path = study_dir / cfg.get("runs", "lm_runs.jsonl")
     if not alts_path.exists():
         raise SystemExit(
             f"Alternatives JSONL not found at {alts_path}. Run "
-            f"model/lm/generate_alternatives.py --study {study} first."
+            f"model/lm/generate_alternatives.py --study {study}"
+            f"{' --base' if base else ''} first."
         )
 
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
@@ -646,5 +671,12 @@ if __name__ == "__main__":
         default=SCENARIO_WORKERS,
         help="How many (scenario, run) units to score concurrently.",
     )
+    parser.add_argument(
+        "--base",
+        action="store_true",
+        help="Base-model mode: score the relationship-free alternative set "
+        "(lm_alternatives_base.jsonl) into lm_runs_base.jsonl; skips the per-run "
+        "intimacy scalar. Given-relationship studies only.",
+    )
     args = parser.parse_args()
-    main(args.study, scenario_workers=args.scenario_workers)
+    main(args.study, scenario_workers=args.scenario_workers, base=args.base)
