@@ -50,7 +50,7 @@
     "desire_low": "Neither Emily nor Elizabeth minds whether they use ketchup or honey mustard.",
     "desire_high": "Both Emily and Elizabeth prefer honey mustard sauce to ketchup.",
     "low_risk_share_effort_low": "The takeout came with extra sauce containers that they can use to pour out and divide the sauce.",
-    "low_risk_share_effort_high": "The takeout didn't come with extra sauce containers or a surface they can pour the sauce onto, so to get them they need to go to the hotel restaurant downstairs.",
+    "low_risk_share_effort_high": "The takeout didn't come with extra sauce containers or a surface they can pour the sauce onto, so to get them they need to go to the hotel lobby downstairs.",
     "no_share": "Emily and Elizabeth each use the ketchup packets and leave the single honey mustard container unopened.",
     "low_risk_share": "They get a sauce container and pour half of the honey mustard into it so that each person has their own dipping portion. Each person only dips from their own portion.",
     "high_risk_share": "They both dip their own chicken tenders into the single honey mustard container, double-dipping the same tenders back into the sauce after each bite."
@@ -59,15 +59,15 @@
     "scenario_label": "cooking",
     "name_0": "Liana",
     "name_1": "Serina",
-    "vignette": "Liana and Serina are both major foodies who love cooking. They spend the evening cooking a big batch of a new pasta recipe to bring to an event the next day. While the pasta is still warm, they consider eating some for their own dinner tonight.",
+    "vignette": "Liana and Serina are both major foodies who love cooking. They spend the evening cooking a big batch of a new pasta recipe to bring to an event the next day. While the pasta is still warm, they consider eating some for their own dinner tonight. There is a plate on the counter that they have used for placing their cooking utensils.",
     "desire_object": "the pasta",
-    "desire_low": "Neither of them is particularly hungry, so they don't especially feel like having any of it tonight.",
-    "desire_high": "The pasta smells amazing and they're both hungry, so they're both tempted to have some tonight.",
-    "low_risk_share_effort_low": "There are clean plates and a clean serving spoon in the cabinets, ready to use.",
-    "low_risk_share_effort_high": "All the plates and the serving spoon are mid-cycle in the dishwasher — getting them out clean would require waiting for the cycle to finish.",
-    "no_share": "Liana and Serina don't have any pasta themselves tonight; they keep the whole batch for the party and each have a boxed salad from the fridge instead.",
-    "low_risk_share": "They get clean plates and a serving spoon, use the spoon to serve some pasta from the pot onto their individual plates, and carry their plates to the living room to eat with their own forks.",
-    "high_risk_share": "They spoon a shared portion from the pot into a single bowl and both eat from that bowl together with the same fork."
+    "desire_low": "Neither of them especially feels like having any of the pasta tonight.",
+    "desire_high": "The pasta smells amazing and they're both tempted to have some tonight.",
+    "low_risk_share_effort_low": "There are more clean plates and utensils in the cabinets, ready to use.",
+    "low_risk_share_effort_high": "All the other plates and utensils are mid-cycle in the dishwasher — getting them out clean would require waiting for the cycle to finish.",
+    "no_share": "Liana and Serina don't have any pasta themselves tonight; they keep the whole batch for the party.",
+    "low_risk_share": "They get clean plates and extra utensils, serve some pasta from the pot onto their individual plates, and eat from their own plates using their own utensils.",
+    "high_risk_share": "They spoon a shared portion from the pot onto the single plate on the counter, and both eat from that plate together with the same fork."
   },
   {
     "scenario_label": "apples",
