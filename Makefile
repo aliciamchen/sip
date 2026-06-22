@@ -48,14 +48,21 @@ help:
 	@echo "  test       - model compliance tests"
 	@echo "  clean      - remove fit + CV outputs"
 	@echo ""
-	@echo "Experiment assets (jsPsych build, run before deploying):"
+	@echo "Experiment assets (jsPsych build):"
 	@echo "  experiments       - regenerate stimuli + counterbalancing + entry files"
+	@echo "  check-experiments - regenerate + fail if any asset was out of sync with source"
 	@echo "  stimuli           - scenarios.py -> scenarios.csv -> per-experiment stimuli.json"
 	@echo "  counterbalancing  - regenerate every active full_counterbalancing.json"
 	@echo "  entry-files       - sync index.html + experiment.js across active experiments"
 	@echo "  preview           - serve the trial-preview page locally (open /preview/)"
 	@echo "  deploy-preview    - publish the trial-preview page to athena"
 	@echo "  deploy-all        - publish _lib/ + all experiments + preview to athena (one login)"
+	@echo "  (deploys auto-run check-experiments first, so stale assets can never ship)"
+	@echo ""
+	@echo "Model viz (interactive prediction explorer; source kept local in model_viz_nonfit/):"
+	@echo "  explorer          - build the explorer page from the precomputed grid"
+	@echo "  explorer-grid     - recompute the parameter-grid predictions (~13 min)"
+	@echo "  deploy-explorer   - build + publish the explorer to athena (one login)"
 	@echo ""
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, cv-inverse"
@@ -74,15 +81,23 @@ help:
 
 # =============================================================================
 # Experiment assets (jsPsych): regenerate what a deploy needs from source.
-# Run before bin/deploy-experiment when scenarios, counterbalancing, or the
-# shared entry files change. Not part of `make all`.
+# `bin/deploy-experiment` runs `check-experiments` automatically before every
+# deploy, so a stale asset can never reach the server; run `check-experiments`
+# yourself before committing experiment changes. Not part of `make all`.
 # =============================================================================
 
-.PHONY: experiments stimuli counterbalancing entry-files preview \
+.PHONY: experiments check-experiments stimuli counterbalancing entry-files preview \
         deploy-preview deploy-all \
         $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
 
 experiments: stimuli counterbalancing entry-files
+
+# Regenerate every generated asset from source and fail if that changed anything
+# — i.e. a stimuli.json / full_counterbalancing.json / entry file had drifted
+# from scenarios.py or the build/ generators. This is the guard against shipping
+# stale stimuli; bin/deploy-experiment runs it before every deploy.
+check-experiments:
+	bin/deploy-experiment --check-artifacts
 
 # Trial-preview page (experiments/preview/): a static page to show collaborators
 # what any study/scenario/condition looks like to a participant. It uses ES-module
@@ -99,8 +114,8 @@ deploy-preview:
 
 # Publish everything to athena in one pass — _lib/, all four experiments, and the
 # preview page — entering the athena password once. Use this when experiment code
-# (not just the preview) has changed. Build the assets first with `make experiments`
-# if scenarios/counterbalancing/entry files changed.
+# (not just the preview) has changed. The deploy regenerates assets from source
+# and aborts if any had drifted, so no manual `make experiments` is needed first.
 deploy-all:
 	bin/deploy-experiment --all
 
@@ -190,6 +205,39 @@ analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
 
 $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 	quarto render analysis/$*.qmd
+
+# =============================================================================
+# Model visualization: interactive prediction explorer
+#
+# A self-contained HTML page (sliders over the utility weights -> the full
+# model's predicted belief updates per study, no fitting). The source is kept
+# local in the gitignored model/model_viz_nonfit/explorer/ (like the rest of
+# model_viz_nonfit/); these targets build and publish it to the same MIT web
+# space as the experiments, exactly like `make deploy-preview`.
+# =============================================================================
+
+.PHONY: explorer explorer-grid deploy-explorer
+
+EXPLORER_DIR := model/model_viz_nonfit/explorer
+# Same athena destination convention as bin/deploy-experiment; override per-run
+# with `EXPLORER_DEST=... make deploy-explorer` if needed.
+EXPLORER_DEST ?= aliciach@athena.dialup.mit.edu:~/www/sip/explorer
+
+# Recompute the parameter-grid predictions by running the observer over the grid
+# (~13 min; needs each study's lm_runs.jsonl). Only needed when the params/ranges
+# in precompute_grid.py change -> $(EXPLORER_DIR)/predictions_grid.json.
+explorer-grid:
+	uv run python $(EXPLORER_DIR)/precompute_grid.py $(EXPLORER_DIR)/predictions_grid.json
+
+# Build the self-contained page from the template + precomputed grid (fast).
+explorer:
+	uv run python $(EXPLORER_DIR)/build_explorer.py $(EXPLORER_DIR)/predictions_grid.json $(EXPLORER_DIR)/site/index.html
+
+# Build, then publish to athena (enter the Athena password once). Served at
+#   https://web.mit.edu/aliciach/www/sip/explorer/
+deploy-explorer: explorer
+	rsync -av --delete "$(EXPLORER_DIR)/site/" "$(EXPLORER_DEST)/"
+	@echo "done. URL: https://web.mit.edu/aliciach/www/sip/explorer/"
 
 # =============================================================================
 # Utilities

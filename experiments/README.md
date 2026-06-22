@@ -83,9 +83,12 @@ bin/deploy-experiment --all                     # push _lib/ + every experiment 
 bin/deploy-experiment --lib-only                # push only _lib/ (after editing it)
 bin/deploy-experiment --list                    # list the active slugs
 bin/deploy-experiment preview                   # push _lib/ + the trial-preview page
+bin/deploy-experiment --check-artifacts         # only verify generated assets are fresh
 ```
 
-`--all` (also `make deploy-all`) is the one to use when experiment code has changed, not just the preview: it pushes `_lib/`, all four active experiments, and the preview page in a single SSH session, so the athena password is entered only once. If scenarios, counterbalancing, or the shared entry files changed, run `make experiments` first to rebuild the generated assets, then deploy.
+`--all` (also `make deploy-all`) is the one to use when experiment code has changed, not just the preview: it pushes `_lib/`, all four active experiments, and the preview page in a single SSH session, so the athena password is entered only once.
+
+Every deploy guards against shipping stale assets: it regenerates the generated files from their source (`make experiments`: `scenarios.csv`, each `json/stimuli.json` and `json/full_counterbalancing.json`, and the entry files) and aborts if that changed anything, since a deploy only rsyncs what is on disk and a forgotten regeneration would otherwise push stale stimuli to participants. So you no longer need to run `make experiments` by hand before deploying. To run just that check — for example before committing a scenario edit — use `make check-experiments` (or `bin/deploy-experiment --check-artifacts`). It compares each asset's content before and after regenerating, so an asset that is current but simply uncommitted does not trip it; only a genuine drift from the source does.
 
 The script rejects slugs that aren't in the active roster (the four experiments listed under "Active experiments" above) — the one exception is the special `preview` target described below. It excludes `python/`, `README.md`, `.DS_Store`, and `*.bak` from the push, and runs rsync with `--delete` so stale files from earlier deploys get cleaned up. The server destination is overridable per-invocation with `RSYNC_DEST=user@host:/path`.
 

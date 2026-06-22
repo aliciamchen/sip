@@ -8,7 +8,14 @@
 #   bin/deploy-experiment preview            # push _lib/ then the trial-preview page
 #   bin/deploy-experiment --lib-only         # push only _lib/ (e.g. after editing it)
 #   bin/deploy-experiment --list             # list active experiment slugs
+#   bin/deploy-experiment --check-artifacts  # only verify generated assets are fresh
 #   bin/deploy-experiment --help
+#
+# Every deploy first regenerates the generated assets (scenarios.csv, each
+# json/stimuli.json + full_counterbalancing.json, and the entry files) from
+# their source via `make experiments` and refuses to ship if that changed
+# anything — i.e. an asset was out of sync with its source. This is the guard
+# against deploying stale stimuli; run it on its own with --check-artifacts.
 #
 # Server destination is set in RSYNC_DEST below. Override per-invocation with
 # `RSYNC_DEST=... bin/deploy-experiment <slug>` if needed.
@@ -44,8 +51,43 @@ repo_root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$repo_root"
 
 usage() {
-  sed -n '2,15p' "$0" | sed 's/^# \?//'
+  sed -n '2,24p' "$0" | sed 's/^# \?//'
   exit "${1:-0}"
+}
+
+# Refuse to ship stale generated assets. scenarios.py + the experiments/build/
+# generators are the source of truth for scenarios.csv and every per-experiment
+# json/stimuli.json, json/full_counterbalancing.json, index.html, and
+# experiment.js; a deploy only rsyncs what is on disk, so a forgotten
+# regeneration would push stale stimuli to participants. Regenerate from source
+# (make experiments) and compare each asset's content before vs. after: if
+# anything changed, the on-disk asset was out of sync, so abort and tell the
+# user to review and commit. Comparing before/after — rather than to HEAD —
+# means merely-uncommitted-but-current assets do not trip the guard.
+ensure_artifacts_current() {
+  echo "→ verifying generated experiment assets are in sync with their source…"
+  local artifacts
+  artifacts=$(git ls-files -- \
+    'experiments/scenarios.csv' \
+    'experiments/*/json/stimuli.json' \
+    'experiments/*/json/full_counterbalancing.json' \
+    'experiments/*/index.html' \
+    'experiments/*/experiment.js')
+  local before after
+  before=$(git hash-object -- $artifacts)
+  make experiments >/dev/null
+  after=$(git hash-object -- $artifacts)
+  if [[ "$before" != "$after" ]]; then
+    echo >&2
+    echo "ERROR: generated experiment assets were OUT OF SYNC with their source." >&2
+    echo "Regenerating from source (make experiments) changed:" >&2
+    paste <(printf '%s\n' $artifacts) <(echo "$before") <(echo "$after") \
+      | awk -F '\t' '$2 != $3 { print "  " $1 }' >&2
+    echo >&2
+    echo "The files are now regenerated. Review the diff, commit, then re-run the deploy." >&2
+    exit 1
+  fi
+  echo "  assets are up to date."
 }
 
 list_experiments() {
@@ -65,14 +107,16 @@ slug=""
 lib_only=false
 deploy_all=false
 dry_run=false
+check_only=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -h|--help)   usage 0 ;;
-    --list)      list_experiments; exit 0 ;;
-    --lib-only)  lib_only=true; shift ;;
-    --all)       deploy_all=true; shift ;;
-    --dry-run)   dry_run=true; shift ;;
-    -*)          echo "unknown flag: $1" >&2; usage 1 ;;
+    -h|--help)        usage 0 ;;
+    --list)           list_experiments; exit 0 ;;
+    --lib-only)       lib_only=true; shift ;;
+    --all)            deploy_all=true; shift ;;
+    --dry-run)        dry_run=true; shift ;;
+    --check-artifacts) check_only=true; shift ;;
+    -*)               echo "unknown flag: $1" >&2; usage 1 ;;
     *)
       if [[ -n "$slug" ]]; then
         echo "multiple slugs given: '$slug' and '$1'" >&2
@@ -82,6 +126,15 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Verify (and, on drift, regenerate) the generated assets before doing anything
+# over the network. --check-artifacts stops here; --lib-only ships no generated
+# assets, so it is exempt.
+if $check_only; then
+  ensure_artifacts_current
+  exit 0
+fi
+$lib_only || ensure_artifacts_current
 
 rsync_flags=(-av --delete "${EXCLUDES[@]}")
 $dry_run && rsync_flags+=(--dry-run)
