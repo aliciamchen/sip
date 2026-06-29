@@ -58,7 +58,7 @@ Participants who do not pass the comprehension check on the instructions in 3 tr
 
 ## 7) **Sample Size. How many observations will be collected or what will determine sample size? (No need to justify the decision, but be precise about exactly how the number will be determined.)**
 
-We will recruit 480 participants (pre-exclusions), to achieve approximately 20 participants per scenario x condition combination. 
+We will recruit 480 participants (pre-exclusions), for approximately 20 participants per scenario x condition combination. 
 
 ## **Other. Anything else you would like to pre-register? (e.g., secondary analyses, variables collected for exploratory purposes, unusual analyses planned?)**
 

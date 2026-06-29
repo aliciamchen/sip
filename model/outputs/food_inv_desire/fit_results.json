@@ -1,0 +1,37 @@
+[
+  {
+    "model": "full",
+    "experiment": "food_inv_desire",
+    "nll": 214.05154418945312,
+    "n_params": 6,
+    "param_alpha": 1.0,
+    "alpha_observer": 0.7074477672576904,
+    "param_sigma": 0.24418358504772186,
+    "param_w_v": 12.397019386291504,
+    "param_w_d": 5.176084995269775,
+    "param_w_e": 8.882513999938965,
+    "param_gamma": 0.09412192553281784
+  },
+  {
+    "model": "discomfort_only",
+    "experiment": "food_inv_desire",
+    "nll": 918.0531005859375,
+    "n_params": 4,
+    "param_alpha": 1.0,
+    "alpha_observer": 2.2920186519622803,
+    "param_sigma": 0.30826303362846375,
+    "param_w_d": 2.32230281829834,
+    "param_gamma": 2.3484814167022705
+  },
+  {
+    "model": "base",
+    "experiment": "food_inv_desire",
+    "nll": 243.43511962890625,
+    "n_params": 4,
+    "param_alpha": 1.0,
+    "alpha_observer": 1.4062530994415283,
+    "param_sigma": 0.25111082196235657,
+    "param_w_v": 4.912961483001709,
+    "param_w_e": 7.1786723136901855
+  }
+]

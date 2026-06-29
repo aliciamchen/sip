@@ -96,25 +96,364 @@ if (exists("df")) {
 }
 ```
 
-## Model predictions
+### Bar-plot version
 
-```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.json")
-if (file.exists(preds_path)) {
-  preds <- read_model_json(preds_path)
-  glimpse(preds)
+Same aggregates as above, drawn as bars so the magnitude and sign of the update
+from 0 are easier to read. Effort stays on the same panel: within each observed
+action, bars are grouped into effort blocks — a solid low-effort block of four
+intimacy bars, then a striped high-effort block — so the four intimacy bars sit
+next to each other within each effort category. Colour reads intimacy and the
+stripe pattern reads effort (via `ggpattern`).
+
+```{r belief-update-bars}
+#| fig-width: 11
+#| fig-height: 5.5
+if (exists("agg")) {
+  library(ggpattern)
+  pd_bar <- position_dodge(width = 0.9)
+  p_bar <- ggplot(agg, aes(action, empirical_stat,
+                           group = interaction(intimacy, effort))) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+    geom_col_pattern(
+      aes(fill = intimacy, pattern = effort),
+      position = pd_bar, width = 0.85, color = "grey30", linewidth = 0.2,
+      pattern_fill = "white", pattern_colour = NA,
+      pattern_density = 0.25, pattern_spacing = 0.025, pattern_angle = 45
+    ) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2,
+                  position = pd_bar, alpha = 0.7) +
+    scale_fill_intimacy() +
+    scale_pattern_manual(values = c("Low effort" = "none", "High effort" = "stripe"),
+                         breaks = c("Low effort", "High effort")) +
+    labs(
+      title = "Desire belief update by action, intimacy, and effort",
+      x = "Observed action", y = "Belief update",
+      fill = "Intimacy", pattern = "Effort of low-risk share"
+    ) +
+    guides(
+      fill = guide_legend(override.aes = list(pattern = "none")),
+      pattern = guide_legend(override.aes = list(fill = "grey70"))
+    )
+  print(p_bar)
 } else {
-  cat("No CV predictions yet — run `make cv-food_inv_desire` once a fit + data exist.\n")
+  cat("No data yet for food_inv_desire.\n")
 }
 ```
 
-## Model-vs-human correlations
+## Out-of-sample model comparison (LOSO-CV)
 
-```{r model-vs-human, eval=FALSE}
-# TODO: wire up once both data and model predictions exist.
-# Model predicts a posterior over the 0–1 desire grid; the predicted rating is its
-# mean (0–1 scale), matching the human DV.
-# Standard pattern: aggregate human + model by cell, scatter, bootstrap Pearson.
+The confirmatory analysis. Predictions come from leave-one-scenario-out CV
+(`cv_food_inv_desire.py`): for each held-out scenario the weights are refit on the
+other 15, then used to predict it — so every model-vs-human number here is
+genuinely out-of-sample (CV is the sole prediction source). The **primary** metric
+is the held-out per-trial log-likelihood; the cell-mean correlation is
+secondary/descriptive.
+
+### Held-out log-likelihood (primary)
+
+```{r cv-heldout-ll}
+#| fig-width: 7
+#| fig-height: 4.5
+MODEL_LABELS <- c(base = "Base", discomfort_only = "Discomfort-only", full = "Full")
+ll_path <- here::here("model", "outputs", "food_inv_desire", "cv_trial_ll.jsonl")
+if (file.exists(ll_path)) {
+  ll <- read_model_jsonl(ll_path)
+  summ <- ll |>
+    group_by(model) |>
+    summarise(mean_ll = mean(held_out_ll), total_nll = -sum(held_out_ll),
+              n = n(), .groups = "drop") |>
+    mutate(model = factor(MODEL_LABELS[model], levels = MODEL_LABELS)) |>
+    arrange(model)
+
+  # subject cluster-bootstrap of the paired per-trial LL differences
+  wide <- ll |>
+    select(subject_id, scenario_label, model, held_out_ll) |>
+    pivot_wider(names_from = model, values_from = held_out_ll) |>
+    mutate(d_fb = full - base, d_fd = full - discomfort_only)
+  boot_ci <- function(col, nboot = 4000) {
+    bs <- split(wide[[col]], wide$subject_id); subs <- names(bs); set.seed(1)
+    m <- replicate(nboot, mean(unlist(bs[sample(subs, length(subs), replace = TRUE)])))
+    list(point = mean(wide[[col]]), lo = unname(quantile(m, .025)),
+         hi = unname(quantile(m, .975)), pgt = mean(m > 0))
+  }
+  fb <- boot_ci("d_fb"); fd <- boot_ci("d_fd")
+
+  print(summ)
+  cat(sprintf("\nfull − base:            ΔLL/trial = %+.4f  95%% CI [%+.4f, %+.4f]  P(Δ>0)=%.3f\n",
+              fb$point, fb$lo, fb$hi, fb$pgt))
+  cat(sprintf("full − discomfort_only: ΔLL/trial = %+.4f  95%% CI [%+.4f, %+.4f]\n",
+              fd$point, fd$lo, fd$hi))
+
+  p <- ggplot(summ, aes(model, mean_ll, fill = model)) +
+    geom_col(width = 0.6) +
+    geom_text(aes(label = sprintf("%.3f", mean_ll)), vjust = 1.4, color = "white", size = 4) +
+    labs(
+      title = "Out-of-sample mean held-out log-likelihood per trial (higher = better)",
+      subtitle = sprintf("full − base ΔLL/trial = %+.4f  [%+.4f, %+.4f]", fb$point, fb$lo, fb$hi),
+      x = NULL, y = "Mean held-out LL / trial"
+    ) +
+    guides(fill = "none")
+  print(p)
+} else {
+  cat("No CV results yet — run `make cv-food_inv_desire` (or `CV_WORKERS=4 ...`).\n")
+}
+```
+
+### Out-of-sample predictions by condition
+
+```{r cv-load}
+cv_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.json")
+ACT_LABELS <- c("No share", "Low-risk share", "High-risk share")
+if (file.exists(cv_path) && exists("agg")) {
+  cv_preds <- read_model_json(cv_path) |>
+    mutate(
+      action = factor(ACT_LABELS[action + 1], levels = ACT_LABELS),
+      intimacy = factor(intimacy_condition, levels = INTIMACY_LEVELS),
+      effort = factor(effort_condition, levels = c("low", "high"),
+                      labels = c("Low effort", "High effort")),
+      model_label = factor(MODEL_LABELS[model], levels = MODEL_LABELS)
+    )
+  cv_model_agg <- cv_preds |>
+    group_by(model_label, action, intimacy, effort) |>
+    summarise(empirical_stat = mean(delta_desire), .groups = "drop")
+  cat("Loaded CV predictions for", nrow(cv_preds), "cells.\n")
+} else {
+  cat("No CV predictions / no human aggregate — run the CV and the belief-update chunk.\n")
+}
+```
+
+```{r cv-overlay}
+#| fig-width: 15
+#| fig-height: 5
+if (exists("cv_model_agg")) {
+  PANEL_LEVELS <- c("Base", "Discomfort-only", "Full", "Human")
+  combined <- bind_rows(
+    cv_model_agg |>
+      transmute(panel = as.character(model_label), action, intimacy, effort,
+                empirical_stat, ci_lower = NA_real_, ci_upper = NA_real_),
+    agg |>
+      transmute(panel = "Human", action, intimacy, effort,
+                empirical_stat, ci_lower, ci_upper)
+  ) |>
+    mutate(panel = factor(panel, levels = PANEL_LEVELS))
+  pd <- position_dodge(width = 0.3)
+  p <- ggplot(combined, aes(action, empirical_stat, color = intimacy,
+                            linetype = effort, group = interaction(intimacy, effort))) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+    geom_line(position = pd, linewidth = 0.8) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0,
+                  position = pd, alpha = 0.7, na.rm = TRUE) +
+    geom_point(position = pd, size = 2.2) +
+    facet_wrap(~ panel, nrow = 1) +
+    scale_color_intimacy() +
+    labs(title = "Desire belief update — ablations vs human (out-of-sample LOSO-CV)",
+         x = "Observed action", y = "Belief update",
+         color = "Intimacy", linetype = "Effort of low-risk share") +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+  print(p)
+} else {
+  cat("No CV predictions loaded.\n")
+}
+```
+
+Same out-of-sample panels as bars (fill = intimacy, stripe = effort).
+
+```{r cv-overlay-bars}
+#| fig-width: 16
+#| fig-height: 5.5
+if (exists("cv_model_agg")) {
+  library(ggpattern)
+  PANEL_LEVELS <- c("Base", "Discomfort-only", "Full", "Human")
+  combined <- bind_rows(
+    cv_model_agg |>
+      transmute(panel = as.character(model_label), action, intimacy, effort,
+                empirical_stat, ci_lower = NA_real_, ci_upper = NA_real_),
+    agg |>
+      transmute(panel = "Human", action, intimacy, effort,
+                empirical_stat, ci_lower, ci_upper)
+  ) |>
+    mutate(panel = factor(panel, levels = PANEL_LEVELS))
+  pd_bar <- position_dodge(width = 0.9)
+  p_bar <- ggplot(combined, aes(action, empirical_stat,
+                                group = interaction(intimacy, effort))) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+    geom_col_pattern(
+      aes(fill = intimacy, pattern = effort),
+      position = pd_bar, width = 0.85, color = "grey30", linewidth = 0.2,
+      pattern_fill = "white", pattern_colour = NA,
+      pattern_density = 0.25, pattern_spacing = 0.02, pattern_angle = 45
+    ) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2,
+                  position = pd_bar, alpha = 0.7, na.rm = TRUE) +
+    facet_wrap(~ panel, nrow = 1) +
+    scale_fill_intimacy() +
+    scale_pattern_manual(values = c("Low effort" = "none", "High effort" = "stripe"),
+                         breaks = c("Low effort", "High effort")) +
+    labs(
+      title = "Desire belief update — ablations vs human, bars (out-of-sample LOSO-CV)",
+      x = "Observed action", y = "Belief update",
+      fill = "Intimacy", pattern = "Effort of low-risk share"
+    ) +
+    guides(
+      fill = guide_legend(override.aes = list(pattern = "none")),
+      pattern = guide_legend(override.aes = list(fill = "grey70"))
+    ) +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+  print(p_bar)
+} else {
+  cat("No CV predictions loaded.\n")
+}
+```
+
+### Out-of-sample cell-level scatter
+
+```{r cv-scatter}
+#| fig-width: 13
+#| fig-height: 5
+if (exists("cv_model_agg")) {
+  human_cells <- agg |> select(action, intimacy, effort, human = empirical_stat)
+  scatter_df <- cv_model_agg |>
+    rename(model = empirical_stat) |>
+    left_join(human_cells, by = c("action", "intimacy", "effort"))
+  rlab <- scatter_df |>
+    group_by(model_label) |>
+    summarise(r = if (sd(model) < 1e-3) NA_real_ else cor(model, human),
+              .groups = "drop") |>
+    mutate(panel_lab = sprintf("%s (r = %s)", model_label,
+                               ifelse(is.na(r), "n/a", sprintf("%.2f", r))))
+  panel_levels <- rlab |> arrange(model_label) |> pull(panel_lab)
+  scatter_df <- scatter_df |>
+    left_join(select(rlab, model_label, panel_lab), by = "model_label") |>
+    mutate(panel_lab = factor(panel_lab, levels = panel_levels))
+  lim <- range(c(scatter_df$human, scatter_df$model), na.rm = TRUE)
+  p <- ggplot(scatter_df, aes(model, human, color = intimacy, shape = effort)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey70") +
+    geom_point(size = 2.6) +
+    facet_wrap(~ panel_lab, nrow = 1) +
+    scale_color_intimacy() +
+    coord_equal(xlim = lim, ylim = lim) +
+    labs(title = "Out-of-sample cell-level model vs human (24 cells each)",
+         subtitle = "LOSO-CV; each point = one action × intimacy × effort cell",
+         x = "Model predicted belief update (CV)", y = "Human belief update")
+  print(p)
+} else {
+  cat("No CV predictions loaded.\n")
+}
+```
+
+## Manuscript figure drafts
+
+Two candidate main-text figures (drafts).
+
+### Prior → posterior slope plot
+
+Open point = prior desire (before the action); filled point = posterior (after);
+the arrow is the belief update. Effort is collapsed. Reads off three things at
+once: the **prior rises with intimacy**, **posteriors converge by action**
+(no-share pulls low, sharing pulls high), and the update is the arrow length —
+including the deeper no-share drop at max intimacy.
+
+```{r fig-slope}
+#| fig-width: 8.5
+#| fig-height: 5.5
+if (exists("df")) {
+  sl <- df |>
+    mutate(
+      action = factor(action_condition,
+                      levels = c("no_share", "low_risk_share", "high_risk_share"),
+                      labels = c("No share", "Low-risk share", "High-risk share")),
+      intimacy = factor(intimacy, levels = INTIMACY_LEVELS)
+    ) |>
+    group_by(action, intimacy, stage) |>
+    tidyboot_mean(column = response) |>
+    ungroup() |>
+    mutate(across(c(empirical_stat, ci_lower, ci_upper), ~ .x * 100))
+  off <- tibble(
+    intimacy = factor(INTIMACY_LEVELS, levels = INTIMACY_LEVELS),
+    dx = seq(-0.27, 0.27, length.out = length(INTIMACY_LEVELS))
+  )
+  sl <- sl |> left_join(off, by = "intimacy") |>
+    mutate(xpos = as.integer(action) + dx)
+  wide <- sl |>
+    select(action, intimacy, xpos, stage, m = empirical_stat) |>
+    pivot_wider(names_from = stage, values_from = m)
+
+  p_slope <- ggplot() +
+    geom_segment(
+      data = wide,
+      aes(x = xpos, xend = xpos, y = prior, yend = posterior, color = intimacy),
+      arrow = arrow(length = unit(0.10, "in"), type = "closed"), linewidth = 0.8
+    ) +
+    geom_errorbar(
+      data = sl, aes(x = xpos, ymin = ci_lower, ymax = ci_upper, color = intimacy),
+      width = 0, alpha = 0.45, linewidth = 0.4
+    ) +
+    geom_point(
+      data = filter(sl, stage == "prior"),
+      aes(xpos, empirical_stat, color = intimacy), shape = 21, fill = "white", size = 1.9
+    ) +
+    geom_point(
+      data = filter(sl, stage == "posterior"),
+      aes(xpos, empirical_stat, color = intimacy), size = 2.1
+    ) +
+    scale_color_intimacy() +
+    scale_x_continuous(breaks = 1:3, labels = levels(sl$action)) +
+    labs(
+      title = "Prior → posterior desire by action and intimacy",
+      subtitle = "Open = prior, filled = posterior, arrow = belief update (effort collapsed)",
+      x = "Observed action", y = "Desire rating (0–100)", color = "Intimacy"
+    )
+  print(p_slope)
+} else {
+  cat("No data loaded.\n")
+}
+```
+
+### Held-out ΔLL interval plot (confirmatory)
+
+Out-of-sample model improvement: Δ held-out log-likelihood per trial, with the
+subject cluster-bootstrap 95% CI; > 0 favors the full model. Free x-scales so the
+small (but reliably positive) full − base contrast is legible next to the large
+full − discomfort-only floor.
+
+```{r fig-dll}
+#| fig-width: 8
+#| fig-height: 3.2
+ll_path <- here::here("model", "outputs", "food_inv_desire", "cv_trial_ll.jsonl")
+if (file.exists(ll_path)) {
+  llw <- read_model_jsonl(ll_path) |>
+    select(subject_id, scenario_label, model, held_out_ll) |>
+    pivot_wider(names_from = model, values_from = held_out_ll) |>
+    mutate(d_fb = full - base, d_fd = full - discomfort_only)
+  boot_ci <- function(col, nboot = 4000) {
+    bs <- split(llw[[col]], llw$subject_id); subs <- names(bs); set.seed(1)
+    m <- replicate(nboot, mean(unlist(bs[sample(subs, length(subs), replace = TRUE)])))
+    tibble(point = mean(llw[[col]]), lo = unname(quantile(m, .025)),
+           hi = unname(quantile(m, .975)))
+  }
+  comps <- bind_rows(
+    boot_ci("d_fb") |> mutate(comparison = "Full − Base"),
+    boot_ci("d_fd") |> mutate(comparison = "Full − Discomfort-only")
+  ) |>
+    mutate(comparison = factor(comparison, levels = c("Full − Base", "Full − Discomfort-only")))
+
+  p_dll <- ggplot(comps, aes(point, y = 0)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60") +
+    geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.25, linewidth = 0.7) +
+    geom_point(size = 3) +
+    geom_text(aes(label = sprintf("Δ = %.3f  [%.3f, %.3f]", point, lo, hi)),
+              vjust = -1.6, size = 3.3) +
+    facet_wrap(~ comparison, scales = "free_x", ncol = 1) +
+    scale_y_continuous(limits = c(-1, 1), breaks = NULL) +
+    labs(
+      title = "Out-of-sample model improvement (LOSO-CV)",
+      subtitle = "Δ held-out log-likelihood / trial; > 0 favors full. Bars = subject-bootstrap 95% CI.",
+      x = "Δ held-out LL / trial", y = NULL
+    )
+  print(p_dll)
+} else {
+  cat("No CV results — run the CV first.\n")
+}
 ```
 
 ## Notes

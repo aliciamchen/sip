@@ -131,6 +131,47 @@ if (have_lm) {
 }
 ```
 
+### Truncation at the padding cap
+
+The observer's actor evaluates a fixed-width action space of `MAX_ACTIONS = 12`
+slots — slot 0 is the observed action, so at most 11 alternatives per cell survive;
+any beyond that are silently dropped by the padded-table loaders. If many cells run
+over the cap, the model is reasoning over a truncated choice set, so it's worth
+knowing how often that happens and how many alternatives it costs.
+
+```{r alt-truncation}
+#| fig-width: 8
+#| fig-height: 4
+if (have_lm) {
+  # The actor softmaxes over at most MAX_ACTIONS slots (slot 0 = the observed
+  # action), so only the first MAX_ACTIONS - 1 alternatives per cell are kept; the
+  # loaders in model/tables.py drop the rest. Constant mirrors MAX_ACTIONS there.
+  MAX_ACTIONS <- 12L
+  keep <- MAX_ACTIONS - 1L
+
+  n_over <- sum(set_sizes$n_alts > keep)
+  dropped <- sum(pmax(set_sizes$n_alts - keep, 0))
+  cat("(cell, run) units over the cap (", keep, " kept): ", n_over, " of ",
+      nrow(set_sizes), " (", round(100 * n_over / nrow(set_sizes), 1), "%)\n",
+      sep = "")
+  cat("Alternatives dropped to padding: ", dropped, " of ", sum(set_sizes$n_alts),
+      " (", round(100 * dropped / sum(set_sizes$n_alts), 1), "%)\n", sep = "")
+
+  ggplot(set_sizes, aes(n_alts, fill = n_alts > keep)) +
+    geom_bar(alpha = PLOT_ALPHA) +
+    geom_vline(xintercept = keep + 0.5, linetype = "dashed", color = "grey25") +
+    annotate("text", x = keep + 0.5, y = Inf, hjust = -0.1, vjust = 1.5,
+             label = paste0("cap = ", keep), color = "grey25", size = 3.5) +
+    scale_fill_manual(values = c(`FALSE` = "#4A7A4A", `TRUE` = "#B05A5A"),
+                      guide = "none") +
+    scale_x_continuous(breaks = scales::breaks_width(1)) +
+    labs(title = "Alternatives per (cell, run) vs. the padding cap",
+         subtitle = paste0("Red = units whose extra alternatives are dropped at ",
+                           "MAX_ACTIONS = ", MAX_ACTIONS),
+         x = "Number of alternatives", y = "Count of (cell, run) units")
+}
+```
+
 ### Run-to-run diversity
 
 Cross-run diversity is the point of the K-run pipeline (dedup is *within* a run;
@@ -205,14 +246,33 @@ if (have_lm) {
            feature = factor(feature, levels = c("risk", "g"),
                             labels = c("Risk", "Goal-satisfaction g")))
 
+  # Per-scenario mean trajectory across the three actions, kept faint as
+  # background texture; `canon_rg_mean` is the bold overall mean trajectory.
+  canon_rg_line <- canon_rg |>
+    group_by(scenario_label, feature, action) |>
+    summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
+  canon_rg_mean <- canon_rg |>
+    group_by(feature, action) |>
+    summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
+
   ggplot(canon_rg, aes(action, value, color = action)) +
-    geom_boxplot(outlier.alpha = 0.2, width = 0.6) +
+    geom_line(data = canon_rg_line, aes(group = scenario_label),
+              color = "grey55", linewidth = 0.15, alpha = 0.12) +
+    geom_boxplot(width = 0.55, fill = "white", alpha = 0.55) +
+    geom_point(position = position_jitter(width = 0.16, height = 0.04, seed = 67),
+               alpha = 0.22, size = 0.75) +
+    # geom_line(data = canon_rg_mean, aes(group = 1),
+    #           color = "grey15", linewidth = 0.9) +
+    # geom_point(data = canon_rg_mean, color = "grey15", size = 2.1) +
     facet_wrap(~feature) +
     scale_color_manual(values = setNames(
-      c("#7A9A4A", "#C9A85A", "#B05A5A"), action_labels), guide = "none") +
-    labs(title = "Canonical action features (slot 0), pooled over scenarios × runs",
+      c("#7A9A4A", "#C9A85A", "#B05A5A"), action_labels)) +
+    scale_y_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25),
+                       expand = expansion(mult = 0)) +
+    labs(title = "Observed action features",
          x = "Observed action", y = "Feature value (0–1)") +
-    theme(axis.text.x = element_text(angle = 20, hjust = 1))
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1))
 }
 ```
 
@@ -224,7 +284,7 @@ should rise from the low to the high condition; the other actions' effort is a
 useful contrast.
 
 ```{r canon-effort}
-#| fig-width: 10
+#| fig-width: 8
 #| fig-height: 4.5
 if (have_lm) {
   canon_eff <- actions |>
@@ -235,13 +295,73 @@ if (have_lm) {
            effort_cond = factor(effort_condition, levels = c("low", "high"),
                                 labels = c("Low effort", "High effort")))
 
-  pd <- position_dodge(width = 0.6)
+  # Mean effort trajectory per effort condition across the three actions; x offset
+  # by ±0.15 so each line sits under its dodged boxes (low left, high right —
+  # matching position_dodge(width = 0.6) over 2 groups).
+  canon_eff_mean <- canon_eff |>
+    group_by(effort_cond, action) |>
+    summarise(effort = mean(effort, na.rm = TRUE), .groups = "drop") |>
+    mutate(xpos = as.integer(action) +
+             ifelse(effort_cond == "Low effort", -0.15, 0.15))
+
+  pd <- position_dodge(width = 0.7)
   ggplot(canon_eff, aes(action, effort, color = effort_cond)) +
-    geom_boxplot(outlier.alpha = 0.15, width = 0.6, position = pd) +
+    geom_boxplot(outlier.shape = NA, width = 0.6, position = pd, fill = NA) +
+    geom_point(position = position_jitterdodge(jitter.width = 0.25, jitter.height = 0.03,
+                                               dodge.width = 0.6, seed = 67),
+               alpha = 0.2, size = 0.75) +
+    geom_line(data = canon_eff_mean,
+              aes(x = xpos, y = effort, color = effort_cond, group = effort_cond),
+              linewidth = 1, inherit.aes = FALSE, show.legend = FALSE) +
+    geom_point(data = canon_eff_mean,
+               aes(x = xpos, y = effort, color = effort_cond),
+               size = 2.1, inherit.aes = FALSE, show.legend = FALSE) +
     scale_color_effort() +
-    labs(title = "Effort of canonical actions by effort condition",
+    scale_y_continuous(limits = c(-0.03, 1.03), breaks = seq(0, 1, 0.25),
+                       expand = expansion(mult = 0)) +
+    labs(title = "Effort of observed actions by effort condition",
          x = "Observed action", y = "Effort (0–1)", color = "Effort condition") +
-    theme(axis.text.x = element_text(angle = 20, hjust = 1))
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1))
+}
+```
+
+### Effort manipulation specificity
+
+The effort manipulation targets the low-risk share, so the high vs. low effort
+condition should move *its* effort and leave the other two actions' effort roughly
+unchanged. Plotting the per-`(scenario, run)` effort delta (high − low) by action
+makes that specificity explicit, rather than asking the reader to compare two
+boxplots by eye.
+
+```{r canon-effort-delta}
+#| fig-width: 7
+#| fig-height: 4.5
+if (have_lm) {
+  eff_delta <- actions |>
+    filter(is_canonical) |>
+    group_by(scenario_label, observed_action, run_id, effort_condition) |>
+    summarise(effort = mean(effort, na.rm = TRUE), .groups = "drop") |>
+    pivot_wider(names_from = effort_condition, values_from = effort) |>
+    mutate(delta = high - low, action = as_action(observed_action))
+
+  eff_delta |>
+    group_by(action) |>
+    summarise(mean_delta = round(mean(delta, na.rm = TRUE), 3), .groups = "drop") |>
+    kable(caption = "Effort delta (high − low condition) by observed action")
+
+  ggplot(eff_delta, aes(action, delta, color = action)) +
+    geom_hline(yintercept = 0, linewidth = 0.3, color = "grey50") +
+    geom_boxplot(width = 0.5, fill = "white", alpha = 0.55, outlier.shape = NA) +
+    geom_point(position = position_jitter(width = 0.16, height = 0, seed = 67),
+               alpha = 0.18, size = 0.7) +
+    scale_color_manual(values = setNames(
+      c("#7A9A4A", "#C9A85A", "#B05A5A"), action_labels), guide = "none") +
+    labs(title = "Effort manipulation is specific to the low-risk share",
+         subtitle = "Per (scenario, run): effort(high condition) − effort(low condition)",
+         x = "Observed action", y = "Effort delta (high − low)") +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1))
 }
 ```
 
@@ -274,6 +394,66 @@ if (have_lm) {
     scale_fill_manual(values = c("risk" = "#B05A5A", "g" = "#4A7A4A")) +
     labs(title = "Run-to-run SD of canonical features (per cell)",
          x = "SD across runs", y = "Cells", fill = "Feature")
+}
+```
+
+### Per-scenario monotonicity
+
+The canonical risk/`g` checks above pool over all 16 scenarios, which can hide a
+single scenario whose elicited features are out of order (e.g. a low-risk share
+rated riskier than the high-risk share). This breaks the pooled check out by
+scenario and flags any violations of the two orderings the pipeline relies on:
+risk should rise `no_share → low_risk_share → high_risk_share`, and `g` for
+`no_share` should sit below both sharing actions.
+
+```{r canon-monotonicity}
+#| fig-width: 9
+#| fig-height: 4.5
+if (have_lm) {
+  canon_by_scen <- actions |>
+    filter(is_canonical) |>
+    group_by(scenario_label, observed_action) |>
+    summarise(risk = mean(risk, na.rm = TRUE), g = mean(g, na.rm = TRUE),
+              .groups = "drop")
+
+  risk_wide <- canon_by_scen |>
+    select(scenario_label, observed_action, risk) |>
+    pivot_wider(names_from = observed_action, values_from = risk)
+  bad_risk <- risk_wide |>
+    filter(!(no_share <= low_risk_share & low_risk_share <= high_risk_share))
+  cat("Scenarios with non-monotone canonical risk:", nrow(bad_risk), "of",
+      nrow(risk_wide), "\n")
+  if (nrow(bad_risk)) cat("  ", paste(bad_risk$scenario_label, collapse = ", "), "\n")
+
+  g_wide <- canon_by_scen |>
+    select(scenario_label, observed_action, g) |>
+    pivot_wider(names_from = observed_action, values_from = g)
+  bad_g <- g_wide |>
+    filter(no_share >= pmin(low_risk_share, high_risk_share))
+  cat("Scenarios where no_share g is not below both sharing actions:",
+      nrow(bad_g), "\n")
+  if (nrow(bad_g)) cat("  ", paste(bad_g$scenario_label, collapse = ", "), "\n")
+
+  prof <- canon_by_scen |>
+    pivot_longer(c(risk, g), names_to = "feature", values_to = "value") |>
+    mutate(action = as_action(observed_action),
+           feature = factor(feature, c("risk", "g"),
+                            c("Risk", "Goal-satisfaction g")))
+  prof_mean <- prof |>
+    group_by(feature, action) |>
+    summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
+
+  ggplot(prof, aes(action, value, group = scenario_label)) +
+    geom_line(color = "grey60", linewidth = 0.3, alpha = 0.5) +
+    geom_line(data = prof_mean, aes(group = 1), color = "#B05A5A", linewidth = 1.1) +
+    geom_point(data = prof_mean, aes(group = 1), color = "#B05A5A", size = 2.2) +
+    facet_wrap(~feature) +
+    scale_y_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25)) +
+    labs(title = "Per-scenario canonical feature profiles",
+         subtitle = "Grey = each scenario; red = pooled mean (risk should rise; no_share g should be lowest)",
+         x = "Observed action", y = "Feature value (0–1)") +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1))
 }
 ```
 
@@ -387,8 +567,10 @@ if (have_lm) {
     to_cond_long()
 
   ggplot(set_sizes_cond, aes(level, n_alts)) +
-    geom_boxplot(fill = "#4A7A4A", alpha = PLOT_ALPHA, outlier.alpha = 0.1,
+    geom_boxplot(fill = "#4A7A4A", alpha = PLOT_ALPHA, outlier.shape = NA,
                  width = 0.6) +
+    geom_point(position = position_jitter(width = 0.18, height = 0.12, seed = 67),
+               alpha = 0.12, size = 0.5, color = "#1F3A1F") +
     stat_summary(fun = mean, geom = "point", shape = 18, size = 2.5,
                  color = "#B05A5A") +
     facet_wrap(~axis, scales = "free_x") +
@@ -424,8 +606,10 @@ if (have_lm) {
     to_cond_long()
 
   ggplot(alt_feat, aes(level, value)) +
-    geom_boxplot(fill = "#6B8E6B", alpha = PLOT_ALPHA, outlier.alpha = 0.04,
+    geom_boxplot(fill = "#6B8E6B", alpha = PLOT_ALPHA, outlier.shape = NA,
                  width = 0.6) +
+    geom_point(position = position_jitter(width = 0.18, height = 0.01, seed = 67),
+               alpha = 0.05, size = 0.4, color = "#1F3A1F") +
     stat_summary(fun = mean, geom = "point", shape = 18, size = 2,
                  color = "#B05A5A") +
     facet_grid(feature ~ axis, scales = "free_x") +
@@ -510,12 +694,385 @@ if (have_lm) {
     kable(caption = "Jaccard overlap of alternative-text sets (exact normalized match)")
 
   ggplot(overlap, aes(comparison, overlap, fill = comparison)) +
-    geom_boxplot(alpha = PLOT_ALPHA, outlier.alpha = 0.1, width = 0.6) +
+    geom_boxplot(alpha = PLOT_ALPHA, outlier.shape = NA, width = 0.6) +
+    geom_point(position = position_jitter(width = 0.15, height = 0.01, seed = 67),
+               alpha = 0.15, size = 0.6, color = "#333333") +
     scale_fill_manual(values = c("#8A8A8A", "#4A7A8A", "#8A5A8A"), guide = "none") +
     ylim(0, 1) +
     labs(title = "Do the alternative sets differ by condition?",
          subtitle = "Run-to-run overlap within a cell vs. across an experimental axis",
          x = NULL, y = "Jaccard overlap (alternative texts)")
+}
+```
+
+## The observed action in its choice set
+
+The alternatives matter only through their contrast with the observed action: the
+actor softmaxes over `{observed action} ∪ alternatives`, so an action is diagnostic
+exactly to the extent its features stand out from the counterfactuals the observer
+imagined. The sections above plot the observed action and the alternatives
+separately; here we join each observed action to *its own* alternatives within the
+same `(cell, run)` and ask three questions — how far the observed action's features
+sit from its alternatives', whether the alternatives bracket it, and whether the
+joint feature space supports the competing-explanation trade-offs the model relies
+on.
+
+### Feature gap: observed action vs. its alternatives
+
+For each `(cell, run)`, the observed action (slot 0) minus the mean of *its* scored
+alternatives, per feature. This is the diagnosticity quantity in raw form: a
+positive risk gap for a high-risk share means the observer imagined safer options
+the actors passed up (so the action is evidence about the relational cost), and a
+negative `g` gap for `no_share` means the imagined alternatives would have delivered
+the food better (so not sharing is evidence about desire).
+
+```{r alt-gap}
+#| fig-width: 10
+#| fig-height: 4.5
+if (have_lm) {
+  # Within each (cell, run): slot-0 feature minus the mean over that cell's
+  # alternatives. Cells with no alternatives are dropped (no contrast to measure).
+  gap <- actions |>
+    group_by(scenario_label, observed_action, effort_condition,
+             intimacy_condition, run_id) |>
+    filter(any(is_canonical), any(!is_canonical)) |>
+    summarise(
+      risk   = risk[is_canonical][1]   - mean(risk[!is_canonical],   na.rm = TRUE),
+      effort = effort[is_canonical][1] - mean(effort[!is_canonical], na.rm = TRUE),
+      g      = g[is_canonical][1]      - mean(g[!is_canonical],      na.rm = TRUE),
+      .groups = "drop") |>
+    pivot_longer(c(risk, effort, g), names_to = "feature", values_to = "gap") |>
+    mutate(action = as_action(observed_action),
+           feature = factor(feature, c("risk", "effort", "g"),
+                            c("Risk", "Effort", "Goal-satisfaction g")))
+
+  gap |>
+    group_by(action, feature) |>
+    summarise(median = round(median(gap, na.rm = TRUE), 2), .groups = "drop") |>
+    pivot_wider(names_from = feature, values_from = median) |>
+    kable(caption = "Median feature gap (observed action − its alternatives)")
+
+  ggplot(gap, aes(action, gap, color = action)) +
+    geom_hline(yintercept = 0, linewidth = 0.3, color = "grey50") +
+    geom_boxplot(width = 0.55, fill = "white", alpha = 0.55, outlier.shape = NA) +
+    geom_point(position = position_jitter(width = 0.16, height = 0, seed = 67),
+               alpha = 0.12, size = 0.6) +
+    facet_wrap(~feature) +
+    scale_color_manual(values = setNames(
+      c("#7A9A4A", "#C9A85A", "#B05A5A"), action_labels), guide = "none") +
+    labs(title = "Observed action minus its alternatives",
+         subtitle = "Per (cell, run): slot-0 feature − mean over that cell's alternatives",
+         x = "Observed action", y = "Feature gap (observed − alternatives)") +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1))
+}
+```
+
+### Does the alternative set bracket the observed action?
+
+A gap says how far apart the observed action and its alternatives sit on average;
+bracketing says whether the alternatives fall on *both sides* of it. When the
+observed action is the extreme of its set on a feature (no imagined option is
+riskier, or none delivers the food better), that one-sidedness is what drives the
+inference; when it is bracketed, the alternatives offer competing explanations in
+both directions.
+
+```{r alt-bracket}
+#| fig-width: 10
+#| fig-height: 4.5
+if (have_lm) {
+  pos_of <- function(canon, alt) {
+    alt <- alt[!is.na(alt)]
+    if (!length(alt) || is.na(canon)) return(NA_character_)
+    if (canon > max(alt)) "Above all alternatives"
+    else if (canon < min(alt)) "Below all alternatives"
+    else "Bracketed"
+  }
+  bracket <- actions |>
+    group_by(scenario_label, observed_action, effort_condition,
+             intimacy_condition, run_id) |>
+    filter(any(is_canonical), any(!is_canonical)) |>
+    summarise(
+      Risk   = pos_of(risk[is_canonical][1],   risk[!is_canonical]),
+      Effort = pos_of(effort[is_canonical][1], effort[!is_canonical]),
+      `Goal-satisfaction g` = pos_of(g[is_canonical][1], g[!is_canonical]),
+      .groups = "drop") |>
+    pivot_longer(c(Risk, Effort, `Goal-satisfaction g`),
+                 names_to = "feature", values_to = "position") |>
+    filter(!is.na(position)) |>
+    mutate(action = as_action(observed_action),
+           feature = factor(feature, c("Risk", "Effort", "Goal-satisfaction g")),
+           position = factor(position, c("Below all alternatives", "Bracketed",
+                                         "Above all alternatives")))
+
+  ggplot(bracket, aes(action, fill = position)) +
+    geom_bar(position = "fill", alpha = PLOT_ALPHA, width = 0.7) +
+    facet_wrap(~feature) +
+    scale_fill_manual(values = c("Below all alternatives" = "#7AA0B5",
+                                 "Bracketed" = "#C9C0A8",
+                                 "Above all alternatives" = "#B05A5A")) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(title = "Where the observed action sits in its alternative set",
+         subtitle = "Share of (cell, run) units by the observed action's position on each feature",
+         x = "Observed action", y = "Share of cells", fill = NULL) +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1),
+          legend.position = "top")
+}
+```
+
+### Joint feature structure
+
+Every diagnosticity argument in the model is a *trade-off* — high-risk sharing can
+be explained by strong desire or by a costly low-risk option, so the same action is
+weaker evidence for intimacy when desire is high. That reasoning is only possible if
+the elicited features are not collinear: there must be actions that are high-`g` at
+low risk *and* high-`g` at high risk, and the low-risk options must actually cost
+more effort. This plots the joint geometry of the feature space (each point an
+action, alternatives in grey) and reports the pairwise feature correlations.
+
+```{r alt-joint-structure}
+#| fig-width: 10
+#| fig-height: 5
+if (have_lm) {
+  # One row per distinct action within a (scenario, run): risk and g don't vary by
+  # effort/intimacy cell, and effort is averaged over its two conditions, so each
+  # action contributes a single point to the feature cloud.
+  cloud <- actions |>
+    group_by(scenario_label, run_id, action_text, is_canonical) |>
+    summarise(risk = mean(risk, na.rm = TRUE),
+              effort = mean(effort, na.rm = TRUE),
+              g = mean(g, na.rm = TRUE),
+              observed_action = first(observed_action), .groups = "drop") |>
+    mutate(category = if_else(is_canonical,
+                              as.character(as_action(observed_action)), "Alternative"))
+
+  cloud |>
+    summarise(`Risk–Effort` = cor(risk, effort, use = "complete.obs"),
+              `Risk–g` = cor(risk, g, use = "complete.obs"),
+              `Effort–g` = cor(effort, g, use = "complete.obs")) |>
+    pivot_longer(everything(), names_to = "Feature pair", values_to = "Pearson r") |>
+    mutate(`Pearson r` = round(`Pearson r`, 2)) |>
+    kable(caption = "Feature correlations across all elicited actions")
+
+  cloud_long <- cloud |>
+    pivot_longer(c(effort, g), names_to = "yvar", values_to = "yval") |>
+    mutate(yvar = factor(yvar, c("effort", "g"),
+                         c("Effort", "Goal-satisfaction g")))
+  cloud_alt <- filter(cloud_long, !is_canonical)
+  cloud_can <- filter(cloud_long, is_canonical)
+
+  ggplot(mapping = aes(risk, yval)) +
+    geom_point(data = cloud_alt, color = "grey75", alpha = 0.08, size = 0.5) +
+    geom_point(data = cloud_can, aes(color = category), alpha = 0.5, size = 1.1) +
+    facet_wrap(~yvar) +
+    scale_color_manual(values = setNames(
+      c("#7A9A4A", "#C9A85A", "#B05A5A"), action_labels), name = "Observed action") +
+    scale_x_continuous(limits = c(-0.03, 1.03), breaks = seq(0, 1, 0.25)) +
+    scale_y_continuous(limits = c(-0.03, 1.03), breaks = seq(0, 1, 0.25)) +
+    labs(title = "Joint feature structure of the action set",
+         subtitle = "Each point an action (grey = LM alternatives); risk vs. the other two features",
+         x = "Risk (0–1)", y = "Feature value (0–1)") +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          legend.position = "top")
+}
+```
+
+### Dominated alternatives
+
+An alternative that is weakly worse than the observed action on *every* utility
+term — no higher `g`, no lower effort, no lower risk — is Pareto-dominated by what
+the actors actually did, so it adds nothing to the softmax contrast regardless of
+the fitted weights. A high dominated fraction means part of the generated set is
+inert padding. (The reverse — the observed action itself dominated by an
+alternative — would be a surprising choice and is reported alongside.)
+
+```{r alt-dominated}
+#| fig-width: 7
+#| fig-height: 4.5
+if (have_lm) {
+  dom <- actions |>
+    group_by(scenario_label, observed_action, effort_condition,
+             intimacy_condition, run_id) |>
+    filter(any(is_canonical), any(!is_canonical)) |>
+    mutate(c_risk = risk[is_canonical][1], c_eff = effort[is_canonical][1],
+           c_g = g[is_canonical][1]) |>
+    filter(!is_canonical) |>
+    mutate(dom_by_canon = c_g >= g & c_eff <= effort & c_risk <= risk &
+             (c_g > g | c_eff < effort | c_risk < risk),
+           dominates_canon = g >= c_g & effort <= c_eff & risk <= c_risk &
+             (g > c_g | effort < c_eff | risk < c_risk)) |>
+    ungroup()
+
+  cat("Alternatives Pareto-dominated by the observed action:",
+      round(100 * mean(dom$dom_by_canon, na.rm = TRUE), 1), "%\n")
+  cat("Alternatives that dominate the observed action:",
+      round(100 * mean(dom$dominates_canon, na.rm = TRUE), 1), "%\n")
+
+  dom_by_action <- dom |>
+    mutate(action = as_action(observed_action)) |>
+    group_by(action) |>
+    summarise(`Dominated by observed` = 100 * mean(dom_by_canon, na.rm = TRUE),
+              `Dominates observed` = 100 * mean(dominates_canon, na.rm = TRUE),
+              .groups = "drop") |>
+    pivot_longer(c(`Dominated by observed`, `Dominates observed`),
+                 names_to = "direction", values_to = "pct")
+
+  ggplot(dom_by_action, aes(action, pct, fill = direction)) +
+    geom_col(position = position_dodge(width = 0.7), width = 0.65,
+             alpha = PLOT_ALPHA) +
+    scale_fill_manual(values = c("Dominated by observed" = "#6B8E6B",
+                                 "Dominates observed" = "#B05A5A")) +
+    labs(title = "Pareto dominance between alternatives and the observed action",
+         subtitle = "Share of alternatives weakly worse / better on all of g, effort, risk",
+         x = "Observed action", y = "% of alternatives", fill = NULL) +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1),
+          legend.position = "top")
+}
+```
+
+## Semantic structure of the alternatives
+
+The exact-text diversity and Jaccard panels above count surface forms, so
+paraphrases ("tear it in half" vs. "rip it in two") read as distinct. This section
+reads an optional artifact from `model/lm/embed_alternatives.py`, which embeds each
+unique alternative two ways. For **diversity**, it clusters the alternatives *within
+each scenario* into action types — per scenario because the dominant axis of
+embedding variation is the scenario itself (its names, food, setting), so a single
+global clustering would just recover the 16 scenarios rather than abstract action
+types. For the cross-scenario **anchoring** view, it instead labels each alternative
+by its nearest canonical action (no-share / low-risk / high-risk share), which is
+scenario-invariant by construction since every scenario shares that three-action
+frame; the cosine to that nearest canonical also catches near-paraphrases that add
+little contrast. Generate it with
+`uv run python model/lm/embed_alternatives.py --study food_inv_desire`; until then
+this section reports the artifact is missing and renders nothing.
+
+```{r semantic-load}
+sem_path <- file.path(lm_dir, "lm_alternatives_semantic.jsonl")
+clusters_path <- file.path(lm_dir, "lm_clusters.json")
+have_sem <- have_lm && file.exists(sem_path)
+
+if (have_sem) {
+  sem <- read_model_jsonl(sem_path)
+  alts_sem <- alts |>
+    left_join(sem, by = c("scenario_label", "action_text"))
+  cat("Semantic artifact:", nrow(sem), "unique (scenario, alt) pairs across",
+      n_distinct(sem$scenario_label), "scenarios (per-scenario clusters)\n")
+} else {
+  cat("No semantic artifact at", sem_path,
+      "\nRun `uv run python model/lm/embed_alternatives.py --study food_inv_desire`",
+      "to generate it.\n")
+}
+```
+
+### Action types (one example scenario)
+
+Clusters are per scenario, so there is no single global type list to show. For one
+illustrative scenario, each within-scenario cluster with a representative
+alternative shows the kinds of counterfactual the LM proposes there — a healthy set
+spans several distinct types rather than collapsing onto one.
+
+```{r semantic-exemplars}
+if (have_sem && file.exists(clusters_path)) {
+  cl <- jsonlite::fromJSON(clusters_path, simplifyMatrix = FALSE)
+  ex_scen <- "oysters"
+  cl$clusters |>
+    filter(scenario == ex_scen) |>
+    transmute(cluster, size,
+              exemplar = vapply(exemplars, \(x) x[[1]], character(1))) |>
+    arrange(desc(size)) |>
+    kable(caption = paste0("Within-scenario action types for '", ex_scen,
+                           "' (one example scenario)"))
+}
+```
+
+### Semantic diversity per cell
+
+The semantic analog of the exact-text diversity panel: distinct action *types* per
+cell divided by the number of alternatives. Near 1 means each alternative is a
+different kind of action; low values mean the set is many paraphrases of a few
+types.
+
+```{r semantic-diversity}
+#| fig-width: 8
+#| fig-height: 4
+if (have_sem) {
+  sem_div <- alts_sem |>
+    filter(!is.na(cluster)) |>
+    group_by(scenario_label, observed_action, effort_condition, intimacy_condition) |>
+    summarise(n = n(), types = n_distinct(cluster), .groups = "drop") |>
+    mutate(type_ratio = types / n)
+
+  cat("Distinct types per cell — mean:", round(mean(sem_div$types), 2),
+      "| types/alts — mean:", round(mean(sem_div$type_ratio), 2), "\n")
+
+  ggplot(sem_div, aes(type_ratio)) +
+    geom_histogram(bins = 25, fill = "#4A7A4A", alpha = PLOT_ALPHA) +
+    labs(title = "Semantic diversity per cell",
+         subtitle = "Distinct per-scenario action types / total alternatives, across runs",
+         x = "Distinct types / total", y = "Cells")
+}
+```
+
+### Type mix by observed action (semantic anchoring)
+
+The semantic version of the anchoring check: if observers imagine counterfactuals
+to *what they saw*, the imagined set should shift with the observed action — e.g.
+skew toward lower-risk actions once a high-risk share has been observed. Each
+alternative is labeled by its nearest canonical action (a scenario-invariant
+type, so it aggregates across scenarios), and each row is that distribution for one
+observed action (rows sum to 100%).
+
+```{r semantic-anchoring}
+#| fig-width: 8
+#| fig-height: 4.5
+if (have_sem) {
+  type_by_action <- alts_sem |>
+    filter(!is.na(nearest_canonical)) |>
+    count(observed_action, nearest_canonical) |>
+    group_by(observed_action) |>
+    mutate(prop = n / sum(n)) |>
+    ungroup() |>
+    mutate(action = as_action(observed_action),
+           nearest = as_action(nearest_canonical))
+
+  ggplot(type_by_action, aes(nearest, action, fill = prop)) +
+    geom_tile(color = "white", linewidth = 0.4) +
+    geom_text(aes(label = scales::percent(prop, accuracy = 1)),
+              size = 3.6, color = "grey15") +
+    scale_fill_viridis_c(option = "mako", direction = -1) +
+    labs(title = "Imagined alternatives by resemblance to a canonical action",
+         subtitle = "Each alternative labeled by its nearest canonical action; rows sum to 100%",
+         x = "Alternative most resembles…", y = "Observed action", fill = "Proportion") +
+    theme(plot.title = element_text(size = 15, hjust = 0),
+          axis.text.x = element_text(angle = 20, hjust = 1))
+}
+```
+
+### Near-paraphrases of the canonical actions
+
+Each alternative's cosine similarity to the nearest canonical action of its
+scenario. Alternatives near 1 are essentially restatements of one of the three
+canonical actions and add little contrast to the actor's choice set; a long right
+tail near the dashed threshold flags how much of the generated set is redundant
+with what was already on the menu.
+
+```{r semantic-neardup}
+#| fig-width: 8
+#| fig-height: 4
+if (have_sem) {
+  dup_thresh <- 0.85
+  cat("Alternatives with cosine ≥", dup_thresh, "to a canonical action:",
+      round(100 * mean(sem$sim_to_canonical >= dup_thresh, na.rm = TRUE), 1), "%\n")
+
+  ggplot(sem, aes(sim_to_canonical)) +
+    geom_histogram(bins = 30, fill = "#6B8E6B", alpha = PLOT_ALPHA) +
+    geom_vline(xintercept = dup_thresh, linetype = "dashed", color = "#B05A5A") +
+    labs(title = "Alternative similarity to the nearest canonical action",
+         subtitle = "Embedding cosine; high = near-paraphrase of an already-listed action",
+         x = "Max cosine similarity to a canonical action", y = "Unique alternatives")
 }
 ```
 
@@ -542,10 +1099,14 @@ if (have_lm) {
 ## Takeaways
 
 - **Coverage & set sizes** — confirm every run covers the full cell grid and that
-  alternative set sizes are reasonable (a handful per cell, none empty).
+  alternative set sizes are reasonable (a handful per cell, none empty); the
+  truncation panel flags how often a cell exceeds the `MAX_ACTIONS` cap and loses
+  alternatives the model never sees.
 - **Canonical features** — risk should be monotone across the three actions and
   `g` should separate `no_share` (≈ 0) from the sharing actions; this is the load-
-  bearing sanity check for the whole pipeline.
+  bearing sanity check for the whole pipeline. The per-scenario panel flags any
+  scenario that breaks those orderings, and the effort-delta panel confirms the
+  effort manipulation moves only the low-risk share.
 - **Run-to-run spread** — the action features should carry positive per-cell SD;
   the intimacy scalar is the one to scrutinize, since it can come back constant
   across runs (see the callout above).
@@ -555,6 +1116,18 @@ if (have_lm) {
   higher-`g` ones); the effort/intimacy axes show how much those framings reshape
   the imagined set, with the Jaccard panel separating real reshaping from
   elicitation noise.
+- **The observed action in its choice set** — the diagnosticity view: the feature
+  gap (observed − alternatives) should separate by observed action (a high-risk
+  share above its imagined alternatives on risk, a `no_share` below them on `g`),
+  the bracketing panel shows whether alternatives straddle the observed action, and
+  the joint-structure panel confirms risk / effort / `g` are not collinear so the
+  model's competing-explanation trade-offs are identifiable; the dominance panel
+  flags inert alternatives (Pareto-worse than the observed action on every term).
+- **Semantic structure** (optional; needs `embed_alternatives.py`) — per-scenario
+  clustering gives a meaning-level diversity metric, the nearest-canonical mix tests
+  the anchoring claim in a scenario-invariant frame (does the imagined set skew
+  lower-risk once a high-risk share is observed?), and the canonical-similarity
+  histogram catches near-paraphrase padding the exact-match panels miss.
 
 See `.claude/rules/model.md` for the full elicitation design and
 `model/lm/score_merged.py` for the scoring procedure.
