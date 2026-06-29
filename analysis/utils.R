@@ -45,13 +45,15 @@ INTIMACY_LABELS <- c(
   "max_intimate"      = "Maximally intimate"
 )
 
-# Intimacy color scales (discrete) — numeric levels mapped to verbal labels
-scale_fill_intimacy <- function() {
-  scale_fill_manual(values = INTIMACY_COLORS, labels = INTIMACY_LABELS)
+# Intimacy color scales (discrete) — slug levels mapped to verbal labels. The
+# legend title defaults to "Relationship" (the construct the intimacy slugs
+# manipulate); pass `name` to override it for a specific plot.
+scale_fill_intimacy <- function(name = "Relationship") {
+  scale_fill_manual(values = INTIMACY_COLORS, labels = INTIMACY_LABELS, name = name)
 }
 
-scale_color_intimacy <- function() {
-  scale_color_manual(values = INTIMACY_COLORS, labels = INTIMACY_LABELS)
+scale_color_intimacy <- function(name = "Relationship") {
+  scale_color_manual(values = INTIMACY_COLORS, labels = INTIMACY_LABELS, name = name)
 }
 
 # Motivation color scales (discrete)
@@ -194,6 +196,19 @@ boot_cluster_means <- function(df, update_cols, group_vars, n_boot = 1000) {
 
 # Shared shape mapping for observed actions in the joint belief-update plots
 ACTION_SHAPES <- c("No share" = 16, "Low-risk share" = 17, "High-risk share" = 15)
+
+# Observed-action x-axis labels wrapped onto two lines (qualifier over "share")
+# so they read horizontally without rotation. Underlying factor levels are
+# unchanged ("No share" etc.) — this only relabels the axis ticks.
+ACTION_AXIS_LABELS <- c(
+  "No share"        = "No\nshare",
+  "Low-risk share"  = "Low-risk\nshare",
+  "High-risk share" = "High-risk\nshare"
+)
+
+scale_x_action <- function(...) {
+  scale_x_discrete(labels = ACTION_AXIS_LABELS, ...)
+}
 
 # Reusable jitter+dodge for risk scatter panels
 POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
