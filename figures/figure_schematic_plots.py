@@ -88,7 +88,7 @@ plt.rcParams.update(
         "font.size": 18,
         "axes.titlesize": 22,
         "axes.labelsize": 20,
-        "xtick.labelsize": 17,
+        "xtick.labelsize": 14,
         "ytick.labelsize": 17,
         # bar (action) plots set explicit x ticks → these show; the continuous plots
         # use empty tick lists → stay tickless. Tick width matches the axis line width.
@@ -107,8 +107,8 @@ plt.rcParams.update(
 FEATURE_ORDER = ["g", "effort", "risk"]
 FEATURE_LABELS = {"g": "Goal", "effort": "Effort", "risk": "Risk"}
 
-# Seaborn colorblind palette, mapped to the four actions (shared by bars + lines).
-_CB = sns.color_palette("colorblind")
+# Seaborn colorblind palette (muted via desat), mapped to the four actions (bars + lines).
+_CB = sns.color_palette("colorblind", desat=0.8)
 ACTION_COLORS = {"a_obs": _CB[0], "a_1": _CB[1], "a_2": _CB[2], "a_3": _CB[3]}
 ACTION_LABELS = {
     "a_obs": r"$a_\mathrm{obs}$",
@@ -116,6 +116,12 @@ ACTION_LABELS = {
     "a_2": r"$a_2$",
     "a_3": r"$a_3$",
 }
+
+# Illustrative utility weights for the schematic — hand-tuned for legibility so the
+# four utility lines separate cleanly, NOT the fitted values in fit_results.json.
+# The features (g / risk / effort / intimacy) are still the real LM elicitation;
+# only the weights are stylized. Set ILLUSTRATIVE_WEIGHTS = None to use the fit.
+ILLUSTRATIVE_WEIGHTS = {"w_v": 12.0, "w_e": 3.0, "w_d": 6.5, "gamma": 1.0}
 
 OUT_DIR = get_project_root() / "figures" / "schematic_panels"
 
@@ -152,10 +158,16 @@ def compute(rec, full):
     risk = np.array([a["risk"] for a in rec["actions"]])
     I = float(rec["intimacy"])
 
-    w_v = full["param_w_v"]
-    w_d = full["param_w_d"]
-    w_e = full["param_w_e"]
-    gamma = full["param_gamma"]
+    if ILLUSTRATIVE_WEIGHTS is not None:
+        w_v = ILLUSTRATIVE_WEIGHTS["w_v"]
+        w_d = ILLUSTRATIVE_WEIGHTS["w_d"]
+        w_e = ILLUSTRATIVE_WEIGHTS["w_e"]
+        gamma = ILLUSTRATIVE_WEIGHTS["gamma"]
+    else:
+        w_v = full["param_w_v"]
+        w_d = full["param_w_d"]
+        w_e = full["param_w_e"]
+        gamma = full["param_gamma"]
     alpha_obs = full["alpha_observer"]
 
     grid = np.arange(0, 1.01, 0.01)  # DesireLevels, 101 bins
@@ -236,23 +248,10 @@ def plot_utility(c):
         )
     ax.set_xlim(0, 1)
     ax.axvline(c["d_star"], ls=":", color="#444444", lw=2.0)
-    ax.annotate(
-        r"$\arg\max_d\, P(a_\mathrm{obs})$" + "\n" + rf"$d = {c['d_star']:.2f}$",
-        xy=(c["d_star"], ax.get_ylim()[1]),  # top of the d* line
-        xytext=(12, 0),  # push into the right margin, clear of the lines
-        textcoords="offset points",
-        ha="left",
-        va="top",
-        fontsize=15,
-        color="#444444",
-    )
     ax.set_xlabel(r"Food desire  $d$")
     ax.set_ylabel("Total utility")
     ax.set_xticks([])  # no numerical tick labels
     ax.set_yticks([])
-    ax.legend(
-        frameon=False, loc="center left", bbox_to_anchor=(1.02, 0.36), handlelength=1.4
-    )
     _savefig(fig, "utility_vs_desire")
 
 
@@ -272,6 +271,91 @@ def plot_posterior(c):
     _savefig(fig, "posterior_desire")
 
 
+def plot_components(rec):
+    """Illustrative component-function plots: each utility term vs. the latent that
+    drives it, one curve per canonical action (no-share / low-risk / high-risk),
+    using ILLUSTRATIVE_WEIGHTS. Coincident lines are dodged slightly so all three
+    stay visible (only the action whose feature is non-zero actually varies)."""
+    W = ILLUSTRATIVE_WEIGHTS
+    feats = {a["key"]: a for a in rec["actions"]}
+    grid = np.linspace(0.0, 1.0, 101)
+    ACTS = ["a_1", "a_obs", "a_2"]  # no-share, low-risk share, high-risk share
+    # a second channel (line style) so coincident curves stay distinct at any zoom
+    LINESTYLES = {"a_1": ":", "a_obs": "-", "a_2": (0, (6, 3))}
+    LABELS = {"a_1": "no-share", "a_obs": "low-risk", "a_2": "high-risk"}
+
+    def panel(y_of, xlabel, ylabel, fname):
+        ys = {k: np.asarray(y_of(k), dtype=float) for k in ACTS}
+        ymax = max(1e-9, max(float(np.max(y)) for y in ys.values()))
+        eps = 0.07 * ymax  # visibility dodge so coincident lines don't merge
+        fig, ax = plt.subplots(figsize=(3.0, 2.8))
+        for i, k in enumerate(ACTS):
+            ax.plot(
+                grid,
+                ys[k] + i * eps,
+                color=ACTION_COLORS[k],
+                lw=4.0,
+                ls=LINESTYLES[k],
+                solid_capstyle="round",
+                dash_capstyle="round",
+            )
+        ax.set_xlim(0, 1)
+        y0, y1 = -0.06 * ymax, 1.12 * ymax + 2 * eps
+        # direct end labels in the right margin, spread vertically so they don't collide
+        gap = 0.13 * (y1 - y0)
+        placed, prev = [], -1e18
+        for yend, k in sorted(
+            (float(ys[k][-1] + i * eps), k) for i, k in enumerate(ACTS)
+        ):
+            yy = max(yend, prev + gap)
+            prev = yy
+            placed.append((k, yy))
+        y1 = max(y1, placed[-1][1] + 0.06 * (y1 - y0))  # headroom for the top label
+        ax.set_ylim(y0, y1)
+        for k, yy in placed:
+            ax.annotate(
+                LABELS[k],
+                xy=(1.0, yy),
+                xytext=(8, 0),
+                textcoords="offset points",
+                ha="left",
+                va="center",
+                color=ACTION_COLORS[k],
+                fontsize=15,
+            )
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_box_aspect(1)  # square plotting area
+        _savefig(fig, fname)
+
+    # reward = w_v · d · g(a), vs desire
+    panel(
+        lambda k: W["w_v"] * grid * feats[k]["g"],
+        r"Food desire  $d$",
+        "Reward",
+        "reward_vs_desire",
+    )
+    # effort cost = w_e · effort(a), vs physical world state (low-risk effort swept 0→1)
+    panel(
+        lambda k: (
+            W["w_e"]
+            * (grid if k == "a_obs" else feats[k]["effort"] * np.ones_like(grid))
+        ),
+        "Effort of low-risk share",
+        "Effort cost",
+        "effort_vs_worldstate",
+    )
+    # discomfort = w_d · risk(a) · (1−I)^γ, vs intimacy
+    panel(
+        lambda k: W["w_d"] * feats[k]["risk"] * (1.0 - grid) ** W["gamma"],
+        r"Relationship intimacy  $I$",
+        "Discomfort cost",
+        "discomfort_vs_intimacy",
+    )
+
+
 def main():
     rec, full = load_inputs()
     c = compute(rec, full)
@@ -279,6 +363,7 @@ def main():
     plot_bars(rec, c)
     plot_utility(c)
     plot_posterior(c)
+    plot_components(rec)
 
     # sanity-check print
     print(f"intimacy I = {c['I']:.3f}   alpha_obs = {c['alpha_obs']:.3f}")

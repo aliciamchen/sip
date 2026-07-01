@@ -1,0 +1,48 @@
+% Figure equations for the hybrid-model schematic.
+% Same math font as the manuscript (newtx). Each \begin{preview} block
+% becomes its own tightly-cropped page -> one vector equation per page.
+% Build (DVI route; --pdf needs MuPDF):
+%   latex equations.tex && dvisvgm --no-fonts --page=1- --output=eq-%p.svg equations.dvi
+\documentclass[12pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{newtx}                              % Times math, matches main.tex
+\usepackage[active,tightpage,displaymath]{preview}
+\setlength\PreviewBorder{2pt}
+\begin{document}
+
+% page 1 — input
+\begin{preview}
+$\tau = (\text{scenario},\, a_{\mathrm{obs}})$
+\end{preview}
+
+% page 2 — generate (sample the alternatives)
+\begin{preview}
+$\{a_1,\ldots,a_m\} \sim P_{\mathrm{LM}}(\cdot \mid \tau)$
+\end{preview}
+
+% page 3 — comparison set
+\begin{preview}
+$\mathcal{A}_{\tau} = \{a_{\mathrm{obs}}\} \cup \{a_1,\ldots,a_m\}$
+\end{preview}
+
+% page 4 — feature map (LM-scored; the LM step is shown by the network icon)
+\begin{preview}
+$\phi_{\tau}(a) = \big(g_{\tau}(a),\, \mathrm{risk}_{\tau}(a),\, \mathrm{effort}_{\tau}(a)\big)$
+\end{preview}
+
+% page 5 — utility
+\begin{preview}
+$U_{\mathrm{total}}(a \mid d, \mathbf{e}) = w_v\, d\, g_{\tau}(a) - w_e\,\mathrm{effort}_{\tau}(a) - w_d\,\mathrm{risk}_{\tau}(a)\,(1-I)^{\gamma}$
+\end{preview}
+
+% page 6 — posterior
+\begin{preview}
+$P(I \mid a) \propto P(a \mid I)\, P(I)$
+\end{preview}
+
+% page 7 — K runs (run-indexed components; only the action set is a P_LM sample)
+\begin{preview}
+$(\mathcal{A}_{\tau}^{(k)},\, \phi_{\tau}^{(k)}), \quad k = 1,\ldots,K$
+\end{preview}
+
+\end{document}
