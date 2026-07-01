@@ -81,6 +81,23 @@ scale_color_effort <- function() {
   scale_color_manual(values = EFFORT_COLORS)
 }
 
+# Build the effort factor from the raw low/high condition codes.
+factor_effort <- function(x) factor(x, levels = c("low", "high"), labels = EFFORT_LEVELS)
+
+# Effort pattern scale (ggpattern): solid vs. striped — the non-color companion
+# to the effort color scales above, for bar plots that already use fill for a
+# different variable (e.g. relationship).
+EFFORT_PATTERNS <- c("Low effort" = "none", "High effort" = "stripe")
+scale_pattern_effort <- function(name = "Effort of low-risk share") {
+  ggpattern::scale_pattern_manual(values = EFFORT_PATTERNS, breaks = EFFORT_LEVELS, name = name)
+}
+
+# Model-comparison panels: fitted-model slugs -> display labels, and the panel
+# order (the three ablations plus the human data) shared by every study's
+# out-of-sample model-vs-human figure.
+MODEL_LABELS <- c(base = "Base", discomfort_only = "Discomfort-only", full = "Full")
+PANEL_LEVELS <- c(unname(MODEL_LABELS), "Humans")
+
 # Combined condition colors for inv-plan-combined-correlation (desire + intimacy)
 .intimacy_levels <- INTIMACY_LEVELS
 .intimacy_colors <- viridisLite::viridis(
@@ -194,6 +211,12 @@ boot_cluster_means <- function(df, update_cols, group_vars, n_boot = 1000) {
   left_join(observed, cis, by = group_vars)
 }
 
+# Observed-action factor: raw condition slugs -> ordered display labels, shared
+# wherever the action_condition column becomes a plotting factor.
+ACTION_LEVELS <- c("no_share", "low_risk_share", "high_risk_share")
+ACTION_LABELS <- c("No share", "Low-risk share", "High-risk share")
+factor_action <- function(x) factor(x, levels = ACTION_LEVELS, labels = ACTION_LABELS)
+
 # Shared shape mapping for observed actions in the joint belief-update plots
 ACTION_SHAPES <- c("No share" = 16, "Low-risk share" = 17, "High-risk share" = 15)
 
@@ -208,6 +231,25 @@ ACTION_AXIS_LABELS <- c(
 
 scale_x_action <- function(...) {
   scale_x_discrete(labels = ACTION_AXIS_LABELS, ...)
+}
+
+# Save a plot to the repo-root figures/ directory as a vector PDF for the
+# manuscript (creates the directory if needed). Uses the cairo_pdf device, which
+# embeds the theme font (Arial Nova) and renders ggpattern fills cleanly — the
+# base pdf() device does neither reliably. cairo_pdf needs cairo support in R (on
+# macOS, install XQuartz: brew install --cask xquartz).
+#
+# width/height default to the current chunk's fig-width / fig-height (Quarto
+# passes those to knitr as fig.width / fig.height), so the saved PDF matches the
+# on-screen plot with no duplicated numbers. Pass them explicitly to override;
+# 7 is the fallback when called outside a knitr render.
+save_figure <- function(plot, filename, width = NULL, height = NULL, ...) {
+  width  <- width  %||% knitr::opts_current$get("fig.width")  %||% 7
+  height <- height %||% knitr::opts_current$get("fig.height") %||% 7
+  fig_dir <- here("figures")
+  if (!dir.exists(fig_dir)) dir.create(fig_dir, recursive = TRUE)
+  ggsave(file.path(fig_dir, filename), plot = plot, width = width, height = height,
+         device = cairo_pdf, ...)
 }
 
 # Reusable jitter+dodge for risk scatter panels

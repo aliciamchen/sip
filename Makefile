@@ -53,6 +53,7 @@ help:
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance tests"
 	@echo "  clean      - remove fit + CV outputs"
+	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
 	@echo "  experiments       - regenerate stimuli + counterbalancing + entry files"
@@ -224,6 +225,32 @@ analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
 
 $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 	quarto render analysis/$*.qmd
+
+# =============================================================================
+# Manuscript figures: copy a curated set of generated PDFs from figures/ into the
+# journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs real,
+# committed files — symlinks don't sync — so this physically copies them. After
+# syncing, commit + push SIP_journal/ to Overleaf. Edit JOURNAL_FIGURES as the
+# paper's figure set changes; each entry is  <name-in-figures/>:<name-in-main.tex>
+# (so the analysis keeps descriptive names and the paper gets its own).
+# =============================================================================
+
+.PHONY: sync-journal-figures
+
+JOURNAL_DIR := SIP_journal
+JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
+JOURNAL_FIGURES := \
+  food_inv_desire_cv_overlay_bars.pdf:study1a-model-comparison.pdf
+
+sync-journal-figures:
+	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }
+	@mkdir -p $(JOURNAL_FIG_DIR)
+	@for pair in $(JOURNAL_FIGURES); do \
+	  src=figures/$${pair%%:*}; dst=$(JOURNAL_FIG_DIR)/$${pair##*:}; \
+	  if [ -f "$$src" ]; then cp "$$src" "$$dst" && echo "  $$src -> $$dst"; \
+	  else echo "MISSING: $$src — render the analysis that generates it first" >&2; exit 1; fi; \
+	done
+	@echo "Synced $(words $(JOURNAL_FIGURES)) figure(s) to $(JOURNAL_FIG_DIR)/"
 
 # =============================================================================
 # Model visualization: interactive prediction explorer

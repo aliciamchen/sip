@@ -206,3 +206,9 @@ quarto render analysis/<qmd-name>.qmd
 ```
 
 Plots are saved in the `figures/` directory; rendered docs in `_output/analysis/`.
+
+### Manuscript figures
+
+The analysis qmds save publication PDFs into `figures/` with the shared `save_figure()` helper in `analysis/utils.R`. It renders through the `cairo_pdf` device, which embeds the theme font and renders the `ggpattern` fills cleanly (the base `pdf()` device does neither reliably), and it takes its width and height from the chunk's `fig-width`/`fig-height`, so the saved file matches the displayed plot.
+
+The journal manuscript is a separate Overleaf-synced git repository (`SIP_journal/`, which is not part of this repo), and Overleaf needs the figure files committed inside it rather than referenced from here — symlinks do not sync. The `make sync-journal-figures` target copies a curated set of these PDFs into `SIP_journal/figures/`, renaming each to the name the manuscript uses; the source-to-paper-name mapping is the `JOURNAL_FIGURES` list in the `Makefile`. After syncing, commit and push `SIP_journal/` to Overleaf.
