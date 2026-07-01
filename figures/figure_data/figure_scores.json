@@ -1,0 +1,40 @@
+{
+  "scenario_label": "burrito_figure",
+  "vignette": "Alice and Bob walk past Korean and Lebanese food trucks to reach a Mexican food truck. Once they arrive at the Mexican food truck, they realize that the burritos are very large and that neither of them is able to finish a whole burrito by themselves. The Mexican food truck has run out of knives. To get knives, they would have to walk to another food truck.",
+  "relationship": "somewhat_formal",
+  "intimacy": 0.2,
+  "desire_object": "the burritos",
+  "seed": 0,
+  "model_id": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  "temperature": 0.2,
+  "actions": [
+    {
+      "key": "a_obs",
+      "action_text": "Alice and Bob walk to another food truck, ask for an extra knife, and cut the burrito in half. They each eat only from their own portion.",
+      "g": 1.0,
+      "effort": 0.6666666666666666,
+      "risk": 0.0
+    },
+    {
+      "key": "a_1",
+      "action_text": "Alice and Bob leave the food truck and go elsewhere.",
+      "g": 0.0,
+      "effort": 0.0,
+      "risk": 0.0
+    },
+    {
+      "key": "a_2",
+      "action_text": "Alice and Bob take turns biting from the same burrito.",
+      "g": 1.0,
+      "effort": 0.0,
+      "risk": 1.0
+    },
+    {
+      "key": "a_3",
+      "action_text": "Alice eats from the burrito until she gets full, and then she throws the rest away.",
+      "g": 0.5,
+      "effort": 0.0,
+      "risk": 0.0
+    }
+  ]
+}
