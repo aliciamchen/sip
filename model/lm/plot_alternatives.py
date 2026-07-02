@@ -56,6 +56,7 @@ import numpy as np
 import pandas as pd
 import umap
 from matplotlib.lines import Line2D
+from scipy.spatial.distance import cdist
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import (  # noqa: E402
@@ -657,52 +658,91 @@ def fig_si_g_contrast(runs):
 # ----------------------------------------------------------------------------
 
 
-def fig_si_base_vs_full(d, alts):
+def _alt_feature_clouds(runs, cell_cols):
+    """cell key -> (N, 3) array of (risk, effort, g) for the alternatives in that
+    cell, pooled over runs. Instances are kept (not deduplicated by text): the
+    per-run sets are what the planner sees, so their pooled feature distribution
+    -- including how often an alternative recurs -- is the landscape we compare."""
+    clouds = {}
+    for key, grp in runs.groupby(cell_cols):
+        pts = [
+            (a["risk"], a["effort"], a["g"])
+            for actions in grp["actions"]
+            for a in actions
+            if not a["is_canonical"]
+            and a["risk"] is not None
+            and a["effort"] is not None
+            and a["g"] is not None
+        ]
+        if pts:
+            clouds[key] = np.asarray(pts, dtype=float)
+    return clouds
+
+
+def _energy_distance(X, Y):
+    """Szekely-Rizzo energy distance between two point sets: 2 E|X-Y| - E|X-X'|
+    - E|Y-Y'|, a proper distance between distributions (0 iff equal), computed
+    here in the [0,1]^3 (risk, effort, g) feature space. The within-set terms
+    exclude self-pairs so the estimate is unbiased for finite samples."""
+
+    def within(A):
+        n = len(A)
+        if n < 2:
+            return 0.0
+        D = cdist(A, A)
+        return (D.sum() - np.trace(D)) / (n * (n - 1))
+
+    return max(0.0, 2 * cdist(X, Y).mean() - within(X) - within(Y))
+
+
+def fig_si_base_vs_full(d, runs):
     """The base ablation's alternatives are elicited without the relationship
-    paragraph (lm_alternatives_base.jsonl). For each (scenario, observed
-    action, effort) cell, the exact-text Jaccard overlap between the base set
-    and each relationship level's conditioned set; the rightmost category is
-    the reference overlap between conditioned sets at different levels. If
-    base-vs-conditioned matches the reference, the relationship-free set is as
-    similar to any conditioned set as the conditioned sets are to each other."""
-    base_path = d / "lm_alternatives_base.jsonl"
+    paragraph (lm_runs_base.jsonl). Because those features -- not the exact
+    wording -- are what enters the planner, we compare the feature distributions
+    of the sets rather than their text. For each (scenario, observed action,
+    effort) cell, the energy distance between the base set's (risk, effort, g)
+    cloud and each relationship level's conditioned cloud; the rightmost
+    category is the reference distance between conditioned clouds at different
+    levels. Lower is more similar, so if base-vs-conditioned matches the
+    reference, the relationship-free set presents the same feature landscape to
+    the planner as any conditioned set does to another."""
+    base_path = d / "lm_runs_base.jsonl"
     if not base_path.exists():
-        print("skipping base-vs-full figure: lm_alternatives_base.jsonl not found")
+        print("skipping base-vs-full figure: lm_runs_base.jsonl not found")
         return None
-    if "intimacy_condition" not in alts.columns:
+    if "intimacy_condition" not in runs.columns:
         print("skipping base-vs-full figure: study has no relationship axis")
         return None
-    base = pd.read_json(base_path, lines=True)
+    base_runs = pd.read_json(base_path, lines=True)
 
     cell_cols = ["scenario_label", "observed_action", "effort_condition"]
-    base_sets = base.groupby(cell_cols)["action_text"].agg(set)
-    full_sets = alts.groupby([*cell_cols, "intimacy_condition"])["action_text"].agg(set)
-
-    def jac(a, b):
-        return len(a & b) / len(a | b)
+    base_clouds = _alt_feature_clouds(base_runs, cell_cols)
+    cond_clouds = _alt_feature_clouds(runs, [*cell_cols, "intimacy_condition"])
 
     recs = []
-    for key, bset in base_sets.items():
-        level_sets = {lvl: full_sets.get((*key, lvl), None) for lvl in INTIMACY_LEVELS}
-        if any(v is None for v in level_sets.values()):
+    for key, bcloud in base_clouds.items():
+        levels = {lvl: cond_clouds.get((*key, lvl)) for lvl in INTIMACY_LEVELS}
+        if any(v is None for v in levels.values()):
             continue
         for lvl in INTIMACY_LEVELS:
             recs.append(
                 dict(
-                    scenario=key[0], comparison=lvl, jaccard=jac(bset, level_sets[lvl])
+                    scenario=key[0],
+                    comparison=lvl,
+                    dist=_energy_distance(bcloud, levels[lvl]),
                 )
             )
         pairs = [
-            jac(level_sets[l1], level_sets[l2])
+            _energy_distance(levels[l1], levels[l2])
             for i, l1 in enumerate(INTIMACY_LEVELS)
             for l2 in INTIMACY_LEVELS[i + 1 :]
         ]
         recs.append(
-            dict(scenario=key[0], comparison="reference", jaccard=float(np.mean(pairs)))
+            dict(scenario=key[0], comparison="reference", dist=float(np.mean(pairs)))
         )
     per_scen = (
         pd.DataFrame(recs)
-        .groupby(["scenario", "comparison"], as_index=False)["jaccard"]
+        .groupby(["scenario", "comparison"], as_index=False)["dist"]
         .mean()
     )
 
@@ -710,7 +750,7 @@ def fig_si_base_vs_full(d, alts):
     fig, ax = plt.subplots(figsize=(5.6, 3.2))
     rng = np.random.default_rng(0)
     for x, cat in enumerate(cats):
-        vals = per_scen.loc[per_scen["comparison"] == cat, "jaccard"].to_numpy()
+        vals = per_scen.loc[per_scen["comparison"] == cat, "dist"].to_numpy()
         ax.scatter(
             x + rng.uniform(-0.1, 0.1, len(vals)),
             vals,
@@ -741,7 +781,9 @@ def fig_si_base_vs_full(d, alts):
         fontsize=7.5,
     )
     ax.set_xlabel("Base set vs. the conditioned set at each relationship level")
-    ax.set_ylabel("Choice-set text overlap\n(Jaccard)")
+    ax.set_ylabel(
+        "Feature-distribution distance\n(energy distance; lower = more similar)"
+    )
     ax.set_ylim(bottom=0)
     fig.tight_layout()
     return savefig(fig, "si_lm_base_vs_full")
@@ -938,7 +980,7 @@ def main(study, seed, example_scenario, figures):
             fig_si_composition(alts, sem),
             fig_si_set_similarity(alts, sem, npz["alt_emb"]),
             fig_si_g_contrast(runs),
-            fig_si_base_vs_full(d, alts),
+            fig_si_base_vs_full(d, runs),
         ):
             if path:
                 print(f"wrote {path}")
