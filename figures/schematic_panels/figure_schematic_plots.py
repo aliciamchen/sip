@@ -30,7 +30,7 @@ import matplotlib.font_manager as fm  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import seaborn as sns  # noqa: E402
 
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root  # noqa: E402
 
