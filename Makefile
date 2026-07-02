@@ -253,7 +253,19 @@ figures-lm-si:
 JOURNAL_DIR := SIP_journal
 JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
 JOURNAL_FIGURES := \
-  food_inv_desire_cv_overlay_bars.pdf:study1a-model-comparison.pdf
+  food_inv_desire_cv_overlay_bars.pdf:study1a-model-comparison.pdf \
+  si_lm_feature_structure.pdf:si-lm-feature-structure.pdf \
+  si_lm_manipulation_checks.pdf:si-lm-manipulation-checks.pdf \
+  si_lm_canonical_scatter.pdf:si-lm-canonical-scatter.pdf \
+  si_lm_choice_set_sizes.pdf:si-lm-choice-set-sizes.pdf \
+  si_lm_choice_set_example.pdf:si-lm-choice-set-example.pdf \
+  si_lm_semantic_space_example.pdf:si-lm-semantic-space-example.pdf \
+  si_lm_alternatives_composition.pdf:si-lm-alternatives-composition.pdf \
+  si_lm_alternatives_set_similarity.pdf:si-lm-alternatives-set-similarity.pdf \
+  si_lm_base_vs_full.pdf:si-lm-base-vs-full.pdf \
+  si_lm_g_contrast.pdf:si-lm-g-contrast.pdf \
+  si_lm_run_spread.pdf:si-lm-run-spread.pdf \
+  si_lm_mixture_check.pdf:si-lm-mixture-check.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }

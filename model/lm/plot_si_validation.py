@@ -310,6 +310,7 @@ def fig_manipulation_checks(canon):
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["Low", "High"])
     ax.set_xlabel("Desire condition")
+    ax.set_ylabel("LM-rated desire $d$")
     ax.set_xlim(-0.6, 1.6)
     ax.set_title("Studies 2a/2b")
     panel_label(ax, "b")
