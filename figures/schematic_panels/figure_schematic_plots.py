@@ -32,6 +32,9 @@ _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from plot_style import (  # noqa: E402
     ACTION_COLORS as CANON_COLORS,
+    INTIMACY_COLORS,
+    INTIMACY_LABELS,
+    INTIMACY_LEVELS,
     OTHER_ACTION_COLOR,
     apply_style,
 )
@@ -203,10 +206,11 @@ def plot_posterior(c):
     dd = c["grid"][1] - c["grid"][0]
     density = c["post"] / dd  # normalized density over [0,1]
     fig, ax = plt.subplots(figsize=(3.4, 1.6))
-    # colored like a_obs: this is the posterior conditioned on the observed action
-    # (plain blue would now read as the no-share action's color)
-    ax.fill_between(c["grid"], density, color=ACTION_COLORS["a_obs"], alpha=0.18)
-    ax.plot(c["grid"], density, color=ACTION_COLORS["a_obs"], lw=2.0)
+    # colored with the somewhat_formal intimacy color: this base example is at the
+    # somewhat_formal relationship, so it matches its curve in the by-relationship panel
+    color = INTIMACY_COLORS["somewhat_formal"]
+    ax.fill_between(c["grid"], density, color=color, alpha=0.18)
+    ax.plot(c["grid"], density, color=color, lw=2.0)
     ax.axvline(c["d_star"], ls=":", color="#444444", lw=1.4)
     ax.set_xlabel(r"Food desire  $d$")
     ax.set_xlim(0, 1)
@@ -215,6 +219,102 @@ def plot_posterior(c):
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)  # drop the y axis line + label
     _savefig(fig, "posterior_desire")
+
+
+def load_intimacy_by_relationship():
+    """The four relationship levels' LM-elicited intimacy magnitudes, keyed by
+    level (max_formal → max_intimate). Read from Study 1a's own elicitation
+    (`model/outputs/lm/food_inv_desire/lm_runs.jsonl`) — the same scenario-
+    independent, deterministic values the fit in fit_results.json was computed
+    under, so the figure and the model agree. (figure_scores.json only caches the
+    single relationship the base example uses; the by-relationship panel needs
+    all four.)"""
+    path = (
+        get_project_root()
+        / "model"
+        / "outputs"
+        / "lm"
+        / "food_inv_desire"
+        / "lm_runs.jsonl"
+    )
+    vals = {}
+    with open(path) as f:
+        for line in f:
+            r = json.loads(line)
+            lvl, iv = r.get("intimacy_condition"), r.get("intimacy")
+            if lvl and iv is not None and lvl not in vals:
+                vals[lvl] = float(iv)
+            if len(vals) == len(INTIMACY_LEVELS):
+                break
+    return {lvl: vals[lvl] for lvl in INTIMACY_LEVELS}
+
+
+def plot_posterior_by_relationship(rec, full):
+    """Posterior over food desire P(d | a_obs, I) at each of the four relationship
+    levels — how relationship intimacy reshapes the desire inference.
+
+    Same actor model as compute() (illustrative weights); only the observed
+    low-risk share a_obs is conditioned on. Because a_obs has risk = 0, intimacy
+    never enters its own utility — it reshapes the posterior only through the
+    competing high-risk share a_2, which becomes attractive as the relationship
+    warms. The upshot: at formal relationships, sharing strongly implies high
+    desire (posterior climbs toward d = 1); at intimate ones it says much less
+    (posterior flattens)."""
+    g = np.array([a["g"] for a in rec["actions"]])
+    effort = np.array([a["effort"] for a in rec["actions"]])
+    risk = np.array([a["risk"] for a in rec["actions"]])
+    W = ILLUSTRATIVE_WEIGHTS
+    alpha_obs = full["alpha_observer"]
+    grid = np.arange(0, 1.01, 0.01)
+    dd = grid[1] - grid[0]
+    I_by_level = load_intimacy_by_relationship()
+
+    # wide, short axes to match the single-relationship posterior panel; the legend
+    # sits outside (right) so it doesn't squish the data area.
+    fig, ax = plt.subplots(figsize=(3.2, 1.9))
+    means, dens = {}, {}
+    for lvl in INTIMACY_LEVELS:
+        I = I_by_level[lvl]
+        cost = W["w_d"] * risk * (max(1.0 - I, 1e-8) ** W["gamma"]) + W["w_e"] * effort
+        U = W["w_v"] * np.outer(grid, g) - cost[None, :]
+        ex = np.exp(U - U.max(axis=1, keepdims=True))
+        p_aobs = (ex / ex.sum(axis=1, keepdims=True))[:, 0]  # slot 0 = a_obs
+        post = p_aobs**alpha_obs
+        post = post / post.sum()
+        means[lvl] = float((grid * post).sum())
+        dens[lvl] = post / dd  # normalized density over [0, 1]
+    # the two formal levels (I = 0.0, 0.2) are nearly coincident; a small constant
+    # vertical dodge (as in plot_components) separates every level. Dodging *down*
+    # by level index preserves the natural plateau order (formal high → intimate
+    # low). Purely cosmetic — the panel is illustrative, with no y scale.
+    ymax = max(float(d.max()) for d in dens.values())
+    eps = 0.05 * ymax
+    for i, lvl in enumerate(INTIMACY_LEVELS):
+        ax.plot(
+            grid,
+            dens[lvl] - i * eps,
+            color=INTIMACY_COLORS[lvl],
+            lw=4.0,
+            solid_capstyle="round",
+            label=INTIMACY_LABELS[lvl],
+        )
+    ax.set_xlim(0, 1)
+    ax.set_ylim(bottom=0)
+    ax.set_xlabel(r"Food desire  $d$")
+    ax.set_xticks([])  # no numerical tick labels
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)  # drop the y axis line + label
+    # legend outside on the right so it never sits on the (small, square) data area
+    ax.legend(
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.5),
+        fontsize=13,
+        handlelength=1.4,
+        borderaxespad=0.0,
+        frameon=False,
+    )
+    _savefig(fig, "posterior_desire_by_relationship")
+    return means
 
 
 def plot_components(rec):
@@ -309,6 +409,7 @@ def main():
     plot_bars(rec, c)
     plot_utility(c)
     plot_posterior(c)
+    rel_means = plot_posterior_by_relationship(rec, full)
     plot_components(rec)
 
     # sanity-check print
@@ -323,6 +424,9 @@ def main():
             f"  {key:6s}  U={c['U'][i_star, j]:7.3f}  "
             f"P(a|d*)={np.exp(c['U'][i_star] - c['U'][i_star].max())[j] / np.exp(c['U'][i_star] - c['U'][i_star].max()).sum():.3f}"
         )
+    print("posterior mean(d) by relationship (observed a_obs):")
+    for lvl in INTIMACY_LEVELS:
+        print(f"  {lvl:20s} mean(d)={rel_means[lvl]:.3f}")
     print(f"\nWrote panels to {OUT_DIR}")
 
 
