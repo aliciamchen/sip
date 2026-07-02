@@ -2,7 +2,7 @@
 
 This directory archives participant data from experiments that are no longer part of the active pipeline, which now consists of the four inverse-planning studies documented in [data/README.md](../README.md). The model and analysis code for these older experiments was removed in the June 2026 cleanup and is recoverable from git history; only the data is kept here.
 
-Not everything in this directory is tracked in git. The processed CSVs for the three forward-planning experiments and the original Study 1a pilot are committed. The six superseded 4-action/2-action inverse experiments, the early design pilots (`pilots/`), and the `planning_comm/` side project were deliberately removed from git history when they were archived (May 2026) and exist only as local copies, as do all `raw_data/` directories.
+Not everything in this directory is tracked in git. The processed CSVs for the three forward-planning experiments and both Study 1a pilots are committed. The six superseded 4-action/2-action inverse experiments, the early design pilots (`pilots/`), and the `planning_comm/` side project were deliberately removed from git history when they were archived (May 2026) and exist only as local copies, as do all `raw_data/` directories.
 
 ## Column naming
 

@@ -12,7 +12,7 @@ Core analysis files (named after their data folder, not paper experiment number)
 
 ### Active analysis qmds
 
-The active roster is four inverse-planning studies on the 3-action set, all currently structure-only stubs (they gracefully handle missing data + missing CV predictions via `file.exists()` guards; TODO blocks mark where belief-update + model-vs-human panels go once pilots land):
+The active roster is four inverse-planning studies on the 3-action set. The Study 1a qmd (`food-inv-desire-analysis.qmd`) runs on the current partial sample (~half the target N); the other three are still structure-only stubs on pilot data (they gracefully handle missing data + missing CV predictions via `file.exists()` guards; TODO blocks mark where belief-update + model-vs-human panels go once full data lands):
 
 - `food-inv-desire-analysis.qmd` — Study 1a: infer desire under known effort + intimacy (continuous 0–100 DV).
 - `food-inv-joint-de-analysis.qmd` — Study 1b: joint over desire × effort given intimacy.

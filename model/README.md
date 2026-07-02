@@ -73,4 +73,4 @@ The utility model and the meaning of `g`, `desire`, `risk`, and the `w_v · desi
 uv run python model/test_model_compliance.py
 ```
 
-Preregistration documents are at the repo root under [`preregs/`](../preregs/), one file per experiment slug.
+Preregistration documents are at the repo root under [`preregs/`](../preregs/); Study 1a's is present, with 1b/2a/2b pending.

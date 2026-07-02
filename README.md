@@ -28,9 +28,9 @@ The `Makefile` exposes per-stage and per-experiment targets (`make fit`, `make c
 ```
 jsPsych experiments (experiments/) → JSON → json_to_csv.py → processed CSVs (data/)
                                                               ↓
-LM elicitation (lm/score_*.py) → scenario tables (model/outputs/lm/<slug>/)
+LM elicitation (model/lm/generate_alternatives.py → score_*.py) → scenario tables (model/outputs/lm/<slug>/)
                                                               ↓
-                                  fit (inverse) → predict → CV
+                                  fit (inverse) → CV
                                                               ↓
                                   R/Quarto analysis (analysis/) → figures
 ```
@@ -141,7 +141,7 @@ model/             Computational models
   outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
     lm/            LM-elicited scenario tables
     <slug>/        Per-experiment outputs
-preregs/           AsPredicted-format preregistration documents (one per active experiment slug)
+preregs/           AsPredicted-format preregistration documents (Study 1a present; 1b/2a/2b pending)
 figures/           Generated figures used in the paper
 LM_evals/          Language-model evaluation code
 ```

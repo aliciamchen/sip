@@ -35,9 +35,10 @@ DesireLevels = jnp.arange(0, 1.01, 0.01)
 
 # Three-action canonical set used by the inverse-planning experiments. Action 0
 # = no sharing, action 1 = low-risk sharing, action 2 = high-risk sharing.
-# Stimulus set is `experiments/scenarios.csv`; LM tables live per study in
-# `outputs/lm/<slug>/lm_scenario.csv` (canonical risk/effort/g) +
-# `lm_alternatives.csv` (the alternatives' risk/effort/g).
+# Stimulus set is `experiments/scenarios.csv`; the per-study LM tables are
+# `outputs/lm/<slug>/lm_runs.jsonl` (scored canonical + alternative risk/effort/g
+# across K runs) and `lm_alternatives.jsonl` (stage-1 texts). The legacy
+# `lm_scenario.csv` + `lm_alternatives.csv` remain only as a K=1 fallback.
 actions = jnp.array([0, 1, 2])
 N_ACTIONS = 3
 # The 3 canonical actions in index order. Experiment data and LM CSVs label the
@@ -340,13 +341,15 @@ def load_padded_lm_tables_desire(
         w_v · desire · g, with desire the inferred latent.
 
     Slot 0 of every cell holds the observed canonical action's features:
-    risk/effort/g from `lm_scenario.csv` (risk/effort depend on scenario +
+    risk/effort/g from `lm_runs.jsonl` (risk/effort depend on scenario +
     effort_condition + action, broadcast across intimacy; g depends on scenario +
     action, broadcast across effort and intimacy).
 
-    Slots 1..k hold the LM-generated alternatives for that cell, read straight
-    off `outputs/lm/food_inv_desire/lm_alternatives.csv` — the one table holding
-    each alternative's text plus its risk/effort/g columns (keyed by alt_idx).
+    Slots 1..k hold the LM-generated alternatives for that cell, with each
+    alternative's risk/effort/g read from
+    `outputs/lm/food_inv_desire/lm_runs.jsonl` (keyed by alt_idx) and its text
+    from `lm_alternatives.jsonl`. (The legacy `lm_scenario.csv` /
+    `lm_alternatives.csv` are read only as a K=1 fallback.)
     Remaining slots are null-padded (risk/effort/g = 0; prior = NULL_EPSILON to
     keep the softmax differentiable).
 
@@ -463,8 +466,9 @@ def load_padded_lm_tables_desire(
 # when any required CSV is missing, so imports stay clean before LM elicitation
 # has been run for that study.
 #
-# Expected CSV schema (produced by score_merged.py --study <slug>, written into
-# that study's folder outputs/lm/<slug>/):
+# Expected schema for the legacy fallback CSVs (the K=1 back-compat path; the
+# current primary output of score_merged.py --study <slug>, written into that
+# study's folder outputs/lm/<slug>/, is lm_runs.jsonl):
 #   - canonical: lm_scenario.csv
 #       (scenario_label, effort_condition, action, risk, effort, g)
 #   - alternatives: lm_alternatives.csv keyed by the study's generation cell +
