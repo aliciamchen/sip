@@ -8,23 +8,21 @@ project_alternatives.py:
 SI figures (publication-styled via the repo-root plot_style module, written to
 repo-root figures/; rendered from --study, Study 1a by default):
 
-  1. si_lm_choice_set_example — one scenario's elicited choice set in the
-     (risk, effort) plane, each point a unique alternative colored by its
-     goal-satisfaction g, with the three canonical actions starred.
-  2. si_lm_semantic_space_example — the same scenario's alternatives in the
+  1. si_lm_semantic_space_example — one scenario's alternatives in the
      per-scenario UMAP embedding space (from lm_alternatives_projection.jsonl),
      colored by their LM-scored risk, with numbered cluster exemplars and
      their text listed beside the map.
-  3a. si_lm_alternatives_composition — the composition of alternatives
+  2a. si_lm_alternatives_composition — the composition of alternatives
      (nearest canonical action) by condition, per observed action.
-  3b. si_lm_alternatives_set_similarity — the embedding similarity between the
+  2b. si_lm_alternatives_set_similarity — the embedding similarity between the
      alternative sets of two elicitation cells, by what differs between the
      cells (nothing/runs only, condition, or observed action).
-  4. si_lm_g_contrast — within-choice-set range of goal-satisfaction g by
+  3. si_lm_g_contrast — within-choice-set range of goal-satisfaction g by
      observed action: where the design can identify desire.
-  5. si_lm_base_vs_full — text overlap between the base ablation's
-     relationship-free alternative sets and the relationship-conditioned sets
-     (skipped if the study has no base elicitation).
+  4. si_lm_base_vs_full — feature-distribution (energy) distance between the
+     base ablation's relationship-free alternative sets and the
+     relationship-conditioned sets (skipped if the study has no base
+     elicitation).
 
 Diagnostic figures (quick-look PNGs, written to model/outputs/lm/<slug>/figures/):
 
@@ -98,128 +96,7 @@ def _run_umap(alt_emb, canon_emb, seed):
 
 
 # ----------------------------------------------------------------------------
-# SI figure 1 — one scenario's choice set in the (risk, effort) plane
-# ----------------------------------------------------------------------------
-
-
-def fig_si_choice_set(runs, scenario):
-    """Each point is a unique alternative (features averaged over runs), colored
-    by goal-satisfaction; the canonical actions are starred."""
-    sub = runs[runs["scenario_label"] == scenario]
-    if sub.empty:
-        raise SystemExit(f"scenario {scenario!r} not found in lm_runs.jsonl")
-    recs = []
-    for actions, obs in zip(sub["actions"], sub["observed_action"]):
-        for a in actions:
-            recs.append(
-                dict(
-                    text=a["action_text"],
-                    is_canon=a["is_canonical"],
-                    obs=obs,
-                    risk=a["risk"],
-                    effort=a["effort"],
-                    g=a["g"],
-                )
-            )
-    df = pd.DataFrame(recs).dropna(subset=["risk", "g", "effort"])
-    agg = df.groupby(["text", "is_canon"], as_index=False).agg(
-        risk=("risk", "mean"),
-        effort=("effort", "mean"),
-        g=("g", "mean"),
-        obs=("obs", "first"),
-    )
-    canon, altr = agg[agg["is_canon"]], agg[~agg["is_canon"]]
-
-    rng = np.random.default_rng(0)
-
-    def jit(v, s=0.024):
-        return v + rng.uniform(-s, s, size=len(v))
-
-    fig, ax = plt.subplots(figsize=(5.4, 4.2))
-    # Opaque points (no alpha) + shuffled draw order: translucent points would
-    # darken where they overlap, making dense regions read as higher g, and a
-    # g-sorted draw order would systematically layer high-g points on top. A
-    # thin white edge separates touching points.
-    xj, yj, gj = (
-        jit(altr["risk"].to_numpy()),
-        jit(altr["effort"].to_numpy()),
-        altr["g"].to_numpy(),
-    )
-    order = rng.permutation(len(xj))
-    sc = ax.scatter(
-        xj[order],
-        yj[order],
-        c=gj[order],
-        cmap=GOAL_CMAP,
-        vmin=0,
-        vmax=1,
-        s=30,
-        edgecolor="white",
-        lw=0.3,
-        zorder=3,
-    )
-    offsets = {
-        "no_share": dict(xytext=(10, 8), ha="left"),
-        "low_risk_share": dict(xytext=(10, 4), ha="left"),
-        "high_risk_share": dict(xytext=(-10, 8), ha="right"),
-    }
-    for _, row in canon.iterrows():
-        act = row["obs"]
-        ax.scatter(
-            row["risk"],
-            row["effort"],
-            marker="*",
-            s=340,
-            color=CANONICAL_STAR_COLOR,
-            edgecolor="black",
-            lw=0.8,
-            zorder=6,
-        )
-        ax.annotate(
-            ACTION_LABELS[act],
-            (row["risk"], row["effort"]),
-            textcoords="offset points",
-            fontsize=8.5,
-            fontweight="bold",
-            **offsets[act],
-        )
-    cbar = fig.colorbar(sc, ax=ax, shrink=0.85, pad=0.03)
-    cbar.set_label("Goal-satisfaction $g$")
-    cbar.outline.set_visible(False)
-    handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor=ALT_GREY,
-            markersize=7,
-            label="LM-generated alternative",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="*",
-            color="none",
-            markerfacecolor="#888888",
-            markeredgecolor="black",
-            markersize=13,
-            label="Action condition",
-        ),
-    ]
-    ax.legend(handles=handles, loc="upper right", fontsize=7.5)
-    ax.set_xlabel("Risk")
-    ax.set_ylabel("Effort")
-    ax.set_xlim(-0.05, 1.05)
-    ax.set_ylim(-0.05, 1.05)
-    ax.set_xticks([0, 0.5, 1])
-    ax.set_yticks([0, 0.5, 1])
-    fig.tight_layout()
-    return savefig(fig, "si_lm_choice_set_example")
-
-
-# ----------------------------------------------------------------------------
-# SI figure 2 — one scenario's semantic space, with the alternatives spelled out
+# SI figure 1 — one scenario's semantic space, with the alternatives spelled out
 # ----------------------------------------------------------------------------
 
 
@@ -334,10 +211,23 @@ def fig_si_semantic_space(proj, clusters, scenario):
 
     # text panel: canonical actions, then the numbered exemplars
     ax2.set_axis_off()
-    y, dy = 1.0, 0.0355
+    dy = 0.0355
     canon_by_action = {
         r["observed_action"]: r["action_text"] for _, r in canon.iterrows()
     }
+    # pre-wrap so the block height can be measured and vertically centered
+    canon_bodies = [
+        textwrap.fill(f"{ACTION_LABELS[act]}: {canon_by_action.get(act, '')}", 60)
+        for act in CANONICAL_ACTIONS
+    ]
+    numbered_wrapped = [(i, textwrap.fill(text, 62)) for i, text in numbered]
+    total = dy * 1.35  # "Action conditions" header
+    total += sum(dy * (b.count("\n") + 1) + dy * 0.5 for b in canon_bodies)
+    total += dy * 0.5  # gap before the second section
+    total += dy * 1.35  # "Example alternatives" header
+    total += sum(dy * (w.count("\n") + 1) + dy * 0.5 for _, w in numbered_wrapped)
+    # start lower by half the leftover space so the block sits centered
+    y = 1.0 - max(0.0, (1.0 - total) / 2)
 
     def put_header(s):
         nonlocal y
@@ -345,14 +235,10 @@ def fig_si_semantic_space(proj, clusters, scenario):
         y -= dy * 1.35
 
     put_header("Action conditions")
-    for act in CANONICAL_ACTIONS:
+    for act, body in zip(CANONICAL_ACTIONS, canon_bodies):
         # bold action name (the map labels the stars by name, not color) then the
-        # full canonical sentence
-        body = textwrap.fill(
-            f"{ACTION_LABELS[act]}: {canon_by_action.get(act, '')}", 60
-        )
-        # drawn grey marker matching the map's stars (not a "★" glyph, missing
-        # from Arial Nova)
+        # full canonical sentence; drawn grey marker matching the map's stars
+        # (not a "★" glyph, missing from Arial Nova)
         ax2.scatter(
             [0.018],
             [y - 0.012],
@@ -367,8 +253,7 @@ def fig_si_semantic_space(proj, clusters, scenario):
         y -= dy * (body.count("\n") + 1) + dy * 0.5
     y -= dy * 0.5
     put_header("Example alternatives")
-    for i, text in numbered:
-        wrapped = textwrap.fill(text, 62)
+    for i, wrapped in numbered_wrapped:
         ax2.text(
             0.012,
             y - 0.008,
@@ -462,12 +347,15 @@ def _boot_ci(vals, n=1000, seed=0):
 
 
 def fig_si_composition(alts, sem):
-    """Composition of the generated alternatives (nearest canonical action) by
-    condition, per observed action. Shows *what kind* of alternatives are
-    generated barely shifts across the relationship/desire condition."""
+    """Composition of the generated alternatives (nearest canonical action).
+    Encodes the message directly: the observed action (x) moves the composition,
+    while the relationship/desire condition barely does. Each bold line is one
+    nearest-canonical category's mean proportion across observed actions; the
+    faint lines are the individual condition levels, whose tight bundling around
+    the mean shows the composition hardly moves with the condition."""
     cond_axes = _condition_axes(alts)
-    # the relational/motivational condition is the axis of interest; effort is a
-    # cell axis but not what we vary here
+    # the relational/motivational condition is the "does-it-matter" axis, shown
+    # as the faint per-level lines; effort is a cell axis but not varied here
     main_col, (main_name, main_levels, _) = next(
         (c, v) for c, v in cond_axes.items() if c != "effort_condition"
     )
@@ -482,64 +370,54 @@ def fig_si_composition(alts, sem):
         print(f"note: {n_missing} alternative instances missing semantic labels")
         merged = merged.dropna(subset=["nearest_canonical"])
 
-    fig, axes = plt.subplots(1, 3, figsize=(8.4, 2.4), sharey=True)
-    for c, obs in enumerate(CANONICAL_ACTIONS):
-        ax = axes[c]
-        sub = merged[merged["observed_action"] == obs]
-        prop = (
-            sub.groupby(main_col)["nearest_canonical"]
-            .value_counts(normalize=True)
-            .unstack(fill_value=0)
-            .reindex(main_levels)
-            .reindex(columns=CANONICAL_ACTIONS, fill_value=0)
+    x = np.arange(len(CANONICAL_ACTIONS))  # observed-action positions
+
+    def prop_nearest(sub):
+        p = sub["nearest_canonical"].value_counts(normalize=True)
+        return {a: float(p.get(a, 0.0)) for a in CANONICAL_ACTIONS}
+
+    fig, ax = plt.subplots(figsize=(4.9, 3.3))
+    for nc in CANONICAL_ACTIONS:
+        color = ACTION_COLORS[nc]
+        per_level = []
+        for lvl in main_levels:
+            ys = [
+                prop_nearest(
+                    merged[
+                        (merged["observed_action"] == obs) & (merged[main_col] == lvl)
+                    ]
+                )[nc]
+                for obs in CANONICAL_ACTIONS
+            ]
+            per_level.append(ys)
+            ax.plot(x, ys, color=color, lw=0.7, alpha=0.3, zorder=2)
+        mean_y = np.mean(per_level, axis=0)
+        ax.plot(
+            x,
+            mean_y,
+            color=color,
+            lw=2.2,
+            zorder=4,
+            marker="o",
+            ms=5,
+            label=f"Nearest: {ACTION_LABELS[nc].lower()}",
         )
-        bottom = np.zeros(len(main_levels))
-        for a in CANONICAL_ACTIONS:
-            ax.bar(
-                range(len(main_levels)),
-                prop[a],
-                bottom=bottom,
-                width=0.72,
-                color=ACTION_COLORS[a],
-                edgecolor="white",
-                lw=1.0,
-                label=ACTION_LABELS[a] if c == 0 else None,
-            )
-            bottom += prop[a].to_numpy()
-        ax.set_title(f"Observed: {ACTION_LABELS[obs].lower()}", fontsize=8.5)
-        ax.set_xticks(range(len(main_levels)))
-        if main_col == "intimacy_condition":
-            # two lines (word per line) so the full labels fit without staggering
-            labels = [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in main_levels]
-            ax.set_xticklabels(labels, fontsize=6.5)
-        else:
-            ax.set_xticklabels([lvl.capitalize() for lvl in main_levels], fontsize=7.5)
-        ax.set_ylim(0, 1)
-        ax.set_yticks([0, 0.5, 1])
-        if c == 0:
-            ax.set_ylabel("Proportion of alternatives")
-        if c == 1:
-            ax.set_xlabel(f"{main_name.capitalize()} condition", fontsize=9)
-    handles = [
-        Line2D(
-            [0],
-            [0],
-            marker="s",
-            color="none",
-            markerfacecolor=ACTION_COLORS[a],
-            markersize=8,
-            label=f"Nearest: {ACTION_LABELS[a].lower()}",
-        )
-        for a in CANONICAL_ACTIONS
-    ]
-    fig.legend(
-        handles=handles,
-        loc="lower center",
-        bbox_to_anchor=(0.5, -0.06),
-        ncol=3,
-        fontsize=7.5,
-        handletextpad=0.2,
-        columnspacing=1.4,
+    ax.set_xticks(x)
+    ax.set_xticklabels(
+        [ACTION_LABELS[a].replace(" ", "\n", 1) for a in CANONICAL_ACTIONS], fontsize=8
+    )
+    ax.set_xlabel("Observed action")
+    ax.set_ylabel("Proportion of generated\nalternatives nearest each action")
+    ax.set_ylim(0, 0.56)
+    ax.set_xlim(-0.25, 2.25)
+    ax.legend(
+        loc="lower left",
+        ncol=1,
+        fontsize=8.5,
+        handlelength=1.3,
+        handletextpad=0.5,
+        labelspacing=0.5,
+        borderaxespad=1.4,
     )
     fig.tight_layout()
     return savefig(fig, "si_lm_alternatives_composition")
@@ -975,7 +853,6 @@ def main(study, seed, example_scenario, figures):
         with open(d / "lm_clusters.json") as f:
             clusters = json.load(f)
         for path in (
-            fig_si_choice_set(runs, example_scenario),
             fig_si_semantic_space(proj, clusters, example_scenario),
             fig_si_composition(alts, sem),
             fig_si_set_similarity(alts, sem, npz["alt_emb"]),

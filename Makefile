@@ -258,7 +258,6 @@ JOURNAL_FIGURES := \
   si_lm_manipulation_checks.pdf:si-lm-manipulation-checks.pdf \
   si_lm_canonical_scatter.pdf:si-lm-canonical-scatter.pdf \
   si_lm_choice_set_sizes.pdf:si-lm-choice-set-sizes.pdf \
-  si_lm_choice_set_example.pdf:si-lm-choice-set-example.pdf \
   si_lm_semantic_space_example.pdf:si-lm-semantic-space-example.pdf \
   si_lm_alternatives_composition.pdf:si-lm-alternatives-composition.pdf \
   si_lm_alternatives_set_similarity.pdf:si-lm-alternatives-set-similarity.pdf \
