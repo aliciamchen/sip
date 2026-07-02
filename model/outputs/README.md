@@ -159,7 +159,10 @@ held-out LL can be bootstrapped over participants.
 A list with one object per held-out cell, giving the held-out `delta_<latent>` (and
 `delta_effort` for the joint studies) tagged with `model`. This is the source the analysis qmds
 load for the condition-averaged model-vs-human correlation (secondary/descriptive), and the
-model's per-cell predictions generally.
+model's per-cell predictions generally. The desire study (`food_inv_desire`) additionally stores
+`delta_desire_runs` — the K per-run held-out `δ_k` for each cell — which the SI run-spread and
+mixture-check figures (`model/lm/plot_si_validation.py`) read to show the simulated-observer
+mixture spread against the fitted `σ`, all out-of-sample.
 
 ### `cv_folds.jsonl`
 

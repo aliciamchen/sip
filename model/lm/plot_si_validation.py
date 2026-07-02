@@ -21,15 +21,15 @@ publication figures into the repo-root figures/ directory:
      updates (Study 1a, full model): each elicitation run is one simulated
      observer, so the within-cell spread across the K runs is the spread of the
      mixture components, shown against the fitted response noise sigma. Unlike
-     figures 1-3 this reads the model outputs (insample_preds.json, produced by
-     model/inverse/predict_insample_desire.py) and is skipped with a message if
-     they are missing.
+     figures 1-3 this reads the model's out-of-sample CV predictions
+     (cv_preds_summary.json, produced by model/cv/cv_food_inv_desire.py) and is
+     skipped with a message if they are missing.
   5. si_lm_choice_set_sizes — distribution of the number of alternatives per
      scored choice set (cell x run), per study.
   6. si_lm_mixture_check — predictive check of the simulated-observer mixture
      likelihood (Study 1a, full model): the K-component predictive density
      overlaid on participants' actual belief updates for six example cells.
-     Reads insample_preds.json and data/food_inv_desire/main_trials.csv;
+     Reads cv_preds_summary.json and data/food_inv_desire/main_trials.csv;
      skipped with a message if the model outputs are missing.
 
 Usage:
@@ -44,6 +44,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
+from matplotlib.offsetbox import DrawingArea
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import (  # noqa: E402
@@ -405,7 +406,7 @@ def fig_canonical_scatter(canon):
             label="Low effort condition",
         ),
     ]
-    ax.legend(handles=handles, loc="upper right", fontsize=9.5, handletextpad=0.3)
+    leg = ax.legend(handles=handles, loc="upper right", fontsize=9.5, handletextpad=0.3)
     ax.set_xlabel("Risk", fontsize=13)
     ax.set_ylabel("Effort", fontsize=13)
     ax.tick_params(labelsize=11)
@@ -415,6 +416,33 @@ def fig_canonical_scatter(canon):
     ax.set_yticks([0, 0.5, 1])
     ax.set_box_aspect(1)
     fig.tight_layout()
+
+    # link the two effort-condition legend markers (high effort filled, low
+    # effort open) with a thin grey line, so the reader reads the grey connectors
+    # in the scatter as "same scenario, two effort conditions"
+    fig.canvas.draw()
+    handle_areas = leg.findobj(DrawingArea)
+    if len(handle_areas) >= 2:
+        inv = ax.transAxes.inverted()
+        centers = [
+            inv.transform(
+                (
+                    0.5 * (e.x0 + e.x1),
+                    0.5 * (e.y0 + e.y1),
+                )
+            )
+            for e in (a.get_window_extent() for a in handle_areas[-2:])
+        ]
+        (x0, y0), (x1, y1) = centers
+        ax.plot(
+            [x0, x1],
+            [y0, y1],
+            color="#BBBBBB",
+            lw=0.8,
+            zorder=6,
+            transform=ax.transAxes,
+            clip_on=False,
+        )
     return savefig(fig, "si_lm_canonical_scatter")
 
 
@@ -423,33 +451,33 @@ def fig_canonical_scatter(canon):
 
 def fig_run_spread():
     """Run-to-run spread of the model's predicted belief updates (Study 1a,
-    full model, in-sample fitted weights). Each elicitation run is one
-    simulated observer, so the per-run updates within a cell are the
-    components of the mixture likelihood; the fitted response noise sigma
-    gives the scale to read the spread against."""
+    full model, out-of-sample leave-one-scenario-out CV predictions). Each
+    elicitation run is one simulated observer, so the per-run updates within a
+    cell are the components of the mixture likelihood; the fitted response noise
+    sigma gives the scale to read the spread against."""
     out_dir = get_project_root() / "model" / "outputs" / "food_inv_desire"
-    preds_path = out_dir / "insample_preds.json"
+    preds_path = out_dir / "cv_preds_summary.json"
     if not preds_path.exists():
         print(
-            "skipping run-spread figure: insample_preds.json not found "
-            "(run model/inverse/predict_insample_desire.py first)"
+            "skipping run-spread figure: cv_preds_summary.json not found "
+            "(run model/cv/cv_food_inv_desire.py first)"
         )
         return None
     with open(preds_path) as f:
         rows = [r for r in json.load(f) if r["model"] == "full"]
-    if "delta_pred_runs" not in rows[0]:
+    if "delta_desire_runs" not in rows[0]:
         print(
-            "skipping run-spread figure: insample_preds.json lacks per-run "
-            "deltas (re-run model/inverse/predict_insample_desire.py)"
+            "skipping run-spread figure: cv_preds_summary.json lacks per-run "
+            "deltas (re-run model/cv/cv_food_inv_desire.py)"
         )
         return None
     with open(out_dir / "fit_results.json") as f:
         fits = json.load(f)
     sigma = float(next(v for v in fits if v["model"] == "full")["param_sigma"])
 
-    means = np.array([r["delta_pred"] for r in rows])
-    runs = np.array([r["delta_pred_runs"] for r in rows])  # (cells, K)
-    sds = np.array([r["delta_pred_sd"] for r in rows])
+    means = np.array([r["delta_desire"] for r in rows])
+    runs = np.array([r["delta_desire_runs"] for r in rows])  # (cells, K)
+    sds = runs.std(axis=1)
     order = np.argsort(means)
     n_cells, K = runs.shape
 
@@ -520,7 +548,7 @@ def fig_choice_set_sizes(runs_by_study):
     choice set (one set per cell x run), per study. Documents the "small,
     focused set" the generation prompt asks for — and makes visible that a
     fraction of Study 1a's sets contain no alternatives at all."""
-    fig, axes = plt.subplots(1, 4, figsize=(7.0, 2.2), sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 4, figsize=(7.0, 1.7), sharex=True, sharey=True)
     xs = np.arange(0, 8)
     for ax, study in zip(axes, STUDIES):
         sizes = runs_by_study[study]["actions"].apply(len) - 1
@@ -546,19 +574,21 @@ def fig_choice_set_sizes(runs_by_study):
 
 def fig_mixture_check():
     """Predictive check of the simulated-observer mixture (Study 1a, full
-    model, in-sample weights): for six cells spanning the range of predicted
-    updates, the K-component predictive density (1/K) sum_k N(u; delta_k,
-    sigma^2) is overlaid on the distribution of participants' actual belief
-    updates in that cell. Ticks at the bottom mark the K per-run delta_k."""
+    model, out-of-sample LOSO CV predictions): for six cells spanning the range
+    of predicted updates, the K-component predictive density (1/K) sum_k N(u;
+    delta_k, sigma^2) is overlaid on the distribution of participants' actual
+    belief updates in that cell. Ticks at the bottom mark the K per-run delta_k."""
     out_dir = get_project_root() / "model" / "outputs" / "food_inv_desire"
-    preds_path = out_dir / "insample_preds.json"
+    preds_path = out_dir / "cv_preds_summary.json"
     if not preds_path.exists():
-        print("skipping mixture-check figure: insample_preds.json not found")
+        print("skipping mixture-check figure: cv_preds_summary.json not found")
         return None
     with open(preds_path) as f:
         rows = [r for r in json.load(f) if r["model"] == "full"]
-    if "delta_pred_runs" not in rows[0]:
-        print("skipping mixture-check figure: no per-run deltas in insample_preds.json")
+    if "delta_desire_runs" not in rows[0]:
+        print(
+            "skipping mixture-check figure: no per-run deltas in cv_preds_summary.json"
+        )
         return None
     with open(out_dir / "fit_results.json") as f:
         fits = json.load(f)
@@ -580,19 +610,20 @@ def fig_mixture_check():
     ).reset_index()
     wide["update"] = wide["posterior"] - wide["prior"]
 
-    rows = sorted(rows, key=lambda r: r["delta_pred"])
+    rows = sorted(rows, key=lambda r: r["delta_desire"])
     picks = [rows[int(q * (len(rows) - 1))] for q in (0.02, 0.2, 0.4, 0.6, 0.8, 0.98)]
 
     u = np.linspace(-1, 1, 401)
     fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.6), sharex=True, sharey=True)
     for ax, r in zip(axes.ravel(), picks):
+        action_condition = CANONICAL_ACTIONS[r["action"]]
         h = wide[
             (wide["scenario_label"] == r["scenario_label"])
-            & (wide["action_condition"] == r["action_condition"])
-            & (wide["effort_condition"] == r["effort"])
-            & (wide["intimacy_condition"] == r["intimacy"])
+            & (wide["action_condition"] == action_condition)
+            & (wide["effort_condition"] == r["effort_condition"])
+            & (wide["intimacy_condition"] == r["intimacy_condition"])
         ]["update"].to_numpy()
-        deltas = np.asarray(r["delta_pred_runs"])
+        deltas = np.asarray(r["delta_desire_runs"])
         dens = np.mean(
             np.exp(-((u[None, :] - deltas[:, None]) ** 2) / (2 * sigma**2))
             / (sigma * np.sqrt(2 * np.pi)),
@@ -609,8 +640,8 @@ def fig_mixture_check():
         ax.plot(u, dens, color=MEAN_COLOR, lw=1.4, zorder=5)
         ax.vlines(deltas, 0, 0.16, color="#777777", lw=0.6, alpha=0.7, zorder=4)
         ax.set_title(
-            f"{r['scenario_label']} - {ACTION_LABELS[r['action_condition']].lower()}\n"
-            f"{r['effort']} effort, {INTIMACY_LABELS[r['intimacy']].lower()}"
+            f"{r['scenario_label']} - {ACTION_LABELS[action_condition].lower()}\n"
+            f"{r['effort_condition']} effort, {INTIMACY_LABELS[r['intimacy_condition']].lower()}"
             f"  (n = {len(h)})",
             fontsize=7.5,
         )

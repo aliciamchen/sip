@@ -127,6 +127,14 @@ posterior mean.)
 
 ## Implementation map
 
+> **Partially superseded (June–July 2026).** This was the original build plan.
+> Since then: the LM tables moved from the `lm_scenario_*.csv` / `lm_alternatives_*.csv`
+> files named below to `lm_runs.jsonl` + `lm_alternatives.jsonl` (the CSVs remain only as a
+> K=1 fallback); the categorical `compute_desire_nll` was replaced by the belief-update
+> Gaussian mixture (see the Likelihood note above); and the separate in-sample predict stage
+> was dropped entirely — CV is the sole prediction source, so the `predict_*.py` references
+> below no longer apply.
+
 - **`tables.py`** — add `DesireLevels`; add `load_lm_g`,
   `load_lm_scenario_desire`; rewrite the four
   `load_padded_lm_tables_{desire,joint_de,intimacy,joint_ie}` to emit a `g`

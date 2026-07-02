@@ -14,7 +14,9 @@ Outputs per `outputs/<slug>/`:
     by participant).
   - `cv_preds_summary.json` — the secondary descriptive prediction: the model
     belief update `delta_<latent>` per held-out cell × variant (for the
-    condition-averaged model-vs-human correlation).
+    condition-averaged model-vs-human correlation). The desire study additionally
+    carries `delta_desire_runs` (the K per-run held-out deltas per cell), used by
+    the SI run-spread and mixture-check figures.
   - `cv_folds.jsonl` — per-fold refit diagnostics (params, train/test NLL).
 
 Each `main_*()` runs end-to-end for one experiment and is exposed through the
@@ -428,6 +430,11 @@ def _desire_cv_fold(variant, fold, warm, patience):
                         "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                         "effort_condition": "low" if e == 0 else "high",
                         "delta_desire": float(deltas.mean()),
+                        # Per-run (K simulated-observer) held-out deltas for this
+                        # cell, kept for the SI run-spread + mixture-check figures.
+                        # Out-of-sample: predicted from the fold that held this
+                        # scenario out.
+                        "delta_desire_runs": [float(x) for x in deltas],
                         "model": variant,
                     }
                 )
