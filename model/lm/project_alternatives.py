@@ -77,20 +77,22 @@ def _action_features(runs):
     return feat
 
 
-def _project_scenario(emb, seed):
+def _project_scenario(emb, seed, n_neighbors, min_dist):
     """UMAP a single scenario's stacked embedding matrix to 2D. n_neighbors is
-    clamped below the row count so small scenarios don't error."""
+    clamped below the row count so small scenarios don't error. The defaults
+    (n_neighbors=50, min_dist=0.4) favor a filled, globally coherent layout
+    over tightly packed micro-clusters, which reads better at figure size."""
     n = emb.shape[0]
     reducer = umap.UMAP(
-        n_neighbors=min(15, max(2, n - 1)),
-        min_dist=0.1,
+        n_neighbors=min(n_neighbors, max(2, n - 1)),
+        min_dist=min_dist,
         metric="cosine",
         random_state=seed,
     )
     return reducer.fit_transform(emb)
 
 
-def main(study, seed):
+def main(study, seed, n_neighbors=50, min_dist=0.4):
     d = get_project_root() / "model" / "outputs" / "lm" / study
     npz_path = d / "lm_embeddings.npz"
     if not npz_path.exists():
@@ -124,7 +126,7 @@ def main(study, seed):
             scen_canon_action = canon_action[canon_mask]
 
             stacked = np.vstack([scen_alt_emb, scen_canon_emb])
-            xy = _project_scenario(stacked, seed)
+            xy = _project_scenario(stacked, seed, n_neighbors, min_dist)
             alt_xy = xy[: len(scen_alt_emb)]
             canon_xy = xy[len(scen_alt_emb) :]
 
@@ -194,5 +196,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--study", default="food_inv_desire")
     parser.add_argument("--seed", type=int, default=42, help="UMAP random_state.")
+    parser.add_argument("--n-neighbors", type=int, default=50)
+    parser.add_argument("--min-dist", type=float, default=0.4)
     args = parser.parse_args()
-    main(args.study, args.seed)
+    main(args.study, args.seed, args.n_neighbors, args.min_dist)

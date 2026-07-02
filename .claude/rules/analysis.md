@@ -7,7 +7,7 @@ paths:
 
 Core analysis files (named after their data folder, not paper experiment number):
 
-- `utils.R` — Shared utility functions (theme setup, bootstrap correlation, belief update calculation, demographics reporting with `data/legacy/` fallback).
+- `utils.R` — Shared utility functions (theme setup, bootstrap correlation, belief update calculation, demographics reporting with `data/legacy/` fallback). Its palettes are the visual source of truth; the Python figure module `plot_style.py` (repo root) copies these hexes so R and Python figures match. Keep the two in sync when a palette changes. Known drift to reconcile: the R LM-elicitation notebooks still color the three actions with an older green/gold/red scheme, whereas `plot_style.py` now uses blue / green / amber (`no_share` / `low_risk_share` / `high_risk_share`).
 - `json_to_csv.py` — Data processing pipeline; converts jsPsych raw JSON to anonymized CSVs.
 
 ### Active analysis qmds

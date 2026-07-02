@@ -26,90 +26,34 @@ import matplotlib
 import numpy as np
 
 matplotlib.use("Agg")
-import matplotlib.font_manager as fm  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
-import seaborn as sns  # noqa: E402
 
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
+from plot_style import (  # noqa: E402
+    ACTION_COLORS as CANON_COLORS,
+    OTHER_ACTION_COLOR,
+    apply_style,
+)
 from utils import get_project_root  # noqa: E402
 
-
-def _register_arial_nova():
-    """Register Arial Nova from the user's font dirs so matplotlib can use it even
-    when its font cache hasn't indexed it. Returns True if the regular face was
-    registered (so math can also use Arial Nova; otherwise we keep a sans fallback).
-    """
-    variants = (
-        "ArialNova.ttf",
-        "ArialNova-Bold.ttf",
-        "ArialNova-Italic.ttf",
-        "ArialNova-BoldItalic.ttf",
-    )
-    dirs = (
-        Path.home() / "Library" / "Fonts",
-        Path("/Library/Fonts"),
-        Path("/System/Library/Fonts/Supplemental"),
-    )
-    found = False
-    for d in dirs:
-        for v in variants:
-            p = d / v
-            if p.exists():
-                fm.fontManager.addfont(str(p))
-                if v == "ArialNova.ttf":
-                    found = True
-    return found
-
-
-_HAS_ARIAL_NOVA = _register_arial_nova()
-
-# ----------------------------------------------------------------------------- style
-# Manuscript aesthetic (matches the R analysis font Arial Nova), editable SVG text.
-_math = (
-    {
-        "mathtext.fontset": "custom",
-        "mathtext.rm": "Arial Nova",
-        "mathtext.it": "Arial Nova:italic",
-        "mathtext.bf": "Arial Nova:bold",
-    }
-    if _HAS_ARIAL_NOVA
-    else {"mathtext.fontset": "dejavusans", "mathtext.default": "it"}
-)
-plt.rcParams.update(
-    {
-        "figure.facecolor": "white",
-        "axes.facecolor": "white",
-        "axes.spines.top": False,
-        "axes.spines.right": False,
-        "axes.linewidth": 2.2,  # thicker axis lines (easier to see in Illustrator)
-        "font.family": "sans-serif",
-        "font.sans-serif": ["Arial Nova", "Arial", "Helvetica", "DejaVu Sans"],
-        "font.size": 18,
-        "axes.titlesize": 22,
-        "axes.labelsize": 20,
-        "xtick.labelsize": 14,
-        "ytick.labelsize": 17,
-        # bar (action) plots set explicit x ticks → these show; the continuous plots
-        # use empty tick lists → stay tickless. Tick width matches the axis line width.
-        "xtick.major.size": 5.5,
-        "xtick.major.width": 2.2,
-        "ytick.major.size": 0,  # no y ticks anywhere
-        "ytick.major.width": 2.2,
-        "axes.labelpad": 12,  # gap between axis labels and the (tickless) spines
-        "legend.fontsize": 17,
-        "svg.fonttype": "none",  # keep text editable in Illustrator
-        "pdf.fonttype": 42,
-        **_math,
-    }
-)
+# Manuscript aesthetic (Arial Nova, large-type Illustrator sizes, editable SVG
+# text) — shared with the SI figures via plot_style.py.
+apply_style("schematic")
 
 FEATURE_ORDER = ["g", "effort", "risk"]
 FEATURE_LABELS = {"g": "Goal", "effort": "Effort", "risk": "Risk"}
 
-# Seaborn colorblind palette (muted via desat), mapped to the four actions (bars + lines).
-_CB = sns.color_palette("colorblind", desat=0.8)
-ACTION_COLORS = {"a_obs": _CB[0], "a_1": _CB[1], "a_2": _CB[2], "a_3": _CB[3]}
+# The shared canonical-action palette, mapped onto the burrito example's four
+# actions: a_obs is the low-risk share (cut the burrito in half), a_1 the
+# no-share, a_2 the high-risk share (take turns biting), and a_3 a
+# non-canonical extra alternative.
+ACTION_COLORS = {
+    "a_obs": CANON_COLORS["low_risk_share"],
+    "a_1": CANON_COLORS["no_share"],
+    "a_2": CANON_COLORS["high_risk_share"],
+    "a_3": OTHER_ACTION_COLOR,
+}
 ACTION_LABELS = {
     "a_obs": r"$a_\mathrm{obs}$",
     "a_1": r"$a_1$",
@@ -259,8 +203,10 @@ def plot_posterior(c):
     dd = c["grid"][1] - c["grid"][0]
     density = c["post"] / dd  # normalized density over [0,1]
     fig, ax = plt.subplots(figsize=(3.4, 1.6))
-    ax.fill_between(c["grid"], density, color="tab:blue", alpha=0.18)
-    ax.plot(c["grid"], density, color="tab:blue", lw=2.0)
+    # colored like a_obs: this is the posterior conditioned on the observed action
+    # (plain blue would now read as the no-share action's color)
+    ax.fill_between(c["grid"], density, color=ACTION_COLORS["a_obs"], alpha=0.18)
+    ax.plot(c["grid"], density, color=ACTION_COLORS["a_obs"], lw=2.0)
     ax.axvline(c["d_star"], ls=":", color="#444444", lw=1.4)
     ax.set_xlabel(r"Food desire  $d$")
     ax.set_xlim(0, 1)

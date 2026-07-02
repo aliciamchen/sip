@@ -74,3 +74,4 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 
 - `utils.py` — `get_project_root()` for constructing paths relative to project root.
 - `analysis/utils.R` — shared R helpers: `setup_analysis()`, `boot_cor()`, `calculate_belief_update()`.
+- `plot_style.py` — shared style for **all** Python-generated figures (the `figures/figure_schematic_plots.py` panels and the LM-elicitation SI figures in `model/lm/plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/`, plus every palette and colormap (matched to `analysis/utils.R`). Change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-lm-si` regenerates the LM SI figure set.

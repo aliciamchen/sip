@@ -31,7 +31,7 @@ ANALYSIS_QMDS := \
         data lm lm-alternatives lm-base \
         fit fit-inverse \
         cv cv-inverse \
-        analysis \
+        analysis figures-lm-si \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -53,6 +53,7 @@ help:
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance tests"
 	@echo "  clean      - remove fit + CV outputs"
+	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
@@ -225,6 +226,18 @@ analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
 
 $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 	quarto render analysis/$*.qmd
+
+# =============================================================================
+# SI LM-elicitation validation figures (no API calls — read the persisted
+# lm_runs.jsonl / embedding artifacts and write PDFs + PNG previews to figures/).
+# The manipulation checks span all four studies; the alternatives deep-dives
+# read the Study 1a embeddings (embed_alternatives.py + project_alternatives.py
+# must have been run for it).
+# =============================================================================
+
+figures-lm-si:
+	uv run python model/lm/plot_si_validation.py
+	uv run python model/lm/plot_alternatives.py --figures si
 
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/ into the
