@@ -44,7 +44,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
-from matplotlib.offsetbox import DrawingArea
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import (  # noqa: E402
@@ -109,7 +108,7 @@ def fig_feature_structure(canon):
     """Rows = studies, columns = risk / g / effort; thin per-scenario lines."""
     xpos = {a: i for i, a in enumerate(CANONICAL_ACTIONS)}
     fig, axes = plt.subplots(
-        len(STUDIES), 3, figsize=(7.0, 8.4), sharex=True, sharey=True
+        len(STUDIES), 3, figsize=(6.4, 6.6), sharex=True, sharey=True
     )
 
     def draw_lines(ax, per_scenario, mean_line, color=None, xoff=0.0, label=None):
@@ -406,13 +405,7 @@ def fig_canonical_scatter(canon):
             label="Low effort condition",
         ),
     ]
-    leg = ax.legend(
-        handles=handles,
-        loc="upper right",
-        fontsize=9.5,
-        handletextpad=0.3,
-        framealpha=1.0,  # opaque so the scatter behind doesn't bleed through
-    )
+    ax.legend(handles=handles, loc="upper right", fontsize=9.5, handletextpad=0.3)
     ax.set_xlabel("Risk", fontsize=13)
     ax.set_ylabel("Effort", fontsize=13)
     ax.tick_params(labelsize=11)
@@ -422,32 +415,6 @@ def fig_canonical_scatter(canon):
     ax.set_yticks([0, 0.5, 1])
     ax.set_box_aspect(1)
     fig.tight_layout()
-
-    # link the two effort-condition legend markers (high effort filled, low
-    # effort open) with a thin grey line, so the reader reads the grey connectors
-    # in the scatter as "same scenario, two effort conditions". The segment spans
-    # only the gap between the two circles (from edge to edge, not center to
-    # center), so it reads as passing behind them without redrawing the markers.
-    fig.canvas.draw()
-    handle_areas = leg.findobj(DrawingArea)
-    if len(handle_areas) >= 2:
-        inv = ax.transAxes.inverted()
-        (x0, y0), (x1, y1) = [
-            inv.transform((0.5 * (e.x0 + e.x1), 0.5 * (e.y0 + e.y1)))
-            for e in (a.get_window_extent() for a in handle_areas[-2:])
-        ]
-        # marker radius (ms=7 -> 3.5 pt) in axes-fraction y, to stop the segment
-        # at each circle's edge
-        r = (3.5 * fig.dpi / 72) / ax.get_window_extent().height
-        ax.plot(
-            [x0, x1],
-            [y0 - r, y1 + r],
-            color="#BBBBBB",
-            lw=0.8,
-            zorder=6,
-            transform=ax.transAxes,
-            clip_on=False,
-        )
     return savefig(fig, "si_lm_canonical_scatter")
 
 
