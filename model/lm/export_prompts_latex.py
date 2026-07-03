@@ -90,13 +90,8 @@ def box(title, body):
 
 
 def subsection(title):
-    """An unnumbered subsection that still registers in the table of contents
-    (the manuscript's headings are all starred)."""
-    return (
-        "\\phantomsection\n"
-        f"\\addcontentsline{{toc}}{{subsection}}{{{title}}}\n"
-        f"\\subsection*{{{title}}}\n\n"
-    )
+    """A numbered subsection (S-prefixed in the manuscript appendix)."""
+    return f"\\subsection{{{title}}}\n\n"
 
 
 def build_content():
@@ -228,10 +223,6 @@ def standalone(content):
         "\\usepackage{xcolor}\n"
         "\\usepackage{amsmath}\n"
         f"{PREAMBLE}\n"
-        # The content uses \\phantomsection (a hyperref command) before each
-        # subsection's \\addcontentsline; stub it so the preview compiles
-        # without hyperref.
-        "\\providecommand{\\phantomsection}{}\n"
         "\\begin{document}\n"
         "\\setcounter{tocdepth}{2}\n"
         "\\tableofcontents\n"
