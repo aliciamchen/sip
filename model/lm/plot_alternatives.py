@@ -13,11 +13,13 @@ repo-root figures/; rendered from --study, Study 1a by default):
      colored by their LM-scored risk, with numbered cluster exemplars and
      their text listed beside the map.
   2a. si_lm_alternatives_composition — the composition of alternatives
-     (nearest observed action), by observed action (panel a) and by
-     relationship condition (panel b).
+     (nearest observed action) as a 2x2: rows are Study 1a (relationship) and
+     Study 2a (desire); columns are by observed action and by the manipulated
+     condition.
   2b. si_lm_alternatives_set_similarity — the embedding similarity between the
      alternative sets of two elicitation cells, by what differs between the
-     cells (nothing/runs only, condition, or observed action).
+     cells (runs only, condition, or observed action); two panels, Study 1a
+     (relationship) and Study 2a (desire).
   3. si_lm_g_contrast — within-choice-set range of goal-satisfaction g by
      observed action: where the design can identify desire.
   4. si_lm_base_vs_full — feature-distribution (energy) distance between the
@@ -392,29 +394,24 @@ def _boot_ci(vals, n=1000, seed=0):
     return np.percentile(vals[idx].mean(axis=1), [2.5, 97.5])
 
 
-def fig_si_composition(runs):
-    """Composition of the generated alternatives -- which observed action each one
-    is closest to in the model's (goal-satisfaction, risk, effort) feature space,
-    the space the planner actually reasons over -- shown two ways. (a) With the
-    observed action on x and the relationship levels as faint lines, the bold
-    lines (mean over relationship) move: the composition tracks the observed
-    action. (b) With the relationship descriptor on x and the observed actions as
-    faint lines, the bold lines (mean over observed action) are flat: the
-    composition barely moves with the relationship."""
+def _composition_prop(runs):
+    """For one study's lm_runs, assign every generated alternative to the observed
+    action whose (g, risk, effort) feature centroid is nearest (the space the
+    planner reasons over), and return (main_col, main_name, main_levels, prop),
+    where prop[(observed_action, condition_level)] is the fraction of alternatives
+    nearest each observed action. The condition axis is whichever non-effort
+    condition the study manipulates (relationship or desire)."""
     cond_axes = _condition_axes(runs)
-    # the relational/motivational condition is the "does-it-matter" axis; effort
-    # is a cell axis but not varied here
     main_col, (main_name, main_levels, _) = next(
         (c, v) for c, v in cond_axes.items() if c != "effort_condition"
     )
-
     feats = ("g", "risk", "effort")
 
     def feat_vec(a):
         return None if any(a[f] is None for f in feats) else [a[f] for f in feats]
 
-    # per-scenario feature centroid of each observed action, from the slot-0
-    # (observed) action's LM-scored (g, risk, effort), averaged over runs/conditions
+    # per-scenario feature centroid of each observed action (slot-0 action),
+    # averaged over runs/conditions
     acc = {}
     for rec in runs.itertuples(index=False):
         obs0 = next((a for a in rec.actions if a["is_observed"]), None)
@@ -423,8 +420,6 @@ def fig_si_composition(runs):
             acc.setdefault((rec.scenario_label, rec.observed_action), []).append(v)
     centroid = {k: np.mean(v, axis=0) for k, v in acc.items()}
 
-    # assign every generated alternative to the observed action whose feature
-    # centroid (in its scenario) is nearest in (g, risk, effort) space
     counts = {
         (obs, lvl): dict.fromkeys(OBSERVED_ACTIONS, 0)
         for obs in OBSERVED_ACTIONS
@@ -454,78 +449,118 @@ def fig_si_composition(runs):
         }
         for cell, c in counts.items()
     }
+    return main_col, main_name, main_levels, prop
 
-    def draw(ax, x, series_lines, mean_line, color, label=None):
+
+def _draw_composition_row(
+    ax_obs, ax_cond, prop, main_col, main_name, main_levels, legend
+):
+    """Draw one study's two composition panels: (left) proportion nearest each
+    action vs observed action, faint lines = condition levels; (right) vs the
+    manipulated condition, faint lines = observed actions."""
+
+    def draw(ax, x, series_lines, color, label=None):
         for ys in series_lines:
             ax.plot(x, ys, color=color, lw=0.7, alpha=0.3, zorder=2)
         ax.plot(
-            x, mean_line, color=color, lw=2.2, zorder=4, marker="o", ms=5, label=label
+            x,
+            np.mean(series_lines, axis=0),
+            color=color,
+            lw=2.2,
+            zorder=4,
+            marker="o",
+            ms=5,
+            label=label,
         )
 
-    fig, (axa, axb) = plt.subplots(1, 2, figsize=(6.8, 3.3), sharey=True)
-
-    # (a) observed action on x; faint lines = relationship levels
     xa = np.arange(len(OBSERVED_ACTIONS))
     for nc in OBSERVED_ACTIONS:
         per_level = [
             [prop[(obs, lvl)][nc] for obs in OBSERVED_ACTIONS] for lvl in main_levels
         ]
         draw(
-            axa,
+            ax_obs,
             xa,
             per_level,
-            np.mean(per_level, axis=0),
             ACTION_COLORS[nc],
-            label=f"Nearest: {ACTION_LABELS[nc].lower()}",
+            label=f"Nearest: {ACTION_LABELS[nc].lower()}" if legend else None,
         )
-    axa.set_xticks(xa)
-    axa.set_xticklabels(
+    ax_obs.set_xticks(xa)
+    ax_obs.set_xticklabels(
         [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_ACTIONS], fontsize=8
     )
-    axa.set_xlabel("Observed action")
-    axa.set_ylabel("Proportion of generated\nalternatives nearest each action")
-    axa.set_xlim(-0.25, len(OBSERVED_ACTIONS) - 0.75)
-    axa.legend(
-        loc="lower left",
-        ncol=1,
-        fontsize=8,
-        handlelength=1.3,
-        handletextpad=0.5,
-        labelspacing=0.5,
-        borderaxespad=1.0,
-    )
-    panel_label(axa, "a")
+    ax_obs.set_xlabel("Observed action")
+    ax_obs.set_xlim(-0.25, len(OBSERVED_ACTIONS) - 0.75)
+    if legend:
+        ax_obs.legend(
+            loc="lower left",
+            ncol=1,
+            fontsize=7.5,
+            handlelength=1.3,
+            handletextpad=0.5,
+            labelspacing=0.4,
+            borderaxespad=0.8,
+        )
 
-    # (b) relationship descriptor on x; faint lines = observed actions
     xb = np.arange(len(main_levels))
     for nc in OBSERVED_ACTIONS:
         per_obs = [
             [prop[(obs, lvl)][nc] for lvl in main_levels] for obs in OBSERVED_ACTIONS
         ]
-        draw(axb, xb, per_obs, np.mean(per_obs, axis=0), ACTION_COLORS[nc])
-    axb.set_xticks(xb)
+        draw(ax_cond, xb, per_obs, ACTION_COLORS[nc])
+    ax_cond.set_xticks(xb)
     if main_col == "intimacy_condition":
-        axb.set_xticklabels(
+        ax_cond.set_xticklabels(
             [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in main_levels], fontsize=7
         )
-        axb.set_xlabel("Relationship descriptor")
+        ax_cond.set_xlabel("Relationship descriptor")
     else:
-        axb.set_xticklabels([lvl.capitalize() for lvl in main_levels], fontsize=8)
-        axb.set_xlabel(f"{main_name.capitalize()} condition")
-    axb.set_xlim(-0.25, len(main_levels) - 0.75)
-    panel_label(axb, "b")
+        ax_cond.set_xticklabels([lvl.capitalize() for lvl in main_levels], fontsize=8)
+        ax_cond.set_xlabel(f"{main_name.capitalize()} condition")
+    ax_cond.set_xlim(-0.25, len(main_levels) - 0.75)
 
-    for ax in (axa, axb):
+
+def fig_si_composition(runs_by_study):
+    """2x2 composition figure. Rows are studies (1a, given-relationship; 2a,
+    given-desire); columns are (left) by observed action and (right) by the
+    study's manipulated condition. Every alternative is assigned to the observed
+    action whose (g, risk, effort) centroid is nearest. The left panels show the
+    observed action dominates (its own type is least represented among the
+    alternatives); the right panels show the smaller, systematic effect of the
+    manipulated condition."""
+    fig, axes = plt.subplots(2, 2, figsize=(7.0, 5.4), sharey=True)
+    for row, (label, runs) in enumerate(runs_by_study):
+        main_col, main_name, main_levels, prop = _composition_prop(runs)
+        _draw_composition_row(
+            axes[row, 0],
+            axes[row, 1],
+            prop,
+            main_col,
+            main_name,
+            main_levels,
+            legend=(row == 0),
+        )
+        axes[row, 0].set_ylabel(f"{label}\nproportion nearest each action")
+    for ax in axes.ravel():
         ax.set_ylim(0, 0.56)
+    for ax, letter in zip(axes.ravel(), "abcd"):
+        panel_label(ax, letter)
     fig.tight_layout()
     return savefig(fig, "si_lm_alternatives_composition")
 
 
-def fig_si_set_similarity(alts, sem, alt_emb):
-    """Embedding similarity between the alternative sets of two elicitation
-    cells, grouped by what differs between the cells. Puts the condition effect
-    on the same scale as the run-to-run baseline and the observed-action
-    effect: the sets change no more across conditions than across runs."""
+_SET_SIM_LABELS = {
+    "same_cell": "Same cell\n(across runs)",
+    "intimacy_condition": "Across intimacy\nconditions",
+    "desire_condition": "Across desire\nconditions",
+    "effort_condition": "Across effort\nconditions",
+    "observed_action": "Across\nobserved actions",
+}
+
+
+def _draw_set_similarity(ax, alts, sem, alt_emb, title, ylabel):
+    """One study's set-similarity panel: mean pairwise cosine between the
+    alternative sets of two cells, grouped by what differs between them."""
     cond_axes = _condition_axes(alts)
     alts_emb = alts.merge(
         sem[["scenario_label", "action_text"]].assign(row=np.arange(len(sem))),
@@ -536,14 +571,6 @@ def fig_si_set_similarity(alts, sem, alt_emb):
     sims = _set_similarity_by_type(alts_emb, alt_emb, cond_cols)
 
     type_order = ["same_cell", *cond_cols, "observed_action"]
-    type_labels = {
-        "same_cell": "Same cell\n(across runs)",
-        "intimacy_condition": "Across intimacy\nconditions",
-        "desire_condition": "Across desire\nconditions",
-        "effort_condition": "Across effort\nconditions",
-        "observed_action": "Across\nobserved actions",
-    }
-    fig, ax = plt.subplots(figsize=(3.8, 2.1))
     rng = np.random.default_rng(0)
     for x, t in enumerate(type_order):
         vals = sims.loc[sims["type"] == t, "sim"].to_numpy()
@@ -570,11 +597,26 @@ def fig_si_set_similarity(alts, sem, alt_emb):
             zorder=5,
         )
     ax.set_xticks(range(len(type_order)))
-    ax.set_xticklabels([type_labels[t] for t in type_order], fontsize=6.5)
-    ax.set_ylabel(
-        "Between-set embedding\nsimilarity (mean pairwise cosine)", fontsize=8
-    )
+    ax.set_xticklabels([_SET_SIM_LABELS[t] for t in type_order], fontsize=6.5)
+    if ylabel:
+        ax.set_ylabel(
+            "Between-set embedding\nsimilarity (mean pairwise cosine)", fontsize=8
+        )
     ax.set_xlim(-0.5, len(type_order) - 0.5)
+    ax.set_title(title, fontsize=9)
+
+
+def fig_si_set_similarity(panels):
+    """Two panels (given-relationship study 1a, given-desire study 2a): embedding
+    similarity between the alternative sets of two elicitation cells, grouped by
+    what differs between them. Each puts the condition effect on the same scale as
+    the run-to-run baseline and the observed-action effect. panels is a list of
+    (title, alts, sem, alt_emb)."""
+    fig, axes = plt.subplots(1, len(panels), figsize=(7.2, 2.5), sharey=True)
+    axes = np.atleast_1d(axes)
+    for i, (title, alts, sem, alt_emb) in enumerate(panels):
+        _draw_set_similarity(axes[i], alts, sem, alt_emb, title, ylabel=(i == 0))
+        panel_label(axes[i], "abcd"[i])
     fig.tight_layout()
     return savefig(fig, "si_lm_alternatives_set_similarity")
 
@@ -723,7 +765,7 @@ def fig_si_base_vs_full(d, runs):
     )
 
     cats = [*INTIMACY_LEVELS, "reference"]
-    fig, ax = plt.subplots(figsize=(5.6, 3.2))
+    fig, ax = plt.subplots(figsize=(5.2, 2.6))
     rng = np.random.default_rng(0)
     for x, cat in enumerate(cats):
         vals = per_scen.loc[per_scen["comparison"] == cat, "dist"].to_numpy()
@@ -753,13 +795,13 @@ def fig_si_base_vs_full(d, runs):
     ax.set_xticks(range(len(cats)))
     ax.set_xticklabels(
         [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in INTIMACY_LEVELS]
-        + ["Conditioned vs.\nconditioned (ref.)"],
+        + ["Between relationship-\nconditioned sets (ref.)"],
         fontsize=7.5,
     )
-    ax.set_xlabel("Base set vs. the conditioned set at each relationship level")
-    ax.set_ylabel(
-        "Feature-distribution distance\n(energy distance; lower = more similar)"
+    ax.set_xlabel(
+        "Relationship-free set vs. the relationship-conditioned set at each level"
     )
+    ax.set_ylabel("Feature-distribution\ndistance (lower = closer)", fontsize=9)
     ax.set_ylim(bottom=0)
     fig.tight_layout()
     return savefig(fig, "si_lm_base_vs_full")
@@ -950,10 +992,24 @@ def main(study, seed, example_scenario, figures):
         proj = pd.read_json(d / "lm_alternatives_projection.jsonl", lines=True)
         with open(d / "lm_clusters.json") as f:
             clusters = json.load(f)
+        # the composition and set-similarity figures span the given-relationship
+        # study (1a, this run) and the given-desire study (2a); the composition is
+        # feature-based (2a's lm_runs.jsonl), while set-similarity needs 2a's
+        # embeddings (embed_alternatives.py --study food_inv_intimacy)
+        d2 = get_project_root() / "model/outputs/lm/food_inv_intimacy"
+        runs_desire = pd.read_json(d2 / "lm_runs.jsonl", lines=True)
+        alts2 = pd.read_json(d2 / "lm_alternatives.jsonl", lines=True)
+        sem2 = pd.read_json(d2 / "lm_alternatives_semantic.jsonl", lines=True)
+        alt_emb2 = np.load(d2 / "lm_embeddings.npz", allow_pickle=False)["alt_emb"]
         for path in (
             fig_si_semantic_space(proj, clusters, example_scenario),
-            fig_si_composition(runs),
-            fig_si_set_similarity(alts, sem, npz["alt_emb"]),
+            fig_si_composition([("Study 1a", runs), ("Study 2a", runs_desire)]),
+            fig_si_set_similarity(
+                [
+                    ("Study 1a", alts, sem, npz["alt_emb"]),
+                    ("Study 2a", alts2, sem2, alt_emb2),
+                ]
+            ),
             fig_si_g_contrast(runs),
             fig_si_base_vs_full(d, runs),
         ):
