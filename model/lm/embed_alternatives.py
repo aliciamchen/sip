@@ -14,12 +14,12 @@ unique alternative text and:
      axis of embedding variation is the scenario itself (scenario-specific names,
      food, setting), so a single global clustering would mostly recover the 16
      scenarios instead of abstract action types.
-  2. labeling each alternative by its nearest canonical action (no_share /
+  2. labeling each alternative by its nearest observed action (no_share /
      low_risk_share / high_risk_share, by embedding cosine). This is scenario-
      invariant by construction — every scenario shares the same three-action frame
      — so it supports the cross-scenario anchoring view (does the imagined set skew
      toward lower-risk actions once a high-risk share has been observed?). The
-     cosine to that nearest canonical also flags near-paraphrases of an
+     cosine to that nearest observed action also flags near-paraphrases of an
      already-listed action, which add little contrast to the actor's choice set.
 
 It is kept separate from score_merged.py because it is an optional, embedding-based
@@ -33,15 +33,15 @@ embedding model with --model.
 
 Outputs (one folder per study, outputs/lm/<slug>/):
   - lm_alternatives_semantic.jsonl — one record per unique (scenario_label,
-    action_text): {cluster (per-scenario id), nearest_canonical, sim_to_canonical}.
+    action_text): {cluster (per-scenario id), nearest_observed_action, sim_to_observed_action}.
     Joined back to lm_alternatives.jsonl by (scenario_label, action_text) in the
     notebook.
   - lm_clusters.json — {model, k_per_scenario, dup_threshold, clusters:
     [{scenario, cluster, size, exemplars}]}, the per-scenario action types with
     nearest-centroid exemplar texts for interpretation.
   - lm_embeddings.npz — the mean-centered, normalized embeddings: `alt_emb` (aligned
-    row-for-row with lm_alternatives_semantic.jsonl) + `canon_emb` with parallel
-    `canon_scenario`/`canon_action` labels. Consumed by model/lm/plot_alternatives.py,
+    row-for-row with lm_alternatives_semantic.jsonl) + `obs_emb` with parallel
+    `obs_scenario`/`obs_action` labels. Consumed by model/lm/plot_alternatives.py,
     which runs the UMAP projection and renders the figures.
 
 Usage:
@@ -83,7 +83,7 @@ EMBED_BATCH = 100
 # across threads, as in client.get_ratings_concurrent). Capped to stay under the
 # account's request-rate limit; lower it on a tighter tier.
 EMBED_WORKERS = 8
-CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
+OBSERVED_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 SEED = 0
 
 
@@ -168,19 +168,19 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
         .drop_duplicates()
         .reset_index(drop=True)
     )
-    canon_texts = {
-        s: [scenarios_df.loc[s, c] for c in CANONICAL_ACTIONS]
+    obs_texts = {
+        s: [scenarios_df.loc[s, c] for c in OBSERVED_ACTIONS]
         for s in scenarios_df.index
     }
 
     unique_alt_texts = sorted(alts_df["action_text"].unique())
-    unique_canon_texts = sorted({t for ts in canon_texts.values() for t in ts})
-    all_texts = sorted(set(unique_alt_texts) | set(unique_canon_texts))
+    unique_obs_texts = sorted({t for ts in obs_texts.values() for t in ts})
+    all_texts = sorted(set(unique_alt_texts) | set(unique_obs_texts))
 
     print(
         f"\nEmbedding {len(all_texts)} unique texts "
-        f"({len(unique_alt_texts)} alternatives + {len(unique_canon_texts)} "
-        f"canonical) with {model} ({embed_workers} concurrent batches)...",
+        f"({len(unique_alt_texts)} alternatives + {len(unique_obs_texts)} "
+        f"observed) with {model} ({embed_workers} concurrent batches)...",
         flush=True,
     )
     client = Together(api_key=api_key, max_retries=MAX_RETRIES)
@@ -193,7 +193,7 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
     # than abstract action types. Per-scenario cluster ids (local to each scenario)
     # feed the within-cell semantic-diversity metric, where comparisons only ever
     # happen inside one scenario. Cross-scenario comparison instead uses the
-    # scenario-invariant `nearest_canonical` label computed below.
+    # scenario-invariant `nearest_observed_action` label computed below.
     scenario_clusters = {}  # scenario -> {alt_text: local cluster id}
     cluster_summary = []  # [{scenario, cluster, size, exemplars}]
     for s in scenarios_df.index:
@@ -225,7 +225,7 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
                 }
             )
 
-    # Per (scenario, alt text): the per-scenario cluster id, the nearest canonical
+    # Per (scenario, alt text): the per-scenario cluster id, the nearest observed
     # action (scenario-invariant action-type label for the anchoring view), and the
     # cosine to it (for the near-paraphrase check). `alt_emb` collects each row's
     # embedding in the SAME order as `records`, so the plotting script can index-
@@ -234,16 +234,16 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
     alt_emb = []
     for _, row in alt_pairs.iterrows():
         s, text = row["scenario_label"], row["action_text"]
-        canon_mat = np.vstack([emb[t] for t in canon_texts[s]])
-        sims = canon_mat @ emb[text]  # unit vectors -> cosine to each canonical
+        obs_mat = np.vstack([emb[t] for t in obs_texts[s]])
+        sims = obs_mat @ emb[text]  # unit vectors -> cosine to each observed action
         nearest = int(np.argmax(sims))
         records.append(
             {
                 "scenario_label": s,
                 "action_text": text,
                 "cluster": scenario_clusters[s][text],
-                "nearest_canonical": CANONICAL_ACTIONS[nearest],
-                "sim_to_canonical": float(np.max(sims)),
+                "nearest_observed_action": OBSERVED_ACTIONS[nearest],
+                "sim_to_observed_action": float(np.max(sims)),
             }
         )
         alt_emb.append(emb[text])
@@ -255,21 +255,21 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
 
     # Persist the embeddings (mean-centered, normalized) for the plotting script,
     # which runs the UMAP projection itself. `alt_emb` aligns row-for-row with
-    # sem_path; canonical embeddings are stored with parallel scenario/action labels
+    # sem_path; observed-action embeddings are stored with parallel scenario/action labels
     # so they can be placed in the same projection (as anchor points).
-    canon_emb, canon_scenario, canon_action = [], [], []
+    obs_emb, obs_scenario, obs_action = [], [], []
     for s in scenarios_df.index:
-        for ci, c in enumerate(CANONICAL_ACTIONS):
-            canon_emb.append(emb[canon_texts[s][ci]])
-            canon_scenario.append(s)
-            canon_action.append(c)
+        for ci, c in enumerate(OBSERVED_ACTIONS):
+            obs_emb.append(emb[obs_texts[s][ci]])
+            obs_scenario.append(s)
+            obs_action.append(c)
     emb_path = study_dir / "lm_embeddings.npz"
     np.savez(
         emb_path,
         alt_emb=np.asarray(alt_emb, dtype=np.float32),
-        canon_emb=np.asarray(canon_emb, dtype=np.float32),
-        canon_scenario=np.array(canon_scenario),
-        canon_action=np.array(canon_action),
+        obs_emb=np.asarray(obs_emb, dtype=np.float32),
+        obs_scenario=np.array(obs_scenario),
+        obs_action=np.array(obs_action),
     )
 
     cluster_summary.sort(key=lambda d: (d["scenario"], -d["size"]))
@@ -286,7 +286,7 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
             indent=2,
         )
 
-    near_dup = np.mean([r["sim_to_canonical"] >= dup_threshold for r in records])
+    near_dup = np.mean([r["sim_to_observed_action"] >= dup_threshold for r in records])
     print("\n=== Done ===")
     print(f"  {sem_path.name}  ({len(records)} unique (scenario, alt) pairs)")
     print(
@@ -294,11 +294,11 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
         f"across {len(scenario_clusters)} scenarios)"
     )
     print(
-        f"  {emb_path.name}  ({len(alt_emb)} alt + {len(canon_emb)} canonical "
+        f"  {emb_path.name}  ({len(alt_emb)} alt + {len(obs_emb)} observed "
         f"embeddings for plotting)"
     )
     print(
-        f"  near-paraphrases of a canonical (cos >= {dup_threshold}): "
+        f"  near-paraphrases of an observed action (cos >= {dup_threshold}): "
         f"{100 * near_dup:.1f}%"
     )
 
@@ -316,7 +316,7 @@ if __name__ == "__main__":
         "--dup-threshold",
         type=float,
         default=0.85,
-        help="Cosine threshold for flagging an alternative as a canonical paraphrase.",
+        help="Cosine threshold for flagging an alternative as an observed-action paraphrase.",
     )
     parser.add_argument("--model", default=DEFAULT_EMBED_MODEL)
     parser.add_argument(

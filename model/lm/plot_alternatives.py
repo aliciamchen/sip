@@ -13,7 +13,7 @@ repo-root figures/; rendered from --study, Study 1a by default):
      colored by their LM-scored risk, with numbered cluster exemplars and
      their text listed beside the map.
   2a. si_lm_alternatives_composition — the composition of alternatives
-     (nearest canonical action) by condition, per observed action.
+     (nearest observed action) by condition, per observed action.
   2b. si_lm_alternatives_set_similarity — the embedding similarity between the
      alternative sets of two elicitation cells, by what differs between the
      cells (nothing/runs only, condition, or observed action).
@@ -26,7 +26,7 @@ repo-root figures/; rendered from --study, Study 1a by default):
 
 Diagnostic figures (quick-look PNGs, written to model/outputs/lm/<slug>/figures/):
 
-  fig1_semantic_map — global UMAP colored by scenario / by nearest canonical.
+  fig1_semantic_map — global UMAP colored by scenario / by nearest observed action.
   fig2_decision_space — alternatives vs. the observed action in feature space,
      with Pareto-dominance flags.
 
@@ -61,8 +61,8 @@ from plot_style import (  # noqa: E402
     ACTION_COLORS,
     ACTION_LABELS,
     ALT_GREY,
-    CANONICAL_ACTIONS,
-    CANONICAL_STAR_COLOR,
+    OBSERVED_ACTIONS,
+    OBSERVED_STAR_COLOR,
     DESIRE_COLORS,
     GOAL_CMAP,
     INTIMACY_COLORS,
@@ -84,10 +84,10 @@ def _load(study):
     return d, sem, alts, runs
 
 
-def _run_umap(alt_emb, canon_emb, seed):
-    """Project alternatives + canonicals into one 2D layout (fit jointly so the
-    canonical anchors live in the same space as the alternatives)."""
-    X = np.vstack([alt_emb, canon_emb])
+def _run_umap(alt_emb, obs_emb, seed):
+    """Project alternatives + observed actions into one 2D layout (fit jointly so the
+    observed-action anchors live in the same space as the alternatives)."""
+    X = np.vstack([alt_emb, obs_emb])
     reducer = umap.UMAP(
         n_neighbors=15, min_dist=0.1, metric="cosine", random_state=seed
     )
@@ -102,13 +102,13 @@ def _run_umap(alt_emb, canon_emb, seed):
 
 def fig_si_semantic_space(proj, clusters, scenario):
     """Per-scenario UMAP layout (precomputed by project_alternatives.py) with
-    numbered cluster exemplars; the exemplar and canonical texts are listed
+    numbered cluster exemplars; the exemplar and observed-action texts are listed
     beside the map so readers can see what the alternatives actually say."""
     sub = proj[proj["scenario_label"] == scenario]
     if sub.empty:
         raise SystemExit(f"scenario {scenario!r} not found in the projection file")
-    alts = sub[~sub["is_canonical"]]
-    canon = sub[sub["is_canonical"]]
+    alts = sub[~sub["is_observed"]]
+    observed = sub[sub["is_observed"]]
     exemplars = [c for c in clusters["clusters"] if c["scenario"] == scenario]
     exemplars = sorted(exemplars, key=lambda c: c["cluster"])
 
@@ -118,7 +118,7 @@ def fig_si_semantic_space(proj, clusters, scenario):
 
     # alternatives colored by their LM-scored risk (run-averaged, from the
     # projection file) — ties the semantic layout to the model-relevant feature
-    # rather than the circular embedding-nearest-canonical label. Opaque points
+    # rather than the circular embedding-nearest-observed-action label. Opaque points
     # + shuffled draw order + thin white edge: translucent points would darken
     # where they overlap, making dense regions read as higher risk.
     scored = alts[alts["risk"].notna()]
@@ -156,13 +156,13 @@ def fig_si_semantic_space(proj, clusters, scenario):
     # they don't need per-action colors that would compete with the risk map)
     label_bbox = dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.7)
     x_mid = 0.5 * (alts["dim1"].min() + alts["dim1"].max())
-    for _, row in canon.iterrows():
+    for _, row in observed.iterrows():
         ax.scatter(
             row["dim1"],
             row["dim2"],
             marker="*",
             s=300,
-            color=CANONICAL_STAR_COLOR,
+            color=OBSERVED_STAR_COLOR,
             edgecolor="black",
             lw=0.8,
             zorder=6,
@@ -209,20 +209,20 @@ def fig_si_semantic_space(proj, clusters, scenario):
     ax.set_xlabel("UMAP-1")
     ax.set_ylabel("UMAP-2")
 
-    # text panel: canonical actions, then the numbered exemplars
+    # text panel: observed actions, then the numbered exemplars
     ax2.set_axis_off()
     dy = 0.0355
-    canon_by_action = {
-        r["observed_action"]: r["action_text"] for _, r in canon.iterrows()
+    obs_by_action = {
+        r["observed_action"]: r["action_text"] for _, r in observed.iterrows()
     }
     # pre-wrap so the block height can be measured and vertically centered
-    canon_bodies = [
-        textwrap.fill(f"{ACTION_LABELS[act]}: {canon_by_action.get(act, '')}", 60)
-        for act in CANONICAL_ACTIONS
+    obs_bodies = [
+        textwrap.fill(f"{ACTION_LABELS[act]}: {obs_by_action.get(act, '')}", 60)
+        for act in OBSERVED_ACTIONS
     ]
     numbered_wrapped = [(i, textwrap.fill(text, 62)) for i, text in numbered]
     total = dy * 1.35  # "Action conditions" header
-    total += sum(dy * (b.count("\n") + 1) + dy * 0.5 for b in canon_bodies)
+    total += sum(dy * (b.count("\n") + 1) + dy * 0.5 for b in obs_bodies)
     total += dy * 0.5  # gap before the second section
     total += dy * 1.35  # "Example alternatives" header
     total += sum(dy * (w.count("\n") + 1) + dy * 0.5 for _, w in numbered_wrapped)
@@ -235,16 +235,16 @@ def fig_si_semantic_space(proj, clusters, scenario):
         y -= dy * 1.35
 
     put_header("Action conditions")
-    for act, body in zip(CANONICAL_ACTIONS, canon_bodies):
+    for act, body in zip(OBSERVED_ACTIONS, obs_bodies):
         # bold action name (the map labels the stars by name, not color) then the
-        # full canonical sentence; drawn grey marker matching the map's stars
+        # full observed-action sentence; drawn grey marker matching the map's stars
         # (not a "★" glyph, missing from Arial Nova)
         ax2.scatter(
             [0.018],
             [y - 0.012],
             marker="*",
             s=85,
-            color=CANONICAL_STAR_COLOR,
+            color=OBSERVED_STAR_COLOR,
             edgecolor="black",
             lw=0.5,
             zorder=5,
@@ -347,10 +347,10 @@ def _boot_ci(vals, n=1000, seed=0):
 
 
 def fig_si_composition(alts, sem):
-    """Composition of the generated alternatives (nearest canonical action).
+    """Composition of the generated alternatives (nearest observed action).
     Encodes the message directly: the observed action (x) moves the composition,
     while the relationship/desire condition barely does. Each bold line is one
-    nearest-canonical category's mean proportion across observed actions; the
+    nearest-observed-action category's mean proportion across observed actions; the
     faint lines are the individual condition levels, whose tight bundling around
     the mean shows the composition hardly moves with the condition."""
     cond_axes = _condition_axes(alts)
@@ -361,23 +361,23 @@ def fig_si_composition(alts, sem):
     )
 
     merged = alts.merge(
-        sem[["scenario_label", "action_text", "nearest_canonical"]],
+        sem[["scenario_label", "action_text", "nearest_observed_action"]],
         on=["scenario_label", "action_text"],
         how="left",
     )
-    n_missing = merged["nearest_canonical"].isna().sum()
+    n_missing = merged["nearest_observed_action"].isna().sum()
     if n_missing:
         print(f"note: {n_missing} alternative instances missing semantic labels")
-        merged = merged.dropna(subset=["nearest_canonical"])
+        merged = merged.dropna(subset=["nearest_observed_action"])
 
-    x = np.arange(len(CANONICAL_ACTIONS))  # observed-action positions
+    x = np.arange(len(OBSERVED_ACTIONS))  # observed-action positions
 
     def prop_nearest(sub):
-        p = sub["nearest_canonical"].value_counts(normalize=True)
-        return {a: float(p.get(a, 0.0)) for a in CANONICAL_ACTIONS}
+        p = sub["nearest_observed_action"].value_counts(normalize=True)
+        return {a: float(p.get(a, 0.0)) for a in OBSERVED_ACTIONS}
 
     fig, ax = plt.subplots(figsize=(4.9, 3.3))
-    for nc in CANONICAL_ACTIONS:
+    for nc in OBSERVED_ACTIONS:
         color = ACTION_COLORS[nc]
         per_level = []
         for lvl in main_levels:
@@ -387,7 +387,7 @@ def fig_si_composition(alts, sem):
                         (merged["observed_action"] == obs) & (merged[main_col] == lvl)
                     ]
                 )[nc]
-                for obs in CANONICAL_ACTIONS
+                for obs in OBSERVED_ACTIONS
             ]
             per_level.append(ys)
             ax.plot(x, ys, color=color, lw=0.7, alpha=0.3, zorder=2)
@@ -404,7 +404,7 @@ def fig_si_composition(alts, sem):
         )
     ax.set_xticks(x)
     ax.set_xticklabels(
-        [ACTION_LABELS[a].replace(" ", "\n", 1) for a in CANONICAL_ACTIONS], fontsize=8
+        [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_ACTIONS], fontsize=8
     )
     ax.set_xlabel("Observed action")
     ax.set_ylabel("Proportion of generated\nalternatives nearest each action")
@@ -503,7 +503,7 @@ def fig_si_g_contrast(runs):
 
     fig, axes = plt.subplots(3, 1, figsize=(4.8, 4.8), sharex=True, sharey=True)
     bins = np.arange(0, 1.05, 0.05)
-    for ax, act in zip(axes, CANONICAL_ACTIONS):
+    for ax, act in zip(axes, OBSERVED_ACTIONS):
         sub = df.loc[df["obs"] == act, "grange"]
         ax.hist(
             sub,
@@ -547,7 +547,7 @@ def _alt_feature_clouds(runs, cell_cols):
             (a["risk"], a["effort"], a["g"])
             for actions in grp["actions"]
             for a in actions
-            if not a["is_canonical"]
+            if not a["is_observed"]
             and a["risk"] is not None
             and a["effort"] is not None
             and a["g"] is not None
@@ -672,7 +672,7 @@ def fig_si_base_vs_full(d, runs):
 # ----------------------------------------------------------------------------
 
 
-def fig_semantic_map(sem, alt_xy, canon_xy, canon_action, out):
+def fig_semantic_map(sem, alt_xy, obs_xy, obs_action, out):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6.8))
 
     # (a) colored by scenario, with the scenario name printed at each blob centroid.
@@ -686,9 +686,9 @@ def fig_semantic_map(sem, alt_xy, canon_xy, canon_action, out):
         ax1.text(cx, cy, s, fontsize=7, ha="center", va="center", weight="bold")
     ax1.set_title("(a) Colored by scenario\nthe space splits into scenario blobs")
 
-    # (b) colored by nearest canonical action, canonical actions as stars.
-    nc = sem["nearest_canonical"].to_numpy()
-    for a in CANONICAL_ACTIONS:
+    # (b) colored by nearest observed action, observed actions as stars.
+    nc = sem["nearest_observed_action"].to_numpy()
+    for a in OBSERVED_ACTIONS:
         m = nc == a
         ax2.scatter(
             alt_xy[m, 0],
@@ -699,13 +699,13 @@ def fig_semantic_map(sem, alt_xy, canon_xy, canon_action, out):
             lw=0,
             label=ACTION_LABELS[a],
         )
-    for j in range(len(canon_xy)):
+    for j in range(len(obs_xy)):
         ax2.scatter(
-            canon_xy[j, 0],
-            canon_xy[j, 1],
+            obs_xy[j, 0],
+            obs_xy[j, 1],
             marker="*",
             s=110,
-            color=ACTION_COLORS[canon_action[j]],
+            color=ACTION_COLORS[obs_action[j]],
             edgecolor="black",
             lw=0.5,
             zorder=5,
@@ -728,18 +728,18 @@ def fig_semantic_map(sem, alt_xy, canon_xy, canon_action, out):
 
 def _decision_points(runs):
     """Explode lm_runs into one row per action with a Pareto-dominance label vs the
-    observed (canonical) action of the same (cell, run)."""
+    observed action of the same (cell, run)."""
     rows = []
     for actions, scen, obs in zip(
         runs["actions"], runs["scenario_label"], runs["observed_action"]
     ):
-        canon = next((a for a in actions if a["is_canonical"]), None)
-        if canon is None:
+        observed = next((a for a in actions if a["is_observed"]), None)
+        if observed is None:
             continue
-        cg, ce, cr = canon["g"], canon["effort"], canon["risk"]
+        cg, ce, cr = observed["g"], observed["effort"], observed["risk"]
         rows.append(dict(observed=obs, kind="observed", risk=cr, effort=ce, g=cg))
         for a in actions:
-            if a["is_canonical"]:
+            if a["is_observed"]:
                 continue
             gg, ee, rr = a["g"], a["effort"], a["risk"]
             kind = "alt"
@@ -782,7 +782,7 @@ def fig_decision_space(runs, out):
         return v + rng.uniform(-scale, scale, size=len(v))
 
     for r, (xf, yf) in enumerate(pairs):
-        for c, obs in enumerate(CANONICAL_ACTIONS):
+        for c, obs in enumerate(OBSERVED_ACTIONS):
             ax = axes[r, c]
             sub = df[df["observed"] == obs]
             for kind in ("alt", "dominated", "dominates"):
@@ -865,18 +865,18 @@ def main(study, seed, example_scenario, figures):
     if figures in ("diagnostic", "all"):
         print(
             f"Running UMAP on {len(npz['alt_emb'])} alternatives + "
-            f"{len(npz['canon_emb'])} canonicals...",
+            f"{len(npz['obs_emb'])} observed actions...",
             flush=True,
         )
-        alt_xy, canon_xy = _run_umap(npz["alt_emb"], npz["canon_emb"], seed)
+        alt_xy, obs_xy = _run_umap(npz["alt_emb"], npz["obs_emb"], seed)
         fig_dir = d / "figures"
         fig_dir.mkdir(exist_ok=True)
         print("Rendering diagnostic figures...", flush=True)
         fig_semantic_map(
             sem,
             alt_xy,
-            canon_xy,
-            npz["canon_action"],
+            obs_xy,
+            npz["obs_action"],
             fig_dir / "fig1_semantic_map.png",
         )
         fig_decision_space(runs, fig_dir / "fig2_decision_space.png")
@@ -891,9 +891,9 @@ if __name__ == "__main__":
         "--example-scenario",
         default="soup",
         help="Scenario for the choice-set and semantic-space example figures. "
-        "Soup projects cleanly: the three canonical actions land in separate, "
+        "Soup projects cleanly: the three observed actions land in separate, "
         "matching-colored clusters with sensible exemplars nearby. (Oysters' "
-        "canonicals project almost on top of each other; basketball/wedding "
+        "observed actions project almost on top of each other; basketball/wedding "
         "place a no-share exemplar far from the no-share star.)",
     )
     parser.add_argument("--figures", choices=["all", "si", "diagnostic"], default="si")

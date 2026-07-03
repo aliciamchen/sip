@@ -7,23 +7,23 @@ inverse studies (1a food_inv_desire, 1b food_inv_joint_de, 2a food_inv_intimacy,
 This is the second step of the two-step elicitation. The first step
 (generate_alternatives.py) elicited, for each (scenario × condition) cell, K
 independent alternative sets — one per elicitation run, tagged with `run_id`.
-Here, for each (scenario, run) we build a unified action list — the 3 canonical
+Here, for each (scenario, run) we build a unified action list — the 3 observed
 actions from `scenarios.csv` plus that run's unique alternatives — and have the
 LM rate it ONCE on risk, effort, and goal-satisfaction g (slot 0 = the observed
-canonical action, slots 1..k = the run's alternatives, all on one comparative
+action, slots 1..k = the run's alternatives, all on one comparative
 scale). There is NO inner rating-averaging: each run is a single scoring pass, so
 the run-to-run spread of both alternatives AND feature scores becomes part of the
 model's predicted distribution (the simulated-observer mixture).
 
 Design choices carried over from the single-run pipeline:
-  1. Canonical + alts scored together (one comparative reference frame).
+  1. Observed + alts scored together (one comparative reference frame).
   2. Risk is effort-marginal (vignette only, no effort paragraph), broadcast
      across effort_condition.
   3. Effort is effort-conditional; g is desire-free. Neither shows intimacy.
   4. Actions are presented to the LM in a per-call randomized order (the merged
      list is otherwise always no_share / low_risk_share / high_risk_share /
-     alts...), and the ratings are mapped back to canonical order before storage,
-     so the canonical actions don't sit in fixed slots and LLM position/primacy
+     alts...), and the ratings are mapped back to observed-action order before storage,
+     so the observed actions don't sit in fixed slots and LLM position/primacy
      bias can't systematically favor the observed action (slot 0 downstream). The
      order is deterministic given (scenario, run, feature) — see `_perm_for`.
 
@@ -40,7 +40,7 @@ mixture as the alternatives and the feature scores:
 
 Output (one folder per study, outputs/lm/<slug>/):
   - lm_runs.jsonl — one record per (run_id, cell), each carrying the run's scored
-    actions (slot 0 canonical + slots 1..k alternatives) and the run's given
+    actions (slot 0 observed + slots 1..k alternatives) and the run's given
     magnitude (`desire` for 2a/2b, `intimacy` for 1a/1b). Consumed by the run-axis
     table loaders in model/tables.py.
 
@@ -104,7 +104,7 @@ from prompts import (
 from prompts import system_prompt as build_system_prompt
 
 N_ACTIONS = 3
-CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
+OBSERVED_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 EFFORT_CONDITIONS = ["low", "high"]
 DESIRES = ["low", "high"]
 INTIMACY_LEVELS = ["max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate"]
@@ -174,25 +174,25 @@ def _norm(text):
 
 
 def _build_merged_actions(scenario_row, alt_rows_for_run):
-    """Unified action list for one (scenario, run): the 3 canonical actions
+    """Unified action list for one (scenario, run): the 3 observed actions
     followed by the run's unique alternative texts (deduped case-insensitively
-    and excluding any alt matching a canonical text). Returns
-    (merged_action_texts, canonical_norms, alt_norms_in_order)."""
-    canonical_actions = [scenario_row[c] for c in CANONICAL_ACTIONS]
-    canonical_norms = [_norm(a) for a in canonical_actions]
-    canonical_norm_set = set(canonical_norms)
+    and excluding any alt matching an observed-action text). Returns
+    (merged_action_texts, observed_norms, alt_norms_in_order)."""
+    observed_actions = [scenario_row[c] for c in OBSERVED_ACTIONS]
+    observed_norms = [_norm(a) for a in observed_actions]
+    observed_norm_set = set(observed_norms)
 
     alt_norms_in_order, alt_texts_unique, seen = [], [], set()
     for _, r in alt_rows_for_run.iterrows():
         norm = _norm(r["action_text"])
-        if norm in canonical_norm_set or norm in seen:
+        if norm in observed_norm_set or norm in seen:
             continue
         seen.add(norm)
         alt_norms_in_order.append(norm)
         alt_texts_unique.append(r["action_text"])
 
-    merged = canonical_actions + alt_texts_unique
-    return merged, canonical_norms, alt_norms_in_order
+    merged = observed_actions + alt_texts_unique
+    return merged, observed_norms, alt_norms_in_order
 
 
 def _score_one_call(client, system_prompt, user_prompt, n_actions, label, seed=None):
@@ -233,10 +233,10 @@ def _perm_for(scenario, run_id, tag, n):
     """Deterministic permutation of ``range(n)`` for one scoring call, seeded
     from (scenario, run_id, feature tag).
 
-    The presented action order is randomized per call so the canonical actions
+    The presented action order is randomized per call so the observed actions
     don't always occupy the same slots (the merged list is otherwise always
     no_share / low_risk_share / high_risk_share / alternatives...). LLM raters
-    have position/primacy biases, so a fixed order would bias the canonical
+    have position/primacy biases, so a fixed order would bias the observed
     actions' features — and the fit/CV slice slot 0 (the observed action), so any
     such bias would land squarely on the modeled quantity. Seeding from a stable
     SHA-256 hash (not Python's salted ``hash``) keeps the order reproducible
@@ -259,7 +259,7 @@ def _score_feature_shuffled(
 ):
     """Score one feature on the merged action list, presenting the actions to the
     LM in a per-call randomized order (see ``_perm_for``) and mapping the ratings
-    back to the canonical (``all_norms``) order.
+    back to the observed-action (``all_norms``) order.
 
     ``build_user_prompt`` takes the ordered list of action texts to present and
     returns the user prompt. Returns dict[norm] -> normalized [0,1] value (NaN if
@@ -287,18 +287,18 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_i
 
     Each feature is scored in a single LM pass, with the actions presented to the
     LM in a randomized order (deterministic given scenario/run/feature; see
-    ``_perm_for``) and the ratings mapped back to the canonical order, so the
-    canonical actions are not always shown in the same slots.
+    ``_perm_for``) and the ratings mapped back to the observed-action order, so the
+    observed actions are not always shown in the same slots.
 
-    Returns {merged_actions, canonical_norms, alt_norms_in_order, risk, effort, g}
+    Returns {merged_actions, observed_norms, alt_norms_in_order, risk, effort, g}
     where risk/g are dict[norm] -> normalized [0,1] value (single value per
     action) and effort is dict[(effort_cond, norm)] -> normalized [0,1]."""
     scenario = scenario_row["scenario_label"]
     vignette = scenario_row["vignette"]
-    merged, canonical_norms, alt_norms = _build_merged_actions(
+    merged, observed_norms, alt_norms = _build_merged_actions(
         scenario_row, alt_rows_for_run
     )
-    all_norms = canonical_norms + alt_norms
+    all_norms = observed_norms + alt_norms
 
     # risk: one prompt, vignette only (effort-marginal).
     risk = _score_feature_shuffled(
@@ -348,7 +348,7 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_i
 
     return {
         "merged_actions": merged,
-        "canonical_norms": canonical_norms,
+        "observed_norms": observed_norms,
         "alt_norms_in_order": alt_norms,
         "risk": risk,
         "effort": effort,
@@ -369,7 +369,7 @@ def _build_run_records(
     """Assemble the per-(run, cell) JSONL records for one (scenario, run).
 
     Enumerates the full generation cell grid (observed_action × generation
-    condition levels) so every cell gets a record with its canonical slot 0,
+    condition levels) so every cell gets a record with its observed slot 0,
     even cells whose run produced zero alternatives. For effort-inferred studies
     each cell emits one record per effort_condition (the effort feature axis).
 
@@ -384,7 +384,7 @@ def _build_run_records(
     level_lists = [_LEVELS[c] for c in cell_cols]
 
     records = []
-    for observed_action in CANONICAL_ACTIONS:
+    for observed_action in OBSERVED_ACTIONS:
         obs_norm = _norm(scenario_row[observed_action])
         for cond_values in itertools.product(*level_lists) if level_lists else [()]:
             cond = dict(zip(cell_cols, cond_values))
@@ -403,7 +403,7 @@ def _build_run_records(
                 actions = [
                     {
                         "slot": 0,
-                        "is_canonical": True,
+                        "is_observed": True,
                         "action_text": scenario_row[observed_action],
                         "risk": _f(risk.get(obs_norm)),
                         "effort": _f(effort.get((ec, obs_norm))),
@@ -416,7 +416,7 @@ def _build_run_records(
                         {
                             "slot": int(alt["alt_idx"]) + 1,
                             "alt_idx": int(alt["alt_idx"]),
-                            "is_canonical": False,
+                            "is_observed": False,
                             "action_text": alt["action_text"],
                             "risk": _f(risk.get(a_norm)),
                             "effort": _f(effort.get((ec, a_norm))),
@@ -429,7 +429,7 @@ def _build_run_records(
                     "observed_action": observed_action,
                 }
                 record.update(cond)
-                record["effort_condition"] = ec  # loader keys canon on this
+                record["effort_condition"] = ec  # loader keys observed on this
                 # Per-run given magnitude, folded in by the cell's condition.
                 if given_desire is not None:
                     record["desire"] = given_desire.get(cond["desire_condition"])

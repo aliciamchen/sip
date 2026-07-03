@@ -2,9 +2,9 @@
 
 ## Stimulus sources
 
-The active stimulus set is one scenario CSV, generated from a Python source of truth. Edit the `.py` file and regenerate with `uv run python experiments/scenarios.py` — never edit the CSV directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/build/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`. The earlier 4-action / 2-action / non-food sets are archived under `experiments/legacy/` (see below).
+The active stimulus set is one scenario CSV, generated from a Python source of truth. Edit the `.py` file and regenerate with `uv run python experiments/scenarios.py` — never edit the CSV directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/build/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`. The earlier stimulus sets are kept in git history (see the Legacy section below).
 
-### `scenarios.csv` — 3-action canonical (active Studies 1a, 1b, 2a, 2b)
+### `scenarios.csv` — 3-action set (active Studies 1a, 1b, 2a, 2b)
 
 The stimulus set for all four active inverse-planning experiments. Carries the effort paragraphs alongside the desire and intimacy framing so all three latent variables (desire, effort, intimacy) can be manipulated alongside the observed action.
 

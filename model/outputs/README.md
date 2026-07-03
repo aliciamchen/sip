@@ -52,7 +52,7 @@ The `param_*` fields documented below use that naming.
 
 ## LM-elicited tables (`outputs/lm/<slug>/`)
 
-Each study keeps its LM tables in its own folder. The canonical actions are re-scored in the
+Each study keeps its LM tables in its own folder. The observed actions are re-scored in the
 comparative frame of that study's own alternative set, so each study's scores can differ —
 keeping them per-folder means no study's elicitation overwrites another's. All `risk`,
 `effort`, and `g` values are LM ratings on a 0–6 scale normalized to `[0, 1]`. The pipeline
@@ -64,7 +64,7 @@ given-magnitude scalars all vary run to run.
 
 One record per `(run_id, cell)`, where a cell is `(scenario, observed_action, +
 observer-visible condition levels)`. Each record holds that run's full action list — slot 0 is
-the observed canonical action, slots 1.. are that run's alternatives — scored together in one
+the observed action, slots 1.. are that run's alternatives — scored together in one
 comparative frame, plus that run's **given-magnitude scalar** for the cell's condition: `desire`
 for the given-desire studies (2a/2b), `intimacy` for the given-relationship studies (1a/1b).
 Written by `score_merged.py`; consumed by `tables.py` (the `load_padded_lm_tables_*` loaders
@@ -80,16 +80,16 @@ given magnitudes), all stacking the runs on a leading `K` axis.
   "effort_condition": "low",
   "intimacy": 0.48,
   "actions": [
-    {"slot": 0, "is_canonical": true,  "action_text": "...", "is_share": 0,
+    {"slot": 0, "is_observed": true,  "action_text": "...", "is_share": 0,
      "risk": 0.0, "effort": 0.0, "g": 0.5},
-    {"slot": 1, "alt_idx": 0, "is_canonical": false, "action_text": "...", "is_share": 1,
+    {"slot": 1, "alt_idx": 0, "is_observed": false, "action_text": "...", "is_share": 1,
      "risk": 0.17, "effort": 0.33, "g": 1.0}
   ]
 }
 ```
 
 The condition keys between `observed_action` and the given scalar follow the study's cell grid;
-`effort_condition` is always present (the loaders key the canonical slot on it). The given
+`effort_condition` is always present (the loaders key the observed slot on it). The given
 scalar is `intimacy` here (1a/1b); for 2a/2b it is `desire` instead. It is denormalized — the
 same value repeats across every record sharing a `(run, condition)` — because the given
 magnitude is a property of the condition, not of the action list. The `actions` list is ragged:

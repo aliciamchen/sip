@@ -2,9 +2,8 @@
 """Shared LM-call infrastructure for the Together AI rating + alternative
 elicitation pipelines.
 
-Centralizes what previously lived in three near-duplicate copies across
-``lm/score_canonical_features.py``, ``lm/score_effort_features.py``, and
-``lm/generate_alternatives_desire.py``:
+Centralizes what previously lived in near-duplicate copies across the earlier
+per-feature scoring and alternative-generation scripts:
 
 - ``load_api_key`` — resolve ``TOGETHER_API_KEY`` from env or ``.env``.
 - ``find_json`` / ``find_json_array`` — best-effort JSON extraction.
@@ -234,8 +233,8 @@ def numeric_action_schema(n_actions, name="ratings"):
     """Build a response_format object that constrains the LM to emit
     ``{"action_0": <number>, ..., "action_{n-1}": <number>}``.
 
-    Used by risk/effort/V rating calls in both the canonical 4-action and
-    variable-length paths. ``strict: true`` makes the server enforce exact schema
+    Used by the per-action risk/effort/g rating calls (``n_actions`` varies per
+    scenario). ``strict: true`` makes the server enforce exact schema
     adherence (Together accepts it for Llama-3.3-70B-Turbo); the schema is
     strict-compatible — every property required, ``additionalProperties`` closed."""
     return {

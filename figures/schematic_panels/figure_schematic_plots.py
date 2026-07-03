@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from plot_style import (  # noqa: E402
-    ACTION_COLORS as CANON_COLORS,
+    ACTION_COLORS as OBS_COLORS,
     INTIMACY_COLORS,
     INTIMACY_LABELS,
     INTIMACY_LEVELS,
@@ -47,14 +47,14 @@ apply_style("schematic")
 FEATURE_ORDER = ["g", "effort", "risk"]
 FEATURE_LABELS = {"g": "Goal", "effort": "Effort", "risk": "Risk"}
 
-# The shared canonical-action palette, mapped onto the burrito example's four
+# The shared observed-action palette, mapped onto the burrito example's four
 # actions: a_obs is the low-risk share (cut the burrito in half), a_1 the
-# no-share, a_2 the high-risk share (take turns biting), and a_3 a
-# non-canonical extra alternative.
+# no-share, a_2 the high-risk share (take turns biting), and a_3 an
+# extra alternative beyond the three observed.
 ACTION_COLORS = {
-    "a_obs": CANON_COLORS["low_risk_share"],
-    "a_1": CANON_COLORS["no_share"],
-    "a_2": CANON_COLORS["high_risk_share"],
+    "a_obs": OBS_COLORS["low_risk_share"],
+    "a_1": OBS_COLORS["no_share"],
+    "a_2": OBS_COLORS["high_risk_share"],
     "a_3": OTHER_ACTION_COLOR,
 }
 ACTION_LABELS = {
@@ -98,7 +98,7 @@ def load_inputs():
 
 
 def compute(rec, full):
-    """Standalone actor utility / choice / desire posterior for the 4-action set."""
+    """Standalone actor utility / choice / desire posterior for the burrito example's four actions."""
     keys = [a["key"] for a in rec["actions"]]
     g = np.array([a["g"] for a in rec["actions"]])
     effort = np.array([a["effort"] for a in rec["actions"]])
@@ -319,7 +319,7 @@ def plot_posterior_by_relationship(rec, full):
 
 def plot_components(rec):
     """Illustrative component-function plots: each utility term vs. the latent that
-    drives it, one curve per canonical action (no-share / low-risk / high-risk),
+    drives it, one curve per observed action (no-share / low-risk / high-risk),
     using ILLUSTRATIVE_WEIGHTS. Coincident lines are dodged slightly so all three
     stay visible (only the action whose feature is non-zero actually varies)."""
     W = ILLUSTRATIVE_WEIGHTS

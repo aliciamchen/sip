@@ -84,15 +84,15 @@ actions_all <- purrr::pmap(STUDIES[c("slug", "label")],
 have_data <- nrow(actions_all) > 0
 
 if (have_data) {
-  canon_all <- filter(actions_all, is_canonical)
+  obs_all <- filter(actions_all, is_observed)
   cat("Loaded studies:", paste(levels(droplevels(actions_all$study)), collapse = ", "), "\n")
   actions_all |>
     group_by(study) |>
     summarise(records = n_distinct(run_id, scenario_label, observed_action,
                                    effort_condition, intimacy_condition, desire_condition),
               action_rows = n(),
-              canonical = sum(is_canonical),
-              alternatives = sum(!is_canonical), .groups = "drop") |>
+              observed = sum(is_observed),
+              alternatives = sum(!is_observed), .groups = "drop") |>
     kable(caption = "Elicitation volume per study (after unnesting actions)")
 } else {
   cat("No lm_runs.jsonl found for any study — run the LM elicitation first.\n")
@@ -102,20 +102,20 @@ if (have_data) {
 # Does the feature map recover the intended action structure?
 
 The load-bearing sanity check for the whole pipeline. Across **all four
-elicitations pooled**, the canonical (observed) actions should show: **risk**
+elicitations pooled**, the observed actions should show: **risk**
 monotone (`no_share` ≈ 0 < `low_risk_share` < `high_risk_share`), **goal-satisfaction
 `g`** near 0 for `no_share` and high for both sharing actions (it is desire-free),
 and **effort** lifted by the effort manipulation on the low-risk share. Each thin
 grey line is one scenario (pooled over studies and runs); the bold line is the
 grand mean.
 
-```{r canon-structure}
+```{r obs-structure}
 #| fig-width: 12
 #| fig-height: 4.5
 if (have_data) {
   # risk and g are effort/intimacy/desire-independent; effort is pooled over its
   # two conditions here for the uniform overview (the manipulation detail follows).
-  canon_feat <- canon_all |>
+  obs_feat <- obs_all |>
     group_by(scenario_label, observed_action) |>
     summarise(risk = mean(risk, na.rm = TRUE),
               effort = mean(effort, na.rm = TRUE),
@@ -125,29 +125,29 @@ if (have_data) {
            feature = factor(feature, c("risk", "effort", "g"),
                             c("Risk", "Effort", "Goal-satisfaction g")))
 
-  canon_mean <- canon_feat |>
+  obs_mean <- obs_feat |>
     group_by(feature, action) |>
     summarise(value = mean(value, na.rm = TRUE), .groups = "drop")
 
-  ggplot(canon_feat, aes(action, value)) +
+  ggplot(obs_feat, aes(action, value)) +
     geom_line(aes(group = scenario_label), color = "grey65",
               linewidth = 0.25, alpha = 0.4) +
-    geom_line(data = canon_mean, aes(group = 1), color = "grey15", linewidth = 1.1) +
-    geom_point(data = canon_mean, aes(color = action), size = 3) +
+    geom_line(data = obs_mean, aes(group = 1), color = "grey15", linewidth = 1.1) +
+    geom_point(data = obs_mean, aes(color = action), size = 3) +
     facet_wrap(~feature) +
     scale_color_manual(values = ACTION_COLORS, guide = "none") +
     scale_y_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25)) +
     labs(title = "LM feature map recovers the intended action structure",
          subtitle = "Pooled over all four elicitations; thin lines = scenarios, bold = grand mean",
-         x = "Observed (canonical) action", y = "Feature value (0–1)") +
+         x = "Observed action", y = "Feature value (0–1)") +
     theme(plot.title = element_text(size = 15, hjust = 0),
           axis.text.x = element_text(angle = 20, hjust = 1))
 }
 ```
 
-```{r canon-monotone-check}
+```{r obs-monotone-check}
 if (have_data) {
-  wide <- canon_all |>
+  wide <- obs_all |>
     group_by(scenario_label, observed_action) |>
     summarise(risk = mean(risk, na.rm = TRUE), g = mean(g, na.rm = TRUE),
               .groups = "drop")
@@ -155,7 +155,7 @@ if (have_data) {
   g_w <- wide |> select(-risk) |> pivot_wider(names_from = observed_action, values_from = g)
   bad_risk <- risk_w |> filter(!(no_share <= low_risk_share & low_risk_share <= high_risk_share))
   bad_g <- g_w |> filter(no_share >= pmin(low_risk_share, high_risk_share))
-  cat("Scenarios with non-monotone canonical risk:", nrow(bad_risk), "of", nrow(risk_w),
+  cat("Scenarios with non-monotone observed-action risk:", nrow(bad_risk), "of", nrow(risk_w),
       if (nrow(bad_risk)) paste0(" (", paste(bad_risk$scenario_label, collapse = ", "), ")") else "", "\n")
   cat("Scenarios where no_share g is not below both sharing actions:", nrow(bad_g),
       if (nrow(bad_g)) paste0(" (", paste(bad_g$scenario_label, collapse = ", "), ")") else "", "\n")
@@ -172,7 +172,7 @@ and leave the other actions roughly unchanged. Pooled across all four elicitatio
 #| fig-width: 8
 #| fig-height: 4.5
 if (have_data) {
-  eff <- canon_all |>
+  eff <- obs_all |>
     filter(effort_condition %in% c("low", "high")) |>
     group_by(scenario_label, observed_action, effort_condition) |>
     summarise(effort = mean(effort, na.rm = TRUE), .groups = "drop") |>
@@ -289,9 +289,9 @@ if (have_data) {
 }
 ```
 
-# Where do the canonical actions sit in risk × effort space?
+# Where do the observed actions sit in risk × effort space?
 
-Each point is a canonical action for one scenario (features averaged over runs),
+Each point is an observed action for one scenario (features averaged over runs),
 pooled across all four elicitations. Shape marks the action. Because the effort
 manipulation only changes the cost of the **low-risk share** action, only that
 action is split by effort condition (low vs high); no-share and high-risk share are
@@ -304,7 +304,7 @@ manipulation shifts the low-risk share vertically.
 #| fig-height: 6
 if (have_data) {
   set.seed(67)
-  canon_re <- canon_all |>
+  obs_re <- obs_all |>
     filter(effort_condition %in% c("low", "high")) |>
     group_by(study, scenario_label, observed_action, effort_condition) |>
     summarise(risk = mean(risk, na.rm = TRUE), effort = mean(effort, na.rm = TRUE),
@@ -314,20 +314,20 @@ if (have_data) {
   # Effort condition only modulates the low-risk share, so keep both effort points
   # for that action; for no-share and high-risk share (effort-invariant) collapse
   # the two effort-condition rows into a single point each, labelled "n/a".
-  low_risk <- canon_re |>
+  low_risk <- obs_re |>
     filter(observed_action == "low_risk_share") |>
     mutate(effort_cond = factor(effort_condition, c("low", "high"),
                                 c("Low effort", "High effort")))
-  invariant <- canon_re |>
+  invariant <- obs_re |>
     filter(observed_action != "low_risk_share") |>
     group_by(study, scenario_label, observed_action, action) |>
     summarise(risk = mean(risk), effort = mean(effort), .groups = "drop") |>
     mutate(effort_cond = "n/a")
-  canon_re <- bind_rows(low_risk, invariant) |>
+  obs_re <- bind_rows(low_risk, invariant) |>
     mutate(effort_cond = factor(effort_cond,
                                 levels = c("Low effort", "High effort", "n/a")))
 
-  ggplot(canon_re, aes(risk, effort, color = effort_cond, shape = action)) +
+  ggplot(obs_re, aes(risk, effort, color = effort_cond, shape = action)) +
     geom_jitter(width = 0.015, height = 0.015, size = 2, alpha = 0.7) +
     scale_color_manual(values = c("Low effort" = "#B5C9A8",
                                   "High effort" = "#4A7A4A", "n/a" = "grey70")) +
@@ -335,7 +335,7 @@ if (have_data) {
                                   "High-risk share" = 15)) +
     scale_x_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25)) +
     scale_y_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25)) +
-    labs(title = "Canonical actions in risk × effort space",
+    labs(title = "Observed actions in risk × effort space",
          subtitle = "Effort condition shown only for low-risk share (the action it modulates); other actions collapsed",
          x = "Risk (0–1)", y = "Effort (0–1)",
          color = "Effort condition", shape = "Observed action") +
@@ -363,7 +363,7 @@ ex_scenario <- "oysters"
 
 Every distinct action in `r ex_scenario`'s (`r ex_label`) elicited choice set,
 placed in the risk × effort plane the model reasons over and colored by its
-goal-satisfaction `g`. The three canonical actions are starred and labeled; the
+goal-satisfaction `g`. The three observed actions are starred and labeled; the
 grey-to-yellow alternatives show how the imagined options trade risk and effort off
 against delivering the food.
 
@@ -373,30 +373,30 @@ against delivering the food.
 if (have_data) {
   ex <- actions_all |>
     filter(slug == ex_study, scenario_label == ex_scenario) |>
-    group_by(action_text, is_canonical) |>
+    group_by(action_text, is_observed) |>
     summarise(risk = mean(risk, na.rm = TRUE), effort = mean(effort, na.rm = TRUE),
               g = mean(g, na.rm = TRUE),
               observed_action = first(observed_action), .groups = "drop") |>
     filter(!is.na(risk), !is.na(effort), !is.na(g))
 
-  ex_alt <- filter(ex, !is_canonical)
-  ex_can <- filter(ex, is_canonical) |> mutate(action = as_action(observed_action))
+  ex_alt <- filter(ex, !is_observed)
+  ex_obs <- filter(ex, is_observed) |> mutate(action = as_action(observed_action))
 
   set.seed(67)
   print(
     ggplot(mapping = aes(risk, effort)) +
       geom_jitter(data = ex_alt, aes(fill = g), width = 0.012, height = 0.012,
                   shape = 21, color = "white", stroke = 0.1, size = 2.6, alpha = 0.85) +
-      geom_point(data = ex_can, shape = 23, aes(fill = g), color = "black",
+      geom_point(data = ex_obs, shape = 23, aes(fill = g), color = "black",
                  size = 5, stroke = 0.9) +
-      ggrepel::geom_label_repel(data = ex_can, aes(label = action), size = 3.2,
+      ggrepel::geom_label_repel(data = ex_obs, aes(label = action), size = 3.2,
                                 fill = "white", alpha = 0.85, box.padding = 0.6,
                                 segment.color = "grey50", min.segment.length = 0) +
       scale_fill_viridis_c(option = "viridis", limits = c(0, 1)) +
       scale_x_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25)) +
       scale_y_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.25)) +
       labs(title = paste0("Elicited choice set for '", ex_scenario, "' (", ex_label, ")"),
-           subtitle = "Each point a distinct action; ◆ = canonical actions, colored by goal-satisfaction g",
+           subtitle = "Each point a distinct action; ◆ = observed actions, colored by goal-satisfaction g",
            x = "Risk (0–1)", y = "Effort (0–1)", fill = "Goal-sat. g") +
       theme(plot.title = element_text(size = 15, hjust = 0))
   )
@@ -407,7 +407,7 @@ if (have_data) {
 
 A UMAP projection of the same scenario's alternatives (embedded text), so the
 *kinds* of counterfactual the LM proposes are visible as clusters. Points are
-colored by their per-scenario action-type cluster; the canonical actions are
+colored by their per-scenario action-type cluster; the observed actions are
 starred. Each cluster is labeled on the figure with a representative alternative,
 and the full list of types is tabled below.
 
@@ -426,8 +426,8 @@ if (!have_proj) {
 #| fig-height: 7
 if (have_proj) {
   proj <- read_model_jsonl(proj_path) |> filter(scenario_label == ex_scenario)
-  proj_alt <- filter(proj, !is_canonical) |> mutate(cluster = factor(cluster))
-  proj_can <- filter(proj, is_canonical) |> mutate(action = as_action(observed_action))
+  proj_alt <- filter(proj, !is_observed) |> mutate(cluster = factor(cluster))
+  proj_obs <- filter(proj, is_observed) |> mutate(action = as_action(observed_action))
 
   # cluster exemplars (one representative alternative per cluster) from the
   # embed_alternatives.py artifact, placed at each cluster's centroid.
@@ -446,13 +446,13 @@ if (have_proj) {
 
   p <- ggplot(proj_alt, aes(dim1, dim2)) +
     geom_point(aes(color = cluster), size = 1.4, alpha = 0.55) +
-    geom_point(data = proj_can, shape = 8, size = 4, stroke = 1.1, color = "black") +
-    ggrepel::geom_text_repel(data = proj_can, aes(label = action), size = 3.2,
+    geom_point(data = proj_obs, shape = 8, size = 4, stroke = 1.1, color = "black") +
+    ggrepel::geom_text_repel(data = proj_obs, aes(label = action), size = 3.2,
                              fontface = "bold", box.padding = 0.5,
                              min.segment.length = 0, color = "grey15") +
     scale_color_viridis_d(option = "turbo", guide = "none") +
     labs(title = paste0("Semantic space of alternatives for '", ex_scenario, "' (", ex_label, ")"),
-         subtitle = "UMAP of alternative texts; color = per-scenario action-type cluster; ✳ = canonical actions",
+         subtitle = "UMAP of alternative texts; color = per-scenario action-type cluster; ✳ = observed actions",
          x = "UMAP-1", y = "UMAP-2") +
     theme(plot.title = element_text(size = 15, hjust = 0),
           axis.text = element_blank(), axis.ticks = element_blank())
@@ -485,7 +485,7 @@ The load-bearing cognitive claim is that observers imagine counterfactuals to *w
 they saw*, so the alternative set should shift with the **observed action** and
 cover the feature space — that is what makes the observed action diagnostic. Pooled
 across all four studies, the alternatives (grey) are shown in the feature planes the
-model reasons over, faceted by observed action, with the canonical actions starred.
+model reasons over, faceted by observed action, with the observed actions starred.
 
 ```{r alt-by-observed}
 #| fig-width: 11
@@ -493,14 +493,14 @@ model reasons over, faceted by observed action, with the canonical actions starr
 if (have_data) {
   set.seed(67)
   by_obs <- actions_all |>
-    select(observed_action, is_canonical, risk, effort, g) |>
+    select(observed_action, is_observed, risk, effort, g) |>
     filter(!is.na(risk)) |>
     mutate(action = as_action(observed_action))
 
-  alt_pts <- filter(by_obs, !is_canonical) |>
+  alt_pts <- filter(by_obs, !is_observed) |>
     pivot_longer(c(g, effort), names_to = "yvar", values_to = "yval") |>
     mutate(yvar = factor(yvar, c("g", "effort"), c("Goal-satisfaction g", "Effort")))
-  can_pts <- by_obs |> filter(is_canonical) |>
+  obs_pts <- by_obs |> filter(is_observed) |>
     group_by(action, observed_action) |>
     summarise(risk = mean(risk), g = mean(g), effort = mean(effort), .groups = "drop") |>
     pivot_longer(c(g, effort), names_to = "yvar", values_to = "yval") |>
@@ -510,13 +510,13 @@ if (have_data) {
     ggplot(mapping = aes(risk, yval)) +
       geom_jitter(data = alt_pts, width = 0.015, height = 0.015,
                   color = "grey70", alpha = 0.04, size = 0.4) +
-      geom_point(data = can_pts, aes(color = action), shape = 18, size = 3) +
+      geom_point(data = obs_pts, aes(color = action), shape = 18, size = 3) +
       facet_grid(yvar ~ action) +
       scale_color_manual(values = ACTION_COLORS, guide = "none") +
       scale_x_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.5)) +
       scale_y_continuous(limits = c(-0.05, 1.05), breaks = seq(0, 1, 0.5)) +
       labs(title = "Alternatives cover the feature space, faceted by observed action",
-           subtitle = "Grey = LM alternatives (all studies pooled); ◆ = canonical mean for that observed action",
+           subtitle = "Grey = LM alternatives (all studies pooled); ◆ = mean for that observed action",
            x = "Risk (0–1)", y = "Feature value (0–1)") +
       theme(plot.title = element_text(size = 15, hjust = 0))
   )
@@ -524,7 +524,7 @@ if (have_data) {
 ```
 
 For Study 1a, the semantic embeddings let us label each alternative by the
-canonical action it most resembles (scenario-invariant), which tests the anchoring
+observed action it most resembles (scenario-invariant), which tests the anchoring
 claim directly: does the imagined set skew toward the contrasting region given what
 was observed? Rows sum to 100%.
 
@@ -539,21 +539,21 @@ if (file.exists(sem_path) && file.exists(alts_path)) {
     left_join(sem, by = c("scenario_label", "action_text"))
 
   anchor <- alts1a |>
-    filter(!is.na(nearest_canonical)) |>
-    count(observed_action, nearest_canonical) |>
+    filter(!is.na(nearest_observed_action)) |>
+    count(observed_action, nearest_observed_action) |>
     group_by(observed_action) |>
     mutate(prop = n / sum(n)) |>
     ungroup() |>
     mutate(observed = as_action(observed_action),
-           nearest = as_action(nearest_canonical))
+           nearest = as_action(nearest_observed_action))
 
   print(
     ggplot(anchor, aes(nearest, observed, fill = prop)) +
       geom_tile(color = "white", linewidth = 0.4) +
       geom_text(aes(label = scales::percent(prop, accuracy = 1)), size = 3.6, color = "grey15") +
       scale_fill_viridis_c(option = "mako", direction = -1) +
-      labs(title = "Anchoring (1a): imagined alternatives by nearest canonical action",
-           subtitle = "Each alternative labeled by its nearest canonical action; rows sum to 100%",
+      labs(title = "Anchoring (1a): imagined alternatives by nearest observed action",
+           subtitle = "Each alternative labeled by its nearest observed action; rows sum to 100%",
            x = "Alternative most resembles…", y = "Observed action", fill = "Proportion") +
       theme(plot.title = element_text(size = 15, hjust = 0),
             axis.text.x = element_text(angle = 20, hjust = 1))
@@ -566,8 +566,8 @@ if (file.exists(sem_path) && file.exists(alts_path)) {
 The alternatives are elicited per cell, so the other observed axes could also
 reshape the imagined set. Intimacy (1a/1b) and desire (2a/2b) are *given context* in
 their studies, so conditioning on them doesn't leak the inferred latent — but it is
-worth seeing whether the imagined set moves with them. Below, the non-canonical
-alternatives' scored features are shown by intimacy condition (1a/1b) and by desire
+worth seeing whether the imagined set moves with them. Below, the alternatives'
+scored features are shown by intimacy condition (1a/1b) and by desire
 condition (2a/2b); a clear shift means the framing bleeds into what observers
 imagine.
 
@@ -576,7 +576,7 @@ imagine.
 #| fig-height: 4.5
 if (have_data) {
   alt_int <- actions_all |>
-    filter(!is_canonical, !is.na(intimacy_condition), !is.na(risk)) |>
+    filter(!is_observed, !is.na(intimacy_condition), !is.na(risk)) |>
     mutate(intimacy_condition = factor(intimacy_condition, INTIMACY_LEVELS)) |>
     select(intimacy_condition, risk, effort, g) |>
     pivot_longer(c(risk, effort, g), names_to = "feature", values_to = "value") |>
@@ -592,7 +592,7 @@ if (have_data) {
         scale_fill_intimacy() +
         scale_x_discrete(labels = \(x) stringr::str_wrap(gsub("_", " ", x), 10)) +
         labs(title = "Alternative features by intimacy condition (1a/1b)",
-             subtitle = "Non-canonical actions pooled; red diamond = mean",
+             subtitle = "Alternative actions pooled; red diamond = mean",
              x = NULL, y = "Feature value (0–1)", fill = "Intimacy") +
         theme(plot.title = element_text(size = 15, hjust = 0),
               axis.text.x = element_text(size = 11),
@@ -607,7 +607,7 @@ if (have_data) {
 #| fig-height: 4.5
 if (have_data) {
   alt_des <- actions_all |>
-    filter(!is_canonical, !is.na(desire_condition), !is.na(risk)) |>
+    filter(!is_observed, !is.na(desire_condition), !is.na(risk)) |>
     mutate(cond = factor(desire_condition, c("low", "high"), c("Low", "High"))) |>
     select(cond, risk, effort, g) |>
     pivot_longer(c(risk, effort, g), names_to = "feature", values_to = "value") |>
@@ -622,7 +622,7 @@ if (have_data) {
         facet_wrap(~feature) +
         scale_fill_desire() +
         labs(title = "Alternative features by desire condition (2a/2b)",
-             subtitle = "Non-canonical actions pooled; red diamond = mean (contrast to intimacy)",
+             subtitle = "Alternative actions pooled; red diamond = mean (contrast to intimacy)",
              x = "Desire condition", y = "Feature value (0–1)", fill = "Desire") +
         theme(plot.title = element_text(size = 15, hjust = 0),
               legend.position = "none")
@@ -640,7 +640,7 @@ if (have_data) {
 - **Manipulation checks** — the desire scalar (2a/2b) should be cleanly ordered
   low < high with run-to-run spread; the intimacy scalar (1a/1b) should be monotone
   across the four levels (it is constant across runs by construction — no spread).
-- **Risk × effort geometry** — the canonical actions separate by risk and the
+- **Risk × effort geometry** — the observed actions separate by risk and the
   effort manipulation shifts the low-risk share, so the feature space is not
   collinear.
 - **Alternatives** — the imagined set should cover the feature space and shift with

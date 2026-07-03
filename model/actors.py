@@ -47,7 +47,7 @@ from utility import (
 # Used inside `observer_desire_*` (Study 1a). The actor knows scenario,
 # observed_action, effort_condition, relationship_condition, desire_condition;
 # the latent (desire) is sampled by the observer's `thinks` block. The actor
-# softmaxes over `MAX_ACTIONS` padded slots, with the observed canonical
+# softmaxes over `MAX_ACTIONS` padded slots, with the observed
 # action in slot 0 and LM-generated alternatives in slots 1..k. Null slots get
 # a tiny epsilon prior (1e-8) so they effectively don't contribute to the
 # softmax but still keep `E[...] ** alpha_observer` differentiable.

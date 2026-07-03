@@ -25,7 +25,7 @@ from utility import (
 )
 
 N_S = len(SCENARIO_LABELS)  # 16
-N_O = N_ACTIONS  # 3 canonical observed actions
+N_O = N_ACTIONS  # 3 observed actions
 N_E = 2  # effort conditions
 N_R = 4  # relationship conditions
 S = MAX_ACTIONS  # padded slots
@@ -33,7 +33,7 @@ S = MAX_ACTIONS  # padded slots
 
 def _synthetic_desire_tables():
     """Synthetic padded tables shaped (16, 3, 2, 4, S) for the desire study.
-    Slots 0..2 hold the three canonical actions; remaining slots are null-padded
+    Slots 0..2 hold the three observed actions; remaining slots are null-padded
     (prior ≈ 0). Feature values are deterministic functions of the slot index."""
     shape = (N_S, N_O, N_E, N_R, S)
     risk = np.zeros(shape, dtype=np.float32)
@@ -44,7 +44,7 @@ def _synthetic_desire_tables():
         for o in range(N_O):
             for e in range(N_E):
                 for r in range(N_R):
-                    for slot in range(N_O):  # 3 valid canonical slots
+                    for slot in range(N_O):  # 3 valid observed-action slots
                         risk[s, o, e, r, slot] = 0.5 * (slot + 1)
                         effort[s, o, e, r, slot] = 0.3 * (slot + 1)
                         g[s, o, e, r, slot] = (slot + 1) / N_O
@@ -116,7 +116,7 @@ def test_discomfort_only_invariant_to_desire():
 
 def test_observer_desire_posterior_sums_to_one():
     """The desire observer's posterior over DesireLevels sums to 1 at slot 0
-    (the observed canonical action), across a sample of cells."""
+    (the observed action), across a sample of cells."""
     risk, effort, g, prior = _synthetic_desire_tables()
     result = observer_desire_full(
         _ALPHA, _W_V, _W_D, _W_E, _GAMMA, 1.0, risk, effort, g, prior, _REL

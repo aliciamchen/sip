@@ -30,7 +30,7 @@ Three experiments in which participants allocated probabilities across all avail
 
 ## Superseded inverse-planning experiments (local-only)
 
-Six food-domain inverse-planning experiments collected against the original 4-action canonical set and 2-action effort set, superseded when the manuscript was reorganized around the single 3-action set and the current Studies 1a/1b/2a/2b.
+Six food-domain inverse-planning experiments collected against the original 4-action set and 2-action effort set, superseded when the manuscript was reorganized around the single 3-action set and the current Studies 1a/1b/2a/2b.
 
 | Slug | Inferred | Conditioning | Action set |
 |---|---|---|---|

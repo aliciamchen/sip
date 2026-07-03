@@ -7,7 +7,7 @@ R analysis figures), the despined white look, and the palettes. apply_style()
 takes a context — "si" for print-sized supplement figures, "schematic" for the
 large-type vector panels assembled in Illustrator.
 
-The three canonical actions use the schematic's seaborn colorblind palette
+The three observed actions use the schematic's seaborn colorblind palette
 (desaturated), assigned no share = blue, low-risk share = green, high-risk
 share = amber. The effort / desire / intimacy palettes match analysis/utils.R.
 (The R elicitation notebooks still color actions with an older green/gold/red
@@ -164,7 +164,7 @@ def panel_label(ax, letter, dx=-0.02, dy=1.04):
 
 # ------------------------------------------------------------------- palettes
 
-CANONICAL_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
+OBSERVED_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]
 
 # The schematic's palette: seaborn colorblind, muted via desat.
 _CB = sns.color_palette("colorblind", desat=0.8)
@@ -173,7 +173,7 @@ ACTION_COLORS = {
     "low_risk_share": to_hex(_CB[2]),  # green
     "high_risk_share": to_hex(_CB[1]),  # amber
 }
-# non-canonical extra action (the schematic's 4th alternative)
+# extra action beyond the three observed (the schematic's 4th alternative)
 OTHER_ACTION_COLOR = to_hex(_CB[3])  # vermillion
 
 ACTION_LABELS = {
@@ -207,10 +207,10 @@ INTIMACY_COLORS = {
 
 ALT_GREY = "#9AA0A6"
 
-# Neutral marker for the canonical actions in figures that color the alternatives
+# Neutral marker for the observed actions in figures that color the alternatives
 # by a continuous feature: the stars are drawn in this grey with text labels, so
 # a feature colormap never competes with an action color.
-CANONICAL_STAR_COLOR = "#8A8A8A"
+OBSERVED_STAR_COLOR = "#8A8A8A"
 
 
 def _muted_cmap(name, saturation=0.5, value=0.92, n=256):

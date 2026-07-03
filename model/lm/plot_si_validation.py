@@ -5,7 +5,7 @@ Reads each study's lm_runs.jsonl (no embeddings needed) and renders three
 publication figures into the repo-root figures/ directory:
 
   1. si_lm_feature_structure — the elicited feature map recovers the intended
-     canonical-action structure in every study's elicitation: risk monotone
+     observed-action structure in every study's elicitation: risk monotone
      across the three actions, goal-satisfaction separating no-share from the
      two sharing actions, and the physical-world manipulation lifting only the
      low-risk share's effort. Thin lines are individual scenarios.
@@ -13,7 +13,7 @@ publication figures into the repo-root figures/ directory:
      desire scalar separates the low/high desire paragraphs (Studies 2a/2b), and
      the LM-rated intimacy magnitude increases monotonically over the four
      relationship descriptors (Studies 1a/1b).
-  3. si_lm_canonical_scatter — all canonical actions in the (risk, effort)
+  3. si_lm_observed_scatter — all observed actions in the (risk, effort)
      plane, showing the feature combinations the design targets: no-share
      low/low, low-risk share low-risk/effort-manipulated, high-risk share
      high-risk/low-effort.
@@ -50,7 +50,7 @@ from plot_style import (  # noqa: E402
     ACTION_COLORS,
     ACTION_LABELS,
     ALT_GREY,
-    CANONICAL_ACTIONS,
+    OBSERVED_ACTIONS,
     DESIRE_COLORS,
     EFFORT_COLORS,
     INTIMACY_COLORS,
@@ -78,21 +78,21 @@ def load_runs(study):
     return pd.read_json(path, lines=True)
 
 
-def extract_canonical(runs):
-    """One row per (run, cell) with the observed canonical action's features."""
+def extract_observed(runs):
+    """One row per (run, cell) with the observed action's features."""
     recs = []
     for rec in runs.itertuples(index=False):
-        canon = next((a for a in rec.actions if a["is_canonical"]), None)
-        if canon is None:
+        observed = next((a for a in rec.actions if a["is_observed"]), None)
+        if observed is None:
             continue
         row = dict(
             scenario=rec.scenario_label,
             action=rec.observed_action,
             effort_condition=rec.effort_condition,
             run_id=rec.run_id,
-            risk=canon["risk"],
-            effort=canon["effort"],
-            g=canon["g"],
+            risk=observed["risk"],
+            effort=observed["effort"],
+            g=observed["g"],
         )
         for field in ("intimacy_condition", "intimacy", "desire_condition", "desire"):
             if hasattr(rec, field):
@@ -104,9 +104,9 @@ def extract_canonical(runs):
 # ---------------------------------------------------------------- figure 1
 
 
-def fig_feature_structure(canon):
+def fig_feature_structure(observed):
     """Rows = studies, columns = risk / g / effort; thin per-scenario lines."""
-    xpos = {a: i for i, a in enumerate(CANONICAL_ACTIONS)}
+    xpos = {a: i for i, a in enumerate(OBSERVED_ACTIONS)}
     fig, axes = plt.subplots(
         len(STUDIES), 3, figsize=(6.4, 6.6), sharex=True, sharey=True
     )
@@ -115,28 +115,28 @@ def fig_feature_structure(canon):
         """per_scenario: DataFrame (scenario x action -> value); mean over top."""
         for _, srow in per_scenario.iterrows():
             ax.plot(
-                [xpos[a] + xoff for a in CANONICAL_ACTIONS],
-                [srow[a] for a in CANONICAL_ACTIONS],
+                [xpos[a] + xoff for a in OBSERVED_ACTIONS],
+                [srow[a] for a in OBSERVED_ACTIONS],
                 **{
                     **SCENARIO_LINE,
                     **({"color": color, "alpha": 0.3} if color else {}),
                 },
             )
-        xs = [xpos[a] + xoff for a in CANONICAL_ACTIONS]
+        xs = [xpos[a] + xoff for a in OBSERVED_ACTIONS]
         ax.plot(
             xs, mean_line, color=(color or MEAN_COLOR), lw=1.8, zorder=5, label=label
         )
         return xs
 
     for r, study in enumerate(STUDIES):
-        df = canon[canon["study"] == study]
+        df = observed[observed["study"] == study]
         for c, feat in enumerate(("g", "effort", "risk")):
             ax = axes[r, c]
             if feat != "effort":
                 wide = (
                     df.groupby(["scenario", "action"])[feat]
                     .mean()
-                    .unstack("action")[CANONICAL_ACTIONS]
+                    .unstack("action")[OBSERVED_ACTIONS]
                 )
                 draw_lines(ax, wide, wide.mean(axis=0).to_numpy())
             else:
@@ -145,7 +145,7 @@ def fig_feature_structure(canon):
                     wide = (
                         sub.groupby(["scenario", "action"])[feat]
                         .mean()
-                        .unstack("action")[CANONICAL_ACTIONS]
+                        .unstack("action")[OBSERVED_ACTIONS]
                     )
                     draw_lines(
                         ax,
@@ -168,7 +168,7 @@ def fig_feature_structure(canon):
     for ax in axes[-1]:
         ax.set_xticks(range(3))
         ax.set_xticklabels(
-            [ACTION_LABELS[a].replace(" ", "\n", 1) for a in CANONICAL_ACTIONS],
+            [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_ACTIONS],
             fontsize=8,
         )
     for ax in axes.ravel():
@@ -182,7 +182,7 @@ def fig_feature_structure(canon):
 # ---------------------------------------------------------------- figure 2
 
 
-def fig_manipulation_checks(canon):
+def fig_manipulation_checks(observed):
     """(a) LM-rated intimacy by relationship descriptor (Studies 1a/1b);
     (b) LM-rated desire by desire condition (Studies 2a and 2b overlaid)."""
     fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.9))
@@ -190,7 +190,7 @@ def fig_manipulation_checks(canon):
 
     # (a) intimacy magnitudes (Studies 1a/1b share the elicitation design)
     ax = axes[0]
-    df = canon[canon["study"] == "food_inv_desire"]
+    df = observed[observed["study"] == "food_inv_desire"]
     lv = df.groupby(["intimacy_condition", "run_id"], as_index=False)[
         "intimacy"
     ].first()
@@ -246,7 +246,7 @@ def fig_manipulation_checks(canon):
         ("food_inv_joint_ie", 0.14, False, (0, (4, 2))),
     )
     for study, xoff, filled, ls in specs:
-        df = canon[canon["study"] == study]
+        df = observed[observed["study"] == study]
         # one point per scenario: its mean desire in each condition, so the
         # faint lines connect the actual plotted points (each line = one
         # scenario's low->high shift)
@@ -325,11 +325,11 @@ def fig_manipulation_checks(canon):
 # ---------------------------------------------------------------- figure 3
 
 
-def fig_canonical_scatter(canon):
-    """All canonical actions in the (risk, effort) plane (Study 1a's elicitation),
+def fig_observed_scatter(observed):
+    """All observed actions in the (risk, effort) plane (Study 1a's elicitation),
     one point per scenario x action x effort condition; vertical grey segments
     connect the two effort conditions of the same scenario x action."""
-    df = canon[canon["study"] == "food_inv_desire"]
+    df = observed[observed["study"] == "food_inv_desire"]
     agg = df.groupby(["scenario", "action", "effort_condition"], as_index=False).agg(
         risk=("risk", "mean"), effort=("effort", "mean")
     )
@@ -382,7 +382,7 @@ def fig_canonical_scatter(canon):
             markersize=7,
             label=ACTION_LABELS[a],
         )
-        for a in CANONICAL_ACTIONS
+        for a in OBSERVED_ACTIONS
     ] + [
         Line2D(
             [0],
@@ -415,7 +415,7 @@ def fig_canonical_scatter(canon):
     ax.set_yticks([0, 0.5, 1])
     ax.set_box_aspect(1)
     fig.tight_layout()
-    return savefig(fig, "si_lm_canonical_scatter")
+    return savefig(fig, "si_lm_observed_scatter")
 
 
 # ---------------------------------------------------------------- figure 4
@@ -588,7 +588,7 @@ def fig_mixture_check():
     u = np.linspace(-1, 1, 401)
     fig, axes = plt.subplots(2, 3, figsize=(7.0, 4.6), sharex=True, sharey=True)
     for ax, r in zip(axes.ravel(), picks):
-        action_condition = CANONICAL_ACTIONS[r["action"]]
+        action_condition = OBSERVED_ACTIONS[r["action"]]
         h = wide[
             (wide["scenario_label"] == r["scenario_label"])
             & (wide["action_condition"] == action_condition)
@@ -632,15 +632,15 @@ def main():
     frames = []
     for study in STUDIES:
         runs_by_study[study] = load_runs(study)
-        df = extract_canonical(runs_by_study[study])
+        df = extract_observed(runs_by_study[study])
         df["study"] = study
         frames.append(df)
-        print(f"{study}: {len(df)} canonical rows")
-    canon = pd.concat(frames, ignore_index=True)
+        print(f"{study}: {len(df)} observed-action rows")
+    observed = pd.concat(frames, ignore_index=True)
     for path in (
-        fig_feature_structure(canon),
-        fig_manipulation_checks(canon),
-        fig_canonical_scatter(canon),
+        fig_feature_structure(observed),
+        fig_manipulation_checks(observed),
+        fig_observed_scatter(observed),
         fig_run_spread(),
         fig_choice_set_sizes(runs_by_study),
         fig_mixture_check(),

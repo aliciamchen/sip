@@ -53,7 +53,7 @@ from tables import (
 # --- Study 2a: infer intimacy (LM-generated alternatives) --------------------
 # Observer knows (desire, effort); infers intimacy (continuous, 101 bins). The
 # actor reasons over the padded LM-alternatives action space; slot 0 is the
-# observed canonical action. Output dims:
+# observed action. Output dims:
 #   (padded_slot, scenario, observed_action, desire, effort, relationship)
 # and the fit/CV slice slot 0.
 
@@ -233,7 +233,7 @@ def observer_intimacy_base[
 # relationship_condition; the latent is desire (continuous, over DesireLevels).
 # The LM generates plausible alternatives per (scenario, observed_action,
 # effort_condition, relationship_condition) cell, padded to MAX_ACTIONS with the
-# observed canonical action in slot 0.
+# observed action in slot 0.
 
 
 @memo

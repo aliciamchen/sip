@@ -1,5 +1,5 @@
 # ruff: noqa
-"""Source of truth for the 16 food-sharing scenarios — the 3-action canonical set.
+"""Source of truth for the 16 food-sharing scenarios — the 3-action set.
 
 This is the stimulus set for the active inverse-planning experiments (Studies 1a,
 1b, 2a, 2b). Each scenario has 3 actions (no sharing / low-risk sharing / high-risk
