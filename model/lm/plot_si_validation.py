@@ -108,7 +108,7 @@ def fig_feature_structure(observed):
     """Rows = studies, columns = risk / g / effort; thin per-scenario lines."""
     xpos = {a: i for i, a in enumerate(OBSERVED_ACTIONS)}
     fig, axes = plt.subplots(
-        len(STUDIES), 3, figsize=(6.4, 6.6), sharex=True, sharey=True
+        len(STUDIES), 3, figsize=(6.4, 5.6), sharex=True, sharey=True
     )
 
     def draw_lines(ax, per_scenario, mean_line, color=None, xoff=0.0, label=None):

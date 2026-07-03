@@ -13,7 +13,8 @@ repo-root figures/; rendered from --study, Study 1a by default):
      colored by their LM-scored risk, with numbered cluster exemplars and
      their text listed beside the map.
   2a. si_lm_alternatives_composition — the composition of alternatives
-     (nearest observed action) by condition, per observed action.
+     (nearest observed action), by observed action (panel a) and by
+     relationship condition (panel b).
   2b. si_lm_alternatives_set_similarity — the embedding similarity between the
      alternative sets of two elicitation cells, by what differs between the
      cells (nothing/runs only, condition, or observed action).
@@ -181,8 +182,52 @@ def fig_si_semantic_space(proj, clusters, scenario):
             bbox=label_bbox,
         )
 
-    circle_bbox = dict(boxstyle="circle,pad=0.22", fc="white", ec="black", lw=0.7)
-    offset_cycle = [(9, 9), (-11, 8), (9, -9), (-11, -8), (12, 0), (0, 12)]
+    # frame with a margin so the numbered callouts can be pushed into white space
+    # (the margin around the cloud and the gaps between clusters) rather than
+    # sitting on top of the data
+    xr = (alts["dim1"].min(), alts["dim1"].max())
+    yr = (alts["dim2"].min(), alts["dim2"].max())
+    diag = float(np.hypot(xr[1] - xr[0], yr[1] - yr[0]))
+    ax.set_xlim(xr[0] - 0.09 * (xr[1] - xr[0]), xr[1] + 0.09 * (xr[1] - xr[0]))
+    ax.set_ylim(yr[0] - 0.09 * (yr[1] - yr[0]), yr[1] + 0.09 * (yr[1] - yr[0]))
+
+    # data points (and observed stars) to steer the callouts away from
+    avoid = alts[["dim1", "dim2"]].to_numpy()
+    if len(observed):
+        avoid = np.vstack([avoid, observed[["dim1", "dim2"]].to_numpy()])
+    placed = []
+
+    def _white_spot(px, py):
+        """Nearest low-density location for a numbered callout: scan rings of
+        candidate offsets and pick the one with the fewest data points (and
+        already-placed labels) nearby, preferring a short leader line."""
+        xlo, xhi = ax.get_xlim()
+        ylo, yhi = ax.get_ylim()
+        inset = 0.035 * diag
+        best = None
+        for dist in (0.10, 0.15, 0.20, 0.26):
+            for ang in np.linspace(0, 2 * np.pi, 24, endpoint=False):
+                cx = px + dist * diag * np.cos(ang)
+                cy = py + dist * diag * np.sin(ang)
+                if not (xlo + inset <= cx <= xhi - inset):
+                    continue
+                if not (ylo + inset <= cy <= yhi - inset):
+                    continue
+                dens = int(
+                    np.count_nonzero(np.hypot(*(avoid - [cx, cy]).T) < 0.05 * diag)
+                )
+                for qx, qy in placed:
+                    if np.hypot(qx - cx, qy - cy) < 0.06 * diag:
+                        dens += 25
+                score = dens + dist * 4  # prefer emptier spots and short leaders
+                if best is None or score < best[0]:
+                    best = (score, cx, cy)
+        if best is None:
+            return px, py
+        placed.append((best[1], best[2]))
+        return best[1], best[2]
+
+    circle_bbox = dict(boxstyle="circle,pad=0.3", fc="white", ec="black", lw=0.8)
     numbered = []
     for i, cl in enumerate(exemplars, start=1):
         text = cl["exemplars"][0]
@@ -191,17 +236,18 @@ def fig_si_semantic_space(proj, clusters, scenario):
             print(f"note: exemplar not found in projection, skipping: {text[:50]}...")
             continue
         row = hit.iloc[0]
+        cx, cy = _white_spot(float(row["dim1"]), float(row["dim2"]))
         ax.annotate(
             str(i),
-            (row["dim1"], row["dim2"]),
-            textcoords="offset points",
-            xytext=offset_cycle[(i - 1) % len(offset_cycle)],
-            fontsize=7,
+            xy=(row["dim1"], row["dim2"]),
+            xytext=(cx, cy),
+            textcoords="data",
+            fontsize=9.5,
             ha="center",
             va="center",
             bbox=circle_bbox,
             zorder=7,
-            arrowprops=dict(arrowstyle="-", color="#888888", lw=0.6),
+            arrowprops=dict(arrowstyle="-", color="#888888", lw=0.7),
         )
         numbered.append((i, text))
     ax.set_xticks([])
@@ -346,79 +392,131 @@ def _boot_ci(vals, n=1000, seed=0):
     return np.percentile(vals[idx].mean(axis=1), [2.5, 97.5])
 
 
-def fig_si_composition(alts, sem):
-    """Composition of the generated alternatives (nearest observed action).
-    Encodes the message directly: the observed action (x) moves the composition,
-    while the relationship/desire condition barely does. Each bold line is one
-    nearest-observed-action category's mean proportion across observed actions; the
-    faint lines are the individual condition levels, whose tight bundling around
-    the mean shows the composition hardly moves with the condition."""
-    cond_axes = _condition_axes(alts)
-    # the relational/motivational condition is the "does-it-matter" axis, shown
-    # as the faint per-level lines; effort is a cell axis but not varied here
+def fig_si_composition(runs):
+    """Composition of the generated alternatives -- which observed action each one
+    is closest to in the model's (goal-satisfaction, risk, effort) feature space,
+    the space the planner actually reasons over -- shown two ways. (a) With the
+    observed action on x and the relationship levels as faint lines, the bold
+    lines (mean over relationship) move: the composition tracks the observed
+    action. (b) With the relationship descriptor on x and the observed actions as
+    faint lines, the bold lines (mean over observed action) are flat: the
+    composition barely moves with the relationship."""
+    cond_axes = _condition_axes(runs)
+    # the relational/motivational condition is the "does-it-matter" axis; effort
+    # is a cell axis but not varied here
     main_col, (main_name, main_levels, _) = next(
         (c, v) for c, v in cond_axes.items() if c != "effort_condition"
     )
 
-    merged = alts.merge(
-        sem[["scenario_label", "action_text", "nearest_observed_action"]],
-        on=["scenario_label", "action_text"],
-        how="left",
-    )
-    n_missing = merged["nearest_observed_action"].isna().sum()
-    if n_missing:
-        print(f"note: {n_missing} alternative instances missing semantic labels")
-        merged = merged.dropna(subset=["nearest_observed_action"])
+    feats = ("g", "risk", "effort")
 
-    x = np.arange(len(OBSERVED_ACTIONS))  # observed-action positions
+    def feat_vec(a):
+        return None if any(a[f] is None for f in feats) else [a[f] for f in feats]
 
-    def prop_nearest(sub):
-        p = sub["nearest_observed_action"].value_counts(normalize=True)
-        return {a: float(p.get(a, 0.0)) for a in OBSERVED_ACTIONS}
+    # per-scenario feature centroid of each observed action, from the slot-0
+    # (observed) action's LM-scored (g, risk, effort), averaged over runs/conditions
+    acc = {}
+    for rec in runs.itertuples(index=False):
+        obs0 = next((a for a in rec.actions if a["is_observed"]), None)
+        v = feat_vec(obs0) if obs0 is not None else None
+        if v is not None:
+            acc.setdefault((rec.scenario_label, rec.observed_action), []).append(v)
+    centroid = {k: np.mean(v, axis=0) for k, v in acc.items()}
 
-    fig, ax = plt.subplots(figsize=(4.9, 3.3))
-    for nc in OBSERVED_ACTIONS:
-        color = ACTION_COLORS[nc]
-        per_level = []
-        for lvl in main_levels:
-            ys = [
-                prop_nearest(
-                    merged[
-                        (merged["observed_action"] == obs) & (merged[main_col] == lvl)
-                    ]
-                )[nc]
-                for obs in OBSERVED_ACTIONS
-            ]
-            per_level.append(ys)
+    # assign every generated alternative to the observed action whose feature
+    # centroid (in its scenario) is nearest in (g, risk, effort) space
+    counts = {
+        (obs, lvl): dict.fromkeys(OBSERVED_ACTIONS, 0)
+        for obs in OBSERVED_ACTIONS
+        for lvl in main_levels
+    }
+    for rec in runs.itertuples(index=False):
+        try:
+            cents = np.array(
+                [centroid[(rec.scenario_label, a)] for a in OBSERVED_ACTIONS]
+            )
+        except KeyError:
+            continue
+        cell = (rec.observed_action, getattr(rec, main_col))
+        if cell not in counts:
+            continue
+        for a in rec.actions:
+            v = None if a["is_observed"] else feat_vec(a)
+            if v is None:
+                continue
+            nearest = OBSERVED_ACTIONS[int(np.argmin(((cents - v) ** 2).sum(axis=1)))]
+            counts[cell][nearest] += 1
+
+    prop = {
+        cell: {
+            a: (c[a] / total if (total := sum(c.values())) else 0.0)
+            for a in OBSERVED_ACTIONS
+        }
+        for cell, c in counts.items()
+    }
+
+    def draw(ax, x, series_lines, mean_line, color, label=None):
+        for ys in series_lines:
             ax.plot(x, ys, color=color, lw=0.7, alpha=0.3, zorder=2)
-        mean_y = np.mean(per_level, axis=0)
         ax.plot(
-            x,
-            mean_y,
-            color=color,
-            lw=2.2,
-            zorder=4,
-            marker="o",
-            ms=5,
+            x, mean_line, color=color, lw=2.2, zorder=4, marker="o", ms=5, label=label
+        )
+
+    fig, (axa, axb) = plt.subplots(1, 2, figsize=(6.8, 3.3), sharey=True)
+
+    # (a) observed action on x; faint lines = relationship levels
+    xa = np.arange(len(OBSERVED_ACTIONS))
+    for nc in OBSERVED_ACTIONS:
+        per_level = [
+            [prop[(obs, lvl)][nc] for obs in OBSERVED_ACTIONS] for lvl in main_levels
+        ]
+        draw(
+            axa,
+            xa,
+            per_level,
+            np.mean(per_level, axis=0),
+            ACTION_COLORS[nc],
             label=f"Nearest: {ACTION_LABELS[nc].lower()}",
         )
-    ax.set_xticks(x)
-    ax.set_xticklabels(
+    axa.set_xticks(xa)
+    axa.set_xticklabels(
         [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_ACTIONS], fontsize=8
     )
-    ax.set_xlabel("Observed action")
-    ax.set_ylabel("Proportion of generated\nalternatives nearest each action")
-    ax.set_ylim(0, 0.56)
-    ax.set_xlim(-0.25, 2.25)
-    ax.legend(
+    axa.set_xlabel("Observed action")
+    axa.set_ylabel("Proportion of generated\nalternatives nearest each action")
+    axa.set_xlim(-0.25, len(OBSERVED_ACTIONS) - 0.75)
+    axa.legend(
         loc="lower left",
         ncol=1,
-        fontsize=8.5,
+        fontsize=8,
         handlelength=1.3,
         handletextpad=0.5,
         labelspacing=0.5,
-        borderaxespad=1.4,
+        borderaxespad=1.0,
     )
+    panel_label(axa, "a")
+
+    # (b) relationship descriptor on x; faint lines = observed actions
+    xb = np.arange(len(main_levels))
+    for nc in OBSERVED_ACTIONS:
+        per_obs = [
+            [prop[(obs, lvl)][nc] for lvl in main_levels] for obs in OBSERVED_ACTIONS
+        ]
+        draw(axb, xb, per_obs, np.mean(per_obs, axis=0), ACTION_COLORS[nc])
+    axb.set_xticks(xb)
+    if main_col == "intimacy_condition":
+        axb.set_xticklabels(
+            [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in main_levels], fontsize=7
+        )
+        axb.set_xlabel("Relationship descriptor")
+    else:
+        axb.set_xticklabels([lvl.capitalize() for lvl in main_levels], fontsize=8)
+        axb.set_xlabel(f"{main_name.capitalize()} condition")
+    axb.set_xlim(-0.25, len(main_levels) - 0.75)
+    panel_label(axb, "b")
+
+    for ax in (axa, axb):
+        ax.set_ylim(0, 0.56)
     fig.tight_layout()
     return savefig(fig, "si_lm_alternatives_composition")
 
@@ -854,7 +952,7 @@ def main(study, seed, example_scenario, figures):
             clusters = json.load(f)
         for path in (
             fig_si_semantic_space(proj, clusters, example_scenario),
-            fig_si_composition(alts, sem),
+            fig_si_composition(runs),
             fig_si_set_similarity(alts, sem, npz["alt_emb"]),
             fig_si_g_contrast(runs),
             fig_si_base_vs_full(d, runs),
