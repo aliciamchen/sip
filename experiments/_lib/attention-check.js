@@ -21,7 +21,12 @@ export function makeAttentionCheckSingleSlider(tolerance) {
     `,
     data: { response_type: "attention_check" },
     on_finish: function (data) {
-      data.attention_passed = Math.abs(data.response - 0) < tolerance;
+      // `tolerance` is in raw slider units (0-100, integer steps), so
+      // tolerance 0 means only an exact 0 passes — the criterion applied to
+      // every participant collected so far. (An earlier value of 0.02 was a
+      // normalized-scale leftover that, compared against the raw integer
+      // response, was equivalent to requiring exactly 0.)
+      data.attention_passed = Math.abs(data.response - 0) <= tolerance;
     },
   };
 }

@@ -25,7 +25,10 @@ export const DATAPIPE_IDS = {
 // Settings identical across all active experiments.
 export const SHARED_CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
-  ATTENTION_TOLERANCE: 0.02,
+  // Raw slider units (0-100, integer steps): 0 = only an exact 0 passes, which
+  // is the criterion every participant so far has been scored under. Keep at 0
+  // mid-collection so the criterion stays constant within a study's sample.
+  ATTENTION_TOLERANCE: 0,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
   PROLIFIC_COMPLETION_URL:
     "https://app.prolific.com/submissions/complete?cc=C1A889GX",

@@ -5,10 +5,12 @@ paths:
 
 # Analysis structure
 
+The qmds are working/visualization documents. The paper's figures will be made in Python (via the shared `plot_style.py`), and the paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`), not from the qmds.
+
 Core analysis files (named after their data folder, not paper experiment number):
 
 - `utils.R` — Shared utility functions (theme setup, bootstrap correlation, belief update calculation, demographics reporting with `data/legacy/` fallback). Its palettes are the visual source of truth; the Python figure module `plot_style.py` (repo root) copies these hexes so R and Python figures match. Keep the two in sync when a palette changes. Known drift to reconcile: the R LM-elicitation notebooks still color the three actions with an older green/gold/red scheme, whereas `plot_style.py` now uses blue / green / amber (`no_share` / `low_risk_share` / `high_risk_share`).
-- `json_to_csv.py` — Data processing pipeline; converts jsPsych raw JSON to anonymized CSVs.
+- `json_to_csv.py` — Data processing pipeline; converts jsPsych raw JSON to anonymized CSVs. Applies each study's exclusion rule from its config: 1a's preregistered lax rule (exclude only failed-attention AND 0 memory questions), strict for the later studies (retain only passed-attention AND >=1 memory question).
 
 ### Active analysis qmds
 

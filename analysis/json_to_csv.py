@@ -7,8 +7,11 @@ For each experiment it writes two CSVs under data/<experiment>/:
 2. exit_survey.csv - demographics + attention/memory summary, one row per participant
 
 It then builds main_trials_long.csv (the model/analysis input), applying the
-standard exclusions (failed the attention check and answered 0 memory checks
-correctly).
+study's exclusion rule (the config's `exclusion_rule`): Study 1a's preregistered
+lax rule excludes only participants who failed the attention check AND answered
+0 memory questions correctly; the later studies use the stricter rule (retain
+only participants who passed the attention check AND answered at least one
+memory question correctly).
 
 If any raw JSON file fails to parse, the script reports every failing file and
 exits without writing CSVs, so a corrupt download can't silently drop a
@@ -99,6 +102,9 @@ EXPERIMENT_CONFIGS = {
         ],
         "has_attention_memory": True,
         "has_comprehension": True,
+        # Preregistered lax rule for 1a: exclude only participants who fail the
+        # attention check AND answer 0 memory questions correctly.
+        "exclusion_rule": "lax",
     },
     "food_inv_joint_de": {
         "description": "Study 1b — joint desire + effort inference under known intimacy (3-action set)",
@@ -129,6 +135,9 @@ EXPERIMENT_CONFIGS = {
         ],
         "has_attention_memory": True,
         "has_comprehension": True,
+        # Stricter rule for the post-1a studies: retain only participants who
+        # pass the attention check AND answer >=1 memory question correctly.
+        "exclusion_rule": "strict",
     },
     "food_inv_intimacy": {
         "description": "Study 2a — intimacy inference under known desire + effort (3-action set)",
@@ -164,6 +173,9 @@ EXPERIMENT_CONFIGS = {
         ],
         "has_attention_memory": True,
         "has_comprehension": True,
+        # Stricter rule for the post-1a studies: retain only participants who
+        # pass the attention check AND answer >=1 memory question correctly.
+        "exclusion_rule": "strict",
     },
     "food_inv_joint_ie": {
         "description": "Study 2b — joint intimacy + effort inference under known desire (3-action set)",
@@ -194,6 +206,9 @@ EXPERIMENT_CONFIGS = {
         ],
         "has_attention_memory": True,
         "has_comprehension": True,
+        # Stricter rule for the post-1a studies: retain only participants who
+        # pass the attention check AND answer >=1 memory question correctly.
+        "exclusion_rule": "strict",
     },
 }
 
@@ -352,25 +367,41 @@ def create_main_trials_long(output_dir, config):
     """
     Create main_trials_long.csv from main_trials.csv and exit_survey.csv.
 
-    Applies the standard exclusions (failed the attention check and answered 0
-    memory checks correctly) and renames the given-condition columns to bare factor names per
-    the config's long_renames (e.g. effort_condition -> effort).
+    Applies the study's exclusion rule (the config's `exclusion_rule`; see the
+    module docstring) and renames the given-condition columns to bare factor
+    names per the config's long_renames (e.g. effort_condition -> effort).
     """
     output_path = Path(output_dir)
 
     main_trials = pd.read_csv(output_path / "main_trials.csv")
     exit_survey = pd.read_csv(output_path / "exit_survey.csv")
 
-    excluded_subjects = exit_survey[
-        (exit_survey["attention_passed"] != True)
-        & (exit_survey["memory_correct_count"] == 0)
-    ]["subject_id"].tolist()
+    # Per-study exclusion rule (see the config's `exclusion_rule` and the
+    # manuscript Methods). Study 1a preregistered the lax rule (exclude only
+    # participants who fail the attention check AND answer every memory-check
+    # question incorrectly); it excluded 0 participants, so the rule was made
+    # more stringent for the later studies (retain only participants who pass
+    # the attention check AND answer at least one memory-check question
+    # correctly). `memory_correct_count` counts questions (three across the two
+    # memory checks), not checks.
+    rule = config["exclusion_rule"]
+    if rule == "lax":
+        excluded_mask = (exit_survey["attention_passed"] != True) & (
+            exit_survey["memory_correct_count"] == 0
+        )
+        rule_desc = "failed attention and 0 memory questions correct"
+    elif rule == "strict":
+        excluded_mask = (exit_survey["attention_passed"] != True) | (
+            exit_survey["memory_correct_count"] == 0
+        )
+        rule_desc = "failed attention or 0 memory questions correct"
+    else:
+        raise ValueError(f"Unknown exclusion_rule: {rule!r}")
+    excluded_subjects = exit_survey[excluded_mask]["subject_id"].tolist()
 
     n_excluded = len(excluded_subjects)
     n_total = exit_survey["subject_id"].nunique()
-    print(
-        f"Excluding {n_excluded} of {n_total} participants (failed attention and 0 memory correct)"
-    )
+    print(f"Excluding {n_excluded} of {n_total} participants ({rule_desc})")
 
     main_trials_filtered = main_trials[
         ~main_trials["subject_id"].isin(excluded_subjects)

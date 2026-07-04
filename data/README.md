@@ -79,9 +79,10 @@ Two sliders per page, so each row carries both ratings.
 
 ## Exclusion criteria
 
-Participants are excluded from analysis if:
-- `attention_passed != True`
-- `memory_correct_count == 0`
+The exclusion rule is per-study (each study's `exclusion_rule` in `analysis/json_to_csv.py`), and `memory_correct_count` counts questions (three across the two memory checks):
+
+- **Study 1a** (`food_inv_desire`) uses its preregistered lax rule: participants are excluded only if they failed the attention check **and** answered 0 memory questions correctly, i.e. `(attention_passed != True) & (memory_correct_count == 0)`.
+- **Studies 1b, 2a, and 2b** use a stricter rule (1a's rule excluded no one, so it was tightened for the later studies): participants are retained only if they passed the attention check **and** answered at least one memory question correctly, i.e. excluded if `(attention_passed != True) | (memory_correct_count == 0)`.
 
 (There is no comprehension-check exclusion: participants who fail the comprehension check after three attempts are ended before any data is saved, so they never appear in `raw_data/`.)
 

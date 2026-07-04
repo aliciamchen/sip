@@ -256,7 +256,14 @@ save_figure <- function(plot, filename, width = NULL, height = NULL, ...) {
 POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
                                           dodge.width = 0.06, seed = 67)
 
-# Print standardized demographics block from an experiment's exit_survey.csv
+# Print standardized demographics block from an experiment's exit_survey.csv.
+# The retention count uses the study's exclusion rule (mirrors
+# analysis/json_to_csv.py): Study 1a preregistered the lax rule (retain anyone
+# who passes attention OR answers >=1 memory question correctly); the later
+# studies use the stricter rule (retain only participants who pass attention
+# AND answer >=1 memory question correctly).
+LAX_EXCLUSION_STUDIES <- c("food_inv_desire")
+
 report_demographics <- function(data_dir) {
   path <- here("data", data_dir, "exit_survey.csv")
   if (!file.exists(path)) {
@@ -264,12 +271,15 @@ report_demographics <- function(data_dir) {
   }
   df_exit <- read_csv(path, show_col_types = FALSE)
   n_total <- nrow(df_exit)
-  # Exclusion rule: drop only participants who fail the attention check AND
-  # both memory checks (0 correct); retain everyone who passes attention or
-  # answers at least one memory check correctly.
-  n_passed <- df_exit |>
-    filter(attention_passed == TRUE | memory_correct_count > 0) |>
-    nrow()
+  n_passed <- if (data_dir %in% LAX_EXCLUSION_STUDIES) {
+    df_exit |>
+      filter(attention_passed == TRUE | memory_correct_count > 0) |>
+      nrow()
+  } else {
+    df_exit |>
+      filter(attention_passed == TRUE & memory_correct_count > 0) |>
+      nrow()
+  }
   cat("Total participants recruited:", n_total, "\n")
   cat("Retained after exclusions:", n_passed, "\n")
   cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
