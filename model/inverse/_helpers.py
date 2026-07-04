@@ -580,23 +580,38 @@ def intimacy_table_kwargs(utility_param_names, domain="food"):
     )
 
 
-def joint_de_table_kwargs(utility_param_names, domain="food"):
+def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
     """Padded LM tables for Study 1b (food_inv_joint_de). Cell grid
     (scenario, observed_action, intimacy); jointly infers (desire, effort).
     Desire is inferred (no desire scalar); intimacy is given, so
-    full/discomfort_only get the LM-rated `relationship_values`."""
+    full/discomfort_only get the LM-rated `relationship_values`.
+
+    `base=True` (the base ablation, which has no intimacy term) loads the
+    relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
+    across the relationship axis, exactly as in `desire_table_kwargs`."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_joint_de
 
     if domain != "food":
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
+    loader = (
+        (
+            lambda: load_padded_lm_tables_joint_de(
+                runs_filename="lm_runs_base.jsonl", broadcast_relationship=True
+            )
+        )
+        if base
+        else load_padded_lm_tables_joint_de
+    )
     return _padded_table_kwargs(
-        load_padded_lm_tables_joint_de,
+        loader,
         utility_param_names,
         "Study 1b",
-        "food_inv_joint_de",
-        relationship_loader=lambda: load_lm_relationship_values("food_inv_joint_de"),
+        "food_inv_joint_de" + (" --base" if base else ""),
+        relationship_loader=(
+            None if base else (lambda: load_lm_relationship_values("food_inv_joint_de"))
+        ),
     )
 
 
@@ -639,9 +654,8 @@ def joint_ie_table_kwargs(utility_param_names, domain="food"):
 # ==============================================================================
 # Each inverse experiment fits its own actor utility weights jointly with
 # α_observer from its own posterior data. Actor weights are NOT transferred
-# from the forward-planning (Study 1a) fit — the forward and inverse tasks have
-# different data and different identifiability, so transferring would conflate
-# the two fits.
+# between studies — the studies have different data and different
+# identifiability, so transferring would conflate the fits.
 #
 # Params layout in the returned 1-D array: [*utility_param_values, alpha_observer,
 # sigma]. Caller maps utility_param_names → param_<name> columns; reads

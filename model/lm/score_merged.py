@@ -164,8 +164,15 @@ _BASE_OVERRIDE = {
         "alternatives": "lm_alternatives_base.jsonl",
         "runs": "lm_runs_base.jsonl",
     },
-    # 1b later: "food_inv_joint_de": {"cell_cols": (), "relationship_given": False,
-    #     "alternatives": "lm_alternatives_base.jsonl", "runs": "lm_runs_base.jsonl"},
+    # 1b: base generation conditions on nothing beyond scenario + observed
+    # action (effort is inferred, intimacy dropped); effort_inferred stays True
+    # so each cell still emits a record per effort_condition feature axis.
+    "food_inv_joint_de": {
+        "cell_cols": (),
+        "relationship_given": False,
+        "alternatives": "lm_alternatives_base.jsonl",
+        "runs": "lm_runs_base.jsonl",
+    },
 }
 
 

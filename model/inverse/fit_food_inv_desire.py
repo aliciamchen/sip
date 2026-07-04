@@ -2,7 +2,7 @@
 
 Study 1a — observer knows (effort, intimacy), infers desire. Each variant jointly
 fits its utility weights, alpha_observer, and the response-noise sigma from this
-experiment's belief-update data (no transfer from the forward fit). Writes
+experiment's belief-update data (no transfer between studies). Writes
 outputs/food_inv_desire/fit_results.json.
 """
 

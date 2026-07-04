@@ -31,6 +31,7 @@ Requires:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -115,9 +116,13 @@ _BASE_OVERRIDE = {
         "show": ("effort",),
         "cell_cols": ("effort_condition",),
     },
-    # 1b later (effort is inferred, so generation shows neither effort nor intimacy):
-    #   "food_inv_joint_de": {"output": "lm_alternatives_base.jsonl",
-    #                         "show": (), "cell_cols": ()},  # 16×3 = 48 cells
+    # 1b: effort is inferred, so base generation shows neither effort nor
+    # intimacy — 16 scenarios × 3 observed actions = 48 cells.
+    "food_inv_joint_de": {
+        "output": "lm_alternatives_base.jsonl",
+        "show": (),
+        "cell_cols": (),
+    },
 }
 
 ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
@@ -153,8 +158,13 @@ def _cell_key(cell, cell_cols, run_id=None):
 
 
 def _run_seed(cell, cell_cols, run_id):
-    """Deterministic per-(cell, run) seed so reruns reproduce."""
-    return (hash(_cell_key(cell, cell_cols)) ^ (int(run_id) * 0x9E3779B1)) & 0x7FFFFFFF
+    """Deterministic per-(cell, run) seed so reruns reproduce. Hashes the cell
+    key with SHA-256 (Python's builtin ``hash`` is salted per process, so it
+    would give every fresh invocation — including resumes — different seeds),
+    masked to the non-negative 31-bit range the Together ``seed`` param takes.
+    Mirrors ``_seed_for`` in score_merged.py."""
+    key = "|".join(str(part) for part in _cell_key(cell, cell_cols, run_id)).encode()
+    return int.from_bytes(hashlib.sha256(key).digest()[:8], "little") & 0x7FFFFFFF
 
 
 def _build_cells(scenarios_df, cfg):

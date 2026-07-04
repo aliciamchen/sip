@@ -2,7 +2,7 @@
 
 Study 1b — joint over (desire, effort) given intimacy. Each variant jointly fits
 its utility weights, alpha_observer, and the response-noise sigma from this
-experiment's belief-update data (no transfer from the forward fit). Writes
+experiment's belief-update data (no transfer between studies). Writes
 outputs/food_inv_joint_de/fit_results.json.
 """
 
@@ -65,7 +65,9 @@ def main():
             relationship_condition=relationship_condition,
             response_desire=resp_desire,
             response_effort=resp_effort,
-            table_kwargs=joint_de_table_kwargs(utility_names),
+            table_kwargs=joint_de_table_kwargs(
+                utility_names, base=(variant_name == "base")
+            ),
         )
         row = {
             "model": variant_name,

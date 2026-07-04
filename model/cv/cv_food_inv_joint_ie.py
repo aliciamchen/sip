@@ -1,10 +1,9 @@
 """LOSO CV for food_inv_joint_ie (Study 2b).
 
 Each fold jointly refits the actor utility weights + alpha_observer on 15
-scenarios, then predicts the held-out scenario. Per-trial test NLL sums two
-contributions (intimacy slider NLL over the 101-bin posterior, plus binary
-cross-entropy on the implied P(effort=HIGH)). See `_inverse_dispatcher` for
-the loop body.
+scenarios, then predicts the held-out scenario. Each held-out trial's two
+belief updates (intimacy and world-state) are scored jointly under the K-run
+bivariate Gaussian mixture. See `_inverse_dispatcher` for the loop body.
 """
 
 import sys

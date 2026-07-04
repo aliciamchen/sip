@@ -108,9 +108,12 @@ INTIMACY_IDX_TO_LEVEL = dict(enumerate(INTIMACY_CONDITIONS))
 N_ACTIONS = int(len(actions))
 # Restarts per fold refit. Each refit warm-starts from the full-data fit (see
 # `full_fit` below) — a leave-one-scenario-out refit only perturbs it slightly —
-# so a single restart from that warm init converges fast and reliably, replacing
-# the old 3 cold restarts. Falls back to a cold start if no full fit exists.
-N_RESTARTS_CV = 1
+# but the full-data fit saw the held-out scenario, so a warm start alone would
+# let held-out information pick the fold's basin of attraction. The default of
+# 2 therefore adds one cold (lognormal) restart per fold and keeps the better
+# NLL, so every fold has an init that never saw the held-out scenario.
+# Env-tunable via CV_RESTARTS (1 = warm-only, for quick smoke runs).
+N_RESTARTS_CV = int(os.environ.get("CV_RESTARTS", "2"))
 
 
 # Per-variant (observer_fn, utility_param_names). Each registry pairs one of the
@@ -178,7 +181,7 @@ def _fold_row(
         "fold": fold,
         "held_out_scenario": scenario_label,
         "alpha_observer": float(params_arr[-2]),
-        "sigma": float(params_arr[-1]),
+        "param_sigma": float(params_arr[-1]),
         "train_nll": float(train_nll),
         "test_nll": float(test_nll),
         "n_train": int(n_train),
@@ -207,7 +210,7 @@ def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
         print(
             f"  {variant}: mean held-out LL/trial = {sub['held_out_ll'].mean():.4f} "
             f"(alpha_obs = {fsub['alpha_observer'].mean():.3f}, "
-            f"sigma = {fsub['sigma'].mean():.3f})"
+            f"sigma = {fsub['param_sigma'].mean():.3f})"
         )
 
 
@@ -285,6 +288,7 @@ def _loso_intimacy(slug):
                         deltas = density_runs @ GRID_NP - PRIOR_MEAN_F  # (K,)
                         pred_rows.append(
                             {
+                                "experiment": slug,
                                 "scenario_label": scenario_label,
                                 "action": a_idx,
                                 "desire_condition": "low" if r == 0 else "high",
@@ -425,6 +429,7 @@ def _desire_cv_fold(variant, fold, warm, patience):
                 )
                 pred_rows.append(
                     {
+                        "experiment": slug,
                         "scenario_label": scenario_label,
                         "action": a_idx,
                         "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
@@ -580,7 +585,7 @@ def _loso_joint_de(slug):
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_DE.items():
-        tk = joint_de_table_kwargs(utility_names)
+        tk = joint_de_table_kwargs(utility_names, base=(variant == "base"))
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit
@@ -619,6 +624,7 @@ def _loso_joint_de(slug):
                     p_high = joint_runs[:, :, 1].sum(axis=1)  # (K,)
                     pred_rows.append(
                         {
+                            "experiment": slug,
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
@@ -755,6 +761,7 @@ def _loso_joint_ie(slug):
                     p_high = joint_runs[:, :, 1].sum(axis=1)  # (K,)
                     pred_rows.append(
                         {
+                            "experiment": slug,
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "desire_condition": "low" if r == 0 else "high",

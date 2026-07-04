@@ -1,5 +1,6 @@
 [
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 0,
     "desire_condition": "low",
@@ -8,6 +9,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 0,
     "desire_condition": "high",
@@ -16,6 +18,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 1,
     "desire_condition": "low",
@@ -24,6 +27,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 1,
     "desire_condition": "high",
@@ -32,6 +36,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 2,
     "desire_condition": "low",
@@ -40,6 +45,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 2,
     "desire_condition": "high",
@@ -48,6 +54,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 0,
     "desire_condition": "low",
@@ -56,6 +63,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 0,
     "desire_condition": "high",
@@ -64,6 +72,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 1,
     "desire_condition": "low",
@@ -72,6 +81,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 1,
     "desire_condition": "high",
@@ -80,6 +90,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "low",
@@ -88,6 +99,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "high",
@@ -96,6 +108,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 0,
     "desire_condition": "low",
@@ -104,6 +117,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 0,
     "desire_condition": "high",
@@ -112,6 +126,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 1,
     "desire_condition": "low",
@@ -120,6 +135,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 1,
     "desire_condition": "high",
@@ -128,6 +144,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 2,
     "desire_condition": "low",
@@ -136,6 +153,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 2,
     "desire_condition": "high",
@@ -144,6 +162,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "low",
@@ -152,6 +171,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "high",
@@ -160,6 +180,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 1,
     "desire_condition": "low",
@@ -168,6 +189,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 1,
     "desire_condition": "high",
@@ -176,6 +198,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 2,
     "desire_condition": "low",
@@ -184,6 +207,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 2,
     "desire_condition": "high",
@@ -192,6 +216,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 0,
     "desire_condition": "low",
@@ -200,6 +225,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 0,
     "desire_condition": "high",
@@ -208,6 +234,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 1,
     "desire_condition": "low",
@@ -216,6 +243,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 1,
     "desire_condition": "high",
@@ -224,6 +252,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "low",
@@ -232,6 +261,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "high",
@@ -240,6 +270,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 0,
     "desire_condition": "low",
@@ -248,6 +279,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 0,
     "desire_condition": "high",
@@ -256,6 +288,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 1,
     "desire_condition": "low",
@@ -264,6 +297,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 1,
     "desire_condition": "high",
@@ -272,6 +306,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 2,
     "desire_condition": "low",
@@ -280,6 +315,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 2,
     "desire_condition": "high",
@@ -288,6 +324,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "low",
@@ -296,6 +333,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "high",
@@ -304,6 +342,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "low",
@@ -312,6 +351,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "high",
@@ -320,6 +360,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 2,
     "desire_condition": "low",
@@ -328,6 +369,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 2,
     "desire_condition": "high",
@@ -336,6 +378,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 0,
     "desire_condition": "low",
@@ -344,6 +387,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 0,
     "desire_condition": "high",
@@ -352,6 +396,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 1,
     "desire_condition": "low",
@@ -360,6 +405,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 1,
     "desire_condition": "high",
@@ -368,6 +414,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "low",
@@ -376,6 +423,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "high",
@@ -384,6 +432,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 0,
     "desire_condition": "low",
@@ -392,6 +441,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 0,
     "desire_condition": "high",
@@ -400,6 +450,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 1,
     "desire_condition": "low",
@@ -408,6 +459,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 1,
     "desire_condition": "high",
@@ -416,6 +468,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 2,
     "desire_condition": "low",
@@ -424,6 +477,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 2,
     "desire_condition": "high",
@@ -432,6 +486,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 0,
     "desire_condition": "low",
@@ -440,6 +495,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 0,
     "desire_condition": "high",
@@ -448,6 +504,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 1,
     "desire_condition": "low",
@@ -456,6 +513,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 1,
     "desire_condition": "high",
@@ -464,6 +522,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 2,
     "desire_condition": "low",
@@ -472,6 +531,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 2,
     "desire_condition": "high",
@@ -480,6 +540,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 0,
     "desire_condition": "low",
@@ -488,6 +549,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 0,
     "desire_condition": "high",
@@ -496,6 +558,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 1,
     "desire_condition": "low",
@@ -504,6 +567,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 1,
     "desire_condition": "high",
@@ -512,6 +576,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 2,
     "desire_condition": "low",
@@ -520,6 +585,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 2,
     "desire_condition": "high",
@@ -528,6 +594,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 0,
     "desire_condition": "low",
@@ -536,6 +603,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 0,
     "desire_condition": "high",
@@ -544,6 +612,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "low",
@@ -552,6 +621,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "high",
@@ -560,6 +630,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 2,
     "desire_condition": "low",
@@ -568,6 +639,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 2,
     "desire_condition": "high",
@@ -576,6 +648,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 0,
     "desire_condition": "low",
@@ -584,6 +657,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 0,
     "desire_condition": "high",
@@ -592,6 +666,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 1,
     "desire_condition": "low",
@@ -600,6 +675,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 1,
     "desire_condition": "high",
@@ -608,6 +684,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 2,
     "desire_condition": "low",
@@ -616,6 +693,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 2,
     "desire_condition": "high",
@@ -624,6 +702,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 0,
     "desire_condition": "low",
@@ -632,6 +711,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 0,
     "desire_condition": "high",
@@ -640,6 +720,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 1,
     "desire_condition": "low",
@@ -648,6 +729,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 1,
     "desire_condition": "high",
@@ -656,6 +738,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 2,
     "desire_condition": "low",
@@ -664,6 +747,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 2,
     "desire_condition": "high",
@@ -672,6 +756,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "low",
@@ -680,6 +765,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "high",
@@ -688,6 +774,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 1,
     "desire_condition": "low",
@@ -696,6 +783,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 1,
     "desire_condition": "high",
@@ -704,6 +792,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "low",
@@ -712,6 +801,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "high",
@@ -720,6 +810,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "low",
@@ -728,6 +819,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "high",
@@ -736,6 +828,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 1,
     "desire_condition": "low",
@@ -744,6 +837,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 1,
     "desire_condition": "high",
@@ -752,6 +846,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 2,
     "desire_condition": "low",
@@ -760,6 +855,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 2,
     "desire_condition": "high",
@@ -768,6 +864,7 @@
     "model": "full"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 0,
     "desire_condition": "low",
@@ -776,6 +873,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 0,
     "desire_condition": "high",
@@ -784,6 +882,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 1,
     "desire_condition": "low",
@@ -792,6 +891,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 1,
     "desire_condition": "high",
@@ -800,6 +900,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 2,
     "desire_condition": "low",
@@ -808,6 +909,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 2,
     "desire_condition": "high",
@@ -816,6 +918,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 0,
     "desire_condition": "low",
@@ -824,6 +927,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 0,
     "desire_condition": "high",
@@ -832,6 +936,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 1,
     "desire_condition": "low",
@@ -840,6 +945,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 1,
     "desire_condition": "high",
@@ -848,6 +954,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "low",
@@ -856,6 +963,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "high",
@@ -864,6 +972,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 0,
     "desire_condition": "low",
@@ -872,6 +981,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 0,
     "desire_condition": "high",
@@ -880,6 +990,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 1,
     "desire_condition": "low",
@@ -888,6 +999,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 1,
     "desire_condition": "high",
@@ -896,6 +1008,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 2,
     "desire_condition": "low",
@@ -904,6 +1017,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 2,
     "desire_condition": "high",
@@ -912,6 +1026,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "low",
@@ -920,6 +1035,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "high",
@@ -928,6 +1044,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 1,
     "desire_condition": "low",
@@ -936,6 +1053,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 1,
     "desire_condition": "high",
@@ -944,6 +1062,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 2,
     "desire_condition": "low",
@@ -952,6 +1071,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 2,
     "desire_condition": "high",
@@ -960,6 +1080,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 0,
     "desire_condition": "low",
@@ -968,6 +1089,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 0,
     "desire_condition": "high",
@@ -976,6 +1098,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 1,
     "desire_condition": "low",
@@ -984,6 +1107,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 1,
     "desire_condition": "high",
@@ -992,6 +1116,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "low",
@@ -1000,6 +1125,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "high",
@@ -1008,6 +1134,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 0,
     "desire_condition": "low",
@@ -1016,6 +1143,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 0,
     "desire_condition": "high",
@@ -1024,6 +1152,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 1,
     "desire_condition": "low",
@@ -1032,6 +1161,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 1,
     "desire_condition": "high",
@@ -1040,6 +1170,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 2,
     "desire_condition": "low",
@@ -1048,6 +1179,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 2,
     "desire_condition": "high",
@@ -1056,6 +1188,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "low",
@@ -1064,6 +1197,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "high",
@@ -1072,6 +1206,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "low",
@@ -1080,6 +1215,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "high",
@@ -1088,6 +1224,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 2,
     "desire_condition": "low",
@@ -1096,6 +1233,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 2,
     "desire_condition": "high",
@@ -1104,6 +1242,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 0,
     "desire_condition": "low",
@@ -1112,6 +1251,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 0,
     "desire_condition": "high",
@@ -1120,6 +1260,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 1,
     "desire_condition": "low",
@@ -1128,6 +1269,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 1,
     "desire_condition": "high",
@@ -1136,6 +1278,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "low",
@@ -1144,6 +1287,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "high",
@@ -1152,6 +1296,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 0,
     "desire_condition": "low",
@@ -1160,6 +1305,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 0,
     "desire_condition": "high",
@@ -1168,6 +1314,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 1,
     "desire_condition": "low",
@@ -1176,6 +1323,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 1,
     "desire_condition": "high",
@@ -1184,6 +1332,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 2,
     "desire_condition": "low",
@@ -1192,6 +1341,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 2,
     "desire_condition": "high",
@@ -1200,6 +1350,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 0,
     "desire_condition": "low",
@@ -1208,6 +1359,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 0,
     "desire_condition": "high",
@@ -1216,6 +1368,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 1,
     "desire_condition": "low",
@@ -1224,6 +1377,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 1,
     "desire_condition": "high",
@@ -1232,6 +1386,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 2,
     "desire_condition": "low",
@@ -1240,6 +1395,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 2,
     "desire_condition": "high",
@@ -1248,6 +1404,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 0,
     "desire_condition": "low",
@@ -1256,6 +1413,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 0,
     "desire_condition": "high",
@@ -1264,6 +1422,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 1,
     "desire_condition": "low",
@@ -1272,6 +1431,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 1,
     "desire_condition": "high",
@@ -1280,6 +1440,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 2,
     "desire_condition": "low",
@@ -1288,6 +1449,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 2,
     "desire_condition": "high",
@@ -1296,6 +1458,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 0,
     "desire_condition": "low",
@@ -1304,6 +1467,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 0,
     "desire_condition": "high",
@@ -1312,6 +1476,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "low",
@@ -1320,6 +1485,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "high",
@@ -1328,6 +1494,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 2,
     "desire_condition": "low",
@@ -1336,6 +1503,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 2,
     "desire_condition": "high",
@@ -1344,6 +1512,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 0,
     "desire_condition": "low",
@@ -1352,6 +1521,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 0,
     "desire_condition": "high",
@@ -1360,6 +1530,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 1,
     "desire_condition": "low",
@@ -1368,6 +1539,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 1,
     "desire_condition": "high",
@@ -1376,6 +1548,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 2,
     "desire_condition": "low",
@@ -1384,6 +1557,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 2,
     "desire_condition": "high",
@@ -1392,6 +1566,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 0,
     "desire_condition": "low",
@@ -1400,6 +1575,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 0,
     "desire_condition": "high",
@@ -1408,6 +1584,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 1,
     "desire_condition": "low",
@@ -1416,6 +1593,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 1,
     "desire_condition": "high",
@@ -1424,6 +1602,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 2,
     "desire_condition": "low",
@@ -1432,6 +1611,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 2,
     "desire_condition": "high",
@@ -1440,6 +1620,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "low",
@@ -1448,6 +1629,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "high",
@@ -1456,6 +1638,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 1,
     "desire_condition": "low",
@@ -1464,6 +1647,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 1,
     "desire_condition": "high",
@@ -1472,6 +1656,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "low",
@@ -1480,6 +1665,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "high",
@@ -1488,6 +1674,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "low",
@@ -1496,6 +1683,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "high",
@@ -1504,6 +1692,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 1,
     "desire_condition": "low",
@@ -1512,6 +1701,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 1,
     "desire_condition": "high",
@@ -1520,6 +1710,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 2,
     "desire_condition": "low",
@@ -1528,6 +1719,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 2,
     "desire_condition": "high",
@@ -1536,6 +1728,7 @@
     "model": "discomfort_only"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 0,
     "desire_condition": "low",
@@ -1544,6 +1737,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 0,
     "desire_condition": "high",
@@ -1552,6 +1746,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 1,
     "desire_condition": "low",
@@ -1560,6 +1755,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 1,
     "desire_condition": "high",
@@ -1568,6 +1764,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 2,
     "desire_condition": "low",
@@ -1576,6 +1773,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "apples",
     "action": 2,
     "desire_condition": "high",
@@ -1584,6 +1782,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 0,
     "desire_condition": "low",
@@ -1592,6 +1791,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 0,
     "desire_condition": "high",
@@ -1600,6 +1800,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 1,
     "desire_condition": "low",
@@ -1608,6 +1809,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 1,
     "desire_condition": "high",
@@ -1616,6 +1818,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "low",
@@ -1624,6 +1827,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "high",
@@ -1632,6 +1836,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 0,
     "desire_condition": "low",
@@ -1640,6 +1845,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 0,
     "desire_condition": "high",
@@ -1648,6 +1854,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 1,
     "desire_condition": "low",
@@ -1656,6 +1863,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 1,
     "desire_condition": "high",
@@ -1664,6 +1872,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 2,
     "desire_condition": "low",
@@ -1672,6 +1881,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "birthday",
     "action": 2,
     "desire_condition": "high",
@@ -1680,6 +1890,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "low",
@@ -1688,6 +1899,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "high",
@@ -1696,6 +1908,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 1,
     "desire_condition": "low",
@@ -1704,6 +1917,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 1,
     "desire_condition": "high",
@@ -1712,6 +1926,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 2,
     "desire_condition": "low",
@@ -1720,6 +1935,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "brunch",
     "action": 2,
     "desire_condition": "high",
@@ -1728,6 +1944,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 0,
     "desire_condition": "low",
@@ -1736,6 +1953,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 0,
     "desire_condition": "high",
@@ -1744,6 +1962,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 1,
     "desire_condition": "low",
@@ -1752,6 +1971,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 1,
     "desire_condition": "high",
@@ -1760,6 +1980,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "low",
@@ -1768,6 +1989,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "high",
@@ -1776,6 +1998,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 0,
     "desire_condition": "low",
@@ -1784,6 +2007,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 0,
     "desire_condition": "high",
@@ -1792,6 +2016,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 1,
     "desire_condition": "low",
@@ -1800,6 +2025,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 1,
     "desire_condition": "high",
@@ -1808,6 +2034,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 2,
     "desire_condition": "low",
@@ -1816,6 +2043,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "dip",
     "action": 2,
     "desire_condition": "high",
@@ -1824,6 +2052,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "low",
@@ -1832,6 +2061,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "high",
@@ -1840,6 +2070,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "low",
@@ -1848,6 +2079,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "high",
@@ -1856,6 +2088,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 2,
     "desire_condition": "low",
@@ -1864,6 +2097,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "drinks",
     "action": 2,
     "desire_condition": "high",
@@ -1872,6 +2106,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 0,
     "desire_condition": "low",
@@ -1880,6 +2115,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 0,
     "desire_condition": "high",
@@ -1888,6 +2124,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 1,
     "desire_condition": "low",
@@ -1896,6 +2133,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 1,
     "desire_condition": "high",
@@ -1904,6 +2142,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "low",
@@ -1912,6 +2151,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "high",
@@ -1920,6 +2160,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 0,
     "desire_condition": "low",
@@ -1928,6 +2169,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 0,
     "desire_condition": "high",
@@ -1936,6 +2178,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 1,
     "desire_condition": "low",
@@ -1944,6 +2187,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 1,
     "desire_condition": "high",
@@ -1952,6 +2196,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 2,
     "desire_condition": "low",
@@ -1960,6 +2205,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "fair",
     "action": 2,
     "desire_condition": "high",
@@ -1968,6 +2214,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 0,
     "desire_condition": "low",
@@ -1976,6 +2223,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 0,
     "desire_condition": "high",
@@ -1984,6 +2232,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 1,
     "desire_condition": "low",
@@ -1992,6 +2241,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 1,
     "desire_condition": "high",
@@ -2000,6 +2250,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 2,
     "desire_condition": "low",
@@ -2008,6 +2259,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "gala",
     "action": 2,
     "desire_condition": "high",
@@ -2016,6 +2268,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 0,
     "desire_condition": "low",
@@ -2024,6 +2277,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 0,
     "desire_condition": "high",
@@ -2032,6 +2286,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 1,
     "desire_condition": "low",
@@ -2040,6 +2295,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 1,
     "desire_condition": "high",
@@ -2048,6 +2304,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 2,
     "desire_condition": "low",
@@ -2056,6 +2313,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "hike",
     "action": 2,
     "desire_condition": "high",
@@ -2064,6 +2322,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 0,
     "desire_condition": "low",
@@ -2072,6 +2331,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 0,
     "desire_condition": "high",
@@ -2080,6 +2340,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "low",
@@ -2088,6 +2349,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "high",
@@ -2096,6 +2358,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 2,
     "desire_condition": "low",
@@ -2104,6 +2367,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "oysters",
     "action": 2,
     "desire_condition": "high",
@@ -2112,6 +2376,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 0,
     "desire_condition": "low",
@@ -2120,6 +2385,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 0,
     "desire_condition": "high",
@@ -2128,6 +2394,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 1,
     "desire_condition": "low",
@@ -2136,6 +2403,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 1,
     "desire_condition": "high",
@@ -2144,6 +2412,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 2,
     "desire_condition": "low",
@@ -2152,6 +2421,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "social",
     "action": 2,
     "desire_condition": "high",
@@ -2160,6 +2430,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 0,
     "desire_condition": "low",
@@ -2168,6 +2439,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 0,
     "desire_condition": "high",
@@ -2176,6 +2448,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 1,
     "desire_condition": "low",
@@ -2184,6 +2457,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 1,
     "desire_condition": "high",
@@ -2192,6 +2466,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 2,
     "desire_condition": "low",
@@ -2200,6 +2475,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "soup",
     "action": 2,
     "desire_condition": "high",
@@ -2208,6 +2484,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "low",
@@ -2216,6 +2493,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "high",
@@ -2224,6 +2502,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 1,
     "desire_condition": "low",
@@ -2232,6 +2511,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 1,
     "desire_condition": "high",
@@ -2240,6 +2520,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "low",
@@ -2248,6 +2529,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "high",
@@ -2256,6 +2538,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "low",
@@ -2264,6 +2547,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "high",
@@ -2272,6 +2556,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 1,
     "desire_condition": "low",
@@ -2280,6 +2565,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 1,
     "desire_condition": "high",
@@ -2288,6 +2574,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 2,
     "desire_condition": "low",
@@ -2296,6 +2583,7 @@
     "model": "base"
   },
   {
+    "experiment": "food_inv_joint_ie",
     "scenario_label": "wedding",
     "action": 2,
     "desire_condition": "high",
