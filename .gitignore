@@ -38,3 +38,8 @@ model/model_viz_nonfit/
 
 .positai
 .claude/worktrees/ 
+
+# Exploratory end-to-end LM-baseline evals (the full package lives on the
+# LM-evals branch) and manuscript figure sources. Both kept local-only.
+LM_evals/
+writing/

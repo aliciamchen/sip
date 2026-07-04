@@ -1,9 +1,10 @@
 # Continuous-desire model — design note
 
-Status: model code implemented May 2026; LM re-elicitation and human-data fits
-pending (see "Status / what's left" at the bottom). This note records the
-design decision and the implementation plan so the manuscript wording can be
-settled against it.
+Status: model code implemented May 2026. The K=20 LM elicitation has since been
+run for all four studies, Study 1a has fits + LOSO CV run on a partial sample,
+and the other three studies have pilot-scale data only (see "Status / what's
+left" at the bottom). This note records the design decision and the
+implementation plan so the manuscript wording can be settled against it.
 
 ## Desire
 
@@ -181,14 +182,13 @@ rather than changed as part of the code refactor.
 
 ## Status / what's left
 
-- Model code: implemented and compiles; Study 1a smoke-tested with a provisional
-  `g` derived from the existing V CSVs (posterior normalizes over the 101-bin
-  desire grid; more sharing observed → higher `E[desire]`).
-- **Pending — LM elicitation:** run the updated `score_merged.py` to
-  produce the real `g` tables (and `desire` scalars for 2a/2b). Together API
-  cost; not run yet. For 1b/2a/2b this also needs their alternative sets
-  generated first (`generate_alternatives.py`).
-- **Pending — fits:** the active studies have no collected human data yet, so
-  `fit`/`cv` cannot be run end-to-end against data. Re-collect Study 1a on
-  the continuous DV first.
+- Model code: implemented and compiles; Study 1a was initially smoke-tested
+  with a provisional `g` derived from the existing V CSVs (posterior normalizes
+  over the 101-bin desire grid; more sharing observed → higher `E[desire]`).
+- **Done — LM elicitation:** the K=20 elicitation (`generate_alternatives.py` +
+  `score_merged.py`) has been run for all four studies; each study's
+  `lm_runs.jsonl` is committed under `model/outputs/lm/<slug>/`.
+- **In progress — data and fits:** Study 1a has roughly half its target sample
+  collected, with fits and LOSO CV run on it. The other three studies have
+  pilot-scale data only; their final samples have not yet been collected.
 - **Pending — manuscript:** update the three passages above.

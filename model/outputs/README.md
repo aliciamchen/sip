@@ -26,11 +26,12 @@ Slugs (the four inverse studies, all on the 3-action set): `food_inv_desire` (St
 sole source of model predictions, because every reported model-vs-human number is
 out-of-sample.
 
-The LM tables aren't tracked in git; the `lm_*.jsonl` are regenerated locally by the LM
-scripts. So a fresh clone — or any study without its own `lm_runs.jsonl` — has no LM tables
-until you run `generate_alternatives.py` + `score_merged.py` for it; until then that study's
-loaders return `None` and its fit raises a clear `FileNotFoundError`. The fit/CV outputs are
-likewise regenerated locally rather than committed.
+The elicited LM tables (`lm_runs.jsonl`, `lm_alternatives.jsonl`) and the fit/CV outputs are
+committed, so the fit → CV → analysis pipeline is reproducible from a fresh clone without a
+Together AI key. They are regenerated when the pipeline changes: the LM tables by
+`generate_alternatives.py` + `score_merged.py`, and the fit/CV outputs by the fit and CV
+scripts. A study whose `lm_runs.jsonl` is missing has no LM tables — its loaders return
+`None` and its fit raises a clear `FileNotFoundError`.
 
 ## What the numbers mean
 

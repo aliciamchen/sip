@@ -15,7 +15,7 @@ uv sync
 
 # Quarto (https://quarto.org/docs/get-started/) is needed to render the analysis docs
 
-make all                # full pipeline: fit → CV → render qmds
+make all                # full pipeline: fit → CV → model comparison → render qmds
 make help               # list all targets
 ```
 
@@ -141,9 +141,8 @@ model/             Computational models
   outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
     lm/            LM-elicited scenario tables
     <slug>/        Per-experiment outputs
-preregs/           AsPredicted-format preregistration documents (Study 1a present; 1b/2a/2b pending)
+preregs/           AsPredicted-format preregistration documents (one per study)
 figures/           Generated figures used in the paper
-LM_evals/          Language-model evaluation code
 ```
 
 See the [data codebook](data/README.md), [experiments README](experiments/README.md), [model README](model/README.md), and [model outputs README](model/outputs/README.md) for details on each directory.
@@ -195,7 +194,9 @@ uv run python model/cv/cv_food_inv_desire.py
 
 Each inverse experiment jointly fits its own actor utility weights ($w_v, w_d, w_e, \gamma$), $\alpha_\mathrm{observer}$, and a response-noise scale $\sigma$ from its own data, rather than transferring actor weights between studies. The dependent measure is the **belief update** (posterior − prior rating), scored against the model's belief update (posterior mean − prior mean) under the K-component simulated-observer Gaussian mixture $\frac{1}{K}\sum_k \mathcal{N}(u \mid \delta_k, \sigma^2)$. The joint Studies 1b/2b score the (desire, effort) / (intimacy, effort) updates jointly with a bivariate Gaussian per component (a single isotropic $\sigma$, with the cross-dimension correlation carried by the spread of the runs' joint $\delta_k$), the effort update being $P(\text{effort}=\text{high}) - 0.5$. The primary model-comparison metric is per-trial held-out log-likelihood.
 
-All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 LOSO folds. CV refits the actor utility weights ($w_v, w_d, w_e, \gamma$) and $\alpha_\mathrm{obs}$ per fold.
+All reported model-vs-human correlations in the analysis qmds are out-of-sample, pooled across 16 LOSO folds. CV refits the actor utility weights ($w_v, w_d, w_e, \gamma$) and $\alpha_\mathrm{obs}$ per fold. Each fold refit warm-starts from the full-data fit and adds a cold restart, keeping the better optimum, so no fold's result depends on an initialization that saw the held-out scenario.
+
+The paper's model-comparison statistics are computed from the CV outputs by `model/cv/model_comparison.py` (or `make model-comparison`): the difference between the full model and each ablation in per-trial held-out log-likelihood, with 95% confidence intervals from bootstrap resampling of participants (1,000 resamples), plus the secondary condition-averaged model-vs-human Pearson correlations with subject-cluster bootstrap intervals. Results are written to `model/outputs/<slug>/cv_model_comparison.json`.
 
 Render analysis qmds:
 

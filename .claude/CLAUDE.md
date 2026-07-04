@@ -46,7 +46,7 @@ The Supplementary Material `\input`s LaTeX files that are generated from the cod
 ```
 jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                                                               ↓
-                                  model fits (model/) → predictions
+                                  model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
                                   R/Quarto analysis (analysis/) → figures
 ```
