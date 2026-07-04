@@ -18,8 +18,8 @@ EXPERIMENTS_ALL := $(EXPERIMENTS_INVERSE)
 
 # Studies that get a relationship-free base-model alternative set (the `--base`
 # elicitation mode): the given-relationship studies only (2a/2b infer intimacy, so
-# they never show a relationship paragraph). Add food_inv_joint_de when 1b is wired.
-EXPERIMENTS_BASE := food_inv_desire
+# they never show a relationship paragraph).
+EXPERIMENTS_BASE := food_inv_desire food_inv_joint_de
 
 ANALYSIS_QMDS := \
   food-inv-desire-analysis \
@@ -30,7 +30,7 @@ ANALYSIS_QMDS := \
 .PHONY: all help test clean \
         data lm lm-alternatives lm-base \
         fit fit-inverse \
-        cv cv-inverse \
+        cv cv-inverse model-comparison \
         analysis figures-lm-si \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_INVERSE)) \
@@ -39,7 +39,7 @@ ANALYSIS_QMDS := \
         $(addprefix cv-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
 
-all: fit cv analysis
+all: fit cv model-comparison analysis
 
 help:
 	@echo "Saliva inverse planning pipeline"
@@ -48,6 +48,7 @@ help:
 	@echo "  all        - fit + cv + analysis"
 	@echo "  fit        - fit all active experiments"
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
+	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate all LM-elicited CSVs (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
@@ -217,6 +218,15 @@ cv-inverse: $(addprefix cv-,$(EXPERIMENTS_INVERSE))
 
 $(addprefix cv-,$(EXPERIMENTS_INVERSE)): cv-%:
 	uv run python model/cv/cv_$*.py
+
+# =============================================================================
+# Model comparison → outputs/<slug>/cv_model_comparison.json: the paper's
+# primary statistic (full − ablation per-trial held-out LL with participant-
+# bootstrap 95% CIs) plus the secondary model-vs-human correlations.
+# =============================================================================
+
+model-comparison:
+	uv run python model/cv/model_comparison.py
 
 # =============================================================================
 # Analysis: quarto render

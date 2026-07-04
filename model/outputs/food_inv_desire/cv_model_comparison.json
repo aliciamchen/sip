@@ -1,0 +1,62 @@
+{
+  "experiment": "food_inv_desire",
+  "n_boot": 1000,
+  "seed": 0,
+  "n_subjects": 237,
+  "n_trials_per_model": 3792,
+  "mean_held_out_ll_per_trial": {
+    "base": -0.07082067505468297,
+    "discomfort_only": -0.24381129286460232,
+    "full": -0.05929244058167381
+  },
+  "primary": [
+    {
+      "comparison": "full_minus_base",
+      "mean_per_trial_ll_diff": 0.01152823447300915,
+      "ci_95": [
+        0.005136318400282146,
+        0.01796872481342232
+      ]
+    },
+    {
+      "comparison": "full_minus_discomfort_only",
+      "mean_per_trial_ll_diff": 0.18451885228292852,
+      "ci_95": [
+        0.15714544008647088,
+        0.20876430094886556
+      ]
+    }
+  ],
+  "secondary_correlations": [
+    {
+      "model": "base",
+      "dv": "desire",
+      "r": 0.8247407114124428,
+      "ci_95": [
+        0.7358789208378119,
+        0.795555164006495
+      ],
+      "n_cells": 384
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "desire",
+      "r": 0.027108688955050707,
+      "ci_95": [
+        -0.009694065944064405,
+        0.06156291702388428
+      ],
+      "n_cells": 384
+    },
+    {
+      "model": "full",
+      "dv": "desire",
+      "r": 0.841874464563218,
+      "ci_95": [
+        0.7538160542365987,
+        0.8095194368558403
+      ],
+      "n_cells": 384
+    }
+  ]
+}

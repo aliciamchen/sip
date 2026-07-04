@@ -1,0 +1,62 @@
+{
+  "experiment": "food_inv_intimacy",
+  "n_boot": 1000,
+  "seed": 0,
+  "n_subjects": 17,
+  "n_trials_per_model": 272,
+  "mean_held_out_ll_per_trial": {
+    "base": -0.1592144916409298,
+    "discomfort_only": 0.033913792522713156,
+    "full": 0.014606475977951264
+  },
+  "primary": [
+    {
+      "comparison": "full_minus_base",
+      "mean_per_trial_ll_diff": 0.17382096761888105,
+      "ci_95": [
+        0.05540110985517352,
+        0.2730205285126003
+      ]
+    },
+    {
+      "comparison": "full_minus_discomfort_only",
+      "mean_per_trial_ll_diff": -0.019307316544761893,
+      "ci_95": [
+        -0.040428392887015975,
+        0.0009676761729572125
+      ]
+    }
+  ],
+  "secondary_correlations": [
+    {
+      "model": "base",
+      "dv": "intimacy",
+      "r": -0.005619389776781065,
+      "ci_95": [
+        -0.12034824248722792,
+        0.02724939028127209
+      ],
+      "n_cells": 153
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "intimacy",
+      "r": 0.5931432445041551,
+      "ci_95": [
+        0.4931308880835654,
+        0.6848052737118328
+      ],
+      "n_cells": 153
+    },
+    {
+      "model": "full",
+      "dv": "intimacy",
+      "r": 0.5827537528702493,
+      "ci_95": [
+        0.48375347343492425,
+        0.6693117265041448
+      ],
+      "n_cells": 153
+    }
+  ]
+}
