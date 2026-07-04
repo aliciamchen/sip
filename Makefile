@@ -7,19 +7,28 @@
 # Processed CSVs are checked into the repo, so the model + analysis stages
 # work without re-running data processing or LM elicitation.
 
-# The active roster is four inverse-planning studies, all on the 3-action set:
-#   food_inv_desire    (Study 1a — infer desire)
-#   food_inv_joint_de  (Study 1b — joint desire + effort)
-#   food_inv_intimacy  (Study 2a — infer intimacy)
-#   food_inv_joint_ie  (Study 2b — joint intimacy + effort)
+# The active roster is six inverse-planning studies, all on the 3-action set:
+#   food_inv_desire       (Study 1a — infer desire)
+#   food_inv_joint_de     (Study 1b — joint desire + effort)
+#   food_inv_intimacy     (Study 2a — infer intimacy)
+#   food_inv_joint_ie     (Study 2b — joint intimacy + effort)
+#   nonfood_inv_joint_de  (Study 3a — 1b's design on the nonfood scenarios)
+#   nonfood_inv_joint_ie  (Study 3b — 2b's design on the nonfood scenarios)
+#
+# EXPERIMENTS_INVERSE drives the data-dependent aggregate stages (fit / cv /
+# analysis); the nonfood studies stay in their own list until their data and LM
+# tables exist, so `make all` keeps working during the food collection. When
+# Study 3 data lands, move the two nonfood slugs into EXPERIMENTS_INVERSE.
+# Per-study targets (lm-/fit-/cv-/data-<slug>) already cover all six.
 EXPERIMENTS_INVERSE := food_inv_desire food_inv_joint_de \
                        food_inv_intimacy food_inv_joint_ie
-EXPERIMENTS_ALL := $(EXPERIMENTS_INVERSE)
+EXPERIMENTS_NONFOOD := nonfood_inv_joint_de nonfood_inv_joint_ie
+EXPERIMENTS_ALL := $(EXPERIMENTS_INVERSE) $(EXPERIMENTS_NONFOOD)
 
 # Studies that get a relationship-free base-model alternative set (the `--base`
-# elicitation mode): the given-relationship studies only (2a/2b infer intimacy, so
-# they never show a relationship paragraph).
-EXPERIMENTS_BASE := food_inv_desire food_inv_joint_de
+# elicitation mode): the given-relationship studies only (2a/2b/3b infer
+# intimacy, so they never show a relationship paragraph).
+EXPERIMENTS_BASE := food_inv_desire food_inv_joint_de nonfood_inv_joint_de
 
 ANALYSIS_QMDS := \
   food-inv-desire-analysis \
@@ -33,10 +42,10 @@ ANALYSIS_QMDS := \
         cv cv-inverse model-comparison \
         analysis figures-lm-si \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
-        $(addprefix lm-,$(EXPERIMENTS_INVERSE)) \
+        $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
-        $(addprefix fit-,$(EXPERIMENTS_INVERSE)) \
-        $(addprefix cv-,$(EXPERIMENTS_INVERSE)) \
+        $(addprefix fit-,$(EXPERIMENTS_ALL)) \
+        $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
 
 all: fit cv model-comparison analysis
@@ -74,9 +83,10 @@ help:
 	@echo "  deploy-explorer   - build + publish the explorer to athena (one login)"
 	@echo ""
 	@echo "Per-stage aggregates:"
-	@echo "  fit-inverse, cv-inverse"
-	@echo "  lm, lm-alternatives   (lm-alternatives does all 4 studies;"
+	@echo "  fit-inverse, cv-inverse   (the food studies; nonfood joins once its data lands)"
+	@echo "  lm, lm-alternatives   (lm-alternatives does the 4 food studies;"
 	@echo "                         'make -j4 lm-alternatives SCENARIO_WORKERS=1' runs them in parallel)"
+	@echo "  lm-nonfood            (LM elicitation for the 2 nonfood studies, 3a + 3b)"
 	@echo "  lm-base               (relationship-free alternatives for the base model;"
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
 	@echo ""
@@ -88,7 +98,8 @@ help:
 	@echo "  analysis-<name>  (without .qmd suffix)"
 	@echo "  e.g. make analysis-food-inv-desire-analysis"
 	@echo ""
-	@echo "Active inverse slugs:   $(EXPERIMENTS_INVERSE)"
+	@echo "Food inverse slugs:     $(EXPERIMENTS_INVERSE)"
+	@echo "Nonfood inverse slugs:  $(EXPERIMENTS_NONFOOD)"
 
 # =============================================================================
 # Experiment assets (jsPsych): regenerate what a deploy needs from source.
@@ -98,8 +109,8 @@ help:
 # =============================================================================
 
 .PHONY: experiments check-experiments stimuli counterbalancing entry-files preview \
-        deploy-preview deploy-all \
-        $(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE))
+        deploy-preview deploy-all lm-nonfood \
+        $(addprefix counterbalancing-,$(EXPERIMENTS_ALL))
 
 experiments: stimuli counterbalancing entry-files
 
@@ -130,9 +141,11 @@ deploy-preview:
 deploy-all:
 	bin/deploy-experiment --all
 
-# scenarios.py (source of truth) -> scenarios.csv -> per-experiment stimuli.json.
+# scenarios.py / scenarios_nonfood.py (sources of truth) -> the scenario CSVs
+# -> per-experiment stimuli.json.
 stimuli:
 	uv run python experiments/scenarios.py
+	uv run python experiments/scenarios_nonfood.py
 	uv run python experiments/build/csv_to_json.py
 
 # Per-participant condition sequences (each json/full_counterbalancing.json),
@@ -140,7 +153,7 @@ stimuli:
 counterbalancing:
 	uv run python experiments/build/counterbalancing.py
 
-$(addprefix counterbalancing-,$(EXPERIMENTS_INVERSE)): counterbalancing-%:
+$(addprefix counterbalancing-,$(EXPERIMENTS_ALL)): counterbalancing-%:
 	uv run python experiments/build/counterbalancing.py --study $*
 
 # Byte-identical index.html + experiment.js across the active experiments.
@@ -180,9 +193,14 @@ SCENARIO_WORKERS ?= 4
 K_RUNS ?= 20
 ALT_T ?= 0.7
 
+# `lm-alternatives` covers the food studies; the nonfood studies (3a/3b) run
+# via their per-study targets (or `make lm-nonfood` for both) so the paid
+# elicitation for Study 3 is an explicit step, not a side effect.
 lm-alternatives: $(addprefix lm-,$(EXPERIMENTS_INVERSE))
 
-$(addprefix lm-,$(EXPERIMENTS_INVERSE)): lm-%:
+lm-nonfood: $(addprefix lm-,$(EXPERIMENTS_NONFOOD))
+
+$(addprefix lm-,$(EXPERIMENTS_ALL)): lm-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $*
 	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
@@ -204,7 +222,7 @@ $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 fit: fit-inverse
 fit-inverse: $(addprefix fit-,$(EXPERIMENTS_INVERSE))
 
-$(addprefix fit-,$(EXPERIMENTS_INVERSE)): fit-%:
+$(addprefix fit-,$(EXPERIMENTS_ALL)): fit-%:
 	uv run python model/inverse/fit_$*.py
 
 # =============================================================================
@@ -216,7 +234,7 @@ $(addprefix fit-,$(EXPERIMENTS_INVERSE)): fit-%:
 cv: cv-inverse
 cv-inverse: $(addprefix cv-,$(EXPERIMENTS_INVERSE))
 
-$(addprefix cv-,$(EXPERIMENTS_INVERSE)): cv-%:
+$(addprefix cv-,$(EXPERIMENTS_ALL)): cv-%:
 	uv run python model/cv/cv_$*.py
 
 # =============================================================================

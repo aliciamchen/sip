@@ -21,10 +21,12 @@ Usage:
     python json_to_csv.py <experiment_name>
 
 Active inverse studies (3-action set):
-    - food_inv_desire   (Study 1a): infer desire; single continuous 0-100 desire slider
-    - food_inv_joint_de (Study 1b): joint desire + effort; two sliders per trial
-    - food_inv_intimacy (Study 2a): infer intimacy; single 0-100 intimacy slider
-    - food_inv_joint_ie (Study 2b): joint intimacy + effort; two sliders per trial
+    - food_inv_desire      (Study 1a): infer desire; single continuous 0-100 desire slider
+    - food_inv_joint_de    (Study 1b): joint desire + effort; two sliders per trial
+    - food_inv_intimacy    (Study 2a): infer intimacy; single 0-100 intimacy slider
+    - food_inv_joint_ie    (Study 2b): joint intimacy + effort; two sliders per trial
+    - nonfood_inv_joint_de (Study 3a): 1b's design on the nonfood scenario set
+    - nonfood_inv_joint_ie (Study 3b): 2b's design on the nonfood scenario set
 """
 
 import argparse
@@ -208,6 +210,64 @@ EXPERIMENT_CONFIGS = {
         "has_comprehension": True,
         # Stricter rule for the post-1a studies: retain only participants who
         # pass the attention check AND answer >=1 memory question correctly.
+        "exclusion_rule": "strict",
+    },
+    # Study 3 (nonfood scenario set): 3a mirrors 1b's conversion config, 3b
+    # mirrors 2b's — same trial schema, sliders, and strict exclusion rule.
+    "nonfood_inv_joint_de": {
+        "description": "Study 3a — joint desire + effort inference under known intimacy (nonfood set)",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "action_condition",
+            "intimacy_condition",
+            "stage",
+            "desire_rating",
+            "effort_rating",
+        ],
+        "condition_fields": ["action_condition", "intimacy_condition"],
+        "rating_fields": {"desire_rating": "desire", "effort_rating": "effort"},
+        "long_renames": {"intimacy_condition": "intimacy"},
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+            "comprehension_attempt",
+        ],
+        "has_attention_memory": True,
+        "has_comprehension": True,
+        "exclusion_rule": "strict",
+    },
+    "nonfood_inv_joint_ie": {
+        "description": "Study 3b — joint intimacy + effort inference under known desire (nonfood set)",
+        "main_trial_fields": [
+            "subject_id",
+            "scenario_label",
+            "action_condition",
+            "desire_condition",
+            "stage",
+            "intimacy_rating",
+            "effort_rating",
+        ],
+        "condition_fields": ["action_condition", "desire_condition"],
+        "rating_fields": {"intimacy_rating": "intimacy", "effort_rating": "effort"},
+        "long_renames": {"desire_condition": "desire"},
+        "exit_survey_fields": [
+            "subject_id",
+            "gender",
+            "age",
+            "understood",
+            "comments",
+            "attention_passed",
+            "memory_correct_count",
+            "comprehension_attempt",
+        ],
+        "has_attention_memory": True,
+        "has_comprehension": True,
         "exclusion_rule": "strict",
     },
 }
@@ -427,16 +487,16 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Active inverse studies (3-action set):
-  food_inv_desire     Study 1a -- infer desire (single 0-100 desire slider)
-  food_inv_joint_de   Study 1b -- joint desire + effort (two sliders)
-  food_inv_intimacy   Study 2a -- infer intimacy (single 0-100 intimacy slider)
-  food_inv_joint_ie   Study 2b -- joint intimacy + effort (two sliders)
+  food_inv_desire        Study 1a -- infer desire (single 0-100 desire slider)
+  food_inv_joint_de      Study 1b -- joint desire + effort (two sliders)
+  food_inv_intimacy      Study 2a -- infer intimacy (single 0-100 intimacy slider)
+  food_inv_joint_ie      Study 2b -- joint intimacy + effort (two sliders)
+  nonfood_inv_joint_de   Study 3a -- 1b's design on the nonfood scenario set
+  nonfood_inv_joint_ie   Study 3b -- 2b's design on the nonfood scenario set
 
 Examples:
   python json_to_csv.py food_inv_desire
-  python json_to_csv.py food_inv_joint_de
-  python json_to_csv.py food_inv_intimacy
-  python json_to_csv.py food_inv_joint_ie
+  python json_to_csv.py nonfood_inv_joint_de
         """,
     )
 
