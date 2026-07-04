@@ -241,4 +241,6 @@ STUDY_LABELS = {
     "food_inv_joint_de": "Study 1b",
     "food_inv_intimacy": "Study 2a",
     "food_inv_joint_ie": "Study 2b",
+    "nonfood_inv_joint_de": "Study 3a",
+    "nonfood_inv_joint_ie": "Study 3b",
 }

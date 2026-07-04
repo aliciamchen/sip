@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""SI figures validating the LM elicitation across the four inverse studies.
+"""SI figures validating the LM elicitation across the inverse studies.
 
-Reads each study's lm_runs.jsonl (no embeddings needed) and renders three
-publication figures into the repo-root figures/ directory:
+Reads each study's lm_runs.jsonl (no embeddings needed) and renders the
+publication figures into the repo-root figures/ directory. Studies whose
+elicitation hasn't been run yet (no lm_runs.jsonl — e.g. the nonfood studies
+before their LM pipeline runs) are skipped with a message, and each figure is
+built from whichever studies are present:
 
   1. si_lm_feature_structure — the elicited feature map recovers the intended
      observed-action structure in every study's elicitation: risk monotone
@@ -68,13 +71,32 @@ STUDIES = [
     "food_inv_joint_de",
     "food_inv_intimacy",
     "food_inv_joint_ie",
+    "nonfood_inv_joint_de",
+    "nonfood_inv_joint_ie",
+]
+# The studies whose elicitation carries each given-magnitude scalar (for the
+# manipulation-check panels). Panel (a) plots one representative
+# given-relationship study per domain — 1a stands in for 1a/1b, which share the
+# scenario-independent intimacy elicitation.
+INTIMACY_PANEL_STUDIES = [
+    ("food_inv_desire", "1a/1b"),
+    ("nonfood_inv_joint_de", "3a"),
+]
+DESIRE_PANEL_STUDIES = [
+    ("food_inv_intimacy", "2a"),
+    ("food_inv_joint_ie", "2b"),
+    ("nonfood_inv_joint_ie", "3b"),
 ]
 MEAN_COLOR = "#333333"
 SCENARIO_LINE = dict(color="#999999", alpha=0.4, lw=0.7, zorder=2)
 
 
 def load_runs(study):
+    """The study's lm_runs.jsonl as a DataFrame, or None if its elicitation
+    hasn't been run yet."""
     path = get_project_root() / "model" / "outputs" / "lm" / study / "lm_runs.jsonl"
+    if not path.exists():
+        return None
     return pd.read_json(path, lines=True)
 
 
@@ -104,11 +126,12 @@ def extract_observed(runs):
 # ---------------------------------------------------------------- figure 1
 
 
-def fig_feature_structure(observed):
-    """Rows = studies, columns = risk / g / effort; thin per-scenario lines."""
+def fig_feature_structure(observed, studies):
+    """Rows = studies (the ones with elicitation data), columns = risk / g /
+    effort; thin per-scenario lines."""
     xpos = {a: i for i, a in enumerate(OBSERVED_ACTIONS)}
     fig, axes = plt.subplots(
-        len(STUDIES), 3, figsize=(6.4, 5.6), sharex=True, sharey=True
+        len(studies), 3, figsize=(6.4, 1.4 * len(studies)), sharex=True, sharey=True
     )
 
     def draw_lines(ax, per_scenario, mean_line, color=None, xoff=0.0, label=None):
@@ -128,7 +151,7 @@ def fig_feature_structure(observed):
         )
         return xs
 
-    for r, study in enumerate(STUDIES):
+    for r, study in enumerate(studies):
         df = observed[observed["study"] == study]
         for c, feat in enumerate(("g", "effort", "risk")):
             ax = axes[r, c]
@@ -183,50 +206,73 @@ def fig_feature_structure(observed):
 
 
 def fig_manipulation_checks(observed):
-    """(a) LM-rated intimacy by relationship descriptor (Studies 1a/1b);
-    (b) LM-rated desire by desire condition (Studies 2a and 2b overlaid)."""
+    """(a) LM-rated intimacy by relationship descriptor (the given-relationship
+    studies); (b) LM-rated desire by desire condition (the given-desire studies
+    overlaid). Each panel draws whichever of its studies have elicitation data,
+    offset on x when there is more than one."""
     fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.9))
     rng = np.random.default_rng(0)
+    present = set(observed["study"])
+    linestyles = ["-", (0, (4, 2)), (0, (1, 1.4))]
 
-    # (a) intimacy magnitudes (Studies 1a/1b share the elicitation design)
+    def offsets(n, span=0.14):
+        return [0.0] if n == 1 else list(np.linspace(-span, span, n))
+
+    # (a) intimacy magnitudes, one representative given-relationship study per
+    # domain (1a stands in for 1a/1b, which share the elicitation design)
     ax = axes[0]
-    df = observed[observed["study"] == "food_inv_desire"]
-    lv = df.groupby(["intimacy_condition", "run_id"], as_index=False)[
-        "intimacy"
-    ].first()
-    spread = lv.groupby("intimacy_condition")["intimacy"].nunique()
-    if (spread > 1).any():
-        print("note: intimacy magnitudes vary across runs; plotting run-level points")
-        for i, lvl in enumerate(INTIMACY_LEVELS):
-            sub = lv[lv["intimacy_condition"] == lvl]
-            ax.scatter(
-                i + rng.uniform(-0.08, 0.08, len(sub)),
-                sub["intimacy"],
-                s=7,
-                color=INTIMACY_COLORS[lvl],
-                alpha=0.3,
-                lw=0,
+    panel_a = [(s, lab) for s, lab in INTIMACY_PANEL_STUDIES if s in present]
+    offs_a = offsets(len(panel_a))
+    jit = 0.08 if len(panel_a) == 1 else 0.05
+    for k, ((study, lab), xoff) in enumerate(zip(panel_a, offs_a)):
+        df = observed[observed["study"] == study]
+        lv = df.groupby(["intimacy_condition", "run_id"], as_index=False)[
+            "intimacy"
+        ].first()
+        spread = lv.groupby("intimacy_condition")["intimacy"].nunique()
+        if (spread > 1).any():
+            print(
+                f"note: intimacy magnitudes vary across runs ({study}); "
+                "plotting run-level points"
             )
-    means = lv.groupby("intimacy_condition")["intimacy"].mean()[INTIMACY_LEVELS]
-    ax.plot(range(4), means, color=MEAN_COLOR, lw=1.8, zorder=5)
-    for i, lvl in enumerate(INTIMACY_LEVELS):
-        ax.scatter(
-            i,
-            means[lvl],
-            s=48,
-            color=INTIMACY_COLORS[lvl],
-            edgecolor="black",
-            lw=0.5,
-            zorder=6,
+            for i, lvl in enumerate(INTIMACY_LEVELS):
+                sub = lv[lv["intimacy_condition"] == lvl]
+                ax.scatter(
+                    i + xoff + rng.uniform(-jit, jit, len(sub)),
+                    sub["intimacy"],
+                    s=7,
+                    color=INTIMACY_COLORS[lvl],
+                    alpha=0.3,
+                    lw=0,
+                )
+        means = lv.groupby("intimacy_condition")["intimacy"].mean()[INTIMACY_LEVELS]
+        ax.plot(
+            np.arange(4) + xoff,
+            means,
+            color=MEAN_COLOR,
+            lw=1.8,
+            ls=linestyles[k % len(linestyles)],
+            zorder=5,
+            label=f"Study {lab}" if len(panel_a) > 1 else None,
         )
-        ax.annotate(
-            f"{means[lvl]:g}",
-            (i, means[lvl]),
-            textcoords="offset points",
-            xytext=(0, 8),
-            ha="center",
-            fontsize=8,
-        )
+        for i, lvl in enumerate(INTIMACY_LEVELS):
+            style = (
+                dict(color=INTIMACY_COLORS[lvl], edgecolor="black", lw=0.5)
+                if k == 0
+                else dict(facecolor="white", edgecolor=INTIMACY_COLORS[lvl], lw=1.4)
+            )
+            ax.scatter(i + xoff, means[lvl], s=48, zorder=6, **style)
+            if len(panel_a) == 1:
+                ax.annotate(
+                    f"{means[lvl]:g}",
+                    (i, means[lvl]),
+                    textcoords="offset points",
+                    xytext=(0, 8),
+                    ha="center",
+                    fontsize=8,
+                )
+    if len(panel_a) > 1:
+        ax.legend(loc="upper left", fontsize=7.5, handlelength=1.8)
     ax.set_xticks(range(4))
     ax.set_xticklabels(
         [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in INTIMACY_LEVELS],
@@ -235,16 +281,18 @@ def fig_manipulation_checks(observed):
     ax.set_xlabel("Relationship descriptor")
     ax.set_ylabel("LM-rated intimacy $I$")
     ax.set_xlim(-0.5, 3.5)
-    ax.set_title("Studies 1a/1b")
+    ax.set_title("Studies " + "/".join(lab for _, lab in panel_a))
     panel_label(ax, "a")
 
-    # (b) desire by condition, Studies 2a and 2b overlaid with an x offset
+    # (b) desire by condition, the given-desire studies overlaid with x offsets
     ax = axes[1]
     xpos = {"low": 0, "high": 1}
-    specs = (
-        ("food_inv_intimacy", -0.14, True, "-"),
-        ("food_inv_joint_ie", 0.14, False, (0, (4, 2))),
-    )
+    panel_b = [(s, lab) for s, lab in DESIRE_PANEL_STUDIES if s in present]
+    offs_b = offsets(len(panel_b))
+    specs = [
+        (study, xoff, k == 0, linestyles[k % len(linestyles)])
+        for k, ((study, _), xoff) in enumerate(zip(panel_b, offs_b))
+    ]
     for study, xoff, filled, ls in specs:
         df = observed[observed["study"] == study]
         # one point per scenario: its mean desire in each condition, so the
@@ -312,7 +360,7 @@ def fig_manipulation_checks(observed):
     ax.set_xlabel("Desire condition")
     ax.set_ylabel("LM-rated desire $d$")
     ax.set_xlim(-0.6, 1.6)
-    ax.set_title("Studies 2a/2b")
+    ax.set_title("Studies " + "/".join(lab for _, lab in panel_b))
     panel_label(ax, "b")
 
     for ax in axes:
@@ -325,11 +373,14 @@ def fig_manipulation_checks(observed):
 # ---------------------------------------------------------------- figure 3
 
 
-def fig_observed_scatter(observed):
-    """All observed actions in the (risk, effort) plane (Study 1a's elicitation),
-    one point per scenario x action x effort condition; vertical grey segments
+def fig_observed_scatter(
+    observed, study="food_inv_desire", figname="si_lm_observed_scatter"
+):
+    """All observed actions in the (risk, effort) plane for one study's
+    elicitation (Study 1a by default; the nonfood analog uses Study 3a's), one
+    point per scenario x action x effort condition; vertical grey segments
     connect the two effort conditions of the same scenario x action."""
-    df = observed[observed["study"] == "food_inv_desire"]
+    df = observed[observed["study"] == study]
     agg = df.groupby(["scenario", "action", "effort_condition"], as_index=False).agg(
         risk=("risk", "mean"), effort=("effort", "mean")
     )
@@ -415,7 +466,7 @@ def fig_observed_scatter(observed):
     ax.set_yticks([0, 0.5, 1])
     ax.set_box_aspect(1)
     fig.tight_layout()
-    return savefig(fig, "si_lm_observed_scatter")
+    return savefig(fig, figname)
 
 
 # ---------------------------------------------------------------- figure 4
@@ -517,12 +568,16 @@ def fig_run_spread():
 
 def fig_choice_set_sizes(runs_by_study):
     """Distribution of the number of LM-generated alternatives in each scored
-    choice set (one set per cell x run), per study. Documents the "small,
-    focused set" the generation prompt asks for — and makes visible that a
-    fraction of Study 1a's sets contain no alternatives at all."""
-    fig, axes = plt.subplots(1, 4, figsize=(7.0, 1.7), sharex=True, sharey=True)
+    choice set (one set per cell x run), per study with elicitation data.
+    Documents the "small, focused set" the generation prompt asks for — and
+    makes visible that a fraction of Study 1a's sets contain no alternatives
+    at all."""
+    studies = list(runs_by_study)
+    fig, axes = plt.subplots(
+        1, len(studies), figsize=(1.75 * len(studies), 1.7), sharex=True, sharey=True
+    )
     xs = np.arange(0, 8)
-    for ax, study in zip(axes, STUDIES):
+    for ax, study in zip(np.atleast_1d(axes), studies):
         sizes = runs_by_study[study]["actions"].apply(len) - 1
         pct = sizes.value_counts(normalize=True).sort_index() * 100
         ax.bar(
@@ -535,7 +590,7 @@ def fig_choice_set_sizes(runs_by_study):
         )
         ax.set_title(STUDY_LABELS[study], fontsize=9)
         ax.set_xticks(xs[::2])
-    axes[0].set_ylabel("% of choice sets")
+    np.atleast_1d(axes)[0].set_ylabel("% of choice sets")
     fig.supxlabel("Number of LM-generated alternatives in the scored set", fontsize=9)
     fig.tight_layout()
     return savefig(fig, "si_lm_choice_set_sizes")
@@ -631,20 +686,36 @@ def main():
     runs_by_study = {}
     frames = []
     for study in STUDIES:
-        runs_by_study[study] = load_runs(study)
-        df = extract_observed(runs_by_study[study])
+        runs = load_runs(study)
+        if runs is None:
+            print(f"{study}: no lm_runs.jsonl yet — skipped")
+            continue
+        runs_by_study[study] = runs
+        df = extract_observed(runs)
         df["study"] = study
         frames.append(df)
         print(f"{study}: {len(df)} observed-action rows")
     observed = pd.concat(frames, ignore_index=True)
-    for path in (
-        fig_feature_structure(observed),
+    studies = list(runs_by_study)
+    figures = [
+        fig_feature_structure(observed, studies),
         fig_manipulation_checks(observed),
         fig_observed_scatter(observed),
         fig_run_spread(),
         fig_choice_set_sizes(runs_by_study),
         fig_mixture_check(),
-    ):
+    ]
+    # The nonfood analog of the observed-action scatter, once Study 3a's
+    # elicitation exists.
+    if "nonfood_inv_joint_de" in runs_by_study:
+        figures.append(
+            fig_observed_scatter(
+                observed,
+                study="nonfood_inv_joint_de",
+                figname="si_lm_observed_scatter_nonfood",
+            )
+        )
+    for path in figures:
         if path:
             print(f"wrote {path}")
 
