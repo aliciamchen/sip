@@ -1,6 +1,6 @@
 # `model/` — modeling pipeline
 
-Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. The roster is four inverse-planning studies, all on the 3-action stimulus set: `food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b).
+Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. The roster is six inverse-planning studies, all on the 3-action stimulus structure: `food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), and `food_inv_joint_ie` (2b) on the food scenario set, plus `nonfood_inv_joint_de` (3a) and `nonfood_inv_joint_ie` (3b), which repeat the two joint designs on the non-food scenario set.
 
 ## Pipeline at a glance
 
@@ -21,7 +21,7 @@ Model comparison  (cv/model_comparison.py)
 
 ## Per-experiment files
 
-All four studies infer one or two latent variables from a single observed action; the observer reasons over `{observed action} ∪ LM-generated alternatives`. The dependent measure is the **belief update** (posterior − prior rating). Each elicitation run k yields a model update `δ_k`, and a participant's update is scored under the K-component Gaussian mixture `(1/K) Σ_k N(u | δ_k, σ²)` with a fitted response-noise `σ` (bivariate with isotropic σ for the joint studies). The fitted parameters are the ablation's utility weights, the observer temperature `α_observer`, and `σ`; the primary model-comparison metric is per-trial held-out log-likelihood under leave-one-scenario-out CV.
+All six studies infer one or two latent variables from a single observed action; the observer reasons over `{observed action} ∪ LM-generated alternatives`. The dependent measure is the **belief update** (posterior − prior rating). Each elicitation run k yields a model update `δ_k`, and a participant's update is scored under the K-component Gaussian mixture `(1/K) Σ_k N(u | δ_k, σ²)` with a fitted response-noise `σ` (bivariate with isotropic σ for the joint studies). The fitted parameters are the ablation's utility weights, the observer temperature `α_observer`, and `σ`; the primary model-comparison metric is per-trial held-out log-likelihood under leave-one-scenario-out CV.
 
 | Slug | Study | Infers | Fit | CV |
 |---|---|---|---|---|
@@ -29,8 +29,10 @@ All four studies infer one or two latent variables from a single observed action
 | `food_inv_joint_de` | 1b | desire + effort   | `inverse/fit_food_inv_joint_de.py` | `cv/cv_food_inv_joint_de.py` |
 | `food_inv_intimacy` | 2a | intimacy          | `inverse/fit_food_inv_intimacy.py` | `cv/cv_food_inv_intimacy.py` |
 | `food_inv_joint_ie` | 2b | intimacy + effort | `inverse/fit_food_inv_joint_ie.py` | `cv/cv_food_inv_joint_ie.py` |
+| `nonfood_inv_joint_de` | 3a | desire + effort   | `inverse/fit_nonfood_inv_joint_de.py` | `cv/cv_nonfood_inv_joint_de.py` |
+| `nonfood_inv_joint_ie` | 3b | intimacy + effort | `inverse/fit_nonfood_inv_joint_ie.py` | `cv/cv_nonfood_inv_joint_ie.py` |
 
-Run any script directly as `uv run python <path>`, or via `make fit-<slug>` / `make cv-<slug>`. Per-experiment scripts are thin wrappers: shared logic lives in `inverse/_helpers.py` and `cv/_inverse_dispatcher.py`, and each wrapper calls the shared main with its slug hardcoded. A fit runs only once its study's data is in `data/<slug>/` and its LM tables have been elicited (otherwise it raises a `FileNotFoundError` naming the elicitation commands to run).
+Run any script directly as `uv run python <path>`, or via `make fit-<slug>` / `make cv-<slug>`. Per-experiment scripts are thin wrappers: shared logic lives in `inverse/_helpers.py` and `cv/_inverse_dispatcher.py`, and each wrapper calls the shared main with its slug hardcoded. The non-food studies reuse the joint studies' observers and helpers wholesale — both stimulus sets have 16 scenarios, so only the scenario labels and the LM-table folder differ. A fit runs only once its study's data is in `data/<slug>/` and its LM tables have been elicited (otherwise it raises a `FileNotFoundError` naming the elicitation commands to run).
 
 ## Layout
 

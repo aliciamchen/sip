@@ -1,12 +1,12 @@
 ---
 name: audit-repo
-description: Run a state-of-the-repo audit across the four active inverse-planning experiments, the model pipeline, and the analysis qmds. Reports broken scripts, stale references, drift across per-experiment scripts, output CSV consistency, test status, orphaned files, and gitignore correctness — grouped by severity. Use after large refactors or before submission.
+description: Run a state-of-the-repo audit across the active inverse-planning experiments, the model pipeline, and the analysis qmds. Reports broken scripts, stale references, drift across per-experiment scripts, output CSV consistency, test status, orphaned files, and gitignore correctness — grouped by severity. Use after large refactors or before submission.
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Repo state audit
 
-Run a thorough audit of this repository. The active roster is four inverse-planning studies on the 3-action set — `food_inv_desire` (1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b) — fed by a multi-stage pipeline (LM elicitation → fit → CV → analysis; CV is the sole source of model predictions, all out-of-sample). The audit catches things that broke during recent refactors and surfaces drift before it compounds.
+Run a thorough audit of this repository. The active roster is six inverse-planning studies on the 3-action structure — `food_inv_desire` (1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b) on the food scenario set, plus `nonfood_inv_joint_de` (3a) and `nonfood_inv_joint_ie` (3b) on the nonfood set (`scenarios_nonfood.csv`; no participant data or LM tables until Study 3 collection starts, so their missing `data/` and `outputs/` folders are expected, not findings) — fed by a multi-stage pipeline (LM elicitation → fit → CV → analysis; CV is the sole source of model predictions, all out-of-sample). The audit catches things that broke during recent refactors and surfaces drift before it compounds.
 
 For broad checks, delegate to the Explore subagent in parallel chunks. For targeted file reads or path checks, do them directly.
 

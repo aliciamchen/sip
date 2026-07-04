@@ -20,8 +20,10 @@ outputs/
     └── cv_model_comparison.json              # bootstrap model-comparison statistics (the paper's numbers)
 ```
 
-Slugs (the four inverse studies, all on the 3-action set): `food_inv_desire` (Study 1a),
-`food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b). Each slug's
+Slugs (the six inverse studies, all on the 3-action structure): `food_inv_desire` (Study 1a),
+`food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b), and the
+non-food pair `nonfood_inv_joint_de` (3a) and `nonfood_inv_joint_ie` (3b), whose folders
+appear once their LM elicitation and fits have been run. Each slug's
 `<slug>/` folder is populated by running its fit → CV scripts (`make all`, or the per-study
 `make fit-<slug>` / `cv-<slug>`). There is no separate in-sample prediction stage: CV is the
 sole source of model predictions, because every reported model-vs-human number is

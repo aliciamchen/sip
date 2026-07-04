@@ -5,9 +5,9 @@ Guidance for Claude Code sessions working in this repository. Project overview, 
 ## Naming and structure conventions
 
 - The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/cv scripts can also be imported as modules if needed.
-- The active roster is four inverse-planning studies, all on the 3-action set: `food_inv_desire` (Study 1a), `food_inv_joint_de` (Study 1b), `food_inv_intimacy` (Study 2a), `food_inv_joint_ie` (Study 2b).
+- The active roster is six inverse-planning studies, all on the 3-action structure: `food_inv_desire` (Study 1a), `food_inv_joint_de` (Study 1b), `food_inv_intimacy` (Study 2a), `food_inv_joint_ie` (Study 2b) on the food scenario set, plus `nonfood_inv_joint_de` (Study 3a, mirroring 1b) and `nonfood_inv_joint_ie` (Study 3b, mirroring 2b) on the nonfood set. The nonfood pair reuses the food joint studies' observers, fit helpers, and CV dispatcher — only the stimulus set, scenario labels, and LM tables differ (`domain="nonfood"` in the table-kwargs builders; `STUDY_SCENARIO_LABELS` in `model/tables.py`).
 - Per-experiment scripts (e.g. `model/inverse/fit_food_inv_intimacy.py`) are thin wrappers that import shared logic from `_inverse_dispatcher.py` (cv/) or `_helpers.py` (inverse/) and call its main with their hardcoded slug. To trace what a script does, follow the import.
-- The active experiment roster lives in `Makefile`'s `EXPERIMENTS_INVERSE` variable; `make all` runs fit → cv → analysis across all four (CV produces the out-of-sample predictions; there is no separate predict stage).
+- The experiment roster lives in the `Makefile`: `EXPERIMENTS_INVERSE` holds the food studies (the data-dependent aggregates `make fit`/`cv`/`analysis` run over these), `EXPERIMENTS_NONFOOD` the two nonfood studies (no data or LM tables yet — move them into `EXPERIMENTS_INVERSE` when Study 3 data lands). `make all` runs fit → cv → analysis over `EXPERIMENTS_INVERSE` (CV produces the out-of-sample predictions; there is no separate predict stage); per-study targets (`lm-/fit-/cv-/data-<slug>`) cover all six.
 
 ## Legacy data
 

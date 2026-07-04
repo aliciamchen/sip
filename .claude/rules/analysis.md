@@ -14,7 +14,7 @@ Core analysis files (named after their data folder, not paper experiment number)
 
 ### Active analysis qmds
 
-The active roster is four inverse-planning studies on the 3-action set. The Study 1a qmd (`food-inv-desire-analysis.qmd`) runs on the current partial sample (~half the target N); the other three are still structure-only stubs on pilot data (they gracefully handle missing data + missing CV predictions via `file.exists()` guards; TODO blocks mark where belief-update + model-vs-human panels go once full data lands):
+The Study 1a qmd (`food-inv-desire-analysis.qmd`) runs on the current partial sample (~half the target N); the other three food qmds are still structure-only stubs on pilot data (they gracefully handle missing data + missing CV predictions via `file.exists()` guards; TODO blocks mark where belief-update + model-vs-human panels go once full data lands). The nonfood studies (3a/3b) have no qmds yet — their data collection hasn't started, and the paper's figures come from Python anyway:
 
 - `food-inv-desire-analysis.qmd` — Study 1a: infer desire under known effort + intimacy (continuous 0–100 DV).
 - `food-inv-joint-de-analysis.qmd` — Study 1b: joint over desire × effort given intimacy.
@@ -27,8 +27,9 @@ Convert experiment JSON output to CSV:
 
 ```bash
 uv run python analysis/json_to_csv.py <experiment_name>
-# active experiments: food_inv_desire, food_inv_joint_de, food_inv_intimacy, food_inv_joint_ie
-#   (all four have configs; the two-slider studies joint_de/joint_ie split the
+# active experiments: food_inv_desire, food_inv_joint_de, food_inv_intimacy,
+#   food_inv_joint_ie, nonfood_inv_joint_de, nonfood_inv_joint_ie
+#   (all six have configs; the two-slider studies joint_de/joint_ie split the
 #    survey-html-form response into desire_rating/intimacy_rating + effort_rating)
 ```
 

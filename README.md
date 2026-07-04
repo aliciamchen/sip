@@ -2,7 +2,7 @@
 
 Cognitive science research on social inference and food sharing: how people decide to share saliva-transferring food with someone given the relationship between them, and how observers infer the relationship, desire, or physical effort from observed actions.
 
-The current manuscript organizes the work into four inverse-planning studies, all built on a 3-action food stimulus set (no sharing / low-risk sharing / high-risk sharing) that lets the three latent variables — desire, effort, and intimacy — be crossed and inferred in different combinations. In each study the observer sees a single action and infers one or two of the latent variables: Study 1a infers desire, Study 1b jointly infers desire and effort, Study 2a infers intimacy, and Study 2b jointly infers intimacy and effort. A planned Study 3 will generalize these findings to non-food domains; its exact design is still being decided.
+The current manuscript organizes the work into six inverse-planning studies, all built on a 3-action stimulus structure (no sharing / low-risk sharing / high-risk sharing) that lets the three latent variables — desire, effort, and intimacy — be crossed and inferred in different combinations. In each study the observer sees a single action and infers one or two of the latent variables: Study 1a infers desire, Study 1b jointly infers desire and effort, Study 2a infers intimacy, and Study 2b jointly infers intimacy and effort, all on a 16-scenario food stimulus set. Study 3 tests whether the same model generalizes beyond food to other forms of interpersonal vulnerability (bodily access, shared physical exposure, and private access) using a matched 16-scenario non-food set: Study 3a repeats 1b's joint desire + effort design and Study 3b repeats 2b's joint intimacy + effort design on those scenarios.
 
 ## Quick start
 
@@ -45,12 +45,14 @@ On each trial the participant reads a vignette plus whichever condition paragrap
 - **Study 1b — joint desire + effort** (`food_inv_joint_de/`) — known: intimacy. Inferred jointly: desire and the physical world state. Design: 4 × 3, two sliders per trial.
 - **Study 2a — intimacy inference** (`food_inv_intimacy/`) — known: desire + effort. Inferred: intimacy. Design: 2 × 2 × 3.
 - **Study 2b — joint intimacy + effort** (`food_inv_joint_ie/`) — known: desire. Inferred jointly: intimacy and the physical world state. Design: 2 × 3, two sliders per trial.
+- **Study 3a — joint desire + effort, non-food** (`nonfood_inv_joint_de/`) — Study 1b's design on the non-food scenario set.
+- **Study 3b — joint intimacy + effort, non-food** (`nonfood_inv_joint_ie/`) — Study 2b's design on the non-food scenario set.
 
 The [experiments README](experiments/README.md) documents the shared jsPsych infrastructure, the counterbalancing scheme, the comprehension/attention/memory checks, and a standalone trial-preview page (`make preview`). Data from earlier, superseded experiments is archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md).
 
 ### Scenarios
 
-The Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it ([`scenarios.py`](experiments/scenarios.py) → `scenarios.csv` for the active food set, [`scenarios_nonfood.py`](experiments/scenarios_nonfood.py) → `scenarios_nonfood.csv` for the planned non-food set). Edit the `.py` file and regenerate; the scenario tables in the paper's supplementary material are rendered from these CSVs by [`export_scenarios_latex.py`](experiments/export_scenarios_latex.py).
+The Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it ([`scenarios.py`](experiments/scenarios.py) → `scenarios.csv` for the food set of Studies 1–2, [`scenarios_nonfood.py`](experiments/scenarios_nonfood.py) → `scenarios_nonfood.csv` for the non-food set of Study 3). Edit the `.py` file and regenerate; the scenario tables in the paper's supplementary material are rendered from these CSVs by [`export_scenarios_latex.py`](experiments/export_scenarios_latex.py).
 
 ## Utility model
 
