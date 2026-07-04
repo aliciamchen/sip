@@ -70,28 +70,8 @@ This shared layout means the experiments are not standalone folders anymore: eac
 
 ## Deploying experiments
 
-Active experiments are hosted on the MIT athena Locker at `https://web.mit.edu/aliciach/www/sip/experiments/<slug>/`. Pushes go through [`bin/deploy-experiment`](../bin/deploy-experiment), which rsyncs the experiment directory plus the shared `_lib/` to `aliciach@athena.dialup.mit.edu:~/www/sip/experiments/`:
-
-```bash
-bin/deploy-experiment food_inv_desire           # push _lib/ + the experiment
-bin/deploy-experiment food_inv_desire --dry-run # preview what would change
-bin/deploy-experiment --all                     # push _lib/ + every experiment + preview
-bin/deploy-experiment --lib-only                # push only _lib/ (after editing it)
-bin/deploy-experiment --list                    # list the active slugs
-bin/deploy-experiment preview                   # push _lib/ + the trial-preview page
-bin/deploy-experiment --check-artifacts         # only verify generated assets are fresh
-```
-
-`--all` (also `make deploy-all`) is the one to use when experiment code has changed, not just the preview: it pushes `_lib/`, all four active experiments, and the preview page in a single SSH session, so the athena password is entered only once.
-
-Every deploy guards against shipping stale assets: it regenerates the generated files from their source (`make experiments`: `scenarios.csv`, each `json/stimuli.json` and `json/full_counterbalancing.json`, and the entry files) and aborts if that changed anything, since a deploy only rsyncs what is on disk and a forgotten regeneration would otherwise push stale stimuli to participants. So you no longer need to run `make experiments` by hand before deploying. To run just that check — for example before committing a scenario edit — use `make check-experiments` (or `bin/deploy-experiment --check-artifacts`). It compares each asset's content before and after regenerating, so an asset that is current but simply uncommitted does not trip it; only a genuine drift from the source does.
-
-The script rejects slugs that aren't in the active roster (the four experiments listed under "Active experiments" above) — the one exception is the special `preview` target described below. It excludes `python/`, `README.md`, `.DS_Store`, and `*.bak` from the push, and runs rsync with `--delete` so stale files from earlier deploys get cleaned up. The server destination is overridable per-invocation with `RSYNC_DEST=user@host:/path`.
+Experiments are hosted on an MIT athena web locker and pushed with [`bin/deploy-experiment`](../bin/deploy-experiment), which rsyncs the experiment directory plus the shared `_lib/` (run it with `--help`-style bare invocation to see the options; `--all` / `make deploy-all` pushes everything in one SSH session). Every deploy first regenerates the generated assets from their sources and aborts if anything changed, so stale stimuli can never ship; run just that check with `make check-experiments`. Launching a study also requires its DataPipe experiment ID in the `DATAPIPE_IDS` map in [`_lib/config.js`](_lib/config.js).
 
 ## Previewing trials
 
-[`experiments/preview/`](preview/) is a standalone page for showing collaborators what any trial looks like to a participant. You pick a study, scenario, and condition, and it renders the intro, prior-rating, and posterior-rating screens — including the dependent-variable sliders — along with a panel listing every field of the selected scenario. It builds each screen by calling the same `makeStimulusTrials` functions the live experiments use (importing each study's `trials.js`), so the wording always matches the real study; it never runs jsPsych or records anything.
-
-Because the page uses ES-module imports and `fetch`, it has to be served over HTTP rather than opened from a `file://` path. To view it locally, run `make preview`, which serves the `experiments/` tree at `http://localhost:8000/`, then open `http://localhost:8000/preview/`. To share it with collaborators, deploy it with `bin/deploy-experiment preview` (or `make deploy-preview`) and send them `https://web.mit.edu/aliciach/www/sip/experiments/preview/`. The preview imports the four experiments' `trials.js` and reads one study's `json/stimuli.json`, so it expects those experiments to already be deployed alongside it.
-
-Before an experiment is launched to participants, its real DataPipe experiment ID needs to be filled into the `DATAPIPE_IDS` map in [`_lib/config.js`](_lib/config.js) (keyed by slug); a `TODO_FILL_IN_DATAPIPE_ID` placeholder means data won't save until a real ID is set. The Prolific completion URL is shared across all experiments and already set in the same file.
+[`experiments/preview/`](preview/) is a standalone page that renders any study × scenario × condition exactly as a participant would see it (it calls the same `makeStimulusTrials` functions as the live experiments, without running jsPsych or recording anything). Serve it locally with `make preview` and open `http://localhost:8000/preview/`, or deploy it with `bin/deploy-experiment preview`.
