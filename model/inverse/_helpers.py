@@ -31,7 +31,7 @@ from tables import (
     EFFORT_CONDITION_TO_IDX,
     INTIMACY_CONDITION_TO_IDX,
     RELATIONSHIP_LEVEL_VALUES,
-    SCENARIO_TO_IDX,
+    scenario_to_idx_for_study,
 )
 from utils import get_project_root
 
@@ -345,7 +345,9 @@ def _load_long(slug):
         data[f"{c}_update"] = data[c] - data[f"{c}_prior"]
 
     data["action"] = data["action_condition"].map(ACTION_LABEL_TO_IDX)
-    data["scenario_idx"] = data["scenario_label"].map(SCENARIO_TO_IDX)
+    # Scenario indices follow the study's own stimulus set (food vs. nonfood
+    # labels; see STUDY_SCENARIO_LABELS in tables.py).
+    data["scenario_idx"] = data["scenario_label"].map(scenario_to_idx_for_study(slug))
 
     desire_map = {"low": 0, "high": 1}
     if "desire" in data.columns:
@@ -421,7 +423,8 @@ def load_desire_data(slug="food_inv_desire"):
 
 
 def load_joint_de_data(slug="food_inv_joint_de"):
-    """Study 1b — observer knows intimacy, jointly infers (desire, effort).
+    """Study 1b (or Study 3a via slug="nonfood_inv_joint_de") — observer knows
+    intimacy, jointly infers (desire, effort).
 
     Each posterior trial contributes two slider responses: `desire_rating` (the
     continuous desire DV) and `effort_rating` (the effort slider, "which effort
@@ -440,7 +443,8 @@ def load_joint_de_data(slug="food_inv_joint_de"):
 
 
 def load_joint_ie_data(slug="food_inv_joint_ie"):
-    """Study 2b — observer knows desire, jointly infers (intimacy, effort).
+    """Study 2b (or Study 3b via slug="nonfood_inv_joint_ie") — observer knows
+    desire, jointly infers (intimacy, effort).
 
     Each posterior trial contributes two slider responses; expects columns
     `intimacy_rating` and `effort_rating`, both on the 0-1 scale (normalized in
@@ -581,60 +585,61 @@ def intimacy_table_kwargs(utility_param_names, domain="food"):
 
 
 def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
-    """Padded LM tables for Study 1b (food_inv_joint_de). Cell grid
-    (scenario, observed_action, intimacy); jointly infers (desire, effort).
-    Desire is inferred (no desire scalar); intimacy is given, so
-    full/discomfort_only get the LM-rated `relationship_values`.
+    """Padded LM tables for the joint desire+effort studies: Study 1b
+    (food_inv_joint_de, domain="food") and Study 3a (nonfood_inv_joint_de,
+    domain="nonfood"). Cell grid (scenario, observed_action, intimacy); jointly
+    infers (desire, effort). Desire is inferred (no desire scalar); intimacy is
+    given, so full/discomfort_only get the LM-rated `relationship_values`.
 
     `base=True` (the base ablation, which has no intimacy term) loads the
     relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
     across the relationship axis, exactly as in `desire_table_kwargs`."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_joint_de
 
-    if domain != "food":
-        raise NotImplementedError(
-            "Padded LM tables are only available for the food domain."
-        )
-    loader = (
-        (
-            lambda: load_padded_lm_tables_joint_de(
-                runs_filename="lm_runs_base.jsonl", broadcast_relationship=True
-            )
-        )
-        if base
-        else load_padded_lm_tables_joint_de
+    slug, study = {
+        "food": ("food_inv_joint_de", "Study 1b"),
+        "nonfood": ("nonfood_inv_joint_de", "Study 3a"),
+    }[domain]
+    loader = lambda: load_padded_lm_tables_joint_de(  # noqa: E731
+        slug=slug,
+        **(
+            {"runs_filename": "lm_runs_base.jsonl", "broadcast_relationship": True}
+            if base
+            else {}
+        ),
     )
     return _padded_table_kwargs(
         loader,
         utility_param_names,
-        "Study 1b",
-        "food_inv_joint_de" + (" --base" if base else ""),
+        study,
+        slug + (" --base" if base else ""),
         relationship_loader=(
-            None if base else (lambda: load_lm_relationship_values("food_inv_joint_de"))
+            None if base else (lambda: load_lm_relationship_values(slug))
         ),
     )
 
 
 def joint_ie_table_kwargs(utility_param_names, domain="food"):
-    """Padded LM tables for Study 2b (food_inv_joint_ie). Cell grid
-    (scenario, observed_action, desire); infers (intimacy, effort) (continuous
-    intimacy, no relationship_values). Desire is given, so the per-condition
-    desire scalar is loaded for full/base."""
+    """Padded LM tables for the joint intimacy+effort studies: Study 2b
+    (food_inv_joint_ie, domain="food") and Study 3b (nonfood_inv_joint_ie,
+    domain="nonfood"). Cell grid (scenario, observed_action, desire); infers
+    (intimacy, effort) (continuous intimacy, no relationship_values). Desire is
+    given, so the per-condition desire scalar is loaded for full/base."""
     from tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_joint_ie,
     )
 
-    if domain != "food":
-        raise NotImplementedError(
-            "Padded LM tables are only available for the food domain."
-        )
+    slug, study = {
+        "food": ("food_inv_joint_ie", "Study 2b"),
+        "nonfood": ("nonfood_inv_joint_ie", "Study 3b"),
+    }[domain]
     return _padded_table_kwargs(
-        load_padded_lm_tables_joint_ie,
+        lambda: load_padded_lm_tables_joint_ie(slug=slug),
         utility_param_names,
-        "Study 2b",
-        "food_inv_joint_ie",
-        desire_loader=lambda: load_lm_scenario_desire("food_inv_joint_ie"),
+        study,
+        slug,
+        desire_loader=lambda: load_lm_scenario_desire(slug),
     )
 
 

@@ -32,9 +32,9 @@ bottom of the file.
 
 The prompts are domain-general: they cover food sharing as well as the
 three non-food sub-types in `scenarios_nonfood.csv` — *substance*
-(chapstick, towel, hairbrush, harmonica, sunscreen), *space* (blanket,
-sleeping-bag, bed, locker-room, sauna), and *privacy* (breakup, payment,
-gossip, home, navigation). The risk rubric covers three channel types
+(chapstick, towel, earbuds, hairbrush, harmonica, sunscreen), *space*
+(blanket, sleeping-bag, bed, locker-room, sauna), and *privacy* (breakup,
+salary, gossip, home, navigation). The risk rubric covers three channel types
 (bodily-substance transfer, physical-contact / shared-space, and
 informational / private-resource); the effort rubric covers physical motor
 work, equipment / setup, and time cost (physical cost only — not coordination
@@ -289,14 +289,26 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
     desire_object names the specific resource at stake (e.g. "the hot dog");
     when given for rating_type="g" it makes the instruction concrete instead
     of the generic "the thing at stake". Ignored for the other rating types.
+
+    Some nonfood scenarios phrase the desire object as an infinitive outcome
+    rather than a noun (e.g. "to try the harmonica", "to warm up under a
+    blanket"); "getting or consuming to try the harmonica" is ungrammatical, so
+    those render as "actually getting to try the harmonica". Noun-phrase objects
+    keep the original wording byte-identical, so the food elicitation is
+    unaffected.
     """
     if rating_type not in _USER_INSTRUCTIONS:
         raise ValueError(f"unknown rating_type: {rating_type}")
     instr = _USER_INSTRUCTIONS[rating_type]
     if rating_type == "g" and desire_object is not None:
+        attain = (
+            f"getting {desire_object}"
+            if desire_object.startswith("to ")
+            else f"getting or consuming {desire_object}"
+        )
         instr = (
             "Rate how much each action results in the two people actually "
-            f"getting or consuming {desire_object} (0-6 scale):"
+            f"{attain} (0-6 scale):"
         )
     actions_block = "\n".join(
         f"Action {i}: {txt}" for i, txt in enumerate(action_texts)

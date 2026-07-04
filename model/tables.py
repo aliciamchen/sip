@@ -166,19 +166,22 @@ class Scenarios(IntEnum):
     WEDDING = 15
 
 
+# The 16 nonfood scenarios (Study 3; experiments/scenarios_nonfood.csv), in
+# alphabetical order like SCENARIO_LABELS. The July 2026 redesign replaced
+# hat -> earbuds and payment -> salary.
 NONFOOD_SCENARIO_LABELS = [
     "bed",
     "blanket",
     "breakup",
     "chapstick",
+    "earbuds",
     "gossip",
     "hairbrush",
     "harmonica",
-    "hat",
     "home",
     "locker-room",
     "navigation",
-    "payment",
+    "salary",
     "sauna",
     "sleeping-bag",
     "sunscreen",
@@ -187,6 +190,27 @@ NONFOOD_SCENARIO_LABELS = [
 NONFOOD_SCENARIO_TO_IDX = {
     label: idx for idx, label in enumerate(NONFOOD_SCENARIO_LABELS)
 }
+
+# Scenario-label registry keyed by study slug. The nonfood studies (3a/3b) share
+# the memo enums, actors, and observers with the food studies — both stimulus
+# sets have 16 scenarios and the memo `Scenarios` axis is positional — so the
+# only per-domain difference the model code sees is which labels map to which
+# indices. Table loaders and data loaders look labels up here by study slug.
+STUDY_SCENARIO_LABELS = {
+    "food_inv_desire": SCENARIO_LABELS,
+    "food_inv_joint_de": SCENARIO_LABELS,
+    "food_inv_intimacy": SCENARIO_LABELS,
+    "food_inv_joint_ie": SCENARIO_LABELS,
+    "nonfood_inv_joint_de": NONFOOD_SCENARIO_LABELS,
+    "nonfood_inv_joint_ie": NONFOOD_SCENARIO_LABELS,
+}
+
+
+def scenario_to_idx_for_study(slug):
+    """Label -> memo scenario index for one study's stimulus set. Food studies
+    index by SCENARIO_LABELS, nonfood studies by NONFOOD_SCENARIO_LABELS; both
+    are 16 long, so the memo axes are shared across domains."""
+    return {label: idx for idx, label in enumerate(STUDY_SCENARIO_LABELS[slug])}
 
 
 # ==============================================================================
@@ -223,7 +247,7 @@ def _read_runs_jsonl(path):
 
 def load_lm_scenario_desire(slug, filepath=None):
     """Load the per-run, per-condition desire scalar for the given-desire studies
-    (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`).
+    (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`, 3b `nonfood_inv_joint_ie`).
 
     When desire is observer-visible context, the LM reads the scenario + the
     shown desire paragraph and rates how much the two people would like the food
@@ -238,8 +262,10 @@ def load_lm_scenario_desire(slug, filepath=None):
 
     Returns a jnp.array of shape (K, 16, 2) indexed by
     (run, scenario, desire_condition), or None if neither source is present.
+    The scenario axis follows the study's own label order
+    (STUDY_SCENARIO_LABELS[slug]).
     """
-    scenario_to_idx = SCENARIO_TO_IDX
+    scenario_to_idx = scenario_to_idx_for_study(slug)
     desire_to_idx = {
         "low": int(DesireConditions.LOW),
         "high": int(DesireConditions.HIGH),
@@ -699,6 +725,7 @@ def load_padded_lm_tables_joint_de(
     observed_path=None,
     alternatives_path=None,
     *,
+    slug="food_inv_joint_de",
     runs_filename="lm_runs.jsonl",
     broadcast_relationship=False,
 ):
@@ -712,18 +739,23 @@ def load_padded_lm_tables_joint_de(
       g:      (16, 3, 4, S)        [scenario, obs, relationship, slot]
       prior:  (16, 3, 4, S)
 
+    `slug` selects the study whose tables to load: Study 3a
+    (`nonfood_inv_joint_de`) shares this design on the nonfood stimulus set, so
+    it reuses this loader with its own outputs folder and scenario-label order
+    (STUDY_SCENARIO_LABELS[slug]).
+
     `runs_filename` / `broadcast_relationship` support the base-model alternative
     set, exactly as in `load_padded_lm_tables_desire`: the `base` ablation has no
     intimacy term, so its alternatives are elicited without the relationship
-    paragraph (`lm_runs_base.jsonl`; for 1b the generation cell is scenario ×
+    paragraph (`lm_runs_base.jsonl`; for 1b/3a the generation cell is scenario ×
     observed action only, with the effort feature axis coming from the scored
     records). With `broadcast_relationship=True` the same alt set is written to
     every one of the 4 relationship indices, so the base table — and the base
     model's predictions — are relationship-invariant.
     """
-    outputs_dir = (
-        Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_de"
-    )
+    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / slug
+    scenario_labels = STUDY_SCENARIO_LABELS[slug]
+    scenario_to_idx = scenario_to_idx_for_study(slug)
     # The base alt set drops intimacy_condition (relationship-free); the scored
     # records still carry effort_condition (the effort feature axis).
     cell_cols = (
@@ -745,7 +777,7 @@ def load_padded_lm_tables_joint_de(
     K = len(runs)
 
     n_s, n_o, n_rel, n_eff = (
-        len(SCENARIO_LABELS),
+        len(scenario_labels),
         N_ACTIONS,
         4,
         N_EFFORT_CONDITIONS,
@@ -762,8 +794,8 @@ def load_padded_lm_tables_joint_de(
     for k, (obs_ae, obs_g, alts_df) in enumerate(runs):
         # Observed slot 0: risk/effort per (scenario, effort_condition, action),
         # broadcast across relationship; g per (scenario, action).
-        for scenario in SCENARIO_LABELS:
-            s = SCENARIO_TO_IDX[scenario]
+        for scenario in scenario_labels:
+            s = scenario_to_idx[scenario]
             for o in range(n_o):
                 for rel in range(n_rel):
                     for e in range(n_eff):
@@ -779,7 +811,7 @@ def load_padded_lm_tables_joint_de(
         for _, row in alts_df.iterrows():
             if row[["risk", "effort", "g"]].isna().any():
                 continue
-            s = SCENARIO_TO_IDX[row["scenario_label"]]
+            s = scenario_to_idx[row["scenario_label"]]
             o = obs_to_idx[row["observed_action"]]
             e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
             slot = int(row["alt_idx"]) + 1
@@ -800,7 +832,7 @@ def load_padded_lm_tables_joint_de(
 
     valid_e = np.broadcast_to(valid[:, :, :, :, None, :], effort.shape)
     _validate_padded_tables(
-        "food_inv_joint_de",
+        slug,
         {"risk": (risk, valid), "effort": (effort, valid_e), "g": (g, valid)},
     )
     risk[~valid] = 0.0
@@ -924,6 +956,8 @@ def load_padded_lm_tables_intimacy(
 def load_padded_lm_tables_joint_ie(
     observed_path=None,
     alternatives_path=None,
+    *,
+    slug="food_inv_joint_ie",
 ):
     """Study 2b: observer knows desire, infers (intimacy, effort). Cell grid is
     (scenario, observed_action, desire_condition). intimacy inferred (continuous,
@@ -935,10 +969,15 @@ def load_padded_lm_tables_joint_ie(
       effort: (16, 3, 2, 2, S)     [scenario, obs, desire, effort_condition, slot]
       g:      (16, 3, 2, S)        [scenario, obs, desire, slot]
       prior:  (16, 3, 2, S)
+
+    `slug` selects the study whose tables to load: Study 3b
+    (`nonfood_inv_joint_ie`) shares this design on the nonfood stimulus set, so
+    it reuses this loader with its own outputs folder and scenario-label order
+    (STUDY_SCENARIO_LABELS[slug]).
     """
-    outputs_dir = (
-        Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_joint_ie"
-    )
+    outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / slug
+    scenario_labels = STUDY_SCENARIO_LABELS[slug]
+    scenario_to_idx = scenario_to_idx_for_study(slug)
     cell_cols = ["desire_condition", "effort_condition"]
     if observed_path or alternatives_path:  # explicit-path override (tests)
         if any(not Path(p).exists() for p in (observed_path, alternatives_path)):
@@ -954,7 +993,7 @@ def load_padded_lm_tables_joint_ie(
     K = len(runs)
 
     n_s, n_o, n_rew, n_eff = (
-        len(SCENARIO_LABELS),
+        len(scenario_labels),
         N_ACTIONS,
         2,
         N_EFFORT_CONDITIONS,
@@ -969,8 +1008,8 @@ def load_padded_lm_tables_joint_ie(
     obs_to_idx = ACTION_LABEL_TO_IDX
 
     for k, (obs_ae, obs_g, alts_df) in enumerate(runs):
-        for scenario in SCENARIO_LABELS:
-            s = SCENARIO_TO_IDX[scenario]
+        for scenario in scenario_labels:
+            s = scenario_to_idx[scenario]
             for o in range(n_o):
                 for rew in range(n_rew):
                     for e in range(n_eff):
@@ -987,7 +1026,7 @@ def load_padded_lm_tables_joint_ie(
         for _, row in alts_df.iterrows():
             if row[["risk", "effort", "g"]].isna().any():
                 continue
-            s = SCENARIO_TO_IDX[row["scenario_label"]]
+            s = scenario_to_idx[row["scenario_label"]]
             o = obs_to_idx[row["observed_action"]]
             rew = rew_to_idx[row["desire_condition"]]
             e = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
@@ -1001,7 +1040,7 @@ def load_padded_lm_tables_joint_ie(
 
     valid_e = np.broadcast_to(valid[:, :, :, :, None, :], effort.shape)
     _validate_padded_tables(
-        "food_inv_joint_ie",
+        slug,
         {"risk": (risk, valid), "effort": (effort, valid_e), "g": (g, valid)},
     )
     risk[~valid] = 0.0

@@ -154,13 +154,22 @@ def build_content():
             shared_user,
         )
     )
-    # The actual per-feature instruction lines.
-    g_instr = (
-        "Rate how much each action results in the two people actually "
-        f"getting or consuming {DESIRE_OBJECT} (0-6 scale):"
-    )
+
+    # The actual per-feature instruction lines. The g instruction is rendered
+    # through the real formatter (prompts.user_prompt) so the SI cannot drift
+    # from the code; its second paragraph is the instruction line. Desire
+    # objects phrased as an infinitive outcome (some non-food scenarios, e.g.
+    # "to try the harmonica") drop "or consuming", so both renderings are shown.
+    def g_instr_for(obj):
+        return prompts.user_prompt("g", VIGNETTE, ACTIONS, desire_object=obj).split(
+            "\n\n"
+        )[1]
+
     instr_body = (
-        f"goal-satisfaction g:  {g_instr}\n\n"
+        f"goal-satisfaction g:  {g_instr_for(DESIRE_OBJECT)}\n"
+        "  (for desire objects phrased as an infinitive outcome in some\n"
+        '   non-food scenarios, "getting or consuming" becomes "getting",\n'
+        f'   e.g.: "{g_instr_for("to try the harmonica")}")\n\n'
         f"physical effort:      {prompts._USER_INSTRUCTIONS['effort']}\n\n"
         f"interpersonal risk:   {prompts._USER_INSTRUCTIONS['risk']}"
     )

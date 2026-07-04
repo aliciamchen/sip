@@ -18,7 +18,7 @@ cell means, re-correlate against the fixed model predictions).
 Writes `outputs/<slug>/cv_model_comparison.json` and prints a summary.
 
 Usage:
-    uv run python model/cv/model_comparison.py                  # all four studies
+    uv run python model/cv/model_comparison.py                  # all studies with CV outputs
     uv run python model/cv/model_comparison.py --study food_inv_desire
     uv run python model/cv/model_comparison.py --n-boot 1000 --seed 0
 """
@@ -60,6 +60,21 @@ STUDY_SPECS = {
         "dvs": [("intimacy_rating_update", "delta_intimacy", "intimacy")],
     },
     "food_inv_joint_ie": {
+        "keys": ["scenario_label", "action", "desire_condition"],
+        "dvs": [
+            ("intimacy_rating_update", "delta_intimacy", "intimacy"),
+            ("effort_rating_update", "delta_effort", "effort"),
+        ],
+    },
+    # Study 3 (nonfood stimulus set): 3a mirrors 1b, 3b mirrors 2b.
+    "nonfood_inv_joint_de": {
+        "keys": ["scenario_label", "action", "intimacy_condition"],
+        "dvs": [
+            ("desire_rating_update", "delta_desire", "desire"),
+            ("effort_rating_update", "delta_effort", "effort"),
+        ],
+    },
+    "nonfood_inv_joint_ie": {
         "keys": ["scenario_label", "action", "desire_condition"],
         "dvs": [
             ("intimacy_rating_update", "delta_intimacy", "intimacy"),
@@ -237,7 +252,8 @@ def main():
         "--study",
         choices=[*STUDY_SPECS.keys(), "all"],
         default="all",
-        help="Which experiment to evaluate (default: all four).",
+        help="Which experiment to evaluate (default: every study whose CV "
+        "outputs exist; studies without them are skipped with a message).",
     )
     parser.add_argument("--n-boot", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0)

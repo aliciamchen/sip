@@ -2,17 +2,20 @@
 """
 Generate LM counterfactual alternative actions for the 3-action inverse experiments.
 
-The 3-act observers (Studies 1a, 1b, 2a, 2b) softmax over a per-cell action
-space {observed_action} ∪ generated_alts rather than the fixed 3-action set.
+The 3-act observers (Studies 1a, 1b, 2a, 2b on the food set; 3a, 3b on the
+nonfood set) softmax over a per-cell action space {observed_action} ∪
+generated_alts rather than the fixed 3-action set.
 Alternatives are conditioned on what the human participant sees in the trial —
 i.e. observer-visible variables only (`feedback_llm_as_participant.md`).
 
 Per-study conditioning tuples (only the variables the observer actually sees,
 besides scenario + observed_action), and the resulting cell count:
-    food_inv_desire   (1a): (effort, intimacy)  → 16 × 3 × 2 × 4 = 384 cells
-    food_inv_joint_de (1b): (intimacy,)         → 16 × 3 × 4     = 192 cells
-    food_inv_intimacy (2a): (desire, effort)    → 16 × 3 × 2 × 2 = 192 cells
-    food_inv_joint_ie (2b): (desire,)           → 16 × 3 × 2     =  96 cells
+    food_inv_desire      (1a): (effort, intimacy)  → 16 × 3 × 2 × 4 = 384 cells
+    food_inv_joint_de    (1b): (intimacy,)         → 16 × 3 × 4     = 192 cells
+    food_inv_intimacy    (2a): (desire, effort)    → 16 × 3 × 2 × 2 = 192 cells
+    food_inv_joint_ie    (2b): (desire,)           → 16 × 3 × 2     =  96 cells
+    nonfood_inv_joint_de (3a): (intimacy,)         → 16 × 3 × 4     = 192 cells
+    nonfood_inv_joint_ie (3b): (desire,)           → 16 × 3 × 2     =  96 cells
 
 One LM elicitation per cell (parse-retries up to MAX_PARSE_RETRIES); each call
 returns a JSON array of variable-length alternatives.
@@ -72,10 +75,12 @@ ALT_GEN_TEMPERATURE = float(os.environ.get("ALT_T", "0.7"))
 # are the resulting cell-key columns (besides scenario_label + observed_action)
 # written to the output JSONL; the downstream merged-scoring + padded-table loader
 # key on these.
-#   1a desire    — visible: effort, intimacy        (infers desire)
-#   1b joint_de  — visible: intimacy                (infers desire + effort)
-#   2a intimacy  — visible: desire, effort          (infers intimacy)
-#   2b joint_ie  — visible: desire                  (infers intimacy + effort)
+#   1a desire            — visible: effort, intimacy  (infers desire)
+#   1b joint_de          — visible: intimacy          (infers desire + effort)
+#   2a intimacy          — visible: desire, effort    (infers intimacy)
+#   2b joint_ie          — visible: desire            (infers intimacy + effort)
+#   3a nonfood joint_de  — visible: intimacy          (infers desire + effort)
+#   3b nonfood joint_ie  — visible: desire            (infers intimacy + effort)
 _STUDY_CONFIG = {
     "food_inv_desire": {
         "scenarios": "scenarios.csv",
@@ -101,6 +106,20 @@ _STUDY_CONFIG = {
         "show": ("desire",),
         "cell_cols": ("desire_condition",),
     },
+    # Study 3 (nonfood stimulus set): 3a mirrors 1b (relationship given, infers
+    # desire + effort), 3b mirrors 2b (desire given, infers intimacy + effort).
+    "nonfood_inv_joint_de": {
+        "scenarios": "scenarios_nonfood.csv",
+        "output": "lm_alternatives.jsonl",
+        "show": ("intimacy",),
+        "cell_cols": ("intimacy_condition",),
+    },
+    "nonfood_inv_joint_ie": {
+        "scenarios": "scenarios_nonfood.csv",
+        "output": "lm_alternatives.jsonl",
+        "show": ("desire",),
+        "cell_cols": ("desire_condition",),
+    },
 }
 
 # Base-model override (the `--base` mode). The `base` ablation has no intimacy
@@ -119,6 +138,12 @@ _BASE_OVERRIDE = {
     # 1b: effort is inferred, so base generation shows neither effort nor
     # intimacy — 16 scenarios × 3 observed actions = 48 cells.
     "food_inv_joint_de": {
+        "output": "lm_alternatives_base.jsonl",
+        "show": (),
+        "cell_cols": (),
+    },
+    # 3a mirrors 1b on the nonfood set — 48 cells.
+    "nonfood_inv_joint_de": {
         "output": "lm_alternatives_base.jsonl",
         "show": (),
         "cell_cols": (),

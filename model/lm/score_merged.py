@@ -2,7 +2,8 @@
 """
 Per-run scoring of the K-run simulated-observer elicitation for the 3-action
 inverse studies (1a food_inv_desire, 1b food_inv_joint_de, 2a food_inv_intimacy,
-2b food_inv_joint_ie). Pick the study with --study.
+2b food_inv_joint_ie, and the nonfood studies 3a nonfood_inv_joint_de,
+3b nonfood_inv_joint_ie). Pick the study with --study.
 
 This is the second step of the two-step elicitation. The first step
 (generate_alternatives.py) elicited, for each (scenario × condition) cell, K
@@ -31,9 +32,9 @@ Given-magnitude scalars are scored PER RUN (folded into each lm_runs.jsonl
 record, alongside the action features) rather than once run-independently — so the
 run-to-run spread of the given magnitudes joins the same simulated-observer
 mixture as the alternatives and the feature scores:
-  - given-desire studies (2a, 2b): a per-(scenario, desire_condition) desire
+  - given-desire studies (2a, 2b, 3b): a per-(scenario, desire_condition) desire
     scalar, scored inside each (scenario, run) unit → each record's `desire`.
-  - given-relationship studies (1a, 1b): a per-level intimacy scalar, rated from
+  - given-relationship studies (1a, 1b, 3a): a per-level intimacy scalar, rated from
     the DE-ANCHORED relationship descriptors (rating the anchored descriptor would
     be circular). Scenario-independent → 4 values scored once per run and reused
     across that run's scenarios → each record's `intimacy`.
@@ -123,27 +124,48 @@ SCENARIO_WORKERS = 4
 # cell does NOT include effort, so each cell emits a record for BOTH effort
 # conditions (effort is a feature axis; risk/g repeat). `desire_given` /
 # `relationship_given` select which per-run given-magnitude scalar each record
-# carries (`desire` for 2a/2b, `intimacy` for 1a/1b).
+# carries (`desire` for 2a/2b/3b, `intimacy` for 1a/1b/3a). `scenarios` is the
+# stimulus CSV the study's action lists come from (the nonfood studies read
+# scenarios_nonfood.csv).
 _STUDY_CONFIG = {
     "food_inv_desire": {
+        "scenarios": "scenarios.csv",
         "cell_cols": ("effort_condition", "intimacy_condition"),
         "effort_inferred": False,
         "desire_given": False,
         "relationship_given": True,
     },
     "food_inv_joint_de": {
+        "scenarios": "scenarios.csv",
         "cell_cols": ("intimacy_condition",),
         "effort_inferred": True,
         "desire_given": False,
         "relationship_given": True,
     },
     "food_inv_intimacy": {
+        "scenarios": "scenarios.csv",
         "cell_cols": ("desire_condition", "effort_condition"),
         "effort_inferred": False,
         "desire_given": True,
         "relationship_given": False,
     },
     "food_inv_joint_ie": {
+        "scenarios": "scenarios.csv",
+        "cell_cols": ("desire_condition",),
+        "effort_inferred": True,
+        "desire_given": True,
+        "relationship_given": False,
+    },
+    # Study 3 (nonfood stimulus set): 3a mirrors 1b, 3b mirrors 2b.
+    "nonfood_inv_joint_de": {
+        "scenarios": "scenarios_nonfood.csv",
+        "cell_cols": ("intimacy_condition",),
+        "effort_inferred": True,
+        "desire_given": False,
+        "relationship_given": True,
+    },
+    "nonfood_inv_joint_ie": {
+        "scenarios": "scenarios_nonfood.csv",
         "cell_cols": ("desire_condition",),
         "effort_inferred": True,
         "desire_given": True,
@@ -168,6 +190,13 @@ _BASE_OVERRIDE = {
     # action (effort is inferred, intimacy dropped); effort_inferred stays True
     # so each cell still emits a record per effort_condition feature axis.
     "food_inv_joint_de": {
+        "cell_cols": (),
+        "relationship_given": False,
+        "alternatives": "lm_alternatives_base.jsonl",
+        "runs": "lm_runs_base.jsonl",
+    },
+    # 3a mirrors 1b on the nonfood set.
+    "nonfood_inv_joint_de": {
         "cell_cols": (),
         "relationship_given": False,
         "alternatives": "lm_alternatives_base.jsonl",
@@ -521,7 +550,7 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
         cfg.update(_BASE_OVERRIDE[study])
     api_key = load_api_key()
 
-    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
+    scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     study_dir.mkdir(parents=True, exist_ok=True)
     alts_path = study_dir / cfg.get("alternatives", "lm_alternatives.jsonl")

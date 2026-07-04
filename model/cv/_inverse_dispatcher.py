@@ -1,6 +1,6 @@
 """
 Leave-one-scenario-out (LOSO) CV for the active inverse experiments
-(Studies 1a, 1b, 2a, 2b).
+(Studies 1a, 1b, 2a, 2b on the food set; 3a, 3b on the nonfood set).
 
 For each variant (full / discomfort_only / base) and each of the 16 scenarios,
 hold the scenario out, jointly refit the actor utility weights, `alpha_observer`,
@@ -25,10 +25,16 @@ corresponding `cv/cv_food_inv_*.py` thin wrapper.
 The experiments differ in which latent the observer infers and how many slider
 responses participants give per trial:
 
-  Study 2a (`food_inv_intimacy`)   — infer intimacy given (desire, effort)
-  Study 1a (`food_inv_desire`)     — infer desire given (effort, intimacy)
-  Study 1b (`food_inv_joint_de`)   — joint over (desire, effort) given intimacy
-  Study 2b (`food_inv_joint_ie`)   — joint over (intimacy, effort) given desire
+  Study 2a (`food_inv_intimacy`)      — infer intimacy given (desire, effort)
+  Study 1a (`food_inv_desire`)        — infer desire given (effort, intimacy)
+  Study 1b (`food_inv_joint_de`)      — joint over (desire, effort) given intimacy
+  Study 2b (`food_inv_joint_ie`)      — joint over (intimacy, effort) given desire
+  Study 3a (`nonfood_inv_joint_de`)   — Study 1b's design on the nonfood set
+  Study 3b (`nonfood_inv_joint_ie`)   — Study 2b's design on the nonfood set
+
+The nonfood studies reuse the joint mains with their own slug
+(`main_joint_de("nonfood_inv_joint_de")` etc.): the designs are identical, and
+only the stimulus set, scenario labels, and LM-table folder differ.
 
 All share the joint-fit logic in `model/inverse/_helpers.py` — there is no
 transfer between studies.
@@ -92,6 +98,7 @@ from observers import (  # noqa: E402
 from tables import (  # noqa: E402
     INTIMACY_CONDITIONS,
     SCENARIO_LABELS,
+    STUDY_SCENARIO_LABELS,
     actions,
 )
 from utils import get_project_root  # noqa: E402
@@ -114,6 +121,13 @@ N_ACTIONS = int(len(actions))
 # NLL, so every fold has an init that never saw the held-out scenario.
 # Env-tunable via CV_RESTARTS (1 = warm-only, for quick smoke runs).
 N_RESTARTS_CV = int(os.environ.get("CV_RESTARTS", "2"))
+
+
+def _domain_for(slug):
+    """LM-table domain for a study slug — routes the *_table_kwargs loaders to
+    the study's stimulus set (nonfood_inv_* slugs read scenarios_nonfood.csv
+    tables; everything else the food set)."""
+    return "nonfood" if slug.startswith("nonfood_") else "food"
 
 
 # Per-variant (observer_fn, utility_param_names). Each registry pairs one of the
@@ -582,17 +596,20 @@ def _loso_joint_de(slug):
         else {}
     )
 
+    scenario_labels = STUDY_SCENARIO_LABELS[slug]
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_DE.items():
-        tk = joint_de_table_kwargs(utility_names, base=(variant == "base"))
+        tk = joint_de_table_kwargs(
+            utility_names, domain=_domain_for(slug), base=(variant == "base")
+        )
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit
             else None
         )
-        for fold in range(N_SCENARIOS):
-            scenario_label = SCENARIO_LABELS[fold]
+        for fold in range(len(scenario_labels)):
+            scenario_label = scenario_labels[fold]
             train_mask = scenario_idx_np != fold
             test_mask = scenario_idx_np == fold
             n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
@@ -682,8 +699,7 @@ def _loso_joint_de(slug):
     return pred_rows, fold_rows, trial_ll_rows
 
 
-def main_joint_de():
-    slug = "food_inv_joint_de"
+def main_joint_de(slug="food_inv_joint_de"):
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
@@ -719,17 +735,18 @@ def _loso_joint_ie(slug):
         else {}
     )
 
+    scenario_labels = STUDY_SCENARIO_LABELS[slug]
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_IE.items():
-        tk = joint_ie_table_kwargs(utility_names)
+        tk = joint_ie_table_kwargs(utility_names, domain=_domain_for(slug))
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit
             else None
         )
-        for fold in range(N_SCENARIOS):
-            scenario_label = SCENARIO_LABELS[fold]
+        for fold in range(len(scenario_labels)):
+            scenario_label = scenario_labels[fold]
             train_mask = scenario_idx_np != fold
             test_mask = scenario_idx_np == fold
             n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
@@ -821,8 +838,7 @@ def _loso_joint_ie(slug):
     return pred_rows, fold_rows, trial_ll_rows
 
 
-def main_joint_ie():
-    slug = "food_inv_joint_ie"
+def main_joint_ie(slug="food_inv_joint_ie"):
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
