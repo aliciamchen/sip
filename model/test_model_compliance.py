@@ -10,14 +10,32 @@ which share the same `w_v · desire · g − w_d · risk · (1 − I)^γ − w_e
 utility skeleton and the padded LM-alternatives action space:
   - utility ablation algebra (full collapses to base and to discomfort_only),
   - ablation invariances (discomfort_only is desire-free),
-  - observer posterior normalization at the observed slot.
+  - observer posterior normalization at the observed slot (single and joint),
+  - the mixture likelihoods against a plain-numpy reference,
+  - null-padded slots absorbing negligible actor probability at fitted-scale
+    weights,
+  - the table loaders' fail-fast validation of NaN features and missing
+    given-magnitude scalars.
 """
+
+import sys
+from pathlib import Path
 
 import jax.numpy as jnp
 import numpy as np
 
-from observers import observer_desire_full
-from tables import MAX_ACTIONS, N_ACTIONS, RELATIONSHIP_LEVEL_VALUES, SCENARIO_LABELS
+sys.path.insert(0, str(Path(__file__).resolve().parent / "inverse"))
+
+from actors import actor_discrete_full_padded_desire
+from observers import observer_desire_full, observer_joint_de_full
+from tables import (
+    MAX_ACTIONS,
+    N_ACTIONS,
+    RELATIONSHIP_LEVEL_VALUES,
+    SCENARIO_LABELS,
+    _assert_no_missing_scalars,
+    _validate_padded_tables,
+)
 from utility import (
     get_utility_base_padded_desire,
     get_utility_discomfort_only_padded_desire,
@@ -134,6 +152,124 @@ def test_observer_desire_posterior_sums_to_one():
     print("✓ desire observer posteriors (slot=0) sum to 1")
 
 
+def test_mixture_nll_1d_matches_reference():
+    """mixture_nll_1d agrees with a plain-numpy evaluation of
+    −log[(1/K) Σ_k N(u | δ_k, σ²)]."""
+    from _helpers import mixture_nll_1d
+
+    rng = np.random.default_rng(3)
+    deltas = rng.normal(0.0, 0.2, size=20)
+    sigma, u = 0.25, 0.13
+    pdf = np.exp(-0.5 * ((u - deltas) / sigma) ** 2) / (sigma * np.sqrt(2 * np.pi))
+    expected = -np.log(pdf.mean())
+    got = float(mixture_nll_1d(jnp.array(u), jnp.array(deltas), jnp.array(sigma)))
+    assert abs(got - expected) < 1e-5, f"{got} vs {expected}"
+    print("✓ mixture_nll_1d matches the numpy reference")
+
+
+def test_mixture_nll_2d_matches_reference():
+    """mixture_nll_2d agrees with a plain-numpy bivariate isotropic mixture."""
+    from _helpers import mixture_nll_2d
+
+    rng = np.random.default_rng(4)
+    deltas = rng.normal(0.0, 0.2, size=(20, 2))
+    sigma = 0.3
+    u = np.array([0.1, -0.2])
+    sq = ((u[None, :] - deltas) ** 2).sum(axis=1)
+    pdf = np.exp(-0.5 * sq / sigma**2) / (2 * np.pi * sigma**2)
+    expected = -np.log(pdf.mean())
+    got = float(mixture_nll_2d(jnp.array(u), jnp.array(deltas), jnp.array(sigma)))
+    assert abs(got - expected) < 1e-5, f"{got} vs {expected}"
+    print("✓ mixture_nll_2d matches the numpy reference")
+
+
+def test_observer_joint_de_posterior_sums_to_one():
+    """The joint (desire, effort) observer's posterior sums to 1 at slot 0."""
+    n_rel, n_eff, S = 4, 2, MAX_ACTIONS
+    shape = (N_S, N_O, n_rel, S)
+    risk = np.zeros(shape, dtype=np.float32)
+    g = np.zeros(shape, dtype=np.float32)
+    prior = np.full(shape, 1e-8, dtype=np.float32)
+    effort = np.zeros((N_S, N_O, n_rel, n_eff, S), dtype=np.float32)
+    for slot in range(N_O):
+        risk[..., slot] = 0.5 * (slot + 1)
+        g[..., slot] = (slot + 1) / N_O
+        prior[..., slot] = 1.0 / N_O
+        effort[..., 0, slot] = 0.2 * (slot + 1)
+        effort[..., 1, slot] = 0.4 * (slot + 1)
+    result = observer_joint_de_full(
+        _ALPHA,
+        _W_V,
+        _W_D,
+        _W_E,
+        _GAMMA,
+        1.3,
+        jnp.array(risk),
+        jnp.array(effort),
+        jnp.array(g),
+        jnp.array(prior),
+        _REL,
+    )
+    # shape: (slot, scenario, observed_action, relationship, desire_101, effort_2)
+    for s in [0, 15]:
+        for o in range(N_O):
+            for r in range(n_rel):
+                psum = float(result[0, s, o, r, :, :].sum())
+                assert np.isclose(psum, 1.0, atol=1e-4), (
+                    f"joint posterior doesn't sum to 1: {psum} (s={s}, o={o}, r={r})"
+                )
+    print("✓ joint_de observer posteriors (slot=0) sum to 1")
+
+
+def test_null_padding_mass_negligible():
+    """Null-padded slots (prior 1e-8, features 0 → utility 0) must absorb a
+    negligible share of the actor's choice probability at fitted-scale weights.
+    Uses the largest weights fitted so far (Study 1a full: w_v≈12.4, w_d≈5.2,
+    w_e≈8.9) at desire=0, where real actions' utilities are most negative. This
+    holds because every real cell contains at least one low-cost action (a
+    no-share-type action with risk ≈ effort ≈ 0); if all real actions had
+    utilities below ≈ −14, the 1e-8 epsilon would start to compete."""
+    risk, effort, g, prior = _synthetic_desire_tables()
+    probs = actor_discrete_full_padded_desire(
+        1.0, 12.4, 5.2, 8.9, 0.094, risk, effort, g, prior, _REL
+    )
+    # shape: (slot, scenario, observed_action, effort, relationship, desire)
+    probs0 = np.asarray(probs[..., 0])  # desire = 0 (worst case for the reward term)
+    pad_mass = probs0[N_O:].sum(axis=0)
+    assert pad_mass.max() < 1e-3, f"padding absorbs {pad_mass.max():.2e} probability"
+    print(f"✓ null-padding mass ≤ {pad_mass.max():.2e} at fitted-scale weights")
+
+
+def test_loader_validation_rejects_nan_features():
+    """_validate_padded_tables must reject NaN features at valid slots and
+    accept NaN at null-padded (invalid) slots."""
+    arr = np.zeros((2, 3), dtype=np.float32)
+    valid = np.zeros((2, 3), dtype=bool)
+    valid[0, 0] = True
+    arr[1, 2] = np.nan  # invalid slot: fine
+    _validate_padded_tables("test", {"risk": (arr, valid)})
+    arr[0, 0] = np.nan  # valid slot: must raise
+    try:
+        _validate_padded_tables("test", {"risk": (arr, valid)})
+    except ValueError:
+        print("✓ loader validation rejects NaN features at valid slots")
+    else:
+        raise AssertionError("NaN at a valid slot was not rejected")
+
+
+def test_loader_validation_rejects_missing_scalars():
+    """_assert_no_missing_scalars must reject NaN given-magnitude entries."""
+    ok = np.array([[0.1, 0.9]], dtype=np.float32)
+    _assert_no_missing_scalars("test", "desire", ok)
+    bad = np.array([[0.1, np.nan]], dtype=np.float32)
+    try:
+        _assert_no_missing_scalars("test", "desire", bad)
+    except ValueError:
+        print("✓ loader validation rejects missing given-magnitude scalars")
+    else:
+        raise AssertionError("missing scalar was not rejected")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -141,6 +277,12 @@ def run_all_tests():
     test_utility_ablation_algebra()
     test_discomfort_only_invariant_to_desire()
     test_observer_desire_posterior_sums_to_one()
+    test_observer_joint_de_posterior_sums_to_one()
+    test_mixture_nll_1d_matches_reference()
+    test_mixture_nll_2d_matches_reference()
+    test_null_padding_mass_negligible()
+    test_loader_validation_rejects_nan_features()
+    test_loader_validation_rejects_missing_scalars()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)
