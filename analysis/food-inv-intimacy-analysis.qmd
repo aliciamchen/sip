@@ -61,7 +61,7 @@ if (file.exists(preds_path)) {
   preds <- read_model_json(preds_path)
   glimpse(preds)
 } else {
-  cat("No CV predictions yet — run `make cv-food_inv_intimacy` once a forward fit + data exist.\n")
+  cat("No CV predictions yet — run `make cv-food_inv_intimacy` once a fit + data exist.\n")
 }
 ```
 

@@ -66,9 +66,7 @@ if (exists("df")) {
     rename(effort_update = belief_update) |>
     filter(stage == "posterior") |>
     mutate(
-      action = factor(action_condition,
-                      levels = c("no_share", "low_risk_share", "high_risk_share"),
-                      labels = c("No share", "Low-risk share", "High-risk share")),
+      action = factor_action(action_condition),
       desire = factor(desire, levels = c("low", "high"), labels = c("Low", "High"))
     )
 

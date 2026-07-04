@@ -66,9 +66,7 @@ if (exists("df")) {
     rename(effort_update = belief_update) |>
     filter(stage == "posterior") |>
     mutate(
-      action = factor(action_condition,
-                      levels = c("no_share", "low_risk_share", "high_risk_share"),
-                      labels = c("No share", "Low-risk share", "High-risk share")),
+      action = factor_action(action_condition),
       intimacy = factor(intimacy, levels = INTIMACY_LEVELS)
     )
 
@@ -155,7 +153,7 @@ if (file.exists(preds_path)) {
   preds <- read_model_json(preds_path)
   glimpse(preds)
 } else {
-  cat("No CV predictions yet — run `make cv-food_inv_joint_de` once a forward fit + data exist.\n")
+  cat("No CV predictions yet — run `make cv-food_inv_joint_de` once a fit + data exist.\n")
 }
 ```
 
