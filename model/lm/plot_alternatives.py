@@ -571,18 +571,21 @@ def _draw_set_similarity(ax, alts, sem, alt_emb, title, ylabel):
     sims = _set_similarity_by_type(alts_emb, alt_emb, cond_cols)
 
     type_order = ["same_cell", *cond_cols, "observed_action"]
+    wide = sims.pivot_table(index="scenario", columns="type", values="sim").reindex(
+        columns=type_order
+    )
     rng = np.random.default_rng(0)
+    # a small, per-scenario x-offset kept constant across the comparison types, so
+    # each scenario's four points connect into a thin line (its own trajectory)
+    xoff = dict(zip(wide.index, rng.uniform(-0.09, 0.09, len(wide))))
+    xs_base = np.arange(len(type_order))
+    for s, row in wide.iterrows():
+        xs = xs_base + xoff[s]
+        ys = row[type_order].to_numpy()
+        ax.plot(xs, ys, color=ALT_GREY, lw=0.5, alpha=0.4, zorder=2)
+        ax.scatter(xs, ys, s=11, color=ALT_GREY, alpha=0.7, lw=0, zorder=3)
     for x, t in enumerate(type_order):
-        vals = sims.loc[sims["type"] == t, "sim"].to_numpy()
-        ax.scatter(
-            x + rng.uniform(-0.09, 0.09, len(vals)),
-            vals,
-            s=13,
-            color=ALT_GREY,
-            alpha=0.7,
-            lw=0,
-            zorder=3,
-        )
+        vals = wide[t].dropna().to_numpy()
         lo, hi = _boot_ci(vals)
         m = vals.mean()
         ax.errorbar(
@@ -765,19 +768,22 @@ def fig_si_base_vs_full(d, runs):
     )
 
     cats = [*INTIMACY_LEVELS, "reference"]
+    wide = per_scen.pivot_table(
+        index="scenario", columns="comparison", values="dist"
+    ).reindex(columns=cats)
     fig, ax = plt.subplots(figsize=(5.2, 2.6))
     rng = np.random.default_rng(0)
+    # per-scenario x-offset kept constant across categories, so each scenario's
+    # points connect into a thin line (its trajectory across the levels)
+    xoff = dict(zip(wide.index, rng.uniform(-0.1, 0.1, len(wide))))
+    xs_base = np.arange(len(cats))
+    for s, row in wide.iterrows():
+        xs = xs_base + xoff[s]
+        ys = row[cats].to_numpy()
+        ax.plot(xs, ys, color=ALT_GREY, lw=0.5, alpha=0.4, zorder=2)
+        ax.scatter(xs, ys, s=11, color=ALT_GREY, alpha=0.7, lw=0, zorder=3)
     for x, cat in enumerate(cats):
-        vals = per_scen.loc[per_scen["comparison"] == cat, "dist"].to_numpy()
-        ax.scatter(
-            x + rng.uniform(-0.1, 0.1, len(vals)),
-            vals,
-            s=12,
-            color=ALT_GREY,
-            alpha=0.7,
-            lw=0,
-            zorder=3,
-        )
+        vals = wide[cat].dropna().to_numpy()
         lo, hi = _boot_ci(vals)
         m = vals.mean()
         ax.errorbar(
