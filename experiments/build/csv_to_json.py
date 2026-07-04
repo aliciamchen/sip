@@ -2,8 +2,9 @@
 """Convert scenario CSVs to stimuli.json for each experiment.
 
 Each stimulus CSV maps to a set of experiment directories that consume it; the
-full routing is in the SOURCES list below. The active inverse experiments
-(Studies 1a, 1b, 2a, 2b) all read scenarios.csv.
+full routing is in the SOURCES list below. The food inverse experiments
+(Studies 1a, 1b, 2a, 2b) read scenarios.csv; the nonfood experiments
+(Studies 3a, 3b) read scenarios_nonfood.csv.
 """
 
 import csv
@@ -11,11 +12,10 @@ import json
 from pathlib import Path
 
 # Each scenario CSV maps to the experiment directories under experiments/ that
-# consume it. The inverse experiments (Studies 1a, 1b, 2a, 2b) read
-# scenarios.csv and live at experiments/<slug>/. A slug is silently skipped
-# if its experiment dir has no json/ subdir.
+# consume it. Each experiment lives at experiments/<slug>/. A slug is silently
+# skipped if its experiment dir has no json/ subdir.
 SOURCES = [
-    # Active: the 3-action stimulus set (experiments/scenarios.csv).
+    # The 3-action food stimulus set (experiments/scenarios.csv).
     (
         "scenarios.csv",
         [
@@ -23,6 +23,14 @@ SOURCES = [
             "food_inv_desire",
             "food_inv_joint_de",
             "food_inv_joint_ie",
+        ],
+    ),
+    # The 3-action nonfood stimulus set (experiments/scenarios_nonfood.csv).
+    (
+        "scenarios_nonfood.csv",
+        [
+            "nonfood_inv_joint_de",
+            "nonfood_inv_joint_ie",
         ],
     ),
 ]

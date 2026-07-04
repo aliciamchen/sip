@@ -1,4 +1,4 @@
-"""Counterbalancing generator for all four active inverse-planning studies.
+"""Counterbalancing generator for all active inverse-planning studies.
 
 One script, one balanced design, one per-study registry — replacing the four
 near-identical `experiments/<slug>/python/generate_counterbalancing.py` files.
@@ -44,11 +44,14 @@ DataPipe completes one whole balanced pass. `n_rounds` must stay a multiple of 3
 for the extra-cell pool to divide evenly across cells.
 
 Per study (cells = product of the manipulated factors; intimacy/effort/desire are
-omitted when that variable is inferred rather than given):
-  - food_inv_desire   (1a): effort x intimacy x action = 2 x 4 x 3 = 24 cells, 30 rounds -> 480 seqs
-  - food_inv_joint_de (1b): intimacy x action           = 4 x 3     = 12 cells, 15 rounds -> 240 seqs
-  - food_inv_intimacy (2a): desire x effort x action    = 2 x 2 x 3 = 12 cells, 15 rounds -> 240 seqs
-  - food_inv_joint_ie (2b): desire x action             = 2 x 3     =  6 cells,  6 rounds ->  96 seqs
+omitted when that variable is inferred rather than given). The nonfood studies
+(3a/3b) mirror 1b/2b's designs on the 16 nonfood scenarios:
+  - food_inv_desire      (1a): effort x intimacy x action = 2 x 4 x 3 = 24 cells, 30 rounds -> 480 seqs
+  - food_inv_joint_de    (1b): intimacy x action           = 4 x 3     = 12 cells, 15 rounds -> 240 seqs
+  - food_inv_intimacy    (2a): desire x effort x action    = 2 x 2 x 3 = 12 cells, 15 rounds -> 240 seqs
+  - food_inv_joint_ie    (2b): desire x action             = 2 x 3     =  6 cells,  6 rounds ->  96 seqs
+  - nonfood_inv_joint_de (3a): intimacy x action           = 4 x 3     = 12 cells, 15 rounds -> 240 seqs
+  - nonfood_inv_joint_ie (3b): desire x action             = 2 x 3     =  6 cells,  6 rounds ->  96 seqs
 
 Usage:
     uv run python experiments/build/counterbalancing.py            # all studies
@@ -67,7 +70,7 @@ project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 from utils import get_project_root
 
-# The 16 scenarios, shared across every study.
+# The 16 food scenarios (Studies 1a/1b/2a/2b).
 STORIES = [
     "basketball",
     "birthday",
@@ -86,6 +89,26 @@ STORIES = [
     "soup",
     "wedding",
 ]
+
+# The 16 nonfood scenarios (Studies 3a/3b; scenarios_nonfood.csv order).
+STORIES_NONFOOD = [
+    "chapstick",
+    "towel",
+    "earbuds",
+    "hairbrush",
+    "harmonica",
+    "sunscreen",
+    "blanket",
+    "sleeping-bag",
+    "bed",
+    "locker-room",
+    "sauna",
+    "breakup",
+    "salary",
+    "gossip",
+    "home",
+    "navigation",
+]
 N_SLOTS = 16  # one trial per scenario
 
 ACTIONS = ("no_share", "low_risk_share", "high_risk_share")
@@ -96,7 +119,8 @@ INTIMACY = ("max_formal", "somewhat_formal", "somewhat_intimate", "max_intimate"
 
 # Per-study design: the manipulated (participant-visible) factors, their levels,
 # the number of rounds, and the RNG seed. `factors` and `levels` are aligned —
-# a cell is `dict(zip(factors, cell_tuple))`.
+# a cell is `dict(zip(factors, cell_tuple))`. `stories` selects the scenario set
+# (defaults to the food STORIES when absent).
 STUDY_CONFIGS = {
     "food_inv_desire": {  # Study 1a — infer desire (effort + intimacy given)
         "seed": 313,
@@ -121,6 +145,20 @@ STUDY_CONFIGS = {
         "n_rounds": 6,  # 6 * 16 = 96 seqs (target N=120 isn't a multiple of 16)
         "factors": ("desire_condition", "action_condition"),
         "levels": (("low", "high"), ACTIONS),
+    },
+    "nonfood_inv_joint_de": {  # Study 3a — 1b's design on the nonfood scenarios
+        "seed": 505,
+        "n_rounds": 15,  # 15 * 16 = 240 seqs = target N (12 cells -> 20 obs/cell)
+        "factors": ("intimacy_condition", "action_condition"),
+        "levels": (INTIMACY, ACTIONS),
+        "stories": STORIES_NONFOOD,
+    },
+    "nonfood_inv_joint_ie": {  # Study 3b — 2b's design on the nonfood scenarios
+        "seed": 606,
+        "n_rounds": 6,  # 6 * 16 = 96 seqs (target N=120 isn't a multiple of 16)
+        "factors": ("desire_condition", "action_condition"),
+        "levels": (("low", "high"), ACTIONS),
+        "stories": STORIES_NONFOOD,
     },
 }
 
@@ -230,7 +268,11 @@ def generate_for_study(slug):
     cfg = STUDY_CONFIGS[slug]
     cells = list(itertools.product(*cfg["levels"]))
     sequences = build_counterbalancing(
-        cells, cfg["factors"], cfg["n_rounds"], cfg["seed"]
+        cells,
+        cfg["factors"],
+        cfg["n_rounds"],
+        cfg["seed"],
+        stories=cfg.get("stories", STORIES),
     )
 
     # Invariant check: every cell lands in the same number of trial slots.
@@ -290,7 +332,7 @@ def main():
     parser.add_argument(
         "--study",
         choices=list(STUDY_CONFIGS),
-        help="generate one study (default: all four)",
+        help="generate one study (default: all studies)",
     )
     args = parser.parse_args()
     slugs = [args.study] if args.study else list(STUDY_CONFIGS)

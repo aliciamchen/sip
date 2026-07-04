@@ -16,12 +16,16 @@ import { makeStimulusTrials as make_food_inv_desire } from "../food_inv_desire/t
 import { makeStimulusTrials as make_food_inv_joint_de } from "../food_inv_joint_de/trials.js";
 import { makeStimulusTrials as make_food_inv_intimacy } from "../food_inv_intimacy/trials.js";
 import { makeStimulusTrials as make_food_inv_joint_ie } from "../food_inv_joint_ie/trials.js";
+import { makeStimulusTrials as make_nonfood_inv_joint_de } from "../nonfood_inv_joint_de/trials.js";
+import { makeStimulusTrials as make_nonfood_inv_joint_ie } from "../nonfood_inv_joint_ie/trials.js";
 
 // ----- study registry --------------------------------------------------------
 // `given` = the latent variables this study reveals to the participant (these
 // become selectable condition dropdowns). `inferred` = the latent variable(s)
 // the participant rates — i.e. the dependent variable(s). `action` is always
-// selectable (the observed behavior) and isn't listed here.
+// selectable (the observed behavior) and isn't listed here. `domain` selects
+// which scenario set the study runs on (food scenarios.csv vs. nonfood
+// scenarios_nonfood.csv; the scenario dropdown repopulates on switch).
 const STUDIES = {
   food_inv_desire: {
     paper: "1a",
@@ -29,6 +33,7 @@ const STUDIES = {
     make: make_food_inv_desire,
     given: ["intimacy", "effort"],
     inferred: ["desire"],
+    domain: "food",
   },
   food_inv_joint_de: {
     paper: "1b",
@@ -36,6 +41,7 @@ const STUDIES = {
     make: make_food_inv_joint_de,
     given: ["intimacy"],
     inferred: ["desire", "effort"],
+    domain: "food",
   },
   food_inv_intimacy: {
     paper: "2a",
@@ -43,6 +49,7 @@ const STUDIES = {
     make: make_food_inv_intimacy,
     given: ["desire", "effort"],
     inferred: ["intimacy"],
+    domain: "food",
   },
   food_inv_joint_ie: {
     paper: "2b",
@@ -50,6 +57,23 @@ const STUDIES = {
     make: make_food_inv_joint_ie,
     given: ["desire"],
     inferred: ["intimacy", "effort"],
+    domain: "food",
+  },
+  nonfood_inv_joint_de: {
+    paper: "3a",
+    name: "Joint inference: desire + effort (nonfood)",
+    make: make_nonfood_inv_joint_de,
+    given: ["intimacy"],
+    inferred: ["desire", "effort"],
+    domain: "nonfood",
+  },
+  nonfood_inv_joint_ie: {
+    paper: "3b",
+    name: "Joint inference: intimacy + effort (nonfood)",
+    make: make_nonfood_inv_joint_ie,
+    given: ["desire"],
+    inferred: ["intimacy", "effort"],
+    domain: "nonfood",
   },
 };
 
@@ -148,8 +172,20 @@ const TYPE_FORM = jsPsychSurveyHtmlForm;
 const TYPE_MULTI = jsPsychSurveyMultiChoice;
 const TYPE_KEY = jsPsychHtmlKeyboardResponse;
 
-let scenarios = [];
-let scenariosByLabel = {};
+// Scenario rows per domain, loaded at init. The scenario dropdown shows the
+// current study's domain and repopulates when a study switch crosses domains.
+const scenariosByDomain = { food: [], nonfood: [] };
+const byLabelByDomain = { food: {}, nonfood: {} };
+
+function currentDomain() {
+  return STUDIES[state.study].domain;
+}
+function currentScenarios() {
+  return scenariosByDomain[currentDomain()];
+}
+function currentScenarioRow() {
+  return byLabelByDomain[currentDomain()][state.scenario_label];
+}
 
 // ----- helpers ---------------------------------------------------------------
 function el(tag, props = {}, ...children) {
@@ -237,7 +273,11 @@ function renderControls() {
   }
   studySel.value = state.study;
   studySel.addEventListener("change", () => {
+    const prevDomain = currentDomain();
     state.study = studySel.value;
+    if (currentDomain() !== prevDomain) {
+      state.scenario_label = currentScenarios()[0].scenario_label;
+    }
     renderControls();
     render();
   });
@@ -245,7 +285,7 @@ function renderControls() {
 
   // Scenario
   const scenSel = el("select");
-  for (const row of scenarios) {
+  for (const row of currentScenarios()) {
     scenSel.append(
       new Option(
         `${row.scenario_label} — ${row.name_0} & ${row.name_1}`,
@@ -372,7 +412,7 @@ function card(labelText, labelClass, bodyNode) {
 function renderScenarioPanel() {
   const host = document.getElementById("scenario-panel");
   host.replaceChildren();
-  const row = scenariosByLabel[state.scenario_label];
+  const row = currentScenarioRow();
   if (!row) return;
 
   const rows = [
@@ -417,7 +457,7 @@ function renderScenarioPanel() {
 function render() {
   try {
     const study = STUDIES[state.study];
-    const row = scenariosByLabel[state.scenario_label];
+    const row = currentScenarioRow();
     const stim = {
       ...row,
       action_condition: state.action,
@@ -449,15 +489,20 @@ function showError(err) {
 // ----- init ------------------------------------------------------------------
 async function init() {
   try {
-    // All four studies are generated from the same scenarios.csv, so one
-    // study's stimuli.json carries every scenario row the preview needs.
-    const res = await fetch("../food_inv_desire/json/stimuli.json");
-    if (!res.ok) throw new Error(`stimuli.json: HTTP ${res.status}`);
-    scenarios = await res.json();
-    scenariosByLabel = Object.fromEntries(
-      scenarios.map((r) => [r.scenario_label, r]),
-    );
-    state.scenario_label = scenarios[0].scenario_label;
+    // One study's stimuli.json per domain carries every scenario row that
+    // domain's studies need (each domain's studies share one scenarios CSV).
+    const load = async (domain, slug) => {
+      const res = await fetch(`../${slug}/json/stimuli.json`);
+      if (!res.ok) throw new Error(`${slug} stimuli.json: HTTP ${res.status}`);
+      const rows = await res.json();
+      scenariosByDomain[domain] = rows;
+      byLabelByDomain[domain] = Object.fromEntries(
+        rows.map((r) => [r.scenario_label, r]),
+      );
+    };
+    await load("food", "food_inv_desire");
+    await load("nonfood", "nonfood_inv_joint_de");
+    state.scenario_label = currentScenarios()[0].scenario_label;
 
     renderControls();
     render();

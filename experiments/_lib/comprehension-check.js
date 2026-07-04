@@ -83,11 +83,57 @@ const INTIMACY_SCALE_Q = {
     "How formal or intimate the relationship is — from maximally formal to maximally intimate.",
 };
 
+// --- Nonfood (Study 3) variants -----------------------------------------------
+// Mirror the food questions with the domain framing swapped (tracks the
+// NONFOOD_* paragraphs in instructions.js).
+
+const NONFOOD_INFERENCE_Q = {
+  prompt:
+    "In each scenario, two people decide what to do in a situation where something — an object, a physical space, or a piece of information — could be shared between them. What will we ask you to do?",
+  name: "inference",
+  options: [
+    "Use the situation and what they decide to do, to judge something the scenario doesn't directly tell us.",
+    "Type out everything the scenario said, word for word.",
+    "Decide what the two people should have done.",
+    "Rate how realistic or well-written the scenario is.",
+  ],
+  correct:
+    "Use the situation and what they decide to do, to judge something the scenario doesn't directly tell us.",
+};
+
+const NONFOOD_DESIRE_MEANING_Q = {
+  prompt:
+    "When we ask how much the two people would like the thing at stake in the scenario, what do we mean?",
+  name: "desire_meaning",
+  options: [
+    "How much they would enjoy getting or doing it right now — for example because they need it or are interested in it — separate from what they decide to do.",
+    "Whether they actually end up getting it.",
+    "How easy or hard it would be for them to get it.",
+    "How close or formal the two people's relationship is.",
+  ],
+  correct:
+    "How much they would enjoy getting or doing it right now — for example because they need it or are interested in it — separate from what they decide to do.",
+};
+
+const NONFOOD_INTIMACY_SCALE_Q = {
+  prompt:
+    "When we ask about the two people's relationship, what does the scale measure?",
+  name: "intimacy_scale",
+  options: [
+    "How formal or intimate the relationship is — from maximally formal to maximally intimate.",
+    "How much the two people would like the thing at stake in the scenario.",
+    "How much physical effort their action would take.",
+    "How long the two people have known each other, in years.",
+  ],
+  correct:
+    "How formal or intimate the relationship is — from maximally formal to maximally intimate.",
+};
+
 // Negative-format item: three things the joint task really asks for (the
 // "which situation is more likely" slider, the before/after timing, and using
 // judgment about unstated details) plus one thing it never asks for, which is
-// the answer. Shown in the joint studies (1b, 2b); the "which situation is more
-// likely" option is only a real task action in these two studies.
+// the answer. Shown in the joint studies (1b, 2b, 3a, 3b); the "which situation
+// is more likely" option is only a real task action in these studies.
 const SECOND_QUESTION_Q = {
   prompt: "Which of these will you NOT be asked to do in this task?",
   name: "not_asked",
@@ -116,6 +162,18 @@ export const STUDY_COMPREHENSION_CHECKS = {
   food_inv_joint_ie: [
     INFERENCE_Q,
     INTIMACY_SCALE_Q,
+    SECOND_QUESTION_Q,
+    TIMING_Q,
+  ],
+  nonfood_inv_joint_de: [
+    NONFOOD_INFERENCE_Q,
+    NONFOOD_DESIRE_MEANING_Q,
+    SECOND_QUESTION_Q,
+    TIMING_Q,
+  ],
+  nonfood_inv_joint_ie: [
+    NONFOOD_INFERENCE_Q,
+    NONFOOD_INTIMACY_SCALE_Q,
     SECOND_QUESTION_Q,
     TIMING_Q,
   ],

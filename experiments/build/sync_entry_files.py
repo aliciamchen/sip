@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
-"""Write the identical index.html and experiment.js into each active experiment
-directory from a single source, so the entry files never drift apart.
+"""Write the index.html and experiment.js into each active experiment directory
+from a single source, so the entry files never drift apart.
 
-index.html and experiment.js are byte-identical across the active experiments
-(the only per-experiment code is trials.js, which experiment.js imports). Edit
-the templates below and re-run this to propagate a change (e.g. a jsPsych
-version bump, or a new shared plugin) to every experiment at once:
+index.html is byte-identical across the active experiments, and experiment.js
+differs only in which consent template the study loads (the only other
+per-experiment code is trials.js, which experiment.js imports). Edit the
+templates below and re-run this to propagate a change (e.g. a jsPsych version
+bump, or a new shared plugin) to every experiment at once:
 
-    uv run python experiments/sync_entry_files.py
+    uv run python experiments/build/sync_entry_files.py
 """
 
 from pathlib import Path
 
-# Active experiment slugs (mirror Makefile's EXPERIMENTS_INVERSE).
-ACTIVE_SLUGS = [
-    "food_inv_desire",
-    "food_inv_joint_de",
-    "food_inv_intimacy",
-    "food_inv_joint_ie",
-]
+# Active experiment slugs -> consent template under _lib/consent/ (mirror the
+# Makefile's experiment roster). The food studies share the food-inverse
+# consent; the nonfood studies (Study 3) use the domain-general one.
+ACTIVE_SLUGS = {
+    "food_inv_desire": "food-inverse",
+    "food_inv_joint_de": "food-inverse",
+    "food_inv_intimacy": "food-inverse",
+    "food_inv_joint_ie": "food-inverse",
+    "nonfood_inv_joint_de": "nonfood-inverse",
+    "nonfood_inv_joint_ie": "nonfood-inverse",
+}
 
 INDEX_HTML = """<!DOCTYPE html>
 <html lang="en">
@@ -60,7 +65,7 @@ runExperiment({
   makeStimulusTrials,
   instructionsPages: INSTRUCTIONS_PAGES,
   comprehensionQuestions: COMPREHENSION_QUESTIONS,
-  consentTemplate: "food-inverse",
+  consentTemplate: "{consent_template}",
 });
 """
 
@@ -69,13 +74,16 @@ def main():
     # This script lives in experiments/build/; the experiment dirs are one level
     # up under experiments/.
     base = Path(__file__).resolve().parent.parent
-    for slug in ACTIVE_SLUGS:
+    for slug, consent_template in ACTIVE_SLUGS.items():
         exp_dir = base / slug
         if not exp_dir.is_dir():
             print(f"Skipped (no experiment dir): {slug}")
             continue
         (exp_dir / "index.html").write_text(INDEX_HTML, encoding="utf-8")
-        (exp_dir / "experiment.js").write_text(EXPERIMENT_JS, encoding="utf-8")
+        (exp_dir / "experiment.js").write_text(
+            EXPERIMENT_JS.replace("{consent_template}", consent_template),
+            encoding="utf-8",
+        )
         print(f"Wrote: {slug}/index.html, {slug}/experiment.js")
 
 

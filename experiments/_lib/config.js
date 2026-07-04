@@ -20,6 +20,8 @@ export const DATAPIPE_IDS = {
   food_inv_joint_de: "zxPavRt21FCr", // Study 1b
   food_inv_intimacy: "wX18fBV6FFV1", // Study 2a
   food_inv_joint_ie: "Z3EeK2XpEZPr", // Study 2b
+  nonfood_inv_joint_de: "TODO_FILL_IN_DATAPIPE_ID", // Study 3a
+  nonfood_inv_joint_ie: "TODO_FILL_IN_DATAPIPE_ID", // Study 3b
 };
 
 // Settings identical across all active experiments.

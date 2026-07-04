@@ -1,8 +1,10 @@
 // Per-scenario memory checks. Each experiment passes a lookup of the memory
 // checks that apply to its scenario set. Food experiments use the hike + wedding
-// scenarios (FOOD_MEMORY_CHECKS); the nonfood experiment uses sleeping-bag +
-// payment (NONFOOD_MEMORY_CHECKS). makeMemoryCheckForStimulus returns the trial
-// object keyed by scenario_label, or null if no memory check applies.
+// scenarios (FOOD_MEMORY_CHECKS); the nonfood experiments use sleeping-bag +
+// salary (NONFOOD_MEMORY_CHECKS). Both sets ask three questions total across
+// the two checks (the exclusion rules count questions, not checks).
+// makeMemoryCheckForStimulus returns the trial object keyed by scenario_label,
+// or null if no memory check applies.
 
 const MEMORY_CHECK_PREAMBLE_MULTI = `
   <div>
@@ -124,7 +126,7 @@ export const NONFOOD_MEMORY_CHECKS = {
       data.memory_correct_incident = correctIncident;
     },
   },
-  payment: {
+  salary: {
     type: jsPsychSurveyMultiChoice,
     preamble: MEMORY_CHECK_PREAMBLE_SINGLE,
     questions: [
@@ -132,10 +134,10 @@ export const NONFOOD_MEMORY_CHECKS = {
         prompt: "Where were the people in the scenario?",
         name: "location",
         options: [
-          "A vintage market",
-          "A grocery store",
-          "A boutique clothing store",
-          "A farmers' market",
+          "At a dinner after an industry event",
+          "In their office break room",
+          "At a company holiday party",
+          "On a video call",
         ],
         required: true,
       },
@@ -143,7 +145,8 @@ export const NONFOOD_MEMORY_CHECKS = {
     button_label: "Continue",
     on_finish: function (data) {
       const responses = data.response || {};
-      const correctLocation = responses.location === "A vintage market" ? 1 : 0;
+      const correctLocation =
+        responses.location === "At a dinner after an industry event" ? 1 : 0;
       data.response_type = "memory_check";
       data.memory_correct_count = correctLocation;
       data.memory_correct_location = correctLocation;

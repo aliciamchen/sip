@@ -1,6 +1,8 @@
-// All instructions for the four active studies, in one place so the shared
-// parts and the study-specific parts are easy to compare side by side. Each
-// trials.js imports STUDY_INSTRUCTIONS and picks its slug's pages.
+// All instructions for the active studies, in one place so the shared parts
+// and the study-specific parts are easy to compare side by side. Each
+// trials.js imports STUDY_INSTRUCTIONS and picks its slug's pages. The nonfood
+// studies (3a/3b) reuse the food studies' structure with the food-specific
+// paragraphs swapped for domain-general ones (NONFOOD_*).
 
 const SURVEY_TITLE = "Social interactions survey";
 
@@ -89,6 +91,31 @@ const READ_CAREFULLY_PLAIN = "Please read each of the scenarios carefully!";
 // The inference note as its own standalone page (shown in every study).
 const INFERENCE_PAGE = instructionsPage([INFERENCE_NOTE]);
 
+// --- Nonfood (Study 3) variants of the food-specific paragraphs -------------
+// Same structure and register as the food wording; only the domain framing
+// changes. The nonfood scenarios span objects, physical spaces, and personal
+// information, so "the food" becomes "the thing at stake in the scenario"
+// (the per-trial question itself names the scenario's specific thing, e.g.
+// "the chapstick" — see desireQuestion in scenario.js).
+
+const NONFOOD_INTRO_NOTE =
+  "<p>In this survey, you will read vignettes about two people in different kinds of social relationships, deciding what to do in situations where something — an object, a physical space, or a piece of information — could be shared between them.</p>";
+
+const NONFOOD_INFERENCE_NOTE =
+  "<p>In each scenario, two people decide what to do in a situation where something could be shared between them.</p>" +
+  "<p>The descriptions we give you leave out some information — about the characters or about the situation. In this study, we will ask you to evaluate some of these unstated details, using your best judgment.</p>";
+
+const NONFOOD_INFERENCE_PAGE = instructionsPage([NONFOOD_INFERENCE_NOTE]);
+
+// Nonfood analog of DESIRE_NOTE: the appeal of the thing at stake, separate
+// from what the two people decide to do and from how hard it is to get.
+const NONFOOD_DESIRE_NOTE =
+  '<div class="side-note"><p>By how much the two people <strong>would like</strong> the thing at stake in each scenario, we mean how much getting or doing it would satisfy the motivational state they are in right now — for example, how much they need it, or how much they like or are interested in that kind of thing. This is about the appeal of the thing itself, separate from what they decide to do and from how easy or hard it is to get. For example, in some situations people might want something a lot but still not end up getting it for other reasons.</p></div>';
+
+// Nonfood analog of DESIRE_SLIDER_NOTE.
+const NONFOOD_DESIRE_SLIDER_NOTE =
+  "<p>For the question about how much the two people would like the thing at stake in the scenario, sliding the slider all the way to one end means you think they would not like it at all, and all the way to the other end means they would like it extremely. Positions in between indicate how much they would like it, with the middle meaning a moderate amount.</p>";
+
 // --- Per-study instructions (study-specific pages in bold relief) -----------
 
 export const STUDY_INSTRUCTIONS = {
@@ -135,6 +162,43 @@ export const STUDY_INSTRUCTIONS = {
   food_inv_joint_ie: [
     instructionsPage([READ_CAREFULLY_NOTICE, INTRO_NOTE, RELATIONSHIPS_NOTE]),
     INFERENCE_PAGE,
+    instructionsPage([
+      "<p>In each scenario, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think the two people are in. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      RELATIONSHIP_SLIDER_NOTE,
+      SITUATION_SLIDER_NOTE,
+      TIMING_NOTE_TWO,
+    ]),
+    finalInstructionsPage(READ_CAREFULLY_PLAIN),
+  ],
+
+  // Study 3a — jointly infer desire and effort on the nonfood scenarios
+  // (two sliders; mirrors 1b).
+  nonfood_inv_joint_de: [
+    instructionsPage([
+      READ_CAREFULLY_NOTICE,
+      NONFOOD_INTRO_NOTE,
+      RELATIONSHIPS_NOTE,
+    ]),
+    NONFOOD_INFERENCE_PAGE,
+    instructionsPage([
+      "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people would like the thing at stake in the scenario. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      NONFOOD_DESIRE_SLIDER_NOTE,
+      SITUATION_SLIDER_NOTE,
+      TIMING_NOTE_TWO,
+      NONFOOD_DESIRE_NOTE,
+    ]),
+    finalInstructionsPage(READ_CAREFULLY_RELATIONSHIP),
+  ],
+
+  // Study 3b — jointly infer intimacy and effort on the nonfood scenarios
+  // (two sliders; mirrors 2b).
+  nonfood_inv_joint_ie: [
+    instructionsPage([
+      READ_CAREFULLY_NOTICE,
+      NONFOOD_INTRO_NOTE,
+      RELATIONSHIPS_NOTE,
+    ]),
+    NONFOOD_INFERENCE_PAGE,
     instructionsPage([
       "<p>In each scenario, we will ask you two questions. The first question asks you to evaluate what kind of social relationship you think the two people are in. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
       RELATIONSHIP_SLIDER_NOTE,

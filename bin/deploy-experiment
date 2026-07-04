@@ -28,14 +28,16 @@ set -euo pipefail
 # -------- config --------
 : "${RSYNC_DEST:=aliciach@athena.dialup.mit.edu:~/www/sip/experiments}"
 
-# Active experiments — keep in sync with the Makefile's EXPERIMENTS_INVERSE.
-# Slugs not in this list are rejected to avoid accidentally deploying legacy
-# experiments.
+# Active experiments — keep in sync with the Makefile's experiment roster
+# (EXPERIMENTS_INVERSE + EXPERIMENTS_NONFOOD). Slugs not in this list are
+# rejected to avoid accidentally deploying legacy experiments.
 ACTIVE_EXPERIMENTS=(
   food_inv_desire
   food_inv_joint_de
   food_inv_intimacy
   food_inv_joint_ie
+  nonfood_inv_joint_de
+  nonfood_inv_joint_ie
 )
 
 # Files/dirs not needed for runtime on the public server.
@@ -69,6 +71,7 @@ ensure_artifacts_current() {
   local artifacts
   artifacts=$(git ls-files -- \
     'experiments/scenarios.csv' \
+    'experiments/scenarios_nonfood.csv' \
     'experiments/*/json/stimuli.json' \
     'experiments/*/json/full_counterbalancing.json' \
     'experiments/*/index.html' \
