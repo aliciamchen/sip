@@ -42,9 +42,14 @@ or other cognitive costs). The original food-only prompts were retired in
 favor of this single set after a side-by-side comparison showed the
 unified prompts produced equal or slightly better fits on the food data.
 
-Note that privacy-type scenarios tend to involve little physical or
-logistical cost variation, so effort ratings on those scenarios cluster
-near zero by construction.
+For disclosure actions (the privacy-type scenarios), effort is
+operationalized as the executional cost of producing the account — how
+long the telling takes and how much context or explaining it requires —
+which falls under the effort rubric's time-cost clause. The emotional
+difficulty of revealing the content is deliberately NOT effort; that is
+the risk dimension. See the invariants note in
+`experiments/scenarios_nonfood.py` and the Study 3 scenario section of
+the manuscript.
 
 Editing any prompt here will change all callers — re-run the relevant LM
 script and downstream fits.
