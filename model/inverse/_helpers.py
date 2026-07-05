@@ -236,6 +236,33 @@ EFFORT_PRIOR_MEAN = jnp.dot(jnp.ones(2) / 2, _EFFORT_STATES)
 _LOG_2PI = jnp.log(2.0 * jnp.pi)
 
 
+def delta_latent(density, grid, prior_mean):
+    """Belief-update δ for a 1-D inferred latent (desire or intimacy): the
+    posterior mean minus the prior mean, reducing the last (grid) axis.
+
+    Deliberately array-library-agnostic — the fit losses call it with jnp
+    arrays and the CV scorer with numpy — so a single definition drives both.
+    `density` is (..., n_grid) over `grid` (n_grid,); returns shape (...).
+    """
+    return density @ grid - prior_mean
+
+
+def delta_joint(joint, grid, latent_prior_mean, effort_prior_mean):
+    """Belief-update δ for a (latent, effort) joint posterior shaped
+    (..., n_grid, 2) — last two axes are the latent grid and the two effort
+    states {low, high}. Returns (latent_delta, effort_delta), each shaped like
+    `joint` with those two axes removed: the latent delta marginalizes effort
+    then takes the posterior mean minus prior; the effort delta is
+    P(effort=HIGH) minus its prior. The negative-axis reductions make it
+    identical for the fit's per-run (K, n_grid, 2) tables and the CV scorer's
+    per-run and per-trial (K, n_test, n_grid, 2) tables, so fit and CV score the
+    same quantity. See test_model_compliance.test_delta_helpers_*.
+    """
+    latent_mean = joint.sum(axis=-1) @ grid  # marginalize effort, then mean
+    p_effort_high = joint[..., 1].sum(axis=-1)  # sum grid bins of the HIGH slab
+    return latent_mean - latent_prior_mean, p_effort_high - effort_prior_mean
+
+
 @jax.jit
 def mixture_nll_1d(u, deltas, sigma):
     """−log[(1/K) Σ_k N(u | δ_k, σ²)] for a scalar belief update `u` and per-run
@@ -958,7 +985,7 @@ def fit_intimacy_observer_joint(
 
         def nll_trial(a, s, r, e, u):
             post_runs = tables[:, 0, s, a, r, e, :]  # (K, 101)
-            deltas = post_runs @ GRID - PRIOR_MEAN  # (K,)
+            deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
         return jnp.sum(
@@ -1017,7 +1044,7 @@ def fit_desire_observer_joint(
 
         def nll_trial(a, s, e, rel, u):
             post_runs = tables[:, 0, s, a, e, rel, :]  # (K, 101)
-            deltas = post_runs @ GRID - PRIOR_MEAN  # (K,)
+            deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
         return jnp.sum(
@@ -1078,11 +1105,10 @@ def fit_joint_de_observer_joint(
 
         def nll_trial(a, s, rel, u_desire, u_effort):
             joint = tables[:, 0, s, a, rel, :, :]  # (K, 101, 2)
-            desire_mean = joint.sum(axis=2) @ GRID  # (K,) marginal over effort
-            p_effort_high = joint[:, :, 1].sum(axis=1)  # (K,) marginal over desire
-            deltas = jnp.stack(
-                [desire_mean - PRIOR_MEAN, p_effort_high - EFFORT_PRIOR_MEAN], axis=1
-            )  # (K, 2)
+            d_desire, d_effort = delta_joint(
+                joint, GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN
+            )  # each (K,)
+            deltas = jnp.stack([d_desire, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_desire, u_effort]), deltas, sigma)
 
         return jnp.sum(
@@ -1146,11 +1172,10 @@ def fit_joint_ie_observer_joint(
 
         def nll_trial(a, s, r, u_intimacy, u_effort):
             joint = tables[:, 0, s, a, r, :, :]  # (K, 101, 2)
-            intimacy_mean = joint.sum(axis=2) @ GRID  # (K,) marginal over effort
-            p_effort_high = joint[:, :, 1].sum(axis=1)  # (K,) marginal over intimacy
-            deltas = jnp.stack(
-                [intimacy_mean - PRIOR_MEAN, p_effort_high - EFFORT_PRIOR_MEAN], axis=1
-            )  # (K, 2)
+            d_intimacy, d_effort = delta_joint(
+                joint, GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN
+            )  # each (K,)
+            deltas = jnp.stack([d_intimacy, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_intimacy, u_effort]), deltas, sigma)
 
         return jnp.sum(

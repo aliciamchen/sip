@@ -63,6 +63,8 @@ from _helpers import (  # noqa: E402
     GRID,
     PRIOR_MEAN,
     _build_observer_tables_runs,
+    delta_joint,
+    delta_latent,
     desire_table_kwargs,
     fit_desire_observer_joint,
     fit_intimacy_observer_joint,
@@ -87,18 +89,10 @@ from _helpers import (  # noqa: E402
     write_jsonl,
 )
 from observers import (  # noqa: E402
-    observer_intimacy_base,
-    observer_intimacy_discomfort_only,
-    observer_intimacy_full,
-    observer_joint_de_base,
-    observer_joint_de_discomfort_only,
-    observer_joint_de_full,
-    observer_joint_ie_base,
-    observer_joint_ie_discomfort_only,
-    observer_joint_ie_full,
-    observer_desire_base,
-    observer_desire_discomfort_only,
-    observer_desire_full,
+    VARIANTS_DESIRE,
+    VARIANTS_INTIMACY,
+    VARIANTS_JOINT_DE,
+    VARIANTS_JOINT_IE,
 )
 from tables import (  # noqa: E402
     INTIMACY_CONDITIONS,
@@ -135,29 +129,10 @@ def _domain_for(slug):
     return "nonfood" if slug.startswith("nonfood_") else "food"
 
 
-# Per-variant (observer_fn, utility_param_names). Each registry pairs one of the
-# three ablations with the matching observer for that experiment; which optional
-# LM tables a variant needs is derived from its param names in *_table_kwargs.
-VARIANTS_INTIMACY = {
-    "full": (observer_intimacy_full, ["w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_intimacy_discomfort_only, ["w_d", "gamma"]),
-    "base": (observer_intimacy_base, ["w_v", "w_e"]),
-}
-VARIANTS_DESIRE = {
-    "full": (observer_desire_full, ["w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_desire_discomfort_only, ["w_d", "gamma"]),
-    "base": (observer_desire_base, ["w_v", "w_e"]),
-}
-VARIANTS_JOINT_DE = {
-    "full": (observer_joint_de_full, ["w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_joint_de_discomfort_only, ["w_d", "gamma"]),
-    "base": (observer_joint_de_base, ["w_v", "w_e"]),
-}
-VARIANTS_JOINT_IE = {
-    "full": (observer_joint_ie_full, ["w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_joint_ie_discomfort_only, ["w_d", "gamma"]),
-    "base": (observer_joint_ie_base, ["w_v", "w_e"]),
-}
+# The per-variant (observer_fn, utility_param_names) registries — one per
+# observer family — are the single source of truth in observers.py, imported
+# above and shared with the fit wrappers so fit and CV never disagree on which
+# ablations exist or which weights each fits.
 # ------------------------------------------------------------------------------
 # Helpers shared across the four LOSO mains.
 # ------------------------------------------------------------------------------
@@ -349,7 +324,9 @@ def _loso_intimacy(slug):
                 for r in (0, 1):
                     for e in (0, 1):
                         density_runs = tables[:, 0, fold, a_idx, r, e, :]  # (K, 101)
-                        deltas = density_runs @ GRID_NP - PRIOR_MEAN_F  # (K,)
+                        deltas = delta_latent(
+                            density_runs, GRID_NP, PRIOR_MEAN_F
+                        )  # (K,)
                         pred_rows.append(
                             {
                                 "experiment": slug,
@@ -374,7 +351,7 @@ def _loso_intimacy(slug):
                     effort_np[ti],
                     :,
                 ]  # (K, n_test, 101)
-                deltas_t = (post @ GRID_NP).T - PRIOR_MEAN_F  # (n_test, K)
+                deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T  # (n_test, K)
                 lls = _held_out_ll_1d(deltas_t, response_np[ti], sigma)
                 test_nll = -float(lls.sum())
                 for j, i in enumerate(ti):
@@ -489,8 +466,8 @@ def _desire_cv_fold(variant, fold, warm, patience):
     for a_idx in range(N_ACTIONS):
         for rel_idx in range(4):
             for e in (0, 1):
-                deltas = (
-                    tables[:, 0, fold, a_idx, e, rel_idx, :] @ GRID_NP - PRIOR_MEAN_F
+                deltas = delta_latent(
+                    tables[:, 0, fold, a_idx, e, rel_idx, :], GRID_NP, PRIOR_MEAN_F
                 )
                 pred_rows.append(
                     {
@@ -513,7 +490,7 @@ def _desire_cv_fold(variant, fold, warm, patience):
     ti = np.where(test_mask)[0]
     if len(ti):
         post = tables[:, 0, sc[ti], act[ti], eff[ti], rel[ti], :]  # (K, n_test, 101)
-        deltas_t = (post @ GRID_NP).T - PRIOR_MEAN_F
+        deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T
         lls = _held_out_ll_1d(deltas_t, resp[ti], sigma)
         test_nll = -float(lls.sum())
         for j, i in enumerate(ti):
@@ -692,18 +669,17 @@ def _loso_joint_de(slug):
             for a_idx in range(N_ACTIONS):
                 for rel_idx in range(4):
                     joint_runs = tables[:, 0, fold, a_idx, rel_idx, :, :]  # (K,101,2)
-                    desire_mean = joint_runs.sum(axis=2) @ GRID_NP  # (K,)
-                    p_high = joint_runs[:, :, 1].sum(axis=1)  # (K,)
+                    d_desire, d_effort = delta_joint(
+                        joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
+                    )  # each (K,)
                     pred_rows.append(
                         {
                             "experiment": slug,
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
-                            "delta_desire": float((desire_mean - PRIOR_MEAN_F).mean()),
-                            "delta_effort": float(
-                                (p_high - EFFORT_PRIOR_MEAN_F).mean()
-                            ),
+                            "delta_desire": float(d_desire.mean()),
+                            "delta_effort": float(d_effort.mean()),
                             "model": variant,
                         }
                     )
@@ -713,12 +689,10 @@ def _loso_joint_de(slug):
                 joint_t = tables[
                     :, 0, scenario_idx_np[ti], action_np[ti], rel_np[ti], :, :
                 ]  # (K, n_test, 101, 2)
-                desire_mean_t = joint_t.sum(axis=3) @ GRID_NP  # (K, n_test)
-                p_high_t = joint_t[:, :, :, 1].sum(axis=2)  # (K, n_test)
-                deltas_t = np.stack(
-                    [desire_mean_t - PRIOR_MEAN_F, p_high_t - EFFORT_PRIOR_MEAN_F],
-                    axis=-1,
-                )  # (K, n_test, 2)
+                d_desire_t, d_effort_t = delta_joint(
+                    joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
+                )  # each (K, n_test)
+                deltas_t = np.stack([d_desire_t, d_effort_t], axis=-1)  # (K, n_test, 2)
                 deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
                 u_t = np.stack([rd_np[ti], re_np[ti]], axis=1)  # (n_test, 2)
                 lls = _held_out_ll_2d(deltas_t, u_t, sigma)
@@ -834,20 +808,17 @@ def _loso_joint_ie(slug):
             for a_idx in range(N_ACTIONS):
                 for r in (0, 1):
                     joint_runs = tables[:, 0, fold, a_idx, r, :, :]  # (K,101,2)
-                    intimacy_mean = joint_runs.sum(axis=2) @ GRID_NP  # (K,)
-                    p_high = joint_runs[:, :, 1].sum(axis=1)  # (K,)
+                    d_intimacy, d_effort = delta_joint(
+                        joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
+                    )  # each (K,)
                     pred_rows.append(
                         {
                             "experiment": slug,
                             "scenario_label": scenario_label,
                             "action": a_idx,
                             "desire_condition": "low" if r == 0 else "high",
-                            "delta_intimacy": float(
-                                (intimacy_mean - PRIOR_MEAN_F).mean()
-                            ),
-                            "delta_effort": float(
-                                (p_high - EFFORT_PRIOR_MEAN_F).mean()
-                            ),
+                            "delta_intimacy": float(d_intimacy.mean()),
+                            "delta_effort": float(d_effort.mean()),
                             "model": variant,
                         }
                     )
@@ -857,12 +828,10 @@ def _loso_joint_ie(slug):
                 joint_t = tables[
                     :, 0, scenario_idx_np[ti], action_np[ti], desire_np[ti], :, :
                 ]  # (K, n_test, 101, 2)
-                intimacy_mean_t = joint_t.sum(axis=3) @ GRID_NP  # (K, n_test)
-                p_high_t = joint_t[:, :, :, 1].sum(axis=2)  # (K, n_test)
-                deltas_t = np.stack(
-                    [intimacy_mean_t - PRIOR_MEAN_F, p_high_t - EFFORT_PRIOR_MEAN_F],
-                    axis=-1,
-                )
+                d_intimacy_t, d_effort_t = delta_joint(
+                    joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
+                )  # each (K, n_test)
+                deltas_t = np.stack([d_intimacy_t, d_effort_t], axis=-1)  # (K,n_test,2)
                 deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
                 u_t = np.stack([ri_np[ti], re_np[ti]], axis=1)  # (n_test, 2)
                 lls = _held_out_ll_2d(deltas_t, u_t, sigma)

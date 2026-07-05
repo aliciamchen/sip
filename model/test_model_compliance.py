@@ -387,6 +387,54 @@ def test_fit_multistart_raises_on_all_nan():
         raise AssertionError("all-NaN multistart did not raise")
 
 
+def test_delta_helpers_match_reference():
+    """delta_latent / delta_joint (the single source of the belief-update δ that
+    both the JAX fit losses and the numpy CV scorer call) must match an
+    independent reference, and give identical results for jnp and numpy inputs.
+    Guards the shared δ definition: if it silently changed, fit and CV would
+    still agree with each other (they call one function) but score the wrong
+    quantity — so we pin it to a hand-written reference here."""
+    from _helpers import EFFORT_PRIOR_MEAN, GRID, PRIOR_MEAN, delta_joint, delta_latent
+
+    grid_np = np.asarray(GRID)
+    pm, epm = float(PRIOR_MEAN), float(EFFORT_PRIOR_MEAN)
+    rng = np.random.default_rng(0)
+
+    def ref_latent(density):  # posterior mean − prior, independent formulation
+        return np.array([float(np.sum(row * grid_np)) for row in density]) - pm
+
+    def ref_joint(joint):  # marginalize effort by adding the two slabs explicitly
+        marg = joint[:, :, 0] + joint[:, :, 1]  # (K, n_grid)
+        latent = np.array([float(np.sum(row * grid_np)) for row in marg]) - pm
+        p_high = joint[:, :, 1].sum(axis=1) - epm  # (K,)
+        return latent, p_high
+
+    # 1-D latent: (K, n_grid) normalized densities
+    dens = rng.random((8, grid_np.shape[0]))
+    dens /= dens.sum(axis=1, keepdims=True)
+    ref = ref_latent(dens)
+    d_np = delta_latent(dens, grid_np, pm)
+    # The fit runs in JAX (float32), the CV in numpy (float64); the reference is
+    # float64, so the numpy path must match tightly and the jnp path only to
+    # float32 precision — the point is formula identity, not bit-level equality.
+    d_jx = np.asarray(delta_latent(jnp.asarray(dens), GRID, PRIOR_MEAN))
+    assert np.allclose(d_np, ref), "delta_latent (numpy) != reference"
+    assert np.allclose(d_jx, ref, atol=1e-5), "delta_latent (jnp) != reference"
+    assert np.allclose(d_np, d_jx, atol=1e-5), "delta_latent: numpy and jnp disagree"
+
+    # 2-D (latent, effort) joint: (K, n_grid, 2) normalized over both last axes
+    joint = rng.random((8, grid_np.shape[0], 2))
+    joint /= joint.sum(axis=(1, 2), keepdims=True)
+    r_lat, r_eff = ref_joint(joint)
+    n_lat, n_eff = delta_joint(joint, grid_np, pm, epm)
+    j_lat, j_eff = delta_joint(jnp.asarray(joint), GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN)
+    assert np.allclose(n_lat, r_lat) and np.allclose(n_eff, r_eff), "delta_joint != ref"
+    assert np.allclose(np.asarray(j_lat), r_lat, atol=1e-5) and np.allclose(
+        np.asarray(j_eff), r_eff, atol=1e-5
+    ), "delta_joint jnp != reference"
+    print("✓ delta_latent/delta_joint match reference and agree across jnp/numpy")
+
+
 def test_fit_manifest_round_trip():
     """write_fit_manifest / verify_fit_manifest: a fresh write verifies; a
     changed data CSV or a tampered fit output is refused."""
@@ -437,6 +485,7 @@ def run_all_tests():
     test_jsonl_loader_rejects_conflicting_duplicates()
     test_fit_multistart_raises_on_all_nan()
     test_fit_manifest_round_trip()
+    test_delta_helpers_match_reference()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)
