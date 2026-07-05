@@ -20,6 +20,7 @@ from _helpers import (  # noqa: E402
     fit_joint_de_observer_joint,
     joint_de_table_kwargs,
     load_joint_de_data,
+    resolve_variant_table_kwargs,
     restart_records_to_rows,
     write_json,
     write_jsonl,
@@ -50,6 +51,14 @@ def main():
     data, action, scenario_idx, relationship_condition, resp_desire, resp_effort = (
         load_joint_de_data(EXPERIMENT_SLUG)
     )
+    # Resolve every variant's LM tables before any fitting starts, so a missing
+    # table fails up front rather than after hours of fitting earlier variants.
+    table_kwargs_by_variant = resolve_variant_table_kwargs(
+        VARIANTS,
+        lambda name, utility_names: joint_de_table_kwargs(
+            utility_names, base=(name == "base")
+        ),
+    )
 
     results = []
     restart_rows = []
@@ -65,9 +74,8 @@ def main():
             relationship_condition=relationship_condition,
             response_desire=resp_desire,
             response_effort=resp_effort,
-            table_kwargs=joint_de_table_kwargs(
-                utility_names, base=(variant_name == "base")
-            ),
+            table_kwargs=table_kwargs_by_variant[variant_name],
+            seed_key=f"{EXPERIMENT_SLUG}|{variant_name}",
         )
         row = {
             "model": variant_name,

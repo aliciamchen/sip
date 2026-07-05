@@ -93,7 +93,6 @@ N_EFFORT_CONDITIONS = 2
 # MAX_ACTIONS = 12 means up to 11 LM-elicited alternatives plus the
 # observed action in slot 0.
 MAX_ACTIONS = 12
-padded_slots = jnp.arange(MAX_ACTIONS)
 
 
 class PaddedActionSlots(IntEnum):
@@ -245,7 +244,7 @@ def _read_runs_jsonl(path):
     return records_by_run
 
 
-def load_lm_scenario_desire(slug, filepath=None):
+def load_lm_scenario_desire(slug):
     """Load the per-run, per-condition desire scalar for the given-desire studies
     (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`, 3b `nonfood_inv_joint_ie`).
 
@@ -273,7 +272,7 @@ def load_lm_scenario_desire(slug, filepath=None):
     n_scenarios = len(scenario_to_idx)
 
     runs_path = _runs_jsonl_path(slug)
-    if filepath is None and runs_path.exists():
+    if runs_path.exists():
         records_by_run = _read_runs_jsonl(runs_path)
         run_ids = sorted(records_by_run)
         # NaN-init so a missing or failed (null) rating is caught below instead
@@ -285,19 +284,26 @@ def load_lm_scenario_desire(slug, filepath=None):
                 if rec.get("desire") is None:
                     continue
                 s = scenario_to_idx[rec["scenario_label"]]
-                d[k, s, desire_to_idx[rec["desire_condition"]]] = float(rec["desire"])
+                r = desire_to_idx[rec["desire_condition"]]
+                _assert_no_conflicting_write(
+                    slug,
+                    "desire",
+                    d[k, s, r],
+                    float(rec["desire"]),
+                    (rec["scenario_label"], rec["desire_condition"], f"run {rid}"),
+                )
+                d[k, s, r] = float(rec["desire"])
         _assert_no_missing_scalars(slug, "desire", d)
         return jnp.array(d)
 
     # Legacy CSV fallback (K=1, pre-regeneration).
-    if filepath is None:
-        filepath = (
-            Path(__file__).resolve().parent
-            / "outputs"
-            / "lm"
-            / slug
-            / "lm_scenario_desire.csv"
-        )
+    filepath = (
+        Path(__file__).resolve().parent
+        / "outputs"
+        / "lm"
+        / slug
+        / "lm_scenario_desire.csv"
+    )
     if not Path(filepath).exists():
         return None
     df = pd.read_csv(filepath)
@@ -337,9 +343,15 @@ def load_lm_relationship_values(slug):
             for rec in records_by_run[rid]:
                 if rec.get("intimacy") is None:
                     continue
-                out[k, INTIMACY_CONDITION_TO_IDX[rec["intimacy_condition"]]] = float(
-                    rec["intimacy"]
+                i = INTIMACY_CONDITION_TO_IDX[rec["intimacy_condition"]]
+                _assert_no_conflicting_write(
+                    slug,
+                    "intimacy",
+                    out[k, i],
+                    float(rec["intimacy"]),
+                    (rec["intimacy_condition"], f"run {rid}"),
                 )
+                out[k, i] = float(rec["intimacy"])
         _assert_no_missing_scalars(slug, "intimacy", out)
         return jnp.array(out)
     return RELATIONSHIP_LEVEL_VALUES[None, :]
@@ -357,8 +369,6 @@ def load_lm_relationship_values(slug):
 
 
 def load_padded_lm_tables_desire(
-    observed_path=None,
-    alternatives_path=None,
     *,
     runs_filename="lm_runs.jsonl",
     broadcast_relationship=False,
@@ -408,15 +418,7 @@ def load_padded_lm_tables_desire(
         if broadcast_relationship
         else ["effort_condition", "intimacy_condition"]
     )
-    if observed_path or alternatives_path:  # explicit-path override (tests)
-        if any(not Path(p).exists() for p in (observed_path, alternatives_path)):
-            return None
-        alts_df = pd.read_csv(alternatives_path)
-        if not _alts_ready(alts_df):
-            return None
-        runs = [(*_observed_lookups(observed_path), alts_df)]
-    else:
-        runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
+    runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
     if runs is None:
         return None
     K = len(runs)
@@ -495,7 +497,7 @@ def load_padded_lm_tables_desire(
         valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
     ).astype(np.float32)
 
-    _warn_truncation(runs, cell_cols)
+    _warn_truncation(runs)
 
     return {
         "risk": jnp.array(risk),
@@ -599,6 +601,28 @@ def _nan_if_none(v):
     return float("nan") if v is None else float(v)
 
 
+def _assert_no_conflicting_write(slug, name, previous, value, key):
+    """Fail fast when the same lm_runs.jsonl key is written twice with a
+    different value — silent last-write-wins would hide a double-appended or
+    corrupted elicitation log. `previous` is the already-stored value (None or
+    a NaN scalar = unwritten slot); equality is NaN-aware (a failed rating
+    loads as NaN), so identical repeats pass and only conflicts raise."""
+    if previous is None:
+        return
+    prev = np.asarray(previous, dtype=np.float32)
+    new = np.asarray(value, dtype=np.float32)
+    if prev.shape == () and np.isnan(prev):
+        return
+    if bool(np.all((prev == new) | (np.isnan(prev) & np.isnan(new)))):
+        return
+    raise ValueError(
+        f"lm_runs.jsonl for {slug} has duplicate {name} records at {key} with "
+        f"conflicting values ({previous} vs {value}) — refusing to let the "
+        f"last write win. Regenerate the log with "
+        f"`model/lm/score_merged.py --study {slug}`."
+    )
+
+
 def _assert_no_missing_scalars(slug, name, arr):
     """Fail fast if a given-magnitude scalar (desire / intimacy) is missing or
     was a failed (null) rating. The tables are NaN-initialized, so any NaN left
@@ -679,8 +703,25 @@ def _run_sources_jsonl(path, cell_cols):
                     _nan_if_none(act["g"]),
                 )
                 if act.get("is_observed"):
-                    obs_ae[(scenario, e_idx, o_idx)] = (rk, ef)
-                    obs_g[(scenario, o_idx)] = gg
+                    slug = path.parent.name
+                    ae_key = (scenario, e_idx, o_idx)
+                    g_key = (scenario, o_idx)
+                    _assert_no_conflicting_write(
+                        slug,
+                        "observed (risk, effort)",
+                        obs_ae.get(ae_key),
+                        (rk, ef),
+                        ae_key + (f"run {run_id}",),
+                    )
+                    _assert_no_conflicting_write(
+                        slug,
+                        "observed g",
+                        obs_g.get(g_key),
+                        gg,
+                        g_key + (f"run {run_id}",),
+                    )
+                    obs_ae[ae_key] = (rk, ef)
+                    obs_g[g_key] = gg
                 else:
                     row = {
                         "scenario_label": scenario,
@@ -697,33 +738,31 @@ def _run_sources_jsonl(path, cell_cols):
     return runs
 
 
-def _warn_truncation(runs, cell_cols):
-    """Warn if any (run, cell) has more LM alternatives than the MAX_ACTIONS - 1
-    non-observed slots, so they would be silently truncated by the loaders."""
-    max_alt_count = 0
+def _warn_truncation(runs):
+    """Warn if any scored LM alternative was dropped by the loaders' actual
+    truncation condition — slot = alt_idx + 1 >= MAX_ACTIONS. Counting alts per
+    cell would miss drops when alt_idx is non-contiguous (some alts unscored),
+    so the warning checks each scored row's slot directly."""
+    n_dropped = 0
+    max_slot = 0
     for _, _, alts_df in runs:
         if alts_df is None or len(alts_df) == 0 or "risk" not in alts_df.columns:
             continue
-        scored = alts_df[alts_df["risk"].notna()]
+        scored = alts_df.dropna(subset=["risk", "effort", "g"])
         if not len(scored):
             continue
-        cnt = (
-            scored.groupby(["scenario_label", "observed_action", *cell_cols])
-            .size()
-            .max()
-        )
-        max_alt_count = max(max_alt_count, int(cnt))
-    if max_alt_count + 1 > MAX_ACTIONS:
+        slots = scored["alt_idx"].astype(int) + 1
+        n_dropped += int((slots >= MAX_ACTIONS).sum())
+        max_slot = max(max_slot, int(slots.max()))
+    if n_dropped:
         print(
-            f"WARNING: largest cell has {max_alt_count} LM-generated alternatives + "
-            f"1 observed = {max_alt_count + 1} actions, exceeding "
-            f"MAX_ACTIONS={MAX_ACTIONS}. Extra alternatives were truncated."
+            f"WARNING: {n_dropped} scored LM-generated alternative(s) sit at "
+            f"slot >= MAX_ACTIONS={MAX_ACTIONS} (largest slot {max_slot}) and "
+            f"were truncated by the loaders."
         )
 
 
 def load_padded_lm_tables_joint_de(
-    observed_path=None,
-    alternatives_path=None,
     *,
     slug="food_inv_joint_de",
     runs_filename="lm_runs.jsonl",
@@ -763,15 +802,7 @@ def load_padded_lm_tables_joint_de(
         if broadcast_relationship
         else ["intimacy_condition", "effort_condition"]
     )
-    if observed_path or alternatives_path:  # explicit-path override (tests)
-        if any(not Path(p).exists() for p in (observed_path, alternatives_path)):
-            return None
-        alts_df = pd.read_csv(alternatives_path)
-        if not _alts_ready(alts_df):
-            return None
-        runs = [(*_observed_lookups(observed_path), alts_df)]
-    else:
-        runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
+    runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
     if runs is None:
         return None
     K = len(runs)
@@ -844,7 +875,7 @@ def load_padded_lm_tables_joint_de(
     prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
         np.float32
     )
-    _warn_truncation(runs, cell_cols)
+    _warn_truncation(runs)
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),
@@ -854,10 +885,7 @@ def load_padded_lm_tables_joint_de(
     }
 
 
-def load_padded_lm_tables_intimacy(
-    observed_path=None,
-    alternatives_path=None,
-):
+def load_padded_lm_tables_intimacy():
     """Study 2a: observer knows (desire, effort), infers intimacy. Cell grid is
     (scenario, observed_action, desire_condition, effort_condition). intimacy
     inferred (continuous; risk modulated by (1-I)^gamma in the utility, no
@@ -874,15 +902,7 @@ def load_padded_lm_tables_intimacy(
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_intimacy"
     )
     cell_cols = ["desire_condition", "effort_condition"]
-    if observed_path or alternatives_path:  # explicit-path override (tests)
-        if any(not Path(p).exists() for p in (observed_path, alternatives_path)):
-            return None
-        alts_df = pd.read_csv(alternatives_path)
-        if not _alts_ready(alts_df):
-            return None
-        runs = [(*_observed_lookups(observed_path), alts_df)]
-    else:
-        runs = _run_sources(outputs_dir, cell_cols)
+    runs = _run_sources(outputs_dir, cell_cols)
     if runs is None:
         return None
     K = len(runs)
@@ -943,7 +963,7 @@ def load_padded_lm_tables_intimacy(
     prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
         np.float32
     )
-    _warn_truncation(runs, cell_cols)
+    _warn_truncation(runs)
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),
@@ -953,12 +973,7 @@ def load_padded_lm_tables_intimacy(
     }
 
 
-def load_padded_lm_tables_joint_ie(
-    observed_path=None,
-    alternatives_path=None,
-    *,
-    slug="food_inv_joint_ie",
-):
+def load_padded_lm_tables_joint_ie(*, slug="food_inv_joint_ie"):
     """Study 2b: observer knows desire, infers (intimacy, effort). Cell grid is
     (scenario, observed_action, desire_condition). intimacy inferred (continuous,
     no table axis); effort inferred -> effort table carries an effort_condition
@@ -979,15 +994,7 @@ def load_padded_lm_tables_joint_ie(
     scenario_labels = STUDY_SCENARIO_LABELS[slug]
     scenario_to_idx = scenario_to_idx_for_study(slug)
     cell_cols = ["desire_condition", "effort_condition"]
-    if observed_path or alternatives_path:  # explicit-path override (tests)
-        if any(not Path(p).exists() for p in (observed_path, alternatives_path)):
-            return None
-        alts_df = pd.read_csv(alternatives_path)
-        if not _alts_ready(alts_df):
-            return None
-        runs = [(*_observed_lookups(observed_path), alts_df)]
-    else:
-        runs = _run_sources(outputs_dir, cell_cols)
+    runs = _run_sources(outputs_dir, cell_cols)
     if runs is None:
         return None
     K = len(runs)
