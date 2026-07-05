@@ -82,7 +82,7 @@ help:
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
-	@echo "  test       - model compliance + data-converter tests"
+	@echo "  test       - model compliance + data-converter + roster-sync tests"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
@@ -373,8 +373,9 @@ deploy-explorer: explorer
 test:
 	uv run python model/test_model_compliance.py
 	uv run python analysis/test_json_to_csv.py
+	uv run python test_roster_sync.py
 
 clean:
-	rm -f model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl
-	rm -f model/outputs/*/cv_trial_ll.jsonl model/outputs/*/cv_preds_summary.json model/outputs/*/cv_folds.jsonl
+	rm -f model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl model/outputs/*/fit_manifest.json
+	rm -f model/outputs/*/cv_trial_ll.jsonl model/outputs/*/cv_preds_summary.json model/outputs/*/cv_folds.jsonl model/outputs/*/cv_manifest.json
 	rm -f model/outputs/*/cv_model_comparison.json

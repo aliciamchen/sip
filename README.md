@@ -151,9 +151,10 @@ uv run python model/cv/model_comparison.py
 # Render an analysis document:
 quarto render analysis/food-inv-desire-analysis.qmd
 
-# Tests (`make test`): model compliance + the JSON→CSV converter
+# Tests (`make test`): model compliance + the JSON→CSV converter + roster sync
 uv run python model/test_model_compliance.py
 uv run python analysis/test_json_to_csv.py
+uv run python test_roster_sync.py
 ```
 
 Plots are saved in `figures/`; rendered docs in `_output/analysis/`.
