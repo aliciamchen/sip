@@ -187,16 +187,22 @@ def _fold_row(
 
 
 def _load_verified_warm_start(slug):
-    """Warm-start params from the full-data fit, provenance-verified: the fit
-    must exist, match its fit_manifest.json, and have been run on the current
-    data CSV. A missing or stale fit is an error rather than a silent cold
-    start — CV results with and without the warm start are not comparable."""
+    """Warm-start params for CV folds from the full-data fit, checking
+    provenance when it's available. A missing fit is a loud warning and a cold
+    start (CV still runs — it just refits each fold from a lognormal init
+    instead of the full-data fit, which is slower and skips the leak-mitigation
+    intent, so a fit first is recommended). A fit whose manifest is *present but
+    mismatched* is a hard error via verify_fit_manifest (genuine staleness); a
+    fit with no manifest warns and is used as-is."""
     fit_path = get_project_root() / "model" / "outputs" / slug / "fit_results.json"
     if not fit_path.exists():
-        raise RuntimeError(
-            f"{fit_path} not found — run `make fit-{slug}` before `make "
-            f"cv-{slug}` (each CV fold warm-starts from the full-data fit)."
+        print(
+            f"WARNING: no fit_results.json for {slug} — CV will cold-start every "
+            f"fold. Run `make fit-{slug}` first for a warm start (faster, and it "
+            f"avoids folds depending on an init that saw the held-out scenario).",
+            file=sys.stderr,
         )
+        return {}
     verify_fit_manifest(slug)
     return load_fit_results(slug)
 

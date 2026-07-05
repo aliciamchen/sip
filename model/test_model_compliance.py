@@ -437,7 +437,9 @@ def test_delta_helpers_match_reference():
 
 def test_fit_manifest_round_trip():
     """write_fit_manifest / verify_fit_manifest: a fresh write verifies; a
-    changed data CSV or a tampered fit output is refused."""
+    changed data CSV or a tampered fit output is refused; a *missing* manifest
+    warns and proceeds (returns None) rather than blocking, so CV can still run
+    on a fit produced before provenance tracking existed."""
     from _helpers import verify_fit_manifest, write_fit_manifest
 
     with tempfile.TemporaryDirectory() as d:
@@ -446,6 +448,12 @@ def test_fit_manifest_round_trip():
         (out / "fit_restarts.jsonl").write_text("{}\n")
         data_csv = out / "main_trials_long.csv"
         data_csv.write_text("subject_id,response\ns1,0.5\n")
+
+        # No manifest yet: must NOT raise (legacy fit stays usable).
+        assert (
+            verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv) is None
+        ), "missing manifest should warn and return None, not raise"
+
         write_fit_manifest("test_slug", out, data_csv=data_csv)
         verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
 

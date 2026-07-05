@@ -236,18 +236,23 @@ Per-fold refit diagnostics (16 folds × 3 ablations). Each record has `experimen
 The fit-side counterpart of `cv_manifest.json`, written by the `fit_*.py` wrappers alongside
 `fit_results.json` and `fit_restarts.jsonl`: the study slug, a timestamp, the git SHA the fit
 ran at, and SHA-256 hashes of the two fit outputs and of the input data CSV. The CV dispatcher
-verifies it before warm-starting folds from the fit (a stale or missing fit is an error rather
-than a silent cold start), and `model_comparison.py` verifies it again so the fit and the CV
-it reports are guaranteed to share one data vintage.
+verifies it before warm-starting folds from the fit, and `model_comparison.py` verifies it
+again. The check is deliberately asymmetric: a manifest that is **present but no longer matches**
+(the fit outputs were rewritten, or the data CSV changed since the fit ran) is a hard error —
+that is genuine staleness; a **missing** manifest only warns and proceeds, so a fit produced
+before provenance tracking existed stays usable (CV can still run on it) rather than forcing a
+re-fit. Re-run the fit to record provenance before trusting the final published numbers.
 
 ### `cv_manifest.json`
 
 A provenance sidecar written by `model/cv/_inverse_dispatcher.py` alongside the three CV
 outputs above, recording the study slug, a timestamp, the git SHA the CV ran at, and SHA-256
-hashes of the three CV files and of the input data CSV. `model_comparison.py` verifies the
-manifest before computing anything — the output hashes must match and the input-data hash must
-match the current `data/<slug>/main_trials_long.csv` — and refuses stale or mixed outputs; a
-comparison must never silently describe CV files produced from different code or data versions.
+hashes of the three CV files and of the input data CSV. `model_comparison.py` verifies it with
+the same asymmetry as the fit manifest: a **present but mismatched** manifest (the three CV
+files were not written together, or the data CSV changed since CV ran) is a hard error — the
+mixed-vintage combination the manifest exists to catch — while a **missing** manifest only
+warns and proceeds, so CV outputs produced before provenance tracking can still be compared.
+Re-run `make cv-<slug>` to record provenance before trusting the final published numbers.
 
 ### `cv_model_comparison.json`
 

@@ -97,18 +97,24 @@ _LEVEL_STR = {0: "low", 1: "high"}
 
 
 def _verify_cv_manifest(slug, outputs_dir):
-    """Require the CV provenance manifest and verify the three CV output files
-    still hash to the values recorded when they were written together. The
-    files are only meaningful as one CV run's outputs — a mixed-vintage
-    combination (e.g. a re-run cv_trial_ll.jsonl next to an older
-    cv_preds_summary.json) would silently combine incompatible predictions."""
+    """Provenance check for a study's CV outputs, with the same asymmetry as the
+    fit check: a *present* cv_manifest.json that no longer matches (the three CV
+    files were not written together, or the input data changed) is a hard error
+    — that is the mixed-vintage combination the manifest exists to catch. A
+    *missing* manifest only warns and proceeds: CV outputs produced before
+    provenance tracking can't be verified, but blocking would refuse to compare
+    a study you already ran. Re-run `make cv-<slug>` to record provenance before
+    trusting the final published numbers."""
     manifest_path = outputs_dir / "cv_manifest.json"
     if not manifest_path.exists():
-        raise RuntimeError(
-            f"missing {manifest_path} — stale or mixed-vintage CV outputs for "
-            f"{slug} (written before provenance manifests existed, or partially "
-            f"deleted); re-run `make cv-{slug}`."
+        print(
+            f"WARNING: no cv_manifest.json for {slug} — these CV outputs predate "
+            f"provenance tracking and can't be verified as a single consistent "
+            f"run over the current data. Proceeding; re-run `make cv-{slug}` to "
+            f"record provenance.",
+            file=sys.stderr,
         )
+        return
     with open(manifest_path) as f:
         manifest = json.load(f)
     stale = [

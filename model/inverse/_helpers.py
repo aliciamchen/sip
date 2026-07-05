@@ -384,10 +384,17 @@ def write_fit_manifest(slug, output_dir, data_csv=None):
 
 
 def verify_fit_manifest(slug, output_dir=None, data_csv=None):
-    """Require fit_manifest.json and verify (a) the fit outputs still hash to
-    the values recorded when they were written together and (b) the input data
-    CSV is unchanged since the fit ran — i.e. the fit is neither mixed-vintage
-    nor stale relative to the data. Returns the manifest dict."""
+    """Provenance check for a fit, with a deliberate asymmetry:
+
+      - A *present* fit_manifest.json that no longer matches (the fit outputs
+        were partially rewritten, or the input data CSV changed since the fit
+        ran) is a hard error — that is genuine, detectable staleness.
+      - A *missing* manifest only warns and proceeds. A fit produced before
+        provenance tracking existed can't be verified, but refusing to use it
+        would break the ability to run CV on a pre-existing fit; we surface the
+        limitation rather than force a re-fit.
+
+    Returns the manifest dict, or None when there is no manifest to check."""
     output_dir = (
         Path(output_dir)
         if output_dir is not None
@@ -396,11 +403,14 @@ def verify_fit_manifest(slug, output_dir=None, data_csv=None):
     data_csv = Path(data_csv) if data_csv is not None else data_csv_path(slug)
     manifest_path = output_dir / "fit_manifest.json"
     if not manifest_path.exists():
-        raise RuntimeError(
-            f"missing {manifest_path} — fit outputs for {slug} predate "
-            f"provenance manifests (or were partially deleted); re-run "
-            f"`make fit-{slug}`."
+        print(
+            f"WARNING: no fit_manifest.json for {slug} — this fit predates "
+            f"provenance tracking, so it can't be verified against the current "
+            f"data. Proceeding; re-run `make fit-{slug}` to record provenance "
+            f"(recommended before trusting the final published numbers).",
+            file=sys.stderr,
         )
+        return None
     with open(manifest_path) as f:
         manifest = json.load(f)
     stale = [
