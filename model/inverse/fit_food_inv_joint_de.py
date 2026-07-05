@@ -26,21 +26,9 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
-from observers import (  # noqa: E402
-    observer_joint_de_base,
-    observer_joint_de_discomfort_only,
-    observer_joint_de_full,
-)
+from observers import VARIANTS_JOINT_DE as VARIANTS  # noqa: E402
 
 EXPERIMENT_SLUG = "food_inv_joint_de"
-
-# (observer_fn, utility_param_names); which optional tables a variant needs is
-# derived from its param names inside *_table_kwargs.
-VARIANTS = {
-    "full": (observer_joint_de_full, ["w_v", "w_d", "w_e", "gamma"]),
-    "discomfort_only": (observer_joint_de_discomfort_only, ["w_d", "gamma"]),
-    "base": (observer_joint_de_base, ["w_v", "w_e"]),
-}
 
 
 def main():

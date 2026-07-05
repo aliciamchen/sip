@@ -831,3 +831,47 @@ def observer_joint_ie_base[
         observer.relationship == relationship,
         observer.effort_condition == effort_condition,
     ]
+
+
+# ==============================================================================
+# Variant registries — single source of truth for the three ablations
+# ==============================================================================
+# Each ablation fits the same utility-weight set across every observer family
+# (only the observer function differs), so the param-name lists live in one
+# place and each family's registry is built from them. The fit wrappers
+# (model/inverse/fit_*.py) and the CV dispatcher both import these instead of
+# re-declaring the mapping, so a variant added or a weight list changed here
+# updates fit and CV together.
+
+VARIANT_PARAM_NAMES = {
+    "full": ["w_v", "w_d", "w_e", "gamma"],
+    "discomfort_only": ["w_d", "gamma"],
+    "base": ["w_v", "w_e"],
+}
+
+
+def _build_variants(full_fn, discomfort_only_fn, base_fn):
+    """Map each ablation name to (observer_fn, utility_param_names) for one
+    observer family, drawing the param names from VARIANT_PARAM_NAMES."""
+    fns = {
+        "full": full_fn,
+        "discomfort_only": discomfort_only_fn,
+        "base": base_fn,
+    }
+    return {
+        name: (fns[name], VARIANT_PARAM_NAMES[name]) for name in VARIANT_PARAM_NAMES
+    }
+
+
+VARIANTS_DESIRE = _build_variants(
+    observer_desire_full, observer_desire_discomfort_only, observer_desire_base
+)
+VARIANTS_JOINT_DE = _build_variants(
+    observer_joint_de_full, observer_joint_de_discomfort_only, observer_joint_de_base
+)
+VARIANTS_INTIMACY = _build_variants(
+    observer_intimacy_full, observer_intimacy_discomfort_only, observer_intimacy_base
+)
+VARIANTS_JOINT_IE = _build_variants(
+    observer_joint_ie_full, observer_joint_ie_discomfort_only, observer_joint_ie_base
+)
