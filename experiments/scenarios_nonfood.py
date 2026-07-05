@@ -141,7 +141,7 @@ rows = [
         low_risk_share_effort_low="Only a few loose strands are caught in the brush's bristles, so picking it clean and giving it a quick rinse and dry would take a minute at most.",
         low_risk_share_effort_high="The brush is densely matted with hair wound through the bristles, so picking it clean would mean working the strands out row by row before it could even be rinsed and dried.",
         no_share="Celeste brushes her own hair; Tamsin does not use the brush, and smooths her hair with her fingers and a bit of water.",
-        low_risk_share="Tamsin picks the hair out of the brush's bristles, rinse the brush under hot water, dries it off, and brushes her hair with the cleaned brush.",
+        low_risk_share="Tamsin picks the hair out of the brush's bristles, rinses the brush under hot water, dries it off, and brushes her hair with the cleaned brush.",
         high_risk_share="Celeste passes the brush directly to Tamsin, who brushes her hair with it without cleaning it or picking out the hair.",
     ),
     dict(
@@ -322,7 +322,7 @@ rows = [
         desire_high="They are both starving and really want to eat.",
         low_risk_share_effort_low="Nadia's phone is set to stay unlocked for a long time, so Ravi can work in the maps app without it locking on him.",
         low_risk_share_effort_high="Nadia's phone auto-locks after a few seconds, so Ravi would have to keep handing the phone back for Nadia to unlock at the wheel, over and over.",
-        no_share="They keep driving straight to the festival without stopping to eat.",
+        no_share="They keep driving straight to the event without stopping to eat.",
         low_risk_share="Nadia unlocks her phone, opens the maps app, and hands the phone to Ravi to find a restaurant and add it as a stop. Ravi works only within the maps app, and whenever the phone locks he hands it back to Nadia to unlock.",
         high_risk_share="Nadia tells Ravi her passcode. Ravi unlocks her phone with it and uses the phone freely to search for restaurants, look up their details, and add the stop.",
     ),

@@ -1,0 +1,12 @@
+{
+  "stage": "generate_alternatives",
+  "study": "nonfood_inv_joint_de",
+  "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  "prompts_sha256": "a16f3b471d9a",
+  "git_sha": "1dbcdd1",
+  "created_utc": "2026-07-05T05:22:41+00:00",
+  "k_runs": 20,
+  "gen_temperature": 0.7,
+  "n_cells": 48,
+  "n_alternatives": 3419
+}
