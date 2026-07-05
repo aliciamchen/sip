@@ -19,8 +19,10 @@ setup_analysis()
 
 Observer jointly infers relationship intimacy and physical effort from a single observed action, given desire. Each trial has two slider responses: intimacy on a 0–100 numeric scale, and effort as a continuous rating between two states.
 
-**Status:** Scaffolding stub. The plots below come online once pilot data lands in
-`data/food_inv_joint_ie/`. Until then, this qmd is structure-only.
+**Status:** Data are in `data/food_inv_joint_ie/`; the demographics and
+belief-update panels below run on them. The model-prediction and
+model-vs-human sections are still disabled (`eval=FALSE`) pending CV
+predictions.
 
 ## Demographics
 
@@ -36,7 +38,8 @@ if (file.exists(here::here("data", "food_inv_joint_ie", "exit_survey.csv"))) {
 
 ```{r load-data}
 data_path <- here::here("data", "food_inv_joint_ie", "main_trials_long.csv")
-if (file.exists(data_path)) {
+have_data <- file.exists(data_path)
+if (have_data) {
   df <- read_csv(data_path, show_col_types = FALSE)
   cat("Trials:", nrow(df), "\n")
   glimpse(df)
@@ -58,7 +61,7 @@ axis.
 ```{r belief-update}
 #| fig-width: 11
 #| fig-height: 7
-if (exists("df")) {
+if (have_data) {
   bu <- df |>
     calculate_belief_update("intimacy_rating") |>
     rename(intimacy_update = belief_update) |>
@@ -122,8 +125,9 @@ if (file.exists(preds_path)) {
 ## Model-vs-human correlations
 
 ```{r model-vs-human, eval=FALSE}
-# TODO: wire up once both data and model predictions exist.
-# Standard pattern (cf. food-inv-desire-analysis.qmd):
+# TODO: wire up once the model predictions exist (data are in).
+# Standard pattern (cf. the cv-load / cv-scatter chunks in
+# food-inv-desire-analysis.qmd):
 #   1. Aggregate human belief updates by cell.
 #   2. Aggregate model predictions by the same cell.
 #   3. Plot scatter + report bootstrap Pearson via format_correlation_labels().

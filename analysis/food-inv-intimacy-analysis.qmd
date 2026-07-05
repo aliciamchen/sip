@@ -19,8 +19,9 @@ setup_analysis()
 
 Observer infers intimacy from a single observed action, given desire and effort.
 
-**Status:** Scaffolding stub. The plots below come online once pilot data lands in
-`data/food_inv_intimacy/`. Until then, this qmd is structure-only.
+**Status:** Data are in `data/food_inv_intimacy/`; the demographics and
+data-loading chunks below run on them. The belief-update and model sections
+are still disabled (`eval=FALSE`) and need enabling plus a render check.
 
 ## Demographics
 
@@ -36,7 +37,8 @@ if (file.exists(here::here("data", "food_inv_intimacy", "exit_survey.csv"))) {
 
 ```{r load-data}
 data_path <- here::here("data", "food_inv_intimacy", "main_trials_long.csv")
-if (file.exists(data_path)) {
+have_data <- file.exists(data_path)
+if (have_data) {
   df <- read_csv(data_path, show_col_types = FALSE)
   cat("Trials:", nrow(df), "\n")
   glimpse(df)
@@ -48,9 +50,10 @@ if (file.exists(data_path)) {
 ## Belief update
 
 ```{r belief-update, eval=FALSE}
-# Compute belief update (posterior - prior) per (subject, scenario)
-# Uses calculate_belief_update() from utils.R with the appropriate rating column.
-# TODO: fill in the right rating column once data lands. Currently expected: intimacy_rating
+# Compute belief update (posterior - prior) per (subject, scenario) via
+# calculate_belief_update(df, "intimacy_rating") from utils.R, guarded by
+# have_data. Data exist in data/food_inv_intimacy/; this chunk still needs to
+# be written, enabled (drop eval=FALSE), and verified with a render.
 ```
 
 ## Model predictions
@@ -68,8 +71,9 @@ if (file.exists(preds_path)) {
 ## Model-vs-human correlations
 
 ```{r model-vs-human, eval=FALSE}
-# TODO: wire up once both data and model predictions exist.
-# Standard pattern (cf. food-inv-intimacy-desire-alt-analysis.qmd):
+# TODO: wire up once the model predictions exist (data are in).
+# Standard pattern (cf. the cv-load / cv-scatter chunks in
+# food-inv-desire-analysis.qmd):
 #   1. Aggregate human belief updates by cell.
 #   2. Aggregate model predictions by the same cell.
 #   3. Plot scatter + report bootstrap Pearson via format_correlation_labels().

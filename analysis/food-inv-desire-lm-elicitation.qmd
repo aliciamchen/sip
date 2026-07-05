@@ -133,20 +133,28 @@ if (have_lm) {
 
 ### Truncation at the padding cap
 
-The observer's actor evaluates a fixed-width action space of `MAX_ACTIONS = 12`
-slots — slot 0 is the observed action, so at most 11 alternatives per cell survive;
-any beyond that are silently dropped by the padded-table loaders. If many cells run
-over the cap, the model is reasoning over a truncated choice set, so it's worth
-knowing how often that happens and how many alternatives it costs.
+The observer's actor evaluates a fixed-width action space of `MAX_ACTIONS`
+slots (defined in `model/tables.py`) — slot 0 is the observed action, so at most
+`MAX_ACTIONS − 1` alternatives per cell survive; any beyond that are silently
+dropped by the padded-table loaders. If many cells run over the cap, the model
+is reasoning over a truncated choice set, so it's worth knowing how often that
+happens and how many alternatives it costs.
 
 ```{r alt-truncation}
 #| fig-width: 8
 #| fig-height: 4
 if (have_lm) {
   # The actor softmaxes over at most MAX_ACTIONS slots (slot 0 = the observed
-  # action), so only the first MAX_ACTIONS - 1 alternatives per cell are kept; the
-  # loaders in model/tables.py drop the rest. Constant mirrors MAX_ACTIONS there.
-  MAX_ACTIONS <- 12L
+  # action), so only the first MAX_ACTIONS - 1 alternatives per cell are kept;
+  # the loaders in model/tables.py drop the rest. Parse the constant from
+  # model/tables.py at render time so it can't silently desynchronize.
+  tables_py <- readLines(here::here("model", "tables.py"))
+  max_actions_line <- grep("^MAX_ACTIONS\\s*=\\s*\\d+", tables_py, value = TRUE)
+  stopifnot("expected exactly one MAX_ACTIONS assignment in model/tables.py" =
+              length(max_actions_line) == 1)
+  MAX_ACTIONS <- as.integer(sub("^MAX_ACTIONS\\s*=\\s*(\\d+).*$", "\\1",
+                                max_actions_line))
+  stopifnot(!is.na(MAX_ACTIONS))
   keep <- MAX_ACTIONS - 1L
 
   n_over <- sum(set_sizes$n_alts > keep)

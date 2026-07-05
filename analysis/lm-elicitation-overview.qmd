@@ -646,5 +646,4 @@ if (have_data) {
 - **Alternatives** — the imagined set should cover the feature space and shift with
   the observed action (the anchoring claim); the intimacy/desire panels show how
   much the given-context framings additionally reshape the set.
-```
 
