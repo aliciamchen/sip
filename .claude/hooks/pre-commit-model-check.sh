@@ -29,9 +29,9 @@ if [ -z "$staged_model" ]; then
   exit 0
 fi
 
-# Skip if the test file isn't present locally — it's gitignored by the `*test*`
-# rule, so a fresh clone won't have it and we don't want to block commits
-# spuriously.
+# Defensive: skip if the test file isn't present. It's tracked in git, so a
+# normal checkout has it — this guard just avoids blocking commits spuriously
+# if it's ever missing.
 if [ ! -f model/test_model_compliance.py ]; then
   exit 0
 fi
