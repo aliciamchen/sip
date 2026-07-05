@@ -1,6 +1,6 @@
 # Data codebook
 
-The active roster is four inverse-planning studies on the 3-action set. Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `analysis/json_to_csv.py`.
+The active roster is six inverse-planning studies on the 3-action set: four on the food scenario set and two on the non-food set. Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `analysis/json_to_csv.py`. The non-food studies' data has not been collected yet, so their folders appear once collection starts; their conversion configs already exist in `json_to_csv.py` (3a mirrors 1b's and 3b mirrors 2b's).
 
 | Folder | Study | Inferred | Given |
 |---|---|---|---|
@@ -8,6 +8,8 @@ The active roster is four inverse-planning studies on the 3-action set. Each exp
 | `food_inv_joint_de/` | 1b | desire + effort (jointly) | intimacy |
 | `food_inv_intimacy/` | 2a | intimacy | desire, effort |
 | `food_inv_joint_ie/` | 2b | intimacy + effort (jointly) | desire |
+| `nonfood_inv_joint_de/` | 3a | desire + effort (jointly) | intimacy |
+| `nonfood_inv_joint_ie/` | 3b | intimacy + effort (jointly) | desire |
 
 Data from earlier experiments (forward-planning, the superseded 4-action/2-action inverse studies, early pilots, and side projects) is archived under [`legacy/`](legacy/README.md), which documents what is tracked versus kept local-only.
 
@@ -30,7 +32,7 @@ The active CSVs use the current "desire" naming (e.g., `desire_condition`); the 
 
 ## Main trials
 
-Each row of `main_trials.csv` is one rating page (one prior or posterior elicitation for one scenario). All ratings are collected on 0–100 sliders and stored on the 0–1 scale. Columns shared by all four studies:
+Each row of `main_trials.csv` is one rating page (one prior or posterior elicitation for one scenario). All ratings are collected on 0–100 sliders and stored on the 0–1 scale. Columns shared by all studies:
 
 | Column | Description |
 |--------|-------------|
@@ -77,12 +79,16 @@ Two sliders per page, so each row carries both ratings.
 | `intimacy_rating` | Intimacy rating, stored 0–1 |
 | `effort_rating` | Which effort situation is more likely, stored 0–1 (0 = effort-low paragraph, 1 = effort-high paragraph) |
 
+### Studies 3a and 3b — non-food (`nonfood_inv_joint_de/`, `nonfood_inv_joint_ie/`)
+
+The non-food studies repeat 1b's and 2b's designs on the non-food scenario set, so their CSVs will use exactly the same columns: Study 3a matches the Study 1b table above and Study 3b matches the Study 2b table. Their data has not been collected yet.
+
 ## Exclusion criteria
 
 The exclusion rule is per-study (each study's `exclusion_rule` in `analysis/json_to_csv.py`), and `memory_correct_count` counts questions (three across the two memory checks):
 
 - **Study 1a** (`food_inv_desire`) uses its preregistered lax rule: participants are excluded only if they failed the attention check **and** answered 0 memory questions correctly, i.e. `(attention_passed != True) & (memory_correct_count == 0)`.
-- **Studies 1b, 2a, and 2b** use a stricter rule (1a's rule excluded no one, so it was tightened for the later studies): participants are retained only if they passed the attention check **and** answered at least one memory question correctly, i.e. excluded if `(attention_passed != True) | (memory_correct_count == 0)`.
+- **Studies 1b, 2a, 2b, 3a, and 3b** use a stricter rule (1a's rule excluded no one, so it was tightened for the later studies): participants are retained only if they passed the attention check **and** answered at least one memory question correctly, i.e. excluded if `(attention_passed != True) | (memory_correct_count == 0)`. The non-food studies' memory checks come from their own scenario set (the sleeping-bag and salary scenarios, three questions total, in `experiments/_lib/memory-checks.js`), but the counting and the rule are the same.
 
 (There is no comprehension-check exclusion: participants who fail the comprehension check after three attempts are ended before any data is saved, so they never appear in `raw_data/`.)
 

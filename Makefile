@@ -15,11 +15,22 @@
 #   nonfood_inv_joint_de  (Study 3a — 1b's design on the nonfood scenarios)
 #   nonfood_inv_joint_ie  (Study 3b — 2b's design on the nonfood scenarios)
 #
-# EXPERIMENTS_INVERSE drives the data-dependent aggregate stages (fit / cv /
-# analysis); the nonfood studies stay in their own list until their data and LM
-# tables exist, so `make all` keeps working during the food collection. When
-# Study 3 data lands, move the two nonfood slugs into EXPERIMENTS_INVERSE.
+# EXPERIMENTS_INVERSE drives the data-dependent aggregate stages (data / fit /
+# cv / analysis); the nonfood studies stay in their own list until their data
+# and LM tables exist, so `make all` keeps working during the food collection.
 # Per-study targets (lm-/fit-/cv-/data-<slug>) already cover all six.
+#
+# When Study 3 data lands, everything that must change:
+#   1. Move the two nonfood slugs into EXPERIMENTS_INVERSE (picks them up in
+#      data / fit / cv / lm-alternatives).
+#   2. Write the two nonfood analysis qmds (they don't exist yet) and add them
+#      to ANALYSIS_QMDS below — it is a separate hand-synced list, so `make
+#      analysis` silently skips Study 3 until they are added.
+#   3. Nothing in model/cv/model_comparison.py or model/lm/plot_si_validation.py:
+#      both already cover all six slugs and skip studies whose outputs are
+#      missing, so they pick Study 3 up automatically.
+#   4. Update the roster prose in README.md, data/README.md, and
+#      .claude/rules/{data,analysis}.md, and add the 3a/3b preregs to preregs/.
 EXPERIMENTS_INVERSE := food_inv_desire food_inv_joint_de \
                        food_inv_intimacy food_inv_joint_ie
 EXPERIMENTS_NONFOOD := nonfood_inv_joint_de nonfood_inv_joint_ie
@@ -48,21 +59,31 @@ ANALYSIS_QMDS := \
         $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
 
-all: fit cv model-comparison analysis
+# The pipeline stages must run strictly in order even under `make -j`: CV
+# warm-starts each fold from the full-data fit, so a cv running concurrently
+# with fit silently produces different results (and model-comparison/analysis
+# read the CV outputs). Listing the stages as sibling prerequisites would let
+# -j run them concurrently, so `all` invokes them as sequential sub-makes —
+# each sub-make can still parallelize internally.
+all:
+	$(MAKE) fit
+	$(MAKE) cv
+	$(MAKE) model-comparison
+	$(MAKE) analysis
 
 help:
 	@echo "Saliva inverse planning pipeline"
 	@echo ""
 	@echo "Aggregates (active experiments only):"
-	@echo "  all        - fit + cv + analysis"
+	@echo "  all        - fit -> cv -> model-comparison -> analysis, in order"
 	@echo "  fit        - fit all active experiments"
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
 	@echo "  analysis   - render all active quarto analysis qmds"
-	@echo "  lm         - regenerate all LM-elicited CSVs (needs TOGETHER_API_KEY)"
+	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
-	@echo "  test       - model compliance tests"
-	@echo "  clean      - remove fit + CV outputs"
+	@echo "  test       - model compliance + data-converter tests"
+	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
@@ -91,7 +112,8 @@ help:
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
-	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>"
+	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
+	@echo "  lm-base-<slug>   (given-relationship studies only)"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -162,10 +184,13 @@ entry-files:
 
 # =============================================================================
 # Data: raw JSON → CSV. Only useful if raw JSON in data/<slug>/raw_data/ exists;
-# otherwise the checked-in CSVs are already current.
+# otherwise the checked-in CSVs are already current. The aggregate loops the
+# active (data-having) studies only — json_to_csv.py aborts on a slug with no
+# raw_data/, so including the nonfood studies before their collection starts
+# would guarantee failure. The per-study data-<slug> targets cover all six.
 # =============================================================================
 
-data: $(addprefix data-,$(EXPERIMENTS_ALL))
+data: $(addprefix data-,$(EXPERIMENTS_INVERSE))
 
 $(addprefix data-,$(EXPERIMENTS_ALL)): data-%:
 	uv run python analysis/json_to_csv.py $*
@@ -200,9 +225,11 @@ lm-alternatives: $(addprefix lm-,$(EXPERIMENTS_INVERSE))
 
 lm-nonfood: $(addprefix lm-,$(EXPERIMENTS_NONFOOD))
 
+# score_merged.py takes no K_RUNS: it scores whatever runs the alternatives
+# file contains, so the run count is set once at generation time.
 $(addprefix lm-,$(EXPERIMENTS_ALL)): lm-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $*
-	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
+	uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
 # Base-model alternatives: same two-stage pipeline with --base, so the LM is NOT
 # shown the relationship description (the base ablation has no intimacy term). Writes
@@ -213,7 +240,7 @@ lm-base: $(addprefix lm-base-,$(EXPERIMENTS_BASE))
 
 $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $* --base
-	K_RUNS=$(K_RUNS) uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
+	uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
 # Fits → outputs/<slug>/fit_results.json (+ fit_restarts.jsonl)
@@ -325,10 +352,12 @@ EXPLORER_DEST ?= aliciach@athena.dialup.mit.edu:~/www/sip/explorer
 # (~13 min; needs each study's lm_runs.jsonl). Only needed when the params/ranges
 # in precompute_grid.py change -> $(EXPLORER_DIR)/predictions_grid.json.
 explorer-grid:
+	@test -d $(EXPLORER_DIR) || { echo "$(EXPLORER_DIR)/ not found (gitignored explorer source; kept on the primary machine only)"; exit 1; }
 	uv run python $(EXPLORER_DIR)/precompute_grid.py $(EXPLORER_DIR)/predictions_grid.json
 
 # Build the self-contained page from the template + precomputed grid (fast).
 explorer:
+	@test -d $(EXPLORER_DIR) || { echo "$(EXPLORER_DIR)/ not found (gitignored explorer source; kept on the primary machine only)"; exit 1; }
 	uv run python $(EXPLORER_DIR)/build_explorer.py $(EXPLORER_DIR)/predictions_grid.json $(EXPLORER_DIR)/site/index.html
 
 # Build, then publish to athena (enter the Athena password once). Served at
@@ -343,7 +372,9 @@ deploy-explorer: explorer
 
 test:
 	uv run python model/test_model_compliance.py
+	uv run python analysis/test_json_to_csv.py
 
 clean:
 	rm -f model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl
 	rm -f model/outputs/*/cv_trial_ll.jsonl model/outputs/*/cv_preds_summary.json model/outputs/*/cv_folds.jsonl
+	rm -f model/outputs/*/cv_model_comparison.json
