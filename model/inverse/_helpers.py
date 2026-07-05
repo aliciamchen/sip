@@ -12,7 +12,9 @@ separate predict step). Shared concerns:
 
 import hashlib
 import json
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 _project_root = Path(__file__).resolve().parent.parent.parent
@@ -294,9 +296,103 @@ def read_jsonl(path):
 
 
 def sha256_file(path):
-    """Hex SHA-256 of a file's bytes (CV provenance manifests: written by the
-    CV dispatcher, verified by model_comparison.py)."""
+    """Hex SHA-256 of a file's bytes (fit/CV provenance manifests: written by
+    the fit wrappers and the CV dispatcher, verified by model_comparison.py)."""
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def git_sha():
+    """Current commit SHA for provenance manifests; None if git is unavailable
+    (e.g. an exported tree) — a manifest still ties its outputs together via
+    their content hashes."""
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=get_project_root(),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+# The fit output files written together per study; fit_manifest.json hashes
+# them so the CV warm start and model_comparison.py can refuse a fit that is
+# stale relative to the data or a mixed-vintage combination of outputs.
+FIT_OUTPUT_NAMES = ("fit_results.json", "fit_restarts.jsonl")
+
+
+def data_csv_path(slug):
+    """The per-trial long CSV a study's fit and CV both consume."""
+    return get_project_root() / "data" / slug / "main_trials_long.csv"
+
+
+def write_fit_manifest(slug, output_dir, data_csv=None):
+    """Provenance manifest for a fit run: the git SHA plus content hashes of
+    the fit outputs and the input data CSV. Written by the fit_*.py wrappers
+    right after the outputs; verified by the CV dispatcher (before
+    warm-starting folds from the fit) and by model_comparison.py."""
+    output_dir = Path(output_dir)
+    data_csv = Path(data_csv) if data_csv is not None else data_csv_path(slug)
+    manifest = {
+        "experiment": slug,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "git_sha": git_sha(),
+        "outputs": {name: sha256_file(output_dir / name) for name in FIT_OUTPUT_NAMES},
+        "input_data": {
+            # Relative to the project root when inside it (the normal case);
+            # absolute for out-of-tree paths (e.g. test fixtures).
+            "path": (
+                str(data_csv.relative_to(get_project_root()))
+                if data_csv.is_relative_to(get_project_root())
+                else str(data_csv)
+            ),
+            "sha256": sha256_file(data_csv),
+        },
+    }
+    write_json(output_dir / "fit_manifest.json", manifest)
+    print(f"Wrote {output_dir / 'fit_manifest.json'}")
+    return manifest
+
+
+def verify_fit_manifest(slug, output_dir=None, data_csv=None):
+    """Require fit_manifest.json and verify (a) the fit outputs still hash to
+    the values recorded when they were written together and (b) the input data
+    CSV is unchanged since the fit ran — i.e. the fit is neither mixed-vintage
+    nor stale relative to the data. Returns the manifest dict."""
+    output_dir = (
+        Path(output_dir)
+        if output_dir is not None
+        else get_project_root() / "model" / "outputs" / slug
+    )
+    data_csv = Path(data_csv) if data_csv is not None else data_csv_path(slug)
+    manifest_path = output_dir / "fit_manifest.json"
+    if not manifest_path.exists():
+        raise RuntimeError(
+            f"missing {manifest_path} — fit outputs for {slug} predate "
+            f"provenance manifests (or were partially deleted); re-run "
+            f"`make fit-{slug}`."
+        )
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    stale = [
+        name
+        for name in FIT_OUTPUT_NAMES
+        if sha256_file(output_dir / name) != manifest.get("outputs", {}).get(name)
+    ]
+    if stale:
+        raise RuntimeError(
+            f"fit output file(s) {stale} do not match fit_manifest.json — stale "
+            f"or mixed-vintage fit outputs for {slug}; re-run `make fit-{slug}`."
+        )
+    if sha256_file(data_csv) != manifest.get("input_data", {}).get("sha256"):
+        raise RuntimeError(
+            f"{data_csv} changed since the {slug} fit ran — the fit (and any CV "
+            f"warm-started from it) is stale; re-run `make fit-{slug}` and then "
+            f"`make cv-{slug}`."
+        )
+    return manifest
 
 
 # ==============================================================================

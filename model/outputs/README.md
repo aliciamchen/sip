@@ -22,6 +22,7 @@ outputs/
 └── <slug>/                               # one folder per inverse study (fits + CV)
     ├── fit_results.json                      # fitted params per ablation (incl. param_sigma)
     ├── fit_restarts.jsonl                    # per-restart fit diagnostics
+    ├── fit_manifest.json                     # fit provenance: git SHA + sha256 of the fit outputs and input data
     ├── cv_trial_ll.jsonl                     # per-trial held-out log-likelihood, by subject_id  ← primary metric
     ├── cv_preds_summary.json                 # held-out per-cell delta_<latent> (the model's predictions)
     ├── cv_folds.jsonl                        # per-fold refit diagnostics
@@ -230,13 +231,23 @@ Per-fold refit diagnostics (16 folds × 3 ablations). Each record has `experimen
 `fold`, `held_out_scenario`, the refit `alpha_observer` / `param_sigma` / `param_*` weights, and
 `train_nll` / `test_nll` with `n_train` / `n_test`.
 
+### `fit_manifest.json`
+
+The fit-side counterpart of `cv_manifest.json`, written by the `fit_*.py` wrappers alongside
+`fit_results.json` and `fit_restarts.jsonl`: the study slug, a timestamp, the git SHA the fit
+ran at, and SHA-256 hashes of the two fit outputs and of the input data CSV. The CV dispatcher
+verifies it before warm-starting folds from the fit (a stale or missing fit is an error rather
+than a silent cold start), and `model_comparison.py` verifies it again so the fit and the CV
+it reports are guaranteed to share one data vintage.
+
 ### `cv_manifest.json`
 
 A provenance sidecar written by `model/cv/_inverse_dispatcher.py` alongside the three CV
 outputs above, recording the study slug, a timestamp, the git SHA the CV ran at, and SHA-256
 hashes of the three CV files and of the input data CSV. `model_comparison.py` verifies the
-manifest before computing anything and refuses stale or mixed outputs — a comparison must
-never silently describe CV files produced from different code or data versions.
+manifest before computing anything — the output hashes must match and the input-data hash must
+match the current `data/<slug>/main_trials_long.csv` — and refuses stale or mixed outputs; a
+comparison must never silently describe CV files produced from different code or data versions.
 
 ### `cv_model_comparison.json`
 

@@ -36,7 +36,13 @@ sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
-from _helpers import _load_long, read_jsonl, sha256_file, write_json  # noqa: E402
+from _helpers import (  # noqa: E402
+    _load_long,
+    read_jsonl,
+    sha256_file,
+    verify_fit_manifest,
+    write_json,
+)
 from utils import get_project_root  # noqa: E402
 
 # The three CV output files written together by the dispatcher's _write_outputs
@@ -114,6 +120,12 @@ def _verify_cv_manifest(slug, outputs_dir):
         raise RuntimeError(
             f"CV output file(s) {stale} do not match cv_manifest.json — stale "
             f"or mixed-vintage CV outputs for {slug}; re-run `make cv-{slug}`."
+        )
+    data_csv = get_project_root() / "data" / slug / "main_trials_long.csv"
+    if sha256_file(data_csv) != manifest.get("input_data", {}).get("sha256"):
+        raise RuntimeError(
+            f"data/{slug}/main_trials_long.csv changed since CV ran — stale CV "
+            f"outputs for {slug}; re-run `make fit-{slug}` and `make cv-{slug}`."
         )
 
 
@@ -237,6 +249,10 @@ def run_study(slug, n_boot, seed):
         print(f"[{slug}] missing CV outputs — run `make cv-{slug}` first; skipping.")
         return None
     _verify_cv_manifest(slug, outputs_dir)
+    # The fit the CV warm-started from must also match its manifest and the
+    # current data CSV; both manifests validating against the same CSV
+    # guarantees the fit and the CV share one data vintage.
+    verify_fit_manifest(slug, output_dir=outputs_dir)
 
     rng = np.random.default_rng(seed)
     trial_df = pd.DataFrame(read_jsonl(trial_path))

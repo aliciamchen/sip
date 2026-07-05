@@ -43,7 +43,6 @@ transfer between studies.
 import functools
 import multiprocessing as mp
 import os
-import subprocess
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
@@ -72,6 +71,7 @@ from _helpers import (  # noqa: E402
     intimacy_table_kwargs,
     joint_de_table_kwargs,
     joint_ie_table_kwargs,
+    git_sha,
     load_desire_data,
     load_fit_results,
     load_intimacy_data,
@@ -82,6 +82,7 @@ from _helpers import (  # noqa: E402
     params_dict_to_array,
     resolve_variant_table_kwargs,
     sha256_file,
+    verify_fit_manifest,
     write_json,
     write_jsonl,
 )
@@ -210,20 +211,19 @@ def _fold_row(
     return row
 
 
-def _git_sha():
-    """Current commit SHA for the CV provenance manifest; None if git is
-    unavailable (e.g. an exported tree) — the manifest still ties the outputs
-    together via their content hashes."""
-    try:
-        return subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=get_project_root(),
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return None
+def _load_verified_warm_start(slug):
+    """Warm-start params from the full-data fit, provenance-verified: the fit
+    must exist, match its fit_manifest.json, and have been run on the current
+    data CSV. A missing or stale fit is an error rather than a silent cold
+    start — CV results with and without the warm start are not comparable."""
+    fit_path = get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+    if not fit_path.exists():
+        raise RuntimeError(
+            f"{fit_path} not found — run `make fit-{slug}` before `make "
+            f"cv-{slug}` (each CV fold warm-starts from the full-data fit)."
+        )
+    verify_fit_manifest(slug)
+    return load_fit_results(slug)
 
 
 # The three CV output files written together per study; the manifest hashes
@@ -253,7 +253,7 @@ def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
     manifest = {
         "experiment": slug,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "git_sha": _git_sha(),
+        "git_sha": git_sha(),
         "outputs": {name: sha256_file(outputs_dir / name) for name in CV_OUTPUT_NAMES},
         "input_data": {
             "path": str(data_csv.relative_to(get_project_root())),
@@ -297,14 +297,9 @@ def _loso_intimacy(slug):
     effort_np = np.asarray(effort_condition)
     response_np = np.asarray(response)
     subject_ids = np.asarray(data["subject_id"].values)
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
-    )
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
 
     # Resolve every variant's LM tables before any fitting starts, so a missing
     # table fails up front rather than after hours of fitting earlier variants.
@@ -571,14 +566,9 @@ def _loso_desire(slug, workers=None, patience=None):
         np.asarray(response),
         np.asarray(data["subject_id"].values),
     )
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
-    )
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
     warms = {
         v: (
             np.asarray(params_dict_to_array(full_fit[v], util))
@@ -648,14 +638,9 @@ def _loso_joint_de(slug):
     rd_np = np.asarray(response_desire)
     re_np = np.asarray(response_effort)
     subject_ids = np.asarray(data["subject_id"].values)
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
-    )
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
 
     # Resolve every variant's LM tables before any fitting starts, so a missing
     # table (e.g. an unelicited lm_runs_base.jsonl) fails up front rather than
@@ -796,14 +781,9 @@ def _loso_joint_ie(slug):
     ri_np = np.asarray(response_intimacy)
     re_np = np.asarray(response_effort)
     subject_ids = np.asarray(data["subject_id"].values)
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
-    )
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
 
     # Resolve every variant's LM tables before any fitting starts, so a missing
     # table fails up front rather than after hours of fitting earlier variants.

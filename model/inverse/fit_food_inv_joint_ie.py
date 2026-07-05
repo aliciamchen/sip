@@ -22,6 +22,7 @@ from _helpers import (  # noqa: E402
     load_joint_ie_data,
     resolve_variant_table_kwargs,
     restart_records_to_rows,
+    write_fit_manifest,
     write_json,
     write_jsonl,
 )
@@ -102,6 +103,7 @@ def main():
     restarts_path = output_dir / "fit_restarts.jsonl"
     write_jsonl(restarts_path, restart_rows)
     print(f"Saved per-restart fits to {restarts_path}")
+    write_fit_manifest(EXPERIMENT_SLUG, output_dir)
 
 
 if __name__ == "__main__":

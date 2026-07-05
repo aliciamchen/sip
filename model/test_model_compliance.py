@@ -18,7 +18,8 @@ utility skeleton and the padded LM-alternatives action space:
     given-magnitude scalars,
   - the data loader's fail-fast validation (unmapped condition labels,
     duplicate stage rows), the JSONL loader's duplicate-key conflict check,
-    and the multistart fit's all-NaN failure.
+    the multistart fit's all-NaN failure, and the fit provenance manifest's
+    write/verify round-trip.
 """
 
 import json
@@ -386,6 +387,38 @@ def test_fit_multistart_raises_on_all_nan():
         raise AssertionError("all-NaN multistart did not raise")
 
 
+def test_fit_manifest_round_trip():
+    """write_fit_manifest / verify_fit_manifest: a fresh write verifies; a
+    changed data CSV or a tampered fit output is refused."""
+    from _helpers import verify_fit_manifest, write_fit_manifest
+
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d)
+        (out / "fit_results.json").write_text('[{"model": "full"}]')
+        (out / "fit_restarts.jsonl").write_text("{}\n")
+        data_csv = out / "main_trials_long.csv"
+        data_csv.write_text("subject_id,response\ns1,0.5\n")
+        write_fit_manifest("test_slug", out, data_csv=data_csv)
+        verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
+
+        data_csv.write_text("subject_id,response\ns1,0.9\n")
+        try:
+            verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("changed data CSV was not refused")
+        data_csv.write_text("subject_id,response\ns1,0.5\n")
+
+        (out / "fit_results.json").write_text('[{"model": "tampered"}]')
+        try:
+            verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
+        except RuntimeError:
+            print("✓ fit manifest verifies clean outputs and refuses stale ones")
+        else:
+            raise AssertionError("tampered fit_results.json was not refused")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -403,6 +436,7 @@ def run_all_tests():
     test_data_loader_rejects_duplicate_stage_rows()
     test_jsonl_loader_rejects_conflicting_duplicates()
     test_fit_multistart_raises_on_all_nan()
+    test_fit_manifest_round_trip()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)
