@@ -59,6 +59,14 @@ def _to_unit(raw):
         return ""
 
 
+# Raw JSON collected before 2026-06-19 stores the second intimacy level under
+# its old slug "neither" (renamed to "somewhat_formal" when the four-level scale
+# was made symmetric). The Study 1b raw files predate the rename, so normalize
+# at parse time — otherwise regenerating the CSVs reproduces the stale label,
+# which the model's table loaders reject.
+LEGACY_INTIMACY_RENAMES = {"neither": "somewhat_formal"}
+
+
 # Experiment configurations. Per-study keys that drive the conversion:
 #   condition_fields — trial keys copied verbatim into main_trials.csv
 #   rating_fields    — output column -> where the rating lives. None means the
@@ -281,7 +289,10 @@ def _extract_main_trial(trial, subject_id, config):
         "stage": trial.get("stage", ""),
     }
     for field in config["condition_fields"]:
-        row[field] = trial.get(field, "")
+        value = trial.get(field, "")
+        if field == "intimacy_condition":
+            value = LEGACY_INTIMACY_RENAMES.get(value, value)
+        row[field] = value
     response = trial.get("response", "")
     for out_col, response_key in config["rating_fields"].items():
         if response_key is None:
@@ -292,10 +303,16 @@ def _extract_main_trial(trial, subject_id, config):
 
 
 def _write_csv(path, rows, fieldnames):
-    """Write rows to path, refusing to clobber an existing file with nothing."""
+    """Write rows to path; abort the whole conversion if zero rows parsed.
+
+    Exiting here (rather than leaving an existing file untouched) prevents the
+    long-CSV rebuild from silently running on a stale main_trials.csv.
+    """
     if not rows:
-        print(f"No rows for {path.name}; existing file left untouched")
-        return
+        sys.exit(
+            f"No rows parsed for {path.name}; aborting before the long-CSV "
+            "rebuild so a stale file can't masquerade as fresh output."
+        )
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -324,6 +341,8 @@ def process_json_files(input_dir, output_dir, config):
 
     # Dictionary to map original subject IDs to anonymous IDs
     subject_id_mapping = {}
+    # Original subject ID -> file it first appeared in, to reject duplicates
+    seen_subject_files = {}
 
     def generate_deterministic_id(original_id):
         """Generate a deterministic UUID based on the original subject ID."""
@@ -346,16 +365,26 @@ def process_json_files(input_dir, output_dir, config):
             with open(json_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            # Extract subject_id from the first trial
-            original_subject_id = data[0].get("subject_id", "unknown")
+            # Extract subject_id from the first trial. A missing ID is a hard
+            # error: falling back to a placeholder would silently merge every
+            # such participant under one anonymous ID.
+            original_subject_id = data[0].get("subject_id")
+            if not original_subject_id:
+                raise ValueError(f"{json_file.name}: first trial has no subject_id")
 
-            # Create anonymous subject ID if not already mapped
-            if original_subject_id not in subject_id_mapping:
-                # Generate a deterministic UUID based on the original subject ID
-                subject_id_mapping[original_subject_id] = generate_deterministic_id(
-                    original_subject_id
+            # Each participant's data must arrive in exactly one file; a
+            # repeated ID means a duplicate download or a mislabeled file.
+            if original_subject_id in seen_subject_files:
+                raise ValueError(
+                    f"{json_file.name}: subject_id {original_subject_id!r} "
+                    f"already seen in {seen_subject_files[original_subject_id]}"
                 )
+            seen_subject_files[original_subject_id] = json_file.name
 
+            # Generate a deterministic anonymous UUID from the original ID
+            subject_id_mapping[original_subject_id] = generate_deterministic_id(
+                original_subject_id
+            )
             subject_id = subject_id_mapping[original_subject_id]
 
             # Process each trial in the data
@@ -435,6 +464,26 @@ def create_main_trials_long(output_dir, config):
 
     main_trials = pd.read_csv(output_path / "main_trials.csv")
     exit_survey = pd.read_csv(output_path / "exit_survey.csv")
+
+    # The exclusion filter below is built solely from the exit survey, so a
+    # participant with trials but no exit-survey record would silently pass
+    # every filter (and the "Excluding X of N" count would use the wrong N).
+    # Require the two subject sets to match exactly.
+    trial_subjects = set(main_trials["subject_id"])
+    survey_subjects = set(exit_survey["subject_id"])
+    if trial_subjects != survey_subjects:
+        problems = []
+        only_trials = sorted(trial_subjects - survey_subjects)
+        only_survey = sorted(survey_subjects - trial_subjects)
+        if only_trials:
+            problems.append(f"trials but no exit-survey record: {only_trials}")
+        if only_survey:
+            problems.append(f"exit-survey record but no trials: {only_survey}")
+        sys.exit(
+            "Trial and exit-survey subject sets differ — "
+            + "; ".join(problems)
+            + ". Fix the raw data and re-run."
+        )
 
     # Per-study exclusion rule (see the config's `exclusion_rule` and the
     # manuscript Methods). Study 1a preregistered the lax rule (exclude only
