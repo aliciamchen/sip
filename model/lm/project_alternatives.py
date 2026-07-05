@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Per-scenario 2D projection of the LM-generated alternatives, exported as a tidy
-artifact for the R elicitation notebook (analysis/lm-elicitation-overview.qmd).
+JSONL artifact for downstream semantic-space diagnostics.
 
 plot_alternatives.py runs a single *global* UMAP over all 16 scenarios at once,
 which is right for the manuscript "semantic map" (the space splits into scenario
@@ -156,9 +156,7 @@ def main(study, seed, n_neighbors=50, min_dist=0.4):
                 n_written += 1
 
             # observed actions (one per observed_action label)
-            obs_feat = feat_scen[feat_scen["is_observed"]].set_index(
-                "observed_action"
-            )
+            obs_feat = feat_scen[feat_scen["is_observed"]].set_index("observed_action")
             for j, act in enumerate(scen_obs_action):
                 f = obs_feat.loc[act] if act in obs_feat.index else None
                 rec = dict(
