@@ -24,6 +24,22 @@ export const DATAPIPE_IDS = {
   nonfood_inv_joint_ie: "TODO_FILL_IN_DATAPIPE_ID", // Study 3b
 };
 
+// Prolific completion codes, keyed by experiment slug. Each Prolific study
+// issues its own completion code (the `cc` parameter of its completion URL),
+// so a newly created study must get its own entry here — bootstrap.js refuses
+// to start (alert + throw) when the current study has no code, so an
+// unconfigured study cannot silently send participants to another study's
+// completion URL. The four food studies share one code because they ran under
+// a single Prolific project.
+export const PROLIFIC_COMPLETION_CODES = {
+  food_inv_desire: "C1A889GX", // Study 1a
+  food_inv_joint_de: "C1A889GX", // Study 1b
+  food_inv_intimacy: "C1A889GX", // Study 2a
+  food_inv_joint_ie: "C1A889GX", // Study 2b
+  // nonfood_inv_joint_de / nonfood_inv_joint_ie (Studies 3a/3b) deliberately
+  // have no entry yet: add each study's code when it is created on Prolific.
+};
+
 // Settings identical across all active experiments.
 export const SHARED_CONFIG = {
   ATTENTION_CHECK_INDEX: 14,
@@ -32,16 +48,28 @@ export const SHARED_CONFIG = {
   // mid-collection so the criterion stays constant within a study's sample.
   ATTENTION_TOLERANCE: 0,
   INTER_TRIAL_DURATIONS: [1500, 1750, 2000],
-  PROLIFIC_COMPLETION_URL:
-    "https://app.prolific.com/submissions/complete?cc=C1A889GX",
+  // Payment and expected duration, shown to participants in the consent form
+  // and the final instructions page (as {{PAYMENT}} / {{DURATION_MINUTES}}
+  // placeholders that bootstrap.js fills from CONFIG). A study that pays
+  // differently or runs longer overrides these via makeConfig's second
+  // argument rather than editing the shared participant-facing text.
+  PAYMENT: "$5",
+  DURATION_MINUTES: 20,
 };
 
-// Build an experiment's CONFIG: the shared defaults plus its DataPipe ID, with
-// any per-experiment overrides applied last.
+// Build an experiment's CONFIG: the shared defaults plus its DataPipe ID and
+// Prolific completion URL, with any per-experiment overrides applied last.
+// A slug with no completion code gets PROLIFIC_COMPLETION_URL undefined, which
+// bootstrap.js turns into a hard startup failure.
 export function makeConfig(slug, overrides = {}) {
+  const completionCode = PROLIFIC_COMPLETION_CODES[slug];
   return {
     ...SHARED_CONFIG,
     PIPE_EXPERIMENT_ID: DATAPIPE_IDS[slug],
+    PROLIFIC_COMPLETION_URL:
+      completionCode === undefined
+        ? undefined
+        : `https://app.prolific.com/submissions/complete?cc=${completionCode}`,
     ...overrides,
   };
 }

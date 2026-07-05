@@ -12,6 +12,7 @@
 // the <script> tags in index.html; the trial objects reference them as their
 // `type`, so they must exist, but jsPsych is never initialized or run.
 
+import { intimacy_texts } from "../_lib/scenario.js";
 import { makeStimulusTrials as make_food_inv_desire } from "../food_inv_desire/trials.js";
 import { makeStimulusTrials as make_food_inv_joint_de } from "../food_inv_joint_de/trials.js";
 import { makeStimulusTrials as make_food_inv_intimacy } from "../food_inv_intimacy/trials.js";
@@ -78,13 +79,6 @@ const STUDIES = {
 };
 
 // ----- condition factors -----------------------------------------------------
-const INTIMACY_TEXTS = {
-  max_formal: "maximally formal",
-  somewhat_formal: "somewhat formal",
-  somewhat_intimate: "somewhat intimate",
-  max_intimate: "maximally intimate",
-};
-
 const FACTORS = {
   action: {
     label: "Observed action",
@@ -104,13 +98,11 @@ const FACTORS = {
   intimacy: {
     label: "Intimacy",
     field: "intimacy_condition",
-    options: [
-      ["max_formal", "maximally formal"],
-      ["somewhat_formal", "somewhat formal"],
-      ["somewhat_intimate", "somewhat intimate"],
-      ["max_intimate", "maximally intimate"],
-    ],
-    format: (v) => INTIMACY_TEXTS[v],
+    // Slugs and labels come straight from the shared intimacy_texts in
+    // _lib/scenario.js (the same map the live trials render), so the preview's
+    // dropdown cannot drift from what participants see.
+    options: Object.entries(intimacy_texts),
+    format: (v) => intimacy_texts[v],
   },
   effort: {
     label: "Effort",

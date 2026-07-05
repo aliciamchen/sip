@@ -74,10 +74,6 @@ h3 {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.vignette-text.vignette-text-wide {
-  max-width: 820px;
-}
-
 .vignette-text.vignette-observed {
   margin-top: 15px;
   margin-bottom: 30px;
