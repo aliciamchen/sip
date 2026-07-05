@@ -74,21 +74,42 @@ STUDIES = [
     "nonfood_inv_joint_de",
     "nonfood_inv_joint_ie",
 ]
-# The studies whose elicitation carries each given-magnitude scalar (for the
-# manipulation-check panels). Panel (a) plots one representative
-# given-relationship study per domain — 1a stands in for 1a/1b, which share the
-# scenario-independent intimacy elicitation.
-INTIMACY_PANEL_STUDIES = [
+FOOD_STUDIES = [
+    "food_inv_desire",
+    "food_inv_joint_de",
+    "food_inv_intimacy",
+    "food_inv_joint_ie",
+]
+STUDY3_STUDIES = ["nonfood_inv_joint_de", "nonfood_inv_joint_ie"]
+JOINT_DE_COMPARISON = ["food_inv_joint_de", "nonfood_inv_joint_de"]
+JOINT_IE_COMPARISON = ["food_inv_joint_ie", "nonfood_inv_joint_ie"]
+
+# The studies whose elicitation carries each given-magnitude scalar. The paper
+# figure stays food-only; Study 3 and the joint comparisons get separate files.
+FOOD_INTIMACY_PANEL_STUDIES = [
     ("food_inv_desire", "1a/1b"),
+]
+FOOD_DESIRE_PANEL_STUDIES = [
+    ("food_inv_intimacy", "2a"),
+    ("food_inv_joint_ie", "2b"),
+]
+STUDY3_INTIMACY_PANEL_STUDIES = [
     ("nonfood_inv_joint_de", "3a"),
 ]
-DESIRE_PANEL_STUDIES = [
-    ("food_inv_intimacy", "2a"),
+STUDY3_DESIRE_PANEL_STUDIES = [
+    ("nonfood_inv_joint_ie", "3b"),
+]
+JOINT_DE_INTIMACY_PANEL_STUDIES = [
+    ("food_inv_joint_de", "1b"),
+    ("nonfood_inv_joint_de", "3a"),
+]
+JOINT_IE_DESIRE_PANEL_STUDIES = [
     ("food_inv_joint_ie", "2b"),
     ("nonfood_inv_joint_ie", "3b"),
 ]
 MEAN_COLOR = "#333333"
 SCENARIO_LINE = dict(color="#999999", alpha=0.4, lw=0.7, zorder=2)
+SAVE_KW = {"png": False}
 
 
 def load_runs(study):
@@ -126,13 +147,19 @@ def extract_observed(runs):
 # ---------------------------------------------------------------- figure 1
 
 
-def fig_feature_structure(observed, studies):
+def fig_feature_structure(
+    observed,
+    studies,
+    figname="si_lm_feature_structure",
+    show_effort_condition=True,
+):
     """Rows = studies (the ones with elicitation data), columns = risk / g /
     effort; thin per-scenario lines."""
     xpos = {a: i for i, a in enumerate(OBSERVED_ACTIONS)}
     fig, axes = plt.subplots(
         len(studies), 3, figsize=(6.4, 1.4 * len(studies)), sharex=True, sharey=True
     )
+    axes = np.atleast_2d(axes)
 
     def draw_lines(ax, per_scenario, mean_line, color=None, xoff=0.0, label=None):
         """per_scenario: DataFrame (scenario x action -> value); mean over top."""
@@ -162,7 +189,7 @@ def fig_feature_structure(observed, studies):
                     .unstack("action")[OBSERVED_ACTIONS]
                 )
                 draw_lines(ax, wide, wide.mean(axis=0).to_numpy())
-            else:
+            elif show_effort_condition:
                 for cond, xoff in (("low", -0.15), ("high", 0.15)):
                     sub = df[df["effort_condition"] == cond]
                     wide = (
@@ -180,6 +207,13 @@ def fig_feature_structure(observed, studies):
                     )
                 if r == 0:
                     ax.legend(loc="upper left", handlelength=1.4, fontsize=7.5)
+            else:
+                wide = (
+                    df.groupby(["scenario", "action"])[feat]
+                    .mean()
+                    .unstack("action")[OBSERVED_ACTIONS]
+                )
+                draw_lines(ax, wide, wide.mean(axis=0).to_numpy())
             if r == 0:
                 ax.set_title(
                     {"risk": "Risk", "g": "Goal-satisfaction $g$", "effort": "Effort"}[
@@ -199,18 +233,31 @@ def fig_feature_structure(observed, studies):
         ax.set_xlim(-0.5, 2.5)
         ax.set_yticks([0, 0.5, 1])
     fig.tight_layout()
-    return savefig(fig, "si_lm_feature_structure")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ---------------------------------------------------------------- figure 2
 
 
-def fig_manipulation_checks(observed):
+def fig_manipulation_checks(
+    observed,
+    intimacy_panel_studies,
+    desire_panel_studies,
+    figname="si_lm_manipulation_checks",
+):
     """(a) LM-rated intimacy by relationship descriptor (the given-relationship
     studies); (b) LM-rated desire by desire condition (the given-desire studies
     overlaid). Each panel draws whichever of its studies have elicitation data,
     offset on x when there is more than one."""
-    fig, axes = plt.subplots(1, 2, figsize=(6.8, 2.9))
+    active_panels = [
+        bool(intimacy_panel_studies),
+        bool(desire_panel_studies),
+    ]
+    n_panels = sum(active_panels)
+    if n_panels == 0:
+        return None
+    fig, axes = plt.subplots(1, n_panels, figsize=(3.4 * n_panels, 2.9))
+    axes = iter(np.atleast_1d(axes))
     rng = np.random.default_rng(0)
     present = set(observed["study"])
     linestyles = ["-", (0, (4, 2)), (0, (1, 1.4))]
@@ -220,205 +267,226 @@ def fig_manipulation_checks(observed):
 
     # (a) intimacy magnitudes, one representative given-relationship study per
     # domain (1a stands in for 1a/1b, which share the elicitation design)
-    ax = axes[0]
-    panel_a = [(s, lab) for s, lab in INTIMACY_PANEL_STUDIES if s in present]
-    offs_a = offsets(len(panel_a))
-    jit = 0.08 if len(panel_a) == 1 else 0.05
-    for k, ((study, lab), xoff) in enumerate(zip(panel_a, offs_a)):
-        df = observed[observed["study"] == study]
-        lv = df.groupby(["intimacy_condition", "run_id"], as_index=False)[
-            "intimacy"
-        ].first()
-        spread = lv.groupby("intimacy_condition")["intimacy"].nunique()
-        if (spread > 1).any():
-            print(
-                f"note: intimacy magnitudes vary across runs ({study}); "
-                "plotting run-level points"
+    if intimacy_panel_studies:
+        ax = next(axes)
+        panel_a = [(s, lab) for s, lab in intimacy_panel_studies if s in present]
+        offs_a = offsets(len(panel_a))
+        jit = 0.08 if len(panel_a) == 1 else 0.05
+        for k, ((study, lab), xoff) in enumerate(zip(panel_a, offs_a)):
+            df = observed[observed["study"] == study]
+            lv = df.groupby(["intimacy_condition", "run_id"], as_index=False)[
+                "intimacy"
+            ].first()
+            spread = lv.groupby("intimacy_condition")["intimacy"].nunique()
+            if (spread > 1).any():
+                print(
+                    f"note: intimacy magnitudes vary across runs ({study}); "
+                    "plotting run-level points"
+                )
+                for i, lvl in enumerate(INTIMACY_LEVELS):
+                    sub = lv[lv["intimacy_condition"] == lvl]
+                    ax.scatter(
+                        i + xoff + rng.uniform(-jit, jit, len(sub)),
+                        sub["intimacy"],
+                        s=7,
+                        color=INTIMACY_COLORS[lvl],
+                        alpha=0.3,
+                        lw=0,
+                    )
+            means = lv.groupby("intimacy_condition")["intimacy"].mean()[
+                INTIMACY_LEVELS
+            ]
+            ax.plot(
+                np.arange(4) + xoff,
+                means,
+                color=MEAN_COLOR,
+                lw=1.8,
+                ls=linestyles[k % len(linestyles)],
+                zorder=5,
+                label=f"Study {lab}" if len(panel_a) > 1 else None,
             )
             for i, lvl in enumerate(INTIMACY_LEVELS):
-                sub = lv[lv["intimacy_condition"] == lvl]
-                ax.scatter(
-                    i + xoff + rng.uniform(-jit, jit, len(sub)),
-                    sub["intimacy"],
-                    s=7,
-                    color=INTIMACY_COLORS[lvl],
-                    alpha=0.3,
-                    lw=0,
+                style = (
+                    dict(color=INTIMACY_COLORS[lvl], edgecolor="black", lw=0.5)
+                    if k == 0
+                    else dict(facecolor="white", edgecolor=INTIMACY_COLORS[lvl], lw=1.4)
                 )
-        means = lv.groupby("intimacy_condition")["intimacy"].mean()[INTIMACY_LEVELS]
-        ax.plot(
-            np.arange(4) + xoff,
-            means,
-            color=MEAN_COLOR,
-            lw=1.8,
-            ls=linestyles[k % len(linestyles)],
-            zorder=5,
-            label=f"Study {lab}" if len(panel_a) > 1 else None,
+                ax.scatter(i + xoff, means[lvl], s=48, zorder=6, **style)
+                if len(panel_a) == 1:
+                    ax.annotate(
+                        f"{means[lvl]:g}",
+                        (i, means[lvl]),
+                        textcoords="offset points",
+                        xytext=(0, 8),
+                        ha="center",
+                        fontsize=8,
+                    )
+        if len(panel_a) > 1:
+            ax.legend(loc="upper left", fontsize=7.5, handlelength=1.8)
+        ax.set_xticks(range(4))
+        ax.set_xticklabels(
+            [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in INTIMACY_LEVELS],
+            fontsize=7.5,
         )
-        for i, lvl in enumerate(INTIMACY_LEVELS):
-            style = (
-                dict(color=INTIMACY_COLORS[lvl], edgecolor="black", lw=0.5)
-                if k == 0
-                else dict(facecolor="white", edgecolor=INTIMACY_COLORS[lvl], lw=1.4)
-            )
-            ax.scatter(i + xoff, means[lvl], s=48, zorder=6, **style)
-            if len(panel_a) == 1:
-                ax.annotate(
-                    f"{means[lvl]:g}",
-                    (i, means[lvl]),
-                    textcoords="offset points",
-                    xytext=(0, 8),
-                    ha="center",
-                    fontsize=8,
-                )
-    if len(panel_a) > 1:
-        ax.legend(loc="upper left", fontsize=7.5, handlelength=1.8)
-    ax.set_xticks(range(4))
-    ax.set_xticklabels(
-        [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in INTIMACY_LEVELS],
-        fontsize=7.5,
-    )
-    ax.set_xlabel("Relationship descriptor")
-    ax.set_ylabel("LM-rated intimacy $I$")
-    ax.set_xlim(-0.5, 3.5)
-    ax.set_title("Studies " + "/".join(lab for _, lab in panel_a))
-    panel_label(ax, "a")
+        ax.set_xlabel("Relationship descriptor")
+        ax.set_ylabel("LM-rated intimacy $I$")
+        ax.set_xlim(-0.5, 3.5)
+        ax.set_title("Studies " + "/".join(lab for _, lab in panel_a))
+        panel_label(ax, "a")
 
     # (b) desire by condition, the given-desire studies overlaid with x offsets
-    ax = axes[1]
-    xpos = {"low": 0, "high": 1}
-    panel_b = [(s, lab) for s, lab in DESIRE_PANEL_STUDIES if s in present]
-    offs_b = offsets(len(panel_b))
-    specs = [
-        (study, xoff, k == 0, linestyles[k % len(linestyles)])
-        for k, ((study, _), xoff) in enumerate(zip(panel_b, offs_b))
-    ]
-    for study, xoff, filled, ls in specs:
-        df = observed[observed["study"] == study]
-        # one point per scenario: its mean desire in each condition, so the
-        # faint lines connect the actual plotted points (each line = one
-        # scenario's low->high shift)
-        wide = (
-            df.groupby(["scenario", "desire_condition"])["desire"]
-            .mean()
-            .unstack("desire_condition")[["low", "high"]]
-        )
-        lo, hi = wide["low"].to_numpy(), wide["high"].to_numpy()
-        # small jitter (shared between line endpoints and points so the lines
-        # still end exactly on the points): vertical to separate scenarios on
-        # the same gridded value, horizontal to avoid overplotting the column
-        jl = rng.uniform(-0.012, 0.012, len(lo))
-        jh = rng.uniform(-0.012, 0.012, len(hi))
-        xl = xoff + rng.uniform(-0.035, 0.035, len(lo))
-        xh = 1 + xoff + rng.uniform(-0.035, 0.035, len(hi))
-        for i in range(len(lo)):
+    if desire_panel_studies:
+        ax = next(axes)
+        xpos = {"low": 0, "high": 1}
+        panel_b = [(s, lab) for s, lab in desire_panel_studies if s in present]
+        offs_b = offsets(len(panel_b))
+        specs = [
+            (study, xoff, k == 0, linestyles[k % len(linestyles)])
+            for k, ((study, _), xoff) in enumerate(zip(panel_b, offs_b))
+        ]
+        for study, xoff, filled, ls in specs:
+            df = observed[observed["study"] == study]
+            # one point per scenario: its mean desire in each condition, so the
+            # faint lines connect the actual plotted points.
+            wide = (
+                df.groupby(["scenario", "desire_condition"])["desire"]
+                .mean()
+                .unstack("desire_condition")[["low", "high"]]
+            )
+            lo, hi = wide["low"].to_numpy(), wide["high"].to_numpy()
+            jl = rng.uniform(-0.012, 0.012, len(lo))
+            jh = rng.uniform(-0.012, 0.012, len(hi))
+            xl = xoff + rng.uniform(-0.035, 0.035, len(lo))
+            xh = 1 + xoff + rng.uniform(-0.035, 0.035, len(hi))
+            for i in range(len(lo)):
+                ax.plot(
+                    [xl[i], xh[i]],
+                    [lo[i] + jl[i], hi[i] + jh[i]],
+                    color="#AAAAAA",
+                    alpha=0.45,
+                    lw=0.6,
+                    zorder=2,
+                )
+            ax.scatter(
+                xl,
+                lo + jl,
+                s=12,
+                color=DESIRE_COLORS["low"],
+                alpha=0.6,
+                lw=0,
+                zorder=3,
+            )
+            ax.scatter(
+                xh,
+                hi + jh,
+                s=12,
+                color=DESIRE_COLORS["high"],
+                alpha=0.6,
+                lw=0,
+                zorder=3,
+            )
             ax.plot(
-                [xl[i], xh[i]],
-                [lo[i] + jl[i], hi[i] + jh[i]],
-                color="#AAAAAA",
-                alpha=0.45,
-                lw=0.6,
-                zorder=2,
+                [xoff, 1 + xoff],
+                wide.mean(axis=0),
+                color=MEAN_COLOR,
+                lw=1.8,
+                ls=ls,
+                zorder=5,
+                label=STUDY_LABELS[study],
             )
-        ax.scatter(
-            xl,
-            lo + jl,
-            s=12,
-            color=DESIRE_COLORS["low"],
-            alpha=0.6,
-            lw=0,
-            zorder=3,
-        )
-        ax.scatter(
-            xh,
-            hi + jh,
-            s=12,
-            color=DESIRE_COLORS["high"],
-            alpha=0.6,
-            lw=0,
-            zorder=3,
-        )
-        ax.plot(
-            [xoff, 1 + xoff],
-            wide.mean(axis=0),
-            color=MEAN_COLOR,
-            lw=1.8,
-            ls=ls,
-            zorder=5,
-            label=STUDY_LABELS[study],
-        )
-        for cond in ("low", "high"):
-            style = (
-                dict(facecolor=DESIRE_COLORS[cond], edgecolor="black", lw=0.5)
-                if filled
-                else dict(facecolor="white", edgecolor=DESIRE_COLORS[cond], lw=1.4)
-            )
-            ax.scatter(xpos[cond] + xoff, wide[cond].mean(), s=48, zorder=6, **style)
-    ax.legend(loc="lower right", fontsize=7.5, handlelength=1.8)
-    ax.set_xticks([0, 1])
-    ax.set_xticklabels(["Low", "High"])
-    ax.set_xlabel("Desire condition")
-    ax.set_ylabel("LM-rated desire $d$")
-    ax.set_xlim(-0.6, 1.6)
-    ax.set_title("Studies " + "/".join(lab for _, lab in panel_b))
-    panel_label(ax, "b")
+            for cond in ("low", "high"):
+                style = (
+                    dict(facecolor=DESIRE_COLORS[cond], edgecolor="black", lw=0.5)
+                    if filled
+                    else dict(facecolor="white", edgecolor=DESIRE_COLORS[cond], lw=1.4)
+                )
+                ax.scatter(
+                    xpos[cond] + xoff, wide[cond].mean(), s=48, zorder=6, **style
+                )
+        if len(panel_b) > 1:
+            ax.legend(loc="lower right", fontsize=7.5, handlelength=1.8)
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels(["Low", "High"])
+        ax.set_xlabel("Desire condition")
+        ax.set_ylabel("LM-rated desire $d$")
+        ax.set_xlim(-0.6, 1.6)
+        ax.set_title("Studies " + "/".join(lab for _, lab in panel_b))
+        panel_label(ax, "b" if intimacy_panel_studies else "a")
 
-    for ax in axes:
+    for ax in fig.axes:
         ax.set_ylim(-0.06, 1.12)
         ax.set_yticks([0, 0.5, 1])
     fig.tight_layout()
-    return savefig(fig, "si_lm_manipulation_checks")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ---------------------------------------------------------------- figure 3
 
 
 def fig_observed_scatter(
-    observed, study="food_inv_desire", figname="si_lm_observed_scatter"
+    observed,
+    study="food_inv_desire",
+    figname="si_lm_observed_scatter",
+    show_effort_condition=True,
 ):
     """All observed actions in the (risk, effort) plane for one study's
     elicitation (Study 1a by default; the nonfood analog uses Study 3a's), one
     point per scenario x action x effort condition; vertical grey segments
     connect the two effort conditions of the same scenario x action."""
     df = observed[observed["study"] == study]
-    agg = df.groupby(["scenario", "action", "effort_condition"], as_index=False).agg(
-        risk=("risk", "mean"), effort=("effort", "mean")
-    )
-    wide = agg.pivot_table(
-        index=["scenario", "action"],
-        columns="effort_condition",
-        values=["risk", "effort"],
-    )
-
     fig, ax = plt.subplots(figsize=(4.6, 4.3))
     rng = np.random.default_rng(0)
     for pos in (0.5,):
         ax.axhline(pos, color="#DDDDDD", ls=(0, (4, 3)), lw=1.1, zorder=0)
         ax.axvline(pos, color="#DDDDDD", ls=(0, (4, 3)), lw=1.1, zorder=0)
 
-    for (scenario, action), row in wide.iterrows():
-        dx = rng.uniform(-0.012, 0.012)  # same x-jitter for the pair: risk is
-        dy = rng.uniform(-0.008, 0.008)  # effort-marginal, so segments stay vertical
-        x = {c: row[("risk", c)] + dx for c in ("low", "high")}
-        y = {c: row[("effort", c)] + dy for c in ("low", "high")}
-        ax.plot(
-            [x["low"], x["high"]],
-            [y["low"], y["high"]],
-            color="#BBBBBB",
-            lw=0.6,
-            alpha=0.6,
-            zorder=1,
+    if show_effort_condition:
+        agg = df.groupby(
+            ["scenario", "action", "effort_condition"], as_index=False
+        ).agg(risk=("risk", "mean"), effort=("effort", "mean"))
+        wide = agg.pivot_table(
+            index=["scenario", "action"],
+            columns="effort_condition",
+            values=["risk", "effort"],
         )
-        for cond in ("low", "high"):
-            filled = cond == "high"
+        for (scenario, action), row in wide.iterrows():
+            dx = rng.uniform(-0.012, 0.012)
+            dy = rng.uniform(-0.008, 0.008)
+            x = {c: row[("risk", c)] + dx for c in ("low", "high")}
+            y = {c: row[("effort", c)] + dy for c in ("low", "high")}
+            ax.plot(
+                [x["low"], x["high"]],
+                [y["low"], y["high"]],
+                color="#BBBBBB",
+                lw=0.6,
+                alpha=0.6,
+                zorder=1,
+            )
+            for cond in ("low", "high"):
+                filled = cond == "high"
+                ax.scatter(
+                    x[cond],
+                    y[cond],
+                    s=34,
+                    facecolor=ACTION_COLORS[action] if filled else "white",
+                    edgecolor=ACTION_COLORS[action],
+                    lw=1.1,
+                    zorder=4 if filled else 3,
+                    alpha=0.9,
+                )
+    else:
+        agg = df.groupby(["scenario", "action"], as_index=False).agg(
+            risk=("risk", "mean"), effort=("effort", "mean")
+        )
+        for row in agg.itertuples(index=False):
             ax.scatter(
-                x[cond],
-                y[cond],
+                row.risk + rng.uniform(-0.012, 0.012),
+                row.effort + rng.uniform(-0.008, 0.008),
                 s=34,
-                facecolor=ACTION_COLORS[action] if filled else "white",
-                edgecolor=ACTION_COLORS[action],
+                facecolor=ACTION_COLORS[row.action],
+                edgecolor=ACTION_COLORS[row.action],
                 lw=1.1,
-                zorder=4 if filled else 3,
+                zorder=4,
                 alpha=0.9,
             )
 
@@ -434,28 +502,30 @@ def fig_observed_scatter(
             label=ACTION_LABELS[a],
         )
         for a in OBSERVED_ACTIONS
-    ] + [
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor="#777777",
-            markeredgecolor="#777777",
-            markersize=7,
-            label="High effort condition",
-        ),
-        Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="none",
-            markerfacecolor="white",
-            markeredgecolor="#777777",
-            markersize=7,
-            label="Low effort condition",
-        ),
     ]
+    if show_effort_condition:
+        handles += [
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="none",
+                markerfacecolor="#777777",
+                markeredgecolor="#777777",
+                markersize=7,
+                label="High effort condition",
+            ),
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="none",
+                markerfacecolor="white",
+                markeredgecolor="#777777",
+                markersize=7,
+                label="Low effort condition",
+            ),
+        ]
     ax.legend(handles=handles, loc="upper right", fontsize=9.5, handletextpad=0.3)
     ax.set_xlabel("Risk", fontsize=13)
     ax.set_ylabel("Effort", fontsize=13)
@@ -466,13 +536,13 @@ def fig_observed_scatter(
     ax.set_yticks([0, 0.5, 1])
     ax.set_box_aspect(1)
     fig.tight_layout()
-    return savefig(fig, figname)
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ---------------------------------------------------------------- figure 4
 
 
-def fig_run_spread():
+def fig_run_spread(figname="si_lm_run_spread"):
     """Run-to-run spread of the model's predicted belief updates (Study 1a,
     full model, out-of-sample leave-one-scenario-out CV predictions). Each
     elicitation run is one simulated observer, so the per-run updates within a
@@ -560,13 +630,13 @@ def fig_run_spread():
         f"fitted sigma = {sigma:.3f} (ratio {np.median(sds) / sigma:.2f})"
     )
     fig.tight_layout()
-    return savefig(fig, "si_lm_run_spread")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ---------------------------------------------------------------- figure 5
 
 
-def fig_choice_set_sizes(runs_by_study):
+def fig_choice_set_sizes(runs_by_study, figname="si_lm_choice_set_sizes"):
     """Distribution of the number of LM-generated alternatives in each scored
     choice set (one set per cell x run), per study with elicitation data.
     Documents the "small, focused set" the generation prompt asks for — and
@@ -593,13 +663,13 @@ def fig_choice_set_sizes(runs_by_study):
     np.atleast_1d(axes)[0].set_ylabel("% of choice sets")
     fig.supxlabel("Number of LM-generated alternatives in the scored set", fontsize=9)
     fig.tight_layout()
-    return savefig(fig, "si_lm_choice_set_sizes")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ---------------------------------------------------------------- figure 6
 
 
-def fig_mixture_check():
+def fig_mixture_check(figname="si_lm_mixture_check"):
     """Predictive check of the simulated-observer mixture (Study 1a, full
     model, out-of-sample LOSO CV predictions): for six cells spanning the range
     of predicted updates, the K-component predictive density (1/K) sum_k N(u;
@@ -678,7 +748,7 @@ def fig_mixture_check():
     for ax in axes[:, 0]:
         ax.set_ylabel("Density")
     fig.tight_layout()
-    return savefig(fig, "si_lm_mixture_check")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 def main():
@@ -696,24 +766,103 @@ def main():
         frames.append(df)
         print(f"{study}: {len(df)} observed-action rows")
     observed = pd.concat(frames, ignore_index=True)
-    studies = list(runs_by_study)
+    studies = [s for s in FOOD_STUDIES if s in runs_by_study]
+    study3 = [s for s in STUDY3_STUDIES if s in runs_by_study]
+    joint_de = [s for s in JOINT_DE_COMPARISON if s in runs_by_study]
+    joint_ie = [s for s in JOINT_IE_COMPARISON if s in runs_by_study]
     figures = [
-        fig_feature_structure(observed, studies),
-        fig_manipulation_checks(observed),
-        fig_observed_scatter(observed),
-        fig_run_spread(),
-        fig_choice_set_sizes(runs_by_study),
-        fig_mixture_check(),
+        fig_feature_structure(
+            observed, studies, figname="si_lm_feature_structure_1a_1b_2a_2b"
+        ),
+        fig_manipulation_checks(
+            observed,
+            FOOD_INTIMACY_PANEL_STUDIES,
+            FOOD_DESIRE_PANEL_STUDIES,
+            figname="si_lm_manipulation_checks_1a_1b_2a_2b",
+        ),
+        fig_observed_scatter(
+            observed,
+            study="food_inv_desire",
+            figname="si_lm_observed_scatter_1a",
+        ),
+        fig_run_spread(figname="si_lm_run_spread_1a"),
+        fig_choice_set_sizes(
+            {s: runs_by_study[s] for s in studies},
+            figname="si_lm_choice_set_sizes_1a_1b_2a_2b",
+        ),
+        fig_mixture_check(figname="si_lm_mixture_check_1a"),
     ]
-    # The nonfood analog of the observed-action scatter, once Study 3a's
-    # elicitation exists.
+    if study3:
+        figures.extend(
+            [
+                fig_feature_structure(
+                    observed,
+                    study3,
+                    figname="si_lm_feature_structure_3a_3b",
+                    show_effort_condition=False,
+                ),
+                fig_manipulation_checks(
+                    observed,
+                    STUDY3_INTIMACY_PANEL_STUDIES,
+                    STUDY3_DESIRE_PANEL_STUDIES,
+                    figname="si_lm_manipulation_checks_3a_3b",
+                ),
+                fig_choice_set_sizes(
+                    {s: runs_by_study[s] for s in study3},
+                    figname="si_lm_choice_set_sizes_3a_3b",
+                ),
+            ]
+        )
     if "nonfood_inv_joint_de" in runs_by_study:
         figures.append(
             fig_observed_scatter(
                 observed,
                 study="nonfood_inv_joint_de",
-                figname="si_lm_observed_scatter_nonfood",
+                figname="si_lm_observed_scatter_3a",
+                show_effort_condition=False,
             )
+        )
+    if len(joint_de) == 2:
+        figures.extend(
+            [
+                fig_feature_structure(
+                    observed,
+                    joint_de,
+                    figname="si_lm_feature_structure_1b_3a",
+                    show_effort_condition=False,
+                ),
+                fig_manipulation_checks(
+                    observed,
+                    JOINT_DE_INTIMACY_PANEL_STUDIES,
+                    [],
+                    figname="si_lm_manipulation_checks_1b_3a",
+                ),
+                fig_choice_set_sizes(
+                    {s: runs_by_study[s] for s in joint_de},
+                    figname="si_lm_choice_set_sizes_1b_3a",
+                ),
+            ]
+        )
+    if len(joint_ie) == 2:
+        figures.extend(
+            [
+                fig_feature_structure(
+                    observed,
+                    joint_ie,
+                    figname="si_lm_feature_structure_2b_3b",
+                    show_effort_condition=False,
+                ),
+                fig_manipulation_checks(
+                    observed,
+                    [],
+                    JOINT_IE_DESIRE_PANEL_STUDIES,
+                    figname="si_lm_manipulation_checks_2b_3b",
+                ),
+                fig_choice_set_sizes(
+                    {s: runs_by_study[s] for s in joint_ie},
+                    figname="si_lm_choice_set_sizes_2b_3b",
+                ),
+            ]
         )
     for path in figures:
         if path:

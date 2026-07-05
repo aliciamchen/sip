@@ -257,15 +257,17 @@ $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 
 # =============================================================================
 # SI LM-elicitation validation figures (no API calls — read the persisted
-# lm_runs.jsonl / embedding artifacts and write PDFs + PNG previews to figures/).
-# The manipulation checks span all four studies; the alternatives deep-dives
-# read the Study 1a embeddings (embed_alternatives.py + project_alternatives.py
-# must have been run for it).
+# lm_runs.jsonl / embedding artifacts and write PDFs to figures/). The Study 3
+# validation figures are separate from the Study 1/2 paper figures; the
+# alternatives deep-dives require embed_alternatives.py + project_alternatives.py
+# for every study included in a paired panel.
 # =============================================================================
 
 figures-lm-si:
 	uv run python model/lm/plot_si_validation.py
 	uv run python model/lm/plot_alternatives.py --figures si
+	uv run python model/lm/plot_alternatives.py --figures si --study nonfood_inv_joint_de --paired-study food_inv_joint_de --suffix 1b_3a
+	uv run python model/lm/plot_alternatives.py --figures si --study nonfood_inv_joint_ie --paired-study food_inv_joint_ie --suffix 2b_3b
 
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/ into the
@@ -282,17 +284,17 @@ JOURNAL_DIR := SIP_journal
 JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
 JOURNAL_FIGURES := \
   food_inv_desire_cv_overlay_bars.pdf:study1a-model-comparison.pdf \
-  si_lm_feature_structure.pdf:si-lm-feature-structure.pdf \
-  si_lm_manipulation_checks.pdf:si-lm-manipulation-checks.pdf \
-  si_lm_observed_scatter.pdf:si-lm-observed-scatter.pdf \
-  si_lm_choice_set_sizes.pdf:si-lm-choice-set-sizes.pdf \
-  si_lm_semantic_space_example.pdf:si-lm-semantic-space-example.pdf \
-  si_lm_alternatives_composition.pdf:si-lm-alternatives-composition.pdf \
-  si_lm_alternatives_set_similarity.pdf:si-lm-alternatives-set-similarity.pdf \
-  si_lm_base_vs_full.pdf:si-lm-base-vs-full.pdf \
-  si_lm_g_contrast.pdf:si-lm-g-contrast.pdf \
-  si_lm_run_spread.pdf:si-lm-run-spread.pdf \
-  si_lm_mixture_check.pdf:si-lm-mixture-check.pdf
+  si_lm_feature_structure_1a_1b_2a_2b.pdf:si-lm-feature-structure.pdf \
+  si_lm_manipulation_checks_1a_1b_2a_2b.pdf:si-lm-manipulation-checks.pdf \
+  si_lm_observed_scatter_1a.pdf:si-lm-observed-scatter.pdf \
+  si_lm_choice_set_sizes_1a_1b_2a_2b.pdf:si-lm-choice-set-sizes.pdf \
+  si_lm_semantic_space_example_1a.pdf:si-lm-semantic-space-example.pdf \
+  si_lm_alternatives_composition_1a_2a.pdf:si-lm-alternatives-composition.pdf \
+  si_lm_alternatives_set_similarity_1a_2a.pdf:si-lm-alternatives-set-similarity.pdf \
+  si_lm_base_vs_full_1a.pdf:si-lm-base-vs-full.pdf \
+  si_lm_g_contrast_1a.pdf:si-lm-g-contrast.pdf \
+  si_lm_run_spread_1a.pdf:si-lm-run-spread.pdf \
+  si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }

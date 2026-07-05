@@ -149,7 +149,10 @@ def _kmeans(data, k):
 
 def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
     api_key = load_api_key()
-    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
+    scenarios_file = (
+        "scenarios_nonfood.csv" if study.startswith("nonfood_") else "scenarios.csv"
+    )
+    scenarios_path = get_project_root() / "experiments" / scenarios_file
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     alts_path = study_dir / "lm_alternatives.jsonl"
     if not alts_path.exists():

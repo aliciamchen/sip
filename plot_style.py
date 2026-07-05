@@ -138,12 +138,12 @@ def apply_style(context="si"):
     plt.rcParams.update({**_COMMON, **_CONTEXTS[context], **math})
 
 
-def savefig(fig, name):
-    """Write figures/<name>.pdf (the manuscript vector convention) plus a PNG
-    preview for quick inspection."""
+def savefig(fig, name, png=True):
+    """Write figures/<name>.pdf, optionally with a PNG preview."""
     FIG_DIR.mkdir(exist_ok=True)
     fig.savefig(FIG_DIR / f"{name}.pdf", bbox_inches="tight")
-    fig.savefig(FIG_DIR / f"{name}.png", dpi=200, bbox_inches="tight")
+    if png:
+        fig.savefig(FIG_DIR / f"{name}.png", dpi=200, bbox_inches="tight")
     plt.close(fig)
     return FIG_DIR / f"{name}.pdf"
 

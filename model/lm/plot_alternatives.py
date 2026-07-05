@@ -72,6 +72,7 @@ from plot_style import (  # noqa: E402
     INTIMACY_LABELS,
     INTIMACY_LEVELS,
     RISK_CMAP,
+    STUDY_LABELS,
     apply_style,
     panel_label,
     savefig,
@@ -103,7 +104,12 @@ def _run_umap(alt_emb, obs_emb, seed):
 # ----------------------------------------------------------------------------
 
 
-def fig_si_semantic_space(proj, clusters, scenario):
+SAVE_KW = {"png": False}
+
+
+def fig_si_semantic_space(
+    proj, clusters, scenario, figname="si_lm_semantic_space_example"
+):
     """Per-scenario UMAP layout (precomputed by project_alternatives.py) with
     numbered cluster exemplars; the exemplar and observed-action texts are listed
     beside the map so readers can see what the alternatives actually say."""
@@ -320,7 +326,7 @@ def fig_si_semantic_space(proj, clusters, scenario):
     ax2.set_ylim(0, 1)
 
     fig.tight_layout()
-    return savefig(fig, "si_lm_semantic_space_example")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ----------------------------------------------------------------------------
@@ -328,7 +334,7 @@ def fig_si_semantic_space(proj, clusters, scenario):
 # ----------------------------------------------------------------------------
 
 
-def _condition_axes(alts):
+def _condition_axes(alts, include_effort=True):
     """The condition columns of this study's cell grid (besides observed action),
     with their level order and display palette."""
     axes = {}
@@ -336,7 +342,7 @@ def _condition_axes(alts):
         axes["intimacy_condition"] = ("intimacy", INTIMACY_LEVELS, INTIMACY_COLORS)
     if "desire_condition" in alts.columns:
         axes["desire_condition"] = ("desire", ["low", "high"], DESIRE_COLORS)
-    if "effort_condition" in alts.columns:
+    if include_effort and "effort_condition" in alts.columns:
         axes["effort_condition"] = ("effort", ["low", "high"], None)
     return axes
 
@@ -520,7 +526,9 @@ def _draw_composition_row(
     ax_cond.set_xlim(-0.25, len(main_levels) - 0.75)
 
 
-def fig_si_composition(runs_by_study):
+def fig_si_composition(
+    runs_by_study, figname="si_lm_alternatives_composition"
+):
     """2x2 composition figure. Rows are studies (1a, given-relationship; 2a,
     given-desire); columns are (left) by observed action and (right) by the
     study's manipulated condition. Every alternative is assigned to the observed
@@ -528,7 +536,10 @@ def fig_si_composition(runs_by_study):
     observed action dominates (its own type is least represented among the
     alternatives); the right panels show the smaller, systematic effect of the
     manipulated condition."""
-    fig, axes = plt.subplots(2, 2, figsize=(7.0, 5.4), sharey=True)
+    fig, axes = plt.subplots(
+        len(runs_by_study), 2, figsize=(7.0, 2.7 * len(runs_by_study)), sharey=True
+    )
+    axes = np.atleast_2d(axes)
     for row, (label, runs) in enumerate(runs_by_study):
         main_col, main_name, main_levels, prop = _composition_prop(runs)
         _draw_composition_row(
@@ -546,7 +557,7 @@ def fig_si_composition(runs_by_study):
     for ax, letter in zip(axes.ravel(), "abcd"):
         panel_label(ax, letter)
     fig.tight_layout()
-    return savefig(fig, "si_lm_alternatives_composition")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 _SET_SIM_LABELS = {
@@ -558,10 +569,10 @@ _SET_SIM_LABELS = {
 }
 
 
-def _draw_set_similarity(ax, alts, sem, alt_emb, title, ylabel):
+def _draw_set_similarity(ax, alts, sem, alt_emb, title, ylabel, include_effort=True):
     """One study's set-similarity panel: mean pairwise cosine between the
     alternative sets of two cells, grouped by what differs between them."""
-    cond_axes = _condition_axes(alts)
+    cond_axes = _condition_axes(alts, include_effort=include_effort)
     alts_emb = alts.merge(
         sem[["scenario_label", "action_text"]].assign(row=np.arange(len(sem))),
         on=["scenario_label", "action_text"],
@@ -609,7 +620,9 @@ def _draw_set_similarity(ax, alts, sem, alt_emb, title, ylabel):
     ax.set_title(title, fontsize=9)
 
 
-def fig_si_set_similarity(panels):
+def fig_si_set_similarity(
+    panels, figname="si_lm_alternatives_set_similarity", include_effort=True
+):
     """Two panels (given-relationship study 1a, given-desire study 2a): embedding
     similarity between the alternative sets of two elicitation cells, grouped by
     what differs between them. Each puts the condition effect on the same scale as
@@ -618,10 +631,18 @@ def fig_si_set_similarity(panels):
     fig, axes = plt.subplots(1, len(panels), figsize=(7.2, 2.5), sharey=True)
     axes = np.atleast_1d(axes)
     for i, (title, alts, sem, alt_emb) in enumerate(panels):
-        _draw_set_similarity(axes[i], alts, sem, alt_emb, title, ylabel=(i == 0))
+        _draw_set_similarity(
+            axes[i],
+            alts,
+            sem,
+            alt_emb,
+            title,
+            ylabel=(i == 0),
+            include_effort=include_effort,
+        )
         panel_label(axes[i], "abcd"[i])
     fig.tight_layout()
-    return savefig(fig, "si_lm_alternatives_set_similarity")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ----------------------------------------------------------------------------
@@ -629,7 +650,7 @@ def fig_si_set_similarity(panels):
 # ----------------------------------------------------------------------------
 
 
-def fig_si_g_contrast(runs):
+def fig_si_g_contrast(runs, figname="si_lm_g_contrast"):
     """Desire enters the utility as w_v * d * g(a), so an observed choice is
     informative about desire only insofar as the actions in the choice set
     differ in goal-satisfaction g. Histograms of the within-set range of g by
@@ -671,7 +692,7 @@ def fig_si_g_contrast(runs):
         ax.set_ylabel("% of sets")
     axes[-1].set_xlabel("Within-choice-set range of goal-satisfaction $g$")
     fig.tight_layout()
-    return savefig(fig, "si_lm_g_contrast")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ----------------------------------------------------------------------------
@@ -716,7 +737,7 @@ def _energy_distance(X, Y):
     return max(0.0, 2 * cdist(X, Y).mean() - within(X) - within(Y))
 
 
-def fig_si_base_vs_full(d, runs):
+def fig_si_base_vs_full(d, runs, figname="si_lm_base_vs_full"):
     """The base ablation's alternatives are elicited without the relationship
     paragraph (lm_runs_base.jsonl). Because those features -- not the exact
     wording -- are what enters the planner, we compare the feature distributions
@@ -810,7 +831,7 @@ def fig_si_base_vs_full(d, runs):
     ax.set_ylabel("Feature-distribution\ndistance (lower = closer)", fontsize=9)
     ax.set_ylim(bottom=0)
     fig.tight_layout()
-    return savefig(fig, "si_lm_base_vs_full")
+    return savefig(fig, figname, **SAVE_KW)
 
 
 # ----------------------------------------------------------------------------
@@ -979,8 +1000,18 @@ def fig_decision_space(runs, out):
 # ----------------------------------------------------------------------------
 
 
-def main(study, seed, example_scenario, figures):
+def _suffix_name(base, suffix):
+    return base if not suffix else f"{base}_{suffix}"
+
+
+def _default_example_scenario(study):
+    return "chapstick" if study.startswith("nonfood_") else "soup"
+
+
+def main(study, seed, example_scenario, figures, paired_study=None, suffix=None):
     apply_style()
+    if example_scenario is None:
+        example_scenario = _default_example_scenario(study)
     d, sem, alts, runs = _load(study)
 
     npz = None
@@ -998,26 +1029,54 @@ def main(study, seed, example_scenario, figures):
         proj = pd.read_json(d / "lm_alternatives_projection.jsonl", lines=True)
         with open(d / "lm_clusters.json") as f:
             clusters = json.load(f)
-        # the composition and set-similarity figures span the given-relationship
-        # study (1a, this run) and the given-desire study (2a); the composition is
-        # feature-based (2a's lm_runs.jsonl), while set-similarity needs 2a's
-        # embeddings (embed_alternatives.py --study food_inv_intimacy)
-        d2 = get_project_root() / "model/outputs/lm/food_inv_intimacy"
-        runs_desire = pd.read_json(d2 / "lm_runs.jsonl", lines=True)
+        # By default, keep the original Study 1a + 2a SI pairing. A paired study
+        # can be supplied for explicit food/nonfood joint-study comparisons.
+        other_study = paired_study or "food_inv_intimacy"
+        d2 = get_project_root() / "model" / "outputs" / "lm" / other_study
+        runs2 = pd.read_json(d2 / "lm_runs.jsonl", lines=True)
         alts2 = pd.read_json(d2 / "lm_alternatives.jsonl", lines=True)
         sem2 = pd.read_json(d2 / "lm_alternatives_semantic.jsonl", lines=True)
         alt_emb2 = np.load(d2 / "lm_embeddings.npz", allow_pickle=False)["alt_emb"]
+        include_effort = not (
+            study.startswith("nonfood_")
+            or (paired_study is not None and paired_study.startswith("nonfood_"))
+        )
+        primary_suffix = suffix or "1a"
+        paired_suffix = suffix or "1a_2a"
+        paired_runs = sorted(
+            [
+                (study, runs, alts, sem, npz["alt_emb"]),
+                (other_study, runs2, alts2, sem2, alt_emb2),
+            ],
+            key=lambda item: STUDY_LABELS[item[0]],
+        )
         for path in (
-            fig_si_semantic_space(proj, clusters, example_scenario),
-            fig_si_composition([("Study 1a", runs), ("Study 2a", runs_desire)]),
+            fig_si_semantic_space(
+                proj,
+                clusters,
+                example_scenario,
+                figname=_suffix_name("si_lm_semantic_space_example", primary_suffix),
+            ),
+            fig_si_composition(
+                [(STUDY_LABELS[s], r) for s, r, *_ in paired_runs],
+                figname=_suffix_name("si_lm_alternatives_composition", paired_suffix),
+            ),
             fig_si_set_similarity(
                 [
-                    ("Study 1a", alts, sem, npz["alt_emb"]),
-                    ("Study 2a", alts2, sem2, alt_emb2),
-                ]
+                    (STUDY_LABELS[s], a, sm, emb)
+                    for s, _, a, sm, emb in paired_runs
+                ],
+                figname=_suffix_name(
+                    "si_lm_alternatives_set_similarity", paired_suffix
+                ),
+                include_effort=include_effort,
             ),
-            fig_si_g_contrast(runs),
-            fig_si_base_vs_full(d, runs),
+            fig_si_g_contrast(
+                runs, figname=_suffix_name("si_lm_g_contrast", primary_suffix)
+            ),
+            fig_si_base_vs_full(
+                d, runs, figname=_suffix_name("si_lm_base_vs_full", primary_suffix)
+            ),
         ):
             if path:
                 print(f"wrote {path}")
@@ -1049,13 +1108,29 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=42, help="UMAP random_state.")
     parser.add_argument(
         "--example-scenario",
-        default="soup",
+        default=None,
         help="Scenario for the choice-set and semantic-space example figures. "
+        "Defaults to soup for food studies and chapstick for nonfood studies. "
         "Soup projects cleanly: the three observed actions land in separate, "
         "matching-colored clusters with sensible exemplars nearby. (Oysters' "
         "observed actions project almost on top of each other; basketball/wedding "
         "place a no-share exemplar far from the no-share star.)",
     )
     parser.add_argument("--figures", choices=["all", "si", "diagnostic"], default="si")
+    parser.add_argument(
+        "--paired-study",
+        help="Optional second study for composition and set-similarity panels.",
+    )
+    parser.add_argument(
+        "--suffix",
+        help="Optional suffix appended to repo-root SI figure filenames.",
+    )
     args = parser.parse_args()
-    main(args.study, args.seed, args.example_scenario, args.figures)
+    main(
+        args.study,
+        args.seed,
+        args.example_scenario,
+        args.figures,
+        paired_study=args.paired_study,
+        suffix=args.suffix,
+    )
