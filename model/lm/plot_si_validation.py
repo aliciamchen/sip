@@ -130,8 +130,14 @@ def fig_feature_structure(observed, studies):
     """Rows = studies (the ones with elicitation data), columns = risk / g /
     effort; thin per-scenario lines."""
     xpos = {a: i for i, a in enumerate(OBSERVED_ACTIONS)}
+    # squeeze=False keeps axes 2-D when only one study has elicitation data.
     fig, axes = plt.subplots(
-        len(studies), 3, figsize=(6.4, 1.4 * len(studies)), sharex=True, sharey=True
+        len(studies),
+        3,
+        figsize=(6.4, 1.4 * len(studies)),
+        sharex=True,
+        sharey=True,
+        squeeze=False,
     )
 
     def draw_lines(ax, per_scenario, mean_line, color=None, xoff=0.0, label=None):
@@ -381,6 +387,9 @@ def fig_observed_scatter(
     point per scenario x action x effort condition; vertical grey segments
     connect the two effort conditions of the same scenario x action."""
     df = observed[observed["study"] == study]
+    if df.empty:
+        print(f"skipping {figname}: no elicitation data for {study}")
+        return None
     agg = df.groupby(["scenario", "action", "effort_condition"], as_index=False).agg(
         risk=("risk", "mean"), effort=("effort", "mean")
     )
@@ -576,9 +585,15 @@ def fig_choice_set_sizes(runs_by_study):
     fig, axes = plt.subplots(
         1, len(studies), figsize=(1.75 * len(studies), 1.7), sharex=True, sharey=True
     )
-    xs = np.arange(0, 8)
+    sizes_by_study = {
+        study: runs_by_study[study]["actions"].apply(len) - 1 for study in studies
+    }
+    # Bar range derived from the data (floor of 0-7 for cross-render
+    # comparability) so larger choice sets aren't silently dropped.
+    max_size = max(int(s.max()) for s in sizes_by_study.values())
+    xs = np.arange(0, max(max_size, 7) + 1)
     for ax, study in zip(np.atleast_1d(axes), studies):
-        sizes = runs_by_study[study]["actions"].apply(len) - 1
+        sizes = sizes_by_study[study]
         pct = sizes.value_counts(normalize=True).sort_index() * 100
         ax.bar(
             xs,
@@ -695,6 +710,12 @@ def main():
         df["study"] = study
         frames.append(df)
         print(f"{study}: {len(df)} observed-action rows")
+    if not frames:
+        raise SystemExit(
+            "no elicited studies found (no lm_runs.jsonl for any study) — run "
+            "generate_alternatives.py + score_merged.py for at least one study "
+            "first"
+        )
     observed = pd.concat(frames, ignore_index=True)
     studies = list(runs_by_study)
     figures = [

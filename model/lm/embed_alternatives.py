@@ -71,6 +71,10 @@ from utils import get_project_root
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from client import MAX_RETRIES, load_api_key
 
+# Per-study config (which scenarios CSV each study's observed actions come
+# from) — shared with the generation stage rather than duplicated here.
+from generate_alternatives import _STUDY_CONFIG
+
 # Embedding model on Together AI. intfloat/multilingual-e5-large-instruct is the
 # active serverless embedding model (1024-dim, 514-token input limit); override
 # with --model if the account has a different one provisioned. The alternative
@@ -148,8 +152,16 @@ def _kmeans(data, k):
 
 
 def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
+    if study not in _STUDY_CONFIG:
+        raise SystemExit(
+            f"Unknown study: {study!r}. Supported: {sorted(_STUDY_CONFIG.keys())}"
+        )
     api_key = load_api_key()
-    scenarios_path = get_project_root() / "experiments" / "scenarios.csv"
+    # The study's own stimulus CSV (the nonfood studies read
+    # scenarios_nonfood.csv), same routing as generate_alternatives/score_merged.
+    scenarios_path = (
+        get_project_root() / "experiments" / _STUDY_CONFIG[study]["scenarios"]
+    )
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     alts_path = study_dir / "lm_alternatives.jsonl"
     if not alts_path.exists():
@@ -160,6 +172,17 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
 
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
     alts_df = pd.read_json(alts_path, lines=True)
+
+    # Every scenario in the alternatives file must resolve in the stimulus CSV;
+    # checked BEFORE any embedding API call so a mismatch can't fail after the
+    # calls have already been paid for.
+    unknown = sorted(set(alts_df["scenario_label"]) - set(scenarios_df.index))
+    if unknown:
+        raise SystemExit(
+            f"Scenario labels {unknown} in {alts_path} are missing from "
+            f"{scenarios_path} — the alternatives file and the study's "
+            "stimulus CSV don't match."
+        )
 
     # Unique (scenario, alternative text) pairs — what we report on. Embedding is
     # text-level (scenario-independent), so we embed unique texts once and reuse.
@@ -305,7 +328,11 @@ def main(study, k, dup_threshold, model, embed_workers=EMBED_WORKERS):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--study", default="food_inv_desire")
+    parser.add_argument(
+        "--study",
+        choices=tuple(_STUDY_CONFIG.keys()),
+        default="food_inv_desire",
+    )
     parser.add_argument(
         "--k",
         type=int,

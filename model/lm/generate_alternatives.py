@@ -35,7 +35,6 @@ Requires:
 
 import argparse
 import hashlib
-import json
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -54,7 +53,14 @@ from _alternatives_dispatcher import (
     MAX_CELL_WORKERS,
     elicit_alternatives,
 )
-from client import MODEL_ID, load_api_key, write_run_manifest
+from client import (
+    MODEL_ID,
+    guard_resume_prompt_mismatch,
+    load_api_key,
+    read_jsonl_checked,
+    write_jsonl_atomic,
+    write_run_manifest,
+)
 from prompts import alternatives_user_prompt
 
 
@@ -164,11 +170,35 @@ def load_scenarios(study):
     return pd.read_csv(scenarios_path)
 
 
-def _write_jsonl(path, rows):
-    """Write the flat per-alternative rows as JSON Lines (one record per line)."""
-    with open(path, "w") as f:
-        for r in rows:
-            f.write(json.dumps(r) + "\n")
+def _empty_units_path(output_path):
+    """Sidecar path recording (cell, run) units whose elicitation VALIDLY
+    returned zero alternatives (lm_alternatives.jsonl ->
+    lm_alternatives.empty_units.jsonl). Such units write no rows to the main
+    JSONL, so without this record they'd be indistinguishable from
+    never-attempted and re-elicited (re-paid) on every resume. Format: one JSON
+    object per line with the unit key fields {scenario_label, observed_action,
+    *cell_cols, run_id}. Resume unions these with the row-derived done units;
+    no consumer of lm_alternatives.jsonl reads this file."""
+    output_path = Path(output_path)
+    return output_path.with_name(output_path.stem + ".empty_units.jsonl")
+
+
+def _sorted_rows(rows, cell_cols):
+    """Stable row order (cell key, run, alt index) so writes are
+    byte-reproducible regardless of thread-completion order — score_merged.py
+    derives each run's merged action order from row order, and no consumer
+    depends on arrival order beyond per-cell grouping."""
+
+    def key(r):
+        return (
+            r["scenario_label"],
+            r["observed_action"],
+            *(r[c] for c in cell_cols),
+            int(r.get("run_id", -1)),
+            int(r.get("alt_idx", -1)),
+        )
+
+    return sorted(rows, key=key)
 
 
 def _cell_key(cell, cell_cols, run_id=None):
@@ -263,17 +293,28 @@ def main(study, base=False):
 
     cell_cols = cfg["cell_cols"]
 
-    # Resume: skip (cell, run) units already in the output JSONL.
+    # Resume: skip (cell, run) units already elicited. Done units are the union
+    # of units with rows in the output JSONL and units in the empty-units
+    # sidecar (see _empty_units_path — a valid zero-alternative elicitation
+    # writes no rows, so it is tracked there instead). Refuses to resume across
+    # a prompts.py edit (see guard_resume_prompt_mismatch).
+    empty_units_path = _empty_units_path(output_path)
     done_units = set()
     results = []
+    empty_units = []
     if output_path.exists():
-        with open(output_path) as f:
-            results = [json.loads(line) for line in f if line.strip()]
+        guard_resume_prompt_mismatch(output_path)
+        results = read_jsonl_checked(output_path)
         if results and "run_id" in results[0]:
             done_units = set(_cell_key(r, cell_cols, r["run_id"]) for r in results)
+    if empty_units_path.exists():
+        empty_units = read_jsonl_checked(empty_units_path)
+        done_units |= set(_cell_key(u, cell_cols, u["run_id"]) for u in empty_units)
+    if output_path.exists():
         print(
             f"Found existing {output_path.name} with {len(done_units)} (cell, run) "
-            f"units already elicited — resuming.",
+            f"units already elicited ({len(empty_units)} recorded as empty) — "
+            "resuming.",
             flush=True,
         )
 
@@ -293,7 +334,13 @@ def main(study, base=False):
         flush=True,
     )
 
+    def _checkpoint():
+        write_jsonl_atomic(output_path, _sorted_rows(results, cell_cols))
+        write_jsonl_atomic(empty_units_path, _sorted_rows(empty_units, cell_cols))
+
     completed = 0
+    n_new_units = 0
+    n_failed_units = 0
     with ThreadPoolExecutor(max_workers=MAX_CELL_WORKERS) as ex:
         future_to_unit = {
             ex.submit(
@@ -310,12 +357,36 @@ def main(study, base=False):
             alts = fut.result()
             completed += 1
             cond_str = " | ".join(f"{c}={cell[c]}" for c in cell_cols)
+            unit_str = (
+                f"run {run} | {cell['scenario_label']} | "
+                f"observed={cell['observed_action']} | {cond_str}"
+            )
+            if alts is None:
+                # All parse retries exhausted: leave the unit pending so a
+                # re-invocation retries it (see elicit_alternatives).
+                n_failed_units += 1
+                print(
+                    f"[{completed}/{len(pending)}] {unit_str} | FAILED — left "
+                    "pending for a future invocation",
+                    flush=True,
+                )
+                continue
+            n_new_units += 1
             print(
-                f"[{completed}/{len(pending)}] run {run} | {cell['scenario_label']} | "
-                f"observed={cell['observed_action']} | {cond_str} | "
-                f"elicited {len(alts)}",
+                f"[{completed}/{len(pending)}] {unit_str} | elicited {len(alts)}",
                 flush=True,
             )
+            if not alts:
+                # Valid empty elicitation — durable via the sidecar, so resume
+                # doesn't re-pay for it.
+                unit = {
+                    "scenario_label": cell["scenario_label"],
+                    "observed_action": cell["observed_action"],
+                }
+                for col in cell_cols:
+                    unit[col] = cell[col]
+                unit["run_id"] = run
+                empty_units.append(unit)
             for alt_idx, alt in enumerate(alts):
                 row = {
                     "scenario_label": cell["scenario_label"],
@@ -328,38 +399,63 @@ def main(study, base=False):
                 row["action_text"] = alt["action"]
                 results.append(row)
             if completed % CHECKPOINT_EVERY == 0:
-                _write_jsonl(output_path, results)
+                _checkpoint()
                 print(
                     f"  checkpoint written ({len(results)} rows total)",
                     flush=True,
                 )
 
-    _write_jsonl(output_path, results)
-    print(f"\nSaved {len(results)} alternatives to {output_path}", flush=True)
-
-    manifest_path = write_run_manifest(
-        output_path,
-        stage="generate_alternatives",
-        study=study,
-        extra={
-            "k_runs": N_RUNS_ALT,
-            "gen_temperature": ALT_GEN_TEMPERATURE,
-            "n_cells": len(all_cells),
-            "n_alternatives": len(results),
-        },
+    _checkpoint()
+    print(
+        f"\nSaved {len(results)} alternatives to {output_path} "
+        f"({len(empty_units)} empty units in {empty_units_path.name})",
+        flush=True,
     )
-    print(f"Wrote provenance manifest to {manifest_path}", flush=True)
+    if n_failed_units:
+        print(
+            f"{n_failed_units} units failed all parse retries — re-run to retry them.",
+            flush=True,
+        )
+
+    # The manifest describes how the data were produced, so only (re)write it
+    # when this invocation actually elicited something — a no-op resume must
+    # not stamp the current prompts/git hashes over data produced earlier.
+    if n_new_units:
+        manifest_path = write_run_manifest(
+            output_path,
+            stage="generate_alternatives",
+            study=study,
+            extra={
+                "k_runs": N_RUNS_ALT,
+                "gen_temperature": ALT_GEN_TEMPERATURE,
+                "n_cells": len(all_cells),
+                "n_alternatives": len(results),
+                "n_empty_units": len(empty_units),
+            },
+        )
+        print(f"Wrote provenance manifest to {manifest_path}", flush=True)
+    else:
+        print("No new units elicited — manifest left unchanged.", flush=True)
 
     print("\n=== Summary ===")
-    results_df = pd.DataFrame(results)
-    per_unit = results_df.groupby(
-        ["scenario_label", "observed_action", *cell_cols, "run_id"]
-    ).size()
-    print(f"Total (cell, run) units: {len(per_unit)} (expected {total})")
-    print(
-        f"Alternatives per (cell, run) — min: {per_unit.min()}, max: {per_unit.max()}, "
-        f"mean: {per_unit.mean():.1f}, median: {per_unit.median():.0f}"
-    )
+    if results:
+        results_df = pd.DataFrame(results)
+        per_unit = results_df.groupby(
+            ["scenario_label", "observed_action", *cell_cols, "run_id"]
+        ).size()
+        print(
+            f"Total (cell, run) units: {len(per_unit) + len(empty_units)} "
+            f"(expected {total}; {len(empty_units)} empty)"
+        )
+        print(
+            f"Alternatives per non-empty (cell, run) — min: {per_unit.min()}, "
+            f"max: {per_unit.max()}, mean: {per_unit.mean():.1f}, "
+            f"median: {per_unit.median():.0f}"
+        )
+    else:
+        print(
+            f"Total (cell, run) units: {len(empty_units)} (expected {total}; all empty)"
+        )
 
 
 if __name__ == "__main__":

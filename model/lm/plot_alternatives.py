@@ -980,6 +980,17 @@ def fig_decision_space(runs, out):
 
 
 def main(study, seed, example_scenario, figures):
+    # The SI figure set is a fixed Study 1a/2a pairing: panel labels say
+    # "Study 1a"/"Study 2a", the companion data is hardcoded to
+    # food_inv_intimacy, and savefig writes fixed food-SI filenames. Running it
+    # for another study would render mislabeled panels and overwrite the food
+    # SI PDFs, so refuse rather than guess a pairing.
+    if figures in ("si", "all") and study != "food_inv_desire":
+        raise SystemExit(
+            f"--figures {figures} renders the fixed Study 1a/2a SI figure set "
+            "and only supports --study food_inv_desire; use --figures "
+            f"diagnostic for {study}."
+        )
     apply_style()
     d, sem, alts, runs = _load(study)
 
