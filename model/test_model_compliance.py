@@ -15,14 +15,21 @@ utility skeleton and the padded LM-alternatives action space:
   - null-padded slots absorbing negligible actor probability at fitted-scale
     weights,
   - the table loaders' fail-fast validation of NaN features and missing
-    given-magnitude scalars.
+    given-magnitude scalars,
+  - the data loader's fail-fast validation (unmapped condition labels,
+    duplicate stage rows), the JSONL loader's duplicate-key conflict check,
+    the multistart fit's all-NaN failure, and the fit provenance manifest's
+    write/verify round-trip.
 """
 
+import json
 import sys
+import tempfile
 from pathlib import Path
 
 import jax.numpy as jnp
 import numpy as np
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "inverse"))
 
@@ -270,6 +277,148 @@ def test_loader_validation_rejects_missing_scalars():
         raise AssertionError("missing scalar was not rejected")
 
 
+def test_data_loader_rejects_unmapped_label():
+    """_map_condition must raise on a condition label with no model index
+    (e.g. the pre-rename 'neither'), not silently produce a NaN index."""
+    from _helpers import _map_condition
+
+    from tables import INTIMACY_CONDITION_TO_IDX
+
+    df = pd.DataFrame({"intimacy": ["max_formal", "neither", "max_intimate"]})
+    try:
+        _map_condition(df, "intimacy", INTIMACY_CONDITION_TO_IDX, "test")
+    except ValueError as e:
+        assert "neither" in str(e), f"offending label not named: {e}"
+        print("✓ data loader rejects unmapped condition labels")
+    else:
+        raise AssertionError("unmapped label was not rejected")
+
+
+def test_data_loader_rejects_duplicate_stage_rows():
+    """_validate_long_raw must reject duplicate (subject, scenario, stage) rows
+    (they would cross-join in the prior↔posterior merge) and out-of-[0, 1]
+    ratings."""
+    from _helpers import _validate_long_raw
+
+    ok = pd.DataFrame(
+        {
+            "subject_id": ["s1", "s1"],
+            "scenario_label": ["apples", "apples"],
+            "stage": ["prior", "posterior"],
+            "desire_rating": [0.5, 0.7],
+        }
+    )
+    _validate_long_raw(ok, ["desire_rating"], "test")
+    dup = pd.concat([ok, ok.iloc[[1]]], ignore_index=True)
+    try:
+        _validate_long_raw(dup, ["desire_rating"], "test")
+    except ValueError:
+        print("✓ data loader rejects duplicate (subject, scenario, stage) rows")
+    else:
+        raise AssertionError("duplicate stage rows were not rejected")
+    out_of_range = ok.assign(desire_rating=[0.5, 1.7])
+    try:
+        _validate_long_raw(out_of_range, ["desire_rating"], "test")
+    except ValueError:
+        print("✓ data loader rejects ratings outside [0, 1]")
+    else:
+        raise AssertionError("out-of-range rating was not rejected")
+
+
+def test_jsonl_loader_rejects_conflicting_duplicates():
+    """_run_sources_jsonl must reject a repeated observed-action key with a
+    different value (silent last-write-wins) while identical repeats pass."""
+    from tables import _run_sources_jsonl
+
+    def _record(risk):
+        return {
+            "run_id": 0,
+            "scenario_label": "apples",
+            "observed_action": "no_share",
+            "effort_condition": "low",
+            "actions": [
+                {
+                    "slot": 0,
+                    "alt_idx": None,
+                    "is_observed": True,
+                    "action_text": "x",
+                    "risk": risk,
+                    "effort": 0.2,
+                    "g": 0.9,
+                }
+            ],
+        }
+
+    def _load(records):
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "lm_runs.jsonl"
+            path.write_text("".join(json.dumps(r) + "\n" for r in records))
+            return _run_sources_jsonl(path, ["effort_condition"])
+
+    _load([_record(0.1), _record(0.1)])  # identical repeat: fine
+    try:
+        _load([_record(0.1), _record(0.5)])
+    except ValueError:
+        print("✓ JSONL loader rejects duplicate keys with conflicting values")
+    else:
+        raise AssertionError("conflicting duplicate was not rejected")
+
+
+def test_fit_multistart_raises_on_all_nan():
+    """_fit_multistart must raise (not return None params) when every restart's
+    loss is NaN from the start."""
+    from _helpers import _fit_multistart
+
+    def loss_fn(params):
+        return jnp.sum(params) * jnp.nan
+
+    try:
+        _fit_multistart(
+            loss_fn,
+            n_params=2,
+            n_restarts=2,
+            max_steps=5,
+            verbose=False,
+            seed_key="test|all_nan",
+        )
+    except RuntimeError:
+        print("✓ multistart fit raises when every restart's NLL is NaN")
+    else:
+        raise AssertionError("all-NaN multistart did not raise")
+
+
+def test_fit_manifest_round_trip():
+    """write_fit_manifest / verify_fit_manifest: a fresh write verifies; a
+    changed data CSV or a tampered fit output is refused."""
+    from _helpers import verify_fit_manifest, write_fit_manifest
+
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d)
+        (out / "fit_results.json").write_text('[{"model": "full"}]')
+        (out / "fit_restarts.jsonl").write_text("{}\n")
+        data_csv = out / "main_trials_long.csv"
+        data_csv.write_text("subject_id,response\ns1,0.5\n")
+        write_fit_manifest("test_slug", out, data_csv=data_csv)
+        verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
+
+        data_csv.write_text("subject_id,response\ns1,0.9\n")
+        try:
+            verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError("changed data CSV was not refused")
+        data_csv.write_text("subject_id,response\ns1,0.5\n")
+
+        (out / "fit_results.json").write_text('[{"model": "tampered"}]')
+        try:
+            verify_fit_manifest("test_slug", output_dir=out, data_csv=data_csv)
+        except RuntimeError:
+            print("✓ fit manifest verifies clean outputs and refuses stale ones")
+        else:
+            raise AssertionError("tampered fit_results.json was not refused")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -283,6 +432,11 @@ def run_all_tests():
     test_null_padding_mass_negligible()
     test_loader_validation_rejects_nan_features()
     test_loader_validation_rejects_missing_scalars()
+    test_data_loader_rejects_unmapped_label()
+    test_data_loader_rejects_duplicate_stage_rows()
+    test_jsonl_loader_rejects_conflicting_duplicates()
+    test_fit_multistart_raises_on_all_nan()
+    test_fit_manifest_round_trip()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)

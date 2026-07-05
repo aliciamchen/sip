@@ -45,6 +45,7 @@ import multiprocessing as mp
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 
 _project_root = Path(__file__).resolve().parent.parent.parent
@@ -70,6 +71,7 @@ from _helpers import (  # noqa: E402
     intimacy_table_kwargs,
     joint_de_table_kwargs,
     joint_ie_table_kwargs,
+    git_sha,
     load_desire_data,
     load_fit_results,
     load_intimacy_data,
@@ -78,6 +80,9 @@ from _helpers import (  # noqa: E402
     mixture_nll_1d,
     mixture_nll_2d,
     params_dict_to_array,
+    resolve_variant_table_kwargs,
+    sha256_file,
+    verify_fit_manifest,
     write_json,
     write_jsonl,
 )
@@ -206,7 +211,32 @@ def _fold_row(
     return row
 
 
+def _load_verified_warm_start(slug):
+    """Warm-start params from the full-data fit, provenance-verified: the fit
+    must exist, match its fit_manifest.json, and have been run on the current
+    data CSV. A missing or stale fit is an error rather than a silent cold
+    start — CV results with and without the warm start are not comparable."""
+    fit_path = get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+    if not fit_path.exists():
+        raise RuntimeError(
+            f"{fit_path} not found — run `make fit-{slug}` before `make "
+            f"cv-{slug}` (each CV fold warm-starts from the full-data fit)."
+        )
+    verify_fit_manifest(slug)
+    return load_fit_results(slug)
+
+
+# The three CV output files written together per study; the manifest hashes
+# them so model_comparison.py can refuse stale or mixed-vintage combinations.
+CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
+
+
 def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
+    if not trial_ll_rows:
+        raise RuntimeError(
+            f"CV for {slug} scored no held-out trials — refusing to write "
+            "empty outputs. Check the data loader and the fold train/test masks."
+        )
     outputs_dir = get_project_root() / "model" / "outputs" / slug
     outputs_dir.mkdir(parents=True, exist_ok=True)
     write_json(outputs_dir / "cv_preds_summary.json", pred_rows)
@@ -215,6 +245,23 @@ def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
     print(f"\nWrote {outputs_dir / 'cv_trial_ll.jsonl'} (primary metric)")
     print(f"Wrote {outputs_dir / 'cv_preds_summary.json'}")
     print(f"Wrote {outputs_dir / 'cv_folds.jsonl'}")
+
+    # Provenance manifest: records the run's git SHA plus content hashes of the
+    # three outputs and the input data, so model_comparison.py can verify it is
+    # combining files from a single CV run over the current data.
+    data_csv = get_project_root() / "data" / slug / "main_trials_long.csv"
+    manifest = {
+        "experiment": slug,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "git_sha": git_sha(),
+        "outputs": {name: sha256_file(outputs_dir / name) for name in CV_OUTPUT_NAMES},
+        "input_data": {
+            "path": str(data_csv.relative_to(get_project_root())),
+            "sha256": sha256_file(data_csv),
+        },
+    }
+    write_json(outputs_dir / "cv_manifest.json", manifest)
+    print(f"Wrote {outputs_dir / 'cv_manifest.json'}")
 
     print("\n=== Per-variant summary (held-out log-likelihood) ===")
     trial_df = pd.DataFrame(trial_ll_rows)
@@ -250,19 +297,21 @@ def _loso_intimacy(slug):
     effort_np = np.asarray(effort_condition)
     response_np = np.asarray(response)
     subject_ids = np.asarray(data["subject_id"].values)
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
+
+    # Resolve every variant's LM tables before any fitting starts, so a missing
+    # table fails up front rather than after hours of fitting earlier variants.
+    tks = resolve_variant_table_kwargs(
+        VARIANTS_INTIMACY,
+        lambda name, utility_names: intimacy_table_kwargs(utility_names),
     )
 
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_INTIMACY.items():
-        tk = intimacy_table_kwargs(utility_names)
+        tk = tks[variant]
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit
@@ -287,6 +336,7 @@ def _loso_intimacy(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
                 init_params=warm,
+                seed_key=f"{slug}|{variant}|{scenario_label}",
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, desire, effort, intimacy_101)
@@ -429,6 +479,7 @@ def _desire_cv_fold(variant, fold, warm, patience):
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
         patience=patience,
+        seed_key=f"{slug}|{variant}|{scenario_label}",
     )
     sigma = float(params[-1])
     # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
@@ -515,14 +566,9 @@ def _loso_desire(slug, workers=None, patience=None):
         np.asarray(response),
         np.asarray(data["subject_id"].values),
     )
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
-    )
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
     warms = {
         v: (
             np.asarray(params_dict_to_array(full_fit[v], util))
@@ -531,6 +577,11 @@ def _loso_desire(slug, workers=None, patience=None):
         )
         for v, (_, util) in VARIANTS_DESIRE.items()
     }
+    # Resolve every variant's LM tables before submitting any fold refits, so a
+    # missing table fails up front (workers rebuild their own per-process cache;
+    # the parent's warm-up validates the files exist and load).
+    for v in VARIANTS_DESIRE:
+        _desire_tk_cached(v)
     jobs = [(v, f) for v in VARIANTS_DESIRE for f in range(N_SCENARIOS)]
 
     if workers and workers > 1:
@@ -587,22 +638,25 @@ def _loso_joint_de(slug):
     rd_np = np.asarray(response_desire)
     re_np = np.asarray(response_effort)
     subject_ids = np.asarray(data["subject_id"].values)
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
+
+    # Resolve every variant's LM tables before any fitting starts, so a missing
+    # table (e.g. an unelicited lm_runs_base.jsonl) fails up front rather than
+    # after hours of fitting earlier variants.
+    tks = resolve_variant_table_kwargs(
+        VARIANTS_JOINT_DE,
+        lambda name, utility_names: joint_de_table_kwargs(
+            utility_names, domain=_domain_for(slug), base=(name == "base")
+        ),
     )
 
     scenario_labels = STUDY_SCENARIO_LABELS[slug]
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_DE.items():
-        tk = joint_de_table_kwargs(
-            utility_names, domain=_domain_for(slug), base=(variant == "base")
-        )
+        tk = tks[variant]
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit
@@ -627,6 +681,7 @@ def _loso_joint_de(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
                 init_params=warm,
+                seed_key=f"{slug}|{variant}|{scenario_label}",
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)
@@ -726,20 +781,24 @@ def _loso_joint_ie(slug):
     ri_np = np.asarray(response_intimacy)
     re_np = np.asarray(response_effort)
     subject_ids = np.asarray(data["subject_id"].values)
-    # Warm-start source: the full-data fit (refits perturb it only slightly).
-    full_fit = (
-        load_fit_results(slug)
-        if (
-            get_project_root() / "model" / "outputs" / slug / "fit_results.json"
-        ).exists()
-        else {}
+    # Warm-start source: the full-data fit (refits perturb it only slightly),
+    # provenance-verified against fit_manifest.json and the current data CSV.
+    full_fit = _load_verified_warm_start(slug)
+
+    # Resolve every variant's LM tables before any fitting starts, so a missing
+    # table fails up front rather than after hours of fitting earlier variants.
+    tks = resolve_variant_table_kwargs(
+        VARIANTS_JOINT_IE,
+        lambda name, utility_names: joint_ie_table_kwargs(
+            utility_names, domain=_domain_for(slug)
+        ),
     )
 
     scenario_labels = STUDY_SCENARIO_LABELS[slug]
     pred_rows, fold_rows, trial_ll_rows = [], [], []
 
     for variant, (obs_fn, utility_names) in VARIANTS_JOINT_IE.items():
-        tk = joint_ie_table_kwargs(utility_names, domain=_domain_for(slug))
+        tk = tks[variant]
         warm = (
             params_dict_to_array(full_fit[variant], utility_names)
             if variant in full_fit
@@ -764,6 +823,7 @@ def _loso_joint_ie(slug):
                 verbose=False,
                 n_restarts=N_RESTARTS_CV,
                 init_params=warm,
+                seed_key=f"{slug}|{variant}|{scenario_label}",
             )
             sigma = float(params[-1])
             # (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)

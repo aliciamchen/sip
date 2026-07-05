@@ -57,7 +57,6 @@ scale_color_intimacy <- function(name = "Relationship") {
 }
 
 # Motivation color scales (discrete)
-MOTIVATION_LEVELS <- c("Low", "High")
 MOTIVATION_COLORS <- c("Low" = "#C9A8B0", "High" = "#7A4A5A")
 
 scale_fill_desire <- function() {
@@ -97,25 +96,6 @@ scale_pattern_effort <- function(name = "Effort of low-risk share") {
 # out-of-sample model-vs-human figure.
 MODEL_LABELS <- c(base = "Base", discomfort_only = "Discomfort-only", full = "Full")
 PANEL_LEVELS <- c(unname(MODEL_LABELS), "Humans")
-
-# Combined condition colors for inv-plan-combined-correlation (desire + intimacy)
-.intimacy_levels <- INTIMACY_LEVELS
-.intimacy_colors <- viridisLite::viridis(
-  n = length(.intimacy_levels),
-  begin = INTIMACY_BEGIN,
-  end = INTIMACY_END,
-  option = INTIMACY_PALETTE
-)
-names(.intimacy_colors) <- paste0("Intimacy: ", .intimacy_levels)
-
-COMBINED_CONDITION_COLORS <- c(
-  MOTIVATION_COLORS,
-  .intimacy_colors
-)
-
-scale_color_combined_condition <- function() {
-  scale_color_manual(values = COMBINED_CONDITION_COLORS)
-}
 
 # Standard theme setup
 setup_analysis <- function() {
@@ -175,10 +155,34 @@ read_model_jsonl <- function(path) {
 
 # Calculate belief updates for prior/posterior data
 # rating_col: name of the rating column (e.g., "intimacy_rating", "p_high_reward")
+# Every (subject_id, scenario_label) group must hold exactly one prior and one
+# posterior row; anything else would silently recycle or NA out the subtraction,
+# so malformed groups abort with the offending (subject, scenario) pairs.
 calculate_belief_update <- function(df, rating_col) {
+  shape <- df |>
+    count(subject_id, scenario_label, stage) |>
+    pivot_wider(names_from = stage, values_from = n, values_fill = 0)
+  for (col in c("prior", "posterior")) {
+    if (!col %in% names(shape)) shape[[col]] <- 0L
+  }
+  bad <- shape |> filter(prior != 1 | posterior != 1)
+  if (nrow(bad) > 0) {
+    stop(
+      "calculate_belief_update(): each (subject_id, scenario_label) group needs ",
+      "exactly 1 prior and 1 posterior row; offending pairs:\n",
+      paste0("  ", bad$subject_id, " / ", bad$scenario_label,
+             " (prior = ", bad$prior, ", posterior = ", bad$posterior, ")",
+             collapse = "\n")
+    )
+  }
   df |>
     group_by(subject_id, scenario_label) |>
-    mutate(belief_update = ifelse(stage == "posterior", .data[[rating_col]][stage == "posterior"] - .data[[rating_col]][stage == "prior"], NA)) |>
+    mutate(belief_update = ifelse(
+      stage == "posterior",
+      .data[[rating_col]][stage == "posterior"][1] -
+        .data[[rating_col]][stage == "prior"][1],
+      NA
+    )) |>
     ungroup()
 }
 
@@ -252,18 +256,13 @@ save_figure <- function(plot, filename, width = NULL, height = NULL, ...) {
          device = cairo_pdf, ...)
 }
 
-# Reusable jitter+dodge for risk scatter panels
-POS_JITTER_DODGE <- position_jitterdodge(jitter.width = 0.04, jitter.height = 0,
-                                          dodge.width = 0.06, seed = 67)
-
 # Print standardized demographics block from an experiment's exit_survey.csv.
-# The retention count uses the study's exclusion rule (mirrors
-# analysis/json_to_csv.py): Study 1a preregistered the lax rule (retain anyone
-# who passes attention OR answers >=1 memory question correctly); the later
-# studies use the stricter rule (retain only participants who pass attention
-# AND answer >=1 memory question correctly).
-LAX_EXCLUSION_STUDIES <- c("food_inv_desire")
-
+# Demographics cover everyone recruited; the retained-after-exclusions count is
+# read off the analyzed data (main_trials_long.csv), which
+# analysis/json_to_csv.py writes after applying the study's exclusion rule.
+# That script is the single source of truth for exclusion rules — deriving the
+# N from its output means a rule change there can't silently desynchronize the
+# manuscript-facing retention count reported here.
 report_demographics <- function(data_dir) {
   path <- here("data", data_dir, "exit_survey.csv")
   if (!file.exists(path)) {
@@ -271,17 +270,17 @@ report_demographics <- function(data_dir) {
   }
   df_exit <- read_csv(path, show_col_types = FALSE)
   n_total <- nrow(df_exit)
-  n_passed <- if (data_dir %in% LAX_EXCLUSION_STUDIES) {
-    df_exit |>
-      filter(attention_passed == TRUE | memory_correct_count > 0) |>
-      nrow()
-  } else {
-    df_exit |>
-      filter(attention_passed == TRUE & memory_correct_count > 0) |>
-      nrow()
-  }
   cat("Total participants recruited:", n_total, "\n")
-  cat("Retained after exclusions:", n_passed, "\n")
+  long_path <- file.path(dirname(path), "main_trials_long.csv")
+  if (file.exists(long_path)) {
+    n_retained <- read_csv(long_path, show_col_types = FALSE) |>
+      distinct(subject_id) |>
+      nrow()
+    cat("Retained after exclusions:", n_retained, "\n")
+  } else {
+    cat("Retained after exclusions: unknown (no main_trials_long.csv at",
+        long_path, ")\n")
+  }
   cat("Mean age:", round(mean(df_exit$age, na.rm = TRUE), 1),
       "SD age:", round(sd(df_exit$age, na.rm = TRUE), 1),
       "Min age:", min(df_exit$age, na.rm = TRUE),
@@ -317,17 +316,4 @@ format_correlation_labels <- function(df, x, y, group_vars = NULL) {
       )
     ) |>
     select(-boot_result)
-}
-
-# Rescale a tidyboot summary (empirical_stat, ci_lower, ci_upper) by `scale`
-# and rename empirical_stat to belief_update. DV ratings are now stored on the
-# 0-1 scale (belief updates already fall in [-1, 1]), so the default scale = 1 is
-# an identity; pass scale = 100 only for legacy 0-100 ratings.
-rescale_belief_update <- function(df, scale = 1) {
-  df |>
-    mutate(
-      belief_update = empirical_stat / scale,
-      ci_lower = ci_lower / scale,
-      ci_upper = ci_upper / scale
-    )
 }

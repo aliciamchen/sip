@@ -23,9 +23,8 @@ unique alternative text and:
      already-listed action, which add little contrast to the actor's choice set.
 
 It is kept separate from score_merged.py because it is an optional, embedding-based
-analysis: the inverse fit never reads its output. The elicitation notebook
-(analysis/food-inv-desire-lm-elicitation.qmd) reads the artifacts below behind a
-`file.exists()` guard, so the notebook renders fine whether or not this has run.
+analysis: the inverse fit never reads its output. The SI alternatives figures
+(plot_alternatives.py) read the artifacts below.
 
 Embeddings go through the Together AI API (reusing `client.load_api_key`);
 clustering uses scipy (both already project deps — no new dependency). Set the

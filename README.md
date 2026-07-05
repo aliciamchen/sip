@@ -95,7 +95,9 @@ All reported predictions are out-of-sample, from leave-one-scenario-out cross-va
 
 ```
 analysis/          R/Quarto analysis scripts and data processing
+bin/               Helper scripts: the experiment deploy script and a git-worktree environment setup
 data/              Processed experiment data (one folder per experiment slug)
+docs/              Design notes recording modeling decisions
 experiments/       jsPsych experiment code + scenario definitions
 model/             Computational models
   inverse/         Per-experiment inverse-planning fit scripts
@@ -104,7 +106,7 @@ model/             Computational models
   outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
     lm/            LM-elicited scenario tables
     <slug>/        Per-experiment outputs
-preregs/           AsPredicted-format preregistration documents (one per study)
+preregs/           AsPredicted-format preregistration documents (the four food studies; Study 3's are pending)
 figures/           Generated figures used in the paper
 ```
 
@@ -149,8 +151,10 @@ uv run python model/cv/model_comparison.py
 # Render an analysis document:
 quarto render analysis/food-inv-desire-analysis.qmd
 
-# Model compliance tests:
+# Tests (`make test`): model compliance + the JSON→CSV converter + roster sync
 uv run python model/test_model_compliance.py
+uv run python analysis/test_json_to_csv.py
+uv run python test_roster_sync.py
 ```
 
 Plots are saved in `figures/`; rendered docs in `_output/analysis/`.

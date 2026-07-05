@@ -13,7 +13,7 @@ There are two scenario CSVs, each generated from a Python source of truth: `scen
 | `scenario_label` | Scenario identifier used in data files |
 | `name_0`, `name_1` | Character names in the vignette |
 | `vignette` | Base scenario description |
-| `desire_phrase` | Scenario-specific completion of the desire question "How much do {name_0} and {name_1} both want to ___?" (e.g. `eat the hot dog`), so the question names the actual food rather than "the food". Used in Studies 1a and 1b |
+| `desire_object` | Scenario-specific object of the desire question "How much do you think {name_0} and {name_1} would like ___?" (e.g. `the hot dog`, `to try the harmonica`), so the question names the actual thing at stake rather than "the food". Used in the desire-DV studies (1a, 1b, 3a) |
 | `desire_low`, `desire_high` | Two desire-state paragraphs |
 | `low_risk_share_effort_low`, `low_risk_share_effort_high` | Two effort-state paragraphs — the low version makes the resource that `low_risk_share` relies on easy to obtain, the high version makes it costly |
 | `no_share` | No sharing |
@@ -26,7 +26,7 @@ The generators that turn source files into the artifacts each experiment loads a
 
 - `csv_to_json.py` — scenario CSV → each experiment's `json/stimuli.json` (routing in its `SOURCES` table).
 - `counterbalancing.py` — per-study `json/full_counterbalancing.json` (designs in its `STUDY_CONFIGS` registry; `--study <slug>` for one).
-- `sync_entry_files.py` — the byte-identical `index.html` + `experiment.js` written into every active experiment.
+- `sync_entry_files.py` — writes every active experiment's `index.html` + `experiment.js` from one template (identical across studies, except that `experiment.js` names the study's consent template).
 - `_scenario_io.py` — shared `write_scenarios_csv()` that the `scenarios*.py` source files call.
 
 The `Makefile` wraps these: `make stimuli`, `make counterbalancing`, `make entry-files`, or `make experiments` for all three.
@@ -35,7 +35,7 @@ The `Makefile` wraps these: `make stimuli`, `make counterbalancing`, `make entry
 
 ### Inverse planning (3-action set)
 
-All six follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the thing at stake ("how much do Carissa and Josh both want to eat the hot dog?", not at all → moderately → extremely), effort as a continuous 0–100 rating between two states, and intimacy on a 0–100 numeric scale. Each experiment dir's `README.md` documents the design spec.
+All six follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the thing at stake ("How much do you think Carissa and Josh would like the hot dog?", not at all → moderately → extremely), effort as a continuous 0–100 rating between the two effort paragraphs as endpoints, and intimacy as a continuous 0–100 rating from maximally formal to maximally intimate. When intimacy is a given condition rather than a DV, it is a verbal level (`max_formal` / `somewhat_formal` / `somewhat_intimate` / `max_intimate`) shown as a relationship descriptor, never a number. Each experiment dir's `README.md` documents the design spec.
 
 - [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy. Design 2 × 4 × 3.
 - [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
@@ -59,20 +59,20 @@ The design balances the scenario-to-condition assignment in two directions at on
 Most of each experiment lives in shared modules under [`_lib/`](_lib/); each `trials.js` is reduced to its study-specific stimulus trials. The shared modules are:
 
 - `bootstrap.js` — `runExperiment({ config, makeStimulusTrials, instructionsPages, comprehensionQuestions, consentTemplate })`: fetches assets, initializes jsPsych, assigns the counterbalancing condition, and **assembles the whole timeline** (consent → instructions + comprehension gate → stimulus trials → exit survey → save → thank-you). The per-study `makeStimulusTrials` is slotted in; the rest is identical for every experiment, so timeline-wide changes happen here.
-- `config.js` — the `DATAPIPE_IDS` map plus the settings shared by every experiment (attention-check index/tolerance, inter-trial durations, Prolific completion URL). Each `trials.js` builds its `CONFIG` with `makeConfig("<slug>")` (pass overrides as a second argument to depart from a default).
+- `config.js` — the `DATAPIPE_IDS` and `PROLIFIC_COMPLETION_CODES` maps (both keyed by slug; a study with no completion code refuses to start, so a new study cannot silently reuse another's code) plus the settings shared by every experiment (attention-check index/tolerance, inter-trial durations, and the payment and duration shown in the consent form and instructions). Each `trials.js` builds its `CONFIG` with `makeConfig("<slug>")` (pass overrides as a second argument to depart from a default, e.g. a study that pays differently).
 - `instructions.js` — `STUDY_INSTRUCTIONS`, every study's instruction pages in one place (shared notes + per-study pages), easy to compare; the non-food studies swap the food-specific paragraphs for domain-general variants.
 - `comprehension-check.js` — `STUDY_COMPREHENSION_CHECKS` (each study's quiz questions, built from shared question blocks like `instructions.js`) and `makeComprehensionGate(...)`. The gate is shown right after the instructions: the participant must answer every question correctly to start the study, gets three attempts (the instructions are re-shown on each miss), and if they never pass the experiment ends asking them to return the study on Prolific, so no data is saved for them.
 - `scenario.js` — the per-trial building blocks: condition-paragraph getters (`getDesireText`/`getEffortText`), the intimacy descriptor, slider labels, the "press any key" page, the prior/posterior pause, and `scenarioStimulus(...)` which renders the vignette block + observed action + lead-in.
 - `two-slider.js` — `makeTwoSliderForm(...)` renders two sliders on one page (Studies 1b/2b) via `survey-html-form`.
 - `timeline.js`, `attention-check.js`, `memory-checks.js`, `style.css`, and the consent templates in `consent/` round out the boilerplate.
 
-So a `trials.js` only defines that study's `makeStimulusTrials` (composing the `_lib` pieces) and exports `CONFIG`, `INSTRUCTIONS_PAGES`, `COMPREHENSION_QUESTIONS`, and `makeStimulusTrials`. The per-experiment `index.html` and `experiment.js` are byte-identical across studies and are generated from a single source by `build/sync_entry_files.py` (run it after changing the entry template, e.g. a jsPsych version bump).
+So a `trials.js` only defines that study's `makeStimulusTrials` (composing the `_lib` pieces) and exports `CONFIG`, `INSTRUCTIONS_PAGES`, `COMPREHENSION_QUESTIONS`, and `makeStimulusTrials`. The per-experiment `index.html` and `experiment.js` are generated from a single source by `build/sync_entry_files.py` (identical across studies except for the consent template named in `experiment.js`; run it after changing the entry template, e.g. a jsPsych version bump).
 
 This shared layout means the experiments are not standalone folders anymore: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
 
 ## Deploying experiments
 
-Experiments are hosted on an MIT athena web locker and pushed with [`bin/deploy-experiment`](../bin/deploy-experiment), which rsyncs the experiment directory plus the shared `_lib/` (run it with `--help`-style bare invocation to see the options; `--all` / `make deploy-all` pushes everything in one SSH session). Every deploy first regenerates the generated assets from their sources and aborts if anything changed, so stale stimuli can never ship; run just that check with `make check-experiments`. Launching a study also requires its DataPipe experiment ID in the `DATAPIPE_IDS` map in [`_lib/config.js`](_lib/config.js).
+Experiments are hosted on an MIT athena web locker and pushed with [`bin/deploy-experiment`](../bin/deploy-experiment), which rsyncs the experiment directory plus the shared `_lib/` (run it with `--help`-style bare invocation to see the options; `--all` / `make deploy-all` pushes everything in one SSH session). Every deploy first regenerates the generated assets from their sources and aborts if anything changed, so stale stimuli can never ship; run just that check with `make check-experiments`. Launching a study also requires its DataPipe experiment ID in the `DATAPIPE_IDS` map and its Prolific completion code in the `PROLIFIC_COMPLETION_CODES` map, both in [`_lib/config.js`](_lib/config.js).
 
 ## Previewing trials
 

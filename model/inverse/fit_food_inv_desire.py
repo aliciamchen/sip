@@ -20,7 +20,9 @@ from _helpers import (  # noqa: E402
     desire_table_kwargs,
     fit_desire_observer_joint,
     load_desire_data,
+    resolve_variant_table_kwargs,
     restart_records_to_rows,
+    write_fit_manifest,
     write_json,
     write_jsonl,
 )
@@ -50,6 +52,14 @@ def main():
     data, action, scenario_idx, effort_condition, relationship_condition, response = (
         load_desire_data(EXPERIMENT_SLUG)
     )
+    # Resolve every variant's LM tables before any fitting starts, so a missing
+    # table fails up front rather than after hours of fitting earlier variants.
+    table_kwargs_by_variant = resolve_variant_table_kwargs(
+        VARIANTS,
+        lambda name, utility_names: desire_table_kwargs(
+            utility_names, base=(name == "base")
+        ),
+    )
 
     results = []
     restart_rows = []
@@ -65,9 +75,8 @@ def main():
             effort_condition=effort_condition,
             relationship_condition=relationship_condition,
             response=response,
-            table_kwargs=desire_table_kwargs(
-                utility_names, base=(variant_name == "base")
-            ),
+            table_kwargs=table_kwargs_by_variant[variant_name],
+            seed_key=f"{EXPERIMENT_SLUG}|{variant_name}",
         )
         row = {
             "model": variant_name,
@@ -97,6 +106,7 @@ def main():
     restarts_path = output_dir / "fit_restarts.jsonl"
     write_jsonl(restarts_path, restart_rows)
     print(f"Saved per-restart fits to {restarts_path}")
+    write_fit_manifest(EXPERIMENT_SLUG, output_dir)
 
 
 if __name__ == "__main__":

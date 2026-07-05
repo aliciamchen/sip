@@ -88,7 +88,9 @@ def numeric_desire_schema(name="desire"):
 
 
 def parse_desire_response(response_text):
-    """Parse a ``{"desire": <number>}`` scalar response (0-100)."""
+    """Parse a ``{"desire": <number>}`` scalar response. The desire prompt asks
+    for a 0-100 rating (DESIRE_SYSTEM_PROMPT), so out-of-range values are
+    rejected (-> None, the caller's failure path) rather than silently kept."""
     if response_text is None:
         return None
     js = find_json(response_text)
@@ -98,7 +100,11 @@ def parse_desire_response(response_text):
     try:
         d = json.loads(js)
         if "desire" in d:
-            return float(d["desire"])
+            v = float(d["desire"])
+            if not 0.0 <= v <= 100.0:
+                print(f"  desire rating {v} outside the 0-100 scale; rejected")
+                return None
+            return v
     except (json.JSONDecodeError, ValueError, TypeError) as e:
         print(f"  Failed to parse desire JSON: {e}")
     return None
@@ -123,7 +129,9 @@ def numeric_intimacy_schema(name="intimacy"):
 
 
 def parse_intimacy_response(response_text):
-    """Parse a ``{"intimacy": <number>}`` scalar response (0-100)."""
+    """Parse a ``{"intimacy": <number>}`` scalar response. The intimacy prompt
+    asks for a 0-100 rating (INTIMACY_SYSTEM_PROMPT), so out-of-range values
+    are rejected (-> None, the caller's failure path)."""
     if response_text is None:
         return None
     js = find_json(response_text)
@@ -133,14 +141,21 @@ def parse_intimacy_response(response_text):
     try:
         d = json.loads(js)
         if "intimacy" in d:
-            return float(d["intimacy"])
+            v = float(d["intimacy"])
+            if not 0.0 <= v <= 100.0:
+                print(f"  intimacy rating {v} outside the 0-100 scale; rejected")
+                return None
+            return v
     except (json.JSONDecodeError, ValueError, TypeError) as e:
         print(f"  Failed to parse intimacy JSON: {e}")
     return None
 
 
 def parse_action_response_variable(response_text, n_actions):
-    """Parse JSON with action_0..action_{n-1} keys."""
+    """Parse JSON with action_0..action_{n-1} keys. The risk/effort/g prompts
+    all ask for 0-6 ratings ("Use this scale from 0 to 6" in each body), so any
+    out-of-range value rejects the response (-> None, the caller's existing
+    failure/NaN path) — a stray "60" must not become feature 10.0 downstream."""
     if response_text is None:
         return None
     js = find_json(response_text)
@@ -158,9 +173,13 @@ def parse_action_response_variable(response_text, n_actions):
         if key not in ratings:
             return None
         try:
-            out[key] = float(ratings[key])
+            v = float(ratings[key])
         except (TypeError, ValueError):
             return None
+        if not 0.0 <= v <= 6.0:
+            print(f"  {key} rating {v} outside the 0-6 scale; response rejected")
+            return None
+        out[key] = v
     return out
 
 

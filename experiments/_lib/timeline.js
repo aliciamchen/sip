@@ -64,12 +64,12 @@ export function makeExitSurvey(jsPsych, exitSurveyHtml) {
   };
 }
 
-export function makeSaveData(jsPsych, pipeExperimentId, subjectId) {
+export function makeSaveData(jsPsych, pipeExperimentId, filename) {
   return {
     type: jsPsychPipe,
     action: "save",
     experiment_id: pipeExperimentId,
-    filename: `${subjectId}.json`,
+    filename,
     data_string: () => jsPsych.data.get().json(),
   };
 }

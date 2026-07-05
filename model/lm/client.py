@@ -7,8 +7,8 @@ per-feature scoring and alternative-generation scripts:
 
 - ``load_api_key`` — resolve ``TOGETHER_API_KEY`` from env or ``.env``.
 - ``find_json`` / ``find_json_array`` — best-effort JSON extraction.
-- ``strip_leading_plus`` — pre-process for the signed V scale, where Llama
-  occasionally emits ``"action_0": +3`` (invalid JSON).
+- ``strip_leading_plus`` — drop the leading ``+`` Llama occasionally emits
+  before numeric JSON values (invalid JSON).
 - ``get_ratings_concurrent`` — fan out N rating calls across a thread pool,
   letting the Together SDK retry transient errors via ``max_retries``.
   Returns ``(successes, n_failures)`` so callers can record both columns.
@@ -103,8 +103,61 @@ def find_json_array(text):
 
 
 def strip_leading_plus(text):
-    """Drop leading ``+`` from numeric JSON values (V's signed -3..+3 scale)."""
+    """Drop the leading ``+`` Llama occasionally emits before numeric JSON
+    values (e.g. ``"action_0": +3``), which is invalid JSON."""
     return _LEADING_PLUS_RE.sub(r": \1", text)
+
+
+# ==============================================================================
+# JSONL checkpoint I/O
+# ==============================================================================
+
+
+def write_jsonl_atomic(path, rows):
+    """Rewrite a JSONL checkpoint via a same-directory temp file + os.replace,
+    so a kill mid-write can't destroy already-paid-for records. (The main repo
+    lives in Dropbox, which makes in-place truncate-and-rewrite extra risky.)"""
+    path = Path(path)
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def read_jsonl_checked(path):
+    """Read a JSONL file into a list of records, failing with a recovery
+    message (file, line, byte offset) on an unparseable line instead of a bare
+    JSONDecodeError. A truncated final line means an interrupted write; resume
+    must surface it, not silently skip or crash on it."""
+    path = Path(path)
+    records = []
+    offset = 0
+    raw_lines = path.read_bytes().split(b"\n")
+    for lineno, raw in enumerate(raw_lines, start=1):
+        stripped = raw.strip()
+        if stripped:
+            try:
+                records.append(json.loads(stripped))
+            except json.JSONDecodeError:
+                if all(not rest.strip() for rest in raw_lines[lineno:]):
+                    raise SystemExit(
+                        f"{path} ends with a truncated record at line {lineno} "
+                        f"(byte offset {offset}) — likely an interrupted "
+                        f"write. Recover by truncating the file to that offset "
+                        f"(`truncate -s {offset} '{path}'`) to drop the "
+                        "partial record, then re-run to resume."
+                    )
+                raise SystemExit(
+                    f"{path} has an unparseable record at line {lineno} (byte "
+                    f"offset {offset}), before the end of the file — the "
+                    "corruption is not just a truncated tail. Restore the "
+                    "file from a backup or delete it to re-elicit."
+                )
+        offset += len(raw) + 1
+    return records
 
 
 # ==============================================================================
@@ -153,7 +206,19 @@ def _one_call(
         resp = client.with_options(max_retries=max_retries).chat.completions.create(
             **kwargs
         )
-        return resp.choices[0].message.content
+        choice = resp.choices[0]
+        finish = getattr(choice, "finish_reason", None)
+        finish = getattr(finish, "value", finish)  # enum in the SDK, str in raw
+        if finish == "length":
+            # Truncated at max_tokens: the JSON is incomplete, so don't hand
+            # it to the parser as if it were a complete response.
+            print(
+                "  call truncated at max_tokens (finish_reason=length); "
+                "treating as failed",
+                flush=True,
+            )
+            return None
+        return choice.message.content
     except Exception as e:
         print(f"  call error: {e}", flush=True)
         return None
@@ -185,9 +250,10 @@ def get_ratings_concurrent(
     below ``min_success_ratio``. ``label`` is shown in the warning so callers
     can identify which (scenario, rating-type) the warning belongs to.
 
-    ``seed``, when given, is offset by the call index (``seed + i``) so a
-    ``num_runs > 1`` fan-out stays varied while remaining reproducible; with the
-    active ``num_runs=1`` pipeline this just pins the single call to ``seed``."""
+    ``seed``, when given, is offset by the call index (``seed + i``, masked to
+    Together's non-negative 31-bit seed range) so a ``num_runs > 1`` fan-out
+    stays varied while remaining reproducible; with the active ``num_runs=1``
+    pipeline this just pins the single call to ``seed``."""
     workers = min(max_workers, num_runs)
     successes = []
     failures = 0
@@ -203,7 +269,7 @@ def get_ratings_concurrent(
                 temperature,
                 max_retries,
                 response_format,
-                (seed + i) if seed is not None else None,
+                ((seed + i) & 0x7FFFFFFF) if seed is not None else None,
             )
             for i in range(num_runs)
         ]
@@ -336,6 +402,56 @@ def _prompts_sha():
         return None
 
 
+def read_run_manifest(output_path):
+    """The provenance manifest previously written next to ``output_path`` by
+    ``write_run_manifest`` (``lm_runs.jsonl`` → ``lm_runs.manifest.json``), or
+    None if there isn't one."""
+    output_path = Path(output_path)
+    manifest_path = output_path.with_name(output_path.stem + ".manifest.json")
+    if not manifest_path.exists():
+        return None
+    with open(manifest_path) as f:
+        return json.load(f)
+
+
+RESUME_PROMPT_MISMATCH_ENV = "LM_RESUME_PROMPT_MISMATCH"
+
+
+def guard_resume_prompt_mismatch(output_path):
+    """Refuse to resume onto data elicited under a different prompts.py.
+
+    Resume skips already-done units, so silently resuming after a prompt edit
+    would mix records from two prompt versions in one output file. On a
+    prompts_sha256 mismatch between the existing manifest and the current
+    prompts.py this hard-errors, unless ``LM_RESUME_PROMPT_MISMATCH=allow`` is
+    set — in which case the mixed provenance is recorded honestly by
+    ``write_run_manifest`` (the superseded hash lands in
+    ``prompt_sha_history``)."""
+    manifest = read_run_manifest(output_path)
+    if manifest is None:
+        return
+    old, cur = manifest.get("prompts_sha256"), _prompts_sha()
+    if old is None or cur is None or old == cur:
+        return
+    if os.environ.get(RESUME_PROMPT_MISMATCH_ENV, "").lower() == "allow":
+        print(
+            f"WARNING: resuming {Path(output_path).name} elicited under "
+            f"prompts_sha256={old} with current prompts.py ({cur}); the mixed "
+            f"provenance will be recorded in the manifest "
+            f"({RESUME_PROMPT_MISMATCH_ENV}=allow).",
+            flush=True,
+        )
+        return
+    raise SystemExit(
+        f"prompts.py has changed since {Path(output_path).name} was elicited "
+        f"(manifest prompts_sha256={old}, current={cur}). Resuming would "
+        "silently mix data from two prompt versions. Either delete the output "
+        "file (and its manifest) to re-elicit from scratch, or set "
+        f"{RESUME_PROMPT_MISMATCH_ENV}=allow to resume anyway (the mismatch "
+        "is then recorded in the manifest)."
+    )
+
+
 def write_run_manifest(output_path, stage, study, extra=None):
     """Write a small provenance sidecar next to a stage's JSONL output.
 
@@ -345,7 +461,13 @@ def write_run_manifest(output_path, stage, study, extra=None):
     prompt + code version, timestamp — next to the data file it describes
     (``lm_runs.jsonl`` → ``lm_runs.manifest.json``). ``extra`` carries
     stage-specific config (K runs, temperature, record counts). Mirrors the
-    plain-JSON style of embed_alternatives.py's lm_clusters.json."""
+    plain-JSON style of embed_alternatives.py's lm_clusters.json.
+
+    If an existing manifest is being replaced and its prompts_sha256 differs
+    from the current one (a resume across a prompt edit, explicitly allowed via
+    ``LM_RESUME_PROMPT_MISMATCH=allow``), the superseded hash is preserved in a
+    ``prompt_sha_history`` list so the mixed provenance stays visible. The key
+    is additive — existing manifest readers are unaffected."""
     manifest = {
         "stage": stage,
         "study": study,
@@ -354,6 +476,18 @@ def write_run_manifest(output_path, stage, study, extra=None):
         "git_sha": _git_sha(),
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    prior = read_run_manifest(output_path)
+    if prior is not None:
+        history = list(prior.get("prompt_sha_history", []))
+        prior_sha = prior.get("prompts_sha256")
+        if (
+            prior_sha
+            and prior_sha != manifest["prompts_sha256"]
+            and prior_sha not in history
+        ):
+            history.append(prior_sha)
+        if history:
+            manifest["prompt_sha_history"] = history
     if extra:
         manifest.update(extra)
     output_path = Path(output_path)

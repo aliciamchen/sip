@@ -10,13 +10,23 @@ outputs/
 ├── lm/                                   # LM-elicited tables, one folder per study slug
 │   └── <slug>/
 │       ├── lm_runs.jsonl                     # scored actions + per-run given magnitude, one record per (run, cell)  ← primary
-│       └── lm_alternatives.jsonl             # stage-1 generated alternative texts (one record per alt)
+│       ├── lm_alternatives.jsonl             # stage-1 generated alternative texts (one record per alt)
+│       ├── lm_runs_base.jsonl                # base ablation's relationship-free analog of lm_runs.jsonl (given-relationship studies)
+│       ├── lm_alternatives_base.jsonl        # base ablation's relationship-free analog of lm_alternatives.jsonl
+│       ├── *.manifest.json                   # provenance sidecar per elicited JSONL (model, prompt hash, git SHA, timestamp)
+│       ├── lm_embeddings.npz                 # embeddings of the alternatives (semantic diagnostics; where elicited)
+│       ├── lm_alternatives_semantic.jsonl    # per-alternative cluster + nearest-observed-action labels
+│       ├── lm_clusters.json                  # per-scenario action-type clusters with exemplar texts
+│       ├── lm_alternatives_projection.jsonl  # per-scenario 2D projection + mean features, for the R notebook
+│       └── figures/                          # quick-look diagnostic PNGs from plot_alternatives.py
 └── <slug>/                               # one folder per inverse study (fits + CV)
     ├── fit_results.json                      # fitted params per ablation (incl. param_sigma)
     ├── fit_restarts.jsonl                    # per-restart fit diagnostics
+    ├── fit_manifest.json                     # fit provenance: git SHA + sha256 of the fit outputs and input data
     ├── cv_trial_ll.jsonl                     # per-trial held-out log-likelihood, by subject_id  ← primary metric
     ├── cv_preds_summary.json                 # held-out per-cell delta_<latent> (the model's predictions)
     ├── cv_folds.jsonl                        # per-fold refit diagnostics
+    ├── cv_manifest.json                      # CV provenance: git SHA + sha256 of the CV outputs and input data
     └── cv_model_comparison.json              # bootstrap model-comparison statistics (the paper's numbers)
 ```
 
@@ -29,12 +39,13 @@ appear once their LM elicitation and fits have been run. Each slug's
 sole source of model predictions, because every reported model-vs-human number is
 out-of-sample.
 
-The elicited LM tables (`lm_runs.jsonl`, `lm_alternatives.jsonl`) and the fit/CV outputs are
-committed, so the fit → CV → analysis pipeline is reproducible from a fresh clone without a
-Together AI key. They are regenerated when the pipeline changes: the LM tables by
-`generate_alternatives.py` + `score_merged.py`, and the fit/CV outputs by the fit and CV
-scripts. A study whose `lm_runs.jsonl` is missing has no LM tables — its loaders return
-`None` and its fit raises a clear `FileNotFoundError`.
+The elicited LM tables (`lm_runs.jsonl`, `lm_alternatives.jsonl`, and their `_base` variants
+where the study has one), their provenance manifests, and the fit/CV outputs are committed, so
+the fit → CV → analysis pipeline is reproducible from a fresh clone without a Together AI key.
+They are regenerated when the pipeline changes: the LM tables by `generate_alternatives.py` +
+`score_merged.py`, and the fit/CV outputs by the fit and CV scripts. A study whose
+`lm_runs.jsonl` is missing has no LM tables — its loaders return `None` and its fit raises a
+clear `FileNotFoundError`.
 
 ## What the numbers mean
 
@@ -104,6 +115,54 @@ and read back by `score_merged.py`. One record per generated alternative, with f
 here — scoring happens in `score_merged.py` and lands in `lm_runs.jsonl`. This is the stage-1
 input to scoring.
 
+### `lm_alternatives_base.jsonl` / `lm_runs_base.jsonl` — the base ablation's tables
+
+The same two-stage pipeline run with `--base` (`make lm-base`), for the given-relationship
+studies only (1a/1b/3a). Because the base ablation has no intimacy term, its choice set must
+not depend on the relationship either, so these alternatives are elicited **without** the
+relationship description and scored into `lm_runs_base.jsonl` with no per-run intimacy scalar.
+The record shapes match the main files' (the cell grid just drops the relationship axis); the
+base fit and CV load them via `desire_table_kwargs(base=True)`, which broadcasts the
+relationship-free set across the relationship conditions.
+
+### `*.manifest.json` — provenance sidecars
+
+Every elicited JSONL gets a small plain-JSON sidecar next to it (`lm_runs.jsonl` →
+`lm_runs.manifest.json`), written by `client.write_run_manifest` at the end of each
+elicitation stage. Because the values in these files are LM-generated, two regenerations must
+be distinguishable, so each manifest records how its file was produced: `stage`
+(`generate_alternatives` or `score_merged`), `study`, `model`, `prompts_sha256` (a short hash
+of `prompts.py`, so a tweaked prompt yields a different manifest), `git_sha`, `created_utc`,
+and stage-specific config (`k_runs`, the generation or scoring temperature, and record
+counts). The manifests also guard resumes: `guard_resume_prompt_mismatch` refuses to resume an
+elicitation onto data produced under a different `prompts.py` (override with
+`LM_RESUME_PROMPT_MISMATCH=allow`, which then preserves the superseded hash in
+`prompt_sha_history`).
+
+### Semantic diagnostics — `lm_embeddings.npz`, `lm_alternatives_semantic.jsonl`, `lm_clusters.json`, `lm_alternatives_projection.jsonl`, `figures/`
+
+An optional embedding-based view of the generated alternatives (the inverse fit never reads
+these), present for the studies where it has been run — currently Study 1a has the full set.
+`embed_alternatives.py --study <slug>` embeds each unique alternative text via the Together AI
+embeddings API and writes three artifacts: `lm_embeddings.npz` (the mean-centered, normalized
+embeddings — `alt_emb`, aligned row-for-row with `lm_alternatives_semantic.jsonl`, plus
+`obs_emb` with parallel `obs_scenario`/`obs_action` labels for the observed actions);
+`lm_alternatives_semantic.jsonl` (one record per unique `(scenario_label, action_text)` with
+its per-scenario `cluster` id, `nearest_observed_action`, and `sim_to_observed_action` cosine,
+joined back to `lm_alternatives.jsonl` on those keys); and `lm_clusters.json` (`model`,
+`k_per_scenario`, `dup_threshold`, and the per-scenario action-type `clusters` with
+nearest-centroid exemplar texts for interpretation).
+
+Downstream of those, `project_alternatives.py` computes a per-scenario 2D UMAP layout and
+writes `lm_alternatives_projection.jsonl` — one record per `(scenario_label, action_text)`
+with `is_observed`, `observed_action`, the semantic labels, the run-averaged `g`/`risk`/`effort`,
+and the `dim1`/`dim2` coordinates — which the R elicitation notebook joins and renders in
+ggplot (UMAP is never re-run in R). `plot_alternatives.py` reads the whole artifact family to
+render the SI alternatives figures into repo-root `figures/`, and drops two quick-look
+diagnostic PNGs (`fig1_semantic_map.png`, a global UMAP colored by scenario and by nearest
+observed action; `fig2_decision_space.png`, alternatives vs. the observed action in feature
+space with Pareto-dominance flags) into `outputs/lm/<slug>/figures/`.
+
 ## Per-study fit and CV outputs (`<slug>/`)
 
 Each study jointly fits its actor utility weights, `alpha_observer`, and the response-noise
@@ -171,6 +230,24 @@ mixture spread against the fitted `σ`, all out-of-sample.
 Per-fold refit diagnostics (16 folds × 3 ablations). Each record has `experiment`, `variant`,
 `fold`, `held_out_scenario`, the refit `alpha_observer` / `param_sigma` / `param_*` weights, and
 `train_nll` / `test_nll` with `n_train` / `n_test`.
+
+### `fit_manifest.json`
+
+The fit-side counterpart of `cv_manifest.json`, written by the `fit_*.py` wrappers alongside
+`fit_results.json` and `fit_restarts.jsonl`: the study slug, a timestamp, the git SHA the fit
+ran at, and SHA-256 hashes of the two fit outputs and of the input data CSV. The CV dispatcher
+verifies it before warm-starting folds from the fit (a stale or missing fit is an error rather
+than a silent cold start), and `model_comparison.py` verifies it again so the fit and the CV
+it reports are guaranteed to share one data vintage.
+
+### `cv_manifest.json`
+
+A provenance sidecar written by `model/cv/_inverse_dispatcher.py` alongside the three CV
+outputs above, recording the study slug, a timestamp, the git SHA the CV ran at, and SHA-256
+hashes of the three CV files and of the input data CSV. `model_comparison.py` verifies the
+manifest before computing anything — the output hashes must match and the input-data hash must
+match the current `data/<slug>/main_trials_long.csv` — and refuses stale or mixed outputs; a
+comparison must never silently describe CV files produced from different code or data versions.
 
 ### `cv_model_comparison.json`
 

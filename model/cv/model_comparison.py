@@ -36,8 +36,18 @@ sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
-from _helpers import _load_long, read_jsonl, write_json  # noqa: E402
+from _helpers import (  # noqa: E402
+    _load_long,
+    read_jsonl,
+    sha256_file,
+    verify_fit_manifest,
+    write_json,
+)
 from utils import get_project_root  # noqa: E402
+
+# The three CV output files written together by the dispatcher's _write_outputs
+# and hashed into cv_manifest.json (must match CV_OUTPUT_NAMES there).
+_CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
 
 # Per-study cell grid and DV mapping. `keys` are the columns that identify a
 # scenario × condition cell in BOTH the human data (after _prepare_data below)
@@ -84,6 +94,39 @@ STUDY_SPECS = {
 }
 
 _LEVEL_STR = {0: "low", 1: "high"}
+
+
+def _verify_cv_manifest(slug, outputs_dir):
+    """Require the CV provenance manifest and verify the three CV output files
+    still hash to the values recorded when they were written together. The
+    files are only meaningful as one CV run's outputs — a mixed-vintage
+    combination (e.g. a re-run cv_trial_ll.jsonl next to an older
+    cv_preds_summary.json) would silently combine incompatible predictions."""
+    manifest_path = outputs_dir / "cv_manifest.json"
+    if not manifest_path.exists():
+        raise RuntimeError(
+            f"missing {manifest_path} — stale or mixed-vintage CV outputs for "
+            f"{slug} (written before provenance manifests existed, or partially "
+            f"deleted); re-run `make cv-{slug}`."
+        )
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    stale = [
+        name
+        for name in _CV_OUTPUT_NAMES
+        if sha256_file(outputs_dir / name) != manifest.get("outputs", {}).get(name)
+    ]
+    if stale:
+        raise RuntimeError(
+            f"CV output file(s) {stale} do not match cv_manifest.json — stale "
+            f"or mixed-vintage CV outputs for {slug}; re-run `make cv-{slug}`."
+        )
+    data_csv = get_project_root() / "data" / slug / "main_trials_long.csv"
+    if sha256_file(data_csv) != manifest.get("input_data", {}).get("sha256"):
+        raise RuntimeError(
+            f"data/{slug}/main_trials_long.csv changed since CV ran — stale CV "
+            f"outputs for {slug}; re-run `make fit-{slug}` and `make cv-{slug}`."
+        )
 
 
 def _prepare_data(slug):
@@ -140,13 +183,24 @@ def _primary_comparisons(trial_df, n_boot, rng):
     return out
 
 
-def _secondary_correlation(data, preds, keys, update_col, delta_col, n_boot, rng):
+def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, n_boot, rng):
     """Pearson r between condition-averaged human updates and the model's
     per-cell delta, with a subject-cluster bootstrap CI. Cells that lose all
     trials in a bootstrap resample are dropped pairwise from that resample's
     correlation."""
     cell_mean = data.groupby(keys, as_index=False)[update_col].mean()
     merged = cell_mean.merge(preds[keys + [delta_col]], on=keys, how="inner")
+    if len(merged) != len(cell_mean):
+        # An inner merge would silently drop human cells with no matching model
+        # prediction (e.g. a stale condition label on either side).
+        missing = cell_mean.merge(preds[keys + [delta_col]], on=keys, how="left")
+        missing = missing.loc[missing[delta_col].isna(), keys]
+        raise RuntimeError(
+            f"{len(missing)} human cell(s) in {slug} have no matching model "
+            f"prediction in cv_preds_summary.json. First offenders:\n"
+            f"{missing.head(5)}\nStale CV outputs or a condition-label "
+            f"mismatch; re-run `make cv-{slug}`."
+        )
     if len(merged) < 3:
         return None
     r = float(np.corrcoef(merged[update_col], merged[delta_col])[0, 1])
@@ -194,6 +248,11 @@ def run_study(slug, n_boot, seed):
     if not trial_path.exists() or not preds_path.exists():
         print(f"[{slug}] missing CV outputs — run `make cv-{slug}` first; skipping.")
         return None
+    _verify_cv_manifest(slug, outputs_dir)
+    # The fit the CV warm-started from must also match its manifest and the
+    # current data CSV; both manifests validating against the same CSV
+    # guarantees the fit and the CV share one data vintage.
+    verify_fit_manifest(slug, output_dir=outputs_dir)
 
     rng = np.random.default_rng(seed)
     trial_df = pd.DataFrame(read_jsonl(trial_path))
@@ -219,7 +278,7 @@ def run_study(slug, n_boot, seed):
         pm = preds[preds["model"] == model]
         for update_col, delta_col, dv in spec["dvs"]:
             corr = _secondary_correlation(
-                data, pm, spec["keys"], update_col, delta_col, n_boot, rng
+                slug, data, pm, spec["keys"], update_col, delta_col, n_boot, rng
             )
             if corr is not None:
                 result["secondary_correlations"].append(

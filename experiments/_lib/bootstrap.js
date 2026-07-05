@@ -8,7 +8,7 @@
 // makeStimulusTrials, instructionsPages, consentTemplate }), where:
 //   - config: the CONFIG object from trials.js (built with makeConfig("<slug>")),
 //     holding PIPE_EXPERIMENT_ID, PROLIFIC_COMPLETION_URL, ATTENTION_CHECK_INDEX,
-//     ATTENTION_TOLERANCE, INTER_TRIAL_DURATIONS
+//     ATTENTION_TOLERANCE, INTER_TRIAL_DURATIONS, PAYMENT, DURATION_MINUTES
 //   - makeStimulusTrials(jsPsych, stimuli): returns the study's per-scenario
 //     trial array (slid in between the instructions and the exit survey)
 //   - instructionsPages: the study's instructions pages (from STUDY_INSTRUCTIONS)
@@ -38,6 +38,18 @@ export function runExperiment({
   comprehensionQuestions,
   consentTemplate,
 }) {
+  // Refuse to start a study with no Prolific completion code configured (no
+  // entry in PROLIFIC_COMPLETION_CODES in config.js): the codes are
+  // study-specific, so running without one would silently send every
+  // participant to another study's completion URL. Failing loudly at startup
+  // makes launching an unconfigured study impossible rather than quietly wrong.
+  if (!config.PROLIFIC_COMPLETION_URL) {
+    const message =
+      "This study has no Prolific completion code configured. Add its code to " +
+      "PROLIFIC_COMPLETION_CODES in experiments/_lib/config.js before launching.";
+    alert(message);
+    throw new Error(message);
+  }
   Promise.all([
     fetch("json/stimuli.json").then((r) => r.json()),
     fetch("json/full_counterbalancing.json").then((r) => r.json()),
@@ -90,10 +102,29 @@ async function createExperiment({
   // participant still gets a valid sequence instead of `undefined`.
   // `sequence_index` is the index actually used — map it to
   // full_counterbalancing.json in analysis (condition_assignment is kept raw).
+  //
+  // If DataPipe resolves to a non-integer (API hiccup, misconfigured
+  // experiment ID), fall back to a RANDOM sequence rather than pinning every
+  // affected participant to sequence 0, which would quietly skew the
+  // counterbalance for the whole outage window. condition_assignment_source
+  // records the provenance ("datapipe" vs "random_fallback") in the saved
+  // data so affected sessions are identifiable in analysis.
   const n_sequences = counterbalancing.length;
-  const sequence_index = Number.isInteger(condition_assignment)
+  const datapipeAssignmentOk = Number.isInteger(condition_assignment);
+  if (!datapipeAssignmentOk) {
+    console.warn(
+      "jsPsychPipe.getCondition did not return an integer " +
+        `(got ${JSON.stringify(condition_assignment)}); ` +
+        "assigning a RANDOM counterbalancing sequence instead. " +
+        "Check the DataPipe experiment ID / condition-assignment settings."
+    );
+  }
+  const sequence_index = datapipeAssignmentOk
     ? ((condition_assignment % n_sequences) + n_sequences) % n_sequences
-    : 0;
+    : Math.floor(Math.random() * n_sequences);
+  const condition_assignment_source = datapipeAssignmentOk
+    ? "datapipe"
+    : "random_fallback";
   const assignedSequence = counterbalancing[sequence_index];
 
   jsPsych.data.addProperties({
@@ -102,6 +133,7 @@ async function createExperiment({
     subject_id,
     url: window.location.href,
     condition_assignment,
+    condition_assignment_source,
     sequence_index,
   });
 
@@ -143,6 +175,17 @@ async function createExperiment({
 
   const shuffledStimuli = jsPsych.randomization.shuffle(stimuliWithConditions);
 
+  // Participant-facing boilerplate (the consent form and the instructions
+  // pages) is authored with {{PAYMENT}} / {{DURATION_MINUTES}} placeholders so
+  // the per-study numbers come from CONFIG rather than being hardcoded in text
+  // shared by every study. Fill them here, before the pages reach the timeline
+  // (the comprehension gate re-shows the instructions, so it gets the filled
+  // pages too).
+  const filledConsentHtml = fillConfigPlaceholders(consentHtml, config);
+  const filledInstructionsPages = instructionsPages.map((page) =>
+    fillConfigPlaceholders(page, config)
+  );
+
   // When the study supplies comprehension questions, gate entry on them: the
   // instructions are shown inside the gate (and re-shown on each retry), so this
   // replaces the standalone instructions screen. Passing the gate leads into a
@@ -150,21 +193,47 @@ async function createExperiment({
   const introStages = comprehensionQuestions
     ? [
         makeComprehensionGate(jsPsych, {
-          instructionsPages,
+          instructionsPages: filledInstructionsPages,
           questions: comprehensionQuestions,
         }),
         makeComprehensionPassPage(),
       ]
-    : [makeInstructionsScreen(instructionsPages)];
+    : [makeInstructionsScreen(filledInstructionsPages)];
+
+  // Save under PROLIFIC_PID_SESSION_ID.json when Prolific supplies a session
+  // (falling back to the bare subject_id otherwise, e.g. local test runs): a
+  // participant who completes the study twice does so under different
+  // SESSION_IDs, so the re-completion surfaces as a second file for the same
+  // subject_id instead of colliding on one filename.
+  const saveFilename = session_id
+    ? `${subject_id}_${session_id}.json`
+    : `${subject_id}.json`;
 
   const timeline = [
-    makeConsentScreen(consentHtml),
+    makeConsentScreen(filledConsentHtml),
     ...introStages,
     ...makeStimulusTrials(jsPsych, shuffledStimuli),
     makeExitSurvey(jsPsych, exitSurveyHtml),
-    makeSaveData(jsPsych, config.PIPE_EXPERIMENT_ID, subject_id),
+    makeSaveData(jsPsych, config.PIPE_EXPERIMENT_ID, saveFilename),
     makeThankYou(config.PROLIFIC_COMPLETION_URL),
   ];
 
   jsPsych.run(timeline);
+}
+
+// Fill {{KEY}} placeholders in participant-facing HTML with values from the
+// study CONFIG (e.g. {{PAYMENT}}, {{DURATION_MINUTES}}), so per-study numbers
+// are configured in _lib/config.js instead of hardcoded in shared text. A
+// placeholder with no CONFIG value throws rather than silently showing a
+// literal "{{...}}" to a participant.
+function fillConfigPlaceholders(html, config) {
+  return html.replace(/\{\{([A-Z_]+)\}\}/g, (placeholder, key) => {
+    if (config[key] === undefined || config[key] === null) {
+      throw new Error(
+        `Participant-facing text references ${placeholder} but CONFIG has no ` +
+          `${key}; set it in _lib/config.js (SHARED_CONFIG or a per-study override).`
+      );
+    }
+    return String(config[key]);
+  });
 }

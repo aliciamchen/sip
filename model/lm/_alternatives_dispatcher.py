@@ -29,7 +29,6 @@ from prompts import ALTERNATIVES_SYSTEM_PROMPT
 # Built once and reused — schema construction is pure.
 _ALTERNATIVES_RESPONSE_FORMAT = alternatives_array_schema()
 
-TEMPERATURE = 1.0
 MAX_TOKENS = 800
 MAX_PARSE_RETRIES = 5
 
@@ -75,7 +74,9 @@ def parse_alternatives(response_text):
         if not isinstance(action, str):
             continue
         out.append({"action": action.strip()})
-    return out if out else None
+    # An empty array is a VALID "no alternatives" response — return [] with no
+    # retries. Only a non-empty array with no parseable item is a parse failure.
+    return out if (out or not arr) else None
 
 
 def _dedup_alternatives(alts):
@@ -89,17 +90,22 @@ def _dedup_alternatives(alts):
     return out
 
 
-def elicit_alternatives(client, user_prompt, temperature=TEMPERATURE, seed=None):
+def elicit_alternatives(client, user_prompt, temperature, seed=None):
     """Elicit alternatives for one (cell, run). Up to MAX_PARSE_RETRIES tries to
     land a parseable response; transient errors inside each call are retried by
-    the SDK via ``max_retries=MAX_RETRIES``. Returns [] when all parse retries are
-    exhausted (rather than raising) so a thread-pool batch can continue.
+    the SDK via ``max_retries=MAX_RETRIES``. Returns the (possibly empty) list
+    of alternatives, or None when all parse retries are exhausted (rather than
+    raising) so a thread-pool batch can continue. The distinction matters for
+    resume: [] is a VALID "no alternatives" elicitation the caller records as
+    done, while None means the unit failed and must stay pending.
 
-    ``temperature`` defaults to the module-level TEMPERATURE (1.0). For the K-run
-    pipeline the caller passes a higher T (so independent runs explore genuinely
-    different alternative sets — the run-to-run spread is the point) plus a
-    deterministic per-(cell, run) ``seed`` for reproducibility. Dedup stays WITHIN
-    a run; cross-run repetition is preserved.
+    For the K-run pipeline the caller passes a nonzero ``temperature`` (so
+    independent runs explore genuinely different alternative sets — the
+    run-to-run spread is the point) plus a deterministic per-(cell, run)
+    ``seed`` for reproducibility; each parse retry offsets the seed by the
+    attempt index (masked to Together's non-negative 31-bit seed range) so a
+    deterministically unparseable response is not refetched identically. Dedup
+    stays WITHIN a run; cross-run repetition is preserved.
     """
     messages = [
         {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
@@ -112,20 +118,33 @@ def elicit_alternatives(client, user_prompt, temperature=TEMPERATURE, seed=None)
         temperature=temperature,
         response_format=_ALTERNATIVES_RESPONSE_FORMAT,
     )
-    if seed is not None:
-        create_kwargs["seed"] = seed
     for attempt in range(MAX_PARSE_RETRIES):
+        if seed is not None:
+            create_kwargs["seed"] = (seed + attempt) & 0x7FFFFFFF
         try:
             response = retrying_client.chat.completions.create(
                 messages=messages, **create_kwargs
             )
-            parsed = parse_alternatives(response.choices[0].message.content)
-            if parsed:
+            choice = response.choices[0]
+            finish = getattr(choice, "finish_reason", None)
+            finish = getattr(finish, "value", finish)  # enum in the SDK
+            if finish == "length":
+                # Truncated at max_tokens — incomplete JSON must not be handed
+                # to the parser as if it were a complete response.
+                print(
+                    f"  Attempt {attempt + 1}: response truncated at max_tokens "
+                    "(finish_reason=length); retrying",
+                    flush=True,
+                )
+                continue
+            parsed = parse_alternatives(choice.message.content)
+            if parsed is not None:
                 return _dedup_alternatives(parsed)
         except Exception as e:
             print(f"  Attempt {attempt + 1} error: {e}", flush=True)
     print(
-        "  All parse retries exhausted; returning empty alternative set for this cell.",
+        "  All parse retries exhausted; leaving this (cell, run) unit pending "
+        "for a future invocation.",
         flush=True,
     )
-    return []
+    return None

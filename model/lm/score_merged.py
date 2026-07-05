@@ -47,7 +47,8 @@ Output (one folder per study, outputs/lm/<slug>/):
 
 Usage:
     uv run python model/lm/score_merged.py --study food_inv_desire
-    # K runs / temperature / concurrency via env: K_RUNS, ALT_T, --scenario-workers
+    # concurrency via --scenario-workers; the run count is not configurable
+    # here — it derives from the run_ids present in lm_alternatives.jsonl
 
 Requires:
     - TOGETHER_API_KEY in env or .env
@@ -58,7 +59,6 @@ Requires:
 import argparse
 import hashlib
 import itertools
-import json
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -91,8 +91,11 @@ from client import (
     TEMPERATURE,
     aggregate_action_ratings,
     get_ratings_concurrent,
+    guard_resume_prompt_mismatch,
     load_api_key,
     numeric_action_schema,
+    read_jsonl_checked,
+    write_jsonl_atomic,
     write_run_manifest,
 )
 from prompts import (
@@ -486,11 +489,27 @@ def _f(x):
     return None if np.isnan(x) else x
 
 
+def _unit_complete(records):
+    """Whether a checkpointed (scenario, run) unit's records are free of null
+    features/scalars. A failed LM call is serialized as null (see ``_f``), so a
+    unit containing any null is a partial failure — resume treats it as NOT
+    done and re-queues it, so re-running heals it instead of skipping it."""
+    for rec in records:
+        for a in rec["actions"]:
+            if a.get("risk") is None or a.get("effort") is None or a.get("g") is None:
+                return False
+        # The per-run given magnitude, when the study carries one.
+        if rec.get("desire", 0) is None or rec.get("intimacy", 0) is None:
+            return False
+    return True
+
+
 def _rate_desire_for_scenario(client, scenario_row, run_id):
     """Per-desire_condition desire scalar in [0, 1] for one scenario, scored in
     one run's pass (folded into that (scenario, run)'s records). The K runs are
     the variation axis, so this is a single scoring pass per (scenario, condition,
-    run) at the elicitation temperature; ``run_id`` seeds it for reproducibility."""
+    run) at the scoring temperature (client.TEMPERATURE); ``run_id`` seeds it
+    for reproducibility."""
     scenario = scenario_row["scenario_label"]
     out = {}
     for dc in DESIRES:
@@ -563,7 +582,7 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
         )
 
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
-    alts_df = pd.read_json(alts_path, lines=True)
+    alts_df = pd.DataFrame(read_jsonl_checked(alts_path))
     if "run_id" not in alts_df.columns:
         raise SystemExit(
             f"{alts_path} has no run_id field — re-run generate_alternatives.py "
@@ -579,22 +598,36 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
         "g": build_system_prompt("g"),
     }
 
-    # Resume: skip (scenario, run) units already written to lm_runs.jsonl.
+    # Resume: skip (scenario, run) units already written to lm_runs.jsonl —
+    # except units whose records contain null features/scalars (failed calls),
+    # which are re-queued so re-running heals them (their stale records are
+    # dropped and rewritten at the first checkpoint). Refuses to resume across
+    # a prompts.py edit (see guard_resume_prompt_mismatch).
     done_units = set()
     existing_records = []
     if runs_path.exists():
-        with open(runs_path) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                rec = json.loads(line)
-                existing_records.append(rec)
-                done_units.add((rec["scenario_label"], int(rec["run_id"])))
+        guard_resume_prompt_mismatch(runs_path)
+        by_unit = {}
+        for rec in read_jsonl_checked(runs_path):
+            key = (rec["scenario_label"], int(rec["run_id"]))
+            by_unit.setdefault(key, []).append(rec)
+        n_requeued = 0
+        for key, recs in by_unit.items():
+            if _unit_complete(recs):
+                done_units.add(key)
+                existing_records.extend(recs)
+            else:
+                n_requeued += 1
         print(
             f"Found {len(done_units)} (scenario, run) units already scored — resuming.",
             flush=True,
         )
+        if n_requeued:
+            print(
+                f"Re-queued {n_requeued} checkpointed units whose records "
+                "contain null features/scalars (failed calls) for re-scoring.",
+                flush=True,
+            )
 
     run_ids = sorted(alts_df["run_id"].dropna().unique().astype(int))
 
@@ -669,29 +702,32 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
             all_records.extend(fut.result())
             done_count += 1
             # Checkpoint: rewrite the full JSONL (append-only set of records).
-            with open(runs_path, "w") as f:
-                for rec in all_records:
-                    f.write(json.dumps(rec) + "\n")
+            write_jsonl_atomic(runs_path, all_records)
             print(
                 f"  [{done_count}/{len(units)}] {s} / run {r} done — checkpointed",
                 flush=True,
             )
 
-    manifest_path = write_run_manifest(
-        runs_path,
-        stage="score_merged",
-        study=study,
-        extra={
-            "k_runs": len(run_ids),
-            "score_temperature": TEMPERATURE,
-            "n_scenarios": len(scenarios_df),
-            "n_records": len(all_records),
-        },
-    )
-
     print("\n=== Done ===")
     print(f"  {runs_path.name}  ({len(all_records)} records)")
-    print(f"  {manifest_path.name}  (provenance manifest)")
+    # The manifest describes how the data were produced, so only (re)write it
+    # when this invocation actually scored something — a no-op resume must not
+    # stamp the current prompts/git hashes over data produced earlier.
+    if units:
+        manifest_path = write_run_manifest(
+            runs_path,
+            stage="score_merged",
+            study=study,
+            extra={
+                "k_runs": len(run_ids),
+                "score_temperature": TEMPERATURE,
+                "n_scenarios": len(scenarios_df),
+                "n_records": len(all_records),
+            },
+        )
+        print(f"  {manifest_path.name}  (provenance manifest)")
+    else:
+        print("  no new units scored — manifest left unchanged")
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ execute:
 
 ```{r setup, include=FALSE}
 source(here::here("analysis", "utils.R"))
+library(ggpattern)
 setup_analysis()
 ```
 
@@ -21,7 +22,8 @@ setup_analysis()
 
 ```{r load-data}
 data_path <- here::here("data", "food_inv_desire", "main_trials_long.csv")
-if (file.exists(data_path)) {
+have_data <- file.exists(data_path)
+if (have_data) {
   df <- read_csv(data_path, show_col_types = FALSE)
   cat("Trials:", nrow(df), "\n")
 } else {
@@ -30,7 +32,7 @@ if (file.exists(data_path)) {
 ```
 
 ```{r belief-update-prep}
-if (exists("df")) {
+if (have_data) {
   bu <- calculate_belief_update(df, "response") |>
     filter(stage == "posterior") |>
     mutate(
@@ -39,16 +41,21 @@ if (exists("df")) {
       effort = factor_effort(effort)
     )
 
-  agg <- bu |>
-    group_by(action, intimacy, effort) |>
-    tidyboot_mean(column = belief_update) |>
-    ungroup()
+  # Cluster bootstrap (resampling subjects), the project standard: subjects
+  # contribute multiple rows per cell, so resampling rows would understate the
+  # CI width.
+  agg <- boot_cluster_means(bu, "belief_update",
+                            c("action", "intimacy", "effort")) |>
+    rename(empirical_stat = belief_update,
+           ci_lower = belief_update_ci_lower,
+           ci_upper = belief_update_ci_upper)
 }
 ```
 
 ```{r cv-load}
 cv_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.json")
-if (file.exists(cv_path) && exists("agg")) {
+have_cv <- have_data && file.exists(cv_path)
+if (have_cv) {
   cv_preds <- read_model_json(cv_path) |>
     mutate(
       action = factor(ACTION_LABELS[action + 1], levels = ACTION_LABELS),
@@ -71,8 +78,7 @@ if (file.exists(cv_path) && exists("agg")) {
 #| fig-width: 13
 #| fig-height: 5
 
-if (exists("cv_model_agg")) {
-  library(ggpattern)
+if (have_cv) {
   combined <- bind_rows(
     cv_model_agg |>
       transmute(panel = as.character(model_label), action, intimacy, effort,
@@ -136,7 +142,7 @@ model predicts a constant ~0, so its correlation is undefined).
 ```{r cv-scatter}
 #| fig-width: 12
 #| fig-height: 4.5
-if (exists("cv_model_agg")) {
+if (have_cv) {
   human_cells <- agg |> select(action, intimacy, effort, human = empirical_stat)
   scatter_df <- cv_model_agg |>
     rename(model = empirical_stat) |>

@@ -10,8 +10,11 @@ separate predict step). Shared concerns:
   - Data loaders (per experiment, returning per-trial belief updates)
 """
 
+import hashlib
 import json
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 _project_root = Path(__file__).resolve().parent.parent.parent
@@ -30,7 +33,6 @@ from tables import (
     DesireLevels,
     EFFORT_CONDITION_TO_IDX,
     INTIMACY_CONDITION_TO_IDX,
-    RELATIONSHIP_LEVEL_VALUES,
     scenario_to_idx_for_study,
 )
 from utils import get_project_root
@@ -45,6 +47,7 @@ def _fit_with_adam(
     label="",
     patience=100,
     tol=1e-6,
+    grad_fn=None,
 ):
     """Adam fit loop with non-negativity clipping, best-so-far tracking, and a
     patience stop.
@@ -52,14 +55,19 @@ def _fit_with_adam(
     Adam is not monotone even on full-batch problems, so the loop keeps the
     best (params, NLL) seen so far and stops once the best NLL hasn't improved
     by more than `tol` for `patience` consecutive steps. Returns the tracked
-    best iterate, not the last one.
+    best iterate, not the last one. A non-finite NLL abandons the restart
+    (returned best_nll stays inf if no finite NLL was ever seen, so
+    `_fit_multistart` counts it as failed rather than keeping the init).
     """
     params = jnp.array(init_params)
     # jit the value+grad so the whole per-step graph (K-run observer build →
     # mixture NLL → backward) compiles once and reruns fast, instead of being
     # re-dispatched eagerly every Adam step. Compile cost amortizes over the
     # fit's steps; the heavy joint observers stay compute-bound (see note).
-    grad_fn = jax.jit(jax.value_and_grad(loss_fn))
+    # `_fit_multistart` passes a pre-jitted `grad_fn` so the compilation is
+    # shared across restarts instead of redone per restart.
+    if grad_fn is None:
+        grad_fn = jax.jit(jax.value_and_grad(loss_fn))
     opt = optax.adam(learning_rate=lr)
     opt_state = opt.init(params)
 
@@ -68,6 +76,13 @@ def _fit_with_adam(
     steps_without_improvement = 0
     for step in range(max_steps):
         nll, grad = grad_fn(params)  # NLL at the current params, pre-update
+        if not jnp.isfinite(nll):
+            # NaN/inf loss: the gradient is unusable and every later step would
+            # inherit the NaN, so stop here. best_nll keeps its last finite
+            # value (inf if none), flagging this restart as failed.
+            if verbose:
+                print(f"  {label} non-finite NLL at step {step}, abandoning restart")
+            break
         if nll < best_nll - tol:
             best_nll = nll
             best_params = params
@@ -93,6 +108,15 @@ def _fit_with_adam(
     return best_params, best_nll
 
 
+def _restart_seed(seed_key):
+    """Deterministic 64-bit seed for the cold-restart RNG from a string key
+    (e.g. "slug|variant|held_out_scenario"). SHA-256, mirroring `_seed_for` in
+    model/lm/score_merged.py (Python's builtin `hash` is salted per process),
+    so every (study, variant, fold) gets decorrelated inits while staying
+    reproducible across reruns."""
+    return int.from_bytes(hashlib.sha256(seed_key.encode()).digest()[:8], "little")
+
+
 def _fit_multistart(
     loss_fn,
     n_params,
@@ -103,21 +127,23 @@ def _fit_multistart(
     label="",
     init_params=None,
     patience=100,
+    seed_key=None,
 ):
     """Run `_fit_with_adam` from several inits and keep the best final NLL.
 
     Without `init_params`, inits are the canonical all-ones vector plus
     `n_restarts - 1` seeded lognormal(0, 0.5) draws (positive, centered at 1,
-    deterministic via `default_rng(0)`), guarding against local minima from the
-    gamma power law. When `init_params` is given (a warm start — e.g. CV refits
-    seeded from the full-data fit, which a leave-one-scenario-out refit only
-    perturbs slightly), it is the first init, and only `n_restarts - 1` cold
-    draws are added; with `n_restarts=1` the fit is a single warm start.
+    deterministic via `_restart_seed(seed_key)`), guarding against local minima
+    from the gamma power law. When `init_params` is given (a warm start — e.g.
+    CV refits seeded from the full-data fit, which a leave-one-scenario-out
+    refit only perturbs slightly), it is the first init, and only
+    `n_restarts - 1` cold draws are added; with `n_restarts=1` the fit is a
+    single warm start.
 
     Returns (best_params, best_nll, records) where `records` is one dict per
     restart {restart, init, final_params, nll} for stability auditing.
     """
-    rng = np.random.default_rng(0)
+    rng = np.random.default_rng(_restart_seed(seed_key) if seed_key else 0)
     inits = [
         jnp.asarray(init_params, dtype=jnp.float32)
         if init_params is not None
@@ -125,6 +151,10 @@ def _fit_multistart(
     ]
     while len(inits) < n_restarts:
         inits.append(jnp.array(rng.lognormal(mean=0.0, sigma=0.5, size=n_params)))
+
+    # Compile the value+grad once here and share it across restarts (the loss
+    # is identical per restart; only the init differs).
+    grad_fn = jax.jit(jax.value_and_grad(loss_fn))
 
     best_params, best_nll = None, float("inf")
     records = []
@@ -137,6 +167,7 @@ def _fit_multistart(
             verbose=verbose,
             label=f"{label}[restart {ri}]",
             patience=patience,
+            grad_fn=grad_fn,
         )
         records.append(
             {
@@ -148,6 +179,13 @@ def _fit_multistart(
         )
         if nll < best_nll:
             best_nll, best_params = float(nll), params
+    if best_params is None:
+        raise RuntimeError(
+            f"{label or 'fit'}: no restart reached a finite NLL "
+            f"({len(inits)} restart(s), seed_key={seed_key!r}) — the loss was "
+            "NaN/inf from every init. Check the LM tables and belief-update "
+            "data for non-finite values before re-running the fit."
+        )
     return best_params, best_nll, records
 
 
@@ -196,12 +234,6 @@ _EFFORT_STATES = jnp.array([0.0, 1.0])
 EFFORT_PRIOR_MEAN = jnp.dot(jnp.ones(2) / 2, _EFFORT_STATES)
 
 _LOG_2PI = jnp.log(2.0 * jnp.pi)
-
-
-@jax.jit
-def posterior_mean(post):
-    """Mean of a (101,) posterior over the [0, 1] latent grid (`post @ GRID`)."""
-    return jnp.dot(post, GRID)
 
 
 @jax.jit
@@ -263,6 +295,106 @@ def read_jsonl(path):
     return rows
 
 
+def sha256_file(path):
+    """Hex SHA-256 of a file's bytes (fit/CV provenance manifests: written by
+    the fit wrappers and the CV dispatcher, verified by model_comparison.py)."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def git_sha():
+    """Current commit SHA for provenance manifests; None if git is unavailable
+    (e.g. an exported tree) — a manifest still ties its outputs together via
+    their content hashes."""
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=get_project_root(),
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+# The fit output files written together per study; fit_manifest.json hashes
+# them so the CV warm start and model_comparison.py can refuse a fit that is
+# stale relative to the data or a mixed-vintage combination of outputs.
+FIT_OUTPUT_NAMES = ("fit_results.json", "fit_restarts.jsonl")
+
+
+def data_csv_path(slug):
+    """The per-trial long CSV a study's fit and CV both consume."""
+    return get_project_root() / "data" / slug / "main_trials_long.csv"
+
+
+def write_fit_manifest(slug, output_dir, data_csv=None):
+    """Provenance manifest for a fit run: the git SHA plus content hashes of
+    the fit outputs and the input data CSV. Written by the fit_*.py wrappers
+    right after the outputs; verified by the CV dispatcher (before
+    warm-starting folds from the fit) and by model_comparison.py."""
+    output_dir = Path(output_dir)
+    data_csv = Path(data_csv) if data_csv is not None else data_csv_path(slug)
+    manifest = {
+        "experiment": slug,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "git_sha": git_sha(),
+        "outputs": {name: sha256_file(output_dir / name) for name in FIT_OUTPUT_NAMES},
+        "input_data": {
+            # Relative to the project root when inside it (the normal case);
+            # absolute for out-of-tree paths (e.g. test fixtures).
+            "path": (
+                str(data_csv.relative_to(get_project_root()))
+                if data_csv.is_relative_to(get_project_root())
+                else str(data_csv)
+            ),
+            "sha256": sha256_file(data_csv),
+        },
+    }
+    write_json(output_dir / "fit_manifest.json", manifest)
+    print(f"Wrote {output_dir / 'fit_manifest.json'}")
+    return manifest
+
+
+def verify_fit_manifest(slug, output_dir=None, data_csv=None):
+    """Require fit_manifest.json and verify (a) the fit outputs still hash to
+    the values recorded when they were written together and (b) the input data
+    CSV is unchanged since the fit ran — i.e. the fit is neither mixed-vintage
+    nor stale relative to the data. Returns the manifest dict."""
+    output_dir = (
+        Path(output_dir)
+        if output_dir is not None
+        else get_project_root() / "model" / "outputs" / slug
+    )
+    data_csv = Path(data_csv) if data_csv is not None else data_csv_path(slug)
+    manifest_path = output_dir / "fit_manifest.json"
+    if not manifest_path.exists():
+        raise RuntimeError(
+            f"missing {manifest_path} — fit outputs for {slug} predate "
+            f"provenance manifests (or were partially deleted); re-run "
+            f"`make fit-{slug}`."
+        )
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    stale = [
+        name
+        for name in FIT_OUTPUT_NAMES
+        if sha256_file(output_dir / name) != manifest.get("outputs", {}).get(name)
+    ]
+    if stale:
+        raise RuntimeError(
+            f"fit output file(s) {stale} do not match fit_manifest.json — stale "
+            f"or mixed-vintage fit outputs for {slug}; re-run `make fit-{slug}`."
+        )
+    if sha256_file(data_csv) != manifest.get("input_data", {}).get("sha256"):
+        raise RuntimeError(
+            f"{data_csv} changed since the {slug} fit ran — the fit (and any CV "
+            f"warm-started from it) is stale; re-run `make fit-{slug}` and then "
+            f"`make cv-{slug}`."
+        )
+    return manifest
+
+
 # ==============================================================================
 # Frozen-param loaders
 # ==============================================================================
@@ -307,6 +439,47 @@ def load_fit_results(slug: str) -> dict:
 # observer table to each slider judgment and sum the two per-slider NLLs.
 
 
+def _map_condition(data, column, mapping, slug):
+    """Map a condition-label column to model indices, refusing to let an
+    unmapped label become a silent NaN index (a stale label would otherwise
+    surface layers away as an opaque indexing TypeError)."""
+    mapped = data[column].map(mapping)
+    if mapped.isna().any():
+        bad = sorted(data.loc[mapped.isna(), column].astype(str).unique())
+        raise ValueError(
+            f"data/{slug}/main_trials_long.csv: column '{column}' has unmapped "
+            f"label(s) {bad}; expected one of {sorted(mapping)}. Fix the labels "
+            f"in the CSV or re-run the data pipeline (`make data-{slug}`)."
+        )
+    return mapped
+
+
+def _validate_long_raw(raw, rating_cols, slug):
+    """Fail fast on malformed main_trials_long.csv rows before the prior↔
+    posterior pivot: duplicate (subject, scenario, stage) rows would cross-join
+    in the merge, and NaN or out-of-[0, 1] ratings would silently poison the
+    belief updates (all rating DVs are normalized to [0, 1] in preprocessing)."""
+    stage_key = ["subject_id", "scenario_label", "stage"]
+    dup = raw.duplicated(stage_key, keep=False)
+    if dup.any():
+        offenders = raw.loc[dup, stage_key].drop_duplicates().head(5)
+        raise ValueError(
+            f"data/{slug}/main_trials_long.csv has duplicate "
+            f"(subject_id, scenario_label, stage) rows — the prior↔posterior "
+            f"merge would cross-join them. First offenders:\n{offenders}\n"
+            f"Re-run the data pipeline (`make data-{slug}`)."
+        )
+    for c in rating_cols:
+        bad = raw[c].isna() | (raw[c] < 0) | (raw[c] > 1)
+        if bad.any():
+            raise ValueError(
+                f"data/{slug}/main_trials_long.csv: column '{c}' has "
+                f"{int(bad.sum())} value(s) that are NaN or outside [0, 1] "
+                f"(ratings are normalized to [0, 1] in preprocessing). "
+                f"Re-run the data pipeline (`make data-{slug}`)."
+            )
+
+
 def _load_long(slug):
     """Load a 3-action experiment's main_trials_long.csv as one row per trial,
     carrying belief-update columns (`<rating>_update = posterior − prior`).
@@ -316,7 +489,7 @@ def _load_long(slug):
     per rating column. Returns a DataFrame with the posterior-stage condition
     columns plus `subject_id` and `<rating>_update` for each rating column present
     (`response`, `intimacy_rating`, `desire_rating`, `effort_rating`), mapped to
-    model indices: scenario_idx, action, intimacy_idx_4/_101, desire_condition
+    model indices: scenario_idx, action, intimacy_idx_4, desire_condition
     (0/1), effort_condition (0/1).
 
     Column assumptions:
@@ -330,54 +503,67 @@ def _load_long(slug):
     raw = pd.read_csv(filepath)
 
     # Pivot prior↔posterior into per-trial belief updates (mirrors the R
-    # calculate_belief_update; grouped by subject × scenario). An inner merge
-    # drops trials missing a stage, matching the R NA semantics.
+    # calculate_belief_update; grouped by subject × scenario).
     rating_cols = [
         c
         for c in ("response", "intimacy_rating", "desire_rating", "effort_rating")
         if c in raw.columns
     ]
+    _validate_long_raw(raw, rating_cols, slug)
     key = ["subject_id", "scenario_label"]
     prior = raw[raw["stage"] == "prior"]
     post = raw[raw["stage"] == "posterior"].copy()
     data = post.merge(prior[key + rating_cols], on=key, suffixes=("", "_prior"))
+    if len(data) != len(post):
+        dropped = post.merge(prior[key], on=key, how="left", indicator=True)
+        offenders = dropped.loc[dropped["_merge"] == "left_only", key]
+        raise ValueError(
+            f"data/{slug}/main_trials_long.csv: {len(offenders)} posterior "
+            f"trial(s) have no matching prior row and would be silently "
+            f"dropped. First offenders:\n{offenders.head(5)}\n"
+            f"Re-run the data pipeline (`make data-{slug}`)."
+        )
     for c in rating_cols:
         data[f"{c}_update"] = data[c] - data[f"{c}_prior"]
 
-    data["action"] = data["action_condition"].map(ACTION_LABEL_TO_IDX)
+    data["action"] = _map_condition(data, "action_condition", ACTION_LABEL_TO_IDX, slug)
     # Scenario indices follow the study's own stimulus set (food vs. nonfood
     # labels; see STUDY_SCENARIO_LABELS in tables.py).
-    data["scenario_idx"] = data["scenario_label"].map(scenario_to_idx_for_study(slug))
+    data["scenario_idx"] = _map_condition(
+        data, "scenario_label", scenario_to_idx_for_study(slug), slug
+    )
 
     desire_map = {"low": 0, "high": 1}
     if "desire" in data.columns:
-        data["desire_condition"] = data["desire"].map(desire_map)
+        data["desire_condition"] = _map_condition(data, "desire", desire_map, slug)
     elif (
         "desire_condition" in data.columns and data["desire_condition"].dtype == object
     ):
-        data["desire_condition"] = data["desire_condition"].map(desire_map)
+        data["desire_condition"] = _map_condition(
+            data, "desire_condition", desire_map, slug
+        )
 
     if "effort" in data.columns:
-        data["effort_condition"] = data["effort"].map(EFFORT_CONDITION_TO_IDX)
+        data["effort_condition"] = _map_condition(
+            data, "effort", EFFORT_CONDITION_TO_IDX, slug
+        )
     elif (
         "effort_condition" in data.columns and data["effort_condition"].dtype == object
     ):
-        data["effort_condition"] = data["effort_condition"].map(EFFORT_CONDITION_TO_IDX)
+        data["effort_condition"] = _map_condition(
+            data, "effort_condition", EFFORT_CONDITION_TO_IDX, slug
+        )
 
     # Intimacy is stored as a verbal slug (no numeric code). Map it to the
-    # 4-level RelationshipConditions index, and to the 101-bin index of its
-    # placeholder continuous magnitude (RELATIONSHIP_LEVEL_VALUES × 100).
-    intimacy_map = INTIMACY_CONDITION_TO_IDX
-    intimacy_bin_101 = {
-        slug: int(round(float(RELATIONSHIP_LEVEL_VALUES[idx]) * 100))
-        for slug, idx in INTIMACY_CONDITION_TO_IDX.items()
-    }
+    # 4-level RelationshipConditions index.
     if "intimacy" in data.columns:
-        data["intimacy_idx_4"] = data["intimacy"].map(intimacy_map)
-        data["intimacy_idx_101"] = data["intimacy"].map(intimacy_bin_101)
+        data["intimacy_idx_4"] = _map_condition(
+            data, "intimacy", INTIMACY_CONDITION_TO_IDX, slug
+        )
     elif "relationship_condition" in data.columns:
-        data["intimacy_idx_4"] = data["relationship_condition"].map(intimacy_map)
-        data["intimacy_idx_101"] = data["relationship_condition"].map(intimacy_bin_101)
+        data["intimacy_idx_4"] = _map_condition(
+            data, "relationship_condition", INTIMACY_CONDITION_TO_IDX, slug
+        )
 
     return data
 
@@ -643,6 +829,20 @@ def joint_ie_table_kwargs(utility_param_names, domain="food"):
     )
 
 
+def resolve_variant_table_kwargs(variants, table_kwargs_fn):
+    """Resolve every variant's LM table kwargs up front, before any fitting
+    starts. A missing LM table (e.g. an unelicited lm_runs_base.jsonl) then
+    fails immediately with the loader's FileNotFoundError instead of crashing
+    after hours of fitting the earlier variants. `variants` maps variant name →
+    (observer_fn, utility_param_names); `table_kwargs_fn(variant_name,
+    utility_param_names)` builds one variant's kwargs. Returns
+    {variant_name: table_kwargs}."""
+    return {
+        name: table_kwargs_fn(name, utility_names)
+        for name, (_, utility_names) in variants.items()
+    }
+
+
 # ------------------------------------------------------------------------------
 # Single-target fits — reuse _fit_alpha_observer with the appropriate slicer.
 # The 3-action observer tables are 5-D: (action, scenario, intimacy/rel, desire, effort).
@@ -737,6 +937,7 @@ def fit_intimacy_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    seed_key=None,
 ):
     """Study 2a — joint fit of utility weights + α_observer + σ on the intimacy
     belief update via the K-run Gaussian mixture.
@@ -775,6 +976,7 @@ def fit_intimacy_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="intimacy_joint",
+        seed_key=seed_key,
     )
     return params, float(nll), restarts
 
@@ -794,6 +996,7 @@ def fit_desire_observer_joint(
     n_restarts=5,
     init_params=None,
     patience=100,
+    seed_key=None,
 ):
     """Study 1a — joint fit of utility weights + α_observer + σ on the desire
     belief update via the K-run Gaussian mixture.
@@ -833,6 +1036,7 @@ def fit_desire_observer_joint(
         verbose=verbose,
         label="desire_joint",
         patience=patience,
+        seed_key=seed_key,
     )
     return params, float(nll), restarts
 
@@ -851,6 +1055,7 @@ def fit_joint_de_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    seed_key=None,
 ):
     """Study 1b — joint fit of utility weights + α_observer + σ on the joint
     (desire, effort) belief update via the K-run bivariate Gaussian mixture
@@ -899,6 +1104,7 @@ def fit_joint_de_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="joint_de_joint",
+        seed_key=seed_key,
     )
     return params, float(nll), restarts
 
@@ -917,6 +1123,7 @@ def fit_joint_ie_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    seed_key=None,
 ):
     """Study 2b — joint fit of utility weights + α_observer + σ on the joint
     (intimacy, effort) belief update via the K-run bivariate Gaussian mixture
@@ -965,5 +1172,6 @@ def fit_joint_ie_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="joint_ie_joint",
+        seed_key=seed_key,
     )
     return params, float(nll), restarts

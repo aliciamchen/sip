@@ -74,10 +74,12 @@ const TIMING_NOTE_TWO =
   "<p>You will answer both questions twice — once before and once after we show you what the two people decide to do.</p>";
 
 // Final page: a study-specific "read carefully" lead-in followed by the shared
-// payment, don't-close, and begin lines.
+// payment, don't-close, and begin lines. The {{PAYMENT}} placeholder is filled
+// from the study CONFIG by bootstrap.js, so a study that pays differently sets
+// PAYMENT in _lib/config.js rather than editing this shared text.
 function finalInstructionsPage(leadIn) {
   return instructionsPage([
-    `<p>${leadIn} 🙂 You will receive $5 if you successfully complete the survey.</p>`,
+    `<p>${leadIn} 🙂 You will receive {{PAYMENT}} if you successfully complete the survey.</p>`,
     "<p>Please do not close the window until you have completed the survey. If you do so, you will lose your progress.</p>",
     "<p>This is the end of the instructions. Press next to proceed to the comprehension check.</p>",
   ]);
