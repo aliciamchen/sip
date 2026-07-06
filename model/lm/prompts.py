@@ -17,7 +17,9 @@ The pipeline has two elicitation steps (see the manuscript Methods):
        - **risk**: bodily, spatial, or informational exposure an action creates
          between the two people — the relationship-independent
          interpersonal-vulnerability feature (discomfort = risk · (1−I)^γ).
-       - **effort**: physical, material, and time cost of executing an action.
+       - **effort**: the cost of executing an action — physical motor,
+         equipment, and time cost, plus (for disclosures) the production
+         cost of producing the utterance.
        - **g**: desire-free goal-satisfaction — how fully the action delivers
          the outcome at stake. The reward term is `w_v · desire · g`, so desire
          scales this stable per-action value (g replaced the old signed-valence
@@ -37,15 +39,16 @@ three non-food sub-types in `scenarios_nonfood.csv` — *substance*
 salary, gossip, home, navigation). The risk rubric covers three channel types
 (bodily-substance transfer, physical-contact / shared-space, and
 informational / private-resource); the effort rubric covers physical motor
-work, equipment / setup, and time cost (physical cost only — not coordination
-or other cognitive costs). The original food-only prompts were retired in
+work, equipment / setup, time cost, and — for disclosures — the executional
+cost of producing the utterance (never relational discomfort, which is the
+risk dimension). The original food-only prompts were retired in
 favor of this single set after a side-by-side comparison showed the
 unified prompts produced equal or slightly better fits on the food data.
 
 For disclosure actions (the privacy-type scenarios), effort is
 operationalized as the executional cost of producing the account — how
 long the telling takes and how much context or explaining it requires —
-which falls under the effort rubric's time-cost clause. The emotional
+which the effort rubric scores as a distinct executional cost. The emotional
 difficulty of revealing the content is deliberately NOT effort; that is
 the risk dimension. See the invariants note in
 `experiments/scenarios_nonfood.py` and the Study 3 scenario section of
@@ -169,14 +172,17 @@ Use this scale from 0 to 6 (continuous values allowed):
 #     cost formally as what an agent weighs against desire — the framework
 #     this project's inverse-planning model instantiates.
 #
-#   - Single-scalar physical cost (integrating across physical sub-types)
-#     — Liu, S., Ullman, T. D., Tenenbaum, J. B., & Spelke, E. S. (2017).
-#     "Ten-month-old infants infer the value of goals from the costs of
-#     actions." Science 358(6366): 1038–1041. Showed that observers
-#     integrate distinct physical cost features (height, width, incline)
-#     into one abstract cost metric — directly grounds collapsing motor,
-#     equipment, and time onto one 0-6 scale and motivates restricting
-#     the construct to physical cost features (rather than cognitive ones).
+#   - Single-scalar cost (integrating across sub-types) — Liu, S., Ullman,
+#     T. D., Tenenbaum, J. B., & Spelke, E. S. (2017). "Ten-month-old
+#     infants infer the value of goals from the costs of actions." Science
+#     358(6366): 1038–1041. Showed that observers integrate distinct
+#     physical cost features (height, width, incline) into one abstract
+#     cost metric — directly grounds collapsing motor, equipment, and time
+#     onto one 0-6 scale. For disclosure actions the same 0-6 scale also
+#     absorbs the executional cost of producing the account (length,
+#     backstory, roundabout phrasing); the emotional vulnerability of
+#     disclosing is kept separate, in the risk dimension. See the
+#     disclosure-effort rationale in experiments/scenarios_nonfood.py.
 #
 #   - Effort as a perceptible quantity separable from desire —
 #     Jara-Ettinger, J., Gweon, H., Tenenbaum, J. B., & Schulz, L. E.
@@ -184,22 +190,23 @@ Use this scale from 0 to 6 (continuous values allowed):
 #     rational action." Cognition 140: 14–23. Establishes that children at
 #     4–6 can estimate action cost as distinct from goal value and agent
 #     competence — grounds the assumption that an "LM-as-participant" can
-#     rate physical effort with the instruction below.
+#     rate effort with the instruction below.
 
 _EFFORT_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate the *physical* cost the actor would weigh against the benefit of the action — the bodily, material, and temporal cost of carrying it out. The three cost types below all count; integrate across them into a single rating:
+For each action, evaluate the cost the actor would weigh against the benefit of the action — the physical, executional, and temporal cost of carrying it out. The cost types below all count; integrate across them into a single rating:
 
 - Physical motor cost: how much bodily work the action requires (preparing, serving, cutting, pouring, handing over, cleaning, wiping, drying, tidying, rearranging, applying).
 - Equipment and preparation cost: whether the action needs extra items or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces) that someone has to obtain, set up, or take care of.
-- Time cost: how long the action takes — waiting for something to dry, sequential rather than simultaneous use, an extended preparation.
+- Executional and production cost: for actions that consist of speaking, telling, or disclosing, how much work goes into producing the utterance itself — how long the account takes to deliver and how much context, backstory, or roundabout indirect phrasing the speaker must use, for it to land.
+- Time cost: how long the action takes — waiting for something to dry, sequential rather than simultaneous use, an extended preparation or telling.
 
-Do NOT rate social awkwardness, relational discomfort, or how intimate or appropriate the action would feel — those are separate dimensions that we are not asking about here. Here we want only the physical effort of carrying the action out.
+Do NOT rate social awkwardness, relational discomfort, or how intimate, appropriate, or emotionally hard the action would feel — those are separate dimensions that we are not asking about here. Here we want only the effort of carrying the action out.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No physical effort (no bodily work, no extra items, no waiting)
-3 = Moderate physical effort (a few bodily steps, such as setting out a clean utensil, dividing a portion, or briefly waiting; or a small handful of extra items to obtain)
-6 = High physical effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, waiting for a long time, or cleaning and assembling many separate items)"""
+0 = No effort (no bodily work, no extra items, no waiting, nothing to compose or marshal)
+3 = Moderate effort (a few bodily steps, such as setting out a clean utensil, dividing a portion, or briefly waiting; a small handful of extra items to obtain; or a short account that takes a little effort to produce)
+6 = High effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, waiting a long time, cleaning and assembling many separate items, or producing a long account that needs extensive backstory or roundabout phrasing to convey)"""
 
 
 # Per-rating-type instructions used in the user prompt (the line just above
@@ -211,9 +218,10 @@ _USER_INSTRUCTIONS = {
         "space, or private disclosure (0-6 scale):"
     ),
     "effort": (
-        "Rate the physical and logistical cost of executing each action — "
-        "how much physical work, preparation, or extra equipment is required "
-        "(0-6 scale):"
+        "Rate the physical or executional cost of executing each action — "
+        "how much physical work, preparation, or equipment it takes, or, for "
+        "telling or disclosing, how much marshaling and roundabout phrasing "
+        "producing the account takes (0-6 scale):"
     ),
     "g": (
         "Rate how much each action results in the two people actually getting "
@@ -286,7 +294,8 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
     `effort_low` / `effort_high`).
     action_texts is an ordered list of action descriptions; they're rendered
     as "Action 0: ...", "Action 1: ...", etc.
-    desire_object names the specific resource at stake (e.g. "the hot dog");
+    desire_object names the specific outcome or resource at stake (e.g.
+    "the hot dog", "to soothe their chapped lips");
     when given for rating_type="g" it makes the instruction concrete instead
     of the generic "the thing at stake". Ignored for the other rating types.
 
@@ -454,8 +463,9 @@ def desire_user_prompt(vignette, state, desire_object):
 
     `state` is the actor's desire-state paragraph (the scenario's
     `desire_low` or `desire_high` text). `desire_object` names the specific
-    resource at stake (e.g. "the hot dog"), matching the object the human
-    participant is asked about in the desire DV question
+    outcome or resource at stake (e.g. "the hot dog", "to soothe their
+    chapped lips"), matching what the human participant is asked about in
+    the desire DV question
     (`experiments/_lib/scenario.js`). Returns one 0-100 desire magnitude.
     """
     return (
