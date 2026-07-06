@@ -122,6 +122,20 @@ _CONTEXTS = {
 }
 
 
+# Larger type for the standalone LM-elicitation validation figures. They are
+# placed at reduced widths in the SI, so the base "si" sizes render small; these
+# figures apply this rc profile (via plt.rc_context) around their drawing. The
+# dense feature-structure grid and the UMAP maps keep the base "si" sizes.
+SI_LARGE_RC = {
+    "font.size": 11.5,
+    "axes.titlesize": 12.5,
+    "axes.labelsize": 12.5,
+    "xtick.labelsize": 10.5,
+    "ytick.labelsize": 10.5,
+    "legend.fontsize": 10.5,
+}
+
+
 def apply_style(context="si"):
     """Apply the shared manuscript aesthetic at the given context's sizes."""
     has_nova = _register_arial_nova()
@@ -155,7 +169,7 @@ def panel_label(ax, letter, dx=-0.02, dy=1.04):
         dy,
         letter,
         transform=ax.transAxes,
-        fontsize=11,
+        fontsize=14,
         fontweight="bold",
         va="bottom",
         ha="right",

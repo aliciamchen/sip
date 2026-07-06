@@ -357,17 +357,15 @@ $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 
 # =============================================================================
 # SI LM-elicitation validation figures (no API calls — read the persisted
-# lm_runs.jsonl / embedding artifacts and write PDFs to figures/). The Study 3
-# validation figures are separate from the Study 1/2 paper figures; the
-# alternatives deep-dives require embed_alternatives.py + project_alternatives.py
-# for every study included in a paired panel.
+# lm_runs.jsonl / embedding artifacts and write PDFs to figures/). Each figure
+# spans all six active studies in one consolidated figure (the alternatives
+# deep-dives require embed_alternatives.py + project_alternatives.py for every
+# study). run-spread / mixture-check stay at Study 1a (model-fit diagnostics).
 # =============================================================================
 
 figures-lm-si:
 	uv run python model/lm/plot_si_validation.py
 	uv run python model/lm/plot_alternatives.py --figures si
-	uv run python model/lm/plot_alternatives.py --figures si --study nonfood_inv_joint_de --paired-study food_inv_joint_de --suffix 1b_3a
-	uv run python model/lm/plot_alternatives.py --figures si --study nonfood_inv_joint_ie --paired-study food_inv_joint_ie --suffix 2b_3b
 
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/ into the
@@ -384,14 +382,16 @@ JOURNAL_DIR := SIP_journal
 JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
 JOURNAL_FIGURES := \
   food_inv_desire_cv_overlay_bars.pdf:study1a-model-comparison.pdf \
-  si_lm_feature_structure_1a_1b_2a_2b.pdf:si-lm-feature-structure.pdf \
-  si_lm_manipulation_checks_1a_1b_2a_2b.pdf:si-lm-manipulation-checks.pdf \
-  si_lm_observed_scatter_1a.pdf:si-lm-observed-scatter.pdf \
-  si_lm_choice_set_sizes_1a_1b_2a_2b.pdf:si-lm-choice-set-sizes.pdf \
+  si_lm_feature_structure_all.pdf:si-lm-feature-structure.pdf \
+  si_lm_manipulation_checks_all.pdf:si-lm-manipulation-checks.pdf \
+  si_lm_observed_scatter_all.pdf:si-lm-observed-scatter.pdf \
+  si_lm_choice_set_sizes_all.pdf:si-lm-choice-set-sizes.pdf \
   si_lm_semantic_space_example_1a.pdf:si-lm-semantic-space-example.pdf \
-  si_lm_alternatives_composition_1a_2a.pdf:si-lm-alternatives-composition.pdf \
-  si_lm_alternatives_set_similarity_1a_2a.pdf:si-lm-alternatives-set-similarity.pdf \
-  si_lm_base_vs_full_1a.pdf:si-lm-base-vs-full.pdf \
+  si_lm_semantic_space_example_3a.pdf:si-lm-semantic-space-example-nonfood.pdf \
+  si_lm_alternatives_composition_relationship.pdf:si-lm-alternatives-composition-relationship.pdf \
+  si_lm_alternatives_composition_desire.pdf:si-lm-alternatives-composition-desire.pdf \
+  si_lm_alternatives_set_similarity_all.pdf:si-lm-alternatives-set-similarity.pdf \
+  si_lm_base_vs_full_1a_1b_3a.pdf:si-lm-base-vs-full.pdf \
   si_lm_g_contrast_1a.pdf:si-lm-g-contrast.pdf \
   si_lm_run_spread_1a.pdf:si-lm-run-spread.pdf \
   si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf
