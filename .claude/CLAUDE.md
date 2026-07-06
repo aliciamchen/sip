@@ -48,8 +48,12 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                                                               ↓
                                   model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
-                                  R/Quarto analysis (analysis/) → figures
+                     paper figures: Python scripts (styled by plot_style.py) → figures/
+                                                              ↓
+                     make sync-journal-figures → SIP_journal/figures/ (Overleaf)
 ```
+
+The R/Quarto qmds in `analysis/` are working/visualization documents, not the paper's figure source — the paper's figures come from the Python scripts above and its model-comparison statistics from `model/cv/model_comparison.py` (see `.claude/rules/analysis.md`).
 
 ## Common commands
 
