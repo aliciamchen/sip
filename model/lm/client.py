@@ -320,40 +320,6 @@ def numeric_action_schema(n_actions, name="ratings"):
     }
 
 
-def alternatives_array_schema(name="alternatives"):
-    """response_format for the alternative-generation calls.
-
-    Constrains the LM to emit ``{"alternatives": [{"action": <string>}, ...]}``.
-    The array is wrapped in an object (rather than a bare top-level array) because
-    ``strict: true`` requires an object root; the wrapper also lets the parser read
-    a single object instead of regex-extracting an array."""
-    return {
-        "type": "json_schema",
-        "json_schema": {
-            "name": name,
-            "strict": True,
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "alternatives": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "action": {"type": "string"},
-                            },
-                            "required": ["action"],
-                            "additionalProperties": False,
-                        },
-                    },
-                },
-                "required": ["alternatives"],
-                "additionalProperties": False,
-            },
-        },
-    }
-
-
 # ==============================================================================
 # Aggregator
 # ==============================================================================

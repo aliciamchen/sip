@@ -20,14 +20,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from client import (
     MAX_RETRIES,
     MODEL_ID,
-    alternatives_array_schema,
     find_json,
     find_json_array,
 )
 from prompts import ALTERNATIVES_SYSTEM_PROMPT
 
-# Built once and reused — schema construction is pure.
-_ALTERNATIVES_RESPONSE_FORMAT = alternatives_array_schema()
+# NOTE: this call deliberately does NOT pass a strict json_schema
+# `response_format`. Grammar-constrained decoding against the alternatives
+# schema (which permits an empty array) collapsed to `{"alternatives": []}` on
+# hard-to-counterfactual cells — most of the disclosure/privacy nonfood
+# scenarios' share actions — even when free generation reliably produces good
+# alternatives for the same prompt and seed. We instead let the model generate
+# freely and extract the JSON with the tolerant parser below (parse_alternatives
+# → find_json / find_json_array), backed by MAX_PARSE_RETRIES. The prompt still
+# asks for the exact `[{"action": ...}]` shape, so parseable output is the norm.
 
 MAX_TOKENS = 800
 MAX_PARSE_RETRIES = 5
@@ -43,9 +49,11 @@ CHECKPOINT_EVERY = 16
 def parse_alternatives(response_text):
     if response_text is None:
         return None
-    # The schema is now an object {"alternatives": [{"action": ...}, ...]}; read
-    # that. Fall back to a bare top-level array for robustness (e.g. an older
-    # response, or a non-strict retry).
+    # Free generation follows the prompt and emits a bare top-level array
+    # [{"action": ...}, ...], which the fallback below reads. We still try a
+    # wrapped {"alternatives": [...]} object first for robustness — that was the
+    # shape the retired json_schema response_format produced, and older data or
+    # a stray wrapped response should still parse.
     arr = None
     js = find_json(response_text)
     if js is not None:
@@ -116,7 +124,6 @@ def elicit_alternatives(client, user_prompt, temperature, seed=None):
         model=MODEL_ID,
         max_tokens=MAX_TOKENS,
         temperature=temperature,
-        response_format=_ALTERNATIVES_RESPONSE_FORMAT,
     )
     for attempt in range(MAX_PARSE_RETRIES):
         if seed is not None:
