@@ -43,3 +43,14 @@ model/model_viz_nonfit/
 # LM-evals branch) and manuscript figure sources. Both kept local-only.
 LM_evals/
 writing/
+
+# Session-derived Claude skills (mined from session history 2026-07-06); kept
+# local-only. The audit-docs / audit-repo / fix-latex-build skills stay tracked.
+.claude/skills/build-manuscript/
+.claude/skills/check-new-data/
+.claude/skills/edit-manuscript/
+.claude/skills/iterate-figures/
+.claude/skills/preview-experiments/
+.claude/skills/regen-experiments/
+.claude/skills/rename-concept/
+.claude/skills/rerun-lm-elicitation/

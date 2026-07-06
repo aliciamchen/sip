@@ -28,6 +28,13 @@ The reverse can also happen: the user sometimes develops code first (a new promp
 
 When you spot a discrepancy, don't silently reconcile it. Surface it: name the divergence, say which side looks newer based on context (recent edits, conversation, git log), and ask which direction to update before changing either one.
 
+## Decisions log
+
+`notes/decisions.md` (local-only, like the rest of `notes/`) records design and methods decisions reached in conversation, so they don't get re-derived from scratch. Two obligations:
+
+- **Before answering a design/methods question**, check the log. If a decision exists, start from its recorded rationale rather than re-litigating — the user may still overturn it, but deliberately.
+- **At the end of a consulting or design discussion that reaches a conclusion**, propose an entry: date, the question, the decision, the why, and whether it's firm or provisional. Don't append without showing the proposed entry first.
+
 ## Submission status
 
 The current journal version is in `SIP_journal/` (gitignored; its own git repo synced to Overleaf).
@@ -71,6 +78,7 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Project instructions
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
+- Before committing a nontrivial change under `model/` or `analysis/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run `/code-review` on the diff and apply or surface the findings. Do this on your own initiative; the user won't ask.
 - For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
 - When changing CLAUDE.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 
