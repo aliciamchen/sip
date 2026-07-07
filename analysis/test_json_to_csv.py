@@ -42,12 +42,15 @@ def anon(original_id):
     return str(uuid.uuid5(_NAMESPACE, original_id))
 
 
-def desire_trial(subject, scenario, stage, response, intimacy="max_formal"):
+def desire_trial(
+    subject, scenario, stage, response, intimacy="max_formal", stimulus_index=0
+):
     """One single-slider rating trial in the food_inv_desire raw schema."""
     return {
         "subject_id": subject,
         "response_type": "response",
         "scenario_label": scenario,
+        "stimulus_index": stimulus_index,
         "action_condition": "no_share",
         "effort_condition": "low",
         "intimacy_condition": intimacy,
@@ -56,13 +59,16 @@ def desire_trial(subject, scenario, stage, response, intimacy="max_formal"):
     }
 
 
-def joint_de_trial(subject, scenario, stage, desire, effort, intimacy="max_formal"):
+def joint_de_trial(
+    subject, scenario, stage, desire, effort, intimacy="max_formal", stimulus_index=0
+):
     """One two-slider rating trial in the food_inv_joint_de raw schema (the
     survey-html-form response is an object with one key per slider)."""
     return {
         "subject_id": subject,
         "response_type": "response",
         "scenario_label": scenario,
+        "stimulus_index": stimulus_index,
         "action_condition": "no_share",
         "intimacy_condition": intimacy,
         "stage": stage,
@@ -128,8 +134,8 @@ def test_happy_path_single_slider():
             inp,
             "s1",
             [
-                desire_trial("s1", "apples", "prior", 73),
-                desire_trial("s1", "apples", "posterior", 40),
+                desire_trial("s1", "apples", "prior", 73, stimulus_index=3),
+                desire_trial("s1", "apples", "posterior", 40, stimulus_index=3),
                 exit_trial("s1"),
             ],
         )
@@ -151,6 +157,7 @@ def test_happy_path_single_slider():
             r for r in main if r["subject_id"] == anon("s1") and r["stage"] == "prior"
         )
         assert float(s1_prior["response"]) == 0.73, s1_prior["response"]
+        assert s1_prior["stimulus_index"] == "3", s1_prior["stimulus_index"]
 
         exit_rows = read_csv_rows(out / "exit_survey.csv")
         assert len(exit_rows) == 2
@@ -160,6 +167,7 @@ def test_happy_path_single_slider():
         assert len(long) == 4
         assert "effort" in long[0] and "intimacy" in long[0], list(long[0].keys())
         assert "effort_condition" not in long[0] and "intimacy_condition" not in long[0]
+        assert "stimulus_index" in long[0], list(long[0].keys())
         assert {r["subject_id"] for r in long} == {anon("s1"), anon("s2")}
     print("✓ single-slider happy path (food_inv_desire)")
 

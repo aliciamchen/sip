@@ -38,6 +38,7 @@ Each row of `main_trials.csv` is one rating page (one prior or posterior elicita
 |--------|-------------|
 | `subject_id` | Anonymized participant UUID |
 | `scenario_label` | Scenario identifier (e.g., "apples") |
+| `stimulus_index` | 0-based order in which the participant encountered this scenario (0–15; identical on the scenario's prior and posterior rows), copied from the jsPsych trial data. Supports the first-half-of-trials (repeated-exposure) robustness analyses. |
 | `action_condition` | Observed action: "no_share", "low_risk_share", or "high_risk_share" |
 | `stage` | "prior" or "posterior" (before vs. after seeing the action) |
 

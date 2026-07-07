@@ -13,6 +13,11 @@ lax rule excludes only participants who failed the attention check AND answered
 only participants who passed the attention check AND answered at least one
 memory question correctly).
 
+Every rating row carries `stimulus_index`, the 0-based order in which the
+participant encountered that scenario (copied from the jsPsych trial data;
+identical on a scenario's prior and posterior rows). It supports the
+first-half-of-trials (repeated-exposure) robustness analyses.
+
 If any raw JSON file fails to parse, the script reports every failing file and
 exits without writing CSVs, so a corrupt download can't silently drop a
 participant. Remove or fix the offending files and re-run.
@@ -84,6 +89,7 @@ EXPERIMENT_CONFIGS = {
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
+            "stimulus_index",
             "action_condition",
             "effort_condition",
             "intimacy_condition",
@@ -124,6 +130,7 @@ EXPERIMENT_CONFIGS = {
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
+            "stimulus_index",
             "action_condition",
             "intimacy_condition",
             "stage",
@@ -155,6 +162,7 @@ EXPERIMENT_CONFIGS = {
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
+            "stimulus_index",
             "action_condition",
             "desire_condition",
             "effort_condition",
@@ -195,6 +203,7 @@ EXPERIMENT_CONFIGS = {
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
+            "stimulus_index",
             "action_condition",
             "desire_condition",
             "stage",
@@ -227,6 +236,7 @@ EXPERIMENT_CONFIGS = {
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
+            "stimulus_index",
             "action_condition",
             "intimacy_condition",
             "stage",
@@ -255,6 +265,7 @@ EXPERIMENT_CONFIGS = {
         "main_trial_fields": [
             "subject_id",
             "scenario_label",
+            "stimulus_index",
             "action_condition",
             "desire_condition",
             "stage",
@@ -286,6 +297,7 @@ def _extract_main_trial(trial, subject_id, config):
     row = {
         "subject_id": subject_id,
         "scenario_label": trial.get("scenario_label", ""),
+        "stimulus_index": trial.get("stimulus_index", ""),
         "stage": trial.get("stage", ""),
     }
     for field in config["condition_fields"]:
