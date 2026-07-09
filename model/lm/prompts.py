@@ -69,11 +69,14 @@ _PREAMBLE_RATING = (
 
 
 def _intro_line():
-    """Build the 'You will see a set of alternative actions ...' intro line. The
+    """Build the 'You will see a set of possible actions ...' intro line. The
     scored action set is variable-length: the LM sees the observed action plus
-    however many alternatives that run generated.
+    however many alternatives that run generated — presented in randomized order
+    with no marker of which was observed, so "possible actions" (not
+    "alternative actions") is the accurate description and preserves the
+    blinding.
     """
-    return "You will see a set of alternative actions the two people could take."
+    return "You will see a set of possible actions the two people could take."
 
 
 def _json_format_block():
@@ -145,24 +148,26 @@ For each action, evaluate how much it makes one person interpersonally vulnerabl
 - Physical contact or shared space: the two people's bodies physically touch, or they share close physical space — sustained proximity within a bounded space such as a bed, blanket, small room, or vehicle. The extent of contact or proximity and the body region involved both matter — brief incidental touch or passing nearness is a small exposure; sustained skin contact, sharing a confined space, or contact with normally restricted body regions is a large one.
 - Private or emotional disclosure: private, sensitive, or emotional information (personal details, or feelings one would not voice publicly), or access to personal resources (a private space, a personal item, a confidential record), from one person becomes accessible to the other.
 
-Here we are asking what the action does, in terms of the interpersonal risk or vulnerablility it creates, independent of the relationship between the two people.
+Here we are asking what the action itself does — the interpersonal vulnerability it creates — independent of the relationship between the two people.
 
 Co-presence without substance transfer, contact, close shared space, or disclosure does NOT by itself make one person vulnerable to the other — for example, two people each handling their own separate utensils, sitting close together in a public space like an elevator, or keeping a conversation to surface-level topics. These should be rated near zero.
 
 Use this scale from 0 to 6 (continuous values allowed):
 0 = No interpersonal vulnerability (the two people stay fully separate; no exchange of substance, no contact or shared interpersonal space, no disclosure)
-3 = Limited or indirect vulnerability
+3 = Limited or indirect vulnerability (e.g. bodily substances reaching the other person only indirectly, through an item that has touched one person's skin; deliberate but limited physical contact, such as a hand on the shoulder; sharing an open or roomy space rather than a confined one; or disclosing somewhat personal but not deeply private information)
 6 = Strong, direct vulnerability (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, sharing a bed or other close confined space, or disclosing private details)"""
 
 
 # _EFFORT_BODY is grounded in the Naïve Utility Calculus (NUC) framework
-# and scoped to physical effort — motor work, equipment / preparation,
-# and time. The construct does not extend to coordination or other
-# cognitive cost types; this is a scope choice grounded in the physical-
-# cost-only character of the empirical NUC literature, not an active
-# exclusion called out in the prompt itself (the prompt simply doesn't
-# list coordination as a criterion — telling the LM to ignore it would
-# prime the concept). The prompt body stays jargon-free; the rating
+# and scoped to the executional cost of carrying the action out — motor
+# work, equipment / preparation, time, and (for disclosures) the
+# production cost of the utterance, the disclosure analogue of motor
+# work. The construct does not extend to coordination or other cognitive
+# cost types; this is a scope choice grounded in the physical-cost-only
+# character of the empirical NUC literature, not an active exclusion
+# called out in the prompt itself (the prompt simply doesn't list
+# coordination as a criterion — telling the LM to ignore it would prime
+# the concept). The prompt body stays jargon-free; the rating
 # dimension is anchored as follows.
 #
 #   - Conceptual anchor (cost as trade-off quantity) — Jara-Ettinger, J.,
@@ -253,7 +258,7 @@ For each action, evaluate how fully it results in the two people ending up with 
 
 Judge only outcome attainment: whether, and how completely, the dyad ends up obtaining or consuming the thing. Judge each action by the outcome it leads to once it is carried through to completion. An action can deliver the outcome fully whether it is done together or separately, directly or via a safer indirect route. If an action involves extra steps along the way — going to fetch a utensil, taking a longer route, acquiring something first — rate it by the end state those steps arrive at, not by the fact that it is still unfinished partway through. How much work or time those steps take is a separate dimension (effort) that we are not asking about here.
 
-An action that ends with both people getting and consuming the thing should be rated high; an action where they forgo it, abandon it, or only one person gets it should be rated low.
+An action that ends with both people getting and consuming the thing should be rated high; an action where only one person gets it, or where they end up with a reduced or incomplete version, should be rated in the middle; an action where they forgo or abandon it should be rated low.
 
 Use this scale from 0 to 6 (continuous values allowed):
 0 = The thing is not obtained (the action forgoes or abandons it)
@@ -352,6 +357,16 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 #     statement of why an observer cannot reason over all possible actions
 #     but must construct a smaller, context-sensitive comparison set —
 #     what this prompt operationalizes.
+#
+# The "sharing can happen in different ways" hint enumerates sharing modes
+# across all three stimulus domains (physical portioning/vessels/contact,
+# shared space, and graded/indirect disclosure) so that generation is
+# scaffolded symmetrically for the food and nonfood sets. The hint is
+# IDENTICAL for every cell and condition, so it cannot produce condition
+# effects; it shapes only the overall coverage of the comparison set (the
+# observer model needs feature contrast among alternatives to infer
+# anything at all). This is acknowledged and defended in the SI
+# elicitation-details section of the manuscript.
 
 ALTERNATIVES_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
@@ -362,7 +377,7 @@ Your job is to list the alternative actions that would come to mind to a reasona
 
 The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
 
-Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, or sharing the same physical space. The options may differ in how much physical closeness or direct contact they involve.
+Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, sharing the same physical space, or telling the other person something in more or less detail, directly or indirectly. The options may differ in how much physical closeness, direct contact, or personal disclosure they involve.
 
 Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. Better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
@@ -443,15 +458,18 @@ def alternatives_user_prompt(
 # actor utility needs a numeric desire magnitude. The LM reads the scenario plus
 # the shown desire-state paragraph (desire_low / desire_high) and rates how much
 # the two people would like the thing on the same 0-100 scale the human
-# participant uses. The wording mirrors the human DV ("how much would they like
-# the thing" = how much obtaining/consuming it would satisfy their current
-# state — its appeal). This is one rating per (scenario, desire condition) — it
-# is NOT per-action (g already carries the action dependence).
+# participant uses. The wording mirrors the human DV question ("How much do you
+# think X and Y would like <object>?") with no added construct gloss, so the LM
+# answers the same question participants answer; the state-dependence is carried
+# by the shown state paragraph and the "given that state" clause, and the scale
+# endpoints mirror the human slider labels (Not at all / Extremely). This is one
+# rating per (scenario, desire condition) — it is NOT per-action (g already
+# carries the action dependence).
 
 DESIRE_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
     + "\n\n"
-    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, along with a short description of their current state. Judge how much the two people would like the thing at stake in the scenario, given that state — that is, how much obtaining or consuming it would satisfy the state they are in right now — on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they end up doing, how much effort it takes, or how the two people are related.
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, along with a short description of their current state. Judge how much the two people would like the thing at stake in the scenario, given that state, on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they end up doing, how much effort it takes, or how the two people are related.
 
 Respond with a JSON object in this exact format, no explanation:
 {"desire": <number>}"""

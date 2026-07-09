@@ -12,7 +12,7 @@ manuscript:
   1. **Counterfactual action generation** (the generator ``G_LM``): one system
      prompt and one user-prompt template.
   2. **Utility-feature scoring** (the feature map ``phi_tau``): a system prompt
-     each for goal-satisfaction ``g``, physical effort, and interpersonal risk,
+     each for goal-satisfaction ``g``, effort, and interpersonal risk,
      plus the shared user-prompt template and the one rating-instruction line
      that varies across the three features.
   3. **Given-magnitude ratings**: the scalar desire and relationship-intimacy
@@ -134,7 +134,7 @@ def build_content():
     )
     out.append(
         box(
-            "System prompt --- physical effort $\\mathrm{effort}_{\\tau}(a)$",
+            "System prompt --- effort $\\mathrm{effort}_{\\tau}(a)$",
             prompts.system_prompt("effort"),
         )
     )
@@ -170,7 +170,7 @@ def build_content():
         "  (for desire objects phrased as an infinitive outcome in some\n"
         '   non-food scenarios, "getting or consuming" becomes "getting",\n'
         f'   e.g.: "{g_instr_for("to try the harmonica")}")\n\n'
-        f"physical effort:      {prompts._USER_INSTRUCTIONS['effort']}\n\n"
+        f"effort:               {prompts._USER_INSTRUCTIONS['effort']}\n\n"
         f"interpersonal risk:   {prompts._USER_INSTRUCTIONS['risk']}"
     )
     out.append(
