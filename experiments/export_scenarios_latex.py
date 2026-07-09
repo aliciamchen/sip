@@ -92,8 +92,7 @@ def longtable(rows, is_nonfood):
         r"\toprule",
     ]
     for i, r in enumerate(rows, 1):
-        names = f"{esc(r['name_0'])} \\& {esc(r['name_1'])}"
-        header = f"\\textbf{{{i}.~{nice_label(r['scenario_label'])}}} \\quad ({names})"
+        header = f"\\textbf{{{i}.~{nice_label(r['scenario_label'])}}}"
         if is_nonfood:
             header += f" \\hfill \\textit{{{esc(r['scenario_type'])}}}"
         if i > 1:
