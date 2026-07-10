@@ -110,7 +110,7 @@
     "name_0": "Henry",
     "name_1": "Gabriel",
     "vignette": "Gabriel and Henry are on a two-night backpacking trip in Yosemite. On the first day, Gabriel accidentally drops his sleeping bag in a stream, soaking it completely through.",
-    "desire_object": "sleep in a sleeping bag",
+    "desire_object": "to sleep in a sleeping bag",
     "desire_low": "The night is expected to be mild, and sleeping without a proper sleeping bag would be tolerable.",
     "desire_high": "The night is expected to be cold, and sleeping without proper insulation would be miserable.",
     "low_risk_share_effort_low": "There's a stack of dry firewood at the campsite, so keeping a fire going strong enough to dry the wet bag by bedtime would be easy.",
@@ -199,14 +199,14 @@
     "scenario_type": "privacy",
     "name_0": "Wren",
     "name_1": "Oscar",
-    "vignette": "Wren and Oscar are meeting up for dinner. The conversation turns to mutual friends and acquaintances, and to what's been going on in their lives.",
-    "desire_object": "to know what each other thinks about the latest news in their social circle",
+    "vignette": "Wren and Oscar are meeting up for dinner. The conversation drifts to their mutual friends and what's been going on in their romantic and sexual lives.",
+    "desire_object": "to discuss the latest gossip in their social circle",
     "desire_low": "Neither of them is particularly interested in getting into other people's business tonight.",
     "desire_high": "They both want to talk about what has happened with someone who knows the people involved.",
     "low_risk_share_effort_low": "The recent developments are straightforward, so a light hint is enough for the other to know at once who and what is meant.",
     "low_risk_share_effort_high": "The recent developments are a set of long, tangled stories, so conveying them takes a lot of roundabout description before the other can piece together who and what is meant.",
     "no_share": "They keep the conversation general and don't talk about other people.",
-    "low_risk_share": "They talk around the latest developments — hinting at who has been going through what, and letting their own reactions show only implicitly — but in enough detail that each can work out who and what the other means.",
+    "low_risk_share": "They talk around the latest developments — hinting at what has happened, and letting their own reactions show only implicitly — but in enough detail that each can work out who and what the other means.",
     "high_risk_share": "They speak openly: naming names, spelling out exactly what has been going on, and saying what they really think about the people involved."
   },
   {
@@ -237,6 +237,6 @@
     "low_risk_share_effort_high": "Nadia's phone auto-locks after a few seconds, so Ravi would have to keep handing the phone back for Nadia to unlock at the wheel, over and over.",
     "no_share": "They keep driving straight to the event without stopping to eat.",
     "low_risk_share": "Nadia unlocks her phone, opens the maps app, and hands the phone to Ravi to find a restaurant and add it as a stop. Ravi works only within the maps app, and whenever the phone locks he hands it back to Nadia to unlock.",
-    "high_risk_share": "Nadia tells Ravi her passcode. Ravi unlocks her phone with it and uses the phone freely to search for restaurants, look up their details, and add the stop."
+    "high_risk_share": "Nadia tells Ravi her passcode. Ravi unlocks her phone with it and uses the phone freely."
   }
 ]
