@@ -5,380 +5,382 @@
   "clusters": [
     {
       "scenario": "bed",
-      "cluster": 0,
-      "size": 65,
+      "cluster": 5,
+      "size": 52,
       "exemplars": [
-        "They take turns sleeping in the bed, with one person sleeping on the couch or floor while the other is in the bed",
-        "They take turns sleeping in the bed, with one person sleeping on the floor or a couch while the other is in the bed",
-        "They take turns sleeping in the bed, with one person sleeping on the floor or a couch for part of the night"
+        "They take turns sleeping in the bed, with one person sleeping for part of the night and then switching with the other",
+        "They take turns sleeping in the bed, with one person sleeping for part of the night and then switching with the other person",
+        "They take turns sleeping in the bed, with one person sleeping in it for part of the night and the other person sleeping in it for the remaining part"
       ]
     },
     {
       "scenario": "bed",
-      "cluster": 1,
-      "size": 43,
+      "cluster": 4,
+      "size": 50,
       "exemplars": [
-        "They could have taken turns sleeping in the bed, with one sleeping in it for part of the night and the other for the remaining part",
-        "They could have taken turns sleeping in the bed, with one person sleeping there for part of the night and the other for the remaining part",
-        "They could have taken turns sleeping in the bed, with one person sleeping there for part of the night and the other person sleeping there for the remaining part"
+        "They look for alternative sleeping arrangements, such as an air mattress or a nearby hotel room",
+        "They could have looked for other sleeping arrangements, such as an air mattress or a spare room",
+        "They could have looked for alternative sleeping arrangements, such as an air mattress or a sleeping bag, to set up in another room or area"
       ]
     },
     {
       "scenario": "bed",
       "cluster": 3,
-      "size": 39,
+      "size": 47,
       "exemplars": [
-        "They could have looked for alternative sleeping arrangements, such as an air mattress or a sleeping bag in another room",
-        "They could have looked for alternative sleeping arrangements, such as an air mattress or a sleeping bag, to set up in another room",
-        "They could have looked for alternative sleeping arrangements, such as an air mattress or a spare room"
+        "They could have flipped a coin or drawn straws to decide who gets the bed",
+        "They could have flipped a coin or drawn straws to decide who gets the bed and who has to find another option",
+        "They could have flipped a coin or drawn straws to decide who gets the bed and who gets the couch"
       ]
     },
     {
       "scenario": "bed",
-      "cluster": 4,
-      "size": 17,
-      "exemplars": [
-        "They look for another accommodation option, such as a nearby hotel, where they can both have their own beds",
-        "They look for alternative accommodations, such as a nearby hotel, for one of them",
-        "They look for another accommodation option, such as a nearby hotel room, where they can both have their own beds"
-      ]
-    },
-    {
-      "scenario": "bed",
-      "cluster": 2,
-      "size": 13,
-      "exemplars": [
-        "Ines sleeps on the bed and Sofia sleeps on the couch or floor",
-        "Sofia sleeps on the bed and Ines sleeps on the couch or floor",
-        "Sofia sleeps on the bed and Ines sleeps on the floor or a couch"
-      ]
-    },
-    {
-      "scenario": "bed",
-      "cluster": 5,
-      "size": 8,
-      "exemplars": [
-        "They sleep on the bed with separate blankets",
-        "They use separate blankets to sleep on the bed",
-        "They use separate blankets on the bed"
-      ]
-    },
-    {
-      "scenario": "blanket",
       "cluster": 1,
-      "size": 87,
+      "size": 37,
       "exemplars": [
-        "Kai uses the blanket and Anaya goes to get another blanket or a warm layer",
-        "Anaya uses the blanket and Kai goes to get another blanket or a warm layer",
-        "Anaya uses the blanket and Kai goes to find another one or a warmer layer to wear"
+        "One of them sleeps on the bed, while the other finds an alternative place to sleep, such as a couch or an air mattress",
+        "One of them sleeps on the bed, and the other finds an alternative place to sleep, such as a couch or air mattress",
+        "One of them sleeps on the bed, and the other finds an alternative place to sleep, such as a couch or an air mattress"
       ]
     },
     {
-      "scenario": "blanket",
+      "scenario": "bed",
       "cluster": 0,
-      "size": 51,
+      "size": 24,
       "exemplars": [
-        "Anaya and Kai share the large blanket, wrapping up in it together",
-        "Anaya and Kai share the large blanket Anaya brought, wrapping up in it together",
-        "Anaya and Kai share the large blanket, wrapping up together in it"
+        "They sleep on the bed with separate blankets or bedding",
+        "They use separate blankets to sleep on the bed together",
+        "They use separate blankets to sleep in the bed"
       ]
     },
     {
-      "scenario": "blanket",
-      "cluster": 5,
-      "size": 44,
-      "exemplars": [
-        "One of them goes to get another blanket or warmer clothing from a nearby location",
-        "One of them gets up to find more blankets or warmer clothing",
-        "One of them gets up to find additional blankets or warmth from another source"
-      ]
-    },
-    {
-      "scenario": "blanket",
-      "cluster": 4,
-      "size": 26,
-      "exemplars": [
-        "They leave the blanket unfolded and use it as a lap blanket, with each person having a portion of it on their lap",
-        "They leave the blanket unfolded and share it by placing it over their legs or around their lower bodies",
-        "They leave the blanket unfolded and use it as a lap blanket, with each person sitting at one end"
-      ]
-    },
-    {
-      "scenario": "blanket",
+      "scenario": "bed",
       "cluster": 2,
       "size": 22,
       "exemplars": [
+        "Ines sleeps on the bed and Sofia sleeps on the floor or a couch",
+        "Sofia sleeps on the bed and Ines sleeps on the floor or a couch",
+        "Ines sleeps on the bed and Sofia sleeps on a different surface, such as the couch or floor"
+      ]
+    },
+    {
+      "scenario": "blanket",
+      "cluster": 1,
+      "size": 85,
+      "exemplars": [
+        "Anaya offers the blanket to Kai, letting him use it to keep warm",
+        "Anaya offers the blanket to Kai, letting him use it while she relies on her jacket for warmth",
+        "Anaya gives the blanket to Kai, letting him use it to stay warm"
+      ]
+    },
+    {
+      "scenario": "blanket",
+      "cluster": 2,
+      "size": 43,
+      "exemplars": [
+        "They decide to leave the movie and find a warmer location to watch the rest of the film",
         "They decide to leave the movie and find a warmer location",
-        "They leave the movie to find a warmer location",
-        "They decide to leave the movie and find a warmer place to watch or do something else"
+        "They decide to leave the movie and go somewhere warmer"
+      ]
+    },
+    {
+      "scenario": "blanket",
+      "cluster": 0,
+      "size": 41,
+      "exemplars": [
+        "They share Anaya's large blanket, wrapping up in it together",
+        "They share Anaya's large blanket, wrapping up together in it",
+        "They share Anaya's blanket, wrapping up in it together"
+      ]
+    },
+    {
+      "scenario": "blanket",
+      "cluster": 5,
+      "size": 39,
+      "exemplars": [
+        "They try to find a way to stay warm without blankets, such as huddling together or finding a warmer spot",
+        "They try to find additional warm clothing or blankets to use",
+        "They try to find a way to stay warm without blankets, such as huddling together or moving to a warmer location"
       ]
     },
     {
       "scenario": "blanket",
       "cluster": 3,
-      "size": 20,
+      "size": 31,
       "exemplars": [
-        "Kai and Anaya huddle together for body heat, without using the blanket",
-        "Kai suggests they huddle together for warmth, without using the blanket",
-        "Anaya and Kai huddle together for body heat, without using the blanket"
+        "Anaya uses the blanket and Kai goes to find another blanket or warmer clothing",
+        "Kai uses the blanket and Anaya goes to find another blanket or warmer clothing",
+        "Anaya offers to go get another blanket or warmer clothing from a nearby store or their car"
       ]
     },
     {
-      "scenario": "breakup",
-      "cluster": 0,
-      "size": 76,
+      "scenario": "blanket",
+      "cluster": 4,
+      "size": 23,
       "exemplars": [
-        "They avoid talking about their breakups altogether and only discuss other topics",
-        "They avoid discussing their breakups altogether and only talk about other topics",
-        "They avoid discussing their breakups altogether and focus on other topics"
+        "They take turns using the blanket, with one person using it for a while and then switching so the other person can get warm",
+        "They take turns using the blanket to warm up, with one person using it for a while before switching with the other",
+        "They take turns using the blanket, with one person wrapping up in it for a while and then switching with the other"
       ]
     },
     {
       "scenario": "breakup",
       "cluster": 4,
-      "size": 53,
+      "size": 112,
       "exemplars": [
-        "One of them brings up their breakup and the other listens, but doesn't share their own experience",
-        "One of them brings up their breakup and the other listens, but they don't both share their experiences",
-        "One of them mentions their breakup in passing, but doesn't delve into details, to acknowledge the other's experience"
-      ]
-    },
-    {
-      "scenario": "breakup",
-      "cluster": 1,
-      "size": 48,
-      "exemplars": [
-        "One of them brings up their own breakup and talks about it, allowing the other to share if they want to",
-        "One of them brings up their own breakup and asks the other about theirs, leading to a discussion about their experiences",
-        "One of them brings up their own breakup and talks about it, inviting the other to share about theirs if they want to"
-      ]
-    },
-    {
-      "scenario": "breakup",
-      "cluster": 5,
-      "size": 25,
-      "exemplars": [
-        "They spend the entire time talking about their breakups, delving deeper into their emotions and experiences",
-        "They spend the entire time talking about their breakups, delving deeper into their feelings and experiences",
-        "They spend the entire time talking about their breakups, delving deeper into the details and emotions"
-      ]
-    },
-    {
-      "scenario": "breakup",
-      "cluster": 2,
-      "size": 9,
-      "exemplars": [
-        "One of them dominates the conversation about their breakup, without giving the other a chance to share their experience",
-        "One of them dominates the conversation about breakups, not allowing the other to share their experience",
-        "One of them dominates the conversation about breakups, not letting the other share their experience"
+        "They discuss their breakups, but only in general terms, without sharing personal details",
+        "They exchange brief, general statements about their breakups without going into personal details",
+        "They discuss their breakups, but only share general information and avoid personal details"
       ]
     },
     {
       "scenario": "breakup",
       "cluster": 3,
-      "size": 8,
-      "exemplars": [
-        "Tessa brings up her breakup and asks Naomi about hers",
-        "Naomi brings up her breakup and asks Tessa about hers",
-        "Naomi brings up Tessa's breakup and they discuss it"
-      ]
-    },
-    {
-      "scenario": "chapstick",
-      "cluster": 4,
       "size": 80,
       "exemplars": [
-        "Priya offers Marcus the tube and he applies the ointment to his lips directly from it",
-        "Priya hands the tube of ointment to Marcus and he applies it directly to his lips",
-        "Priya hands the tube to Marcus and he applies the ointment directly to his lips"
+        "One of them initiates a conversation about their breakup, and the other responds with their own experiences",
+        "One of them brings up their breakup and the other listens, but doesn't share their own experience",
+        "One of them asks the other about their own breakup, showing interest and inviting discussion"
       ]
     },
     {
-      "scenario": "chapstick",
+      "scenario": "breakup",
       "cluster": 0,
-      "size": 57,
+      "size": 45,
       "exemplars": [
-        "Priya squeezes some ointment onto her finger and applies it to her lips, then squeezes some onto Marcus's finger for him to apply to his own lips",
-        "Priya squeezes some ointment onto her finger, applies it to her lips, then squeezes some onto Marcus's finger for him to apply to his own lips",
-        "Priya squeezes some ointment onto her finger, applies it to her lips, and then squeezes some onto Marcus's finger for him to apply to his lips"
+        "They spend the entire time talking about their breakups, delving into details and sharing their feelings",
+        "They spend the entire time talking about their breakups, delving deeper into their emotions and experiences",
+        "They spend the entire time talking about their breakups, delving deeper into their feelings and experiences"
       ]
     },
     {
-      "scenario": "chapstick",
-      "cluster": 3,
-      "size": 24,
-      "exemplars": [
-        "Priya applies the ointment to her lips and declines to share with Marcus",
-        "Priya and Marcus decide not to share the lip ointment and Marcus goes to buy some for himself",
-        "Priya applies the ointment to her lips and decides not to share it with Marcus"
-      ]
-    },
-    {
-      "scenario": "chapstick",
+      "scenario": "breakup",
       "cluster": 1,
       "size": 21,
       "exemplars": [
-        "Priya and Marcus go to the lodge's store to buy another tube of lip ointment for Marcus",
-        "Priya and Marcus go to the lodge store together to buy another tube of lip ointment for Marcus",
-        "Priya and Marcus decide to purchase another tube of lip ointment from the lodge store so they each have their own"
+        "One of them shares their experience, but the other listens without reciprocating or sharing their own story",
+        "One of them shares their experience, but the other listens without reciprocating and sharing their own story",
+        "One of them shares their experience, but the other listens without reciprocating"
+      ]
+    },
+    {
+      "scenario": "breakup",
+      "cluster": 2,
+      "size": 13,
+      "exemplars": [
+        "They hint at their breakups and see if the other picks up on the cue to discuss it further",
+        "They hint at their breakups and see if the other person picks up on the cue to discuss it",
+        "They hint at their breakups and see if the other person picks up on the cue to discuss it further"
+      ]
+    },
+    {
+      "scenario": "breakup",
+      "cluster": 5,
+      "size": 7,
+      "exemplars": [
+        "They exchange general updates about their lives, avoiding discussion of the breakups",
+        "They ask each other general questions about their well-being and relationships, without directly discussing the breakups",
+        "ask each other general questions about how they're doing, without expecting or offering in-depth discussions"
+      ]
+    },
+    {
+      "scenario": "chapstick",
+      "cluster": 0,
+      "size": 83,
+      "exemplars": [
+        "Priya applies the ointment to her lips, then offers Marcus to apply some to his lips using her finger",
+        "Priya applies the ointment to her lips, then offers Marcus to apply it to his lips using her finger",
+        "Priya applies the ointment to her lips, then Marcus applies it to his lips using his finger to take some from Priya's lips"
+      ]
+    },
+    {
+      "scenario": "chapstick",
+      "cluster": 4,
+      "size": 58,
+      "exemplars": [
+        "Priya gives the tube of ointment to Marcus to apply to his own lips",
+        "Priya gives the tube to Marcus to apply the ointment to his own lips directly",
+        "Priya hands the tube to Marcus to apply some ointment to his own lips"
+      ]
+    },
+    {
+      "scenario": "chapstick",
+      "cluster": 5,
+      "size": 56,
+      "exemplars": [
+        "Priya suggests they buy another tube of lip ointment from the lodge store so Marcus can have his own",
+        "Priya and Marcus go to the lodge's store to buy another tube of lip ointment for Marcus to use",
+        "Priya suggests they go buy some more lip ointment from the lodge's store so Marcus can have his own"
       ]
     },
     {
       "scenario": "chapstick",
       "cluster": 2,
-      "size": 18,
+      "size": 34,
       "exemplars": [
-        "Marcus asks Priya to buy him his own tube of lip ointment from the lodge's store",
-        "Marcus asks Priya to buy him his own tube of lip ointment from a nearby store",
-        "Priya applies ointment to her lips, then Marcus buys his own tube of lip ointment from the lodge store"
+        "Priya applies ointment to her lips, but doesn't offer any to Marcus, who then has to find another solution",
+        "Priya applies the ointment to her lips, but doesn't offer any to Marcus, who then has to find another solution",
+        "Priya applies the ointment to her lips, but doesn't offer any to Marcus, who has to find another solution"
       ]
     },
     {
       "scenario": "chapstick",
-      "cluster": 5,
-      "size": 5,
+      "cluster": 3,
+      "size": 22,
       "exemplars": [
-        "They take turns applying ointment from the tube to their own lips",
-        "They decide to go without using the lip ointment and see if their lips get worse",
-        "They take turns applying ointment from the tube to their lips"
+        "Priya offers Marcus the tube first, letting him apply the ointment to his lips before she uses it",
+        "Priya offers Marcus the tube first, allowing him to apply the ointment to his lips before she applies it to her own",
+        "Priya offers Marcus the tube first, and he applies it to his lips before handing it back to her to apply to her own lips"
+      ]
+    },
+    {
+      "scenario": "chapstick",
+      "cluster": 1,
+      "size": 11,
+      "exemplars": [
+        "Neither of them uses the ointment, deciding their lips aren't dry enough to bother with",
+        "Neither of them uses the lip ointment, deciding their lips aren't dry enough to bother",
+        "Priya and Marcus decide not to use the ointment at all, and just deal with their slightly dry lips"
       ]
     },
     {
       "scenario": "earbuds",
-      "cluster": 2,
-      "size": 64,
+      "cluster": 5,
+      "size": 93,
       "exemplars": [
-        "Isla lends one earbud to Theo and they take turns listening to the episode",
-        "Isla lends one earbud to Theo, then they take turns listening to the episode",
-        "Isla and Theo take turns listening to the episode on Isla's earbuds"
+        "Isla and Theo take turns listening to the episode on Isla's earbuds, one at a time",
+        "Isla and Theo take turns listening to the episode on Isla's earbuds",
+        "Isla and Theo take turns listening to the episode on Isla's earbuds, with one person listening for a portion and then switching"
+      ]
+    },
+    {
+      "scenario": "earbuds",
+      "cluster": 1,
+      "size": 69,
+      "exemplars": [
+        "Isla downloads the episode on her phone and then transfers or streams it to Theo's device so he can listen",
+        "Isla downloads the episode and transfers it to Theo's device, so he can listen to it later",
+        "Isla downloads the episode on her phone and then transfers or streams it to Theo's phone, so he can listen"
       ]
     },
     {
       "scenario": "earbuds",
       "cluster": 3,
-      "size": 51,
-      "exemplars": [
-        "Isla and Theo listen to the episode on a speaker, if Isla's device has one, so they can both hear it without earbuds",
-        "Isla shares her phone or device with Theo, and they listen to the episode together without using earbuds, playing it out loud",
-        "Isla and Theo try to find a way to play the episode out loud, such as through a phone speaker, so they can both hear it at the same time"
-      ]
-    },
-    {
-      "scenario": "earbuds",
-      "cluster": 1,
-      "size": 40,
-      "exemplars": [
-        "Isla buys or finds another pair of earbuds for Theo to use so they can listen at the same time",
-        "Isla buys or rents another pair of earbuds or headphones for Theo to use",
-        "Isla buys or borrows another pair of earbuds for Theo to use"
-      ]
-    },
-    {
-      "scenario": "earbuds",
-      "cluster": 4,
-      "size": 17,
-      "exemplars": [
-        "They wait until they have access to another pair of earbuds or a speaker to listen to the episode together",
-        "They decide to wait and listen to the episode together another day, when they might have access to another pair of earbuds or a speaker",
-        "They decide to wait and listen to the episode together another day when they both have access to earbuds or a speaker"
-      ]
-    },
-    {
-      "scenario": "earbuds",
-      "cluster": 0,
-      "size": 9,
-      "exemplars": [
-        "They find a way to play the episode out loud, such as through a phone speaker, so they can both hear it",
-        "They find a way to play the episode out loud for both to hear, such as through a phone speaker",
-        "They find a way to play the episode on a speaker, such as a phone speaker, so they can both hear it"
-      ]
-    },
-    {
-      "scenario": "earbuds",
-      "cluster": 5,
-      "size": 5,
-      "exemplars": [
-        "They find another way to occupy themselves during the train ride and listen to the episode separately later",
-        "They look for alternative listening options, such as the train's public speakers or a portable speaker, to listen to the episode together",
-        "They find a public podcast listening area or a shared audio outlet on the train to listen together"
-      ]
-    },
-    {
-      "scenario": "gossip",
-      "cluster": 1,
-      "size": 92,
-      "exemplars": [
-        "They change the subject to their own lives or hobbies, avoiding discussion of mutual friends and acquaintances",
-        "They decide to avoid discussing mutual acquaintances altogether, instead focusing on their own personal lives or other topics",
-        "They change the subject to their own personal lives or hobbies, avoiding discussion of mutual acquaintances altogether"
-      ]
-    },
-    {
-      "scenario": "gossip",
-      "cluster": 0,
-      "size": 64,
-      "exemplars": [
-        "They ask each other specific, in-depth questions about particular acquaintances, seeking more detailed information",
-        "They ask each other specific, in-depth questions about particular acquaintances or situations to gather more information",
-        "They ask each other specific, in-depth questions about particular acquaintances to gather more detailed information"
-      ]
-    },
-    {
-      "scenario": "gossip",
-      "cluster": 2,
-      "size": 57,
-      "exemplars": [
-        "They discuss the mutual friends and acquaintances, but only in general terms without sharing personal details or opinions",
-        "They discuss the mutual friends and acquaintances, but only share general information and avoid personal details",
-        "They discuss the mutual friends and acquaintances in a general way without sharing personal details"
-      ]
-    },
-    {
-      "scenario": "gossip",
-      "cluster": 4,
-      "size": 52,
-      "exemplars": [
-        "They delve into detailed, personal stories about their mutual acquaintances, sharing their own opinions and speculations",
-        "They delve into detailed stories about their mutual acquaintances, including their own opinions and analyses",
-        "They delve into their personal opinions and analysis of the situations with mutual acquaintances"
-      ]
-    },
-    {
-      "scenario": "gossip",
-      "cluster": 5,
-      "size": 52,
-      "exemplars": [
-        "They delve into specific stories and gossip about their mutual friends and acquaintances",
-        "They delve into detailed stories and gossip about their mutual acquaintances",
-        "They delve into gossip about their mutual friends and acquaintances"
-      ]
-    },
-    {
-      "scenario": "gossip",
-      "cluster": 3,
-      "size": 1,
-      "exemplars": [
-        "One person dominates the conversation, sharing all the updates and not letting the other person contribute"
-      ]
-    },
-    {
-      "scenario": "hairbrush",
-      "cluster": 1,
-      "size": 80,
-      "exemplars": [
-        "Celeste offers to let Tamsin use her hairbrush to brush her hair",
-        "Celeste offers Tamsin to use her hairbrush to brush her hair",
-        "Celeste offers to lend Tamsin her hairbrush and Tamsin uses it to brush her hair"
-      ]
-    },
-    {
-      "scenario": "hairbrush",
-      "cluster": 2,
       "size": 49,
       "exemplars": [
-        "Tamsin and Celeste go to the hotel lobby or a nearby store to buy a new hairbrush for Tamsin",
-        "Tamsin and Celeste go to the hotel lobby or a nearby store to purchase a new hairbrush for Tamsin",
-        "Tamsin and Celeste go to the hotel lobby or a store to buy a new hairbrush for Tamsin"
+        "Isla buys or finds another pair of earbuds for Theo to use so they can listen separately",
+        "Isla buys or finds another pair of earbuds for Theo to use so they can listen simultaneously",
+        "Isla buys or finds another pair of earbuds for Theo to use so they can both listen simultaneously"
+      ]
+    },
+    {
+      "scenario": "earbuds",
+      "cluster": 0,
+      "size": 43,
+      "exemplars": [
+        "They wait until they have access to another pair of earbuds or a speaker to listen to the episode together",
+        "They decide to wait and listen to the episode together another time when they both have earbuds or a speaker",
+        "They decide to wait and listen to the episode another day, when they might both have access to earbuds or a speaker"
+      ]
+    },
+    {
+      "scenario": "earbuds",
+      "cluster": 2,
+      "size": 10,
+      "exemplars": [
+        "Isla and Theo look for a public speaker or other shared audio solution on the train to listen to the episode together",
+        "Isla and Theo look for alternative listening options, such as a portable speaker or asking a conductor if there's a way to play the episode over the train's speakers",
+        "Isla and Theo look for alternative ways to listen to the episode together, such as using the train's speakers or finding a public podcast listening area"
+      ]
+    },
+    {
+      "scenario": "earbuds",
+      "cluster": 4,
+      "size": 3,
+      "exemplars": [
+        "They choose not to listen to the episode at all during the train ride and instead do something else together",
+        "They decide not to listen to the episode at all during the train ride",
+        "Theo finds an alternative way to listen, such as using the train's speakers or finding a different podcast"
+      ]
+    },
+    {
+      "scenario": "gossip",
+      "cluster": 1,
+      "size": 82,
+      "exemplars": [
+        "change the subject to something else entirely, avoiding discussion of mutual friends and acquaintances",
+        "Change the subject to something else entirely, avoiding discussion of mutual friends and acquaintances",
+        "changing the subject to something else entirely, avoiding discussion of mutual friends and acquaintances"
+      ]
+    },
+    {
+      "scenario": "gossip",
+      "cluster": 5,
+      "size": 74,
+      "exemplars": [
+        "talking about the situation in vague terms, without naming names",
+        "speaking vaguely, without naming names or going into detail",
+        "be vague and discuss the situation in general terms without naming names or specifics"
+      ]
+    },
+    {
+      "scenario": "gossip",
+      "cluster": 3,
+      "size": 58,
+      "exemplars": [
+        "ask each other direct questions about specific friends or acquaintances to gather more information",
+        "asking each other direct questions to gather more information about the situation",
+        "ask each other direct questions about specific friends or acquaintances to get more information"
+      ]
+    },
+    {
+      "scenario": "gossip",
+      "cluster": 2,
+      "size": 35,
+      "exemplars": [
+        "Directly discussing the latest developments and explicitly stating who has been going through what",
+        "Directly discuss the latest developments, explicitly stating who is involved and what has happened",
+        "they directly discuss the latest developments, openly sharing details about who has been going through what"
+      ]
+    },
+    {
+      "scenario": "gossip",
+      "cluster": 0,
+      "size": 32,
+      "exemplars": [
+        "discuss the person's life in a more personal or intimate way, sharing their own experiences or impressions",
+        "share stories about their own personal experiences with the people they're discussing",
+        "share stories about their own interactions with the people they're discussing"
+      ]
+    },
+    {
+      "scenario": "gossip",
+      "cluster": 4,
+      "size": 24,
+      "exemplars": [
+        "delve into gossip and share stories about their mutual friends and acquaintances",
+        "delve into gossip and discuss details about their mutual friends and acquaintances",
+        "delve into gossip about their mutual friends and acquaintances"
+      ]
+    },
+    {
+      "scenario": "hairbrush",
+      "cluster": 1,
+      "size": 65,
+      "exemplars": [
+        "Celeste offers to brush Tamsin's hair for her using the brush",
+        "Celeste uses the brush to brush Tamsin's hair for her",
+        "Celeste brushes Tamsin's hair for her with the brush"
+      ]
+    },
+    {
+      "scenario": "hairbrush",
+      "cluster": 2,
+      "size": 45,
+      "exemplars": [
+        "Tamsin goes to the hotel front desk or a nearby store to buy a new hairbrush",
+        "Tamsin goes to the hotel's front desk or a nearby store to buy a new hairbrush",
+        "Tamsin goes to the hotel's front desk or a nearby store to purchase a new hairbrush"
       ]
     },
     {
@@ -386,129 +388,149 @@
       "cluster": 4,
       "size": 36,
       "exemplars": [
-        "Tamsin uses her fingers or a substitute to detangle her hair",
-        "Tamsin uses her fingers or another available item to detangle her hair",
-        "Tamsin uses her fingers or another available tool to try and detangle her hair"
-      ]
-    },
-    {
-      "scenario": "hairbrush",
-      "cluster": 0,
-      "size": 18,
-      "exemplars": [
-        "Tamsin asks hotel staff if they have a spare hairbrush she can borrow",
-        "Tamsin asks someone else, such as hotel staff, if they have a spare hairbrush she can use",
-        "Tamsin goes to the hotel lobby or front desk to ask if they have a spare hairbrush she can use"
-      ]
-    },
-    {
-      "scenario": "hairbrush",
-      "cluster": 3,
-      "size": 18,
-      "exemplars": [
-        "Tamsin and Celeste look for a store or the hotel lobby to see if they can purchase or borrow a hairbrush for Tamsin to use",
-        "Tamsin and Celeste go to the hotel gift shop or front desk to see if they can buy or borrow a hairbrush",
-        "Tamsin and Celeste go to the hotel gift shop or front desk to ask if they have a hairbrush Tamsin can borrow or buy"
+        "Celeste and Tamsin take turns brushing their hair, with Celeste going first and then Tamsin, but with Tamsin cleaning the brush before using it",
+        "Celeste and Tamsin take turns using the brush, with Celeste brushing her hair first, then cleaning or picking out her hair before passing it to Tamsin",
+        "Celeste and Tamsin take turns brushing their hair with the brush, with Celeste going first and then cleaning it before passing it to Tamsin"
       ]
     },
     {
       "scenario": "hairbrush",
       "cluster": 5,
-      "size": 9,
+      "size": 28,
       "exemplars": [
-        "Tamsin decides not to brush her hair and goes to the banquet as is",
-        "Tamsin goes to the banquet without brushing her hair, as she thinks it will look fine anyway",
-        "Tamsin goes to the banquet without brushing her hair, as she thinks it will look fine regardless"
+        "Tamsin uses her fingers or another available object to style her hair instead of a brush",
+        "Tamsin uses her fingers to style her hair instead of brushing it",
+        "Tamsin uses her fingers or a different object to style her hair"
       ]
     },
     {
-      "scenario": "harmonica",
-      "cluster": 1,
-      "size": 49,
-      "exemplars": [
-        "Jonas decides to play the harmonica exclusively, not letting Derek play it",
-        "Jonas decides to play the harmonica exclusively, not letting Derek play it at all",
-        "Jonas plays the harmonica exclusively, not letting Derek try"
-      ]
-    },
-    {
-      "scenario": "harmonica",
-      "cluster": 3,
-      "size": 42,
-      "exemplars": [
-        "Jonas hands the harmonica to Derek to try playing first",
-        "Jonas hands the harmonica over to Derek to try playing it first",
-        "Jonas lets Derek play the harmonica first and then he plays it after Derek is done"
-      ]
-    },
-    {
-      "scenario": "harmonica",
+      "scenario": "hairbrush",
       "cluster": 0,
-      "size": 34,
-      "exemplars": [
-        "They pass the harmonica back and forth without wiping it down between turns",
-        "They take turns playing the harmonica without wiping it down between turns",
-        "They take turns playing the harmonica without wiping the mouthpiece between turns"
-      ]
-    },
-    {
-      "scenario": "harmonica",
-      "cluster": 4,
       "size": 27,
       "exemplars": [
-        "One of them plays the harmonica while the other watches or plays a different instrument",
-        "One person plays the harmonica while the other person plays a different instrument",
-        "One person plays the harmonica while the other accompanies on a different instrument"
+        "Tamsin uses her fingers or another available object to try to detangle her hair instead of using a brush",
+        "Tamsin uses her fingers or another available tool to detangle her hair instead of using a brush",
+        "Tamsin uses her fingers or a substitute item to detangle her hair instead of using a brush"
+      ]
+    },
+    {
+      "scenario": "hairbrush",
+      "cluster": 3,
+      "size": 27,
+      "exemplars": [
+        "Celeste and Tamsin go to the hotel lobby or a store to buy a new hairbrush for Tamsin to use",
+        "Celeste and Tamsin go to the hotel lobby or a convenience store to purchase a new hairbrush for Tamsin",
+        "Celeste and Tamsin go to the hotel lobby or a convenience store to buy a new hairbrush for Tamsin"
       ]
     },
     {
       "scenario": "harmonica",
-      "cluster": 2,
-      "size": 20,
+      "cluster": 3,
+      "size": 95,
       "exemplars": [
-        "Derek buys or finds another harmonica to play so they can both play at the same time",
+        "Jonas plays the harmonica the whole time, not letting Derek try",
+        "Jonas plays the harmonica the whole time, not letting Derek play it",
+        "Jonas plays the harmonica the whole time and doesn't let Derek try it"
+      ]
+    },
+    {
+      "scenario": "harmonica",
+      "cluster": 0,
+      "size": 25,
+      "exemplars": [
+        "They take turns playing the harmonica without wiping it down between turns",
+        "They play the harmonica together, taking turns blowing and drawing air through it without wiping it down",
+        "They take turns playing the harmonica without wiping the mouthpiece down"
+      ]
+    },
+    {
+      "scenario": "harmonica",
+      "cluster": 1,
+      "size": 19,
+      "exemplars": [
         "Derek buys or finds another harmonica so they can both play at the same time",
-        "Derek buys or borrows another harmonica so they can both play at the same time"
+        "Derek buys or borrows another harmonica so they can both play at the same time",
+        "Jonas or Derek buys or finds another harmonica so they can both play at the same time"
+      ]
+    },
+    {
+      "scenario": "harmonica",
+      "cluster": 4,
+      "size": 16,
+      "exemplars": [
+        "They decide not to play the harmonica at all",
+        "They decide not to share the harmonica at all",
+        "They decide not to play the harmonica at all, due to concerns about sharing"
       ]
     },
     {
       "scenario": "harmonica",
       "cluster": 5,
-      "size": 20,
+      "size": 16,
       "exemplars": [
-        "They decide not to play the harmonica at all, focusing on other instruments instead",
-        "They decide not to play the harmonica at all and focus on other instruments",
-        "They decide not to play the harmonica at all"
+        "They wipe the harmonica with a cloth or tissue between turns",
+        "They wipe the harmonica with a cloth or their shirts between turns before passing it back and forth",
+        "They take breaks from playing the harmonica to clean it or wipe it down with sanitizer"
+      ]
+    },
+    {
+      "scenario": "harmonica",
+      "cluster": 2,
+      "size": 13,
+      "exemplars": [
+        "Derek buys or borrows his own harmonica to play",
+        "Derek buys or brings his own harmonica to play",
+        "Derek buys or borrows a separate harmonica to play"
+      ]
+    },
+    {
+      "scenario": "home",
+      "cluster": 5,
+      "size": 93,
+      "exemplars": [
+        "Vera goes to Ivy's apartment, and Ivy tidies up before she arrives",
+        "Ivy cleans up her apartment quickly before Vera arrives, and they meet there",
+        "Vera goes to Ivy's apartment, and Ivy quickly cleans up before Vera arrives"
       ]
     },
     {
       "scenario": "home",
       "cluster": 1,
-      "size": 111,
+      "size": 59,
       "exemplars": [
-        "Ivy quickly cleans up her apartment before Vera arrives and they meet there",
-        "Ivy cleans up her apartment, and Vera comes over to meet there",
-        "Ivy cleans up her apartment before Vera arrives, and then Vera goes there to meet"
-      ]
-    },
-    {
-      "scenario": "home",
-      "cluster": 2,
-      "size": 64,
-      "exemplars": [
-        "Ivy suggests meeting at a different, possibly less crowded location, like a park or a museum",
-        "Ivy could have suggested meeting at a nearby cafe or park to avoid having Vera see her apartment's current state",
-        "Ivy asks Vera to meet at a different location, such as a park or a museum, due to the messy state of her apartment"
+        "Ivy meets Vera at a different, possibly less crowded location, such as a park or a museum",
+        "Ivy meets Vera at a different, possibly less crowded location, like a park or museum",
+        "Ivy meets Vera at a different, possibly less busy location, such as a park or a museum"
       ]
     },
     {
       "scenario": "home",
       "cluster": 4,
-      "size": 24,
+      "size": 52,
       "exemplars": [
-        "They meet at a different, possibly less crowded location, like a park or museum",
-        "They choose a different location, like a park or a museum, to meet",
-        "They choose a different location, such as a park or museum, to meet"
+        "Meet at a different, possibly less busy location, like a park or a bookstore",
+        "They decide to meet at a different, possibly less crowded location, such as a park or museum",
+        "They meet at a different, possibly less busy location, like a park or indoor shopping area"
+      ]
+    },
+    {
+      "scenario": "home",
+      "cluster": 3,
+      "size": 35,
+      "exemplars": [
+        "Ivy leaves the apartment as is and they meet in the living room with the mess visible",
+        "Ivy doesn't tidy up and they meet in the messy apartment",
+        "Ivy leaves the apartment as is and they hang out in the living room with the mess visible"
+      ]
+    },
+    {
+      "scenario": "home",
+      "cluster": 2,
+      "size": 33,
+      "exemplars": [
+        "Ivy gives Vera a limited tour, avoiding the most messy or personal areas of the apartment",
+        "Ivy gives Vera a limited tour, avoiding the most personal or messy areas of the apartment",
+        "Ivy gives Vera a limited tour, avoiding the most cluttered or personal areas of the apartment"
       ]
     },
     {
@@ -516,449 +538,429 @@
       "cluster": 0,
       "size": 17,
       "exemplars": [
-        "They meet at a park or other outdoor spot in the neighborhood",
-        "Meet at a park or other outdoor spot",
-        "They meet at a park or other outdoor spot"
-      ]
-    },
-    {
-      "scenario": "home",
-      "cluster": 3,
-      "size": 15,
-      "exemplars": [
-        "They decide to meet at a coffee shop despite the rain and crowds",
-        "They decide to meet at a coffee shop despite the crowds and rain",
-        "They decide to meet at a coffee shop or other public place despite the crowds and rain"
-      ]
-    },
-    {
-      "scenario": "home",
-      "cluster": 5,
-      "size": 11,
-      "exemplars": [
-        "They reschedule to meet another time when the weather is better and coffee shops are less crowded",
-        "They reschedule to meet at a later time when the coffee shops are less busy or the weather improves",
-        "They reschedule for another time when the weather is better and coffee shops are less crowded"
+        "They plan to go for a walk around the neighborhood instead of meeting inside",
+        "Ivy suggests they go for a walk around the neighborhood",
+        "They plan to go for a walk around the neighborhood and not spend time inside Ivy's apartment"
       ]
     },
     {
       "scenario": "locker-room",
       "cluster": 1,
-      "size": 33,
+      "size": 65,
       "exemplars": [
-        "They change at the same end of the open bench area, not trying to avoid seeing each other",
-        "They change at the same end of the open bench area without trying to avoid seeing each other",
-        "They change in the open bench area without trying to avoid seeing each other"
-      ]
-    },
-    {
-      "scenario": "locker-room",
-      "cluster": 2,
-      "size": 33,
-      "exemplars": [
-        "They change quickly in turns, with one person waiting outside the locker room or in the stall while the other changes",
-        "They take turns changing, with one person changing while the other waits outside the locker room or in the stall",
-        "They take turns changing, with one waiting outside the locker room or in the private stall while the other changes"
-      ]
-    },
-    {
-      "scenario": "locker-room",
-      "cluster": 4,
-      "size": 32,
-      "exemplars": [
-        "One of them changes in the private stall while the other changes at the open bench area",
-        "one of them change in the private stall while the other changes at the open bench area",
-        "One of them changes at the open bench area while the other uses the private stall"
+        "One or both of them change in the locker room while the other waits or does the same",
+        "One of them changes in the locker room while the other waits outside or in a less crowded area",
+        "One of them changes in the locker room while the other waits or changes in a separate area, such as a private stall if available"
       ]
     },
     {
       "scenario": "locker-room",
       "cluster": 0,
-      "size": 27,
+      "size": 61,
       "exemplars": [
-        "They change in the open bench area at the same time",
-        "They change at the open bench area together, trying to hurry",
-        "They take turns changing at the open bench area to speed up the process"
+        "look for separate, private changing stalls or areas to change individually",
+        "look for separate, individual changing stalls or rooms to change in private",
+        "look for separate, private changing stalls or rooms to change in"
       ]
     },
     {
       "scenario": "locker-room",
       "cluster": 5,
-      "size": 10,
-      "exemplars": [
-        "change at the open bench area together, but keeping a respectful distance",
-        "They change at the open bench area, keeping a respectful distance from each other",
-        "change on the open bench area together, without trying to maintain distance"
-      ]
-    },
-    {
-      "scenario": "locker-room",
-      "cluster": 3,
-      "size": 5,
-      "exemplars": [
-        "Samira changes in the private changing stall while Maya uses the open bench area",
-        "Maya changes in the private changing stall while Samira uses the open bench area",
-        "Maya uses the private changing stall while Samira changes at the open bench area"
-      ]
-    },
-    {
-      "scenario": "navigation",
-      "cluster": 1,
-      "size": 93,
-      "exemplars": [
-        "Nadia gives her phone to Ravi and he uses it to search for restaurants, unlocking it whenever necessary",
-        "Nadia unlocks her phone and hands it to Ravi to search for restaurants",
-        "Nadia unlocks her phone and hands it over to Ravi to search for restaurants"
-      ]
-    },
-    {
-      "scenario": "navigation",
-      "cluster": 0,
-      "size": 72,
-      "exemplars": [
-        "Use Nadia's phone to search for restaurants along their route and pick one to stop at",
-        "Search on Nadia's phone for restaurants at an upcoming exit and stop to eat",
-        "Search for restaurants along the route using Nadia's phone and stop at one that is close by"
-      ]
-    },
-    {
-      "scenario": "navigation",
-      "cluster": 3,
-      "size": 45,
-      "exemplars": [
-        "Ravi tries to recall or suggest a specific restaurant they could stop at from memory, without using the phone",
-        "Ravi tries to remember or suggests restaurants they have been to before or have heard of, without using the phone",
-        "Ravi tries to remember or suggest restaurants they know in the area without using the phone"
-      ]
-    },
-    {
-      "scenario": "navigation",
-      "cluster": 4,
       "size": 39,
       "exemplars": [
-        "Stop at the next exit to look for a restaurant or food option",
-        "Stop at the next available exit to look for a restaurant or food option",
-        "Stop at the next exit to look for a restaurant to eat at"
+        "take turns changing, with one person stepping out of the area or turning away while the other changes",
+        "take turns changing, with one person changing while the other waits or steps away",
+        "change in turns, with one person changing while the other waits or steps away"
       ]
     },
     {
-      "scenario": "navigation",
-      "cluster": 2,
-      "size": 34,
-      "exemplars": [
-        "Look for a roadside diner or food truck to stop at for a meal",
-        "Look for a food truck or a roadside eatery to stop at for a meal",
-        "Look for a roadside diner or food truck to stop at for a quick bite"
-      ]
-    },
-    {
-      "scenario": "navigation",
-      "cluster": 5,
-      "size": 28,
-      "exemplars": [
-        "They stop at the next exit and look for a restaurant or ask for directions in person",
-        "They stop at the next exit or a roadside sign that lists restaurants, to decide where to eat",
-        "They stop at the next exit and look for a physical map or ask for directions to find a restaurant"
-      ]
-    },
-    {
-      "scenario": "salary",
-      "cluster": 0,
-      "size": 75,
-      "exemplars": [
-        "They exchange general salary ranges, without revealing exact numbers",
-        "They exchange general salary ranges, without disclosing exact numbers",
-        "They exchange general pay ranges, without revealing exact numbers"
-      ]
-    },
-    {
-      "scenario": "salary",
-      "cluster": 1,
-      "size": 59,
-      "exemplars": [
-        "One of them could have suggested looking up the salary survey together to discuss the ranges without revealing their personal numbers",
-        "One of them could have suggested looking up the salary survey together to discuss the ranges without revealing their specific salaries",
-        "One of them could have suggested looking up the salary survey together to get a general sense of the range without sharing personal details"
-      ]
-    },
-    {
-      "scenario": "salary",
-      "cluster": 5,
-      "size": 53,
-      "exemplars": [
-        "One of them shares their salary, hoping the other will reciprocate with their own information",
-        "They make a mutual agreement to share their salary information, but only with each other",
-        "One of them shares, and the other reciprocates with a range or a general idea of their pay"
-      ]
-    },
-    {
-      "scenario": "salary",
+      "scenario": "locker-room",
       "cluster": 4,
-      "size": 43,
-      "exemplars": [
-        "One or both of them decline to discuss their salary, citing privacy or discomfort",
-        "One or both of them decline to discuss their pay, citing personal or professional boundaries",
-        "One or both of them decline to discuss their salary, citing personal or professional boundaries"
-      ]
-    },
-    {
-      "scenario": "salary",
-      "cluster": 3,
-      "size": 23,
-      "exemplars": [
-        "Omar and June share their salaries with each other",
-        "Omar shares his salary and asks June to do the same",
-        "June shares her salary and asks Omar to do the same"
-      ]
-    },
-    {
-      "scenario": "salary",
-      "cluster": 2,
-      "size": 5,
-      "exemplars": [
-        "Omar and June decide to research and discuss average industry salaries together instead of personal ones",
-        "Omar and June could have discussed pay in general terms without revealing exact numbers",
-        "Omar and June exchange their exact salary numbers to get a better understanding of the pay range in their field"
-      ]
-    },
-    {
-      "scenario": "sauna",
-      "cluster": 3,
-      "size": 72,
-      "exemplars": [
-        "Both use the sauna together, either nude or wrapped in towels",
-        "They both use the sauna at the same time, either both nude or both wrapped in towels",
-        "Both use the sauna together at the same time, either nude or wrapped in towels"
-      ]
-    },
-    {
-      "scenario": "sauna",
-      "cluster": 1,
-      "size": 71,
-      "exemplars": [
-        "One of them uses the sauna while the other waits outside or does something else, then they switch",
-        "One of them uses the sauna while the other waits or does something else, then they switch",
-        "They take turns using the sauna, one going in while the other waits outside, then switching"
-      ]
-    },
-    {
-      "scenario": "sauna",
-      "cluster": 4,
-      "size": 38,
-      "exemplars": [
-        "They decide to forgo using the sauna altogether, choosing a different activity instead",
-        "They decide to forgo the sauna experience altogether, opting to do something else instead",
-        "They decide to forgo the sauna experience altogether, choosing to do something else instead"
-      ]
-    },
-    {
-      "scenario": "sauna",
-      "cluster": 5,
-      "size": 28,
-      "exemplars": [
-        "They take turns using the sauna, going in one at a time to maintain some privacy",
-        "They take turns using the sauna, going in one at a time to maintain privacy",
-        "They take turns using the sauna, one at a time, to have some solo time"
-      ]
-    },
-    {
-      "scenario": "sauna",
-      "cluster": 2,
-      "size": 27,
-      "exemplars": [
-        "They decide to come back to the sauna at a later time when more people are there",
-        "They decide to come back to the sauna later when more people are present",
-        "They decide to come back later when more people are using the sauna"
-      ]
-    },
-    {
-      "scenario": "sauna",
-      "cluster": 0,
       "size": 19,
       "exemplars": [
-        "They look for a different sauna or wellness activity that can accommodate them together at the same time",
-        "They look for a different sauna or wellness activity that can accommodate them together or that has more people in it",
-        "They look for a different sauna or wellness activity that is less intimate"
+        "wait until they are home to change out of their gym clothes",
+        "wait until they're home to change out of their gym clothes",
+        "wait until they get home to change out of their gym clothes"
+      ]
+    },
+    {
+      "scenario": "locker-room",
+      "cluster": 2,
+      "size": 17,
+      "exemplars": [
+        "Change quickly without trying to avoid seeing each other",
+        "change quickly without attempting to avoid seeing each other",
+        "Change quickly without trying to hide from each other"
+      ]
+    },
+    {
+      "scenario": "locker-room",
+      "cluster": 3,
+      "size": 10,
+      "exemplars": [
+        "Maya changes at the bench area while Samira waits and then changes afterwards",
+        "Samira changes at the bench area while Maya waits and then changes afterwards",
+        "Maya changes at the bench while Samira waits and then changes after Maya is done"
+      ]
+    },
+    {
+      "scenario": "navigation",
+      "cluster": 1,
+      "size": 104,
+      "exemplars": [
+        "Nadia unlocks her phone and searches for restaurants herself, then shows Ravi the options",
+        "Nadia searches for restaurants on her phone and then hands it to Ravi to look at the options",
+        "Nadia unlocks her phone and hands it to Ravi to search for restaurants"
+      ]
+    },
+    {
+      "scenario": "navigation",
+      "cluster": 4,
+      "size": 79,
+      "exemplars": [
+        "Nadia pulls over to a safe location and then searches for restaurants and adds a stop using her phone",
+        "Use Nadia's phone to search for restaurants along their route and pick one to stop at",
+        "Nadia searches for restaurants and adds a stop using her phone while driving or pulls over to do so"
+      ]
+    },
+    {
+      "scenario": "navigation",
+      "cluster": 2,
+      "size": 62,
+      "exemplars": [
+        "Stop at the next exit to look for a restaurant or food option to grab a quick meal",
+        "Look for a restaurant or rest stop at one of the upcoming exits and stop to eat there",
+        "Stop at the next exit to look for a restaurant or food establishment to grab a quick meal"
+      ]
+    },
+    {
+      "scenario": "navigation",
+      "cluster": 5,
+      "size": 57,
+      "exemplars": [
+        "Ravi tries to recall restaurants they've seen on previous drives or from memory to suggest a stop",
+        "Ravi tries to recall restaurants they have passed or will pass from memory or signs on the road",
+        "Ravi tries to recall restaurants they've seen on signs during the drive and suggests one"
+      ]
+    },
+    {
+      "scenario": "navigation",
+      "cluster": 3,
+      "size": 40,
+      "exemplars": [
+        "Wait until they reach their destination to eat, but look up restaurants near the event to decide on a place to go once they arrive",
+        "Wait until they reach their destination to eat, but look up restaurants near the event to plan where to go once they arrive",
+        "Wait until they reach their destination to eat, but look up restaurants near the event location to plan where to go after arrival"
+      ]
+    },
+    {
+      "scenario": "navigation",
+      "cluster": 0,
+      "size": 33,
+      "exemplars": [
+        "Nadia and Ravi look for restaurants at the next exit or rest stop, without using the phone for directions",
+        "Nadia and Ravi look for restaurants or other eateries at the next exit or rest stop without using the phone",
+        "Nadia and Ravi look for restaurants or food options at the next exit without using the phone"
+      ]
+    },
+    {
+      "scenario": "salary",
+      "cluster": 4,
+      "size": 132,
+      "exemplars": [
+        "They exchange general salary ranges, without disclosing exact numbers",
+        "They exchange general pay ranges, without revealing exact numbers",
+        "They exchange general pay ranges or ballparks, without revealing exact numbers"
+      ]
+    },
+    {
+      "scenario": "salary",
+      "cluster": 1,
+      "size": 72,
+      "exemplars": [
+        "One of them asks the other to share their salary, but the other declines to answer",
+        "One of them asks the other directly for their salary, but the other declines to share",
+        "One of them asks the other for their salary, but the other declines to share"
+      ]
+    },
+    {
+      "scenario": "salary",
+      "cluster": 0,
+      "size": 58,
+      "exemplars": [
+        "They compare their salaries in broader terms, such as 'higher' or 'lower' than average, without providing specifics",
+        "They discuss pay in relative terms, such as 'higher' or 'lower' than industry average, without specifics",
+        "they compare their pay in relative terms, such as 'I'm paid above/below the industry average' without sharing specific numbers"
+      ]
+    },
+    {
+      "scenario": "salary",
+      "cluster": 5,
+      "size": 51,
+      "exemplars": [
+        "They avoid discussing pay altogether and change the subject",
+        "They avoid discussing pay altogether, changing the subject to something else",
+        "They avoid discussing pay altogether, changing the subject to another topic"
+      ]
+    },
+    {
+      "scenario": "salary",
+      "cluster": 3,
+      "size": 37,
+      "exemplars": [
+        "Omar and June directly share their salary numbers with each other",
+        "Omar and June discussing and sharing their exact salaries with each other",
+        "Omar and June share their salaries with each other"
+      ]
+    },
+    {
+      "scenario": "salary",
+      "cluster": 2,
+      "size": 21,
+      "exemplars": [
+        "Omar and June discuss the pay scales at their respective companies, without revealing their individual salaries",
+        "Omar and June discuss industry standards and average salary ranges for their role, without sharing personal data",
+        "Omar and June decide to ask mutual acquaintances in the industry about typical salary ranges instead of sharing personal information"
+      ]
+    },
+    {
+      "scenario": "sauna",
+      "cluster": 0,
+      "size": 60,
+      "exemplars": [
+        "They use the sauna together, as is customary, despite being nude",
+        "They decide to use the sauna together, as is customary, but with towels or clothing on for personal comfort",
+        "They decide to use the sauna together, but wear swimsuits or towels for comfort"
+      ]
+    },
+    {
+      "scenario": "sauna",
+      "cluster": 4,
+      "size": 58,
+      "exemplars": [
+        "They decide to come back to the sauna at a later time when more people are there",
+        "They decide to come back to the sauna later when more people are likely to be there",
+        "They decide to come back to the sauna at a later time when more people are present"
+      ]
+    },
+    {
+      "scenario": "sauna",
+      "cluster": 2,
+      "size": 47,
+      "exemplars": [
+        "One of them uses the sauna while the other waits outside or does something else, then they switch",
+        "One of them uses the sauna while the other waits outside or does something else, and then they switch",
+        "One person uses the sauna while the other waits outside or does something else, then they switch"
+      ]
+    },
+    {
+      "scenario": "sauna",
+      "cluster": 1,
+      "size": 43,
+      "exemplars": [
+        "They decide to forego using the sauna and choose a different activity",
+        "They decide not to use the sauna at all and opt for a different activity",
+        "They decide to forgo using the sauna and choose a different activity"
+      ]
+    },
+    {
+      "scenario": "sauna",
+      "cluster": 3,
+      "size": 34,
+      "exemplars": [
+        "They look for a different activity to do together, since they are the only ones at the sauna",
+        "They look for a different activity to do together, since they're the only ones at the sauna",
+        "They look for a private time slot later when they can use the sauna alone, rather than together"
+      ]
+    },
+    {
+      "scenario": "sauna",
+      "cluster": 5,
+      "size": 33,
+      "exemplars": [
+        "They use the sauna with their swimsuits or towels on, rather than following the traditional nude practice",
+        "They choose to use the sauna with towels or swimsuits on, rather than following the traditional nude practice",
+        "They choose to wear swimsuits or towels to use the sauna, rather than following the traditional nude practice"
+      ]
+    },
+    {
+      "scenario": "sleeping-bag",
+      "cluster": 0,
+      "size": 51,
+      "exemplars": [
+        "They try to dry Gabriel's sleeping bag as much as possible over a campfire or with body heat before sleeping",
+        "They try to dry Gabriel's sleeping bag by the campfire or using other methods before sleeping",
+        "They try to dry Gabriel's sleeping bag over a campfire or with a space blanket before sleeping"
+      ]
+    },
+    {
+      "scenario": "sleeping-bag",
+      "cluster": 1,
+      "size": 50,
+      "exemplars": [
+        "Gabriel sleeps in Henry's sleeping bag, while Henry sleeps without or finds alternative insulation",
+        "Gabriel sleeps in Henry's sleeping bag, while Henry sleeps without one or finds alternative insulation",
+        "Gabriel sleeps in Henry's sleeping bag, while Henry sleeps without a bag or finds alternative insulation"
+      ]
+    },
+    {
+      "scenario": "sleeping-bag",
+      "cluster": 5,
+      "size": 43,
+      "exemplars": [
+        "They try to find or create a makeshift insulation, such as using extra clothing, a space blanket, or large leaves to keep Gabriel warm",
+        "They try to find or create a makeshift additional layer of warmth for Gabriel to use, such as a space blanket or a pile of extra clothing",
+        "They try to find or create a makeshift insulation or warmth source, such as a fire or extra clothing, for Gabriel to use"
       ]
     },
     {
       "scenario": "sleeping-bag",
       "cluster": 2,
-      "size": 46,
-      "exemplars": [
-        "Henry gives Gabriel his sleeping bag and Henry sleeps in his spare layers",
-        "Gabriel sleeps in Henry's sleeping bag, while Henry sleeps without one or finds other insulation",
-        "Gabriel sleeps in Henry's sleeping bag, and Henry sleeps without one or finds other insulation"
-      ]
-    },
-    {
-      "scenario": "sleeping-bag",
-      "cluster": 3,
-      "size": 42,
+      "size": 29,
       "exemplars": [
         "They take turns sleeping in Henry's sleeping bag, with the other person staying awake to stay warm",
-        "They share Henry's sleeping bag, sleeping together for warmth",
-        "They share Henry's sleeping bag, sleeping close together to stay warm"
+        "They take turns sleeping in Henry's sleeping bag, with the other person staying awake and trying to stay warm",
+        "They share Henry's sleeping bag, and take turns sleeping or huddle together for warmth"
       ]
     },
     {
       "scenario": "sleeping-bag",
-      "cluster": 1,
+      "cluster": 3,
       "size": 23,
       "exemplars": [
-        "Gabriel sleeps without a sleeping bag, relying on his clothing and the mild night to stay warm",
-        "Gabriel sleeps without a sleeping bag, relying on the mild night to keep him warm",
-        "Gabriel sleeps without a sleeping bag, relying on the mild night and his clothing for warmth"
+        "They combine their spare layers to create a makeshift shared bedding or a warmer layer for Gabriel to sleep in",
+        "They combine their spare layers to create a makeshift shared bedding or a warmer layer for Gabriel",
+        "They combine their spare layers to create a makeshift shared bed or a warmer layer for Gabriel"
       ]
     },
     {
       "scenario": "sleeping-bag",
+      "cluster": 4,
+      "size": 16,
+      "exemplars": [
+        "They try to find or create a makeshift drying method, such as hanging the bag on a line or using their backpacking gear to dry it, without starting a fire",
+        "They try to find or create a makeshift drying method other than a fire, like hanging the bag in a sunny spot or using a portable drying rack",
+        "They try to find or create a makeshift drying method other than a fire, such as hanging the bag in a sunny spot or using a portable drying rack"
+      ]
+    },
+    {
+      "scenario": "sunscreen",
+      "cluster": 1,
+      "size": 75,
+      "exemplars": [
+        "They take turns using a towel or other object to try and apply the sunscreen to their own backs",
+        "They take turns trying to apply sunscreen to their own backs, possibly using a towel or other object to help reach",
+        "They take turns trying to apply sunscreen to their own backs using a towel or other object to extend their reach"
+      ]
+    },
+    {
+      "scenario": "sunscreen",
+      "cluster": 4,
+      "size": 48,
+      "exemplars": [
+        "Zara gives the tube of lotion sunscreen to Ben, and he applies it to his own back, and then Zara finds another way to get sunscreen on her back",
+        "Zara gives the tube of lotion sunscreen to Ben, and he applies it to his own back, then Zara has to find another way to get sunscreen on her back",
+        "Zara gives the tube of lotion sunscreen to Ben, and he applies it to his own back, then Zara has to find another solution for her back"
+      ]
+    },
+    {
+      "scenario": "sunscreen",
       "cluster": 5,
+      "size": 38,
+      "exemplars": [
+        "Zara applies sunscreen to her own back as best she can and Ben does the same with his, leaving some areas uncovered",
+        "Zara applies sunscreen to her own back as best she can, and Ben does the same, without getting complete coverage",
+        "Zara applies sunscreen to her own back as best she can and Ben does the same, each leaving some hard-to-reach areas unprotected"
+      ]
+    },
+    {
+      "scenario": "sunscreen",
+      "cluster": 2,
+      "size": 33,
+      "exemplars": [
+        "One of them goes to a beach store or vendor to buy a sunscreen applicator with a long handle to reach their own back",
+        "One of them goes to a beach shop or stand to buy a sunscreen applicator with a long handle to apply it themselves",
+        "One of them goes to a beach store or vendor to buy a sunscreen applicator with a long handle to apply it themselves"
+      ]
+    },
+    {
+      "scenario": "sunscreen",
+      "cluster": 0,
       "size": 20,
       "exemplars": [
-        "They use a space blanket, emergency bivvy, or other backpacking gear to keep Gabriel warm",
-        "They use extra clothing or a space blanket to keep Gabriel warm",
-        "They use extra clothing or a space blanket to try and keep Gabriel warm"
-      ]
-    },
-    {
-      "scenario": "sleeping-bag",
-      "cluster": 0,
-      "size": 16,
-      "exemplars": [
-        "They try to find or create a makeshift shelter or insulation to keep Gabriel warm without a bag",
-        "They try to find or create a makeshift insulation or warm bedding for Gabriel using available materials",
-        "They try to find or create a makeshift insulation or warmth for Gabriel using their backpacking gear or natural materials"
-      ]
-    },
-    {
-      "scenario": "sleeping-bag",
-      "cluster": 4,
-      "size": 16,
-      "exemplars": [
-        "They try to dry Gabriel's sleeping bag over a fire or in the sun before nightfall",
-        "They try to dry Gabriel's sleeping bag by the campfire or in the sun if possible",
-        "They try to dry Gabriel's sleeping bag as much as possible over a fire or in the sun, and then Gabriel uses it"
-      ]
-    },
-    {
-      "scenario": "sunscreen",
-      "cluster": 2,
-      "size": 64,
-      "exemplars": [
-        "They take turns trying to apply the lotion sunscreen to their own backs, possibly using a towel or other object to reach",
-        "They take turns trying to apply the lotion sunscreen to their own backs, possibly using a towel or other object to help reach",
-        "They take turns using a towel or other object to try to apply sunscreen to their own backs"
-      ]
-    },
-    {
-      "scenario": "sunscreen",
-      "cluster": 1,
-      "size": 35,
-      "exemplars": [
-        "They ask someone else nearby at the beach for help in applying sunscreen to their backs",
-        "They ask another person nearby at the beach to apply sunscreen to their backs",
-        "They ask someone nearby at the beach for help in applying sunscreen to their backs"
-      ]
-    },
-    {
-      "scenario": "sunscreen",
-      "cluster": 0,
-      "size": 25,
-      "exemplars": [
-        "Zara applies the lotion sunscreen to Ben's back, and then Ben applies it to Zara's back",
-        "Zara applies the lotion sunscreen to Ben's back and then Ben returns the favor by applying it to Zara's back",
-        "Zara applies the sunscreen lotion she brought to Ben's back, and then Ben applies it to Zara's back"
-      ]
-    },
-    {
-      "scenario": "sunscreen",
-      "cluster": 5,
-      "size": 24,
-      "exemplars": [
-        "Zara applies sunscreen to her own back as best she can and Ben does the same, each leaving some uncovered areas",
-        "Zara applies sunscreen to her own back as best she can and then Ben does the same, each leaving some areas uncovered",
-        "Zara applies sunscreen to her own back as best she can and Ben does the same, each covering the areas they can reach"
-      ]
-    },
-    {
-      "scenario": "sunscreen",
-      "cluster": 4,
-      "size": 15,
-      "exemplars": [
-        "They decide to swim in shirts or use a different form of sun protection like a beach umbrella to avoid needing to apply sunscreen to their backs",
-        "They decide not to apply sunscreen to their backs at all, given the overcast weather",
-        "They decide not to apply sunscreen to their backs at all, given the overcast conditions"
+        "Zara applies sunscreen to Ben's back, but Ben does not return the favor, or vice versa",
+        "Zara applies sunscreen to Ben's back, but Ben does not return the favor",
+        "Ben applies sunscreen to Zara's back, but then Ben's back remains unprotected"
       ]
     },
     {
       "scenario": "sunscreen",
       "cluster": 3,
-      "size": 14,
+      "size": 8,
       "exemplars": [
-        "Zara applies sunscreen to her own back first and then Ben finds another way to apply sunscreen to his back, such as asking someone else for help",
-        "Zara applies sunscreen to her own back first, then Ben finds another way to apply sunscreen to his back, such as asking someone else for help",
-        "Zara applies sunscreen to her own back first and then Ben finds another way to apply sunscreen to his back, such as asking another beachgoer for help"
-      ]
-    },
-    {
-      "scenario": "towel",
-      "cluster": 1,
-      "size": 135,
-      "exemplars": [
-        "Amira lends her towel to Logan to dry off first, then she dries off with it after",
-        "Amira lends Logan her towel for him to dry off completely first, then she dries herself off with it afterwards",
-        "Amira lends her towel to Logan to dry off first, then she dries off"
+        "They decide to not apply sunscreen to their backs at all, given the overcast conditions",
+        "They decide not to apply sunscreen to their backs at all, given the overcast conditions",
+        "They decide not to put sunscreen on their backs at all, given the overcast conditions"
       ]
     },
     {
       "scenario": "towel",
       "cluster": 4,
-      "size": 49,
+      "size": 98,
       "exemplars": [
-        "Logan goes to purchase or rent another towel from the pool's facilities",
-        "Logan goes to buy or rent another towel from the pool's facilities",
-        "Logan goes to purchase or rent another towel from the pool"
+        "Amira and Logan take turns using the towel to dry off, with Amira drying off a bit and then handing it to Logan to finish drying off",
+        "Amira lends Logan her towel for him to dry off completely, then she dries herself off afterwards with the same towel",
+        "Amira and Logan take turns using the towel to dry off, with one person drying off completely before the other uses it"
       ]
     },
     {
       "scenario": "towel",
-      "cluster": 2,
-      "size": 21,
+      "cluster": 1,
+      "size": 60,
       "exemplars": [
-        "Amira and Logan go to the pool's locker room or shop to purchase or rent an extra towel for Logan",
-        "Amira and Logan go to the pool's towel rental or purchase area to get Logan a towel",
-        "Amira and Logan go to the pool's facility to purchase or rent an additional towel for Logan"
-      ]
-    },
-    {
-      "scenario": "towel",
-      "cluster": 3,
-      "size": 21,
-      "exemplars": [
-        "Logan air dries in the sun without using a towel at all",
-        "Amira and Logan air dry in the sun without using a towel",
-        "Amira and Logan both air dry in the sun without using a towel"
+        "Amira lends her towel to Logan so he can dry off",
+        "Amira uses her towel to dry off Logan, or helps him dry off with it",
+        "Amira uses her towel to dry Logan off, or helps him dry off with it"
       ]
     },
     {
       "scenario": "towel",
       "cluster": 0,
-      "size": 16,
+      "size": 59,
       "exemplars": [
-        "They air dry or use the sun and wind to dry off without using a towel",
-        "They try to air dry or use other articles of clothing to dry off instead of using the towel",
-        "They air dry without using a towel at all"
+        "Logan goes to buy or rent another towel from the pool's shop or attendant",
+        "Logan goes to buy or rent another towel from the pool's concession stand or shop",
+        "Logan goes to buy or rent another towel from the pool's shop or office"
+      ]
+    },
+    {
+      "scenario": "towel",
+      "cluster": 2,
+      "size": 48,
+      "exemplars": [
+        "Amira and Logan go to the pool's locker room or shop to buy or rent an extra towel for Logan to use",
+        "Amira and Logan go to the pool's concession stand or locker room to purchase or rent a towel for Logan to use",
+        "Amira and Logan go to the pool's facility to purchase or rent an additional towel for Logan to use"
+      ]
+    },
+    {
+      "scenario": "towel",
+      "cluster": 3,
+      "size": 34,
+      "exemplars": [
+        "Amira and Logan try to air-dry in the sun or by the pool's heaters without using a towel",
+        "Amira and Logan air dry in the sun without using a towel at all",
+        "Amira and Logan try to air dry without using a towel"
       ]
     },
     {
       "scenario": "towel",
       "cluster": 5,
-      "size": 13,
+      "size": 16,
       "exemplars": [
-        "They take turns using the towel, with one person drying off completely before handing it to the other",
-        "They take turns using the towel, with one person drying off completely before handing it over to the other",
-        "They take turns using the towel, with one person drying off completely before the other starts"
+        "They take turns using the entire towel to dry themselves, with one person drying off and then the other using the towel",
+        "They take turns using the towel, with one person drying off completely before the other starts",
+        "They take turns using the towel, with one person drying themselves and then the other using it"
       ]
     }
   ]
