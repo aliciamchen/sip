@@ -234,21 +234,39 @@ def _build_merged_actions(scenario_row, alt_rows_for_run):
     return merged, observed_norms, alt_norms_in_order
 
 
+# A seeded scoring call that returns unparseable output (e.g. the model emits a
+# malformed number like "1!5") reproduces the identical failure when retried with
+# the SAME seed, because Together's seed pins the draw — so a deterministic bad
+# generation would null the unit on every re-score forever. Retry a few times with
+# a perturbed seed to escape it; attempt 0 keeps the canonical seed so a clean call
+# stays reproducible.
+_SCORE_PARSE_RETRIES = 4
+
+
 def _score_one_call(client, system_prompt, user_prompt, n_actions, label, seed=None):
     """Single LM scoring pass (num_runs=1, no inner averaging) returning per-action
     ratings. The K elicitation runs are the variation axis, not repeated calls.
-    ``seed`` pins the call for reproducible re-scoring."""
-    ratings, n_failures = get_ratings_concurrent(
-        client,
-        system_prompt,
-        user_prompt,
-        lambda t: parse_action_response_variable(t, n_actions),
-        num_runs=1,
-        max_tokens=_max_tokens_for(n_actions),
-        response_format=numeric_action_schema(n_actions),
-        label=label,
-        seed=seed,
-    )
+    ``seed`` pins the call for reproducible re-scoring; on an unparseable response
+    the seed is perturbed per retry (see ``_SCORE_PARSE_RETRIES``) so a
+    deterministic parse failure can still heal instead of nulling the unit."""
+    ratings, n_failures = [], 0
+    for attempt in range(_SCORE_PARSE_RETRIES):
+        call_seed = (
+            seed if seed is None or attempt == 0 else (seed + attempt) & 0x7FFFFFFF
+        )
+        ratings, n_failures = get_ratings_concurrent(
+            client,
+            system_prompt,
+            user_prompt,
+            lambda t: parse_action_response_variable(t, n_actions),
+            num_runs=1,
+            max_tokens=_max_tokens_for(n_actions),
+            response_format=numeric_action_schema(n_actions),
+            label=label,
+            seed=call_seed,
+        )
+        if ratings:
+            break
     agg = aggregate_action_ratings(ratings, n_actions)
     return agg, n_failures
 

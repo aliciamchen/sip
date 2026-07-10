@@ -12,6 +12,7 @@ Requires TOGETHER_API_KEY (in .env) and the `together` package.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -40,7 +41,11 @@ MAX_PARSE_RETRIES = 5
 
 # How many cells to elicit concurrently. One LM call per cell (with up to
 # MAX_PARSE_RETRIES parse-retries inside), so this is the per-call concurrency.
-MAX_CELL_WORKERS = 8
+# Env-tunable (default 8) to raise or lower generation throughput against the
+# Together tier's rate limit — the generation-side analogue of score_merged's
+# --scenario-workers flag. Clamped to >= 1 (like the other worker pools) so a
+# stray CELL_WORKERS=0 doesn't crash ThreadPoolExecutor.
+MAX_CELL_WORKERS = max(1, int(os.environ.get("CELL_WORKERS", "8")))
 
 # How often to flush partial results to disk while the thread pool runs.
 CHECKPOINT_EVERY = 16

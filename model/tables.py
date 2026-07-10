@@ -1059,7 +1059,7 @@ def load_padded_lm_tables_joint_ie(*, slug="food_inv_joint_ie"):
     prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
         np.float32
     )
-    _warn_truncation(runs, cell_cols)
+    _warn_truncation(runs)
     return {
         "risk": jnp.array(risk),
         "effort": jnp.array(effort),

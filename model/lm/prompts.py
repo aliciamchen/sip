@@ -64,7 +64,7 @@ script and downstream fits.
 
 _PREAMBLE_RATING = (
     "You are a participant in a human study. Respond as if you were a "
-    "regular adult, just going off of your intuition."
+    "regular adult from the United States, just going off your intuition."
 )
 
 
@@ -84,7 +84,7 @@ def _json_format_block():
     The example illustrates only the JSON shape for 3 actions; the real call has
     as many keys as actions given.
     """
-    return """Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Use whatever values your judgments warrant. Example for 3 actions:
+    return """Respond with your numerical ratings as a JSON object whose keys are "action_0", "action_1", ... matching the number of actions given, no explanation needed. Example for 3 actions:
 {"action_0": <number>, "action_1": <number>, "action_2": <number>}"""
 
 
@@ -150,11 +150,11 @@ For each action, evaluate how much it makes one person interpersonally vulnerabl
 
 Here we are asking what the action itself does — the interpersonal vulnerability it creates — independent of the relationship between the two people.
 
-Co-presence without substance transfer, contact, close shared space, or disclosure does NOT by itself make one person vulnerable to the other — for example, two people each handling their own separate utensils, sitting close together in a public space like an elevator, or keeping a conversation to surface-level topics. These should be rated near zero.
+Co-presence without substance transfer, contact, close shared space, or disclosure does NOT by itself make one person vulnerable to the other — for example, two people each handling their own separate utensils, standing close together in a public space like an elevator, or keeping a conversation to surface-level topics. These should be rated near zero.
 
 Use this scale from 0 to 6 (continuous values allowed):
 0 = No interpersonal vulnerability (the two people stay fully separate; no exchange of substance, no contact or shared interpersonal space, no disclosure)
-3 = Limited or indirect vulnerability (e.g. bodily substances reaching the other person only indirectly, through an item that has touched one person's skin; deliberate but limited physical contact, such as a hand on the shoulder; sharing an open or roomy space rather than a confined one; or disclosing somewhat personal but not deeply private information)
+3 = Limited or indirect vulnerability (e.g. bodily substances reaching the other person only indirectly, through an item that has touched one person's skin; deliberate but limited physical contact, such as a hand on the shoulder; being close to each other in an open or roomy space rather than a confined one; or disclosing somewhat personal but not deeply private information)
 6 = Strong, direct vulnerability (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, sharing a bed or other close confined space, or disclosing private details)"""
 
 
@@ -191,7 +191,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 #
 #   - Effort as a perceptible quantity separable from desire —
 #     Jara-Ettinger, J., Gweon, H., Tenenbaum, J. B., & Schulz, L. E.
-#     (2015). "Children's understanding of the costs and desires underlying
+#     (2015). "Children's understanding of the costs and rewards underlying
 #     rational action." Cognition 140: 14–23. Establishes that children at
 #     4–6 can estimate action cost as distinct from goal value and agent
 #     competence — grounds the assumption that an "LM-as-participant" can
@@ -209,7 +209,7 @@ For each action, evaluate the cost the actor would weigh against the benefit of 
 Do NOT rate social awkwardness, relational discomfort, or how intimate, appropriate, or emotionally hard the action would feel — those are separate dimensions that we are not asking about here. Here we want only the effort of carrying the action out.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No effort (no bodily work, no extra items, no waiting, nothing to compose or marshal)
+0 = No effort (no bodily work, no extra items, no waiting, nothing to compose or explain)
 3 = Moderate effort (a few bodily steps, such as setting out a clean utensil, dividing a portion, or briefly waiting; a small handful of extra items to obtain; or a short account that takes a little effort to produce)
 6 = High effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, waiting a long time, cleaning and assembling many separate items, or producing a long account that needs extensive backstory or roundabout phrasing to convey)"""
 
@@ -225,7 +225,7 @@ _USER_INSTRUCTIONS = {
     "effort": (
         "Rate the physical or executional cost of executing each action — "
         "how much physical work, preparation, or equipment it takes, or, for "
-        "telling or disclosing, how much marshaling and roundabout phrasing "
+        "telling or disclosing, how much explaining and roundabout phrasing "
         "producing the account takes (0-6 scale):"
     ),
     "g": (
