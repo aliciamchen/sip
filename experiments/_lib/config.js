@@ -36,8 +36,8 @@ export const PROLIFIC_COMPLETION_CODES = {
   food_inv_joint_de: "C1A889GX", // Study 1b
   food_inv_intimacy: "C1A889GX", // Study 2a
   food_inv_joint_ie: "C1A889GX", // Study 2b
-  nonfood_food_inv_joint_de: "C1A889GX", // Study 3a
-  nonfood_food_inv_joint_ie: "C1A889GX", // Study 3b
+  nonfood_inv_joint_de: "C1A889GX", // Study 3a
+  nonfood_inv_joint_ie: "C1A889GX", // Study 3b
 };
 
 // Settings identical across all active experiments.
