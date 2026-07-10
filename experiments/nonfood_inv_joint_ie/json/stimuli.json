@@ -144,7 +144,7 @@
     "desire_low": "Neither of them minds staying in their workout clothes for the ride home; they can just change once they get home.",
     "desire_high": "They both feel sweaty and gross, and commuting in damp workout clothes sounds miserable — they would much rather change before heading out.",
     "low_risk_share_effort_low": "A tall row of lockers juts into the middle of the bench area, so they can easily change on opposite sides of it without seeing each other.",
-    "low_risk_share_effort_high": "The bench area is one open room with no dividers, so changing without seeing each other would mean carefully coordinating — taking turns, facing the corners, and calling out before turning around.",
+    "low_risk_share_effort_high": "The bench area is one open room with no dividers, so changing without seeing each other would mean carefully coordinating.",
     "no_share": "Neither of them changes at the gym; they both change once they get home.",
     "low_risk_share": "They change at opposite ends of the bench area, positioned so that they don't see each other undressed.",
     "high_risk_share": "They change side by side at the bench area."

@@ -20,8 +20,8 @@ export const DATAPIPE_IDS = {
   food_inv_joint_de: "zxPavRt21FCr", // Study 1b
   food_inv_intimacy: "wX18fBV6FFV1", // Study 2a
   food_inv_joint_ie: "Z3EeK2XpEZPr", // Study 2b
-  nonfood_inv_joint_de: "TODO_FILL_IN_DATAPIPE_ID", // Study 3a
-  nonfood_inv_joint_ie: "TODO_FILL_IN_DATAPIPE_ID", // Study 3b
+  nonfood_inv_joint_de: "v9DEj3s8NlpB", // Study 3a
+  nonfood_inv_joint_ie: "8TZY2FiBay0J", // Study 3b
 };
 
 // Prolific completion codes, keyed by experiment slug. Each Prolific study
@@ -36,8 +36,8 @@ export const PROLIFIC_COMPLETION_CODES = {
   food_inv_joint_de: "C1A889GX", // Study 1b
   food_inv_intimacy: "C1A889GX", // Study 2a
   food_inv_joint_ie: "C1A889GX", // Study 2b
-  // nonfood_inv_joint_de / nonfood_inv_joint_ie (Studies 3a/3b) deliberately
-  // have no entry yet: add each study's code when it is created on Prolific.
+  nonfood_food_inv_joint_de: "C1A889GX", // Study 3a
+  nonfood_food_inv_joint_ie: "C1A889GX", // Study 3b
 };
 
 // Settings identical across all active experiments.
