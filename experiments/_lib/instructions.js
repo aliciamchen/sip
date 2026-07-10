@@ -96,7 +96,7 @@ const INFERENCE_PAGE = instructionsPage([INFERENCE_NOTE]);
 // --- Nonfood (Study 3) variants of the food-specific paragraphs -------------
 // Same structure and register as the food wording; only the domain framing
 // changes. The nonfood scenarios span objects, physical spaces, and personal
-// information, so "the food" becomes "the thing at stake in the scenario"
+// information, so "the food" becomes "the thing that could be shared"
 // (the per-trial question itself names the scenario's specific thing, e.g.
 // "the chapstick" — see desireQuestion in scenario.js).
 
@@ -109,14 +109,14 @@ const NONFOOD_INFERENCE_NOTE =
 
 const NONFOOD_INFERENCE_PAGE = instructionsPage([NONFOOD_INFERENCE_NOTE]);
 
-// Nonfood analog of DESIRE_NOTE: the appeal of the thing at stake, separate
-// from what the two people decide to do and from how hard it is to get.
+// Nonfood analog of DESIRE_NOTE: the appeal of the thing that could be shared,
+// separate from what the two people decide to do and from how hard it is to get.
 const NONFOOD_DESIRE_NOTE =
-  '<div class="side-note"><p>By how much the two people <strong>would like</strong> the thing at stake in each scenario, we mean how much getting or doing it would satisfy the motivational state they are in right now — for example, how much they need it, or how much they like or are interested in that kind of thing. This is about the appeal of the thing itself, separate from what they decide to do and from how easy or hard it is to get. For example, in some situations people might want something a lot but still not end up getting it for other reasons.</p></div>';
+  '<div class="side-note"><p>By how much the two people <strong>would like</strong> the thing that could be shared, we mean how much getting or doing it would satisfy the motivational state they are in right now — for example, how much they need it, or how much they like or are interested in that kind of thing. This is about the appeal of the thing itself, separate from what they decide to do and from how easy or hard it is to get. For example, in some situations people might want something a lot but still not end up getting it for other reasons.</p></div>';
 
 // Nonfood analog of DESIRE_SLIDER_NOTE.
 const NONFOOD_DESIRE_SLIDER_NOTE =
-  "<p>For the question about how much the two people would like the thing at stake in the scenario, sliding the slider all the way to one end means you think they would not like it at all, and all the way to the other end means they would like it extremely. Positions in between indicate how much they would like it, with the middle meaning a moderate amount.</p>";
+  "<p>For the question about how much the two people would like the thing that could be shared, sliding the slider all the way to one end means you think they would not like it at all, and all the way to the other end means they would like it extremely. Positions in between indicate how much they would like it, with the middle meaning a moderate amount.</p>";
 
 // --- Per-study instructions (study-specific pages in bold relief) -----------
 
@@ -183,7 +183,7 @@ export const STUDY_INSTRUCTIONS = {
     ]),
     NONFOOD_INFERENCE_PAGE,
     instructionsPage([
-      "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people would like the thing at stake in the scenario. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
+      "<p>In each scenario, we will ask you two questions. The first question asks how much you think the two people would like the thing that could be shared. The second question asks which of two situations you think is more likely. You will answer each question using a slider.</p>",
       NONFOOD_DESIRE_SLIDER_NOTE,
       SITUATION_SLIDER_NOTE,
       TIMING_NOTE_TWO,

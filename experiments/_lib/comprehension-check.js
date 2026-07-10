@@ -103,16 +103,16 @@ const NONFOOD_INFERENCE_Q = {
 
 const NONFOOD_DESIRE_MEANING_Q = {
   prompt:
-    "When we ask how much the two people would like the thing at stake in the scenario, what do we mean?",
+    "When we ask how much the two people would like the thing that could be shared, what do we mean?",
   name: "desire_meaning",
   options: [
-    "How much they would enjoy getting or doing it right now — for example because they need it or are interested in it — separate from what they decide to do.",
+    "How much getting or doing it right now would satisfy them — for example because they need it or are interested in it — separate from what they decide to do.",
     "Whether they actually end up getting it.",
     "How easy or hard it would be for them to get it.",
     "How close or formal the two people's relationship is.",
   ],
   correct:
-    "How much they would enjoy getting or doing it right now — for example because they need it or are interested in it — separate from what they decide to do.",
+    "How much getting or doing it right now would satisfy them — for example because they need it or are interested in it — separate from what they decide to do.",
 };
 
 const NONFOOD_INTIMACY_SCALE_Q = {
@@ -121,7 +121,7 @@ const NONFOOD_INTIMACY_SCALE_Q = {
   name: "intimacy_scale",
   options: [
     "How formal or intimate the relationship is — from maximally formal to maximally intimate.",
-    "How much the two people would like the thing at stake in the scenario.",
+    "How much the two people would like the thing that could be shared.",
     "How much physical effort their action would take.",
     "How long the two people have known each other, in years.",
   ],
