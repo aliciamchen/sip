@@ -40,7 +40,20 @@ def main():
         comparison = data.load_comparison(slug)
         if comparison is None:
             continue
-        data.warn_if_stale(slug, data.load_trials(slug), comparison)
+        # A forest plot mixing sample vintages would be misleading, so include a
+        # study only when its model-comparison matches the current data sample.
+        # Studies with no current data, or whose committed comparison predates
+        # the current CSV (e.g. a leftover pilot cv_model_comparison.json after
+        # the CV outputs were dropped), are skipped until their CV is re-run.
+        trials = data.load_trials(slug)
+        if trials is None:
+            print(
+                f"[{slug}] has a model-comparison but no current data — omitting from LL figure"
+            )
+            continue
+        if data.warn_if_stale(slug, trials, comparison):
+            print(f"[{slug}] omitted from LL figure (stale vintage)")
+            continue
         for entry in comparison["primary"]:
             rows.append(
                 {

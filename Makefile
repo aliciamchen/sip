@@ -33,7 +33,7 @@
 #   2. Write the two nonfood analysis qmds (they don't exist yet) and add them
 #      to ANALYSIS_QMDS below — it is a separate hand-synced list, so `make
 #      analysis` silently skips Study 3 until they are added.
-#   3. Nothing in model/cv/model_comparison.py or model/lm/plot_si_validation.py:
+#   3. Nothing in model/cv/model_comparison.py or figures/scripts/plot_si_validation.py:
 #      both already cover all six slugs and skip studies whose outputs are
 #      missing, so they pick Study 3 up automatically.
 #   4. Update the roster prose in README.md, data/README.md, and
@@ -95,8 +95,8 @@ help:
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance + data-converter + roster-sync tests"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
-	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/"
-	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/"
+	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/outputs/"
+	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/outputs/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
@@ -375,23 +375,24 @@ $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 
 # =============================================================================
 # SI LM-elicitation validation figures (no API calls — read the persisted
-# lm_runs.jsonl / embedding artifacts and write PDFs to figures/). Each figure
-# spans all six active studies in one consolidated figure (the alternatives
-# deep-dives require embed_alternatives.py + project_alternatives.py for every
-# study). run-spread / mixture-check stay at Study 1a (model-fit diagnostics).
+# lm_runs.jsonl / embedding artifacts and write PDFs to figures/outputs/). Each
+# figure spans all six active studies in one consolidated figure (the
+# alternatives deep-dives require embed_alternatives.py + project_alternatives.py
+# for every study). run-spread / mixture-check stay at Study 1a (model-fit
+# diagnostics).
 # =============================================================================
 
 figures-lm-si:
-	uv run python model/lm/plot_si_validation.py
-	uv run python model/lm/plot_alternatives.py --figures si
+	uv run python figures/scripts/plot_si_validation.py
+	uv run python figures/scripts/plot_alternatives.py --figures si
 
 # =============================================================================
-# Main results figures (figures/results/): per-study results figures, the
-# model-vs-human scatter figures, and the held-out-LL comparison. Each script
-# renders the panels whose inputs (data CSVs, CV predictions) exist and skips
-# the rest with a message, so this target is safe to run at any pipeline
-# stage; figures fill in as data and fits land. PDFs (+ PNG previews) go to
-# figures/.
+# Main results figures (scripts in figures/scripts/, output to figures/outputs/):
+# per-study results figures, the model-vs-human scatter figures, and the
+# held-out-LL comparison. Each script renders the panels whose inputs (data
+# CSVs, CV predictions) exist and skips the rest with a message, so this target
+# is safe to run at any pipeline stage; figures fill in as data and fits land.
+# PDFs (+ PNG previews) go to figures/outputs/.
 # =============================================================================
 
 RESULTS_FIGURE_SCRIPTS := figure_study1a figure_study1b figure_study2 \
@@ -399,15 +400,15 @@ RESULTS_FIGURE_SCRIPTS := figure_study1a figure_study1b figure_study2 \
 
 figures-results:
 	@for s in $(RESULTS_FIGURE_SCRIPTS); do \
-	  uv run python figures/results/$$s.py || exit 1; \
+	  uv run python figures/scripts/$$s.py || exit 1; \
 	done
 
 # =============================================================================
-# Manuscript figures: copy a curated set of generated PDFs from figures/ into the
-# journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs real,
-# committed files — symlinks don't sync — so this physically copies them. After
-# syncing, commit + push SIP_journal/ to Overleaf. Edit JOURNAL_FIGURES as the
-# paper's figure set changes; each entry is  <name-in-figures/>:<name-in-main.tex>
+# Manuscript figures: copy a curated set of generated PDFs from figures/outputs/
+# into the journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs
+# real, committed files — symlinks don't sync — so this physically copies them.
+# After syncing, commit + push SIP_journal/ to Overleaf. Edit JOURNAL_FIGURES as
+# the paper's figure set changes; each entry is  <name-in-figures-outputs/>:<name-in-main.tex>
 # (so the analysis keeps descriptive names and the paper gets its own).
 # =============================================================================
 
@@ -442,7 +443,7 @@ sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }
 	@mkdir -p $(JOURNAL_FIG_DIR)
 	@for pair in $(JOURNAL_FIGURES); do \
-	  src=figures/$${pair%%:*}; dst=$(JOURNAL_FIG_DIR)/$${pair##*:}; \
+	  src=figures/outputs/$${pair%%:*}; dst=$(JOURNAL_FIG_DIR)/$${pair##*:}; \
 	  if [ -f "$$src" ]; then cp "$$src" "$$dst" && echo "  $$src -> $$dst"; \
 	  else echo "MISSING: $$src — render the analysis that generates it first" >&2; exit 1; fi; \
 	done

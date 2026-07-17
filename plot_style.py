@@ -1,8 +1,9 @@
 """Shared matplotlib style for the Python-generated manuscript figures.
 
-One place for what the schematic panels (figures/figure_schematic_plots.py) and
-the SI LM-elicitation figures (model/lm/plot_si_validation.py,
-model/lm/plot_alternatives.py) must agree on: the Arial Nova font (matching the
+One place for what all the figure scripts in figures/scripts/ (the main results
+figures, the schematic panels, and the SI LM-elicitation figures
+plot_si_validation.py / plot_alternatives.py) must agree on: the Arial Nova
+font (matching the
 R analysis figures), the despined white look, and the palettes. apply_style()
 takes a context — "si" for print-sized supplement figures, "schematic" for the
 large-type vector panels assembled in Illustrator.
@@ -35,7 +36,7 @@ _project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root  # noqa: E402
 
-FIG_DIR = get_project_root() / "figures"
+FIG_DIR = get_project_root() / "figures" / "outputs"
 
 # ----------------------------------------------------------------------- font
 
@@ -153,7 +154,7 @@ def apply_style(context="si"):
 
 
 def savefig(fig, name, png=True):
-    """Write figures/<name>.pdf, optionally with a PNG preview."""
+    """Write figures/outputs/<name>.pdf, optionally with a PNG preview."""
     FIG_DIR.mkdir(exist_ok=True)
     fig.savefig(FIG_DIR / f"{name}.pdf", bbox_inches="tight")
     if png:

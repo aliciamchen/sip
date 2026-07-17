@@ -6,15 +6,15 @@ paths:
 # Analysis structure
 
 The qmds are demographics/data-check documents only. All figures — the main
-results figures and the SI figures — are made in Python (`figures/results/`
-and `model/lm/plot_si_*.py`, styled by the repo-root `plot_style.py`, which is
-now the visual source of truth for palettes), and the paper's model-comparison
-statistics come from `model/cv/model_comparison.py` (`make model-comparison`),
-not from the qmds. The R plotting layer (ggplot scales, themes, palettes,
-`save_figure`, the bootstrap helpers) was removed from `utils.R` in July 2026
-when the plots moved to Python; the Python equivalents are in
-`figures/results/_data.py`, which reuses `model_comparison.py`'s loaders
-rather than re-deriving the belief updates.
+results figures and the SI figures — are made by the Python scripts in
+`figures/scripts/` (styled by the repo-root `plot_style.py`, which is now the
+visual source of truth for palettes, and written to `figures/outputs/`), and
+the paper's model-comparison statistics come from `model/cv/model_comparison.py`
+(`make model-comparison`), not from the qmds. The R plotting layer (ggplot
+scales, themes, palettes, `save_figure`, the bootstrap helpers) was removed
+from `utils.R` in July 2026 when the plots moved to Python; the Python
+equivalents are in `figures/scripts/_data.py`, which reuses
+`model_comparison.py`'s loaders rather than re-deriving the belief updates.
 
 Core analysis files (named after their data folder, not paper experiment number):
 
@@ -64,4 +64,4 @@ quarto render analysis/food-inv-intimacy-analysis.qmd
 quarto render analysis/food-inv-joint-ie-analysis.qmd
 ```
 
-Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd. The results figures are `make figures-results` (see the Makefile's figure section and `figures/results/`).
+Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd. The results figures are `make figures-results` (see the Makefile's figure section and `figures/scripts/`).

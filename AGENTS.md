@@ -48,7 +48,7 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                                                               ↓
                                   model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
-                                  R/Quarto analysis (analysis/) → figures
+          paper figures: Python scripts in figures/scripts/ → figures/outputs/
 ```
 
 ## Common commands
@@ -73,5 +73,5 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Utility helpers
 
 - `utils.py` — `get_project_root()` for constructing paths relative to project root.
-- `analysis/utils.R` — shared R helpers: `setup_analysis()`, `boot_cor()`, `calculate_belief_update()`.
-- `plot_style.py` — shared style for **all** Python-generated figures (the `figures/schematic_panels/figure_schematic_plots.py` panels and the LM-elicitation SI figures in `model/lm/plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/`, plus every palette and colormap (matched to `analysis/utils.R`). Change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-lm-si` regenerates the LM SI figure set.
+- `analysis/utils.R` — shared R helpers for the qmds and exploratory scripts: `report_demographics()`, `calculate_belief_update()`, the model JSON readers, and the condition factor orders. No plotting code — that all moved to Python.
+- `plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/outputs/`, plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-results` regenerates the main results set; `make figures-lm-si` the LM SI set.

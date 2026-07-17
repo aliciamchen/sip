@@ -20,7 +20,7 @@ import json
 import sys
 from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent
+_project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model" / "lm"))
 

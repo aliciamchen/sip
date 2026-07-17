@@ -40,7 +40,7 @@ Outputs (one folder per study, outputs/lm/<slug>/):
     nearest-centroid exemplar texts for interpretation.
   - lm_embeddings.npz — the mean-centered, normalized embeddings: `alt_emb` (aligned
     row-for-row with lm_alternatives_semantic.jsonl) + `obs_emb` with parallel
-    `obs_scenario`/`obs_action` labels. Consumed by model/lm/plot_alternatives.py,
+    `obs_scenario`/`obs_action` labels. Consumed by figures/scripts/plot_alternatives.py,
     which runs the UMAP projection and renders the figures.
 
 Usage:
