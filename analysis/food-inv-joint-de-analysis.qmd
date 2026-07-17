@@ -19,10 +19,12 @@ setup_analysis()
 
 Observer jointly infers desire and effort from a single observed action, given intimacy. Each trial has two slider responses.
 
-**Status:** Data are in `data/food_inv_joint_de/`; the demographics and
-belief-update panels below run on them. The model-prediction and
-model-vs-human sections are still disabled (`eval=FALSE`) pending CV
-predictions.
+**Status:** Full sample is in `data/food_inv_joint_de/` (232 participants
+retained of 236 recruited). The demographics and belief-update panels below run
+on it. The model-prediction and model-vs-human sections mirror the Study 1a qmd
+(`food-inv-desire-analysis.qmd`) and are guarded by file existence (`have_cv`):
+they render as soon as `make cv-food_inv_joint_de` has written
+`cv_preds_summary.json`, and print a placeholder until then.
 
 ## Demographics
 
@@ -148,27 +150,134 @@ if (have_data) {
 }
 ```
 
-## Model predictions
+## Out-of-sample predictions
 
-```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_joint_de", "cv_preds_summary.json")
-if (file.exists(preds_path)) {
-  preds <- read_model_json(preds_path)
-  glimpse(preds)
+Each model's LOSO-CV predictions are aggregated to the same observed-action ×
+given-intimacy cell as the human belief updates, for both inferred latents
+(desire and effort of the low-risk share). These chunks run automatically once
+`make cv-food_inv_joint_de` has written `cv_preds_summary.json`; until then they
+print a placeholder.
+
+```{r cv-load}
+cv_path <- here::here("model", "outputs", "food_inv_joint_de", "cv_preds_summary.json")
+have_cv <- have_data && file.exists(cv_path)
+if (have_cv) {
+  cv_preds <- read_model_json(cv_path) |>
+    mutate(
+      action = factor(ACTION_LABELS[action + 1], levels = ACTION_LABELS),
+      intimacy = factor(intimacy_condition, levels = INTIMACY_LEVELS),
+      model_label = factor(MODEL_LABELS[model], levels = MODEL_LABELS)
+    )
+  cv_model_agg <- cv_preds |>
+    group_by(model_label, action, intimacy) |>
+    summarise(desire_update = mean(delta_desire),
+              effort_update = mean(delta_effort), .groups = "drop")
+  cat("Loaded CV predictions for", nrow(cv_preds), "cells across",
+      nlevels(droplevels(cv_preds$model_label)), "models.\n")
 } else {
   cat("No CV predictions yet — run `make cv-food_inv_joint_de` once a fit + data exist.\n")
 }
 ```
 
+The same by-DV panels as above, now with one column per model and a Humans
+column, so each model's predicted belief updates can be read against the human
+means cell by cell (crosshairs on the Humans column are 95% cluster-bootstrap
+CIs).
+
+```{r cv-overlay-by-dv}
+#| fig-width: 13
+#| fig-height: 7
+if (have_cv) {
+  human_long <- agg |>
+    rename_with(\(x) paste0(x, "_mean"), c(desire_update, effort_update)) |>
+    pivot_longer(
+      -c(action, intimacy),
+      names_to = c("measure", ".value"),
+      names_pattern = "(desire|effort)_update_(mean|ci_lower|ci_upper)"
+    ) |>
+    mutate(panel = "Humans")
+
+  model_long <- cv_model_agg |>
+    rename(desire_mean = desire_update, effort_mean = effort_update) |>
+    pivot_longer(
+      -c(model_label, action, intimacy),
+      names_to = c("measure", ".value"),
+      names_pattern = "(desire|effort)_(mean)"
+    ) |>
+    mutate(panel = as.character(model_label),
+           ci_lower = NA_real_, ci_upper = NA_real_) |>
+    select(-model_label)
+
+  combined <- bind_rows(human_long, model_long) |>
+    mutate(
+      panel = factor(panel, levels = PANEL_LEVELS),
+      measure = factor(measure, levels = c("desire", "effort"),
+                       labels = c("Desire", "Effort of low-risk share"))
+    )
+
+  pd <- position_dodge(width = 0.25)
+  p <- ggplot(combined, aes(action, mean, color = intimacy, group = intimacy)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
+    geom_line(position = pd, linewidth = 0.8) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.15,
+                  position = pd, alpha = 0.8, na.rm = TRUE) +
+    geom_point(position = pd, size = 2.4) +
+    facet_grid(measure ~ panel) +
+    scale_color_intimacy() +
+    scale_x_action() +
+    labs(x = "Observed action", y = "Belief update", color = "Intimacy")
+  print(p)
+} else {
+  cat("No CV predictions loaded.\n")
+}
+```
+
 ## Model-vs-human correlations
 
-```{r model-vs-human, eval=FALSE}
-# TODO: wire up once the model predictions exist (data are in).
-# Standard pattern (cf. the cv-load / cv-scatter chunks in
-# food-inv-desire-analysis.qmd):
-#   1. Aggregate human belief updates by cell.
-#   2. Aggregate model predictions by the same cell.
-#   3. Plot scatter + report bootstrap Pearson via format_correlation_labels().
+Each point is one observed-action × given-intimacy cell: the model's
+out-of-sample predicted belief update against the human mean, split by inferred
+latent (rows) and model (columns). The dashed line is y = x, and the per-facet
+r is the cell-level Pearson correlation (the discomfort-only model predicts a
+near-constant desire update, so its desire correlation can be undefined).
+
+```{r cv-scatter}
+#| fig-width: 12
+#| fig-height: 8
+if (have_cv) {
+  human_cells <- agg |>
+    transmute(action, intimacy,
+              desire = desire_update, effort = effort_update) |>
+    pivot_longer(c(desire, effort), names_to = "measure", values_to = "human")
+  scatter_df <- cv_model_agg |>
+    rename(desire = desire_update, effort = effort_update) |>
+    pivot_longer(c(desire, effort), names_to = "measure", values_to = "model") |>
+    left_join(human_cells, by = c("action", "intimacy", "measure")) |>
+    mutate(measure = factor(measure, levels = c("desire", "effort"),
+                            labels = c("Desire", "Effort of low-risk share")))
+
+  rlab <- scatter_df |>
+    group_by(model_label, measure) |>
+    summarise(r = if (sd(model) < 1e-3) NA_real_ else cor(model, human),
+              .groups = "drop") |>
+    mutate(r_lab = sprintf("r = %s", ifelse(is.na(r), "n/a", sprintf("%.2f", r))))
+
+  lim <- range(c(scatter_df$human, scatter_df$model), na.rm = TRUE)
+  p_scatter <- ggplot(scatter_df, aes(model, human, color = intimacy, shape = action)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey70") +
+    geom_point(size = 2.6) +
+    geom_text(data = rlab, aes(x = lim[1], y = lim[2], label = r_lab),
+              inherit.aes = FALSE, hjust = 0, vjust = 1, size = 3.4) +
+    facet_grid(measure ~ model_label) +
+    scale_color_intimacy() +
+    scale_shape_manual(values = ACTION_SHAPES) +
+    coord_equal(xlim = lim, ylim = lim) +
+    labs(x = "Model predicted belief update (out-of-sample)",
+         y = "Human belief update",
+         color = "Intimacy", shape = "Observed action")
+  print(p_scatter)
+} else {
+  cat("No CV predictions loaded.\n")
+}
 ```
 
 ## Notes
