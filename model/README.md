@@ -1,6 +1,6 @@
 # `model/` — modeling pipeline
 
-Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. The roster is six inverse-planning studies, all on the 3-action stimulus structure: `food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), and `food_inv_joint_ie` (2b) on the food scenario set, plus `nonfood_inv_joint_de` (3a) and `nonfood_inv_joint_ie` (3b), which repeat the two joint designs on the non-food scenario set.
+Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. The roster is six inverse-planning studies, all on the 3-action stimulus structure — four on the food scenario set, plus two non-food studies that repeat the joint designs on the non-food set. The [per-experiment table below](#per-experiment-files) maps each slug to its fit/CV scripts; the canonical slug ↔ Study-number roster is in the [root README](../README.md#experiments).
 
 ## Pipeline at a glance
 

@@ -37,10 +37,12 @@ The `Makefile` wraps these: `make stimuli`, `make counterbalancing`, `make entry
 
 All six follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the thing at stake ("How much do you think Carissa and Josh would like the hot dog?", not at all → moderately → extremely), effort as a continuous 0–100 rating between the two effort paragraphs as endpoints, and intimacy as a continuous 0–100 rating from maximally formal to maximally intimate. When intimacy is a given condition rather than a DV, it is a verbal level (`max_formal` / `somewhat_formal` / `somewhat_intimate` / `max_intimate`) shown as a relationship descriptor, never a number. Each experiment dir's `README.md` documents the design spec.
 
-- [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy. Design 2 × 4 × 3.
-- [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy. Design 4 × 3, two sliders per trial.
-- [food_inv_intimacy](food_inv_intimacy/README.md) — **Study 2a**: infer intimacy under known desire + effort. Design 2 × 2 × 3.
-- [food_inv_joint_ie](food_inv_joint_ie/README.md) — **Study 2b**: joint inference over intimacy and effort given desire. Design 2 × 3, two sliders per trial (intimacy on the 0–100 scale, effort with paragraph endpoints).
+Each entry links to that study's design spec; the canonical slug ↔ Study-number roster and the full per-study designs (factor grids) are in the [root README](../README.md#experiments).
+
+- [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy.
+- [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy (two sliders per trial).
+- [food_inv_intimacy](food_inv_intimacy/README.md) — **Study 2a**: infer intimacy under known desire + effort.
+- [food_inv_joint_ie](food_inv_joint_ie/README.md) — **Study 2b**: joint inference over intimacy and effort given desire (two sliders per trial).
 - [nonfood_inv_joint_de](nonfood_inv_joint_de/README.md) — **Study 3a**: Study 1b's design on the non-food scenario set.
 - [nonfood_inv_joint_ie](nonfood_inv_joint_ie/README.md) — **Study 3b**: Study 2b's design on the non-food scenario set.
 
