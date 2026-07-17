@@ -1,10 +1,10 @@
 {
   "experiment": "food_inv_joint_de",
-  "timestamp": "2026-07-17T04:45:39.346608+00:00",
-  "git_sha": "ebb238c3529aaf876c7a13cde92d2f0659a445ab",
+  "timestamp": "2026-07-17T13:14:41.725004+00:00",
+  "git_sha": "d2559d5b8bf1746c1d4c502ba290625a0258bba6",
   "outputs": {
-    "fit_results.json": "8a1cd323f558563eab59e78256a58a851e3d2006434d8009dba77ad84b606ae4",
-    "fit_restarts.jsonl": "0d56a9ede667d008b6838259d66d4eaac895b5ed8363fb20db89304e76a15f5d"
+    "fit_results.json": "8c954b9f6e95ec2e376eebbf2a15eb511930164535ad8c1fab304394b37420c9",
+    "fit_restarts.jsonl": "216b6b21e27c87d5bafc4928d4198fe3a94f5ee75753117f5026c065c51055e4"
   },
   "input_data": {
     "path": "data/food_inv_joint_de/main_trials_long.csv",

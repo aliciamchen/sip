@@ -1,13 +1,13 @@
 {
   "experiment": "food_inv_desire",
-  "timestamp": "2026-07-16T23:15:45.347215+00:00",
-  "git_sha": "e573d4c5237761428346a04b1bdda3fc6b537e16",
+  "timestamp": "2026-07-17T10:35:39.578115+00:00",
+  "git_sha": "d2559d5b8bf1746c1d4c502ba290625a0258bba6",
   "outputs": {
-    "fit_results.json": "a57d49b81c8e037feb180511c218287917d81e7e5bd98058f2eef59162cb8f36",
-    "fit_restarts.jsonl": "e452375f76b18b35d8ca53653e34351b25fb9125dda98e6fef3432507d1f9def"
+    "fit_results.json": "d20032a735ae0d0630d5834294474125030a6f3a2d8cb7d51bbbeead06b41ea8",
+    "fit_restarts.jsonl": "0bda80b546dae07311691bd9b4356e68af6432f06ae7580c79cbf394ef7417aa"
   },
   "input_data": {
     "path": "data/food_inv_desire/main_trials_long.csv",
-    "sha256": "951a42f49831670afddd64227834aae7d5b71c4a85cd91e72411c36dd389e169"
+    "sha256": "63bdfdeb941994c85da9d107672f0be93eefb01d5bc85eb4cb3a0b3f431b978c"
   }
 }
