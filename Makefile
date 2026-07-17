@@ -80,6 +80,7 @@ all:
 	$(MAKE) fit
 	$(MAKE) cv
 	$(MAKE) model-comparison
+	$(MAKE) figures-results
 	$(MAKE) analysis
 
 help:
@@ -389,19 +390,70 @@ figures-lm-si:
 # =============================================================================
 # Main results figures (scripts in figures/scripts/, output to figures/outputs/):
 # per-study results figures, the model-vs-human scatter figures, and the
-# held-out-LL comparison. Each script renders the panels whose inputs (data
-# CSVs, CV predictions) exist and skips the rest with a message, so this target
-# is safe to run at any pipeline stage; figures fill in as data and fits land.
-# PDFs (+ PNG previews) go to figures/outputs/.
+# held-out-LL comparison. Each figure is a file target that depends on its
+# study's data CSV + CV outputs (via $(fig_inputs)) plus the shared figure
+# modules, so `make` rebuilds exactly the figures whose inputs changed — and
+# `make all` regenerates them from the current data. Data/CV prereqs are
+# wrapped in $(wildcard ...) so a study whose inputs don't exist yet simply
+# isn't a prerequisite (the scripts skip its panels gracefully and still write
+# the PDF); a newly-appeared input is picked up on the next make. PNG previews
+# are written beside each PDF.
 # =============================================================================
 
-RESULTS_FIGURE_SCRIPTS := figure_study1a figure_study1b figure_study2 \
-                          figure_study3 figure_model_scatter figure_ll_comparison
+FIG_SCRIPTS := figures/scripts
+FIG_OUT := figures/outputs
+# Shared code every results figure depends on (a change here rebuilds them all).
+FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_joint.py \
+              plot_style.py study_registry.py model/cv/model_comparison.py
 
-figures-results:
-	@for s in $(RESULTS_FIGURE_SCRIPTS); do \
-	  uv run python figures/scripts/$$s.py || exit 1; \
-	done
+# The data + model outputs a study contributes to a figure. Deliberately only
+# the CV *side-outputs* that are NOT make targets — the data CSV and
+# cv_preds_summary.json — never cv_trial_ll.jsonl or cv_model_comparison.json
+# (both targets). Depending on a target would make `make figures-results` try to
+# rebuild the whole fit→CV chain when it looks stale; depending on the plain
+# outputs means a figure rebuilds when the model outputs change without ever
+# triggering an (expensive) refit. cv_model_comparison.json (the r/LL
+# annotations) is refreshed by the model-comparison stage, which `make all` runs
+# before figures; standalone, the scripts warn if it is stale. Wildcard-guarded
+# so a study whose outputs don't exist yet drops out of the prereqs.
+fig_inputs = $(wildcard data/$(1)/main_trials_long.csv) \
+             $(wildcard model/outputs/$(1)/cv_preds_summary.json)
+
+$(FIG_OUT)/study1a_results.pdf: $(FIG_SCRIPTS)/figure_study1a.py $(FIG_SHARED) \
+    $(call fig_inputs,food_inv_desire)
+	uv run python $(FIG_SCRIPTS)/figure_study1a.py
+
+$(FIG_OUT)/study1b_results.pdf: $(FIG_SCRIPTS)/figure_study1b.py $(FIG_SHARED) \
+    $(call fig_inputs,food_inv_joint_de)
+	uv run python $(FIG_SCRIPTS)/figure_study1b.py
+
+$(FIG_OUT)/study2_results.pdf: $(FIG_SCRIPTS)/figure_study2.py $(FIG_SHARED) \
+    $(call fig_inputs,food_inv_intimacy) $(call fig_inputs,food_inv_joint_ie)
+	uv run python $(FIG_SCRIPTS)/figure_study2.py
+
+$(FIG_OUT)/study3_results.pdf: $(FIG_SCRIPTS)/figure_study3.py $(FIG_SHARED) \
+    $(call fig_inputs,nonfood_inv_joint_de) $(call fig_inputs,nonfood_inv_joint_ie)
+	uv run python $(FIG_SCRIPTS)/figure_study3.py
+
+# figure_model_scatter.py writes three PDFs in one pass; witness on study1's
+# (the same grouped-output idiom as CMP_WITNESS, since make 3.81 has no `&:`).
+# Prereqs are every study's CV inputs; study2/3 are rebuilt with it.
+SCATTER_WITNESS := $(FIG_OUT)/model_scatter_study1.pdf
+$(SCATTER_WITNESS): $(FIG_SCRIPTS)/figure_model_scatter.py $(FIG_SHARED) \
+    $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
+	uv run python $(FIG_SCRIPTS)/figure_model_scatter.py
+$(FIG_OUT)/model_scatter_study2.pdf $(FIG_OUT)/model_scatter_study3.pdf: $(SCATTER_WITNESS)
+
+$(FIG_OUT)/model_ll_comparison.pdf: $(FIG_SCRIPTS)/figure_ll_comparison.py $(FIG_SHARED) \
+    $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
+	uv run python $(FIG_SCRIPTS)/figure_ll_comparison.py
+
+RESULTS_FIGURE_PDFS := $(FIG_OUT)/study1a_results.pdf $(FIG_OUT)/study1b_results.pdf \
+                       $(FIG_OUT)/study2_results.pdf $(FIG_OUT)/study3_results.pdf \
+                       $(SCATTER_WITNESS) $(FIG_OUT)/model_scatter_study2.pdf \
+                       $(FIG_OUT)/model_scatter_study3.pdf $(FIG_OUT)/model_ll_comparison.pdf
+
+figures-results: $(RESULTS_FIGURE_PDFS)
 
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/outputs/

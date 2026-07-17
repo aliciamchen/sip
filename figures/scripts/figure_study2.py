@@ -30,12 +30,12 @@ import _panels as panels  # noqa: E402
 
 SLUG_A = "food_inv_intimacy"  # Study 2a
 SLUG_B = "food_inv_joint_ie"  # Study 2b
-CELLS_A = ["action_label", "desire_condition", "effort_condition"]
-CELLS_B = ["action_label", "desire_condition"]
-DVS_B = [
-    ("intimacy_rating_update", "delta_intimacy", "Intimacy"),
-    ("effort_rating_update", "delta_effort", "Effort of low-risk share"),
-]
+CELLS_A = data.condition_cols(
+    SLUG_A
+)  # ["action_label", "desire_condition", "effort_condition"]
+CELLS_B = data.condition_cols(SLUG_B)  # ["action_label", "desire_condition"]
+HUMAN_COL_A, DELTA_COL_A, _ = data.dvs_display(SLUG_A)[0]  # 2a intimacy
+DVS_B = data.dvs_display(SLUG_B)  # [(intimacy cols, "Intimacy"), (effort cols, ...)]
 DESIRE_LEVELS = ["low", "high"]
 
 
@@ -46,7 +46,7 @@ def build_2a():
         trials = trials.assign(action_label=data.action_label_col(trials))
         human = data.bootstrap_cell_means(
             trials,
-            ["intimacy_rating_update"],
+            [HUMAN_COL_A],
             CELLS_A,
             seed=data.seed_for(f"figures:{SLUG_A}"),
         )
@@ -57,9 +57,7 @@ def build_2a():
     model = None
     if preds is not None:
         preds = preds.assign(action_label=data.action_label_col(preds))
-        model = preds.groupby(["model", *CELLS_A], as_index=False)[
-            "delta_intimacy"
-        ].mean()
+        model = preds.groupby(["model", *CELLS_A], as_index=False)[DELTA_COL_A].mean()
         data.warn_if_stale(SLUG_A, trials, data.load_comparison(SLUG_A))
     return human, model
 
@@ -71,12 +69,12 @@ def draw_2a(subfig, human, model):
     axes = subfig.subplots(1, len(grid_cols), sharey=True, squeeze=False)[0]
     for ax, key in zip(axes, grid_cols):
         if key == "humans":
-            cells, value_col, ci, stub = human, "intimacy_rating_update", True, False
+            cells, value_col, ci, stub = human, HUMAN_COL_A, True, False
         else:
             cells = model[model["model"] == key]
             # the base model has no intimacy representation, so its predicted
             # updates are ~0 everywhere — draw them as visible zero stubs
-            value_col, ci, stub = "delta_intimacy", False, key == "base"
+            value_col, ci, stub = DELTA_COL_A, False, key == "base"
         panels.grouped_bars(
             ax,
             cells,

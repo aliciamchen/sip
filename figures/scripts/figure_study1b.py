@@ -23,15 +23,15 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import INTIMACY_COLORS, INTIMACY_LEVELS, apply_style, savefig  # noqa: E402
 
+import _data as data  # noqa: E402
 import _joint as joint  # noqa: E402
 import _panels as panels  # noqa: E402
 
 SLUG = "food_inv_joint_de"
-CELL_COLS = ["action_label", "intimacy_condition"]
-DVS = [
-    ("desire_rating_update", "delta_desire", "Desire"),
-    ("effort_rating_update", "delta_effort", "Effort of low-risk share"),
-]
+CELL_COLS = data.condition_cols(SLUG)  # ["action_label", "intimacy_condition"]
+DVS = data.dvs_display(
+    SLUG
+)  # [(desire cols, "Desire"), (effort cols, "Effort of low-risk share")]
 
 
 def main():

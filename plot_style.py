@@ -251,11 +251,7 @@ FEATURE_CMAP = _muted_cmap("viridis", saturation=0.6, value=0.92)
 GOAL_CMAP = FEATURE_CMAP
 RISK_CMAP = FEATURE_CMAP
 
-STUDY_LABELS = {
-    "food_inv_desire": "Study 1a",
-    "food_inv_joint_de": "Study 1b",
-    "food_inv_intimacy": "Study 2a",
-    "food_inv_joint_ie": "Study 2b",
-    "nonfood_inv_joint_de": "Study 3a",
-    "nonfood_inv_joint_ie": "Study 3b",
-}
+# Slug -> paper label. Sourced from the shared study registry so the labels
+# can't drift from the rest of the per-study metadata; re-exported here because
+# the figure scripts already import it from plot_style.
+from study_registry import STUDY_LABELS  # noqa: E402,F401

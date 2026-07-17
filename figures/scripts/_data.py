@@ -37,9 +37,26 @@ sys.path.insert(0, str(_project_root / "model" / "cv"))
 
 import model_comparison as _mc  # noqa: E402  (also puts model/inverse on sys.path)
 from plot_style import OBSERVED_ACTIONS  # noqa: E402
+from study_registry import study  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
+# model_comparison's per-study cell/DV spec is itself derived from the study
+# registry, so this and the registry helpers below never disagree.
 STUDY_SPECS = _mc.STUDY_SPECS
+
+
+def condition_cols(slug):
+    """Condition-level grouping columns for the by-condition panels: the
+    display action label plus the study's given conditions (drops scenario, so
+    the bar/line panels average over scenarios)."""
+    return ["action_label", *study(slug).given_conditions]
+
+
+def dvs_display(slug):
+    """The study's inferred DVs as (human_update_col, model_delta_col,
+    display_label) tuples, in panel order."""
+    return [(dv.update_col, dv.delta_col, dv.label) for dv in study(slug).dvs]
+
 
 MODEL_ORDER = ["base", "discomfort_only", "full"]
 MODEL_LABELS = {

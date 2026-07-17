@@ -24,7 +24,12 @@ import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
 
 SLUG = "food_inv_desire"
-CELL_COLS = ["action_label", "intimacy_condition", "effort_condition"]
+CELL_COLS = data.condition_cols(
+    SLUG
+)  # ["action_label", "intimacy_condition", "effort_condition"]
+HUMAN_COL, DELTA_COL, _ = data.dvs_display(SLUG)[
+    0
+]  # desire: response_update / delta_desire
 
 
 def build_cells():
@@ -36,7 +41,7 @@ def build_cells():
         trials = trials.assign(action_label=data.action_label_col(trials))
         human = data.bootstrap_cell_means(
             trials,
-            ["response_update"],
+            [HUMAN_COL],
             CELL_COLS,
             seed=data.seed_for(f"figures:{SLUG}"),
         )
@@ -48,9 +53,7 @@ def build_cells():
     model = None
     if preds is not None:
         preds = preds.assign(action_label=data.action_label_col(preds))
-        model = preds.groupby(["model", *CELL_COLS], as_index=False)[
-            "delta_desire"
-        ].mean()
+        model = preds.groupby(["model", *CELL_COLS], as_index=False)[DELTA_COL].mean()
         data.warn_if_stale(SLUG, trials, data.load_comparison(SLUG))
     return human, model
 
@@ -78,10 +81,10 @@ def main():
 
     for ax, key in zip(axes, panel_keys):
         if key == "humans":
-            cells, value_col, ci, stub = human, "response_update", True, False
+            cells, value_col, ci, stub = human, HUMAN_COL, True, False
         else:
             cells = model[model["model"] == key]
-            value_col, ci, stub = "delta_desire", False, key == "discomfort_only"
+            value_col, ci, stub = DELTA_COL, False, key == "discomfort_only"
         panels.grouped_bars(
             ax,
             cells,

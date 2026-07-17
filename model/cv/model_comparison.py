@@ -43,54 +43,25 @@ from _helpers import (  # noqa: E402
     verify_fit_manifest,
     write_json,
 )
+from study_registry import STUDIES  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 # The three CV output files written together by the dispatcher's _write_outputs
 # and hashed into cv_manifest.json (must match CV_OUTPUT_NAMES there).
 _CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
 
-# Per-study cell grid and DV mapping. `keys` are the columns that identify a
-# scenario × condition cell in BOTH the human data (after _prepare_data below)
-# and cv_preds_summary.json; `dvs` maps each human belief-update column to its
-# model delta column.
+# Per-study cell grid and DV mapping, derived from the shared study registry
+# (study_registry.py) so the model-comparison cells and the figures never
+# disagree. `keys` are the columns that identify a scenario × condition cell in
+# BOTH the human data (after _prepare_data below) and cv_preds_summary.json;
+# `dvs` maps each human belief-update column to its model delta column (short
+# DV id).
 STUDY_SPECS = {
-    "food_inv_desire": {
-        "keys": ["scenario_label", "action", "intimacy_condition", "effort_condition"],
-        "dvs": [("response_update", "delta_desire", "desire")],
-    },
-    "food_inv_joint_de": {
-        "keys": ["scenario_label", "action", "intimacy_condition"],
-        "dvs": [
-            ("desire_rating_update", "delta_desire", "desire"),
-            ("effort_rating_update", "delta_effort", "effort"),
-        ],
-    },
-    "food_inv_intimacy": {
-        "keys": ["scenario_label", "action", "desire_condition", "effort_condition"],
-        "dvs": [("intimacy_rating_update", "delta_intimacy", "intimacy")],
-    },
-    "food_inv_joint_ie": {
-        "keys": ["scenario_label", "action", "desire_condition"],
-        "dvs": [
-            ("intimacy_rating_update", "delta_intimacy", "intimacy"),
-            ("effort_rating_update", "delta_effort", "effort"),
-        ],
-    },
-    # Study 3 (nonfood stimulus set): 3a mirrors 1b, 3b mirrors 2b.
-    "nonfood_inv_joint_de": {
-        "keys": ["scenario_label", "action", "intimacy_condition"],
-        "dvs": [
-            ("desire_rating_update", "delta_desire", "desire"),
-            ("effort_rating_update", "delta_effort", "effort"),
-        ],
-    },
-    "nonfood_inv_joint_ie": {
-        "keys": ["scenario_label", "action", "desire_condition"],
-        "dvs": [
-            ("intimacy_rating_update", "delta_intimacy", "intimacy"),
-            ("effort_rating_update", "delta_effort", "effort"),
-        ],
-    },
+    slug: {
+        "keys": s.cell_keys,
+        "dvs": [(dv.update_col, dv.delta_col, dv.name) for dv in s.dvs],
+    }
+    for slug, s in STUDIES.items()
 }
 
 _LEVEL_STR = {0: "low", 1: "high"}

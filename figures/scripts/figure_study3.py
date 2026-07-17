@@ -30,29 +30,25 @@ from plot_style import (  # noqa: E402
     savefig,
 )
 
+import _data as data  # noqa: E402
 import _joint as joint  # noqa: E402
 import _panels as panels  # noqa: E402
 
 SLUG_A = "nonfood_inv_joint_de"  # Study 3a (mirrors 1b)
 SLUG_B = "nonfood_inv_joint_ie"  # Study 3b (mirrors 2b)
-DVS_A = [
-    ("desire_rating_update", "delta_desire", "Desire"),
-    ("effort_rating_update", "delta_effort", "Effort of low-risk share"),
-]
-DVS_B = [
-    ("intimacy_rating_update", "delta_intimacy", "Intimacy"),
-    ("effort_rating_update", "delta_effort", "Effort of low-risk share"),
-]
+# Derived from the study registry, so 3a/3b can't drift from their 1b/2b twins.
+DVS_A = data.dvs_display(SLUG_A)
+DVS_B = data.dvs_display(SLUG_B)
 DESIRE_LEVELS = ["low", "high"]
 
 
 def main():
     apply_style("si")
     human_a, model_a = joint.build_joint_cells(
-        SLUG_A, DVS_A, ["action_label", "intimacy_condition"]
+        SLUG_A, DVS_A, data.condition_cols(SLUG_A)
     )
     human_b, model_b = joint.build_joint_cells(
-        SLUG_B, DVS_B, ["action_label", "desire_condition"]
+        SLUG_B, DVS_B, data.condition_cols(SLUG_B)
     )
     if human_a is None and human_b is None:
         print("[study3] nothing to draw yet")
