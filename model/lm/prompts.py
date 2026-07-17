@@ -72,9 +72,7 @@ def _intro_line():
     """Build the 'You will see a set of possible actions ...' intro line. The
     scored action set is variable-length: the LM sees the observed action plus
     however many alternatives that run generated — presented in randomized order
-    with no marker of which was observed, so "possible actions" (not
-    "alternative actions") is the accurate description and preserves the
-    blinding.
+    with no marker of which was observed.
     """
     return "You will see a set of possible actions the two people could take."
 
@@ -379,7 +377,7 @@ The alternatives should be things the two people could have done at the moment t
 
 Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, sharing the same physical space, or telling the other person something in more or less detail, directly or indirectly. The options may differ in how much physical closeness, direct contact, or personal disclosure they involve.
 
-Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. Better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
+Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
 Respond ONLY with a JSON array in this exact format, no explanation:
 [
