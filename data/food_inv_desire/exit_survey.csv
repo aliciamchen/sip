@@ -1,10 +1,23 @@
 subject_id,gender,age,understood,comments,attention_passed,memory_correct_count,comprehension_attempt
+2be22eab-a85b-5549-b0cc-4211c9ef8102,male,55,yes,"IN MY OPINION, the questions were not 100% clear and could have been written differently. For instance, if the scenario says they DID NOT eat something and I am asked how much they liked it makes no sense to me.
+Still on the scenarios, I really don't think they're clear or realistic to analyze. For instance, two people that are not relatively intimate or close to each other would NEVER lick from the same ice cream cone. There's nothing to evaluate there. They would simply NOT do it.
+Anyway, I tried to be as honest as possible here, but I really don't like my own answers for multiple of the questions.",True,2,1
+5c5b2f33-33f0-5889-9172-81006ecb97fc,female,37,yes,N/a,True,3,1
+894d3a01-72b8-5f54-909e-b5abca8d5a58,female,39,yes,,True,3,1
+553ae6a3-5a08-5aad-b0f2-4aef09bc1853,male,52,yes,"This whole thing seemed rather pointless to me as I literally could have answered anything for any scenario. The data provided offered almost no insight as to what they liked, save a few times and I am not a mind reader for the rest. I could literally have just chosen moderate for every answer except a couple. I only slightly strayed from that to mix it up some. I am thinking perhaps better instructions and clearer scenarios with more data might help more accurate data, though I do not really know the point. I just know that I could close my eyes and guess and my answers could be just as correct.",True,1,1
 d038c91e-192e-5403-93f7-9af4ab579530,male,37,yes,,True,0,3
 2d235da7-15f6-5a38-b9ad-9a0f4a102bb2,female,49,yes,,True,3,2
+da880156-7d62-5266-b4ce-49d1c825ee2b,male,42,yes,,True,3,1
 d34a58f8-6021-5a10-b5db-e57f92756aa0,male,45,yes,This was pretty interesting. I liked it.,True,2,1
 35a4064d-379c-59e2-8363-214f063c623f,male,30,yes,,True,3,1
 3322a983-5b83-539b-a1ec-6e42a2f21fd1,female,20,yes,,True,2,1
+497f1cd9-ea51-517f-91a9-7f79a7f3362e,female,50,yes,,True,3,1
+74ecb092-852e-5691-a143-72fbbbb46f77,female,64,yes,,True,2,1
+d822326b-a716-5e76-9f77-2bef6844688e,male,35,yes,Great study. Thank you!,True,2,2
+f5e31ba3-2674-5cbb-be4a-9f5f3aa7118d,male,47,yes,,True,3,1
 e3e401ba-d749-5e57-bdad-be24639faabe,female,29,yes,,True,2,3
+8b4f5b8a-2182-5ba6-92e1-751c5b4b90e5,female,34,yes,NA,True,3,1
+4436efbc-221d-5452-abbc-8b15140f87a1,female,58,yes,,True,3,1
 c7d4573d-1b41-583c-96c5-4231cad82031,male,66,yes,"It is somewhat confusing to judge the 2nd part of each scenario since I could only choose how the pair would act or did act, instead of separately.  That impacted how I answered.",True,2,1
 21f73050-c4ba-5011-afc8-3d26836dd7c3,female,21,yes,,True,0,1
 05bf3811-624b-5796-a414-1bad1d8f5c4a,male,55,yes,,True,3,1
@@ -14,10 +27,18 @@ c7d4573d-1b41-583c-96c5-4231cad82031,male,66,yes,"It is somewhat confusing to ju
 ddf8ab2b-1cc8-5af5-9a4e-145003f3f04c,male,55,yes,,True,2,1
 42a24ecb-c3a4-57c5-9814-39cdec41f1af,female,53,yes,,True,1,2
 a316bd8f-0560-5e42-9834-f23d43bc712a,male,21,yes,,True,1,1
+7ab3649d-d041-5c2d-8cba-de129c571d8d,male,39,yes,,True,3,1
+91c4fd7f-0a72-5f38-89d7-a827bdfda5fe,male,46,yes,,True,1,2
+030ad3a8-a8c5-5c36-aaa8-6b7cca16ae1f,female,49,yes,,True,1,1
 45f1650d-0f6a-5f41-adf0-54679a57fe8b,female,46,yes,I have no other comments.,True,3,1
+534b64e5-f2e6-5af8-9867-200d34051a47,male,22,yes,,True,2,2
+7a9aff7e-0447-5ba9-9923-202c7bd9f974,female,34,yes,,True,2,1
 28dbd926-0529-5c50-a2c7-8dca5240bc7d,female,51,yes,,True,3,1
 847bf47d-35f5-5877-b947-061f5ad3adcc,female,42,yes,,True,3,1
+6f51b364-94f2-5e09-ac58-5b41bf660fe5,male,28,yes,No,True,3,1
 0c4eb614-cb12-53ca-9cd1-ffa89ddc0199,female,24,yes,,True,2,2
+e3e5a7d0-95c6-5af9-8aea-1b67ec8ba5b7,male,25,yes,,True,1,1
+09168a0c-5759-5a08-85c9-227eeb54f5f6,female,23,yes,,True,3,2
 21a2772a-5224-55e5-8075-dcbfb5789963,female,18,yes,I really liked these scenarios it really surprised me with how they went with each food topic with different mindsets.  ,True,3,1
 00bd92b8-6d0e-5de1-a46e-423739705749,male,48,yes,,True,2,1
 cd736aa3-c7ed-5f24-81f1-e763da86c82c,male,42,yes,,True,3,1
@@ -27,94 +48,199 @@ ad4cfd1b-9770-5c25-a186-2dac18f4c6ae,female,51,yes,,True,2,1
 77fd7eea-870c-543f-aae9-9a0d892c66ac,male,36,yes,,True,2,2
 9361add4-8ae2-51df-bd18-2baabd091c4c,female,37,yes,,True,2,1
 ef5feb24-f9e1-5ea4-adf1-9f528f828a99,female,34,yes,na,True,3,1
+4c732a84-9221-51a5-88f7-3c00c43e9c2e,female,42,yes,"The details got blurry as the stories went on, especially for the last check of attention on where the 2 people were at with the soups. ",True,0,1
+f7eb3c48-b5cc-54bd-af80-eb30ac77039d,male,37,yes,I thought it was a lot of fun!,True,3,2
 281dfad4-745f-5f36-9fb8-b146e43efb57,female,36,yes,,True,1,1
+a260dcba-39d7-505e-b83b-7d5790dae4b2,male,33,yes,,True,1,2
 77b45e96-fd77-5af6-90b8-fca163398add,male,24,no,it was good ,True,2,1
+dfd2419a-8e37-5236-932b-453424d4b0d2,female,57,yes,,True,2,1
+fd152d64-85de-5df3-8ee3-4d82db1eca3d,male,34,yes,,True,3,1
 8a7a869c-8c4e-584a-b9ed-fea1cf0fd1ae,female,26,yes,No comments. Thank you for the study.,True,3,1
 add78e85-a4f8-58c2-a47f-648bbab99ffc,male,48,yes,,True,2,1
 5357296f-e9f6-57fd-a8fd-1285601b9f99,female,51,yes,,True,2,1
 d41946e3-04ca-530a-a031-1d32d1b94b9c,male,29,yes,,True,3,1
 611d2000-d066-5960-a804-98fc4a21cbae,female,38,yes,N/A,True,2,1
+64716072-af34-5dc2-988f-9e1a45e7c9f2,female,51,yes,,True,2,1
 e01d2296-93fd-5462-81d6-9605564a8e2b,male,72,yes,Thank you.,True,3,1
 ed3f8c73-39ce-5774-99b9-7e119f63b120,female,24,yes,,True,3,1
 20adaed0-6376-5231-92c1-be6e350bf565,male,20,yes,N/A,True,2,1
 7fb24806-754e-553b-8a4d-0fa06f8fd92c,female,35,yes,,True,2,1
+c1bc336b-8d0a-5b37-9d21-b62077b53f54,female,69,yes,,True,3,1
 b33e954e-7345-51ae-89c7-549d1ca2ffa7,female,25,yes,,True,2,3
 78cd564d-5a93-59fb-a49f-b5d361f141d9,male,45,yes,,True,1,1
+6da1a4f3-3873-533e-8665-dec9e72cc3d3,female,37,yes,I liked the topic of this survey,True,3,1
 274397d1-87f6-56bf-b567-e6063e8f55e3,female,58,yes,Have a beautiful day,True,1,3
 936ca681-be47-5c4b-85ab-5e4182b89761,female,64,yes,,True,2,2
+12dafc97-34a4-50c0-9db1-6fb3b23285b1,male,31,yes,,False,2,1
+6ea6819b-47c8-5f4d-b2ac-b9c72cdb36dc,male,53,yes,Thank you.,True,2,3
+db472999-785a-5b3f-a727-40778c3820e0,male,57,yes,No comments. Thanks much!,True,2,1
 433779c0-ddac-5093-bc1c-e54d78b11db3,female,35,yes,,True,3,1
+b5501591-4e87-5cd3-9e21-f75b9def1d28,female,53,yes,No,True,2,1
+3a24a413-db73-51eb-b6e5-ebdc8b65b11d,male,43,yes,no comments,True,3,1
+d5c398a1-a3da-5ada-8745-b3b6720a4552,male,55,yes,have a great day!,True,2,1
+c63711a1-1f68-51a1-a3b3-bfbea3558e13,female,60,yes,just sitting here considering how many times i've eaten off of someone elses fork when they offered me a bite -formal or intimate...lol,True,2,1
 d8fa1bf6-1cf1-5d12-af33-0dc01ad243ba,female,41,yes,n/a,True,3,1
+8bc02b13-691a-50b0-8042-8d5279c0f7ad,male,34,yes,I didn't run into any issues!,True,3,1
+e87952f8-9729-52c4-85b5-819177664508,female,47,yes,No,True,3,2
+816d8e67-b98d-55df-8f9b-882f71d245ae,male,49,yes,,True,3,1
 4dd71931-bc58-503b-862f-d8d22ee9795b,nonconforming,60,yes,,True,3,1
 af6634b9-d2ee-590d-8ca3-2e9391cea8e6,female,37,yes,no comments,True,3,1
+497d8d7f-57da-5472-a917-4126a02036a0,male,45,yes,no other comments,True,2,1
 d9ac7b51-0c7d-5103-9c0e-57f2aae9f792,female,54,yes,This was a fun study. Thank you.,True,3,1
+f3b61d80-894f-501f-b0d8-1a01c6fa19e9,male,31,yes,,True,2,1
+712ab438-d234-505d-9a4e-690a982e020d,male,21,yes,,True,3,1
 e7f1d570-6636-5f79-b397-c5463c901c65,male,34,yes,n/a,True,3,1
 599b30ad-dd5a-5091-9652-66f0e007cc1f,female,40,yes,,True,3,2
 78e99324-e6bb-50f5-b6ce-73826a6fe77b,male,52,yes,none,True,3,3
 59b1b950-8be4-5ba4-935f-624645128d32,female,50,yes,Thank you!,True,3,1
+762b19e7-1945-5a1e-8b89-4a3df96b901a,male,22,yes,,True,2,1
 833cb00a-2ac6-5e6f-9cd3-9549a95d8dde,male,36,yes,"The question as to whether they would ""like it or not"" given their situation may feel awkward to respond to. There could be more clarification around what exactly that means in their current situation (I know some upfront effort was there). 
 
 For example, is it getting at that potentially sharing X dish may spoil their enjoyment of it (and interpreting that within their intimacy level)? ",True,2,1
+c2a2b101-a42b-51ea-9ef4-daab33943315,nonconforming,28,yes,,True,3,1
+624c7bf4-38b0-5496-abe9-21e1cd30c3dc,male,53,yes,,True,2,1
+eac2697b-fb30-5fa6-9870-8688c0dde246,female,36,yes,,True,3,1
+ecd5c159-5db9-52dc-b269-a414885be1e1,female,33,yes,,True,2,1
+842bbdf7-3442-53ab-86b1-61c24c60414a,male,60,yes,no thank you,True,3,1
 b140624e-46c0-5467-b43c-2258f2cd70d9,female,60,yes,,True,3,1
+17a554ce-2001-5256-82f5-599eb51f6ecc,male,60,yes,the attention checks were somewhat silly. the focus was supposed to be on the foods. asking the names of the people or the locations really wasn't relevant,True,1,1
+2de74f3d-3707-50cb-a6fd-7dd55f1ba8bf,female,57,yes,"This was interesting, thank you! ",True,3,1
 1a23a1dd-d70d-5695-b106-2df61e8c1760,male,60,yes,no,True,2,1
 325e5edc-37e6-52fc-b2c5-78fc00a7bf1c,female,32,yes,Thanks for the opportunity!,True,2,1
+8295cd38-67d1-5f20-8f33-6ddb7e56100e,male,59,yes,,True,3,1
+713a213f-445e-5b83-924b-2082d940f426,female,40,yes,,True,3,1
+e54cff2b-af73-5983-956c-3c0dc8c06207,female,39,yes,,True,3,1
 0ce62955-6079-58bc-a148-df8eccf2f930,female,35,yes,none,True,2,1
 f70e8117-3950-53d6-82af-4d0d4b33f604,male,59,yes,,True,2,1
+09b48695-266d-5a78-80cb-a0870b885686,male,51,yes,n/a,True,2,1
+cb837464-73a2-54b6-91fa-ccd607affe66,nonconforming,24,yes,Some of these people made silly choices. Thanks! :),True,3,1
+10d918e4-b671-54eb-bf9d-6a2382e35a3a,male,56,yes,no thanks,True,2,2
 4ef7432b-0cd6-53f8-b803-5fee9192142f,female,42,yes,,True,3,1
+3817d21a-d5c0-5102-9928-ce2ecadd39b7,male,41,yes,,True,2,2
+476a4b90-c2fb-5560-8d0e-3d43a4461324,male,35,yes,Good study looking forward to more like this,True,3,2
 7ff7969b-adcd-5ca6-b9a1-d99e7c9410e9,female,40,yes,,True,2,1
+e265cd14-e90a-5aa7-b63a-69b8bde82913,female,39,yes,"none, thank you.",True,3,1
+2eb30c08-0d17-5b47-ac49-11fe4f7a96e7,male,35,yes,the study was clear and understandable,True,3,1
 ed686909-3613-5481-b92e-41a785ecfefc,female,55,yes,Thanks so much for an enjoyable study!,True,3,1
+141edb48-243b-5ab7-be78-8da33af6cf26,female,38,yes,"I am sorry about the memory checks, I could not remember the names well. ty!",True,1,1
 f73b0cbb-bc55-5727-a7b7-c1df8261c504,female,41,yes,,True,3,1
 ed8a0ab1-f93c-5730-bbaa-eed74cc699cf,female,23,yes,No.,True,2,1
 898528c4-2382-51dc-9515-4a7fd45bcfb4,nonconforming,27,yes,,True,3,1
+cd4775d1-d370-5d12-9162-34e933b73761,male,62,yes,,True,3,1
+5668f356-79bc-58f7-8373-44c3919deb15,male,31,yes,,True,3,3
+48835d8f-19c3-5ad0-8a95-80ee1cf39c69,male,62,yes,Hello. This was very interesting. I've never taken a study like this. I'm very curious what it is you're studying. Thank you for the opportunity to participate and best wishes in your research.,True,3,1
+569c2b8d-7785-58d0-8bab-8313fcf1fb44,male,46,yes,,True,3,1
+11379cc9-b355-52c1-8193-cde0e8765240,male,30,yes,,True,3,1
+1b519000-c661-50ef-9c91-2bd5f7cd4bc3,male,71,yes,,True,3,2
 d8d23e9e-af7f-52e9-ab6f-bbe013b83c7b,male,48,yes,Nothing additional at this time.,True,1,2
 fa6d7367-1e7b-5bd7-a007-b874f34639bf,male,43,yes,,True,3,1
+15df7cf9-1c01-5124-a21d-73566cd38a44,female,53,yes,no,True,2,1
+d3d89b2f-db17-5efb-a793-7908a544f51e,male,37,yes,,True,3,1
+394ad621-a1c1-5db8-8d63-2eb864e88f1c,male,33,yes,"No, thank you!",True,3,1
 97d28982-2972-57f6-96da-ea5484d7e702,female,22,yes,,True,2,1
+0cd2fc9d-e790-51a2-b4e2-1a8413202fac,male,27,yes,,True,2,1
+fff99378-7c1b-59aa-8153-2655a36bdf3f,female,42,yes,,True,2,2
+dac36cf8-0a60-5286-8778-c209a98c0ccd,female,29,yes,,True,3,1
+b54e5a80-0bdc-5dbe-ae3d-e09e979748fb,female,23,yes,,True,2,1
 57341157-cc50-5525-bdf6-ad2b0c194b76,male,44,yes,Nope,True,3,3
+1f14c7b8-93e0-5151-a464-cb5e8c2975b9,male,39,yes,,True,2,1
 beed2a3c-5301-5c1c-8cf6-4b11d5c641a8,male,42,yes,n/a,True,3,1
+e3882b03-4a73-591e-97ed-48c8bc1aca49,male,53,yes,"Fun study, thanks.",True,2,3
 6d576bd8-7db8-58d5-89af-eff697145b1c,female,28,yes,,True,3,1
+3b50b53b-9107-5200-9f2a-6f223f7d5b75,male,25,yes,,True,2,2
+cde0afb1-5e59-5d08-8cb6-786062c1993e,female,20,yes,,True,2,1
+89330c64-eb6e-59b1-a6c1-7a1ff386f3c0,male,37,yes,,True,2,2
+1d0a2a2a-029f-56c6-8633-b04768cb01e1,male,41,yes,none,True,3,1
 3b70010d-ce46-519d-afe8-4e5dc80b0962,male,53,yes,,True,2,2
 397042e5-9e18-5520-a45c-de311ac5fe43,female,32,yes,,True,3,1
+73adc388-40ed-5412-a40c-7ac769462ac8,male,43,yes,,True,2,1
 da57876a-054d-5914-94b3-ff7c9fc318ab,female,18,yes,,True,1,1
+c748d0d7-7026-50d7-aac7-0bbaee44b9ff,female,26,yes,,True,2,1
 a663796c-cf38-5bf0-b529-8da9573e2437,female,54,yes,I pretended I was one of the people and paid attention to how formal or intimate they were.  ,True,3,1
 95069fa3-22ed-556b-915a-097efde13a13,female,49,yes,,True,2,2
+1231ee67-31ef-5f19-b5c6-d6dc31b70115,female,51,yes,,True,1,1
 79973887-45e0-5dbf-8644-74d50ebe0fa2,female,23,yes,,True,2,1
+2bd4921a-adb5-5d90-92b2-13fd929a2ee5,female,36,yes,No additional comments,True,3,1
+73741623-4adf-53ba-9aff-af38d41d6605,female,27,yes,,True,2,1
+c43a348c-a92d-55ba-ae4c-c5f48e65e3cd,female,60,yes,,True,2,1
+bcad80a7-36df-5a3c-9ff1-01ee06b3bc3a,male,40,yes,,True,3,1
+5dcecba4-0437-57f4-a708-c006e41c5993,male,45,yes,,True,1,2
+d3b80a0a-3db7-53b7-ab45-816ce24c4b07,male,20,yes,,True,2,1
+f45dd1d4-46c2-55a7-9d55-17c71487394a,female,20,yes,,True,3,2
 49792efe-d8d9-56a7-b58e-5b028bc7a7ae,male,45,yes,no,True,3,1
+29f44c6f-4707-5f41-8083-79ed05302708,male,40,yes,Thanks for the oppurtunity,True,2,1
 0c520da4-ccd7-5aa0-b628-5bf29489c0f4,male,34,yes,,True,2,2
+6b49011a-8587-5580-8505-e9f6a0fc0e67,female,67,yes,,True,2,1
 a70a6bbc-710e-5893-a55b-320f77982c1e,male,38,yes,,True,3,2
 b892ebd1-6e9a-5423-b3d6-2c4d6b05c9b7,female,22,yes,,True,2,1
 72e2ad50-815c-554c-a4a9-bb9c64816468,nonconforming,53,yes,,True,3,2
+578a9135-bec8-5d57-bff3-da16a00b882d,nonconforming,34,yes,Nope.,True,1,1
+2baf5dde-5ddf-5f86-aacd-d63ee26addfe,male,23,yes,This was so much fun to think about and evaluate!,True,3,2
+a01b194f-cfbc-5fbb-a3a0-f66a7fc61ee2,female,50,yes,,True,3,1
 0d6ea796-6ba9-5786-b08f-b7aa3ba4e943,male,50,yes,Good study. Thank you for the work!,True,3,1
+00ec38e6-3702-5be8-a82b-88688eb00718,male,42,yes,,True,2,1
+accf3d97-0e9c-529c-be43-0ef88dcbba05,female,45,yes,,True,3,2
+b0e23b8c-0841-53a9-a811-53c46c85c35d,male,25,yes,,True,3,2
 fc9f4678-98ec-5b58-8f12-626a4570bc27,female,36,yes,,True,3,1
 9e8e24f4-c76d-51a1-bdf1-91441e2c5c6b,male,34,yes,,True,1,1
+d6f68cf7-d45a-592e-95f3-1f1ca17e13eb,female,46,yes,,True,2,1
 a0690b49-2abc-5a5a-bd01-510643d2af38,male,39,yes,,True,2,2
 8969ee93-6c68-5aae-ae8c-774364e4c6c1,female,28,yes,,True,2,1
+a4850172-9152-5ce9-b5d8-bb9ea523ece1,male,39,yes,,True,2,1
+2f8a2a83-2ead-587e-880d-e505a4b00374,female,67,yes,,True,3,1
+b2f0af92-6a04-56fc-8f16-25fcbf81dc01,male,48,yes,none,True,3,1
 ec179d93-c1c1-5acc-84cc-a7e08e6af206,male,19,yes,,True,2,1
+f30e0284-fff5-5bc5-b983-320e9b93aaf9,male,45,yes,None,True,3,1
 dcbb8ee8-061c-54ef-b961-74b909f62b61,female,24,yes,,True,2,1
 6ebb5f8d-7d32-5a71-baf3-e417a64fe6c9,male,30,yes,great study,True,2,1
 66da3e69-0c9f-5f0f-bcfd-e61fab8b60af,female,28,yes,,True,2,1
 d998da5f-8306-53ae-ae18-070c2b8c17db,female,37,yes,,True,2,1
 dd06ff9a-5959-5020-92ec-cd1caa6f0c82,female,29,yes,,True,1,1
+53d6d43e-77ca-5e79-a804-69253c49fb76,male,38,yes,,True,3,1
 f52b6e71-db9a-5d5a-a77f-8bc734636321,female,27,yes,,True,2,1
 590e2375-1da5-5adc-88de-17471f65df24,male,32,yes,"This was really hard to wrap my head around, especially the choice before the actions. The instructions said, ""By how much the two people would like the food, we mean how much eating it would satisfy the motivational state they are in right now — for example, how hungry they are, or how much they like or are interested in that kind of food. This is about the appeal of the food itself, separate from what they decide to do and from how easy or hard it is to get or eat the food."" Well, if we don't know about each person's preference, how can we determine how much they like the food with no background information? Just seems flawed to me.",True,2,1
 f736a00d-4e15-5837-9bb1-b8e9945f31f2,female,27,yes,The instructions were a little difficult but once I started I understood better. An example would be nice.,True,3,1
+1525cff3-3553-5a82-b35d-8fa47fc77e47,male,34,yes,,True,1,2
+2bcc0724-3167-5b5f-8b05-df99c29cb0a0,male,38,yes,,True,2,1
 860c7677-d671-5748-ac48-929bf73423a0,female,33,yes,"It was hard deciding how much BOTH liked the food when it boiled down to one eating it and the other not, but I guess that's part of the survey! I wonder what's the point of this...?",True,3,1
+a72ebeed-2e84-58cd-a4cf-49df71b6c802,male,31,yes,,True,1,1
 2cd4fa9d-25dd-5a79-85f4-0e51a2383b2a,female,30,yes,"I did my best with the memory checks, I wasn't as focused on the names of the individuals as I was the details of each interaction, their relationship to one another, etc.",True,3,2
+0c47e345-0338-5577-a314-2547bc306863,male,21,yes,thank you,True,2,1
 c92df111-5c07-510b-b871-3d3e9990f2f8,female,38,yes,All good,True,1,1
 4964fb1d-5a6c-567d-8590-a6bef825165f,female,50,yes,Thank you!,True,3,1
 745de79f-c654-58fb-b763-231b80d7bcf7,male,51,yes,,True,2,1
+62e365e1-23af-59f6-9306-0baeb67737a9,male,51,yes,I have no comments.,True,3,2
 c5243679-1be9-5868-be69-f65353e6ca91,male,60,yes,,True,3,1
+0a038f20-60e9-5bf2-be4f-02f3a6e314fd,male,46,yes,,True,2,2
 9e8d7b3f-6fd8-5e12-959e-8c57bf1cdfff,female,30,yes,,True,2,2
+56284b74-c226-5b55-8282-cfb49db54e33,female,56,yes,,True,3,1
 bc1442cd-85cd-5ff3-aabd-e9ed2f69b885,male,32,yes,,True,3,1
 95574136-f539-5bbe-8717-def511f2187a,male,30,yes,,True,2,1
 250bd3ec-279a-5a16-a6fd-e4122862d6bd,female,39,yes,"I apologize if I got the names wrong on the memory recall, there were a lot of scenarios with different names, and the names didn't seem as important as the scenarios so I didn't think to remember them.",True,1,1
+a490499d-dafa-51c6-95ea-797813c8b380,male,31,yes,,True,3,1
+9add5071-e6d3-56c4-ab04-57f9f9789990,male,24,yes,,True,3,2
 be22e59c-81ae-5fdb-81f8-d975ed470696,nonconforming,22,yes,"I might have got that last question wrong, I answered every question in the moment exactly how I felt and read it properly, I just kind of forgot the very specific details, I was more focused on the food than names or places.",True,2,2
 9674703f-4d40-5c77-aee0-f83dc2778ed6,female,46,yes,Thanks,True,2,1
+0979e532-20c2-5b99-9f44-f06164762966,female,29,yes,,True,2,1
 9ccfdfc5-ff72-5deb-931c-21919c836527,female,50,yes,Great study!,True,3,1
 376b52cb-a885-59dc-b2d6-6c353cab37d0,female,40,yes,,True,2,1
+14e92596-7175-5013-87e1-bc5b5d03f4d5,male,45,yes,,True,0,1
 99ec0ea6-6659-5f93-9c20-9d5f40944704,female,28,yes,,True,1,2
+f8ce2faa-1f33-5cbd-bf18-b2fec24cffa2,male,41,yes,,True,3,1
+bf6c1b95-abbe-552c-a49c-1c1df3fe0cec,female,44,yes,,True,3,1
 2499a862-2d6c-59e0-a574-379ecf2b4d67,male,23,yes,,True,1,1
+0070c5d4-9407-542d-879f-cb9a99fd0e8d,female,44,yes,Sharing an ice cream cone with another person with whom you have a max formal relationship is gross city :),True,3,2
+87d702f1-8a16-5bcd-960a-2f8f8d317193,female,21,yes,none,True,3,2
 40f264ea-5051-5c7a-b03a-99b4fa9899ce,female,36,yes,"Thank you, this was an interesting study. ",True,3,1
+93911ae3-7ab8-5c67-aa77-d55d9430d8e9,male,61,yes,,True,2,1
+a61f9bf1-da12-51aa-8a4b-e9e73dc9c92c,male,58,yes,none,True,2,1
 a787b362-3a94-524b-b378-77471eccece0,male,40,yes,,True,2,1
+bc1e608c-fe84-5997-96ca-4ce40cc1b20c,male,39,yes,,True,3,1
+2f723858-8954-5fe2-9911-70ebd71bec54,male,37,yes,,True,3,1
 1f43af17-bd24-55d1-b556-f9f00cbbb6a1,female,26,yes,,True,3,1
+34eebcab-5a8d-5160-940d-05ffd7a7f182,female,37,yes,,True,3,1
+8a95bf1c-2ab9-553a-a965-047a137aa598,female,40,yes,,True,1,1
+99eefcb4-280c-507e-b99a-18afe5f9abeb,female,34,yes,,True,3,1
 44a3ba5c-d7b9-5b9c-8836-c40032c3411d,nonconforming,19,yes,,True,2,2
 04048312-85b3-5ec3-a4a9-2a8676761b01,female,30,yes,,True,2,1
 74e16f3f-f3b2-5b74-843d-b6c0cb5cd4b2,female,20,yes,,True,3,2
@@ -122,84 +248,175 @@ a787b362-3a94-524b-b378-77471eccece0,male,40,yes,,True,2,1
 39bee19e-a475-5882-8161-1e2e2c1bc048,male,39,yes,,True,2,1
 cb281405-94c7-55ee-bdb4-19ae398359c0,male,34,yes,,True,3,2
 d30d7722-964b-5a7f-801b-262ed6d6f0cc,male,53,yes,No,True,2,1
+cdadcb18-802a-527a-97ce-7d78dd83b2e6,male,40,yes,the whole party was very interesting,True,1,1
 2bdfb417-539a-529c-bf89-4f045cfb337a,female,57,yes,none,True,1,1
+e761cdb1-16b6-54e1-9794-f3fcb2586d24,female,63,yes,,True,3,1
+a932ab0b-3b2b-5a8f-9184-3a7cd8d94565,male,46,yes,,True,3,1
 6c07280f-f128-5475-b2fa-c43e028cd138,male,44,yes,,True,3,1
 cf6dd6f8-7a75-5d53-9a26-93be035ec1c9,female,38,yes,"none, thank you!",True,3,1
+a443b7ba-6773-5c2f-86e3-80e1788f1198,female,67,yes,,True,2,1
+85f29747-5a78-595e-a19a-29aba31bacd5,male,64,yes,,True,2,1
+9f28c78c-23e1-5cf8-9b57-f9d5edd8af2f,female,47,yes,no,True,3,2
+3cc8d0f7-e7cc-5609-8690-c9159772ae74,female,66,yes,,True,3,1
+4451c4f5-9e27-5401-ae24-c8bd61432ec3,male,55,yes,,True,1,2
+103346b5-c498-51f0-9113-1087b760d94c,female,39,yes,,True,3,1
+b02b1771-a652-5bee-bf62-a1a83d196eb3,female,35,yes,,True,3,1
+3a363f12-0f7e-5ec9-903e-78a54d452e61,male,58,yes,,True,2,1
+9f357563-552a-5153-aa61-386f76aceba5,male,23,yes,,True,2,2
+c49dd010-6baa-559d-8eb5-9268b8590267,female,48,yes,none,True,3,1
 8ddf4e12-d111-5a28-9b43-ab6c1079b742,female,27,yes,The study was smooth and enjoyable.,True,3,1
+022fb434-05f9-522a-bf24-d81f57e25030,male,53,yes,,True,2,1
 4dc3cc7b-a4da-543c-858b-f1b79c561f1a,male,35,yes,,True,3,1
 d16e0b1c-263f-5abe-bec0-e82bfb9259ba,male,21,yes,"Thank you for the opportunity, it was a fun survey! :D",True,2,2
+a989882d-50b2-5cac-a81f-ea781a1e2050,male,18,yes,thanks for the study,True,3,1
 f73bf408-358a-50f2-b499-d92cd53b3473,female,35,yes,,True,1,1
+093b2f3a-116d-5411-8bec-965787732c66,male,29,yes,,True,3,1
+48746daf-b5a7-5da4-8eda-b72bba03b3e6,female,56,yes,This was lots of fun thank you so much!,True,3,1
+ed394d75-340a-56dd-8a61-36eb5f7d96c5,male,37,yes,,True,3,1
 24a93691-4e82-5cb2-af26-e65a24010bde,female,33,yes,no,True,2,1
 c0071c57-a568-5c62-a9f3-be6e8d1d56ea,female,37,yes,,True,3,1
 121ac289-39bc-5f2f-be14-6adb7f567a12,male,42,yes,None,True,3,1
 5094f7cf-a082-5400-99e4-5ad638135894,male,30,yes,,True,2,2
 3488170b-ae0f-596c-a3ba-48af23bb12b8,female,20,yes,,True,1,1
 de7196a8-92b0-5700-842d-1538186c38b6,female,49,yes,"I found some of the attention checks challenging to remember details after moving on from the scenario, even if it was the next page. This was especially true for the hiking scenario. I promise I am not a bot so I hope you can offer some grace for me if I answered those questions wrong! :) ",True,2,1
+56d8188b-52f6-5159-acdb-6b3b002abe7b,male,33,yes,No,True,3,2
+c94244ae-1231-52e9-bdcf-0ad44b141be6,female,69,yes,,True,3,1
 e4e74e0d-945d-5da6-84aa-22fa6f444d1b,male,37,yes,,True,2,2
+3dbee2b8-d6c0-54f7-bc3d-6abe574f23a3,male,20,yes,,True,3,1
+854668cb-3ce6-5b97-b0e3-6d8817a7b8f7,abstain,30,yes,,True,2,1
+156bf1c3-474a-5dd1-9697-4ab8b9264b8e,male,57,yes,Excellent survey! Very engaging and thought provoking. Thank you.,True,3,1
 7c897b37-3f84-5df7-95bb-68b254261517,male,39,yes,,True,2,1
+c5bd30da-593b-5b5c-94c2-74d434fed17c,female,53,yes,,True,2,1
+9bce5c5a-8c75-5817-a0f3-914f2ba91be0,male,83,yes,no,True,2,1
 f21ede9f-8f55-532c-bbb4-107ac93fbb49,female,31,yes,"Some of the names used in the study were a little distracting. Maybe simple names like ""tom"" or ""mary"" would help me focus on the interactions more. ",True,3,1
+2653b575-61b1-55d3-9541-8fac9fc66b3c,male,34,yes,all good,True,3,1
+5f76bde4-8e9e-539c-aa31-91eb8313ab8f,male,44,yes,no comments,True,2,1
 07fb2c10-7fef-5d63-ae90-e28ec1902bf7,male,30,yes,,True,2,1
 96b6b756-1de9-52ce-9d1e-57dbadb2a2da,female,39,yes,,True,2,2
 947ff3b2-cdf2-560d-8fe3-bee9d373adb4,male,56,yes,,True,2,2
+3b60b62b-c0c2-58fb-ad35-4922323cf21b,female,42,yes,N/A,True,3,1
+75d0d009-7788-5a89-8447-92a311a8f456,female,36,yes,N/A,True,1,1
 be796c77-ab8e-5f70-b08e-02c146d790dd,male,28,yes,Thank you for this opportunity,True,1,2
 5a888e6d-8da4-539c-bb89-b7336640dedd,female,51,yes,,True,3,1
 1a94f765-73ed-54c7-8599-75138cceed46,male,35,yes,interesting survey,True,1,2
 f532a81a-3490-5e6c-8ef4-ebad28c12377,male,28,yes,,True,3,1
+d5947fbb-4e58-5f45-a264-dc487947aa34,female,59,yes,Thank you for the opportunity to participate in your survey. I hope my answers are helpful. ,True,3,1
+26a585c3-26b1-579e-9e03-d4b985fa53da,female,44,yes,"No, but I really liked the little scenarios. Considering we had to read them carefully, they were fun and engaging. ",True,2,2
+97fa4add-2b75-5be8-9958-08192484a57f,male,34,yes,,True,2,3
 26d303b4-475f-50f3-b923-4b7039790055,female,27,yes,,True,3,1
+f2576c63-2725-50ec-947d-0e0f7e301380,female,35,yes,"The attention checks ask alot, maybe size down to one we are reading alot of scenerios in one sitting and the names get confsuing :( ",True,2,1
+13cb852e-26f9-5393-8c69-485ed0edc44f,female,56,yes,,True,3,1
 15f32aad-a99b-5d8c-9509-9468216669ce,female,38,yes,,True,3,1
 d112c58d-c7a2-5513-8838-1a9dc51e3991,female,34,yes,"This was fun, thanks!!",True,2,1
+7574e880-5f72-5a64-bb08-dfdd5bb165a3,nonconforming,27,yes,,True,1,1
+8b3db9ef-af2c-59d7-8da5-c75863160972,male,29,yes,,True,2,1
 fa7a86c5-b6ad-515f-ac13-6a827b136c72,female,19,yes,Everything was great,True,2,2
+7d776558-8f35-58c5-8742-312a044e71ea,female,32,yes,,True,3,1
+4e798f6c-16b6-51e0-9bc1-8ffe35b01522,male,63,yes,,True,1,1
 c6af5015-5186-5729-b269-c34e09006b1d,female,36,yes,,True,2,1
 2eae8759-1b3d-5c11-9027-243c4e18b307,female,42,yes,,True,2,1
 9d69b4b8-9c4c-5603-83f3-0c67ac7a03ea,female,50,yes,No,True,2,1
+9008c15d-c1f3-5896-bdde-1b2aa41c02fb,male,21,yes,No.,True,2,1
 38192fe9-1456-5c08-847f-ffe0f11010c4,female,56,yes,,True,2,1
 a122c77d-c676-5d83-a2b2-a2cee8a537eb,female,38,yes,,True,3,1
 36505289-14e2-5710-8b83-c6a497646562,male,35,yes,,True,1,1
 3fde8175-0169-573e-a2d8-17c63732854a,female,31,yes,,True,1,2
+64230f9c-b16f-5d55-b290-1589e1abc78e,male,36,yes,,True,2,2
 0edf08a4-6970-5f86-8ab1-8fb6de2e6746,male,46,yes,,True,2,1
 f7f81710-c82f-5616-8834-75cef7c4ce19,female,41,yes,,True,3,1
+2e78971a-b592-5902-87cc-eb3a0431aeec,female,22,yes,,True,3,1
+8b67c7fd-982a-5d1e-a095-b63af858c4ec,male,19,yes,None,True,3,2
 71533fa3-5fdd-57fe-9fcf-37071b0a1546,female,20,yes,,True,2,1
 6f6b9616-efc0-5a40-a1df-a81d35022e47,female,55,yes,It was difficult to decide what the 2 people would so based on their relationships.,True,3,1
 3893f56a-3f1b-5d38-9a95-f80031467254,nonconforming,26,yes,,True,3,1
+389d750b-7657-5266-b365-6d9d34e368d4,male,68,yes,,True,2,1
 e5b3a8ca-c95f-5c80-94d5-12b49c76e6ce,female,40,yes,no,True,3,1
+732940a8-0c44-5517-8b0d-457dfc2580d6,female,29,yes,,True,2,1
+bd4df9ea-dfa0-5ad7-9486-7a6282d4fc0d,male,25,yes,N/A,True,3,1
+b9f19525-82ff-5851-940c-ac897bbcfd82,male,59,yes,,True,1,1
+cc0b8a2b-e920-5083-8fa7-711bdec9164b,male,30,yes,,True,3,2
+66d58d4c-0b0b-5d6d-9c11-230bc70d7f9f,male,26,yes,,True,0,2
 6c23a500-bc28-544c-bbbd-c2ecf7d60fb7,male,36,yes,No.,True,1,1
 8b74811f-3288-5954-b4c7-67c539ec5b8b,male,47,yes,N/A thank you. ,True,3,1
+fa725de8-21fa-5275-bae5-b9de018eca18,female,30,yes,,True,3,1
 5664b16f-fa36-5ddf-a4db-95470a0701f1,female,20,yes,,True,0,1
+1baad2f3-8b7e-5a60-9726-d097ff21209c,female,58,yes,,True,2,1
+b7e9ac62-5f79-5b76-88fd-340e52875a9b,male,31,yes,The survey is well composed.,True,3,1
 18fd2159-0e70-5217-9613-834e3f6087ca,female,44,yes,,True,3,1
+d0881e02-6f7d-5ea6-90f1-19286e9e15cb,female,65,yes,I'm not good with remembering names.,True,2,1
+767f507b-e739-5610-8b84-a68efce6307c,male,20,yes,,True,3,1
 3c500a07-500b-5b07-9814-e778876cc3f7,female,25,yes,,True,3,2
 f813d4b7-fe21-54ff-b67e-6505c321cac5,female,37,yes,,True,3,1
+1f62204f-302c-516f-ab8e-ba43e9cbe5d7,female,39,yes,,True,3,1
 cc877ce3-61a8-5f51-94a1-36635b553cac,female,23,yes,,True,2,3
 df152ada-e7bc-57d4-be75-8f5e8a3183ab,male,28,yes,,True,3,2
+f25f693e-9a8f-5b74-8595-c1b07bae447f,female,35,yes,,True,2,2
 261089bc-da2a-58bb-8dba-27b24e97f3c4,female,23,yes,,True,2,2
+1db16679-a334-58a5-ad3f-281106d69655,female,20,yes,,True,3,2
+024b757a-5179-5494-8eba-69c65a7fb75c,nonconforming,36,yes,I paid more attention to formality relationships than names (never been good with names). Just found it curious that the attention check for that one asked for participants to recall the irrelevant part of the scenario. hope I got it right!,True,3,1
+dc30b0fe-1d0b-5c52-9d17-ba4112b4a4de,female,44,yes,no,True,2,1
+ef1c3e07-5551-5f5d-bfd8-ac58638917ed,female,30,yes,"Thank you, researchers!",True,3,1
 a078b757-5b0f-562c-b3c8-84c426119175,female,20,yes,,True,3,1
+013e3882-aaca-5d80-8691-ef2febb73ff7,female,39,yes,,True,2,1
 92c142c4-82cc-5502-b855-bdb217458a6a,female,35,yes,,True,2,1
 76e6fb4e-4779-5f48-8870-8a3681a500dd,female,21,yes,,True,2,1
+2b1fbef9-88ba-5b01-ad8c-692b61a850d8,female,35,yes,,True,3,1
+a4776825-9042-5f89-8ee3-40d0fbf2fe92,female,25,yes,,True,3,1
 478d399c-077e-5065-8d99-e2e27b80ba4b,female,60,yes,,True,3,2
 96ec9863-0316-507b-a8c2-47739292be43,female,36,yes,,True,2,1
 61005d0a-1021-5e41-a2ef-e2901643a44d,male,48,yes,No,True,2,2
+2f0c2684-0b40-5df8-98e8-443008b2650c,male,45,yes,"Maybe add pictures of food and/or people, to further provoke, elicit more robust imaginations in your participants? Just a thought. ",True,2,1
+8be43b6d-a82f-5dcf-810b-ad8bbee2ae30,male,45,yes,,True,2,1
+ab0b7f28-257d-5828-be3e-14adfd36d2c6,male,24,yes,,True,3,1
+862ee6c1-ef54-5517-924a-741e4d581566,male,50,yes,Thank you for allowing me to participate. ,True,3,1
 e9c18449-2df0-5fbd-a3fe-c0cf42776a51,male,24,yes,No,True,2,1
+f894ccc0-ccda-5e90-8ec1-27d949b3e7be,male,67,yes, ,True,1,1
 b4e5a3dc-b813-5666-b14b-9758b589f9d5,male,38,yes,no,True,2,1
+66beb851-f20e-5c89-9c89-a57a13b591a4,male,50,yes,,True,2,1
 52baf99c-1ed6-5649-9420-2f2d32a67d28,female,26,yes,,True,2,1
 74c019bf-1c76-5204-9ae1-0e869ae408f1,male,43,yes,,True,3,2
 8c27dfae-a15b-5644-a1c8-82cbd15fd11b,male,27,yes,,True,2,1
 125392be-d59f-5cc1-97b3-07755483a029,female,37,yes,,True,3,1
+6a5c64f0-1018-5b05-baa0-3d245aa2ec83,male,22,yes,,True,2,1
 d2aaaafb-28fd-5ab3-b88e-b179b274ff33,female,40,yes,,True,2,2
+8913a2c7-9577-5478-9a4b-3e8c3e01bb78,male,30,yes,,True,3,1
+abe5628c-e5ba-5274-a698-5036e4950708,male,47,yes,This was interesting. :),True,2,3
+64dea5b3-4096-5a64-9bd2-fba3262843dc,male,42,yes,,True,3,1
 1de50c06-435f-5823-ba12-244d9c0f53a6,female,44,yes,None.,True,3,1
 512e4f7a-6ea4-54a4-9805-9215f58e171d,male,35,yes,Thank you for allowing me to participate!,True,2,1
 ab9c9903-b61d-5e82-818b-363fef1fd025,male,41,yes,N/A,True,3,1
+77f34515-7d94-5c78-8843-83781939372b,male,38,yes,,True,2,1
+dfa478c7-e8ff-58e5-b88c-ecc6421084b1,male,45,yes,It was straightforward without any technical issues.,True,2,1
 d58c242e-02c8-5194-ab05-28b523fd927e,male,31,yes,none,True,1,1
+99bb72d9-f082-55e1-a2a9-7b9a0dfc0bd3,male,64,yes,,True,3,2
+ba87612c-ec1a-5ee3-8abe-8955312b406f,male,37,yes,,True,3,2
+9372edfe-afd6-5efa-a4d6-5470f1e960d1,male,35,yes,Really intrigued about the purpose of this survey.,True,1,1
+623fde59-6f05-5d3b-b23f-2f0f829c3136,female,54,yes,very confusing,True,3,1
 0ec92da7-bcb4-5969-be78-7d9647b8db32,male,40,yes,,True,2,1
+a9f9e777-56f1-54ac-b755-85a7c92a3cd8,male,34,yes,,True,3,1
+86e0bc9a-0f3f-506a-9971-e6c5e749405f,male,69,yes,,True,3,1
+3534826f-7c70-5118-965e-136dc5c3f22b,female,30,yes,,True,3,1
 f100b063-1a97-5f37-84d0-42a06cc72296,female,26,yes,,True,3,1
+36c0f248-30a7-5145-a84f-d940386d5633,male,38,yes,no comments,True,1,1
 4ab505b8-f775-5abf-a354-3d7bd0f7a9e4,male,83,yes,no comments,True,3,1
 fb87d95f-aa77-51f1-99c3-84f6bb20c118,male,62,yes,,True,2,1
+a87eaacf-acc6-5bf8-8982-07d01a8a6632,male,58,yes,,True,2,3
 5920b7b6-3591-5753-b277-ac3d44defc36,female,29,yes,,True,2,3
 11a5cf39-5c8b-50c6-a917-634d1fb0ec9d,female,47,yes,no,True,2,1
 24c99c39-e05f-5fd8-9351-685ae4c72fa6,male,32,yes,,True,3,1
+f8544e70-9b74-5bfc-9b6c-3ff4c3816237,male,31,yes,Thank you,True,0,2
+167e258c-636f-5c5b-a2ff-e370ad55382a,female,31,yes,,True,2,3
 62db9ad2-45d7-5494-8f87-463b69a7095c,nonconforming,27,yes,,True,2,1
+bae5bdf5-c953-5332-ac6b-b7f882ec1880,abstain,34,yes,,True,2,1
+354d523b-668f-5d95-9448-73bf66d96bcc,male,42,yes,good study,True,2,1
 046a35d1-d77a-5b3d-9427-1f829d6b8c23,female,56,yes,,True,1,1
+81c1bc65-6a59-59c2-a433-1745c3f9ab5c,male,55,yes,,True,2,1
+0569208d-1a18-5840-80c3-252ee34c1a03,male,43,yes,,True,2,1
+b0f6ae78-f261-5449-ae2c-823385602eaf,male,45,yes,NA,True,2,1
 2e7930fa-23f5-586d-849f-ccf629560b08,female,27,yes,,True,3,1
 a2ae6358-56b3-573d-8e74-ee42a8735514,female,32,yes,,True,3,1
 057300f2-d772-5efe-891d-cf81eb337e10,nonconforming,25,yes,nope! thank you :),True,3,1
+aebe6386-d679-56aa-926e-5c0feb3ce148,female,50,yes,no,True,2,1
 1b441c5e-5bd1-500d-8ffd-addd835aa775,female,23,yes,,True,1,3
 c07349bf-58d1-5344-83ef-e8181e39541d,male,37,yes,,True,3,1
 b577a3e9-b471-503d-9f5f-acb322da6c2c,male,32,yes,,True,2,1
@@ -207,34 +424,63 @@ b577a3e9-b471-503d-9f5f-acb322da6c2c,male,32,yes,,True,2,1
 742a9bb7-157c-516c-978e-1ef352e68f85,female,46,yes,,True,3,2
 f8c6aad3-529b-547f-afbe-517f50d185ae,male,37,yes,,True,3,1
 605d56b5-4be8-5d06-9d80-ea00eecd15b5,female,33,yes,,True,2,1
+0a5b6acf-8144-52dc-b7e4-e4ceee46f645,male,30,yes,,True,3,1
+4b746af2-4c55-5927-b690-5cbfcb790d96,male,37,yes,,True,2,1
 95297205-cf0c-5708-ba2f-f34e7c4c0952,female,44,yes,,True,3,1
+8ffbd92b-7182-5dca-b380-cae125296b77,male,45,yes,None.,True,2,1
 1ff67748-5d3f-56c7-9aa0-a0df0731761c,female,39,yes,,True,3,1
 b7ad6236-e6f2-5425-bc4f-5406554fccb4,nonconforming,22,yes,"I did have a bit of trouble with the comprehension checks at the beginning even though I read the instructions multiple times. I feel like the instructions weren't that great. But I knew what to do once I passed them, don't worry.",True,1,2
+5593a3d8-ecd3-5b18-ad50-162c78cc49ff,male,43,yes,,True,3,2
 996eb5c8-0104-5f41-be23-b9ff6749ac31,female,37,yes,very useful and interesting  study,True,1,1
 1b0fcad0-8a55-55ef-9437-8343aef82385,female,45,yes,"I'm not sure that a memory check is best to screen for bots, some of us humans have terrible memories and I'm one of them lol. Thank you and have a great day.",True,3,1
 42333d01-85d1-5ddc-a082-9d070025f306,female,53,yes,I don't have any other comments.,True,3,1
+512ef576-c9f9-5d7b-9517-a5ed4c1232bd,female,41,yes,none,True,3,1
 27ae2f40-5995-59e9-9a39-973ffd50de96,female,30,yes,,True,2,1
+95e6a09a-63ae-5f53-8dcc-f63f9d18dd8f,male,43,yes,,True,3,3
+e810cb26-89e8-535b-bf99-25572f3e2c32,male,20,yes,no,True,2,2
 3dfe0711-acd4-523e-9a08-be800563bdb0,female,46,yes,,True,2,1
+601b2c9c-3ad1-5992-869d-f8f185b1ca1e,abstain,22,yes,,True,3,1
+18352e8d-c915-5d90-87ae-eb5263b916bb,male,39,yes,,True,3,1
 e97d2b56-72c7-5a1b-9714-146e4e9a50da,female,32,yes,,True,3,1
 c20ec444-1501-5aaa-9062-f5679a949d0e,male,40,yes,n/a,True,3,1
+1af05665-97f9-5b0d-874c-859154bfd43c,male,18,yes,,True,2,1
 4bbda53d-5c12-5b20-8e18-ed722d3648cd,female,25,yes,no,True,2,1
+4e842230-fa8e-5d37-9e89-2deef4c99e59,female,32,yes,,True,2,1
 f94dfda0-ed5c-596e-adf9-d0b42ba49827,female,28,yes,,True,3,2
 40bc88c3-0e92-5d8e-a59d-b48d31b338e7,male,56,yes,,True,3,1
+4f9de455-a434-596c-ad3d-d461d213655d,male,53,yes,none,True,2,1
 83c470b8-d7f9-5e5d-b7ed-690175da1b58,female,39,yes,No additional feedback to give.,True,2,1
+4d7f758b-ef52-5732-9fcd-a7f5fb9843bb,female,55,yes,,True,3,1
 29b97a0d-7e3b-5722-8f0d-d4c9767ccb32,male,36,yes,None,True,3,1
+36134caf-1f4d-53ca-93b1-57488e94cfe8,male,28,yes,,True,3,1
 2d5ffc37-785f-5f6a-a822-5797b2984ff2,female,54,yes,none,True,3,1
+b58153d7-3bcf-5922-8b00-fc7f97c9d12b,male,26,yes,,True,3,1
 a534d212-014c-5c3d-9e0c-1782a181b740,female,23,yes,,True,3,1
 b05026f1-707b-5f3b-abe0-308c864d07d5,female,28,yes,,True,3,1
+b345d9ff-5f86-5ea7-8087-bec717475f32,male,46,yes,"I was confused by the ""formal"" vs ""intimate"", in that it seemed that in all but one or two of the scenarios the two people were in a romantic relationship, even when it was labeled ""formal"".",True,3,1
+aea6435d-fd89-5796-8384-bd332460ebcc,female,32,yes,,True,2,2
+4c405e7d-4b8c-5fd1-a026-af8fc103957c,female,33,yes,,True,2,1
 d9a9e83a-ed08-52d3-9610-a37e67219a85,female,22,yes,,True,3,2
+626668c7-a8e7-5c4b-b48c-dd3a8f43c78c,male,46,yes,,True,2,1
+30a6a638-b738-5e11-a738-b5711f53c81d,nonconforming,36,yes,"No, not particularly.",True,3,1
+3d315dfa-ff1b-5160-8a32-dfcd44589a0e,female,42,yes,,True,2,2
 e0e90850-7202-510b-ba16-0ac3b5d85c29,female,44,yes,,True,2,1
 70e1acb1-609d-5714-b8a1-b846b2092294,male,48,yes,,True,3,1
 3efd94d3-d97f-5ba4-9985-0a0b469ebcb2,male,56,yes,,True,3,1
 7c119084-3b05-5746-8508-36b69a918477,male,39,yes,,True,2,1
+3def1701-0c75-571d-8166-09a9535cbe75,female,35,yes,,True,3,2
 3e8bea0b-ee21-5af9-a516-bcd047dcfa17,female,59,yes,thank you,True,3,1
+5fd954bb-db93-5504-9865-6cf6c4e54a44,male,31,yes,The instructions were clear and well understood. No technical issues experienced.Thanks.,True,2,1
 36f29e5c-9bd1-5604-b7b4-c90d701d3253,female,47,yes,,True,2,1
+f62823f2-5ff7-5d6f-9193-344ceade8906,male,55,yes,No,True,2,3
 34be13fe-cd23-57e2-ad65-abbe85f94aa9,female,27,yes,,True,0,2
 6c4adb63-ac99-55a7-a160-7f183441f103,male,33,yes,,True,2,1
+c2ebe67d-91aa-580e-af6b-fd98a3bf3e91,male,46,yes,good job folks!,True,2,1
+2f529efd-7375-554a-98f9-9815f17c6e80,female,45,yes,,True,3,3
 9d9e2fde-5fb0-507d-b93b-ae60544c6cff,male,27,yes,No,True,2,1
+717db084-6a46-566a-b110-9ca29a978819,male,34,yes,none,True,2,1
 0e6f91eb-727b-5079-9525-d3effb2b6bc0,male,37,yes,,True,3,1
 65b791ac-442a-5e71-bdfc-7553951b77d3,male,59,yes,,True,1,1
 1dd7aded-d3a9-5c90-b0f7-7ecc1de662c0,female,47,yes,,True,3,1
+d453f783-55ad-5e80-8168-f6991ade5c25,male,32,yes,,True,3,2
+7cb12699-8d1b-56d8-97b4-31528e211241,female,44,yes,2 of the attention checks were kind of difficult.  I could not remember whether it was Tony or Alvin that left his snacks behind and I know that for the other attention check each person was able to get a dish of their choosing without sharing but I could not remember the venue. But I was trying to decide how the people would feel in these situations.  Do not double dip the chip! :),True,2,1
