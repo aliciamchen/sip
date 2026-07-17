@@ -119,7 +119,15 @@ _LEVELS = {
     "intimacy_condition": INTIMACY_LEVELS,
 }
 
-SCENARIO_WORKERS = 4
+SCENARIO_WORKERS = 8
+
+# How many completed (scenario, run) units between checkpoint flushes of
+# lm_runs.jsonl. Each checkpoint rewrites the whole (growing, multi-MB) file
+# atomically on a Dropbox-synced path, so flushing after every unit dominated
+# I/O on long runs; every N units caps the re-scoring cost of a crash at N-1
+# units (~cents) while cutting the rewrites ~N-fold. The generation-side
+# analogue is _alternatives_dispatcher.CHECKPOINT_EVERY.
+CHECKPOINT_EVERY_UNITS = 8
 
 # Per-study config. `cell_cols` are the generation-cell key columns in the
 # alternatives JSONL (besides scenario_label + observed_action + run_id).
@@ -357,27 +365,32 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_i
     )
     all_norms = observed_norms + alt_norms
 
-    # risk: one prompt, vignette only (effort-marginal).
-    risk = _score_feature_shuffled(
-        client,
-        system_prompts["risk"],
-        lambda acts: format_risk_prompt_variable(vignette, acts),
-        merged,
-        all_norms,
-        normalize_risk,
-        scenario,
-        run_id,
-        "risk",
-    )
+    # The four feature calls are independent and each is deterministically
+    # seeded and permuted by (scenario, run, feature tag) — see _lm_seed_for /
+    # _perm_for — so scoring them concurrently returns the same values as
+    # scoring them one after another.
 
-    # effort: one prompt per effort_condition (effort paragraph appended).
-    effort = {}
-    for ec in EFFORT_CONDITIONS:
+    def _score_risk():
+        # risk: one prompt, vignette only (effort-marginal).
+        return _score_feature_shuffled(
+            client,
+            system_prompts["risk"],
+            lambda acts: format_risk_prompt_variable(vignette, acts),
+            merged,
+            all_norms,
+            normalize_risk,
+            scenario,
+            run_id,
+            "risk",
+        )
+
+    def _score_effort(ec):
+        # effort: one prompt per effort_condition (effort paragraph appended).
         vignette_eff = f"{vignette} {scenario_row[f'low_risk_share_effort_{ec}']}"
-        eff_by_norm = _score_feature_shuffled(
+        return _score_feature_shuffled(
             client,
             system_prompts["effort"],
-            lambda acts, v=vignette_eff: format_effort_prompt_variable(v, acts),
+            lambda acts: format_effort_prompt_variable(vignette_eff, acts),
             merged,
             all_norms,
             normalize_effort,
@@ -385,23 +398,34 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_i
             run_id,
             f"effort_{ec}",
         )
-        for norm, val in eff_by_norm.items():
-            effort[(ec, norm)] = val
 
-    # g: one prompt, desire-free goal-satisfaction.
-    g = _score_feature_shuffled(
-        client,
-        system_prompts["g"],
-        lambda acts: format_g_prompt_variable(
-            vignette, acts, scenario_row["desire_object"]
-        ),
-        merged,
-        all_norms,
-        normalize_g,
-        scenario,
-        run_id,
-        "g",
-    )
+    def _score_g():
+        # g: one prompt, desire-free goal-satisfaction.
+        return _score_feature_shuffled(
+            client,
+            system_prompts["g"],
+            lambda acts: format_g_prompt_variable(
+                vignette, acts, scenario_row["desire_object"]
+            ),
+            merged,
+            all_norms,
+            normalize_g,
+            scenario,
+            run_id,
+            "g",
+        )
+
+    with ThreadPoolExecutor(max_workers=2 + len(EFFORT_CONDITIONS)) as ex:
+        risk_fut = ex.submit(_score_risk)
+        effort_futs = {ec: ex.submit(_score_effort, ec) for ec in EFFORT_CONDITIONS}
+        g_fut = ex.submit(_score_g)
+        risk = risk_fut.result()
+        effort = {
+            (ec, norm): val
+            for ec in EFFORT_CONDITIONS
+            for norm, val in effort_futs[ec].result().items()
+        }
+        g = g_fut.result()
 
     return {
         "merged_actions": merged,
@@ -529,8 +553,8 @@ def _rate_desire_for_scenario(client, scenario_row, run_id):
     run) at the scoring temperature (client.TEMPERATURE); ``run_id`` seeds it
     for reproducibility."""
     scenario = scenario_row["scenario_label"]
-    out = {}
-    for dc in DESIRES:
+
+    def _rate_one(dc):
         ratings, _ = get_ratings_concurrent(
             client,
             DESIRE_SYSTEM_PROMPT,
@@ -546,8 +570,12 @@ def _rate_desire_for_scenario(client, scenario_row, run_id):
             label=f"{scenario}/desire[{dc}]",
             seed=_lm_seed_for(scenario, run_id, f"desire_{dc}"),
         )
-        out[dc] = (float(ratings[0]) / 100.0) if ratings else None
-    return out
+        return (float(ratings[0]) / 100.0) if ratings else None
+
+    # Independent, deterministically seeded per condition → safe to rate
+    # concurrently; ex.map preserves the DESIRES key order.
+    with ThreadPoolExecutor(max_workers=len(DESIRES)) as ex:
+        return dict(zip(DESIRES, ex.map(_rate_one, DESIRES)))
 
 
 def _rate_relationship_values(client, run_id):
@@ -555,8 +583,8 @@ def _rate_relationship_values(client, run_id):
     descriptors (scenario-independent → 4 values). Single scoring pass per level,
     per run (the K runs are the variation axis); ``run_id`` seeds it so re-runs
     reproduce."""
-    out = {}
-    for level in INTIMACY_LEVELS:
+
+    def _rate_one(level):
         ratings, _ = get_ratings_concurrent(
             client,
             INTIMACY_SYSTEM_PROMPT,
@@ -568,8 +596,12 @@ def _rate_relationship_values(client, run_id):
             label=f"relationship[{level}]",
             seed=_lm_seed_for("__relationship__", run_id, f"intimacy_{level}"),
         )
-        out[level] = (float(ratings[0]) / 100.0) if ratings else None
-    return out
+        return (float(ratings[0]) / 100.0) if ratings else None
+
+    # Independent, deterministically seeded per level → safe to rate
+    # concurrently; ex.map preserves the INTIMACY_LEVELS key order.
+    with ThreadPoolExecutor(max_workers=len(INTIMACY_LEVELS)) as ex:
+        return dict(zip(INTIMACY_LEVELS, ex.map(_rate_one, INTIMACY_LEVELS)))
 
 
 def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
@@ -662,14 +694,29 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
                 relationship_by_run.setdefault(int(rec["run_id"]), {})[
                     rec["intimacy_condition"]
                 ] = float(rec["intimacy"])
-        for rid in run_ids:
-            have = relationship_by_run.get(int(rid), {})
-            if not all(lvl in have for lvl in INTIMACY_LEVELS):
-                print(
-                    f"Rating per-level relationship intimacy (de-anchored), run {rid}...",
-                    flush=True,
+        missing_rids = [
+            rid
+            for rid in run_ids
+            if not all(
+                lvl in relationship_by_run.get(int(rid), {}) for lvl in INTIMACY_LEVELS
+            )
+        ]
+        if missing_rids:
+            print(
+                "Rating per-level relationship intimacy (de-anchored) for "
+                f"{len(missing_rids)} run(s)...",
+                flush=True,
+            )
+            # Runs are independent and deterministically seeded, so rate them
+            # concurrently (each run rates its 4 levels concurrently too).
+            with ThreadPoolExecutor(
+                max_workers=max(1, min(scenario_workers, len(missing_rids)))
+            ) as ex:
+                rated = ex.map(
+                    lambda rid: _rate_relationship_values(client, rid), missing_rids
                 )
-                relationship_by_run[int(rid)] = _rate_relationship_values(client, rid)
+                for rid, values in zip(missing_rids, rated):
+                    relationship_by_run[int(rid)] = values
 
     units = [
         (s, r)
@@ -689,14 +736,29 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
         run_alt_rows = alts_df[
             (alts_df["scenario_label"] == scenario) & (alts_df["run_id"] == run_id)
         ]
-        scored = _score_actions(
-            client, scenario_row, run_alt_rows, system_prompts, run_id
-        )
-        given_desire = (
-            _rate_desire_for_scenario(client, scenario_row, run_id)
-            if cfg["desire_given"]
-            else None
-        )
+        if cfg["desire_given"]:
+            # The feature scoring and the per-condition desire scalar are
+            # independent, deterministically seeded calls — run them
+            # concurrently.
+            with ThreadPoolExecutor(max_workers=2) as ex:
+                scored_fut = ex.submit(
+                    _score_actions,
+                    client,
+                    scenario_row,
+                    run_alt_rows,
+                    system_prompts,
+                    run_id,
+                )
+                desire_fut = ex.submit(
+                    _rate_desire_for_scenario, client, scenario_row, run_id
+                )
+                scored = scored_fut.result()
+                given_desire = desire_fut.result()
+        else:
+            scored = _score_actions(
+                client, scenario_row, run_alt_rows, system_prompts, run_id
+            )
+            given_desire = None
         given_relationship = (
             relationship_by_run.get(int(run_id)) if cfg["relationship_given"] else None
         )
@@ -713,18 +775,31 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
 
     all_records = list(existing_records)
     done_count = 0
-    with ThreadPoolExecutor(max_workers=max(1, scenario_workers)) as ex:
-        futures = {ex.submit(_process_unit, s, r): (s, r) for s, r in units}
-        for fut in as_completed(futures):
-            s, r = futures[fut]
-            all_records.extend(fut.result())
-            done_count += 1
-            # Checkpoint: rewrite the full JSONL (append-only set of records).
+    last_flushed = 0
+    try:
+        with ThreadPoolExecutor(max_workers=max(1, scenario_workers)) as ex:
+            futures = {ex.submit(_process_unit, s, r): (s, r) for s, r in units}
+            for fut in as_completed(futures):
+                s, r = futures[fut]
+                all_records.extend(fut.result())
+                done_count += 1
+                # Checkpoint: rewrite the full JSONL (append-only set of
+                # records) every CHECKPOINT_EVERY_UNITS completed units.
+                checkpointed = done_count % CHECKPOINT_EVERY_UNITS == 0
+                if checkpointed:
+                    write_jsonl_atomic(runs_path, all_records)
+                    last_flushed = done_count
+                print(
+                    f"  [{done_count}/{len(units)}] {s} / run {r} done"
+                    + (" — checkpointed" if checkpointed else ""),
+                    flush=True,
+                )
+    finally:
+        # Final (or crash/interrupt) flush so completed-but-unflushed units
+        # aren't re-scored on resume; skipped when the loop's last checkpoint
+        # already wrote them.
+        if done_count > last_flushed:
             write_jsonl_atomic(runs_path, all_records)
-            print(
-                f"  [{done_count}/{len(units)}] {s} / run {r} done — checkpointed",
-                flush=True,
-            )
 
     print("\n=== Done ===")
     print(f"  {runs_path.name}  ({len(all_records)} records)")

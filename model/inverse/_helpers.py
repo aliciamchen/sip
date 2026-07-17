@@ -974,6 +974,7 @@ def fit_intimacy_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    patience=100,
     seed_key=None,
 ):
     """Study 2a — joint fit of utility weights + α_observer + σ on the intimacy
@@ -1013,6 +1014,7 @@ def fit_intimacy_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="intimacy_joint",
+        patience=patience,
         seed_key=seed_key,
     )
     return params, float(nll), restarts
@@ -1092,6 +1094,7 @@ def fit_joint_de_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    patience=100,
     seed_key=None,
 ):
     """Study 1b — joint fit of utility weights + α_observer + σ on the joint
@@ -1140,6 +1143,7 @@ def fit_joint_de_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="joint_de_joint",
+        patience=patience,
         seed_key=seed_key,
     )
     return params, float(nll), restarts
@@ -1159,6 +1163,7 @@ def fit_joint_ie_observer_joint(
     verbose=True,
     n_restarts=5,
     init_params=None,
+    patience=100,
     seed_key=None,
 ):
     """Study 2b — joint fit of utility weights + α_observer + σ on the joint
@@ -1207,6 +1212,7 @@ def fit_joint_ie_observer_joint(
         max_steps=max_steps,
         verbose=verbose,
         label="joint_ie_joint",
+        patience=patience,
         seed_key=seed_key,
     )
     return params, float(nll), restarts

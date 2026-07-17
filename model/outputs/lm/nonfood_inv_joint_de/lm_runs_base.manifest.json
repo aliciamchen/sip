@@ -2,13 +2,9 @@
   "stage": "score_merged",
   "study": "nonfood_inv_joint_de",
   "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-  "prompts_sha256": "10469deb6f6c",
-  "git_sha": "7c5875e",
-  "created_utc": "2026-07-10T01:04:42+00:00",
-  "prompt_sha_history": [
-    "a16f3b471d9a",
-    "aa0ecc643fb9"
-  ],
+  "prompts_sha256": "b1dc252d29c9",
+  "git_sha": "89f2cdf",
+  "created_utc": "2026-07-17T08:32:59+00:00",
   "k_runs": 20,
   "score_temperature": 0.2,
   "n_scenarios": 16,

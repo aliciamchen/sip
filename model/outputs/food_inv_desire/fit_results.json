@@ -2,36 +2,36 @@
   {
     "model": "full",
     "experiment": "food_inv_desire",
-    "nll": 214.05154418945312,
+    "nll": 401.5039978027344,
     "n_params": 6,
     "param_alpha": 1.0,
-    "alpha_observer": 0.7074477672576904,
-    "param_sigma": 0.24418358504772186,
-    "param_w_v": 12.397019386291504,
-    "param_w_d": 5.176084995269775,
-    "param_w_e": 8.882513999938965,
-    "param_gamma": 0.09412192553281784
+    "alpha_observer": 1.0831778049468994,
+    "param_sigma": 0.25098228454589844,
+    "param_w_v": 6.35670804977417,
+    "param_w_d": 2.866405725479126,
+    "param_w_e": 4.404358863830566,
+    "param_gamma": 0.5964452028274536
   },
   {
     "model": "discomfort_only",
     "experiment": "food_inv_desire",
-    "nll": 918.0531005859375,
+    "nll": 1968.854248046875,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 2.2920186519622803,
-    "param_sigma": 0.30826303362846375,
-    "param_w_d": 2.32230281829834,
-    "param_gamma": 2.3484814167022705
+    "alpha_observer": 0.7218124270439148,
+    "param_sigma": 0.31251779198646545,
+    "param_w_d": 0.5188051462173462,
+    "param_gamma": 2.9788458347320557
   },
   {
     "model": "base",
     "experiment": "food_inv_desire",
-    "nll": 243.43511962890625,
+    "nll": 444.3375549316406,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 1.4062530994415283,
-    "param_sigma": 0.25111082196235657,
-    "param_w_v": 4.912961483001709,
-    "param_w_e": 7.1786723136901855
+    "alpha_observer": 2.696784257888794,
+    "param_sigma": 0.252763032913208,
+    "param_w_v": 2.445420980453491,
+    "param_w_e": 3.0591881275177
   }
 ]

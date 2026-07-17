@@ -106,7 +106,7 @@ model/             Computational models
   outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
     lm/            LM-elicited scenario tables
     <slug>/        Per-experiment outputs
-preregs/           AsPredicted-format preregistration documents (the four food studies; Study 3's are pending)
+preregs/           AsPredicted-format preregistration documents (all six studies)
 figures/           Generated figures used in the paper
   results/         Scripts for the main results figures (per study, model-vs-human scatters, held-out-LL comparison)
 ```
@@ -144,9 +144,12 @@ uv run python analysis/json_to_csv.py <experiment_slug>
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
-# Fit → CV → model comparison (per study; CV produces the out-of-sample predictions):
+# Fit → CV → model comparison (per study; CV produces the out-of-sample predictions).
+# The CV's independent (variant × fold) refits run as CV_WORKERS parallel worker
+# processes (the Makefile default is 8; the outputs are identical to a sequential
+# run, so CV_WORKERS only changes the wall-clock time):
 uv run python model/inverse/fit_food_inv_desire.py
-uv run python model/cv/cv_food_inv_desire.py
+CV_WORKERS=8 uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py
 
 # Render the main results figures (each script skips studies whose data or
