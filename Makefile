@@ -117,7 +117,7 @@ help:
 	@echo "Per-stage aggregates:"
 	@echo "  fit-inverse, cv-inverse   (the food studies; nonfood joins once its data lands)"
 	@echo "  lm, lm-alternatives   (lm-alternatives does the 4 food studies;"
-	@echo "                         'make -j4 lm-alternatives SCENARIO_WORKERS=1' runs them in parallel)"
+	@echo "                         'make -j4 lm-alternatives SCENARIO_WORKERS=2 CELL_WORKERS=8' runs them in parallel)"
 	@echo "  lm-nonfood            (LM elicitation for the 2 nonfood studies, 3a + 3b)"
 	@echo "  lm-base               (relationship-free alternatives for the base model;"
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
@@ -220,9 +220,17 @@ lm: lm-alternatives
 # scoring, so those stay ordered.
 #
 # SCENARIO_WORKERS controls how many (scenario, run) units score_merged scores
-# concurrently. When parallelizing studies with -j, lower it to stay under your
-# Together tier's limit, e.g.  make -j4 lm-alternatives SCENARIO_WORKERS=1
-SCENARIO_WORKERS ?= 4
+# concurrently; each unit itself fans out its 4 feature calls (+2 desire-scalar
+# calls in the given-desire studies), so in-flight requests ≈ 4-6× this value.
+# CELL_WORKERS is the generation-side analogue (one call per (cell, run), so
+# pool size = in-flight calls). Together's serverless rate limits are dynamic
+# per-org (they grow with sustained traffic; bursts past them get 429s, which
+# the SDK retries with backoff) — if a run prints repeated 429 / rate-limit
+# errors, lower these. When parallelizing studies with -j, remember total
+# in-flight = (studies) × (per-study in-flight), e.g.
+#   make -j4 lm-alternatives SCENARIO_WORKERS=2 CELL_WORKERS=8
+SCENARIO_WORKERS ?= 8
+CELL_WORKERS ?= 32
 # K_RUNS = elicitation runs per cell (the simulated-observer mixture components);
 # ALT_T = generation temperature (nonzero, so runs explore different alternatives).
 # A K=1 smoke test before the full paid run:  make lm-alternatives K_RUNS=1
@@ -239,7 +247,7 @@ lm-nonfood: $(addprefix lm-,$(EXPERIMENTS_NONFOOD))
 # score_merged.py takes no K_RUNS: it scores whatever runs the alternatives
 # file contains, so the run count is set once at generation time.
 $(addprefix lm-,$(EXPERIMENTS_ALL)): lm-%:
-	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $*
+	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $*
 	uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
 # Base-model alternatives: same two-stage pipeline with --base, so the LM is NOT
@@ -250,7 +258,7 @@ $(addprefix lm-,$(EXPERIMENTS_ALL)): lm-%:
 lm-base: $(addprefix lm-base-,$(EXPERIMENTS_BASE))
 
 $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
-	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) uv run python model/lm/generate_alternatives.py --study $* --base
+	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base
 	uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
@@ -295,7 +303,7 @@ model/outputs/$(1)/cv_trial_ll.jsonl: \
     model/outputs/lm/$(1)/lm_runs.jsonl \
     $$(if $$(filter $(1),$$(EXPERIMENTS_BASE)),model/outputs/lm/$(1)/lm_runs_base.jsonl) \
     model/outputs/$(1)/fit_results.json
-	uv run python model/cv/cv_$(1).py
+	CV_WORKERS=$$(CV_WORKERS) uv run python model/cv/cv_$(1).py
 
 # Phony aliases keep `make fit-<slug>` / `make cv-<slug>` working by name; the
 # recipe lives on the file target, so they no-op when the output is current.
@@ -318,6 +326,15 @@ fit-inverse: $(addprefix fit-,$(EXPERIMENTS_INVERSE))
 # source of model predictions — every reported model-vs-human number is
 # out-of-sample.
 # =============================================================================
+
+# CV_WORKERS: how many of a study's (variant × fold) refits run as parallel
+# worker processes (48 jobs per study; the refits are independent and
+# deterministic, so the outputs are identical to a sequential run). Workers'
+# XLA/OpenMP thread pools are capped by the dispatcher, so CV_WORKERS ≈ cores
+# is safe for a single study; lower it when parallelizing studies with -j so
+# (studies × CV_WORKERS) stays ≲ the machine's cores. CV_RESTARTS and
+# CV_PATIENCE pass through the environment as before.
+CV_WORKERS ?= 8
 
 cv: cv-inverse
 cv-inverse: $(addprefix cv-,$(EXPERIMENTS_INVERSE))

@@ -99,7 +99,7 @@ Six active experiments, each with its own `fit_<slug>.py` (a thin wrapper that d
 
 The PRIMARY model-comparison metric is **per-trial held-out log-likelihood** under leave-one-scenario-out (LOSO) CV (`outputs/<slug>/cv_trial_ll.jsonl`, keyed by `subject_id` for the participant bootstrap); the condition-averaged model-vs-human correlation (`cv_preds_summary.json`) is secondary/descriptive.
 
-- `_inverse_dispatcher.py` — LOSO logic for the inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`; the joint mains take a slug (`main_joint_de("nonfood_inv_joint_de")` runs Study 3a). Each loops over 16 scenarios, refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions. Each fold refit runs `CV_RESTARTS` restarts (default 2: the full-data warm start plus one cold restart, keeping the better NLL, so no fold depends on an init that saw the held-out scenario). **Default to the parallel path for CV runs** (folds are independent — parallel and sequential give numerically identical results): `_loso_desire` runs its folds in a `ProcessPoolExecutor` when `CV_WORKERS > 1` (env, default `1` = sequential, which wastes a many-core machine — a full 1a CV ran open-ended past ~1h45m sequentially). **Only `_loso_desire` (Study 1a) is wired for `CV_WORKERS`;** `_loso_intimacy` / `_loso_joint_de` / `_loso_joint_ie` (2a/2b/3a/3b) still run folds sequentially — parallelize those across studies with `make -j` or by porting the same worker-pool.
+- `_inverse_dispatcher.py` — LOSO logic for the inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`; the joint mains take a slug (`main_joint_de("nonfood_inv_joint_de")` runs Study 3a). All four route through the generic `_run_loso(family, slug)` runner: for each of the 16 scenarios it refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions. Each fold refit runs `CV_RESTARTS` restarts (default 2: the full-data warm start plus one cold restart, keeping the better NLL, so no fold depends on an init that saw the held-out scenario). With `CV_WORKERS` > 1 (Makefile default 8) the 48 (variant × fold) jobs run as spawn worker processes with capped XLA/OpenMP threads — each job is deterministic given (variant, fold, warm start, patience), so the outputs are byte-identical to a sequential run. The per-family pieces (data-array loader, table-kwargs builder, fold body) are wired in the `_FAMILIES` registry at the bottom of the module.
 - `cv_<slug>.py` — one per experiment, a thin wrapper around the dispatcher main.
 - `model_comparison.py` — the paper's numbers, from the CV outputs (`make model-comparison`): full − ablation per-trial held-out LL differences with participant-bootstrap 95% CIs (1,000 resamples), plus the secondary condition-averaged model-vs-human Pearson correlations with subject-cluster bootstrap CIs → `outputs/<slug>/cv_model_comparison.json`.
 
@@ -127,20 +127,22 @@ uv run python model/lm/score_merged.py          --study food_inv_desire
 make lm-alternatives                               # the 4 food studies, K=20
 make lm-nonfood                                    # the 2 nonfood studies (3a + 3b)
 make lm-alternatives K_RUNS=1                      # cheap K=1 smoke test first
-make -j4 lm-alternatives SCENARIO_WORKERS=1        # 4 studies in parallel
+make -j4 lm-alternatives SCENARIO_WORKERS=2 CELL_WORKERS=8   # 4 studies in parallel
 ```
 
-`K_RUNS` (default 20) sets the elicitation runs per cell (the mixture components); `ALT_T` (default 0.7) the generation temperature. `score_merged` scores `--scenario-workers` `(scenario, run)` units concurrently; tune to the Together tier's RPM limit, lowering it when also parallelizing studies with `-j`. After regenerating, the table loaders read `lm_runs.jsonl` automatically (no fit-code change).
+`K_RUNS` (default 20) sets the elicitation runs per cell (the mixture components); `ALT_T` (default 0.7) the generation temperature. `CELL_WORKERS` (default 32) is generation's concurrent-call count; `score_merged` scores `--scenario-workers` (default 8) `(scenario, run)` units concurrently, each fanning out its 4 feature calls (+2 desire-scalar calls in the given-desire studies), so in-flight requests ≈ 4-6× that value. Together's serverless rate limits are dynamic per-org and the SDK retries 429s with backoff — lower the workers if a run prints repeated rate-limit errors, especially when also parallelizing studies with `-j`. After regenerating, the table loaders read `lm_runs.jsonl` automatically (no fit-code change).
 
 
 Active inverse fits + CV (CV produces the out-of-sample predictions):
 
 ```bash
 uv run python model/inverse/fit_food_inv_desire.py      # Study 1a (or any other slug's fit script)
-# 1a CV — prefer the parallel path (identical results, ~4x faster on a 14-core box):
-CV_WORKERS=12 XLA_FLAGS="--xla_cpu_multi_thread_eigen=false" \
-  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1 \
-  uv run python model/cv/cv_food_inv_desire.py           # thread caps keep 12 workers from oversubscribing 14 cores
+# CV — prefer the parallel path (identical results; worker thread caps are set
+# automatically by the dispatcher, so CV_WORKERS is the only knob needed).
+# Wired for all six studies. Joint-family caveat (1b/2b/3a/3b): each worker's
+# gradient step carries ~8 GB of XLA temps, so use CV_WORKERS≈3 for those on a
+# 48 GB machine until the joint-observer memory fix lands:
+CV_WORKERS=8 uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py               # bootstrap model comparison, all studies
 ```
 
