@@ -12,20 +12,19 @@ execute:
 
 ```{r setup, include=FALSE}
 source(here::here("analysis", "utils.R"))
-library(ggpattern)
-setup_analysis()
 ```
 
 # Study 2a — Intimacy inference
 
 Observer infers intimacy from a single observed action, given desire and effort.
 
-**Status:** Full sample is in `data/food_inv_intimacy/` (236 participants
-retained of 237 recruited). The demographics and belief-update panels below run
-on it. The model-prediction and model-vs-human sections are still disabled
-(`eval=FALSE`) pending CV predictions — mirror the Study 1a qmd
-(`food-inv-desire-analysis.qmd`) once `make cv-food_inv_intimacy` has written
-`cv_preds_summary.json`.
+**Status:** Full sample is in `data/food_inv_intimacy/` (recruited and
+retained counts are reported by the demographics chunk below). This document
+reports demographics and data checks only — all figures (including the model-vs-human panels) are generated in
+Python by `figures/results/figure_study2.py` and
+`figures/results/figure_model_scatter.py` (`make figures-results`), and the
+model-comparison statistics by `model/cv/model_comparison.py`
+(`make model-comparison`).
 
 ## Demographics
 
@@ -49,117 +48,6 @@ if (have_data) {
 } else {
   cat("No data yet for food_inv_intimacy.\n")
 }
-```
-
-## Belief update
-
-Belief update is the posterior − prior intimacy rating, collected on a 0–100
-slider and stored on the 0–1 scale, so updates fall in [−1, 1]. Intimacy is the
-inferred latent here; desire and effort are the given conditions crossed within
-every trial (mirroring Study 1a, where desire is inferred and intimacy is
-given). The panels below show the mean update per observed action × given
-desire × given effort cell, with 95% cluster-bootstrap CIs (resampling
-subjects, the project standard, since subjects contribute multiple rows per
-cell).
-
-```{r belief-update-prep}
-if (have_data) {
-  bu <- calculate_belief_update(df, "intimacy_rating") |>
-    filter(stage == "posterior") |>
-    mutate(
-      action = factor_action(action_condition),
-      desire = factor(desire, levels = c("low", "high"), labels = c("Low", "High")),
-      effort = factor_effort(effort)
-    )
-
-  agg <- boot_cluster_means(bu, "belief_update",
-                            c("action", "desire", "effort")) |>
-    rename(empirical_stat = belief_update,
-           ci_lower = belief_update_ci_lower,
-           ci_upper = belief_update_ci_upper)
-}
-```
-
-Grouped bars mirror the Study 1a house style: fill = given desire, pattern =
-given effort of the low-risk share, one bar per action × desire × effort cell.
-
-```{r belief-update-bars}
-#| fig-width: 5
-#| fig-height: 5
-if (have_data) {
-  pd_bar <- position_dodge(width = 0.9)
-  p_bar <- ggplot(agg, aes(action, empirical_stat,
-                           group = interaction(desire, effort))) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70", linewidth = 1) +
-    geom_col_pattern(
-      aes(fill = desire, pattern = effort),
-      position = pd_bar, width = 0.85, linewidth = 0.2,
-      pattern_fill = "white", pattern_colour = NA,
-      pattern_density = 0.25, pattern_spacing = 0.02, pattern_angle = 45
-    ) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2,
-                  position = pd_bar, color = "grey10") +
-    scale_fill_desire() +
-    scale_pattern_effort() +
-    scale_x_action() +
-    labs(title = "Intimacy inference by observed action, given desire and effort",
-         x = "Observed action", y = "Intimacy belief update", fill = "Desire") +
-    guides(
-      fill = guide_legend(nrow = 2, override.aes = list(pattern = "none")),
-      pattern = guide_legend(nrow = 2, override.aes = list(fill = "grey10"))
-    ) +
-    theme(legend.position = "bottom")
-  print(p_bar)
-} else {
-  cat("No data yet for food_inv_intimacy.\n")
-}
-```
-
-The same cell means as lines: color = given desire, one panel per given effort,
-so the graded pattern across observed actions is easy to read.
-
-```{r belief-update-lines}
-#| fig-width: 9
-#| fig-height: 4.5
-if (have_data) {
-  pd <- position_dodge(width = 0.25)
-  p_line <- ggplot(agg, aes(action, empirical_stat, color = desire, group = desire)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70") +
-    geom_line(position = pd, linewidth = 0.8) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.15,
-                  position = pd, alpha = 0.8) +
-    geom_point(position = pd, size = 2.6) +
-    facet_wrap(~ effort) +
-    scale_color_desire() +
-    scale_x_action() +
-    labs(x = "Observed action", y = "Intimacy belief update", color = "Desire")
-  print(p_line)
-} else {
-  cat("No data yet for food_inv_intimacy.\n")
-}
-```
-
-## Model predictions
-
-```{r preds, eval=FALSE}
-preds_path <- here::here("model", "outputs", "food_inv_intimacy", "cv_preds_summary.json")
-if (file.exists(preds_path)) {
-  preds <- read_model_json(preds_path)
-  glimpse(preds)
-} else {
-  cat("No CV predictions yet — run `make cv-food_inv_intimacy` once a fit + data exist.\n")
-}
-```
-
-## Model-vs-human correlations
-
-```{r model-vs-human, eval=FALSE}
-# TODO: wire up once the model predictions exist (data are in).
-# Standard pattern (cf. the cv-load / cv-scatter chunks in
-# food-inv-desire-analysis.qmd):
-#   1. Aggregate human belief updates by cell.
-#   2. Aggregate model predictions by the same cell.
-#   3. Plot scatter + report bootstrap Pearson via format_correlation_labels().
 ```
 
 ## Notes

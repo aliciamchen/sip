@@ -58,7 +58,7 @@ ANALYSIS_QMDS := \
         data lm lm-alternatives lm-base \
         fit fit-inverse \
         cv cv-inverse model-comparison \
-        analysis figures-lm-si \
+        analysis figures-lm-si figures-results \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -95,6 +95,7 @@ help:
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance + data-converter + roster-sync tests"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
+	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
@@ -368,6 +369,23 @@ figures-lm-si:
 	uv run python model/lm/plot_alternatives.py --figures si
 
 # =============================================================================
+# Main results figures (figures/results/): per-study results figures, the
+# model-vs-human scatter figures, and the held-out-LL comparison. Each script
+# renders the panels whose inputs (data CSVs, CV predictions) exist and skips
+# the rest with a message, so this target is safe to run at any pipeline
+# stage; figures fill in as data and fits land. PDFs (+ PNG previews) go to
+# figures/.
+# =============================================================================
+
+RESULTS_FIGURE_SCRIPTS := figure_study1a figure_study1b figure_study2 \
+                          figure_study3 figure_model_scatter figure_ll_comparison
+
+figures-results:
+	@for s in $(RESULTS_FIGURE_SCRIPTS); do \
+	  uv run python figures/results/$$s.py || exit 1; \
+	done
+
+# =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/ into the
 # journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs real,
 # committed files — symlinks don't sync — so this physically copies them. After
@@ -380,8 +398,15 @@ figures-lm-si:
 
 JOURNAL_DIR := SIP_journal
 JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
+# Main results figures whose fits/CV are still pending join this list once
+# their outputs are fresh and the rendered figure is approved:
+#   study1b_results.pdf:study1b-results.pdf
+#   study2_results.pdf:study2-results.pdf
+#   study3_results.pdf:study3-results.pdf
+#   model_scatter_study1.pdf:model-scatter-study1.pdf   (+ study2/study3)
+#   model_ll_comparison.pdf:model-ll-comparison.pdf
 JOURNAL_FIGURES := \
-  food_inv_desire_cv_overlay_bars.pdf:study1a-model-comparison.pdf \
+  study1a_results.pdf:study1a-model-comparison.pdf \
   si_lm_feature_structure_all.pdf:si-lm-feature-structure.pdf \
   si_lm_manipulation_checks_all.pdf:si-lm-manipulation-checks.pdf \
   si_lm_observed_scatter_all.pdf:si-lm-observed-scatter.pdf \

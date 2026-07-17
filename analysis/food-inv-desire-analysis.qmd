@@ -12,13 +12,31 @@ execute:
 
 ```{r setup, include=FALSE}
 source(here::here("analysis", "utils.R"))
-library(ggpattern)
-setup_analysis()
 ```
 
 # Study 1a — Desire inference
 
-## Data prep
+Observer infers desire from a single observed action, given effort and intimacy
+(continuous 0–100 DV).
+
+**Status:** Full sample is in `data/food_inv_desire/`. This document reports
+demographics and data checks only — all figures (including the model-vs-human
+panels) are generated in Python by `figures/results/figure_study1a.py` and
+`figures/results/figure_model_scatter.py` (`make figures-results`), and the
+model-comparison statistics by `model/cv/model_comparison.py`
+(`make model-comparison`).
+
+## Demographics
+
+```{r demographics}
+if (file.exists(here::here("data", "food_inv_desire", "exit_survey.csv"))) {
+  report_demographics("food_inv_desire")
+} else {
+  cat("No data yet for food_inv_desire.\n")
+}
+```
+
+## Data
 
 ```{r load-data}
 data_path <- here::here("data", "food_inv_desire", "main_trials_long.csv")
@@ -26,150 +44,13 @@ have_data <- file.exists(data_path)
 if (have_data) {
   df <- read_csv(data_path, show_col_types = FALSE)
   cat("Trials:", nrow(df), "\n")
+  glimpse(df)
 } else {
-  cat("No data yet for food_inv_desire (active continuous 0–100 DV).\n")
+  cat("No data yet for food_inv_desire.\n")
 }
 ```
 
-```{r belief-update-prep}
-if (have_data) {
-  bu <- calculate_belief_update(df, "response") |>
-    filter(stage == "posterior") |>
-    mutate(
-      action = factor_action(action_condition),
-      intimacy = factor(intimacy, levels = INTIMACY_LEVELS),
-      effort = factor_effort(effort)
-    )
+## Notes
 
-  # Cluster bootstrap (resampling subjects), the project standard: subjects
-  # contribute multiple rows per cell, so resampling rows would understate the
-  # CI width.
-  agg <- boot_cluster_means(bu, "belief_update",
-                            c("action", "intimacy", "effort")) |>
-    rename(empirical_stat = belief_update,
-           ci_lower = belief_update_ci_lower,
-           ci_upper = belief_update_ci_upper)
-}
-```
-
-```{r cv-load}
-cv_path <- here::here("model", "outputs", "food_inv_desire", "cv_preds_summary.json")
-have_cv <- have_data && file.exists(cv_path)
-if (have_cv) {
-  cv_preds <- read_model_json(cv_path) |>
-    mutate(
-      action = factor(ACTION_LABELS[action + 1], levels = ACTION_LABELS),
-      intimacy = factor(intimacy_condition, levels = INTIMACY_LEVELS),
-      effort = factor_effort(effort_condition),
-      model_label = factor(MODEL_LABELS[model], levels = MODEL_LABELS)
-    )
-  cv_model_agg <- cv_preds |>
-    group_by(model_label, action, intimacy, effort) |>
-    summarise(empirical_stat = mean(delta_desire), .groups = "drop")
-  cat("Loaded CV predictions for", nrow(cv_preds), "cells.\n")
-} else {
-  cat("No CV predictions / no human aggregate — run the CV and the belief-update chunk.\n")
-}
-```
-
-## Out-of-sample predictions by condition
-
-```{r cv-overlay-bars}
-#| fig-width: 13
-#| fig-height: 5
-
-if (have_cv) {
-  combined <- bind_rows(
-    cv_model_agg |>
-      transmute(panel = as.character(model_label), action, intimacy, effort,
-                empirical_stat, ci_lower = NA_real_, ci_upper = NA_real_),
-    agg |>
-      transmute(panel = "Humans", action, intimacy, effort,
-                empirical_stat, ci_lower, ci_upper)
-  ) |>
-    mutate(panel = factor(panel, levels = PANEL_LEVELS)) |>
-    # the discomfort-only model predicts ~0 belief update everywhere; flag those
-    # cells so they can be drawn as a single small bar centered on 0 (a tile that
-    # straddles the axis) instead of an invisible zero-height bar
-    mutate(is_zero_stub = panel == "Discomfort-only" & abs(empirical_stat) < 0.012)
-
-  pd_bar <- position_dodge(width = 0.9)
-  p_bar <- ggplot(combined, aes(action, empirical_stat,
-                                group = interaction(intimacy, effort))) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey70", linewidth=1) +
-    geom_col_pattern(
-      data = function(d) dplyr::filter(d, !is_zero_stub),
-      aes(fill = intimacy, pattern = effort),
-      position = pd_bar, width = 0.85, linewidth = 0.2,
-      pattern_fill = "white", pattern_colour = NA,
-      pattern_density = 0.25, pattern_spacing = 0.02, pattern_angle = 45
-    ) +
-    geom_tile_pattern(
-      data = function(d) dplyr::filter(d, is_zero_stub),
-      aes(y = 0, fill = intimacy, pattern = effort),
-      height = 0.015, position = pd_bar, width = 0.85,
-      linewidth = 0.2,
-      pattern_fill = "white", pattern_colour = NA,
-      pattern_density = 0.25, pattern_spacing = 0.02, pattern_angle = 45,
-      show.legend = FALSE
-    ) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2,
-                  position = pd_bar, color = "grey10", na.rm = TRUE) +
-    facet_wrap(~ panel, nrow = 1) +
-    scale_fill_intimacy() +
-    scale_pattern_effort() +
-    scale_x_action() +
-    labs(x = "Observed action", y = "Belief update") +
-    guides(
-      fill = guide_legend(nrow = 2, override.aes = list(pattern = "none")),
-      pattern = guide_legend(nrow = 2, override.aes = list(fill = "grey10"))
-    ) +
-    theme(legend.position = "bottom")
-  print(p_bar)
-  save_figure(p_bar, "food_inv_desire_cv_overlay_bars.pdf")
-} else {
-  cat("No CV predictions loaded.\n")
-}
-```
-
-### Out-of-sample cell-level scatter
-
-Each point is one action × intimacy × effort cell: the model's out-of-sample
-predicted belief update (LOSO-CV) against the human mean. The dashed line is
-y = x, and the per-panel r is the cell-level correlation (the discomfort-only
-model predicts a constant ~0, so its correlation is undefined).
-
-```{r cv-scatter}
-#| fig-width: 12
-#| fig-height: 4.5
-if (have_cv) {
-  human_cells <- agg |> select(action, intimacy, effort, human = empirical_stat)
-  scatter_df <- cv_model_agg |>
-    rename(model = empirical_stat) |>
-    left_join(human_cells, by = c("action", "intimacy", "effort"))
-  rlab <- scatter_df |>
-    group_by(model_label) |>
-    summarise(r = if (sd(model) < 1e-3) NA_real_ else cor(model, human),
-              .groups = "drop") |>
-    mutate(panel_lab = sprintf("%s (r = %s)", model_label,
-                               ifelse(is.na(r), "n/a", sprintf("%.2f", r))))
-  panel_levels <- rlab |> arrange(model_label) |> pull(panel_lab)
-  scatter_df <- scatter_df |>
-    left_join(select(rlab, model_label, panel_lab), by = "model_label") |>
-    mutate(panel_lab = factor(panel_lab, levels = panel_levels))
-  lim <- range(c(scatter_df$human, scatter_df$model), na.rm = TRUE)
-  p_scatter <- ggplot(scatter_df, aes(model, human, color = intimacy, shape = effort)) +
-    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey70") +
-    geom_point(size = 2.6) +
-    facet_wrap(~ panel_lab, nrow = 1) +
-    scale_color_intimacy() +
-    coord_equal(xlim = lim, ylim = lim) +
-    labs(x = "Model predicted belief update (out-of-sample)",
-         y = "Human belief update", shape = "Effort of low-risk share")
-  print(p_scatter)
-} else {
-  cat("No CV predictions loaded.\n")
-}
-```
-
-
+See the manuscript Methods section for the exact design, plus
+`experiments/food_inv_desire/README.md` for the trial structure spec.

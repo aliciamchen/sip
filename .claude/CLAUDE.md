@@ -60,7 +60,7 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                      make sync-journal-figures → SIP_journal/figures/ (Overleaf)
 ```
 
-The R/Quarto qmds in `analysis/` are working/visualization documents, not the paper's figure source — the paper's figures come from the Python scripts above and its model-comparison statistics from `model/cv/model_comparison.py` (see `.claude/rules/analysis.md`).
+The R/Quarto qmds in `analysis/` report demographics and data checks only — every figure comes from the Python scripts (the main results figures in `figures/results/`, run with `make figures-results`; the SI LM figures in `model/lm/`) and the model-comparison statistics from `model/cv/model_comparison.py` (see `.claude/rules/analysis.md`).
 
 ## Common commands
 
@@ -85,5 +85,6 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Utility helpers
 
 - `utils.py` — `get_project_root()` for constructing paths relative to project root.
-- `analysis/utils.R` — shared R helpers: `setup_analysis()`, `boot_cor()`, `calculate_belief_update()`.
-- `plot_style.py` — shared style for **all** Python-generated figures (the `figures/schematic_panels/figure_schematic_plots.py` panels and the LM-elicitation SI figures in `model/lm/plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/`, plus every palette and colormap (matched to `analysis/utils.R`). Change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-lm-si` regenerates the LM SI figure set.
+- `analysis/utils.R` — shared R helpers for the qmds and exploratory scripts: `report_demographics()`, `calculate_belief_update()`, the model JSON readers, and the condition factor orders. No plotting code — that all moved to Python.
+- `plot_style.py` — shared style for **all** Python-generated figures (the main results figures in `figures/results/`, the `figures/schematic_panels/figure_schematic_plots.py` panels, and the LM-elicitation SI figures in `model/lm/plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/`, plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-results` regenerates the main results set; `make figures-lm-si` the LM SI set.
+- `figures/results/` — the main results figure scripts (one per paper figure: `figure_study1a/1b/2/3.py`, `figure_model_scatter.py`, `figure_ll_comparison.py`), with shared data prep in `_data.py` (reusing `model/cv/model_comparison.py`'s cell specs and loaders) and panel functions in `_panels.py` / `_joint.py`. Each script renders the panels whose inputs exist and skips the rest with a printed note, and warns when CV outputs are stale relative to the data CSV.

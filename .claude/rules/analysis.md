@@ -5,17 +5,38 @@ paths:
 
 # Analysis structure
 
-The qmds are working/visualization documents. The paper's figures will be made in Python (via the shared `plot_style.py`), and the paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`), not from the qmds.
+The qmds are demographics/data-check documents only. All figures — the main
+results figures and the SI figures — are made in Python (`figures/results/`
+and `model/lm/plot_si_*.py`, styled by the repo-root `plot_style.py`, which is
+now the visual source of truth for palettes), and the paper's model-comparison
+statistics come from `model/cv/model_comparison.py` (`make model-comparison`),
+not from the qmds. The R plotting layer (ggplot scales, themes, palettes,
+`save_figure`, the bootstrap helpers) was removed from `utils.R` in July 2026
+when the plots moved to Python; the Python equivalents are in
+`figures/results/_data.py`, which reuses `model_comparison.py`'s loaders
+rather than re-deriving the belief updates.
 
 Core analysis files (named after their data folder, not paper experiment number):
 
-- `utils.R` — Shared utility functions (theme setup, bootstrap correlation, cluster-bootstrap cell means, belief update calculation, demographics reporting with `data/legacy/` fallback). `report_demographics()` reads the retained-after-exclusions N off the study's `main_trials_long.csv` rather than re-implementing the exclusion rules in R — `json_to_csv.py` is the single source of truth for those. Its palettes are the visual source of truth; the Python figure module `plot_style.py` (repo root) copies these hexes so R and Python figures match. Keep the two in sync when a palette changes. Known drift to reconcile: the R LM-elicitation notebooks still color the three actions with an older green/gold/red scheme, whereas `plot_style.py` now uses blue / green / amber (`no_share` / `low_risk_share` / `high_risk_share`).
+- `utils.R` — Shared R helpers for the qmds and exploratory scripts:
+  `report_demographics()` (with `data/legacy/` fallback), `calculate_belief_update()`,
+  the model JSON/JSONL readers, and the `INTIMACY_LEVELS` / `ACTION_LEVELS`
+  factor orders. `report_demographics()` reads the retained-after-exclusions N
+  off the study's `main_trials_long.csv` rather than re-implementing the
+  exclusion rules in R — `json_to_csv.py` is the single source of truth for
+  those. The local-only `signature_tests.R` (exploratory, non-preregistered)
+  also sources this file; keep `calculate_belief_update`, `ACTION_LEVELS`, and
+  `INTIMACY_LEVELS` available for it.
 - `json_to_csv.py` — Data processing pipeline; converts jsPsych raw JSON to anonymized CSVs. Applies each study's exclusion rule from its config: 1a's preregistered lax rule (exclude only failed-attention AND 0 memory questions), strict for the later studies (retain only passed-attention AND >=1 memory question). This script is the single source of truth for exclusion rules. It fails fast on bad raw data (unparseable files, missing or duplicate subject IDs, trial/exit-survey subject mismatches, zero parsed rows) and normalizes the legacy pre-2026-06-19 `neither` intimacy label to `somewhat_formal` at parse time.
 - `test_json_to_csv.py` — Offline tests for the converter on synthetic fixtures (`uv run python analysis/test_json_to_csv.py`).
 
 ### Active analysis qmds
 
-The Study 1a qmd (`food-inv-desire-analysis.qmd`) runs on the current partial sample (~half the target N), including the CV model-vs-human panels. The joint qmds (1b, 2b) have data and run their demographics + belief-update panels; their model sections are still `eval=FALSE` pending CV predictions. The 2a qmd has data but its belief-update and model sections are still `eval=FALSE` stubs. All four gracefully handle missing data + missing CV predictions via file-existence flags (`have_data <- file.exists(...)` set where the CSV is read, guarding the dependent chunks — not `exists("df")`, which is always TRUE because of `stats::df`). The nonfood studies (3a/3b) have no qmds yet — their data collection hasn't started, and the paper's figures come from Python anyway:
+One qmd per food study, each reporting demographics and a data glimpse behind
+`have_data <- file.exists(...)` guards (not `exists("df")`, which is always
+TRUE because of `stats::df`). The nonfood studies (3a/3b) have no qmds — they
+can get demographics qmds when their data land, and the figures come from
+Python either way:
 
 - `food-inv-desire-analysis.qmd` — Study 1a: infer desire under known effort + intimacy (continuous 0–100 DV).
 - `food-inv-joint-de-analysis.qmd` — Study 1b: joint over desire × effort given intimacy.
@@ -43,4 +64,4 @@ quarto render analysis/food-inv-intimacy-analysis.qmd
 quarto render analysis/food-inv-joint-ie-analysis.qmd
 ```
 
-Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd.
+Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd. The results figures are `make figures-results` (see the Makefile's figure section and `figures/results/`).
