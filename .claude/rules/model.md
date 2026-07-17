@@ -99,7 +99,7 @@ Six active experiments, each with its own `fit_<slug>.py` (a thin wrapper that d
 
 The PRIMARY model-comparison metric is **per-trial held-out log-likelihood** under leave-one-scenario-out (LOSO) CV (`outputs/<slug>/cv_trial_ll.jsonl`, keyed by `subject_id` for the participant bootstrap); the condition-averaged model-vs-human correlation (`cv_preds_summary.json`) is secondary/descriptive.
 
-- `_inverse_dispatcher.py` — LOSO logic for the inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`; the joint mains take a slug (`main_joint_de("nonfood_inv_joint_de")` runs Study 3a). Each loops over 16 scenarios, refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions. Each fold refit runs `CV_RESTARTS` restarts (default 2: the full-data warm start plus one cold restart, keeping the better NLL, so no fold depends on an init that saw the held-out scenario).
+- `_inverse_dispatcher.py` — LOSO logic for the inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`; the joint mains take a slug (`main_joint_de("nonfood_inv_joint_de")` runs Study 3a). Each loops over 16 scenarios, refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions. Each fold refit runs `CV_RESTARTS` restarts (default 2: the full-data warm start plus one cold restart, keeping the better NLL, so no fold depends on an init that saw the held-out scenario). **Default to the parallel path for CV runs** (folds are independent — parallel and sequential give numerically identical results): `_loso_desire` runs its folds in a `ProcessPoolExecutor` when `CV_WORKERS > 1` (env, default `1` = sequential, which wastes a many-core machine — a full 1a CV ran open-ended past ~1h45m sequentially). **Only `_loso_desire` (Study 1a) is wired for `CV_WORKERS`;** `_loso_intimacy` / `_loso_joint_de` / `_loso_joint_ie` (2a/2b/3a/3b) still run folds sequentially — parallelize those across studies with `make -j` or by porting the same worker-pool.
 - `cv_<slug>.py` — one per experiment, a thin wrapper around the dispatcher main.
 - `model_comparison.py` — the paper's numbers, from the CV outputs (`make model-comparison`): full − ablation per-trial held-out LL differences with participant-bootstrap 95% CIs (1,000 resamples), plus the secondary condition-averaged model-vs-human Pearson correlations with subject-cluster bootstrap CIs → `outputs/<slug>/cv_model_comparison.json`.
 
@@ -137,9 +137,14 @@ Active inverse fits + CV (CV produces the out-of-sample predictions):
 
 ```bash
 uv run python model/inverse/fit_food_inv_desire.py      # Study 1a (or any other slug's fit script)
-uv run python model/cv/cv_food_inv_desire.py
+# 1a CV — prefer the parallel path (identical results, ~4x faster on a 14-core box):
+CV_WORKERS=12 XLA_FLAGS="--xla_cpu_multi_thread_eigen=false" \
+  OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1 \
+  uv run python model/cv/cv_food_inv_desire.py           # thread caps keep 12 workers from oversubscribing 14 cores
 uv run python model/cv/model_comparison.py               # bootstrap model comparison, all studies
 ```
+
+`CV_WORKERS` parallelism is wired only for 1a (`_loso_desire`); the other studies' CV runs sequentially (parallelize across studies with `make -j cv-<slugA> cv-<slugB>`). The parallel CV branch prints only at the end, so pass `PYTHONUNBUFFERED=1` and expect no per-fold progress mid-run.
 
 
 Tests:
