@@ -144,18 +144,24 @@ uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
 # Fit → CV → model comparison (per study; CV produces the out-of-sample predictions).
-# The CV's independent (variant × fold) refits run as CV_WORKERS parallel worker
-# processes (the Makefile default is 8; the outputs are identical to a sequential
-# run, so CV_WORKERS only changes the wall-clock time):
+# The CV's independent (variant × fold) refits run as parallel worker processes,
+# with worker and thread counts defaulting per study family (8 single-threaded
+# workers for the single-latent studies; 3 multi-threaded workers for the
+# memory-heavier joint studies). The outputs are identical to a sequential run,
+# so CV_WORKERS / CV_WORKER_THREADS only change the wall-clock time. A CV run
+# that is interrupted resumes from its completed folds on the next invocation,
+# via a checkpoint file that is discarded automatically whenever the study's
+# inputs, fitting configuration, or model code change:
 uv run python model/inverse/fit_food_inv_desire.py
-CV_WORKERS=8 uv run python model/cv/cv_food_inv_desire.py
+uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py
 
 # Render an analysis document:
 quarto render analysis/food-inv-desire-analysis.qmd
 
-# Tests (`make test`): model compliance + the JSON→CSV converter + roster sync
+# Tests (`make test`): model compliance + CV checkpoint + JSON→CSV converter + roster sync
 uv run python model/test_model_compliance.py
+uv run python model/cv/test_checkpoint.py
 uv run python analysis/test_json_to_csv.py
 uv run python test_roster_sync.py
 ```

@@ -99,7 +99,8 @@ Six active experiments, each with its own `fit_<slug>.py` (a thin wrapper that d
 
 The PRIMARY model-comparison metric is **per-trial held-out log-likelihood** under leave-one-scenario-out (LOSO) CV (`outputs/<slug>/cv_trial_ll.jsonl`, keyed by `subject_id` for the participant bootstrap); the condition-averaged model-vs-human correlation (`cv_preds_summary.json`) is secondary/descriptive.
 
-- `_inverse_dispatcher.py` — LOSO logic for the inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`; the joint mains take a slug (`main_joint_de("nonfood_inv_joint_de")` runs Study 3a). All four route through the generic `_run_loso(family, slug)` runner: for each of the 16 scenarios it refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions. Each fold refit runs `CV_RESTARTS` restarts (default 2: the full-data warm start plus one cold restart, keeping the better NLL, so no fold depends on an init that saw the held-out scenario). With `CV_WORKERS` > 1 (Makefile default 8) the 48 (variant × fold) jobs run as spawn worker processes with capped XLA/OpenMP threads — each job is deterministic given (variant, fold, warm start, patience), so the outputs are byte-identical to a sequential run. The per-family pieces (data-array loader, table-kwargs builder, fold body) are wired in the `_FAMILIES` registry at the bottom of the module.
+- `_inverse_dispatcher.py` — LOSO logic for the inverse studies. Exports `main_{desire,joint_de,intimacy,joint_ie}`; the joint mains take a slug (`main_joint_de("nonfood_inv_joint_de")` runs Study 3a). All four route through the generic `_run_loso(family, slug)` runner: for each of the 16 scenarios it refits weights + `alpha_observer` + `σ` on the 15-scenario training set via the matching `fit_*_observer_joint` helper, slices slot 0 of the held-out scenario across runs, and scores each held-out trial's belief update under the mixture (`held_out_ll`); also emits the per-cell `delta_<latent>` predictions. Each fold refit runs `CV_RESTARTS` restarts (default 2: the full-data warm start plus one cold restart, keeping the better NLL, so no fold depends on an init that saw the held-out scenario). With `CV_WORKERS` > 1 the 48 (variant × fold) jobs run as spawn worker processes with capped XLA/OpenMP threads — each job is deterministic given (variant, fold, warm start, patience), so the outputs are byte-identical to a sequential run. Worker and thread counts default per family from the `_FAMILIES` registry (the single source of truth): `default_workers` 8 with 1 thread for the single-latent families; `JOINT_WORKERS` = 3 with `JOINT_WORKER_THREADS` threads for the joint families, whose ~8 GB-per-worker memory bound caps their worker count and would otherwise strand cores. Env `CV_WORKERS` / `CV_WORKER_THREADS` override (execution layout only — results are thread-count-invariant, verified byte-identical). Completed folds are appended to `outputs/<slug>/cv_checkpoint.jsonl` as they finish, so an interrupted run resumes from them (see `_checkpoint.py`). The per-family pieces (data-array loader, table-kwargs builder, fold body) are wired in the `_FAMILIES` registry at the bottom of the module.
+- `_checkpoint.py` — the CV fold checkpoint: a fingerprint-guarded JSONL side file holding each completed (variant × fold) refit. The fingerprint hashes everything that determines fold results (data CSV, LM run tables, warm-start fit, patience, restarts, and the model-math source files listed in `_CODE_FILES`), so a resume can never splice folds from different vintages — any mismatch, including a mid-run model-code edit, discards the checkpoint. The final CV outputs are still written only when every fold is present, and the checkpoint is deleted once they land. Unit tests: `test_checkpoint.py` (in `make test`).
 - `cv_<slug>.py` — one per experiment, a thin wrapper around the dispatcher main.
 - `model_comparison.py` — the paper's numbers, from the CV outputs (`make model-comparison`): full − ablation per-trial held-out LL differences with participant-bootstrap 95% CIs (1,000 resamples), plus the secondary condition-averaged model-vs-human Pearson correlations with subject-cluster bootstrap CIs → `outputs/<slug>/cv_model_comparison.json`.
 
@@ -137,16 +138,18 @@ Active inverse fits + CV (CV produces the out-of-sample predictions):
 
 ```bash
 uv run python model/inverse/fit_food_inv_desire.py      # Study 1a (or any other slug's fit script)
-# CV — prefer the parallel path (identical results; worker thread caps are set
-# automatically by the dispatcher, so CV_WORKERS is the only knob needed).
-# Wired for all six studies. Joint-family caveat (1b/2b/3a/3b): each worker's
-# gradient step carries ~8 GB of XLA temps, so use CV_WORKERS≈3 for those on a
-# 48 GB machine until the joint-observer memory fix lands:
-CV_WORKERS=8 uv run python model/cv/cv_food_inv_desire.py
+# CV — parallel across the 48 (variant × fold) refits for all six studies,
+# with results identical to a sequential run. Worker and thread counts default
+# per observer family (8 × 1-thread single-latent; 3 × 4-thread joint — each
+# joint worker carries ~8 GB of XLA temps, so more workers would exhaust a
+# 48 GB machine). Just run the script; set CV_WORKERS / CV_WORKER_THREADS only
+# to override the family defaults:
+uv run python model/cv/cv_food_inv_desire.py
+uv run python model/cv/cv_food_inv_joint_de.py           # joint family: 3 × 4-thread workers
 uv run python model/cv/model_comparison.py               # bootstrap model comparison, all studies
 ```
 
-`CV_WORKERS` parallelism is wired only for 1a (`_loso_desire`); the other studies' CV runs sequentially (parallelize across studies with `make -j cv-<slugA> cv-<slugB>`). The parallel CV branch prints only at the end, so pass `PYTHONUNBUFFERED=1` and expect no per-fold progress mid-run.
+A CV run can be interrupted freely: each completed fold refit is appended to `outputs/<slug>/cv_checkpoint.jsonl`, and rerunning the same study resumes from the completed folds. The checkpoint is fingerprint-guarded — any change to the data CSV, the LM tables, the warm-start fit, the refit config, or the model-math source files discards it automatically. Pass `PYTHONUNBUFFERED=1` for live per-fold progress. Interrupt with Ctrl-C (SIGINT reaches the whole process group); a `kill -9` of the parent instead leaves the spawn workers running as orphans that burn a core each until their current fold finishes — find them with `ps -eo pid,ppid,command | grep spawn_main` (orphans have ppid 1) and kill those too.
 
 
 Tests:

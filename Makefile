@@ -303,7 +303,7 @@ model/outputs/$(1)/cv_trial_ll.jsonl: \
     model/outputs/lm/$(1)/lm_runs.jsonl \
     $$(if $$(filter $(1),$$(EXPERIMENTS_BASE)),model/outputs/lm/$(1)/lm_runs_base.jsonl) \
     model/outputs/$(1)/fit_results.json
-	CV_WORKERS=$$(CV_WORKERS) uv run python model/cv/cv_$(1).py
+	CV_WORKERS=$$(CV_WORKERS) CV_WORKER_THREADS=$$(CV_WORKER_THREADS) uv run python model/cv/cv_$(1).py
 
 # Phony aliases keep `make fit-<slug>` / `make cv-<slug>` working by name; the
 # recipe lives on the file target, so they no-op when the output is current.
@@ -329,12 +329,25 @@ fit-inverse: $(addprefix fit-,$(EXPERIMENTS_INVERSE))
 
 # CV_WORKERS: how many of a study's (variant × fold) refits run as parallel
 # worker processes (48 jobs per study; the refits are independent and
-# deterministic, so the outputs are identical to a sequential run). Workers'
-# XLA/OpenMP thread pools are capped by the dispatcher, so CV_WORKERS ≈ cores
-# is safe for a single study; lower it when parallelizing studies with -j so
-# (studies × CV_WORKERS) stays ≲ the machine's cores. CV_RESTARTS and
-# CV_PATIENCE pass through the environment as before.
-CV_WORKERS ?= 8
+# deterministic, so the outputs are identical to a sequential run — worker and
+# thread counts change wall-clock only, never results). Left empty, each study
+# uses its observer family's default from the dispatcher's _FAMILIES registry
+# (the single source of truth): 8 single-threaded workers for the single-latent
+# families, 3 × CV_WORKER_THREADS-threaded workers for the joint families,
+# whose ~8 GB-of-XLA-temps-per-worker memory bound is what caps their worker
+# count on a 48 GB machine. Setting CV_WORKERS explicitly applies to every
+# family (the dispatcher warns when that pushes a joint family past its memory-
+# safe default); lower it when parallelizing studies with -j so
+# (studies × CV_WORKERS × threads) stays ≲ the machine's cores. CV_RESTARTS
+# and CV_PATIENCE pass through the environment as before.
+#
+# A CV run can be interrupted freely: completed fold refits land in
+# outputs/<slug>/cv_checkpoint.jsonl as they finish, and the next run of the
+# same study resumes from them (the checkpoint is fingerprint-guarded against
+# any change to the data, LM tables, warm-start fit, refit config, or the
+# model-math source files).
+CV_WORKERS ?=
+CV_WORKER_THREADS ?=
 
 cv: cv-inverse
 cv-inverse: $(addprefix cv-,$(EXPERIMENTS_INVERSE))
@@ -464,6 +477,7 @@ deploy-explorer: explorer
 
 test:
 	uv run python model/test_model_compliance.py
+	uv run python model/cv/test_checkpoint.py
 	uv run python analysis/test_json_to_csv.py
 	uv run python test_roster_sync.py
 
@@ -471,3 +485,4 @@ clean:
 	rm -f model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl model/outputs/*/fit_manifest.json
 	rm -f model/outputs/*/cv_trial_ll.jsonl model/outputs/*/cv_preds_summary.json model/outputs/*/cv_folds.jsonl model/outputs/*/cv_manifest.json
 	rm -f model/outputs/*/cv_model_comparison.json
+	rm -f model/outputs/*/cv_checkpoint.jsonl
