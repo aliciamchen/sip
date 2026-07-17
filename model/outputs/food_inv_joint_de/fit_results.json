@@ -2,36 +2,36 @@
   {
     "model": "full",
     "experiment": "food_inv_joint_de",
-    "nll": 183.22323608398438,
+    "nll": 1547.267822265625,
     "n_params": 6,
     "param_alpha": 1.0,
-    "alpha_observer": 2.1923611164093018,
-    "param_sigma": 0.3388725817203522,
-    "param_w_v": 5.9826579093933105,
-    "param_w_d": 0.18754610419273376,
-    "param_w_e": 1.7603349685668945,
-    "param_gamma": 18.205120086669922
+    "alpha_observer": 9.162858963012695,
+    "param_sigma": 0.27406439185142517,
+    "param_w_v": 0.630158007144928,
+    "param_w_d": 1.9832936525344849,
+    "param_w_e": 0.7110763192176819,
+    "param_gamma": 1.6689363718032837
   },
   {
     "model": "discomfort_only",
     "experiment": "food_inv_joint_de",
-    "nll": 248.58885192871094,
+    "nll": 2707.11181640625,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 3.5633203983306885,
-    "param_sigma": 0.3821375370025635,
-    "param_w_d": 0.3633478879928589,
-    "param_gamma": 3.703907012939453
+    "alpha_observer": 3.753479480743408,
+    "param_sigma": 0.34844696521759033,
+    "param_w_d": 0.7596403956413269,
+    "param_gamma": 1.5810470581054688
   },
   {
     "model": "base",
     "experiment": "food_inv_joint_de",
-    "nll": 183.2372283935547,
+    "nll": 1688.6346435546875,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 2.214235782623291,
-    "param_sigma": 0.33888131380081177,
-    "param_w_v": 5.915838241577148,
-    "param_w_e": 1.750298261642456
+    "alpha_observer": 9.119950294494629,
+    "param_sigma": 0.28720977902412415,
+    "param_w_v": 0.6663011312484741,
+    "param_w_e": 0.5968818664550781
   }
 ]

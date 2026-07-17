@@ -1,0 +1,21 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count,comprehension_attempt
+6a22516b-8eed-549e-ba1e-0d292a0eb612,female,46,yes,,True,3,1
+70973d33-a0e3-54e5-95fa-19a8238d0d1e,female,31,yes,it took longer than 20 miniuets. the reward is too low for the effort.,True,3,2
+c90743c8-ac27-5892-9a6a-563fe12c540e,female,52,yes,,True,3,3
+64098ec2-265f-55be-92c5-ad28407cbc17,female,41,yes,,True,3,1
+2be6294c-4222-55b6-b5fe-ce0cbebe84af,female,63,yes,"It almost seemed like what I chose triggered an opposite scenario.  There was no way to predict any of the outcomes because no important no meaningful information was included.  The outcomes felt random which it is in real life, so not sure what was being tested.  
+
+Maybe tolerance to uncertainty.",True,3,1
+d73f5fee-d17d-5f82-b044-02919cb4a6bb,female,18,yes,,True,3,1
+277b71a5-9dbf-5db4-b18c-9c6b58bfd0d3,female,72,yes,N/A,True,3,2
+ea0517fc-9e64-5f4e-883b-45b1e01ded11,female,19,yes,,True,2,1
+f9c74ca1-befc-585f-8497-c2bb39bc17dd,female,59,yes,none,True,3,1
+7a1f8091-3c33-53f8-aa6c-05f041d5830d,male,22,yes,,True,2,1
+2155eec6-925c-5a2c-9428-eb59a1872b7e,female,34,yes,,True,3,3
+d2a85724-d855-5c8a-a8c9-27a7b7a3443c,male,64,yes,,True,3,1
+6b195580-82a0-5f5d-9330-4f7162d5bbf3,female,32,yes,,True,3,1
+b93ab221-6e99-562a-88bf-795e98fc4aac,male,41,yes,,True,2,1
+be0e8af7-0a39-5aac-881b-996655f02e49,female,56,yes,I thought the study overall was thought provoking. A few of the scenarios turned out differently than I expected.,True,3,1
+260d4ae9-39b8-566b-b12b-a73acc6b7b65,male,40,yes,fun!,True,3,1
+0ca7ef6c-69f2-548b-b201-2465d5231c73,female,34,yes,,True,3,1
+90bbbffe-f3a9-5a6c-af6e-0522d2f1554a,male,48,yes,No,True,3,1
