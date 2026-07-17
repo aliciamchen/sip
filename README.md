@@ -106,7 +106,7 @@ model/             Computational models
   outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
     lm/            LM-elicited scenario tables
     <slug>/        Per-experiment outputs
-preregs/           AsPredicted-format preregistration documents (the four food studies; Study 3's are pending)
+preregs/           AsPredicted-format preregistration documents (all six studies)
 figures/           Generated figures used in the paper
 ```
 
