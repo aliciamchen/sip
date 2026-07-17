@@ -143,9 +143,12 @@ uv run python analysis/json_to_csv.py <experiment_slug>
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
-# Fit → CV → model comparison (per study; CV produces the out-of-sample predictions):
+# Fit → CV → model comparison (per study; CV produces the out-of-sample predictions).
+# The CV's independent (variant × fold) refits run as CV_WORKERS parallel worker
+# processes (the Makefile default is 8; the outputs are identical to a sequential
+# run, so CV_WORKERS only changes the wall-clock time):
 uv run python model/inverse/fit_food_inv_desire.py
-uv run python model/cv/cv_food_inv_desire.py
+CV_WORKERS=8 uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py
 
 # Render an analysis document:

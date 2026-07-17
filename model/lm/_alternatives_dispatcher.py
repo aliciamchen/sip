@@ -41,11 +41,14 @@ MAX_PARSE_RETRIES = 5
 
 # How many cells to elicit concurrently. One LM call per cell (with up to
 # MAX_PARSE_RETRIES parse-retries inside), so this is the per-call concurrency.
-# Env-tunable (default 8) to raise or lower generation throughput against the
-# Together tier's rate limit — the generation-side analogue of score_merged's
-# --scenario-workers flag. Clamped to >= 1 (like the other worker pools) so a
-# stray CELL_WORKERS=0 doesn't crash ThreadPoolExecutor.
-MAX_CELL_WORKERS = max(1, int(os.environ.get("CELL_WORKERS", "8")))
+# Env-tunable (default 32) to raise or lower generation throughput against the
+# Together org's rate limit — the generation-side analogue of score_merged's
+# --scenario-workers flag. Together's serverless limits are dynamic per-org and
+# the SDK retries 429s with backoff, so a too-high setting self-corrects (at
+# some throughput cost); lower it if a run prints repeated rate-limit errors.
+# Clamped to >= 1 (like the other worker pools) so a stray CELL_WORKERS=0
+# doesn't crash ThreadPoolExecutor.
+MAX_CELL_WORKERS = max(1, int(os.environ.get("CELL_WORKERS", "32")))
 
 # How often to flush partial results to disk while the thread pool runs.
 CHECKPOINT_EVERY = 16
