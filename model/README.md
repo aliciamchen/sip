@@ -1,6 +1,6 @@
 # `model/` — modeling pipeline
 
-Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. The roster is six inverse-planning studies, all on the 3-action stimulus structure: `food_inv_desire` (Study 1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), and `food_inv_joint_ie` (2b) on the food scenario set, plus `nonfood_inv_joint_de` (3a) and `nonfood_inv_joint_ie` (3b), which repeat the two joint designs on the non-food scenario set.
+Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. The roster is six inverse-planning studies, all on the 3-action stimulus structure — four on the food scenario set, plus two non-food studies that repeat the joint designs on the non-food set. The [per-experiment table below](#per-experiment-files) maps each slug to its fit/CV scripts; the canonical slug ↔ Study-number roster is in the [root README](../README.md#experiments).
 
 ## Pipeline at a glance
 
@@ -38,7 +38,7 @@ Run any script directly as `uv run python <path>`, or via `make fit-<slug>` / `m
 
 - `tables.py` — enums and axes, plus the loaders that assemble `outputs/lm/<slug>/lm_runs.jsonl` into the padded per-study feature tables (with fail-fast validation of missing or failed ratings).
 - `utility.py` — jit-compiled utility functions implementing `w_v · d · g − w_d · risk · (1 − I)^γ − w_e · effort` and its ablations (see the [utility model](../README.md#utility-model)).
-- `actors.py` / `observers.py` — the [memo](https://github.com/kach/memo) probabilistic programs: one actor and one observer family per study, each in `full` / `discomfort_only` / `base` variants. The observer conditions on the observed action and returns the posterior over the study's latent(s); the joint studies return a joint posterior that downstream code marginalizes to the two sliders.
+- `actors.py` / `observers.py` — the actor models and their Bayesian observers, one family per study, each in `full` / `discomfort_only` / `base` variants. The actors are [memo](https://github.com/kach/memo) probabilistic programs, as are the single-latent observers. The joint observers used by the fits are equivalent plain-JAX inversions of the actor policies — the original memo formulations needed several gigabytes of intermediate memory per gradient step, and are kept in `observers.py` as reference implementations that the test suite checks the fast versions against. Every observer conditions on the observed action and returns the posterior over the study's latent(s); the joint studies return a joint posterior that downstream code marginalizes to the two sliders.
 - `inverse/_helpers.py` — mixture likelihoods, data loaders, the Adam multi-start fit loop, and the per-study fit entry points.
 - `cv/_inverse_dispatcher.py` — the leave-one-scenario-out loops (each fold refits on 15 scenarios with a warm start from the full-data fit plus a cold restart, keeping the better optimum).
 - `cv/model_comparison.py` — the paper's statistics from the CV outputs: full − ablation per-trial held-out log-likelihood with participant-bootstrap 95% CIs, plus the secondary model-vs-human correlations.

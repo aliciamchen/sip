@@ -36,6 +36,11 @@ data/legacy/planning_comm/
 # regenerate from the scripts in model/model_viz_nonfit/. Kept local.
 model/model_viz_nonfit/
 
+# Live-run CV fold checkpoint (lets an interrupted LOSO run resume; deleted
+# when the run's final outputs are written). Transient by design — the
+# committed CV artifacts are the cv_* outputs, never this side file.
+model/outputs/*/cv_checkpoint.jsonl
+
 .positai
 .claude/worktrees/ 
 

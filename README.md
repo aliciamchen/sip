@@ -7,17 +7,13 @@ The current manuscript organizes the work into six inverse-planning studies, all
 ## Quick start
 
 ```bash
-# Python deps (uses uv: https://github.com/astral-sh/uv)
-uv sync
-
-# R deps (renv): open R from the project root, then
-# renv::restore()
-
-# Quarto (https://quarto.org/docs/get-started/) is needed to render the analysis docs
-
+uv sync                 # Python deps (uv-managed .venv)
+# R deps: open R from the project root, then run renv::restore()
 make all                # full pipeline: fit → CV → model comparison → render qmds
 make help               # list all targets
 ```
+
+Rendering the analysis documents also needs Quarto. See [Dependencies](#dependencies) below for the full install details (uv, the pip alternative, the required R version, and Quarto).
 
 Everything `make all` needs is checked into the repo: the processed experiment CSVs (`data/`) and the LM-elicited scenario tables (`model/outputs/lm/`), so the fits, cross-validation, and analyses reproduce from a fresh clone without raw participant JSON or a Together AI key. Rendered analysis documents land in `_output/analysis/`; figures land in `figures/outputs/`.
 
@@ -34,6 +30,32 @@ LM elicitation (model/lm/) → scenario tables (model/outputs/lm/<slug>/)
 ```
 
 The `Makefile` exposes per-stage and per-experiment targets (`make fit-<slug>`, `make cv-<slug>`, etc.); `make help` lists them. The underlying script invocations are in [Reproducing the results](#reproducing-the-results) below.
+
+## Repository structure
+
+```
+analysis/          Data processing plus R/Quarto demographics and data-check documents
+bin/               Helper scripts: the experiment deploy script and a git-worktree environment setup
+data/              Processed experiment data (one folder per experiment slug)
+docs/              Design notes recording modeling decisions
+experiments/       jsPsych experiment code + scenario definitions
+model/             Computational models
+  inverse/         Per-experiment inverse-planning fit scripts
+  cv/              Per-experiment LOSO cross-validation + model comparison
+  lm/              LM-elicitation scripts (Together AI)
+  outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
+    lm/            LM-elicited scenario tables
+    <slug>/        Per-experiment outputs
+preregs/           AsPredicted-format preregistration documents (all six studies)
+figures/           Paper figures
+  scripts/         Figure-generation scripts (main results, SI LM-validation, schematic panels)
+  outputs/         Generated figures (PDF + PNG preview) written by the scripts
+  schematic_panels/  Illustrator-linked schematic sub-panels (SVG + PDF)
+  figure_data/     Cached inputs for the schematic panels
+  model-eqs/       Hand-authored equation glyphs
+```
+
+See the [data codebook](data/README.md), [experiments README](experiments/README.md), [model README](model/README.md), and [model outputs codebook](model/outputs/README.md) for details on each directory.
 
 ## Experiments
 
@@ -91,32 +113,6 @@ Each study jointly fits its ablations' utility weights, an observer softmax temp
 
 All reported predictions are out-of-sample, from leave-one-scenario-out cross-validation: for each of the 16 scenarios, all parameters are refit on the other 15 and used to predict the held-out one. The paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`): the difference between the full model and each ablation in per-trial held-out log-likelihood, with 95% confidence intervals from bootstrap resampling of participants (1,000 resamples), plus the secondary condition-averaged model-vs-human correlations. Results are written to `model/outputs/<slug>/cv_model_comparison.json`.
 
-## Repository structure
-
-```
-analysis/          Data processing plus R/Quarto demographics and data-check documents
-bin/               Helper scripts: the experiment deploy script and a git-worktree environment setup
-data/              Processed experiment data (one folder per experiment slug)
-docs/              Design notes recording modeling decisions
-experiments/       jsPsych experiment code + scenario definitions
-model/             Computational models
-  inverse/         Per-experiment inverse-planning fit scripts
-  cv/              Per-experiment LOSO cross-validation + model comparison
-  lm/              LM-elicitation scripts (Together AI)
-  outputs/         Fitted parameters and CV results (predictions, all out-of-sample)
-    lm/            LM-elicited scenario tables
-    <slug>/        Per-experiment outputs
-preregs/           AsPredicted-format preregistration documents (all six studies)
-figures/           Paper figures
-  scripts/         Figure-generation scripts (main results, SI LM-validation, schematic panels)
-  outputs/         Generated figures (PDF + PNG preview) written by the scripts
-  schematic_panels/  Illustrator-linked schematic sub-panels (SVG + PDF)
-  figure_data/     Cached inputs for the schematic panels
-  model-eqs/       Hand-authored equation glyphs
-```
-
-See the [data codebook](data/README.md), [experiments README](experiments/README.md), [model README](model/README.md), and [model outputs codebook](model/outputs/README.md) for details on each directory.
-
 ## Dependencies
 
 ### Python (uv)
@@ -144,16 +140,20 @@ The Makefile is the recommended way to run the pipeline; the steps below show th
 # Raw jsPsych JSON → anonymized CSVs (raw data is not included in the repository):
 uv run python analysis/json_to_csv.py <experiment_slug>
 
-# LM elicitation (only needed to REgenerate the committed tables; requires TOGETHER_API_KEY):
+# LM elicitation — only to REgenerate the committed tables (requires TOGETHER_API_KEY);
+# see "LM-elicited model components" above for what these two steps do:
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
 # Fit → CV → model comparison (per study; CV produces the out-of-sample predictions).
-# The CV's independent (variant × fold) refits run as CV_WORKERS parallel worker
-# processes (the Makefile default is 8; the outputs are identical to a sequential
-# run, so CV_WORKERS only changes the wall-clock time):
+# The CV's independent (variant × fold) refits run as parallel worker processes
+# (8 single-threaded workers by default). The outputs are identical to a
+# sequential run, so CV_WORKERS / CV_WORKER_THREADS only change the wall-clock
+# time. A CV run that is interrupted resumes from its completed folds on the
+# next invocation, via a checkpoint file that is discarded automatically
+# whenever the study's inputs, fitting configuration, or model code change:
 uv run python model/inverse/fit_food_inv_desire.py
-CV_WORKERS=8 uv run python model/cv/cv_food_inv_desire.py
+uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py
 
 # Render the main results figures (each script skips studies whose data or
@@ -163,13 +163,12 @@ make figures-results
 # Render an analysis document (demographics + data checks):
 quarto render analysis/food-inv-desire-analysis.qmd
 
-# Tests (`make test`): model compliance + the JSON→CSV converter + roster sync
+# Tests (`make test`): model compliance + CV checkpoint + JSON→CSV converter + roster sync
 uv run python model/test_model_compliance.py
+uv run python model/cv/test_checkpoint.py
 uv run python analysis/test_json_to_csv.py
 uv run python test_roster_sync.py
 ```
-
-Plots are saved in `figures/outputs/`; rendered docs in `_output/analysis/`.
 
 ### Manuscript figures
 

@@ -53,12 +53,20 @@ _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
+sys.path.insert(0, str(_project_root / "model" / "cv"))
 
 import jax  # noqa: E402
 import jax.numpy as jnp  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from _checkpoint import (  # noqa: E402
+    append_fold,
+    checkpoint_path,
+    clear_checkpoint,
+    init_checkpoint,
+    run_fingerprint,
+)
 from _helpers import (  # noqa: E402
     EFFORT_PRIOR_MEAN,
     GRID,
@@ -118,6 +126,19 @@ N_ACTIONS = int(len(actions))
 # NLL, so every fold has an init that never saw the held-out scenario.
 # Env-tunable via CV_RESTARTS (1 = warm-only, for quick smoke runs).
 N_RESTARTS_CV = int(os.environ.get("CV_RESTARTS", "2"))
+# Per-family execution defaults (env CV_WORKERS / CV_WORKER_THREADS override;
+# see the `default_workers` / `worker_threads` entries in _FAMILIES below).
+# All four families now share one profile: many single-threaded workers. The
+# joint families briefly needed 3 × 4-thread workers when their observers
+# carried ~8 GB of XLA temps each, but the fast joint observers (see
+# observers.py: direct Bayesian inversion of the actor policy) brought a
+# worker back to ~1.5 GB, so the memory cap is gone. The per-family keys stay
+# as the tuning point if a family's profile ever diverges again. Neither knob
+# changes the refit results (fold outputs are reduction-order-stable across
+# thread counts; verified byte-identical in the interrupt/resume smoke) —
+# they are purely execution-layout choices.
+DEFAULT_WORKERS = 8
+DEFAULT_WORKER_THREADS = 1
 
 
 def _domain_for(slug):
@@ -253,6 +274,12 @@ def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
             f"sigma = {fsub['param_sigma'].mean():.3f})"
         )
 
+    # The run is fully written (outputs + manifest), so the fold checkpoint
+    # has served its purpose — remove it rather than leave a stale side file
+    # for the next run to re-validate. Deleted last, so even a failure in the
+    # cosmetic summary above can't cost a resume.
+    clear_checkpoint(checkpoint_path(outputs_dir))
+
 
 def _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test):
     n_folds = len(STUDY_SCENARIO_LABELS[slug])
@@ -304,7 +331,7 @@ def _cv_fold(variant, fold, warm, patience):
 
 
 @contextlib.contextmanager
-def _capped_worker_threads():
+def _capped_worker_threads(n_threads=1):
     """Cap the XLA/OpenMP thread pools of the spawn workers while the pool is
     alive. Each worker re-imports JAX and would otherwise spin up its own
     full-width XLA CPU thread pool — CV_WORKERS × cores threads oversubscribe
@@ -312,7 +339,13 @@ def _capped_worker_threads():
     env in the pool initializer would be too late: the child imports jax while
     unpickling the module), so the caps are set in the parent right before the
     pool starts and restored right after. The parent's already-initialized JAX
-    is unaffected. Explicit user-set values are respected."""
+    is unaffected. Explicit user-set values are respected.
+
+    `n_threads` > 1 gives each worker a small multi-threaded pool instead of a
+    single-threaded one — useful when a family's worker count is capped below
+    the core count (as the joint families' was while their observers were
+    memory-bound; no family defaults to it today). Keep workers × threads ≲
+    the machine's cores."""
     saved = {k: os.environ.get(k) for k in ("XLA_FLAGS", "OMP_NUM_THREADS")}
     xla = os.environ.get("XLA_FLAGS", "")
     # Match on the flag NAME (not name=value), so a user-set value for either
@@ -321,14 +354,14 @@ def _capped_worker_threads():
     add = [
         f
         for f in (
-            "--xla_cpu_multi_thread_eigen=false",
-            "intra_op_parallelism_threads=1",
+            f"--xla_cpu_multi_thread_eigen={'false' if n_threads == 1 else 'true'}",
+            f"intra_op_parallelism_threads={n_threads}",
         )
         if f.split("=")[0] not in xla
     ]
     if add:
         os.environ["XLA_FLAGS"] = " ".join(([xla] if xla else []) + add)
-    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("OMP_NUM_THREADS", str(n_threads))
     try:
         yield
     finally:
@@ -341,15 +374,36 @@ def _capped_worker_threads():
 
 def _run_loso(family, slug, workers=None, patience=None):
     """LOSO CV for one study. Runs the (variant × fold) refits concurrently when
-    `workers` > 1 (env `CV_WORKERS`, default 1): folds are independent and each
-    refit is deterministic, so the output is identical to the sequential run —
-    only the execution overlaps. `patience` (env `CV_PATIENCE`, default 100)
-    trims the Adam no-improvement tail of each warm-started refit."""
-    workers = workers if workers is not None else int(os.environ.get("CV_WORKERS", "1"))
+    `workers` > 1 (env `CV_WORKERS`; default from the family registry): folds
+    are independent and each refit is deterministic, so the output is identical
+    to the sequential run — only the execution overlaps. Each worker's XLA pool
+    gets the family's `worker_threads` (env `CV_WORKER_THREADS` overrides).
+    `patience` (env `CV_PATIENCE`, default 100) trims the Adam no-improvement
+    tail of each warm-started refit.
+
+    Every completed fold is appended to `outputs/<slug>/cv_checkpoint.jsonl`
+    (fingerprint-guarded; see _checkpoint.py), and completed folds found there
+    at startup are skipped — so an interrupted multi-hour run resumes instead
+    of starting over. The final outputs are still written only when every fold
+    is present, so consumers never see a partial set."""
+    fam = _FAMILIES[family]
+    # Worker count: explicit arg, then env CV_WORKERS, then the family default
+    # from the registry (the joint families default lower — memory-bound).
+    # An empty CV_WORKERS falls through to the family default.
+    workers = (
+        workers
+        if workers is not None
+        else int(os.environ.get("CV_WORKERS") or fam["default_workers"])
+    )
     patience = (
         patience if patience is not None else int(os.environ.get("CV_PATIENCE", "100"))
     )
-    fam = _FAMILIES[family]
+    worker_threads = int(os.environ.get("CV_WORKER_THREADS") or fam["worker_threads"])
+    if worker_threads < 1:
+        raise ValueError(
+            f"CV_WORKER_THREADS must be >= 1, got {worker_threads} — XLA/OpenMP "
+            f"thread pools need a positive thread count."
+        )
     arrays = fam["load_arrays"](slug)
     variants = fam["variants"]
     # Warm-start source: the full-data fit (refits perturb it only slightly),
@@ -372,9 +426,30 @@ def _run_loso(family, slug, workers=None, patience=None):
     n_folds = len(STUDY_SCENARIO_LABELS[slug])
     jobs = [(v, f) for v in variants for f in range(n_folds)]
 
-    if workers and workers > 1:
-        print(f"  parallel {family} CV: {workers} workers, patience={patience}")
-        with _capped_worker_threads():
+    # Resume any completed folds from an interrupted run's checkpoint. The
+    # fingerprint ties them to this run's exact inputs and refit config, so a
+    # resume can never splice folds from different vintages; keys outside this
+    # run's job list are dropped rather than trusted.
+    outputs_dir = get_project_root() / "model" / "outputs" / slug
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    ckpt = checkpoint_path(outputs_dir)
+    fingerprint = run_fingerprint(slug, family, patience, N_RESTARTS_CV)
+    results = {
+        k: v for k, v in init_checkpoint(ckpt, fingerprint).items() if k in set(jobs)
+    }
+    pending = [j for j in jobs if j not in results]
+    if results:
+        print(
+            f"  resuming from checkpoint: {len(results)}/{len(jobs)} "
+            f"(variant × fold) refits already done"
+        )
+
+    if pending and workers > 1:
+        print(
+            f"  parallel {family} CV: {workers} workers × {worker_threads} "
+            f"thread(s), patience={patience}"
+        )
+        with _capped_worker_threads(worker_threads):
             with ProcessPoolExecutor(
                 max_workers=workers,
                 mp_context=mp.get_context("spawn"),
@@ -383,28 +458,33 @@ def _run_loso(family, slug, workers=None, patience=None):
             ) as ex:
                 futs = {
                     ex.submit(_cv_fold, v, f, warms[v], patience): (v, f)
-                    for v, f in jobs
+                    for v, f in pending
                 }
-                results = {}
                 try:
                     for fu in as_completed(futs):
                         v, f = futs[fu]
-                        results[(v, f)] = fu.result()
+                        res = fu.result()
+                        results[(v, f)] = res
+                        append_fold(ckpt, v, f, *res)
                         print(
                             f"    [{len(results)}/{len(jobs)}] {slug} / {v} / "
                             f"fold {f + 1}/{n_folds} done",
                             flush=True,
                         )
                 except BaseException:
-                    # A failed refit dooms the run (nothing is written from
-                    # partial results), so drop the queued jobs and surface the
-                    # error now rather than after the remaining folds burn
-                    # hours of compute. Already-running folds still finish.
+                    # A failed refit dooms the run (the final outputs need every
+                    # fold), so drop the queued jobs and surface the error now
+                    # rather than after the remaining folds burn hours of
+                    # compute. Already-running folds still finish (but only the
+                    # ones already consumed above reached the checkpoint).
                     ex.shutdown(wait=False, cancel_futures=True)
                     raise
-    else:
+    elif pending:
         _cv_worker_init(family, slug, arrays)
-        results = {(v, f): _cv_fold(v, f, warms[v], patience) for v, f in jobs}
+        for v, f in pending:
+            res = _cv_fold(v, f, warms[v], patience)
+            results[(v, f)] = res
+            append_fold(ckpt, v, f, *res)
 
     pred_rows, fold_rows, trial_ll_rows = [], [], []
     for key in jobs:  # deterministic order — matches the sequential run
@@ -923,23 +1003,31 @@ _FAMILIES = {
         "load_arrays": _load_arrays_intimacy,
         "table_kwargs": _tk_intimacy,
         "fold_impl": _fold_impl_intimacy,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
     "desire": {
         "variants": VARIANTS_DESIRE,
         "load_arrays": _load_arrays_desire,
         "table_kwargs": _tk_desire,
         "fold_impl": _fold_impl_desire,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
     "joint_de": {
         "variants": VARIANTS_JOINT_DE,
         "load_arrays": _load_arrays_joint_de,
         "table_kwargs": _tk_joint_de,
         "fold_impl": _fold_impl_joint_de,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
     "joint_ie": {
         "variants": VARIANTS_JOINT_IE,
         "load_arrays": _load_arrays_joint_ie,
         "table_kwargs": _tk_joint_ie,
         "fold_impl": _fold_impl_joint_ie,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
 }

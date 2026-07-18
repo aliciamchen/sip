@@ -27,6 +27,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
@@ -34,12 +35,29 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent / "inverse"))
 
 from actors import actor_discrete_full_padded_desire
-from observers import observer_desire_full, observer_joint_de_full
+from observers import (
+    VARIANT_PARAM_NAMES,
+    _observer_joint_de_base_memo_reference,
+    _observer_joint_de_discomfort_only_memo_reference,
+    _observer_joint_de_full_memo_reference,
+    _observer_joint_ie_base_memo_reference,
+    _observer_joint_ie_discomfort_only_memo_reference,
+    _observer_joint_ie_full_memo_reference,
+    observer_desire_full,
+    observer_joint_de_base,
+    observer_joint_de_discomfort_only,
+    observer_joint_de_full,
+    observer_joint_ie_base,
+    observer_joint_ie_discomfort_only,
+    observer_joint_ie_full,
+)
 from tables import (
     MAX_ACTIONS,
     N_ACTIONS,
     RELATIONSHIP_LEVEL_VALUES,
     SCENARIO_LABELS,
+    DesireConditions,
+    RelationshipConditions,
     _assert_no_missing_scalars,
     _validate_padded_tables,
 )
@@ -226,6 +244,174 @@ def test_observer_joint_de_posterior_sums_to_one():
                     f"joint posterior doesn't sum to 1: {psum} (s={s}, o={o}, r={r})"
                 )
     print("✓ joint_de observer posteriors (slot=0) sum to 1")
+
+
+def _synthetic_joint_tables(family, seed=7):
+    """Seeded synthetic tables for one joint family, shaped like one elicitation
+    run's slice. Null-slot priors are 1e-8 (not exactly 0) so the memo reference
+    is NaN-free on every slot and the fast path can be compared on the full
+    table, matching the convention of the normalization tests above. Axis sizes
+    come from the enums so the fixture tracks the production table shapes."""
+    rng = np.random.default_rng(seed)
+    n_cond = (
+        len(RelationshipConditions) if family == "joint_de" else len(DesireConditions)
+    )
+    cell = (N_S, N_O, n_cond)
+    risk = rng.uniform(0.0, 1.0, size=(*cell, S)).astype(np.float32)
+    g = rng.uniform(0.0, 1.0, size=(*cell, S)).astype(np.float32)
+    effort = rng.uniform(0.0, 1.0, size=(*cell, N_E, S)).astype(np.float32)
+    prior = np.full((*cell, S), 1e-8, dtype=np.float32)
+    prior[..., :N_O] = 1.0 / N_O
+    tables = dict(
+        risk_table=jnp.array(risk),
+        effort_table=jnp.array(effort),
+        g_padded_table=jnp.array(g),
+        prior_table=jnp.array(prior),
+    )
+    if family == "joint_de":
+        tables["relationship_values"] = _REL
+    else:
+        tables["desire_table"] = jnp.array(
+            rng.uniform(0.1, 1.0, size=(N_S, len(DesireConditions))).astype(np.float32)
+        )
+    return tables
+
+
+# The six (fast, memo-reference) joint observer pairs. Weight names per
+# variant come from the production registry (VARIANT_PARAM_NAMES — the same
+# list the fits use, so a renamed or reordered weight updates the test in
+# lockstep); the table-name tuples are deliberately hand-written as an
+# independent statement of each signature (alpha_observer sits between the
+# weights and the tables).
+_JOINT_OBSERVER_CASES = [
+    (
+        "joint_de/full",
+        observer_joint_de_full,
+        _observer_joint_de_full_memo_reference,
+        "joint_de",
+        VARIANT_PARAM_NAMES["full"],
+        (
+            "risk_table",
+            "effort_table",
+            "g_padded_table",
+            "prior_table",
+            "relationship_values",
+        ),
+    ),
+    (
+        "joint_de/discomfort_only",
+        observer_joint_de_discomfort_only,
+        _observer_joint_de_discomfort_only_memo_reference,
+        "joint_de",
+        VARIANT_PARAM_NAMES["discomfort_only"],
+        ("risk_table", "effort_table", "prior_table", "relationship_values"),
+    ),
+    (
+        "joint_de/base",
+        observer_joint_de_base,
+        _observer_joint_de_base_memo_reference,
+        "joint_de",
+        VARIANT_PARAM_NAMES["base"],
+        ("risk_table", "effort_table", "g_padded_table", "prior_table"),
+    ),
+    (
+        "joint_ie/full",
+        observer_joint_ie_full,
+        _observer_joint_ie_full_memo_reference,
+        "joint_ie",
+        VARIANT_PARAM_NAMES["full"],
+        ("risk_table", "effort_table", "g_padded_table", "prior_table", "desire_table"),
+    ),
+    (
+        "joint_ie/discomfort_only",
+        observer_joint_ie_discomfort_only,
+        _observer_joint_ie_discomfort_only_memo_reference,
+        "joint_ie",
+        VARIANT_PARAM_NAMES["discomfort_only"],
+        ("risk_table", "effort_table", "prior_table"),
+    ),
+    (
+        "joint_ie/base",
+        observer_joint_ie_base,
+        _observer_joint_ie_base_memo_reference,
+        "joint_ie",
+        VARIANT_PARAM_NAMES["base"],
+        ("risk_table", "effort_table", "g_padded_table", "prior_table", "desire_table"),
+    ),
+]
+
+_JOINT_WEIGHT_VALUES = {"w_v": _W_V, "w_d": _W_D, "w_e": _W_E, "gamma": _GAMMA}
+
+
+def test_joint_observers_match_memo_reference():
+    """The fast joint observers (direct Bayesian inversion of the actor policy
+    in plain JAX) must reproduce the original memo observers — the ground truth
+    for the model's semantics — on every slot, cell, and latent bin, across
+    ablations and alpha_observer regimes (>1, >>1, <1). This is the guarantee
+    that the memory optimization changed the computation, not the model."""
+    for family in ("joint_de", "joint_ie"):
+        tables = _synthetic_joint_tables(family)
+        for label, fast_fn, ref_fn, fam, weights, table_names in _JOINT_OBSERVER_CASES:
+            if fam != family:
+                continue
+            for alpha_obs in (1.3, 10.3, 0.7):
+                args = (
+                    [_ALPHA]
+                    + [_JOINT_WEIGHT_VALUES[w] for w in weights]
+                    + [alpha_obs]
+                    + [tables[t] for t in table_names]
+                )
+                fast = np.asarray(fast_fn(*args))
+                ref = np.asarray(ref_fn(*args))
+                assert np.isfinite(fast).all(), f"{label}: fast path has non-finite"
+                assert np.allclose(fast, ref, rtol=1e-4, atol=1e-6), (
+                    f"{label} (alpha_obs={alpha_obs}): fast observer deviates from "
+                    f"memo reference; max abs diff {np.abs(fast - ref).max():.3e}"
+                )
+    print("✓ fast joint observers match the memo reference (all variants)")
+
+
+def test_joint_observer_gradients_match_memo_reference():
+    """Fits differentiate through the observer, so the fast path's gradients
+    must match the memo reference's too. Readout is restricted to slot 0 (the
+    only slot the fit and CV consume). alpha_observer is probed both in the
+    everyday regime (1.3) and at the fitted scale (10.3), where BOTH
+    implementations share a known non-finite-gradient fragility (see
+    `_sharpened_joint_posterior`) — `equal_nan=True` pins the fast path to the
+    reference's exact NaN pattern there, so a change that makes one
+    implementation diverge (going NaN where the other stays finite, or vice
+    versa) fails loudly."""
+    for family, fast_fn, ref_fn in [
+        ("joint_de", observer_joint_de_full, _observer_joint_de_full_memo_reference),
+        ("joint_ie", observer_joint_ie_full, _observer_joint_ie_full_memo_reference),
+    ]:
+        tables = _synthetic_joint_tables(family)
+        table_names = next(
+            t
+            for lbl, f, r, fam, w, t in _JOINT_OBSERVER_CASES
+            if fam == family and f is fast_fn
+        )
+        table_args = [tables[t] for t in table_names]
+
+        def readout(fn, w_v, alpha_obs):
+            out = fn(_ALPHA, w_v, _W_D, _W_E, _GAMMA, alpha_obs, *table_args)
+            return jnp.log(out[0] + 1e-9).sum()  # slot 0 only
+
+        for alpha_obs in (1.3, 10.3):
+            for argnum in (0, 1):  # d/dw_v and d/dalpha_observer
+                g_fast = jax.grad(
+                    lambda wv, ao: readout(fast_fn, wv, ao), argnums=argnum
+                )(jnp.float32(_W_V), jnp.float32(alpha_obs))
+                g_ref = jax.grad(
+                    lambda wv, ao: readout(ref_fn, wv, ao), argnums=argnum
+                )(jnp.float32(_W_V), jnp.float32(alpha_obs))
+                assert np.allclose(
+                    float(g_fast), float(g_ref), rtol=1e-3, equal_nan=True
+                ), (
+                    f"{family} (alpha_obs={alpha_obs}): gradient (argnum {argnum}) "
+                    f"fast={float(g_fast):.6g} vs reference={float(g_ref):.6g}"
+                )
+    print("✓ fast joint observer gradients match the memo reference")
 
 
 def test_null_padding_mass_negligible():
@@ -483,6 +669,8 @@ def run_all_tests():
     test_discomfort_only_invariant_to_desire()
     test_observer_desire_posterior_sums_to_one()
     test_observer_joint_de_posterior_sums_to_one()
+    test_joint_observers_match_memo_reference()
+    test_joint_observer_gradients_match_memo_reference()
     test_mixture_nll_1d_matches_reference()
     test_mixture_nll_2d_matches_reference()
     test_null_padding_mass_negligible()

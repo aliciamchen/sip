@@ -205,7 +205,7 @@
     "desire_high": "They both want to talk about what has happened with someone who knows the people involved.",
     "low_risk_share_effort_low": "The recent developments are straightforward, so a light hint is enough for the other to know at once who and what is meant.",
     "low_risk_share_effort_high": "The recent developments are a set of long, tangled stories, so conveying them takes a lot of roundabout description before the other can piece together who and what is meant.",
-    "no_share": "They keep the conversation general and don't talk about other people.",
+    "no_share": "They keep the conversation general and don't talk much about other people.",
     "low_risk_share": "They talk around the latest developments — hinting at what has happened, and letting their own reactions show only implicitly — but in enough detail that each can work out who and what the other means.",
     "high_risk_share": "They speak openly: naming names, spelling out exactly what has been going on, and saying what they really think about the people involved."
   },
@@ -234,7 +234,7 @@
     "desire_low": "Neither of them is particularly hungry; they could also wait until they reach their destination to eat.",
     "desire_high": "They are both starving and really want to eat.",
     "low_risk_share_effort_low": "Nadia's phone is set to stay unlocked for a long time, so Ravi can work in the maps app without it locking on him.",
-    "low_risk_share_effort_high": "Nadia's phone auto-locks after a few seconds, so Ravi would have to keep handing the phone back for Nadia to unlock at the wheel, over and over.",
+    "low_risk_share_effort_high": "Nadia's phone auto-locks after a few seconds, so Ravi would have to keep handing the phone back for Nadia to unlock, over and over.",
     "no_share": "They keep driving straight to the event without stopping to eat.",
     "low_risk_share": "Nadia unlocks her phone, opens the maps app, and hands the phone to Ravi to find a restaurant and add it as a stop. Ravi works only within the maps app, and whenever the phone locks he hands it back to Nadia to unlock.",
     "high_risk_share": "Nadia tells Ravi her passcode. Ravi unlocks her phone with it and uses the phone freely."

@@ -1,0 +1,123 @@
+subject_id,gender,age,understood,comments,attention_passed,memory_correct_count,comprehension_attempt
+47b13ca0-fd26-5779-b056-3f754614f114,male,20,no,,True,2,2
+83fc67c2-61ce-5b7e-a1e5-d5bde151a4d2,male,54,yes,"I'm not sure whether I got the second question of the first attention check correct. It was difficult to remember which name was associated with which snack. But I was paying absolute attention throughout, so I encourage you to use my answers in your study with confidence.",True,3,2
+e602a8c1-3209-53e4-94db-3d49da6edfb9,female,48,yes,,True,3,1
+ae86eb57-adc5-5d87-a819-bc323cb02d33,female,47,yes,,True,3,1
+a4aa2795-f038-5939-bf77-2f080204c843,male,80,yes,,True,3,1
+510aaf23-2514-574d-9a1c-12a1f2652327,male,58,yes,Thank you so much for the study!,True,2,1
+39391eba-f0f2-5047-917b-9ad51bc711e9,male,45,yes,no comment ,True,3,1
+d5af9c8a-da49-5f20-9313-21902079417e,female,24,yes,,True,3,1
+22e9180f-1bf1-5ee7-b86d-55a7b7126068,male,29,yes,,True,3,1
+92631ce0-d224-5ec5-82fb-37fd2b575d50,male,46,yes,,True,1,1
+90f84f93-062f-5af6-b7f9-59e28080036c,male,25,yes,,True,2,1
+da1a4bb5-69cd-53ad-9bd3-8ef9a7803109,female,26,yes,,True,1,1
+05628373-4642-5516-8453-5f2fe5fa1973,male,42,yes,thanks. cool study.,True,0,1
+66f1dd15-0577-596a-ba50-90a41da0905b,male,45,yes,Nothing to suggest.,True,3,3
+bb95222d-1c3e-57b8-b3ec-b7ab59d64ed1,female,63,yes,,True,2,1
+d487f443-ab63-5f88-a91e-829a9e4b069d,male,69,yes,,True,2,1
+65480ec3-ffdc-54a2-8e62-3f32976409ee,male,56,yes,,True,2,1
+c839fa1e-3fce-5774-956e-3cf379c43d6a,female,65,yes,,True,3,3
+6cc72538-9913-5c2e-b4de-9daf6cd88201,male,46,yes,N/A,True,3,1
+36c59f8c-a130-5a91-8b3e-879a4c8b9398,male,30,yes,,True,2,1
+0f22e5d1-0e21-589a-bf9f-42863d20c76d,female,31,yes,,True,2,1
+695d6fb2-becf-58df-abe0-ee2579394755,male,52,yes,none.,True,3,2
+e70104a1-8579-5d1a-ae62-f97e05235769,male,35,yes,It was interesting! I found myself unable to make the predictions well for afterwards but the formality part vs. intimacy was also hard but a little easier to predict!  I hope my responses helped!  Good luck with your research!,True,2,1
+b86d7d5b-0f05-57f8-8e95-efcba6073c63,female,27,yes,Sharing one cob of corn between two people biting off it is wild,True,3,2
+b7543ca5-4bfd-5505-b729-ac30448e371e,female,61,yes,,True,2,1
+fa26bb15-1bfe-5cba-bfe8-998eb46fd54f,male,34,yes,,True,1,1
+663f8323-415f-5bbe-acb4-63db93f0294d,female,57,yes,"Thank you very much, and I hope you have a wonderful weekend!",True,3,1
+ada90494-906d-5895-aac2-42c2ac8ab1fd,female,33,yes,No comments.,True,2,2
+c7ba14dd-3504-5a92-bc3a-1c43c52540ad,female,53,yes,,True,3,1
+4b5dc9c7-88bf-55cb-b8dc-23338bdf00ad,male,47,yes,,True,3,1
+0cd843b5-741f-566c-adb2-7e71af43df8b,male,39,yes,nice study,True,3,1
+9feffae7-6885-5635-a4c8-0a4c8f6a7e32,female,19,yes,,True,3,2
+748f72f9-4e8c-51f5-92ca-e48adf02beb3,female,32,yes,,True,3,1
+6ce34f3d-f2ef-570e-b963-c99099350d53,male,43,yes,no,True,3,1
+88dfa8f2-e98f-54d0-9997-c3d9b7d52ce9,female,53,yes,"I have nothing to add, but am curious about the nature and goals of this study! I wish you the best with your research. ",True,2,1
+965c5ba0-fab1-5e09-a08d-7e59b493abca,male,30,yes,None,True,1,3
+e4c275d6-c807-5e85-8e29-970297d794d8,female,21,yes,,True,2,3
+abff86fb-a1f9-5f47-831f-730420534bb2,male,30,yes,N/A,True,2,1
+21bda5ab-88f6-5bad-9c23-a77bc7168859,female,24,yes,,True,3,1
+eb634f36-c40a-58d6-80ef-6ddfc3fcef3e,male,48,yes,,True,2,1
+e6b560a6-d776-5a83-ad87-88b2249fbf8a,female,25,yes,Not at the moment,True,2,1
+b91a0eb0-686e-57c5-b9f7-0a814cd3e38c,female,26,yes,N/A,True,3,1
+cab523c2-13b9-519a-97f4-3557a2a64538,male,54,yes,,True,2,1
+fbb5f9e2-a26a-5ab1-806f-7d345fc1d8bc,female,77,yes,No issues.,True,3,1
+b20c16d4-bb27-5687-aebe-f050312b8496,male,65,yes,nothing at this time,True,3,1
+e7534ec6-25f2-593a-9d3b-a9eff484a43f,male,50,yes,no,True,3,1
+30ccedad-ed18-5c81-87d0-eacd9c236422,female,25,yes,"The study was interesting, I really enjoyed the study.",True,3,1
+1ce2d4b0-7436-5875-8bf0-7a0a97616348,female,29,yes,N/A,True,2,1
+096dbe1d-4b64-5f6e-8cb2-22cb47c9e7c3,female,65,yes,No,True,3,1
+11c18b13-7dc6-50a6-9bc4-d7ec36dfa9fa,female,24,yes,,True,1,1
+7a0b20fc-6ddd-5d42-90ef-c37bbd9a9198,female,38,yes,"Thank you for this experience, and have a great weekend. ",True,1,1
+b6dc34d3-f9a7-5600-a67b-7e6a71aa8289,female,64,yes,,True,3,1
+b38b072c-be55-59bf-b10e-07399d9eb7b7,female,61,yes,no,True,2,1
+d960b63e-aac1-5576-afe4-367f00dec80f,male,28,yes,NO thank you.,True,3,1
+0de718f8-a8a2-5fe1-bcd5-ae1584fc908b,abstain,27,yes,I have no particular suggestions. It was a study I did enjoy taking though! :),True,2,1
+11fb7f8f-0a27-5dcc-a2e1-e69fc7f43b6b,male,35,yes,,True,3,1
+e0c2c140-2799-5b66-80f0-332a8878ad85,male,41,yes,No additional comments or suggestions.,True,2,1
+710b1b6d-2f90-5edc-a716-4a47a1caa4d7,female,41,yes,The study has been interesting.,True,1,1
+6b7699c2-cbd7-53ce-8672-3f3e2deac150,female,53,yes,,True,2,1
+ba097d28-d587-5e72-9696-75dda0fb6880,nonconforming,21,yes,,True,3,1
+1ed0a951-10db-59c9-abfa-aa2aeef8d0b5,male,20,yes,N/A,True,3,1
+1d6d6ee4-2383-58be-b24f-8c73c9b9cddb,male,36,yes,,True,3,1
+da1fe917-dbc3-56e5-a5c0-da2d3a178ae4,male,35,yes,N/A,True,1,1
+dc0326af-35f3-57ca-a01f-8281f0ddbd20,male,25,yes,sorry i didnt really think the names of these dumb scenarios mattered enough to remember. lame study,True,3,1
+db01879d-504c-5695-befa-9f1e9061365d,male,29,yes,,True,2,1
+776d0218-8992-5d4c-9ae7-c6fabaa50815,female,46,yes,"This was neat, good luck.",True,3,1
+ee843a8c-2501-5a66-be62-c4947f6c5be8,female,51,yes,none,True,3,1
+655e3889-d8f2-5c53-ae8c-f8e18fcdae4c,female,38,yes,,True,2,1
+93b93a67-7349-536e-88ff-b19839f71347,male,37,yes,Na,True,1,1
+cac3e6ee-8c36-5eae-8ff9-89b37655f041,male,25,yes,,True,1,2
+13972d9c-4f39-5b23-8c6c-c0620c8e767d,male,55,yes,"if they eat with the same utensil and or out of the same cup or bowl, I assume the are very familiar with each other.",True,2,1
+064e9eb5-aad7-5b51-9483-5fec40deb32e,female,53,yes,,True,2,1
+df4a588b-d27c-5d24-98e2-f49dede6a912,male,37,yes,"Fun study, thank you",True,3,2
+4607554f-4ddd-5d2c-b48d-5ac925ea13ff,female,48,yes,Good luck on your research,True,2,1
+1c382766-5980-5105-86f9-796efd439ff8,male,56,yes,Nothing to add - thank you.,True,2,1
+b30c6c7b-c2d2-5249-8f7d-5827bfcdbde9,male,34,yes,,True,2,2
+b3c10f99-4cdf-5de0-9e5c-3f846d6f06af,female,36,yes,no comments,True,3,1
+99efbd01-ddb6-5ece-b2cb-f3630e00425c,female,30,yes,NO,True,3,1
+1ee350fc-045e-526c-b9b8-5523be9caf26,female,46,yes,,True,3,1
+328b9517-1c8a-5c83-9558-babd42f844c3,male,24,yes,Enjoyable study ,True,3,1
+db5ea35f-6b05-5bac-8d0c-6718c808a8c9,female,33,yes,,True,2,2
+72d28634-2f29-58cb-b523-e9fc8cb1d0be,male,40,yes,,True,2,3
+b98e5b60-79d0-53c8-a2d1-e8dc4b54b1f6,male,21,yes,,True,2,3
+c3e2c033-d553-549d-874b-9c136cbd7a62,male,33,yes,,True,3,1
+fad7b923-deea-5a24-ab0d-a95426b262dc,male,28,yes,,True,2,2
+3b8a50ff-b959-5202-8717-f27405258966,male,35,yes,The session was interactive,True,2,1
+3ee25d1f-8d55-50af-bf9b-e957fd4c27e0,female,20,yes,,True,3,3
+71661134-f842-5325-ab08-536bf930c3de,female,48,yes,"Thank you, have a great day",True,2,1
+f1220fd3-5788-534a-aee8-39bada57f74c,female,34,yes,,True,2,1
+e47e7684-3957-5cc5-b6bc-21abf85694da,male,35,yes,no,True,3,1
+e069bb22-9eb2-5871-88ca-38e2f4893878,female,44,yes,,True,2,1
+603c3a7c-f8bc-570f-a9ba-97a1674da4c5,female,35,yes,,True,2,1
+2d9eab8b-7623-5dea-b033-73665dc7775f,male,38,yes,NONE,True,1,2
+e64afda3-2d27-5ab5-805f-71d48ff5d579,male,25,yes,No additional comment,True,2,1
+74fa2fc4-fe8f-583b-b49b-77beb820d132,female,42,yes,,True,3,1
+95363d86-4f53-5263-867b-5d416400b52b,male,24,yes,,True,3,1
+174e11b0-9870-5fc2-8781-9a8cc8a760c8,female,24,yes,,True,2,2
+1d43fa8f-4d65-5c78-b7c8-8d3c5b01d0a7,male,71,yes,no comments,True,2,1
+680de1ca-dc24-539d-a15f-87ce5b3e1755,male,36,yes,none,True,2,1
+526c7de4-7e1a-5f4b-9773-c4032e3dc72c,nonconforming,22,yes,,True,3,1
+5f08247e-bbb1-5ff0-a853-66ed9672b6dc,female,28,yes,,True,2,1
+7d33bfd6-f117-5cf4-b038-3e5057f43c15,female,29,yes,thank youu,True,3,2
+8b42bd93-c6c8-5382-8b58-40457f4c3ce1,male,31,yes,no,True,3,1
+ac9b941a-268f-5f29-b9bf-143eebcc31b8,male,57,yes,no,True,2,2
+8f23f78f-a523-51e8-952e-c8b4fd2fb685,female,25,yes,,True,2,1
+1522a76c-d392-530f-ad4e-d6ab0d945770,female,28,yes,"With the questions, i would skip over the first one because it would be shown again on the second page. this was not me skipping the page, it just helps me to look at the statement and the question at the same time. Thank you for this study and best of luck on your research!",True,3,1
+3f48b9bf-a1f5-56f0-88fd-a19e5df0773b,male,45,yes,Thank you!,True,2,2
+32c7ba12-b31c-5873-9257-e97f7c782aac,female,65,yes,,True,2,1
+5881e174-a4b2-5208-a6a7-97435a0c8b12,female,39,yes,,True,2,2
+21e9e8b3-fb7e-5736-8aa0-c0a4b5cafc41,male,27,yes,,True,2,1
+38f2f9c1-82b6-5cd4-80d5-3dda1a385492,female,20,yes,,True,3,1
+fff00a56-ccb4-59d1-a134-68535149c03b,female,49,yes,no comments,True,3,1
+51a340e8-c8ec-5f30-97ec-67401d818764,female,46,yes,,True,1,1
+a8070e0d-918c-5a44-b472-645ecd31d02e,female,49,yes,,True,3,1
+1d2864d1-32a9-567c-809e-50da7c54b4be,male,34,yes,,True,3,2
+8c462f31-9a45-50ca-97c0-dab41781c090,female,57,yes,,True,3,1
+b0ffbd66-b40f-5c4f-bc81-4fb55f24a8d0,female,32,yes,,True,2,1
+da637b40-c4aa-577f-8867-8f99ddab28f7,male,68,yes,None,True,3,1
+2322aff7-0ba8-5ec8-8760-a1dc82619263,female,49,yes,,True,3,1
+05af6c67-71d8-5740-a85c-dac2333beb1f,female,74,yes,no comments or suggestions to offer,True,1,3
+0c87184b-e54d-503b-bbfa-3f645b0ee625,male,42,yes,,True,3,2
+6e31b59e-51fd-5bc3-aa33-19e724587b4b,male,28,yes,,True,0,2
