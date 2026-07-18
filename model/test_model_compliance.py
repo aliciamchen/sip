@@ -899,6 +899,89 @@ def test_load_lm_priors_base_broadcasts_relationship():
     print("✓ load_lm_priors base broadcasts across the relationship axis")
 
 
+def test_parse_run_config_args_defaults():
+    """No flags → the canonical RunConfig (uniform priors, no alts suffix, no
+    priors-file override), which routes outputs to outputs/<slug>/."""
+    from _helpers import parse_run_config_args
+
+    from run_config import RunConfig
+
+    cfg = parse_run_config_args([])
+    assert cfg == RunConfig(), f"defaults not canonical: {cfg}"
+    assert cfg.is_canonical
+    print("✓ parse_run_config_args defaults to the canonical config")
+
+
+def test_parse_run_config_args_informative():
+    """--priors informative:desire + --alts-suffix + --priors-file parse into
+    the matching RunConfig fields (and it is not canonical)."""
+    from _helpers import parse_run_config_args
+
+    cfg = parse_run_config_args(
+        [
+            "--priors",
+            "informative:desire",
+            "--alts-suffix",
+            "_refusal_hint",
+            "--priors-file",
+            "lm_priors_human.jsonl",
+        ]
+    )
+    assert cfg.priors_mode == "informative"
+    assert cfg.priors_latents == ("desire",)
+    assert cfg.alts_suffix == "_refusal_hint"
+    assert cfg.priors_file == "lm_priors_human.jsonl"
+    assert not cfg.is_canonical
+    print("✓ parse_run_config_args parses informative priors + suffix + file")
+
+
+def test_build_priors_kwarg_uniform_is_none():
+    """Uniform mode (the canonical default) yields no priors kwarg — the fit
+    stays on the byte-identical uniform path."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    assert build_priors_kwarg("food_inv_joint_de", RunConfig()) is None
+    print("✓ build_priors_kwarg returns None in uniform mode")
+
+
+def test_build_priors_kwarg_empty_active_raises():
+    """informative:<latent> naming a latent the study does NOT infer leaves
+    `active` empty; build_priors_kwarg must raise (not silently run canonical)."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    # food_inv_joint_de infers (desire, effort); intimacy is not among them.
+    cfg = RunConfig.parse("informative:intimacy", "", None)
+    try:
+        build_priors_kwarg("food_inv_joint_de", cfg)
+    except ValueError as e:
+        assert "desire" in str(e) and "effort" in str(e), f"latents not named: {e}"
+        print("✓ build_priors_kwarg raises when the named latent isn't inferred")
+    else:
+        raise AssertionError("empty active latents were not rejected")
+
+
+def test_build_priors_kwarg_missing_file_raises():
+    """informative priors on a study whose priors file hasn't been elicited must
+    fail fast with the `make lm-priors-<slug>` hint (not fall back to uniform).
+    nonfood_inv_joint_de has no lm_priors.jsonl."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    cfg = RunConfig.parse("informative", "", None)
+    try:
+        build_priors_kwarg("nonfood_inv_joint_de", cfg)
+    except FileNotFoundError as e:
+        assert "make lm-priors-nonfood_inv_joint_de" in str(e), f"missing hint: {e}"
+        print("✓ build_priors_kwarg raises FileNotFoundError with the make hint")
+    else:
+        raise AssertionError("missing priors file was not rejected")
+
+
 def _load_prompts_module():
     """Load model/lm/prompts.py in isolation (no package import machinery), so
     the prompt tests exercise the source file directly."""
@@ -1053,6 +1136,11 @@ def run_all_tests():
     test_load_lm_priors_missing_cell_raises()
     test_load_lm_priors_out_of_range_raises()
     test_load_lm_priors_base_broadcasts_relationship()
+    test_parse_run_config_args_defaults()
+    test_parse_run_config_args_informative()
+    test_build_priors_kwarg_uniform_is_none()
+    test_build_priors_kwarg_empty_active_raises()
+    test_build_priors_kwarg_missing_file_raises()
     test_alternatives_prompt_arms()
     test_prior_prompts_compose_condition_texts()
     test_elicit_priors_cell_grids()

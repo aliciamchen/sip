@@ -66,3 +66,57 @@ def reweight_joint(joint, w_latent=None, p_high=None):
         w_eff = jnp.stack([1.0 - p_high, p_high], axis=-1)
         p = p * w_eff[..., None, :]
     return p / p.sum(axis=(-2, -1), keepdims=True)
+
+
+def build_priors_kwarg(slug, config, base=False):
+    """Assemble the fit helpers' `priors=` dict for one study/variant from the
+    elicited prior tables and the RunConfig (spec:
+    notes/2026-07-18-informative-priors-refusal-alts-design.md).
+
+    Returns None in uniform mode (the canonical byte-identical path). In
+    informative mode it loads the study's per-run, per-cell prior scalars and
+    keeps only the latents the study actually infers (mapping the grid latents
+    desire/intimacy → `m_latent` and the 2-state effort latent → `p_effort`),
+    producing the {"m_latent": ..., "p_effort": ...} dict the fit helpers
+    reweight the observer posterior with. K-alignment against the alternatives
+    tables is asserted by the caller (fit wrapper / CV dispatcher), which knows
+    the feature tables' run count.
+
+    Guards two silent-misconfiguration traps:
+      - informative priors requested but the elicited file is missing →
+        FileNotFoundError with the `make lm-priors-<slug>` hint (fail fast
+        instead of silently falling back to uniform);
+      - `--priors informative:<latent>` naming only latent(s) this study does
+        NOT infer (so `active` is empty) → ValueError naming the study's
+        inferred latents, rather than returning None and silently running the
+        canonical uniform fit while the user believes it is informative.
+    """
+    active = config.active_latents(slug)
+    if not active:
+        if config.priors_mode == "informative":
+            from run_config import INFERRED_LATENTS
+
+            raise ValueError(
+                f"--priors informative:{','.join(config.priors_latents)} names no "
+                f"latent that {slug} infers (it infers "
+                f"{', '.join(INFERRED_LATENTS[slug])}); the requested prior would "
+                "silently run the canonical uniform fit. Name one of the study's "
+                "inferred latents or drop the :latent qualifier."
+            )
+        return None
+    from tables import load_lm_priors
+
+    tables = load_lm_priors(slug, base=base, filename=config.priors_filename(base))
+    if tables is None:
+        raise FileNotFoundError(
+            f"informative priors requested but "
+            f"{config.priors_filename(base)} not found for {slug} — run "
+            f"`make lm-priors-{'base-' if base else ''}{slug}` first."
+        )
+    out = {"m_latent": None, "p_effort": None}
+    for lat in active:
+        if lat in ("desire", "intimacy"):
+            out["m_latent"] = tables[f"{lat}_m"]
+        elif lat == "effort":
+            out["p_effort"] = tables["effort_p"]
+    return out

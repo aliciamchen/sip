@@ -40,6 +40,36 @@ from tables import (
 from utils import get_project_root
 
 
+def parse_run_config_args(argv=None, description=None):
+    """Shared CLI for the fit wrappers and CV scripts: the run configuration
+    (spec: notes/2026-07-18-informative-priors-refusal-alts-design.md). The
+    default (no flags) is the canonical preregistered config — uniform priors,
+    the unsuffixed lm_runs.jsonl vintage, outputs to outputs/<slug>/ — so a plain
+    invocation stays byte-identical to the pre-config pipeline."""
+    import argparse
+
+    from run_config import RunConfig
+
+    p = argparse.ArgumentParser(description=description)
+    p.add_argument(
+        "--priors",
+        default="uniform",
+        help="uniform | informative | informative:<latent,...> (e.g. informative:desire)",
+    )
+    p.add_argument(
+        "--alts-suffix",
+        default="",
+        help='alternatives vintage suffix: "" | _refusal_hint | _refusal_hint_hyp',
+    )
+    p.add_argument(
+        "--priors-file",
+        default=None,
+        help="override the priors JSONL name (e.g. lm_priors_human.jsonl)",
+    )
+    a = p.parse_args(argv)
+    return RunConfig.parse(a.priors, a.alts_suffix, a.priors_file)
+
+
 def _fit_with_adam(
     loss_fn,
     init_params,
