@@ -63,3 +63,4 @@ writing/
 # PNG previews of the manuscript figures (the committed artifacts are the PDFs;
 # plot_style.savefig writes a PNG beside each PDF for review)
 figures/outputs/*.png
+.agents/skills
