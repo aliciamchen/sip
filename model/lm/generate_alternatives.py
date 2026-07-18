@@ -48,6 +48,7 @@ sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _alternatives_dispatcher
 from _alternatives_dispatcher import (
     CHECKPOINT_EVERY,
     MAX_CELL_WORKERS,
@@ -61,7 +62,7 @@ from client import (
     write_jsonl_atomic,
     write_run_manifest,
 )
-from prompts import alternatives_user_prompt
+from prompts import alternatives_system_prompt, alternatives_user_prompt
 
 
 # The K-run simulated-observer pipeline: for each (scenario × condition) cell we
@@ -156,6 +157,63 @@ _BASE_OVERRIDE = {
     },
 }
 
+# Generation prompt arms (spec decision 4). Each non-default arm writes to its
+# own suffixed vintage file so a re-elicitation never touches the current tables:
+#   current           — the canonical prompt; lm_alternatives{_base}.jsonl
+#   refusal_hint       — refusal clause spliced into the system prompt;
+#                        lm_alternatives{_base}_refusal_hint.jsonl
+#   refusal_hint_hyp   — refusal clause + per-study epistemic user-prompt blocks
+#                        (hypothesis-aware); lm_alternatives{_base}_refusal_hint_hyp.jsonl
+ARMS = ("current", "refusal_hint", "refusal_hint_hyp")
+
+
+def _suffix_for_arm(arm):
+    """Vintage suffix spliced before `.jsonl` for a non-default arm ("" for the
+    canonical `current` arm)."""
+    return "" if arm == "current" else "_" + arm
+
+
+def _output_path_for(study, base, arm):
+    """Alternatives output path for one (study, base, arm), with the arm's
+    vintage suffix spliced into the base filename. Importable and API-free so the
+    compliance test can pin the naming (e.g. (food_inv_joint_de, False,
+    refusal_hint) -> lm_alternatives_refusal_hint.jsonl)."""
+    cfg = dict(_STUDY_CONFIG[study])
+    if base:
+        cfg.update(_BASE_OVERRIDE[study])
+    stem, dot, ext = cfg["output"].rpartition(".")
+    output_dir = get_project_root() / "model" / "outputs" / "lm" / study
+    return output_dir / f"{stem}{_suffix_for_arm(arm)}{dot}{ext}"
+
+
+def _hyp_kwargs_for_study(study, row):
+    """Per-study epistemic kwargs for the `refusal_hint_hyp` arm (spec decision
+    4): make the LM aware of exactly the latent(s) the study infers, so the
+    generated set spans their range. Keyed on the base study slug only, so a
+    study's `--base` variant gets the same kwargs as its standard run.
+
+      - effort-inferred (1b/2b/3a/3b): the two effort paragraphs as hypotheses
+      - desire-inferred (1a/1b/3a):    the desire object flagged unknown-magnitude
+      - intimacy-inferred (2a/2b/3b):  the relationship flagged unknown
+    """
+    kwargs = {}
+    if study in (
+        "food_inv_joint_de",
+        "nonfood_inv_joint_de",
+        "food_inv_joint_ie",
+        "nonfood_inv_joint_ie",
+    ):
+        kwargs["effort_hypotheses"] = (
+            row["low_risk_share_effort_low"],
+            row["low_risk_share_effort_high"],
+        )
+    if study in ("food_inv_desire", "food_inv_joint_de", "nonfood_inv_joint_de"):
+        kwargs["unknown_desire_object"] = row["desire_object"]
+    if study in ("food_inv_intimacy", "food_inv_joint_ie", "nonfood_inv_joint_ie"):
+        kwargs["unknown_intimacy"] = True
+    return kwargs
+
+
 ACTION_COLS = ["no_share", "low_risk_share", "high_risk_share"]
 DESIRE_LEVELS = ["low", "high"]
 EFFORT_LEVELS = ["low", "high"]
@@ -222,11 +280,13 @@ def _run_seed(cell, cell_cols, run_id):
     return int.from_bytes(hashlib.sha256(key).digest()[:8], "little") & 0x7FFFFFFF
 
 
-def _build_cells(scenarios_df, cfg):
+def _build_cells(scenarios_df, cfg, study, arm):
     """Enumerate cells for one study, iterating scenario × observed_action over
     only the observer-visible conditioning axes (per cfg['show']). Returns dicts
     with scenario_label, observed_action, the study's cell_cols, and user_prompt
-    (built with only the visible condition paragraphs)."""
+    (built with only the visible condition paragraphs). For the `refusal_hint_hyp`
+    arm the per-study epistemic blocks (constant within a study) are threaded into
+    every cell's user prompt via `_hyp_kwargs_for_study`."""
     show = cfg["show"]
     desire_levels = DESIRE_LEVELS if "desire" in show else [None]
     effort_levels = EFFORT_LEVELS if "effort" in show else [None]
@@ -236,6 +296,9 @@ def _build_cells(scenarios_df, cfg):
     for _, row in scenarios_df.iterrows():
         scenario = row["scenario_label"]
         vignette = row["vignette"]
+        hyp_kwargs = (
+            _hyp_kwargs_for_study(study, row) if arm == "refusal_hint_hyp" else {}
+        )
         for observed_col in ACTION_COLS:
             observed_action_text = row[observed_col]
             for desire in desire_levels:
@@ -258,18 +321,23 @@ def _build_cells(scenarios_df, cfg):
                             prompt_kwargs["intimacy_level"] = intimacy
                             cell["intimacy_condition"] = intimacy
                         cell["user_prompt"] = alternatives_user_prompt(
-                            vignette, observed_action_text, **prompt_kwargs
+                            vignette,
+                            observed_action_text,
+                            **prompt_kwargs,
+                            **hyp_kwargs,
                         )
                         cells.append(cell)
     return cells
 
 
-def main(study, base=False):
+def main(study, base=False, arm="current"):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Currently supported: "
             f"{sorted(_STUDY_CONFIG.keys())}"
         )
+    if arm not in ARMS:
+        raise SystemExit(f"Unknown arm: {arm!r}. Supported: {list(ARMS)}")
     cfg = dict(_STUDY_CONFIG[study])
     if base:
         if study not in _BASE_OVERRIDE:
@@ -280,6 +348,15 @@ def main(study, base=False):
         cfg.update(_BASE_OVERRIDE[study])
     api_key = load_api_key()
 
+    # The generation system prompt is fixed for the whole invocation (one arm per
+    # run), so select the arm's variant once and install it as the dispatcher's
+    # module-level ALTERNATIVES_SYSTEM_PROMPT — elicit_alternatives reads that
+    # global when it builds each cell's messages. For `current` this is the
+    # byte-identical canonical prompt (a no-op swap).
+    _alternatives_dispatcher.ALTERNATIVES_SYSTEM_PROMPT = alternatives_system_prompt(
+        refusal_hint=(arm != "current")
+    )
+
     print(f"Loading scenarios (study={study})...", flush=True)
     scenarios_df = load_scenarios(study)
     print(f"Loaded {len(scenarios_df)} scenarios", flush=True)
@@ -287,9 +364,8 @@ def main(study, base=False):
     print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
     client = Together(api_key=api_key)
 
-    output_dir = get_project_root() / "model" / "outputs" / "lm" / study
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / cfg["output"]
+    output_path = _output_path_for(study, base, arm)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     cell_cols = cfg["cell_cols"]
 
@@ -319,7 +395,7 @@ def main(study, base=False):
         )
 
     # Build work list as (cell, run) units, dropping done ones.
-    all_cells = _build_cells(scenarios_df, cfg)
+    all_cells = _build_cells(scenarios_df, cfg, study, arm)
     pending = [
         (c, run)
         for c in all_cells
@@ -426,6 +502,7 @@ def main(study, base=False):
             stage="generate_alternatives",
             study=study,
             extra={
+                "arm": arm,
                 "k_runs": N_RUNS_ALT,
                 "gen_temperature": ALT_GEN_TEMPERATURE,
                 "n_cells": len(all_cells),
@@ -473,5 +550,15 @@ if __name__ == "__main__":
         "paragraph (given-relationship studies only), writing a separate "
         "lm_alternatives_base.jsonl.",
     )
+    parser.add_argument(
+        "--arm",
+        choices=ARMS,
+        default="current",
+        help="Generation prompt arm. 'current' (default): the canonical prompt. "
+        "'refusal_hint': splice the refusal clause into the system prompt. "
+        "'refusal_hint_hyp': refusal clause + per-study epistemic user-prompt "
+        "blocks. Non-default arms write to suffixed vintage files "
+        "(lm_alternatives{_base}_<arm>.jsonl), leaving the current tables intact.",
+    )
     args = parser.parse_args()
-    main(args.study, base=args.base)
+    main(args.study, base=args.base, arm=args.arm)

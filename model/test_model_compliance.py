@@ -828,7 +828,9 @@ def test_load_lm_priors_base_broadcasts_relationship():
     print("✓ load_lm_priors base broadcasts across the relationship axis")
 
 
-def test_prior_prompts_compose_condition_texts():
+def _load_prompts_module():
+    """Load model/lm/prompts.py in isolation (no package import machinery), so
+    the prompt tests exercise the source file directly."""
     import importlib.util as _ilu
 
     spec = _ilu.spec_from_file_location(
@@ -836,6 +838,69 @@ def test_prior_prompts_compose_condition_texts():
     )
     prompts = _ilu.module_from_spec(spec)
     spec.loader.exec_module(prompts)
+    return prompts
+
+
+def _load_generate_alternatives_module():
+    """Load model/lm/generate_alternatives.py in isolation, for its importable,
+    API-free helpers (e.g. `_output_path_for`)."""
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "generate_alternatives",
+        Path(__file__).resolve().parent / "lm" / "generate_alternatives.py",
+    )
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_alternatives_prompt_arms():
+    prompts = _load_prompts_module()
+
+    base_sp = prompts.alternatives_system_prompt()
+    assert base_sp == prompts.ALTERNATIVES_SYSTEM_PROMPT
+    assert "nothing is shared at all" not in base_sp
+    hint_sp = prompts.alternatives_system_prompt(refusal_hint=True)
+    assert (
+        "including options where nothing is shared at all (declining, "
+        "keeping it to oneself, or forgoing it)" in hint_sp
+    )
+    # the clause replaces the differ-in sentence's period, once
+    assert hint_sp.count("nothing is shared at all") == 1
+
+    up = prompts.alternatives_user_prompt(
+        "VIG.",
+        "They shared.",
+        intimacy_level="max_formal",
+        effort_hypotheses=("LOW PARA.", "HIGH PARA."),
+        unknown_desire_object="the hot dog",
+    )
+    assert "One of the following is true of the situation" in up
+    assert up.index("LOW PARA.") < up.index("HIGH PARA.")
+    assert "do not know how much the two people want the hot dog" in up
+    # epistemic block sits after the condition paragraphs, before the action
+    assert up.index("maximally formal") < up.index("One of the following")
+    assert up.index("One of the following") < up.index("They shared.")
+
+    up2 = prompts.alternatives_user_prompt("VIG.", "ACT.", unknown_intimacy=True)
+    assert "do not know how close or formal" in up2
+
+    # Output-path suffixing (the vintage side files each arm writes).
+    ga = _load_generate_alternatives_module()
+    assert (
+        ga._output_path_for("food_inv_joint_de", False, "refusal_hint").name
+        == "lm_alternatives_refusal_hint.jsonl"
+    )
+    assert (
+        ga._output_path_for("food_inv_desire", True, "refusal_hint_hyp").name
+        == "lm_alternatives_base_refusal_hint_hyp.jsonl"
+    )
+    print("✓ alternatives prompt arms + suffixed output paths")
+
+
+def test_prior_prompts_compose_condition_texts():
+    prompts = _load_prompts_module()
 
     up = prompts.prior_desire_user_prompt(
         "VIGNETTE.", "the hot dog", condition_texts=("REL.", "EFFORT.")
@@ -916,6 +981,7 @@ def run_all_tests():
     test_load_lm_priors_missing_cell_raises()
     test_load_lm_priors_out_of_range_raises()
     test_load_lm_priors_base_broadcasts_relationship()
+    test_alternatives_prompt_arms()
     test_prior_prompts_compose_condition_texts()
     test_elicit_priors_cell_grids()
     print("=" * 60)
