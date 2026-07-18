@@ -131,6 +131,9 @@ help:
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
+	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = preregistered canonical):"
+	@echo "    PRIORS=informative[:<latents>]  ALTS_SUFFIX=_refusal_hint  PRIORS_FILE=<name>"
+	@echo "    (any set var routes outputs to model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
 	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
 	@echo "  smoke-alternatives-<slug>   (echo-only: prints the K=1 three-arm smoke commands to run by hand)"
@@ -330,19 +333,30 @@ $(addprefix smoke-alternatives-,$(EXPERIMENTS_INVERSE)): smoke-alternatives-%:
 # recipe writes the whole set atomically, and `clean` removes it as a set.
 # =============================================================================
 
+# Run-config passthrough for fit-/cv- targets (canonical when unset), e.g.:
+#   make fit-food_inv_joint_de PRIORS=informative
+#   make cv-food_inv_joint_de PRIORS=informative ALTS_SUFFIX=_refusal_hint
+# With every var empty CONFIG_FLAGS is empty, so the recipes stay the canonical
+# preregistered invocation (uniform priors, lm_runs.jsonl, outputs/<slug>/);
+# setting any var routes the fit/CV to outputs/<slug>/alt/<tag>/ instead.
+PRIORS ?=
+ALTS_SUFFIX ?=
+PRIORS_FILE ?=
+CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(ALTS_SUFFIX),--alts-suffix $(ALTS_SUFFIX)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE))
+
 define MODEL_PIPELINE_RULES
 model/outputs/$(1)/fit_results.json: \
     $$(wildcard data/$(1)/main_trials_long.csv) \
     model/outputs/lm/$(1)/lm_runs.jsonl \
     $$(if $$(filter $(1),$$(EXPERIMENTS_BASE)),model/outputs/lm/$(1)/lm_runs_base.jsonl)
-	uv run python model/inverse/fit_$(1).py
+	uv run python model/inverse/fit_$(1).py $$(CONFIG_FLAGS)
 
 model/outputs/$(1)/cv_trial_ll.jsonl: \
     $$(wildcard data/$(1)/main_trials_long.csv) \
     model/outputs/lm/$(1)/lm_runs.jsonl \
     $$(if $$(filter $(1),$$(EXPERIMENTS_BASE)),model/outputs/lm/$(1)/lm_runs_base.jsonl) \
     model/outputs/$(1)/fit_results.json
-	CV_WORKERS=$$(CV_WORKERS) CV_WORKER_THREADS=$$(CV_WORKER_THREADS) uv run python model/cv/cv_$(1).py
+	CV_WORKERS=$$(CV_WORKERS) CV_WORKER_THREADS=$$(CV_WORKER_THREADS) uv run python model/cv/cv_$(1).py $$(CONFIG_FLAGS)
 
 # Phony aliases keep `make fit-<slug>` / `make cv-<slug>` working by name; the
 # recipe lives on the file target, so they no-op when the output is current.
