@@ -20,6 +20,7 @@ from pathlib import Path
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
+sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
 import jax
 import jax.numpy as jnp
@@ -28,6 +29,7 @@ import optax
 import pandas as pd
 from jax.scipy.special import logsumexp
 
+from _priors import beta_prior_on_grid, reweight_grid, reweight_joint
 from tables import (
     ACTION_LABEL_TO_IDX,
     DesireLevels,
@@ -189,15 +191,23 @@ def _fit_multistart(
     return best_params, best_nll, records
 
 
-def restart_records_to_rows(slug, variant, utility_param_names, records):
+def restart_records_to_rows(
+    slug, variant, utility_param_names, records, extra_param_names=()
+):
     """Flatten `_fit_multistart` records into rows for fit_restarts.jsonl.
 
     One row per restart with init_<name> / param_<name> columns (the params
-    layout is [*utility_param_names, alpha_observer, sigma]). Variants with different
+    layout is [*utility_param_names, alpha_observer, sigma, *extra_param_names]).
+    `extra_param_names` carries the informative-prior fit's fitted `prior_nu`
+    (empty in the canonical uniform-prior fits). Variants with different
     parameter sets just leave the other variants' columns empty.
     """
     rows = []
-    names = list(utility_param_names) + ["alpha_observer", "sigma"]
+    names = (
+        list(utility_param_names)
+        + ["alpha_observer", "sigma"]
+        + list(extra_param_names)
+    )
     for rec in records:
         row = {
             "experiment": slug,
@@ -747,7 +757,7 @@ def _padded_table_kwargs(
     return kw
 
 
-def desire_table_kwargs(utility_param_names, domain="food", base=False):
+def desire_table_kwargs(utility_param_names, domain="food", base=False, suffix=""):
     """Padded LM tables for Study 1a (food_inv_desire). Observer's actor
     softmaxes over LM-generated alternatives per (scenario, observed_action,
     effort, intimacy) cell. Desire is inferred (no desire scalar); intimacy is
@@ -757,21 +767,27 @@ def desire_table_kwargs(utility_param_names, domain="food", base=False):
     relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
     across the relationship axis, so the base table — and the base model's
     predictions — are relationship-invariant. full/discomfort_only keep the
-    relationship-conditioned `lm_runs.jsonl`."""
+    relationship-conditioned `lm_runs.jsonl`.
+
+    `suffix` selects an alternate elicitation vintage (e.g. a refusal-hint side
+    file `lm_runs<suffix>.jsonl`); default "" is the standard file, keeping the
+    canonical fit byte-identical. The suffix threads into both the padded
+    alternatives loader and the per-run relationship-magnitude loader."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_desire
 
     if domain != "food":
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
+    runs_filename = f"lm_runs{'_base' if base else ''}{suffix}.jsonl"
     loader = (
         (
             lambda: load_padded_lm_tables_desire(
-                runs_filename="lm_runs_base.jsonl", broadcast_relationship=True
+                runs_filename=runs_filename, broadcast_relationship=True
             )
         )
         if base
-        else load_padded_lm_tables_desire
+        else (lambda: load_padded_lm_tables_desire(runs_filename=runs_filename))
     )
     return _padded_table_kwargs(
         loader,
@@ -779,16 +795,23 @@ def desire_table_kwargs(utility_param_names, domain="food", base=False):
         "Study 1a",
         "food_inv_desire" + (" --base" if base else ""),
         relationship_loader=(
-            None if base else (lambda: load_lm_relationship_values("food_inv_desire"))
+            None
+            if base
+            else (
+                lambda: load_lm_relationship_values(
+                    "food_inv_desire", runs_filename=runs_filename
+                )
+            )
         ),
     )
 
 
-def intimacy_table_kwargs(utility_param_names, domain="food"):
+def intimacy_table_kwargs(utility_param_names, domain="food", suffix=""):
     """Padded LM tables for Study 2a (food_inv_intimacy). Cell grid
     (scenario, observed_action, desire, effort); infers intimacy (continuous, no
     relationship_values). Desire is given, so the per-condition desire scalar is
-    loaded for full/base."""
+    loaded for full/base. 2a has no base variant, so only the standard
+    `lm_runs<suffix>.jsonl` vintage is used (default "" is byte-identical)."""
     from tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_intimacy,
@@ -798,16 +821,19 @@ def intimacy_table_kwargs(utility_param_names, domain="food"):
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
+    runs_filename = f"lm_runs{suffix}.jsonl"
     return _padded_table_kwargs(
-        load_padded_lm_tables_intimacy,
+        lambda: load_padded_lm_tables_intimacy(runs_filename=runs_filename),
         utility_param_names,
         "Study 2a",
         "food_inv_intimacy",
-        desire_loader=lambda: load_lm_scenario_desire("food_inv_intimacy"),
+        desire_loader=lambda: load_lm_scenario_desire(
+            "food_inv_intimacy", runs_filename=runs_filename
+        ),
     )
 
 
-def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
+def joint_de_table_kwargs(utility_param_names, domain="food", base=False, suffix=""):
     """Padded LM tables for the joint desire+effort studies: Study 1b
     (food_inv_joint_de, domain="food") and Study 3a (nonfood_inv_joint_de,
     domain="nonfood"). Cell grid (scenario, observed_action, intimacy); jointly
@@ -816,20 +842,22 @@ def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
 
     `base=True` (the base ablation, which has no intimacy term) loads the
     relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
-    across the relationship axis, exactly as in `desire_table_kwargs`."""
+    across the relationship axis, exactly as in `desire_table_kwargs`.
+
+    `suffix` selects an alternate elicitation vintage (`lm_runs<suffix>.jsonl` /
+    `lm_runs_base<suffix>.jsonl`); default "" is byte-identical, threading into
+    both the padded alternatives loader and the relationship-magnitude loader."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_joint_de
 
     slug, study = {
         "food": ("food_inv_joint_de", "Study 1b"),
         "nonfood": ("nonfood_inv_joint_de", "Study 3a"),
     }[domain]
+    runs_filename = f"lm_runs{'_base' if base else ''}{suffix}.jsonl"
     loader = lambda: load_padded_lm_tables_joint_de(  # noqa: E731
         slug=slug,
-        **(
-            {"runs_filename": "lm_runs_base.jsonl", "broadcast_relationship": True}
-            if base
-            else {}
-        ),
+        runs_filename=runs_filename,
+        **({"broadcast_relationship": True} if base else {}),
     )
     return _padded_table_kwargs(
         loader,
@@ -837,17 +865,23 @@ def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
         study,
         slug + (" --base" if base else ""),
         relationship_loader=(
-            None if base else (lambda: load_lm_relationship_values(slug))
+            None
+            if base
+            else (
+                lambda: load_lm_relationship_values(slug, runs_filename=runs_filename)
+            )
         ),
     )
 
 
-def joint_ie_table_kwargs(utility_param_names, domain="food"):
+def joint_ie_table_kwargs(utility_param_names, domain="food", suffix=""):
     """Padded LM tables for the joint intimacy+effort studies: Study 2b
     (food_inv_joint_ie, domain="food") and Study 3b (nonfood_inv_joint_ie,
     domain="nonfood"). Cell grid (scenario, observed_action, desire); infers
     (intimacy, effort) (continuous intimacy, no relationship_values). Desire is
-    given, so the per-condition desire scalar is loaded for full/base."""
+    given, so the per-condition desire scalar is loaded for full/base. 2b/3b have
+    no base variant, so only the standard `lm_runs<suffix>.jsonl` vintage is used
+    (default "" is byte-identical)."""
     from tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_joint_ie,
@@ -857,12 +891,15 @@ def joint_ie_table_kwargs(utility_param_names, domain="food"):
         "food": ("food_inv_joint_ie", "Study 2b"),
         "nonfood": ("nonfood_inv_joint_ie", "Study 3b"),
     }[domain]
+    runs_filename = f"lm_runs{suffix}.jsonl"
     return _padded_table_kwargs(
-        lambda: load_padded_lm_tables_joint_ie(slug=slug),
+        lambda: load_padded_lm_tables_joint_ie(slug=slug, runs_filename=runs_filename),
         utility_param_names,
         study,
         slug,
-        desire_loader=lambda: load_lm_scenario_desire(slug),
+        desire_loader=lambda: load_lm_scenario_desire(
+            slug, runs_filename=runs_filename
+        ),
     )
 
 
@@ -919,14 +956,17 @@ _RUN_AXIS_TABLES = (
 )
 
 
-def params_dict_to_array(params, utility_param_names):
+def params_dict_to_array(params, utility_param_names, extra_param_names=()):
     """Reconstruct the optimizer's parameter vector [*utility, alpha_observer,
-    sigma] from a `load_fit_results` dict, for re-running the observer (e.g. the
-    CV warm-start). sigma defaults to 1.0 if absent (it doesn't affect the
-    observer build)."""
+    sigma, *extra] from a `load_fit_results` dict, for re-running the observer
+    (e.g. the CV warm-start). sigma defaults to 1.0 if absent (it doesn't affect
+    the observer build); `extra_param_names` (e.g. the informative-prior fit's
+    `prior_nu`) are appended and KeyError if missing — a deliberate fail-fast on
+    a warm start whose params don't carry the extended vector."""
     return jnp.array(
         [params[name] for name in utility_param_names]
         + [params["alpha_observer"], params.get("sigma", 1.0)]
+        + [params[n] for n in extra_param_names]
     )
 
 
@@ -969,6 +1009,7 @@ def fit_intimacy_observer_joint(
     effort_condition,
     response,
     table_kwargs,
+    priors=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -986,17 +1027,45 @@ def fit_intimacy_observer_joint(
     `tables[:, 0, scenario, action, desire, effort, :]`; its mean minus the prior
     mean gives that run's model update δ_k. `response` is the intimacy belief
     update u, scored under (1/K)Σ N(u | δ_k, σ²).
+
+    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 2)) is active,
+    the intimacy latent gets a per-cell discretized-Beta prior with a single
+    fitted concentration `prior_nu` appended to the param vector at index
+    `n_core`; the uniform fit is nested at m=0.5, nu=2.
     """
+    if priors is not None and all(v is None for v in priors.values()):
+        priors = None
+    n_core = len(utility_param_names) + 2
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    n_params = n_core + (1 if use_grid else 0)
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
+            "A warm start that doesn't match the prior configuration would be "
+            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
+            "would read sigma). Build the warm start with "
+            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
+            "prior adds a grid latent."
+        )
 
     def loss_fn(params):
         tables = _build_observer_tables_runs(
-            observer_fn, params, utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, table_kwargs
         )
-        sigma = params[-1]
+        sigma = params[n_core - 1]
+        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, r, e, u):
             post_runs = tables[:, 0, s, a, r, e, :]  # (K, 101)
-            deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
+            if use_grid:
+                w = beta_prior_on_grid(priors["m_latent"][:, s, r, e], nu)  # (K, 101)
+                post_runs = reweight_grid(post_runs, w)
+                prior_mean = w @ GRID  # (K,)
+            else:
+                prior_mean = PRIOR_MEAN
+            deltas = delta_latent(post_runs, GRID, prior_mean)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
         return jnp.sum(
@@ -1007,7 +1076,7 @@ def fit_intimacy_observer_joint(
 
     params, nll, restarts = _fit_multistart(
         loss_fn,
-        n_params=len(utility_param_names) + 2,
+        n_params=n_params,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,
@@ -1029,6 +1098,7 @@ def fit_desire_observer_joint(
     relationship_condition,
     response,
     table_kwargs,
+    priors=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1046,17 +1116,45 @@ def fit_desire_observer_joint(
     `tables[:, 0, scenario, action, effort, intimacy, :]`; its mean minus the
     prior mean gives that run's δ_k. `response` is the desire belief update u,
     scored under (1/K)Σ N(u | δ_k, σ²).
+
+    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 4)) is active,
+    the desire latent gets a per-cell discretized-Beta prior with a single fitted
+    concentration `prior_nu` appended to the param vector at index `n_core`; the
+    uniform fit is nested at m=0.5, nu=2.
     """
+    if priors is not None and all(v is None for v in priors.values()):
+        priors = None
+    n_core = len(utility_param_names) + 2
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    n_params = n_core + (1 if use_grid else 0)
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
+            "A warm start that doesn't match the prior configuration would be "
+            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
+            "would read sigma). Build the warm start with "
+            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
+            "prior adds a grid latent."
+        )
 
     def loss_fn(params):
         tables = _build_observer_tables_runs(
-            observer_fn, params, utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, table_kwargs
         )
-        sigma = params[-1]
+        sigma = params[n_core - 1]
+        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, e, rel, u):
             post_runs = tables[:, 0, s, a, e, rel, :]  # (K, 101)
-            deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
+            if use_grid:
+                w = beta_prior_on_grid(priors["m_latent"][:, s, e, rel], nu)  # (K, 101)
+                post_runs = reweight_grid(post_runs, w)
+                prior_mean = w @ GRID  # (K,)
+            else:
+                prior_mean = PRIOR_MEAN
+            deltas = delta_latent(post_runs, GRID, prior_mean)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
         return jnp.sum(
@@ -1067,7 +1165,7 @@ def fit_desire_observer_joint(
 
     params, nll, restarts = _fit_multistart(
         loss_fn,
-        n_params=len(utility_param_names) + 2,
+        n_params=n_params,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,
@@ -1089,6 +1187,7 @@ def fit_joint_de_observer_joint(
     response_desire,
     response_effort,
     table_kwargs,
+    priors=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1108,18 +1207,54 @@ def fit_joint_de_observer_joint(
     desire-marginal mean and P(effort=HIGH); each minus its prior mean gives that
     run's 2-D model update δ_k. `response_desire`/`response_effort` are the two
     belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
+
+    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    preregistered fit. `priors` may carry `m_latent` (desire, shape (K, 16, 4);
+    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
+    P(effort=high), shape (K, 16, 4)); each None leaves that latent uniform. The
+    uniform fit is nested at m=0.5, nu=2, p=0.5.
     """
+    if priors is not None and all(v is None for v in priors.values()):
+        priors = None
+    n_core = len(utility_param_names) + 2
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    use_eff = priors is not None and priors.get("p_effort") is not None
+    n_params = n_core + (1 if use_grid else 0)
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
+            "A warm start that doesn't match the prior configuration would be "
+            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
+            "would read sigma). Build the warm start with "
+            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
+            "prior adds a grid latent."
+        )
 
     def loss_fn(params):
         tables = _build_observer_tables_runs(
-            observer_fn, params, utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, table_kwargs
         )
-        sigma = params[-1]
+        sigma = params[n_core - 1]
+        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, rel, u_desire, u_effort):
             joint = tables[:, 0, s, a, rel, :, :]  # (K, 101, 2)
+            if use_grid:
+                w = beta_prior_on_grid(priors["m_latent"][:, s, rel], nu)
+                lat_prior_mean = w @ GRID
+            else:
+                w = None
+                lat_prior_mean = PRIOR_MEAN
+            if use_eff:
+                p = priors["p_effort"][:, s, rel]
+                eff_prior_mean = p
+            else:
+                p = None
+                eff_prior_mean = EFFORT_PRIOR_MEAN
+            joint = reweight_joint(joint, w, p)
             d_desire, d_effort = delta_joint(
-                joint, GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN
+                joint, GRID, lat_prior_mean, eff_prior_mean
             )  # each (K,)
             deltas = jnp.stack([d_desire, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_desire, u_effort]), deltas, sigma)
@@ -1136,7 +1271,7 @@ def fit_joint_de_observer_joint(
 
     params, nll, restarts = _fit_multistart(
         loss_fn,
-        n_params=len(utility_param_names) + 2,
+        n_params=n_params,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,
@@ -1158,6 +1293,7 @@ def fit_joint_ie_observer_joint(
     response_intimacy,
     response_effort,
     table_kwargs,
+    priors=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1177,18 +1313,54 @@ def fit_joint_ie_observer_joint(
     intimacy-marginal mean and P(effort=HIGH); each minus its prior mean gives
     that run's 2-D model update δ_k. `response_intimacy`/`response_effort` are the
     two belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
+
+    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    preregistered fit. `priors` may carry `m_latent` (intimacy, shape (K, 16, 2);
+    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
+    P(effort=high), shape (K, 16, 2)); each None leaves that latent uniform. The
+    uniform fit is nested at m=0.5, nu=2, p=0.5.
     """
+    if priors is not None and all(v is None for v in priors.values()):
+        priors = None
+    n_core = len(utility_param_names) + 2
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    use_eff = priors is not None and priors.get("p_effort") is not None
+    n_params = n_core + (1 if use_grid else 0)
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
+            "A warm start that doesn't match the prior configuration would be "
+            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
+            "would read sigma). Build the warm start with "
+            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
+            "prior adds a grid latent."
+        )
 
     def loss_fn(params):
         tables = _build_observer_tables_runs(
-            observer_fn, params, utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, table_kwargs
         )
-        sigma = params[-1]
+        sigma = params[n_core - 1]
+        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, r, u_intimacy, u_effort):
             joint = tables[:, 0, s, a, r, :, :]  # (K, 101, 2)
+            if use_grid:
+                w = beta_prior_on_grid(priors["m_latent"][:, s, r], nu)
+                lat_prior_mean = w @ GRID
+            else:
+                w = None
+                lat_prior_mean = PRIOR_MEAN
+            if use_eff:
+                p = priors["p_effort"][:, s, r]
+                eff_prior_mean = p
+            else:
+                p = None
+                eff_prior_mean = EFFORT_PRIOR_MEAN
+            joint = reweight_joint(joint, w, p)
             d_intimacy, d_effort = delta_joint(
-                joint, GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN
+                joint, GRID, lat_prior_mean, eff_prior_mean
             )  # each (K,)
             deltas = jnp.stack([d_intimacy, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_intimacy, u_effort]), deltas, sigma)
@@ -1205,7 +1377,7 @@ def fit_joint_ie_observer_joint(
 
     params, nll, restarts = _fit_multistart(
         loss_fn,
-        n_params=len(utility_param_names) + 2,
+        n_params=n_params,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,

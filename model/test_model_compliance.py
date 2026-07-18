@@ -717,6 +717,77 @@ def test_reweight_joint_matches_manual_and_nests_uniform():
     print("✓ reweight_joint matches manual reference and nests uniform")
 
 
+def _tiny_joint_ie_table_kwargs(K=2):
+    """K-run joint_ie observer table kwargs for the nesting test: K independent
+    seeded single-run slices from `_synthetic_joint_tables` stacked on a leading
+    run axis (the shape `_build_observer_tables_runs` vmaps over). Gives
+    risk (K,16,3,2,S), effort (K,16,3,2,2,S), g/prior (K,16,3,2,S), and
+    desire_table (K,16,2) — the production 2b run-axis shapes."""
+    runs = [_synthetic_joint_tables("joint_ie", seed=100 + k) for k in range(K)]
+    return {key: jnp.stack([r[key] for r in runs], axis=0) for key in runs[0]}
+
+
+def test_informative_prior_nests_uniform_fit_loss():
+    """priors with m=0.5 everywhere and nu fixed at 2 must reproduce the
+    uniform-path loss and gradient exactly (spec: uniform nested)."""
+    from observers import VARIANTS_JOINT_IE
+
+    obs_fn, utility_names = VARIANTS_JOINT_IE["full"]
+    tk = _tiny_joint_ie_table_kwargs()  # the synthetic-table fixture (K=2)
+    K = tk["risk_table"].shape[0]
+    action = jnp.array([0, 1, 2, 1])
+    scen = jnp.array([0, 1, 2, 3])
+    des = jnp.array([0, 1, 0, 1])
+    u_int = jnp.array([0.1, -0.2, 0.05, 0.3])
+    u_eff = jnp.array([-0.1, 0.2, 0.0, -0.3])
+
+    from _helpers import fit_joint_ie_observer_joint
+
+    # Probe each loss at a fixed init via a 1-restart, max_steps=1 fit and
+    # compare the recorded init NLLs (the loss at the same point).
+    init_uniform = jnp.ones(len(utility_names) + 2)
+    _, nll_u, rec_u = fit_joint_ie_observer_joint(
+        obs_fn,
+        utility_names,
+        action,
+        scen,
+        des,
+        u_int,
+        u_eff,
+        tk,
+        n_restarts=1,
+        init_params=init_uniform,
+        max_steps=1,
+        verbose=False,
+    )
+    n_scen = tk["risk_table"].shape[1]
+    priors = {
+        "m_latent": jnp.full((K, n_scen, 2), 0.5),
+        "p_effort": jnp.full((K, n_scen, 2), 0.5),
+    }
+    init_inf = jnp.concatenate([init_uniform, jnp.array([2.0])])  # nu = 2
+    _, nll_i, rec_i = fit_joint_ie_observer_joint(
+        obs_fn,
+        utility_names,
+        action,
+        scen,
+        des,
+        u_int,
+        u_eff,
+        tk,
+        n_restarts=1,
+        init_params=init_inf,
+        max_steps=1,
+        verbose=False,
+        priors=priors,
+    )
+    assert abs(rec_u[0]["nll"] - rec_i[0]["nll"]) < 1e-4, (
+        f"informative m=0.5/nu=2 must nest uniform: "
+        f"{rec_u[0]['nll']} vs {rec_i[0]['nll']}"
+    )
+    print("✓ informative prior (m=0.5, nu=2) nests the uniform-path fit loss")
+
+
 def _tmpdir():
     """A fresh temp directory as a Path (the file has no shared fixture helper)."""
     return Path(tempfile.mkdtemp())
@@ -977,6 +1048,7 @@ def run_all_tests():
     test_beta_prior_on_grid_normalizes_and_nests_uniform()
     test_reweight_grid_uniform_weights_is_identity()
     test_reweight_joint_matches_manual_and_nests_uniform()
+    test_informative_prior_nests_uniform_fit_loss()
     test_load_lm_priors_joint_de_shapes_and_values()
     test_load_lm_priors_missing_cell_raises()
     test_load_lm_priors_out_of_range_raises()

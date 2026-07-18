@@ -987,7 +987,7 @@ def load_padded_lm_tables_joint_de(
     }
 
 
-def load_padded_lm_tables_intimacy():
+def load_padded_lm_tables_intimacy(runs_filename="lm_runs.jsonl"):
     """Study 2a: observer knows (desire, effort), infers intimacy. Cell grid is
     (scenario, observed_action, desire_condition, effort_condition). intimacy
     inferred (continuous; risk modulated by (1-I)^gamma in the utility, no
@@ -999,12 +999,15 @@ def load_padded_lm_tables_intimacy():
       effort: (16, 3, 2, 2, S)     [scenario, obs, desire, effort, slot]
       g:      (16, 3, 2, 2, S)     [scenario, obs, desire, effort, slot]
       prior:  (16, 3, 2, 2, S)
+
+    `runs_filename` selects the elicitation vintage (an alternate side file such
+    as a refusal-hint set); default "lm_runs.jsonl" is the standard source.
     """
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_intimacy"
     )
     cell_cols = ["desire_condition", "effort_condition"]
-    runs = _run_sources(outputs_dir, cell_cols)
+    runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
     if runs is None:
         return None
     K = len(runs)
@@ -1075,7 +1078,9 @@ def load_padded_lm_tables_intimacy():
     }
 
 
-def load_padded_lm_tables_joint_ie(*, slug="food_inv_joint_ie"):
+def load_padded_lm_tables_joint_ie(
+    *, slug="food_inv_joint_ie", runs_filename="lm_runs.jsonl"
+):
     """Study 2b: observer knows desire, infers (intimacy, effort). Cell grid is
     (scenario, observed_action, desire_condition). intimacy inferred (continuous,
     no table axis); effort inferred -> effort table carries an effort_condition
@@ -1090,13 +1095,15 @@ def load_padded_lm_tables_joint_ie(*, slug="food_inv_joint_ie"):
     `slug` selects the study whose tables to load: Study 3b
     (`nonfood_inv_joint_ie`) shares this design on the nonfood stimulus set, so
     it reuses this loader with its own outputs folder and scenario-label order
-    (STUDY_SCENARIO_LABELS[slug]).
+    (STUDY_SCENARIO_LABELS[slug]). `runs_filename` selects the elicitation
+    vintage (an alternate side file); default "lm_runs.jsonl" is the standard
+    source.
     """
     outputs_dir = Path(__file__).resolve().parent / "outputs" / "lm" / slug
     scenario_labels = STUDY_SCENARIO_LABELS[slug]
     scenario_to_idx = scenario_to_idx_for_study(slug)
     cell_cols = ["desire_condition", "effort_condition"]
-    runs = _run_sources(outputs_dir, cell_cols)
+    runs = _run_sources(outputs_dir, cell_cols, runs_filename=runs_filename)
     if runs is None:
         return None
     K = len(runs)
