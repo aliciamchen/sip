@@ -494,8 +494,11 @@ def alternatives_user_prompt(
             f"know which:\n- {low_text}\n- {high_text}"
         )
     if unknown_desire_object is not None:
+        # "also" only when this follows the effort-hypotheses block (1b/3a);
+        # in 1a it is the sole epistemic statement and "also" would dangle.
+        also = "also " if effort_hypotheses is not None else ""
         parts.append(
-            "You also do not know how much the two people want "
+            f"You {also}do not know how much the two people want "
             f"{unknown_desire_object}."
         )
     if unknown_intimacy:

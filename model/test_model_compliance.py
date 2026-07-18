@@ -1139,10 +1139,18 @@ def test_alternatives_prompt_arms():
     )
     assert "One of the following is true of the situation" in up
     assert up.index("LOW PARA.") < up.index("HIGH PARA.")
-    assert "do not know how much the two people want the hot dog" in up
+    # following the effort block (1b/3a), the desire line says "also"
+    assert "You also do not know how much the two people want the hot dog" in up
     # epistemic block sits after the condition paragraphs, before the action
     assert up.index("maximally formal") < up.index("One of the following")
     assert up.index("One of the following") < up.index("They shared.")
+
+    # 1a form: desire line is the sole epistemic statement — no dangling "also"
+    up_1a = prompts.alternatives_user_prompt(
+        "VIG.", "ACT.", unknown_desire_object="the hot dog"
+    )
+    assert "You do not know how much the two people want the hot dog" in up_1a
+    assert "also" not in up_1a
 
     up2 = prompts.alternatives_user_prompt("VIG.", "ACT.", unknown_intimacy=True)
     assert "do not know how close or formal" in up2
