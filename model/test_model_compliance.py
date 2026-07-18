@@ -856,6 +856,38 @@ def test_prior_prompts_compose_condition_texts():
     print("✓ prior prompts compose condition texts and expose the scalar keys")
 
 
+def test_elicit_priors_cell_grids():
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "elicit_priors", Path(__file__).resolve().parent / "lm" / "elicit_priors.py"
+    )
+    ep = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(ep)
+
+    cells_1a = ep._build_prior_cells("food_inv_desire", base=False)
+    assert len(cells_1a) == 16 * 2 * 4  # scenario x effort x relationship
+    assert cells_1a[0]["quantities"] == ("prior_desire",)
+    assert len(ep._build_prior_cells("food_inv_desire", base=True)) == 16 * 2
+
+    cells_1b = ep._build_prior_cells("food_inv_joint_de", base=False)
+    assert len(cells_1b) == 16 * 4
+    assert set(cells_1b[0]["quantities"]) == {"prior_desire", "prior_effort_high"}
+    # relationship sentence present in condition_texts, effort paragraphs held
+    # out of condition_texts (they are the effort question's endpoints)
+    assert any("relationship" in t for t in cells_1b[0]["condition_texts"])
+
+    cells_2a = ep._build_prior_cells("food_inv_intimacy", base=False)
+    assert len(cells_2a) == 16 * 2 * 2
+    assert cells_2a[0]["quantities"] == ("prior_intimacy",)
+    assert len(cells_2a[0]["condition_texts"]) == 2  # desire + effort paragraphs
+
+    cells_2b = ep._build_prior_cells("food_inv_joint_ie", base=False)
+    assert len(cells_2b) == 16 * 2
+    assert set(cells_2b[0]["quantities"]) == {"prior_intimacy", "prior_effort_high"}
+    print("✓ elicit_priors cell grids have the expected shapes and quantities")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -885,6 +917,7 @@ def run_all_tests():
     test_load_lm_priors_out_of_range_raises()
     test_load_lm_priors_base_broadcasts_relationship()
     test_prior_prompts_compose_condition_texts()
+    test_elicit_priors_cell_grids()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)

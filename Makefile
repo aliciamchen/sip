@@ -55,13 +55,15 @@ ANALYSIS_QMDS := \
   food-inv-joint-ie-analysis
 
 .PHONY: all help test clean \
-        data lm lm-alternatives lm-base \
+        data lm lm-alternatives lm-base lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-results \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
+        $(addprefix lm-priors-,$(EXPERIMENTS_ALL)) \
+        $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
         $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
@@ -123,10 +125,13 @@ help:
 	@echo "  lm-nonfood            (LM elicitation for the 2 nonfood studies, 3a + 3b)"
 	@echo "  lm-base               (relationship-free alternatives for the base model;"
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
+	@echo "  lm-priors             (prior-scalar elicitation for the informative-prior configs;"
+	@echo "                         4 food studies + the given-relationship base pair; smoke with K_RUNS=1)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
+	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -262,6 +267,24 @@ lm-base: $(addprefix lm-base-,$(EXPERIMENTS_BASE))
 $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base
 	uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
+
+# Prior-scalar elicitation (informative-prior configs; cheap, ~$5 for the food
+# four at K=20). This is a standalone stage, decoupled from the alternatives
+# pipeline: for each (scenario x prior-visible conditions) cell it elicits the
+# study's PRIOR-stage scalars (K_RUNS runs) into lm_priors{_base}.jsonl, which
+# the informative-prior fit configs load via tables.load_lm_priors. `lm-priors`
+# runs the four food studies plus the base variants of the given-relationship
+# pair; per-study `lm-priors-<slug>` (any of the six) and `lm-priors-base-<slug>`
+# (given-relationship studies only) cover the rest. Smoke with K_RUNS=1 and
+# preview the call count with a --dry-run first.
+lm-priors: $(addprefix lm-priors-,$(EXPERIMENTS_INVERSE)) \
+           lm-priors-base-food_inv_desire lm-priors-base-food_inv_joint_de
+
+$(addprefix lm-priors-,$(EXPERIMENTS_ALL)): lm-priors-%:
+	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $*
+
+$(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
+	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $* --base
 
 # =============================================================================
 # Per-study file-target graph (the incremental core, roster-driven)
