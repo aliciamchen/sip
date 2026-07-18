@@ -828,6 +828,34 @@ def test_load_lm_priors_base_broadcasts_relationship():
     print("✓ load_lm_priors base broadcasts across the relationship axis")
 
 
+def test_prior_prompts_compose_condition_texts():
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "prompts", Path(__file__).resolve().parent / "lm" / "prompts.py"
+    )
+    prompts = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(prompts)
+
+    up = prompts.prior_desire_user_prompt(
+        "VIGNETTE.", "the hot dog", condition_texts=("REL.", "EFFORT.")
+    )
+    assert "VIGNETTE." in up and "REL." in up and "EFFORT." in up
+    assert "the hot dog" in up and '"desire"' in up
+    assert prompts.PRIOR_DESIRE_SYSTEM_PROMPT.startswith(
+        "You are a participant in a human study"
+    )
+
+    ue = prompts.prior_effort_user_prompt("VIGNETTE.", "LOW TEXT.", "HIGH TEXT.")
+    assert ue.index("LOW TEXT.") < ue.index("HIGH TEXT.")  # low = 0 endpoint
+    assert '"effort"' in ue
+
+    ui = prompts.prior_intimacy_user_prompt("VIGNETTE.", condition_texts=("DESIRE.",))
+    assert "relationship" in ui and '"intimacy"' in ui
+    assert "0" in prompts.PRIOR_INTIMACY_SYSTEM_PROMPT
+    print("✓ prior prompts compose condition texts and expose the scalar keys")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -856,6 +884,7 @@ def run_all_tests():
     test_load_lm_priors_missing_cell_raises()
     test_load_lm_priors_out_of_range_raises()
     test_load_lm_priors_base_broadcasts_relationship()
+    test_prior_prompts_compose_condition_texts()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)

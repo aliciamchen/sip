@@ -528,3 +528,89 @@ def relationship_user_prompt(descriptor):
         "On a scale from 0 to 100, how intimate is this relationship? Respond "
         'with {"intimacy": <number>}.'
     )
+
+
+# ==============================================================================
+# Public API: prior scalars (informative-prior configs; see
+# notes/2026-07-18-informative-priors-refusal-alts-design.md)
+# ==============================================================================
+# Each prompt mirrors the human PRIOR-stage question exactly: the LM sees the
+# vignette plus the same given-condition paragraphs the participant sees before
+# the action is revealed, and answers the same question the participant's
+# slider asks, with the same endpoints. One rating per (run, scenario,
+# prior-visible conditions); no action text appears anywhere.
+
+PRIOR_DESIRE_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. Before knowing anything about what they decide to do, judge how much the two people would like the thing at stake in the scenario, on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they might do, how much effort anything takes, or how the two people are related.
+
+Respond with a JSON object in this exact format, no explanation:
+{"desire": <number>}"""
+)
+
+
+def prior_desire_user_prompt(vignette, desire_object, condition_texts=()):
+    """Prior-desire rating (1a/1b): the participant's prior-stage screen minus
+    the action. `condition_texts` are the given-condition paragraphs the study
+    shows before the prior rating (1a: relationship sentence + effort
+    paragraph; 1b: relationship sentence; base variants: no relationship)."""
+    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts.append(
+        f"\nBefore observing what the two people decide to do: on a scale "
+        f"from 0 to 100, how much do you think they would like "
+        f'{desire_object}? Respond with {{"desire": <number>}}.'
+    )
+    return "\n".join(parts)
+
+
+PRIOR_EFFORT_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, followed by two descriptions of what the situation might be like. Before knowing anything about what the two people decide to do, judge which of the two situations you think is more likely, on a scale from 0 (the FIRST situation is certainly the case) to 100 (the SECOND situation is certainly the case), where 50 means the two situations are equally likely.
+
+Respond with a JSON object in this exact format, no explanation:
+{"effort": <number>}"""
+)
+
+
+def prior_effort_user_prompt(
+    vignette, effort_low_text, effort_high_text, condition_texts=()
+):
+    """Prior-effort rating (1b/2b): mirrors the human effort slider, whose
+    endpoints are the scenario's two effort paragraphs with "Equally likely"
+    at the midpoint. The low-effort paragraph is the 0 endpoint (first), the
+    high-effort paragraph the 100 endpoint (second), matching the human
+    slider's left-to-right order; the response maps to P(high effort) =
+    value / 100."""
+    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts.append(f"\nFirst situation: {effort_low_text}")
+    parts.append(f"Second situation: {effort_high_text}")
+    parts.append(
+        "\nOn a scale from 0 (certainly the first situation) to 100 "
+        "(certainly the second situation), which situation do you think is "
+        'more likely? Respond with {"effort": <number>}.'
+    )
+    return "\n".join(parts)
+
+
+PRIOR_INTIMACY_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. Before knowing anything about what they decide to do, judge how the two people would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate), where 50 means neither formal nor intimate.
+
+Respond with a JSON object in this exact format, no explanation:
+{"intimacy": <number>}"""
+)
+
+
+def prior_intimacy_user_prompt(vignette, condition_texts=()):
+    """Prior-intimacy rating (2a/2b): the participant's prior-stage screen
+    minus the action (2a: desire + effort paragraphs; 2b: desire paragraph)."""
+    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts.append(
+        "\nBefore observing what the two people decide to do: on a scale "
+        "from 0 to 100, how do you think they would describe their "
+        'relationship? Respond with {"intimacy": <number>}.'
+    )
+    return "\n".join(parts)
