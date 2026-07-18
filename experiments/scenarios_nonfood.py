@@ -33,10 +33,11 @@ The scenarios follow the same design invariants as the finalized food set:
   clause and keeps the two cost terms separable for speech acts. The cost is
   cashed out in two ways. `salary` and `gossip` make the low-risk share an
   off-record, deniable telling of the same content (comparing pay against a
-  published survey without naming numbers; recounting a story about mutual
-  acquaintances without using names), and the effort paragraphs manipulate
-  the scaffolding that roundabout telling needs (how cleanly the survey's
-  bands map onto their jobs; how identifiable the people involved are).
+  published survey without naming numbers; talking around the developments
+  in hints, without naming names), and the effort paragraphs manipulate the
+  scaffolding that roundabout telling needs (how cleanly the survey's bands
+  map onto their jobs; how tangled the developments are, and so how much
+  roundabout description it takes for the hints to land).
   Indirectness is the verbal analogue of the food set's fetch-a-clean-utensil
   routes: extra words buy reduced exposure and plausible deniability (Brown &
   Levinson 1987; Pinker, Nowak, & Lee 2008). `breakup` instead manipulates
@@ -46,10 +47,10 @@ The scenarios follow the same design invariants as the finalized food set:
   genuinely under-deliver it.
 
 `desire_object` fills the desire-elicitation question "How much do you think
-{name_0} and {name_1} would like ___?"; a few scenarios use an infinitive
-phrase (e.g. "to change quickly") where no noun phrase reads naturally (the
-g-scoring prompt renders those as "actually getting {desire_object}" — see
-`user_prompt` in `model/lm/prompts.py`).
+{name_0} and {name_1} would like ___?"; every scenario states it as an
+infinitive phrase (e.g. "to change before the commute home"), which the
+g-scoring prompt renders as "actually getting {desire_object}" — see
+`user_prompt` in `model/lm/prompts.py`.
 
 The extra `scenario_type` column tags each scenario's sharing domain
 (substance 6 / space 5 / privacy 5).
@@ -292,7 +293,7 @@ rows = [
         desire_high="They both want to talk about what has happened with someone who knows the people involved.",
         low_risk_share_effort_low="The recent developments are straightforward, so a light hint is enough for the other to know at once who and what is meant.",
         low_risk_share_effort_high="The recent developments are a set of long, tangled stories, so conveying them takes a lot of roundabout description before the other can piece together who and what is meant.",
-        no_share="They keep the conversation general and don't talk about other people.",
+        no_share="They keep the conversation general and don't talk much about other people.",
         low_risk_share="They talk around the latest developments — hinting at what has happened, and letting their own reactions show only implicitly — but in enough detail that each can work out who and what the other means.",
         high_risk_share="They speak openly: naming names, spelling out exactly what has been going on, and saying what they really think about the people involved.",
     ),
@@ -321,7 +322,7 @@ rows = [
         desire_low="Neither of them is particularly hungry; they could also wait until they reach their destination to eat.",
         desire_high="They are both starving and really want to eat.",
         low_risk_share_effort_low="Nadia's phone is set to stay unlocked for a long time, so Ravi can work in the maps app without it locking on him.",
-        low_risk_share_effort_high="Nadia's phone auto-locks after a few seconds, so Ravi would have to keep handing the phone back for Nadia to unlock at the wheel, over and over.",
+        low_risk_share_effort_high="Nadia's phone auto-locks after a few seconds, so Ravi would have to keep handing the phone back for Nadia to unlock, over and over.",
         no_share="They keep driving straight to the event without stopping to eat.",
         low_risk_share="Nadia unlocks her phone, opens the maps app, and hands the phone to Ravi to find a restaurant and add it as a stop. Ravi works only within the maps app, and whenever the phone locks he hands it back to Nadia to unlock.",
         high_risk_share="Nadia tells Ravi her passcode. Ravi unlocks her phone with it and uses the phone freely.",
