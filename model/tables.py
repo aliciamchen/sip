@@ -244,7 +244,7 @@ def _read_runs_jsonl(path):
     return records_by_run
 
 
-def load_lm_scenario_desire(slug):
+def load_lm_scenario_desire(slug, runs_filename="lm_runs.jsonl"):
     """Load the per-run, per-condition desire scalar for the given-desire studies
     (2a `food_inv_intimacy`, 2b `food_inv_joint_ie`, 3b `nonfood_inv_joint_ie`).
 
@@ -271,7 +271,7 @@ def load_lm_scenario_desire(slug):
     }
     n_scenarios = len(scenario_to_idx)
 
-    runs_path = _runs_jsonl_path(slug)
+    runs_path = _runs_jsonl_path(slug).with_name(runs_filename)
     if runs_path.exists():
         records_by_run = _read_runs_jsonl(runs_path)
         run_ids = sorted(records_by_run)
@@ -316,7 +316,7 @@ def load_lm_scenario_desire(slug):
     return jnp.array(d)[None, :, :]
 
 
-def load_lm_relationship_values(slug):
+def load_lm_relationship_values(slug, runs_filename="lm_runs.jsonl"):
     """Per-run continuous intimacy magnitude I ∈ [0, 1] for each of the four
     RelationshipConditions levels, for the given-relationship studies
     (1a `food_inv_desire`, 1b `food_inv_joint_de`).
@@ -332,7 +332,7 @@ def load_lm_relationship_values(slug):
 
     Returns a jnp.array of shape (K, 4).
     """
-    runs_path = _runs_jsonl_path(slug)
+    runs_path = _runs_jsonl_path(slug).with_name(runs_filename)
     if runs_path.exists():
         records_by_run = _read_runs_jsonl(runs_path)
         run_ids = sorted(records_by_run)
@@ -355,6 +355,108 @@ def load_lm_relationship_values(slug):
         _assert_no_missing_scalars(slug, "intimacy", out)
         return jnp.array(out)
     return RELATIONSHIP_LEVEL_VALUES[None, :]
+
+
+# Per-study prior-cell condition columns (the conditions the participant sees
+# BEFORE the action — the prior-stage screens) and elicited quantities. The
+# nonfood studies mirror their food counterparts (same observers, own folder).
+_PRIOR_STUDY_SPEC = {
+    "food_inv_desire": {
+        "conds": ("effort_condition", "intimacy_condition"),
+        "quantities": ("prior_desire",),
+    },
+    "food_inv_joint_de": {
+        "conds": ("intimacy_condition",),
+        "quantities": ("prior_desire", "prior_effort_high"),
+    },
+    "food_inv_intimacy": {
+        "conds": ("desire_condition", "effort_condition"),
+        "quantities": ("prior_intimacy",),
+    },
+    "food_inv_joint_ie": {
+        "conds": ("desire_condition",),
+        "quantities": ("prior_intimacy", "prior_effort_high"),
+    },
+}
+_PRIOR_STUDY_SPEC["nonfood_inv_joint_de"] = _PRIOR_STUDY_SPEC["food_inv_joint_de"]
+_PRIOR_STUDY_SPEC["nonfood_inv_joint_ie"] = _PRIOR_STUDY_SPEC["food_inv_joint_ie"]
+
+_PRIOR_COND_LEVELS = {
+    "effort_condition": ["low", "high"],
+    "desire_condition": ["low", "high"],
+    "intimacy_condition": INTIMACY_CONDITIONS,
+}
+# Loader output key per elicited quantity.
+_PRIOR_OUT_KEY = {
+    "prior_desire": "desire_m",
+    "prior_intimacy": "intimacy_m",
+    "prior_effort_high": "effort_p",
+}
+
+
+def load_lm_priors(slug, base=False, filename=None):
+    """Per-run, per-cell prior scalars for the informative-prior configs
+    (spec: notes/2026-07-18-informative-priors-refusal-alts-design.md).
+
+    Reads outputs/lm/<slug>/lm_priors{_base}.jsonl (one record per run x
+    scenario x prior-visible conditions; `filename` overrides, absolute paths
+    allowed for tests and the human-ceiling file). Returns None when the file
+    is missing, else {out_key: (K, 16, *cond_levels)} arrays. `base=True`
+    (given-relationship studies) reads the relationship-free file and
+    broadcasts it across the 4-level relationship axis, mirroring the base
+    alternative tables. Fail-fast: a missing cell, a duplicate with a
+    conflicting value, or a scalar outside [0, 1] raises ValueError.
+    """
+    spec = _PRIOR_STUDY_SPEC[slug]
+    conds = tuple(c for c in spec["conds"] if not (base and c == "intimacy_condition"))
+    if filename is None:
+        filename = f"lm_priors{'_base' if base else ''}.jsonl"
+    path = Path(filename)
+    if not path.is_absolute():
+        path = Path(__file__).resolve().parent / "outputs" / "lm" / slug / filename
+    if not path.exists():
+        return None
+
+    scenario_to_idx = scenario_to_idx_for_study(slug)
+    levels = [_PRIOR_COND_LEVELS[c] for c in conds]
+    shape_tail = tuple(len(lv) for lv in levels)
+    records_by_run = _read_runs_jsonl(path)
+    run_ids = sorted(records_by_run)
+    out = {
+        q: np.full(
+            (len(run_ids), len(scenario_to_idx), *shape_tail), np.nan, np.float32
+        )
+        for q in spec["quantities"]
+    }
+    for k, rid in enumerate(run_ids):
+        for rec in records_by_run[rid]:
+            s = scenario_to_idx[rec["scenario_label"]]
+            idx = (k, s) + tuple(_PRIOR_COND_LEVELS[c].index(rec[c]) for c in conds)
+            for q in spec["quantities"]:
+                v = rec.get(q)
+                if v is None:
+                    continue
+                if not (0.0 <= float(v) <= 1.0):
+                    raise ValueError(
+                        f"{slug} {path.name}: {q}={v} outside [0, 1] at "
+                        f"{rec['scenario_label']} run {rid}"
+                    )
+                _assert_no_conflicting_write(
+                    slug,
+                    q,
+                    out[q][idx],
+                    float(v),
+                    (rec["scenario_label"], conds, f"run {rid}"),
+                )
+                out[q][idx] = float(v)
+    for q, arr in out.items():
+        _assert_no_missing_scalars(slug, q, arr)
+    if base and "intimacy_condition" in spec["conds"]:
+        # Broadcast the relationship-free base priors across the 4-level
+        # relationship axis (appended in the same position the standard file
+        # has it: last).
+        out = {q: np.repeat(arr[..., None], 4, axis=-1) for q, arr in out.items()}
+    return {_PRIOR_OUT_KEY[q]: jnp.array(arr) for q, arr in out.items()}
 
 
 # ==============================================================================

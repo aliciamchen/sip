@@ -52,6 +52,7 @@ from observers import (
     observer_joint_ie_full,
 )
 from tables import (
+    INTIMACY_CONDITIONS,
     MAX_ACTIONS,
     N_ACTIONS,
     RELATIONSHIP_LEVEL_VALUES,
@@ -716,6 +717,117 @@ def test_reweight_joint_matches_manual_and_nests_uniform():
     print("✓ reweight_joint matches manual reference and nests uniform")
 
 
+def _tmpdir():
+    """A fresh temp directory as a Path (the file has no shared fixture helper)."""
+    return Path(tempfile.mkdtemp())
+
+
+def _write_priors_fixture(tmp_path, slug, rows):
+    import json as _json
+
+    d = tmp_path / "model" / "outputs" / "lm" / slug
+    d.mkdir(parents=True)
+    with open(d / "lm_priors.jsonl", "w") as f:
+        for r in rows:
+            f.write(_json.dumps(r) + "\n")
+    return d / "lm_priors.jsonl"
+
+
+def test_load_lm_priors_joint_de_shapes_and_values():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": k,
+            "scenario_label": s,
+            "intimacy_condition": lvl,
+            "prior_desire": 0.7,
+            "prior_effort_high": 0.3,
+        }
+        for k in range(2)
+        for s in SCENARIO_LABELS
+        for lvl in INTIMACY_CONDITIONS
+    ]
+    path = _write_priors_fixture(_tmpdir(), "food_inv_joint_de", rows)
+    out = load_lm_priors("food_inv_joint_de", filename=str(path))
+    assert out["desire_m"].shape == (2, 16, 4)
+    assert out["effort_p"].shape == (2, 16, 4)
+    # Stored float32 (as every loader here), so compare with a float32 tolerance.
+    assert abs(float(out["desire_m"][0, 0, 0]) - 0.7) < 1e-6
+    print("✓ load_lm_priors joint_de shapes and values")
+
+
+def test_load_lm_priors_missing_cell_raises():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": 0,
+            "scenario_label": s,
+            "intimacy_condition": lvl,
+            "prior_desire": 0.5,
+            "prior_effort_high": 0.5,
+        }
+        for s in SCENARIO_LABELS
+        for lvl in INTIMACY_CONDITIONS
+    ][:-1]  # drop one cell
+    path = _write_priors_fixture(_tmpdir(), "food_inv_joint_de", rows)
+    try:
+        load_lm_priors("food_inv_joint_de", filename=str(path))
+        assert False, "expected ValueError on missing cell"
+    except ValueError:
+        print("✓ load_lm_priors raises on a missing cell")
+
+
+def test_load_lm_priors_out_of_range_raises():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": 0,
+            "scenario_label": s,
+            "intimacy_condition": lvl,
+            "prior_desire": 1.7,  # out of [0, 1]
+            "prior_effort_high": 0.5,
+        }
+        for s in SCENARIO_LABELS
+        for lvl in INTIMACY_CONDITIONS
+    ]
+    path = _write_priors_fixture(_tmpdir(), "food_inv_joint_de", rows)
+    try:
+        load_lm_priors("food_inv_joint_de", filename=str(path))
+        assert False, "expected ValueError on out-of-range scalar"
+    except ValueError:
+        print("✓ load_lm_priors raises on an out-of-range scalar")
+
+
+def test_load_lm_priors_base_broadcasts_relationship():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": 0,
+            "scenario_label": s,
+            "prior_desire": 0.6,
+            "prior_effort_high": 0.4,
+        }
+        for s in SCENARIO_LABELS
+    ]
+    d = _tmpdir() / "model" / "outputs" / "lm" / "food_inv_joint_de"
+    d.mkdir(parents=True)
+    import json as _json
+
+    with open(d / "lm_priors_base.jsonl", "w") as f:
+        for r in rows:
+            f.write(_json.dumps(r) + "\n")
+    out = load_lm_priors(
+        "food_inv_joint_de", base=True, filename=str(d / "lm_priors_base.jsonl")
+    )
+    assert out["desire_m"].shape == (1, 16, 4)
+    assert jnp.allclose(out["desire_m"][0, :, 0], out["desire_m"][0, :, 3])
+    print("✓ load_lm_priors base broadcasts across the relationship axis")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -740,6 +852,10 @@ def run_all_tests():
     test_beta_prior_on_grid_normalizes_and_nests_uniform()
     test_reweight_grid_uniform_weights_is_identity()
     test_reweight_joint_matches_manual_and_nests_uniform()
+    test_load_lm_priors_joint_de_shapes_and_values()
+    test_load_lm_priors_missing_cell_raises()
+    test_load_lm_priors_out_of_range_raises()
+    test_load_lm_priors_base_broadcasts_relationship()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)
