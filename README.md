@@ -141,14 +141,12 @@ uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
 # Fit → CV → model comparison (per study; CV produces the out-of-sample predictions).
-# The CV's independent (variant × fold) refits run as parallel worker processes,
-# with worker and thread counts defaulting per study family (8 single-threaded
-# workers for the single-latent studies; 3 multi-threaded workers for the
-# memory-heavier joint studies). The outputs are identical to a sequential run,
-# so CV_WORKERS / CV_WORKER_THREADS only change the wall-clock time. A CV run
-# that is interrupted resumes from its completed folds on the next invocation,
-# via a checkpoint file that is discarded automatically whenever the study's
-# inputs, fitting configuration, or model code change:
+# The CV's independent (variant × fold) refits run as parallel worker processes
+# (8 single-threaded workers by default). The outputs are identical to a
+# sequential run, so CV_WORKERS / CV_WORKER_THREADS only change the wall-clock
+# time. A CV run that is interrupted resumes from its completed folds on the
+# next invocation, via a checkpoint file that is discarded automatically
+# whenever the study's inputs, fitting configuration, or model code change:
 uv run python model/inverse/fit_food_inv_desire.py
 uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py

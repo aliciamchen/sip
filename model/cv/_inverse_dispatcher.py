@@ -128,16 +128,17 @@ N_ACTIONS = int(len(actions))
 N_RESTARTS_CV = int(os.environ.get("CV_RESTARTS", "2"))
 # Per-family execution defaults (env CV_WORKERS / CV_WORKER_THREADS override;
 # see the `default_workers` / `worker_threads` entries in _FAMILIES below).
-# The single-latent families run many single-threaded workers; the joint
-# observers' ~8 GB of XLA temps cap their worker count at ~3 on a 48 GB
-# machine, which would strand the remaining cores at one thread per worker —
-# so their workers get a small multi-threaded pool instead. Neither knob
+# All four families now share one profile: many single-threaded workers. The
+# joint families briefly needed 3 × 4-thread workers when their observers
+# carried ~8 GB of XLA temps each, but the fast joint observers (see
+# observers.py: direct Bayesian inversion of the actor policy) brought a
+# worker back to ~1.5 GB, so the memory cap is gone. The per-family keys stay
+# as the tuning point if a family's profile ever diverges again. Neither knob
 # changes the refit results (fold outputs are reduction-order-stable across
 # thread counts; verified byte-identical in the interrupt/resume smoke) —
 # they are purely execution-layout choices.
-SINGLE_LATENT_WORKERS = 8
-JOINT_WORKERS = 3
-JOINT_WORKER_THREADS = 4
+DEFAULT_WORKERS = 8
+DEFAULT_WORKER_THREADS = 1
 
 
 def _domain_for(slug):
@@ -341,11 +342,10 @@ def _capped_worker_threads(n_threads=1):
     is unaffected. Explicit user-set values are respected.
 
     `n_threads` > 1 gives each worker a small multi-threaded pool instead of a
-    single-threaded one. The joint families default to this (see `_FAMILIES`):
-    their workers are memory-bound (~8 GB of XLA temps each caps CV_WORKERS at
-    ~3 on a 48 GB machine), which strands most cores at one thread per worker —
-    the extra threads put the idle cores to work. Keep workers × threads ≲ the
-    machine's cores."""
+    single-threaded one — useful when a family's worker count is capped below
+    the core count (as the joint families' was while their observers were
+    memory-bound; no family defaults to it today). Keep workers × threads ≲
+    the machine's cores."""
     saved = {k: os.environ.get(k) for k in ("XLA_FLAGS", "OMP_NUM_THREADS")}
     xla = os.environ.get("XLA_FLAGS", "")
     # Match on the flag NAME (not name=value), so a user-set value for either
@@ -374,14 +374,12 @@ def _capped_worker_threads(n_threads=1):
 
 def _run_loso(family, slug, workers=None, patience=None):
     """LOSO CV for one study. Runs the (variant × fold) refits concurrently when
-    `workers` > 1 (env `CV_WORKERS`; default from the family registry — many
-    single-threaded workers for the single-latent families, few multi-threaded
-    workers for the memory-bound joint families): folds are independent and each
-    refit is deterministic, so the output is identical to the sequential run —
-    only the execution overlaps. Each worker's XLA pool gets the family's
-    `worker_threads` (env `CV_WORKER_THREADS` overrides). `patience` (env
-    `CV_PATIENCE`, default 100) trims the Adam no-improvement tail of each
-    warm-started refit.
+    `workers` > 1 (env `CV_WORKERS`; default from the family registry): folds
+    are independent and each refit is deterministic, so the output is identical
+    to the sequential run — only the execution overlaps. Each worker's XLA pool
+    gets the family's `worker_threads` (env `CV_WORKER_THREADS` overrides).
+    `patience` (env `CV_PATIENCE`, default 100) trims the Adam no-improvement
+    tail of each warm-started refit.
 
     Every completed fold is appended to `outputs/<slug>/cv_checkpoint.jsonl`
     (fingerprint-guarded; see _checkpoint.py), and completed folds found there
@@ -447,16 +445,6 @@ def _run_loso(family, slug, workers=None, patience=None):
         )
 
     if pending and workers > 1:
-        # A fat-worker family (multi-threaded workers ⇔ memory-bound) pushed
-        # past its registry default is how a 48 GB machine ends up swapping.
-        if fam["worker_threads"] > 1 and workers > fam["default_workers"]:
-            print(
-                f"WARNING: {family} CV workers each carry ~8 GB of XLA temps; "
-                f"CV_WORKERS={workers} exceeds the family default of "
-                f"{fam['default_workers']} and can exhaust a 48 GB machine "
-                f"(raise CV_WORKER_THREADS instead to use more cores).",
-                file=sys.stderr,
-            )
         print(
             f"  parallel {family} CV: {workers} workers × {worker_threads} "
             f"thread(s), patience={patience}"
@@ -1015,31 +1003,31 @@ _FAMILIES = {
         "load_arrays": _load_arrays_intimacy,
         "table_kwargs": _tk_intimacy,
         "fold_impl": _fold_impl_intimacy,
-        "default_workers": SINGLE_LATENT_WORKERS,
-        "worker_threads": 1,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
     "desire": {
         "variants": VARIANTS_DESIRE,
         "load_arrays": _load_arrays_desire,
         "table_kwargs": _tk_desire,
         "fold_impl": _fold_impl_desire,
-        "default_workers": SINGLE_LATENT_WORKERS,
-        "worker_threads": 1,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
     "joint_de": {
         "variants": VARIANTS_JOINT_DE,
         "load_arrays": _load_arrays_joint_de,
         "table_kwargs": _tk_joint_de,
         "fold_impl": _fold_impl_joint_de,
-        "default_workers": JOINT_WORKERS,
-        "worker_threads": JOINT_WORKER_THREADS,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
     "joint_ie": {
         "variants": VARIANTS_JOINT_IE,
         "load_arrays": _load_arrays_joint_ie,
         "table_kwargs": _tk_joint_ie,
         "fold_impl": _fold_impl_joint_ie,
-        "default_workers": JOINT_WORKERS,
-        "worker_threads": JOINT_WORKER_THREADS,
+        "default_workers": DEFAULT_WORKERS,
+        "worker_threads": DEFAULT_WORKER_THREADS,
     },
 }

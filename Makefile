@@ -332,14 +332,11 @@ fit-inverse: $(addprefix fit-,$(EXPERIMENTS_INVERSE))
 # deterministic, so the outputs are identical to a sequential run — worker and
 # thread counts change wall-clock only, never results). Left empty, each study
 # uses its observer family's default from the dispatcher's _FAMILIES registry
-# (the single source of truth): 8 single-threaded workers for the single-latent
-# families, 3 × CV_WORKER_THREADS-threaded workers for the joint families,
-# whose ~8 GB-of-XLA-temps-per-worker memory bound is what caps their worker
-# count on a 48 GB machine. Setting CV_WORKERS explicitly applies to every
-# family (the dispatcher warns when that pushes a joint family past its memory-
-# safe default); lower it when parallelizing studies with -j so
-# (studies × CV_WORKERS × threads) stays ≲ the machine's cores. CV_RESTARTS
-# and CV_PATIENCE pass through the environment as before.
+# (the single source of truth) — currently 8 single-threaded workers for every
+# family, now that the fast joint observers keep a worker at ~1.5 GB. Setting
+# CV_WORKERS explicitly applies to every family; lower it when parallelizing
+# studies with -j so (studies × CV_WORKERS × threads) stays ≲ the machine's
+# cores. CV_RESTARTS and CV_PATIENCE pass through the environment as before.
 #
 # A CV run can be interrupted freely: completed fold refits land in
 # outputs/<slug>/cv_checkpoint.jsonl as they finish, and the next run of the
