@@ -68,6 +68,8 @@ from utility import (
     get_utility_full_padded_desire,
 )
 
+from make_human_priors import build_human_prior_rows
+
 N_S = len(SCENARIO_LABELS)  # 16
 N_O = N_ACTIONS  # 3 observed actions
 N_E = 2  # effort conditions
@@ -1107,6 +1109,110 @@ def test_elicit_priors_cell_grids():
     print("✓ elicit_priors cell grids have the expected shapes and quantities")
 
 
+def test_build_human_prior_rows_grouping():
+    """make_human_priors.build_human_prior_rows: prior-stage filter, per-cell
+    mean over subjects, condition renaming, and the [0, 1] pass-through (the
+    human ratings are already normalized, so there is no rescaling)."""
+    # joint_de: two elicited quantities, one prior-visible condition (intimacy).
+    df = pd.DataFrame(
+        [
+            # apples / max_formal: two prior subjects + a posterior row to exclude
+            {
+                "scenario_label": "apples",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "desire_rating": 0.2,
+                "effort_rating": 0.6,
+            },
+            {
+                "scenario_label": "apples",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "desire_rating": 0.4,
+                "effort_rating": 0.8,
+            },
+            {
+                "scenario_label": "apples",
+                "intimacy": "max_formal",
+                "stage": "posterior",
+                "desire_rating": 0.99,
+                "effort_rating": 0.99,
+            },
+            # pizza / max_intimate: single prior subject
+            {
+                "scenario_label": "pizza",
+                "intimacy": "max_intimate",
+                "stage": "prior",
+                "desire_rating": 0.1,
+                "effort_rating": 0.5,
+            },
+        ]
+    )
+    rows = build_human_prior_rows(df, "food_inv_joint_de")
+    assert len(rows) == 2  # the posterior row does not add a cell
+    by_cell = {(r["scenario_label"], r["intimacy_condition"]): r for r in rows}
+    apples = by_cell[("apples", "max_formal")]
+    assert apples["run_id"] == 0
+    assert "intimacy_condition" in apples and "intimacy" not in apples  # renamed
+    assert abs(apples["prior_desire"] - 0.3) < 1e-9  # mean(0.2, 0.4), prior only
+    assert abs(apples["prior_effort_high"] - 0.7) < 1e-9  # mean(0.6, 0.8), no posterior
+    pizza = by_cell[("pizza", "max_intimate")]
+    assert abs(pizza["prior_desire"] - 0.1) < 1e-9
+    assert abs(pizza["prior_effort_high"] - 0.5) < 1e-9
+
+    # desire (1a): single quantity read from `response`, two prior-visible
+    # conditions (effort + intimacy) -> two renamed condition keys.
+    df1a = pd.DataFrame(
+        [
+            {
+                "scenario_label": "apples",
+                "effort": "low",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "response": 0.2,
+            },
+            {
+                "scenario_label": "apples",
+                "effort": "low",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "response": 0.6,
+            },
+            {
+                "scenario_label": "apples",
+                "effort": "high",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "response": 0.9,
+            },
+            {
+                "scenario_label": "apples",
+                "effort": "low",
+                "intimacy": "max_formal",
+                "stage": "posterior",
+                "response": 0.99,
+            },
+        ]
+    )
+    rows1a = build_human_prior_rows(df1a, "food_inv_desire")
+    assert len(rows1a) == 2  # (low, max_formal) and (high, max_formal)
+    assert set(rows1a[0]) == {
+        "run_id",
+        "scenario_label",
+        "effort_condition",
+        "intimacy_condition",
+        "prior_desire",
+    }
+    cells = {(r["effort_condition"], r["intimacy_condition"]): r for r in rows1a}
+    assert (
+        abs(cells[("low", "max_formal")]["prior_desire"] - 0.4) < 1e-9
+    )  # mean(0.2, 0.6)
+    assert abs(cells[("high", "max_formal")]["prior_desire"] - 0.9) < 1e-9
+    print(
+        "✓ build_human_prior_rows groups prior-stage ratings per cell with renamed conditions"
+    )
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -1144,6 +1250,7 @@ def run_all_tests():
     test_alternatives_prompt_arms()
     test_prior_prompts_compose_condition_texts()
     test_elicit_priors_cell_grids()
+    test_build_human_prior_rows_grouping()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)

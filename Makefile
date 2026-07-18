@@ -64,6 +64,7 @@ ANALYSIS_QMDS := \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix lm-priors-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)) \
+        $(addprefix smoke-alternatives-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
         $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
@@ -132,6 +133,7 @@ help:
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
 	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
+	@echo "  smoke-alternatives-<slug>   (echo-only: prints the K=1 three-arm smoke commands to run by hand)"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -285,6 +287,18 @@ $(addprefix lm-priors-,$(EXPERIMENTS_ALL)): lm-priors-%:
 
 $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
 	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $* --base
+
+# K=1 three-arm generation smoke for the prompt-change gate (paid; tiny).
+# Runs nothing by itself -- prints the exact commands to run per arm. A static
+# pattern rule over the four food studies (smoke_report.py's supported slugs);
+# a plain `%` implicit rule would be skipped for these .PHONY targets.
+$(addprefix smoke-alternatives-,$(EXPERIMENTS_INVERSE)): smoke-alternatives-%:
+	@echo "K=1 smoke for $*: run each arm then the report:"
+	@echo "  K_RUNS=1 uv run python model/lm/generate_alternatives.py --study $* --arm refusal_hint"
+	@echo "  K_RUNS=1 uv run python model/lm/score_merged.py --study $* --alts-suffix _refusal_hint"
+	@echo "  K_RUNS=1 uv run python model/lm/generate_alternatives.py --study $* --arm refusal_hint_hyp"
+	@echo "  K_RUNS=1 uv run python model/lm/score_merged.py --study $* --alts-suffix _refusal_hint_hyp"
+	@echo "  uv run python model/lm/smoke_report.py --study $*"
 
 # =============================================================================
 # Per-study file-target graph (the incremental core, roster-driven)
