@@ -661,6 +661,61 @@ def test_fit_manifest_round_trip():
             raise AssertionError("tampered fit_results.json was not refused")
 
 
+def test_beta_prior_on_grid_normalizes_and_nests_uniform():
+    from _priors import GRID, beta_prior_on_grid
+
+    # exact uniform at (m=0.5, nu=2): Beta(1,1) has zero log-pdf everywhere
+    w = beta_prior_on_grid(jnp.array(0.5), 2.0)
+    assert w.shape == (101,)
+    assert jnp.allclose(w, jnp.ones(101) / 101, atol=1e-7)
+    # normalization + mean recovery for concentrated priors, batched input
+    ms = jnp.array([0.2, 0.5, 0.8])
+    for nu in (2.0, 8.0, 32.0):
+        w = beta_prior_on_grid(ms, nu)  # (3, 101)
+        assert jnp.allclose(w.sum(-1), 1.0, atol=1e-6)
+        means = w @ GRID
+        assert jnp.all(jnp.diff(means) > 0)  # monotone in m
+        if nu >= 8.0:
+            assert jnp.max(jnp.abs(means - ms)) < 0.03
+    print("✓ beta_prior_on_grid normalizes, nests uniform, recovers the mean")
+
+
+def test_reweight_grid_uniform_weights_is_identity():
+    from _priors import GRID, beta_prior_on_grid, reweight_grid
+
+    rng = np.random.default_rng(0)
+    post = rng.dirichlet(np.ones(101), size=(4,))  # (4, 101)
+    w = beta_prior_on_grid(jnp.full((4,), 0.5), 2.0)
+    out = reweight_grid(jnp.asarray(post), w)
+    assert jnp.allclose(out, post, atol=1e-6)
+    # informative prior shifts the posterior mean toward the prior mean
+    w_hi = beta_prior_on_grid(jnp.full((4,), 0.9), 8.0)
+    out_hi = reweight_grid(jnp.asarray(post), w_hi)
+    assert jnp.all(out_hi @ GRID > jnp.asarray(post) @ GRID)
+    assert jnp.allclose(out_hi.sum(-1), 1.0, atol=1e-6)
+    print("✓ reweight_grid is identity under uniform weights, shifts under prior")
+
+
+def test_reweight_joint_matches_manual_and_nests_uniform():
+    from _priors import beta_prior_on_grid, reweight_joint
+
+    rng = np.random.default_rng(1)
+    j = rng.dirichlet(np.ones(202), size=(3,)).reshape(3, 101, 2)
+    j = jnp.asarray(j)
+    assert reweight_joint(j) is j  # both None: no-op
+    out_u = reweight_joint(
+        j, beta_prior_on_grid(jnp.full((3,), 0.5), 2.0), jnp.full((3,), 0.5)
+    )
+    assert jnp.allclose(out_u, j, atol=1e-6)
+    # manual reference for an informative case
+    w = beta_prior_on_grid(jnp.full((3,), 0.3), 8.0)  # (3, 101)
+    p = jnp.full((3,), 0.2)
+    ref = j * w[:, :, None] * jnp.stack([1 - p, p], -1)[:, None, :]
+    ref = ref / ref.sum((-2, -1), keepdims=True)
+    assert jnp.allclose(reweight_joint(j, w, p), ref, atol=1e-6)
+    print("✓ reweight_joint matches manual reference and nests uniform")
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -682,6 +737,9 @@ def run_all_tests():
     test_fit_multistart_raises_on_all_nan()
     test_fit_manifest_round_trip()
     test_delta_helpers_match_reference()
+    test_beta_prior_on_grid_normalizes_and_nests_uniform()
+    test_reweight_grid_uniform_weights_is_identity()
+    test_reweight_joint_matches_manual_and_nests_uniform()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)

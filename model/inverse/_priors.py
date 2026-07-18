@@ -1,0 +1,68 @@
+"""Informative-prior machinery for the inverse fits (spec:
+notes/2026-07-18-informative-priors-refusal-alts-design.md).
+
+Every observer in observers.py is a Bayes inversion of the actor policy under
+a UNIFORM latent prior, so an informative-prior posterior is exactly the
+uniform-prior posterior reweighted by the prior and renormalized:
+    post_inf(z | a) ∝ prior(z) · post_unif(z | a).
+That identity lets the prior live entirely at the likelihood layer -- the
+observers (fast and memo reference) are untouched, and the uniform path stays
+byte-identical (see test_model_compliance nesting tests).
+
+Grid latents (desire / intimacy) get a discretized Beta(mean m, concentration
+nu) prior with a single fitted nu per study (param_prior_nu; uniform is nested
+at m = 0.5, nu = 2). The 2-state effort latent's prior is the elicited scalar
+P(effort = high) directly -- no shape parameter.
+"""
+
+import sys
+from pathlib import Path
+
+import jax
+import jax.numpy as jnp
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from tables import DesireLevels
+
+GRID = DesireLevels  # == IntimacyLevels; the 101-bin [0, 1] latent grid
+# Beta pdf evaluation clamp: half a grid bin, so the exact-0/1 endpoints get
+# the density of the nearest half-bin instead of ±inf when a or b < 1.
+GRID_EPS = 0.005
+
+
+def beta_prior_on_grid(m, nu, grid=None):
+    """Discretized Beta prior over the latent grid.
+
+    m: prior mean(s), shape (...,) in [0, 1]; nu: concentration (scalar,
+    differentiable -- the fitted param). Returns normalized weights
+    (..., n_grid). Exactly uniform at (m=0.5, nu=2), which nests the
+    preregistered uniform prior.
+    """
+    g = GRID if grid is None else grid
+    x = jnp.clip(g, GRID_EPS, 1.0 - GRID_EPS)
+    m = jnp.asarray(m)[..., None]
+    log_pdf = (nu * m - 1.0) * jnp.log(x) + (nu * (1.0 - m) - 1.0) * jnp.log1p(-x)
+    return jax.nn.softmax(log_pdf, axis=-1)
+
+
+def reweight_grid(post, w):
+    """post (..., n_grid) uniform-prior posterior × w (..., n_grid) prior
+    weights → renormalized informative-prior posterior."""
+    p = post * w
+    return p / p.sum(axis=-1, keepdims=True)
+
+
+def reweight_joint(joint, w_latent=None, p_high=None):
+    """(..., n_grid, 2) joint posterior reweighted by a grid-latent prior
+    and/or a 2-state effort prior; None leaves that axis at the observer's
+    uniform prior. Both None returns the input unchanged (canonical path)."""
+    if w_latent is None and p_high is None:
+        return joint
+    p = joint
+    if w_latent is not None:
+        p = p * w_latent[..., :, None]
+    if p_high is not None:
+        w_eff = jnp.stack([1.0 - p_high, p_high], axis=-1)
+        p = p * w_eff[..., None, :]
+    return p / p.sum(axis=(-2, -1), keepdims=True)
