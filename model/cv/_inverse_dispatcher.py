@@ -100,6 +100,7 @@ from _helpers import (  # noqa: E402
 from _priors import (  # noqa: E402
     beta_prior_on_grid,
     build_priors_kwarg,
+    priors_base_variant,
     reweight_grid,
     reweight_joint,
 )
@@ -398,7 +399,9 @@ def _priors_cached(slug, variant):
     key = (slug, variant == "base")
     if key not in _PRIORS_CACHE:
         cfg = _CV_W["config"]
-        pr = build_priors_kwarg(slug, cfg, base=(variant == "base"))
+        pr = build_priors_kwarg(
+            slug, cfg, base=priors_base_variant(slug, variant, cfg.priors_file)
+        )
         if pr is not None:
             k_tables = _tk_cached(_CV_W["family"], slug, variant)["risk_table"].shape[0]
             pr = {

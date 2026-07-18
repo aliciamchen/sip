@@ -28,7 +28,7 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
-from _priors import build_priors_kwarg  # noqa: E402
+from _priors import build_priors_kwarg, priors_base_variant  # noqa: E402
 from observers import VARIANTS_DESIRE as VARIANTS  # noqa: E402
 
 EXPERIMENT_SLUG = "food_inv_desire"
@@ -55,10 +55,16 @@ def main(config=None):
         ),
     )
     # Informative-prior kwargs per variant (None in the canonical uniform config,
-    # which keeps the fit byte-identical). The base variant reads its own
-    # relationship-free priors file.
+    # which keeps the fit byte-identical). priors_base_variant (the single source
+    # of truth, shared with the CV dispatcher) routes only the base variant to its
+    # relationship-free priors vintage, and only when no explicit --priors-file is
+    # set (see _priors.py).
     priors_by_variant = {
-        name: build_priors_kwarg(EXPERIMENT_SLUG, config, base=(name == "base"))
+        name: build_priors_kwarg(
+            EXPERIMENT_SLUG,
+            config,
+            base=priors_base_variant(EXPERIMENT_SLUG, name, config.priors_file),
+        )
         for name in VARIANTS
     }
     # K alignment: the priors' run axis must match the feature tables' K. A K=1

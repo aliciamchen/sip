@@ -28,7 +28,7 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
-from _priors import build_priors_kwarg  # noqa: E402
+from _priors import build_priors_kwarg, priors_base_variant  # noqa: E402
 from observers import VARIANTS_JOINT_IE as VARIANTS  # noqa: E402
 
 EXPERIMENT_SLUG = "food_inv_joint_ie"
@@ -56,10 +56,17 @@ def main(config=None):
     )
     # Informative-prior kwargs per variant (None in the canonical uniform config,
     # which keeps the fit byte-identical). The given-desire studies show no
-    # relationship paragraph, so every variant reads the standard priors file
-    # (base=False), mirroring joint_ie_table_kwargs' single alternatives vintage.
+    # relationship paragraph and have no base priors vintage, so
+    # priors_base_variant (the single source of truth, shared with the CV
+    # dispatcher) returns False for every variant — every variant reads the
+    # standard priors file, mirroring joint_ie_table_kwargs' single vintage.
     priors_by_variant = {
-        name: build_priors_kwarg(EXPERIMENT_SLUG, config) for name in VARIANTS
+        name: build_priors_kwarg(
+            EXPERIMENT_SLUG,
+            config,
+            base=priors_base_variant(EXPERIMENT_SLUG, name, config.priors_file),
+        )
+        for name in VARIANTS
     }
     # K alignment: the priors' run axis must match the feature tables' K. A K=1
     # priors file (e.g. the human-ceiling vintage) tiles up to the tables' K;

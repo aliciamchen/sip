@@ -731,12 +731,19 @@ def _tiny_joint_ie_table_kwargs(K=2):
 
 def test_informative_prior_nests_uniform_fit_loss():
     """priors with m=0.5 everywhere and nu fixed at 2 must reproduce the
-    uniform-path loss and gradient exactly (spec: uniform nested)."""
+    uniform-path loss AND its gradient exactly at the shared coordinates (spec:
+    uniform nested). The value nesting is checked through the real fit; the
+    gradient nesting reconstructs the fit's joint_ie loss (from the same public
+    helpers the fit closure calls) so it can be differentiated, and pins that
+    reconstruction to the fit by matching its recorded init NLL — so the
+    reconstruction can't silently drift out of sync with the fit."""
     from observers import VARIANTS_JOINT_IE
 
     obs_fn, utility_names = VARIANTS_JOINT_IE["full"]
     tk = _tiny_joint_ie_table_kwargs()  # the synthetic-table fixture (K=2)
     K = tk["risk_table"].shape[0]
+    n_scen = tk["risk_table"].shape[1]
+    n_core = len(utility_names) + 2
     action = jnp.array([0, 1, 2, 1])
     scen = jnp.array([0, 1, 2, 3])
     des = jnp.array([0, 1, 0, 1])
@@ -747,7 +754,7 @@ def test_informative_prior_nests_uniform_fit_loss():
 
     # Probe each loss at a fixed init via a 1-restart, max_steps=1 fit and
     # compare the recorded init NLLs (the loss at the same point).
-    init_uniform = jnp.ones(len(utility_names) + 2)
+    init_uniform = jnp.ones(n_core)
     _, nll_u, rec_u = fit_joint_ie_observer_joint(
         obs_fn,
         utility_names,
@@ -762,7 +769,6 @@ def test_informative_prior_nests_uniform_fit_loss():
         max_steps=1,
         verbose=False,
     )
-    n_scen = tk["risk_table"].shape[1]
     priors = {
         "m_latent": jnp.full((K, n_scen, 2), 0.5),
         "p_effort": jnp.full((K, n_scen, 2), 0.5),
@@ -787,7 +793,61 @@ def test_informative_prior_nests_uniform_fit_loss():
         f"informative m=0.5/nu=2 must nest uniform: "
         f"{rec_u[0]['nll']} vs {rec_i[0]['nll']}"
     )
-    print("✓ informative prior (m=0.5, nu=2) nests the uniform-path fit loss")
+
+    # Gradient nesting: reconstruct the fit's joint_ie loss (parametrized by the
+    # priors dict) so jax.grad can be taken, anchored to the real fit by matching
+    # its recorded init NLL, then compare d(loss)/d(shared params).
+    from _helpers import (
+        EFFORT_PRIOR_MEAN,
+        GRID,
+        PRIOR_MEAN,
+        _build_observer_tables_runs,
+        delta_joint,
+        mixture_nll_2d,
+    )
+    from _priors import beta_prior_on_grid, reweight_joint
+
+    def loss(params, pr):
+        use_grid = pr is not None and pr.get("m_latent") is not None
+        use_eff = pr is not None and pr.get("p_effort") is not None
+        tables = _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+        sigma = params[n_core - 1]
+        nu = params[n_core] if use_grid else None
+
+        def nll_trial(a, s, r, ui, ue):
+            joint = tables[:, 0, s, a, r, :, :]  # (K, 101, 2)
+            if use_grid:
+                w = beta_prior_on_grid(pr["m_latent"][:, s, r], nu)
+                lat_pm = w @ GRID
+            else:
+                w, lat_pm = None, PRIOR_MEAN
+            if use_eff:
+                p = pr["p_effort"][:, s, r]
+                eff_pm = p
+            else:
+                p, eff_pm = None, EFFORT_PRIOR_MEAN
+            joint = reweight_joint(joint, w, p)
+            d_i, d_e = delta_joint(joint, GRID, lat_pm, eff_pm)
+            return mixture_nll_2d(
+                jnp.array([ui, ue]), jnp.stack([d_i, d_e], axis=1), sigma
+            )
+
+        return jnp.sum(jax.vmap(nll_trial)(action, scen, des, u_int, u_eff))
+
+    # Anchor: the reconstruction reproduces the real fit's init loss (so a later
+    # divergence between fit and reconstruction fails here, not silently).
+    assert abs(float(loss(init_uniform, None)) - rec_u[0]["nll"]) < 1e-3
+    assert abs(float(loss(init_inf, priors)) - rec_i[0]["nll"]) < 1e-3
+
+    g_u = jax.grad(lambda p: loss(p, None))(init_uniform)  # (n_core,)
+    g_i = jax.grad(lambda p: loss(p, priors))(init_inf)  # (n_core + 1,)
+    assert jnp.allclose(g_u, g_i[:n_core], atol=1e-4), (
+        f"informative gradient must nest uniform on the shared params: "
+        f"{np.asarray(g_u)} vs {np.asarray(g_i[:n_core])}"
+    )
+    print(
+        "✓ informative prior (m=0.5, nu=2) nests the uniform-path fit loss + gradient"
+    )
 
 
 def _tmpdir():
@@ -967,21 +1027,66 @@ def test_build_priors_kwarg_empty_active_raises():
 
 
 def test_build_priors_kwarg_missing_file_raises():
-    """informative priors on a study whose priors file hasn't been elicited must
-    fail fast with the `make lm-priors-<slug>` hint (not fall back to uniform).
-    nonfood_inv_joint_de has no lm_priors.jsonl."""
+    """informative priors whose priors file is absent must fail fast with the
+    `make lm-priors-<slug>` hint (not fall back to uniform). Points at a
+    guaranteed-absent fixture filename (via --priors-file) rather than relying on
+    a real study genuinely lacking its lm_priors.jsonl — so the test stays
+    hermetic the day nonfood priors are elicited."""
     from _priors import build_priors_kwarg
 
     from run_config import RunConfig
 
-    cfg = RunConfig.parse("informative", "", None)
+    cfg = RunConfig.parse(
+        "informative", "", "lm_priors_definitely_absent_fixture.jsonl"
+    )
     try:
-        build_priors_kwarg("nonfood_inv_joint_de", cfg)
+        build_priors_kwarg("food_inv_joint_de", cfg)
     except FileNotFoundError as e:
-        assert "make lm-priors-nonfood_inv_joint_de" in str(e), f"missing hint: {e}"
+        assert "make lm-priors-food_inv_joint_de" in str(e), f"missing hint: {e}"
         print("✓ build_priors_kwarg raises FileNotFoundError with the make hint")
     else:
         raise AssertionError("missing priors file was not rejected")
+
+
+def test_priors_base_variant_truth_table():
+    """priors_base_variant (F1/F2): the base priors vintage is routed to only for
+    (given-relationship study, base variant, no explicit --priors-file). A
+    given-desire study, a non-base variant, or an explicit priors-file each
+    return False (the latter is the F2 fix — an explicit vintage is used as-is,
+    never through the loader's base collapse)."""
+    from _priors import priors_base_variant
+
+    # given-desire study has no base priors vintage → never base
+    assert priors_base_variant("food_inv_intimacy", "base", None) is False
+    # given-relationship study, base variant, default file → base vintage
+    assert priors_base_variant("food_inv_joint_de", "base", None) is True
+    # explicit --priors-file collapses every variant to base=False (F2)
+    assert (
+        priors_base_variant("food_inv_joint_de", "base", "lm_priors_human.jsonl")
+        is False
+    )
+    # non-base variant → never base
+    assert priors_base_variant("food_inv_joint_de", "full", None) is False
+    print("✓ priors_base_variant truth table (F1/F2)")
+
+
+def test_build_priors_kwarg_human_ceiling_loads():
+    """F2 regression: fitting with an explicit --priors-file (the full-shaped
+    human-ceiling lm_priors_human.jsonl, one row per relationship level) must
+    load for the base variant WITHOUT the loader's base collapse — which would
+    drop intimacy_condition and raise a conflicting-write ValueError.
+    priors_base_variant forces base=False for an explicit file, so the
+    full-shaped (1, 16, 4) arrays load cleanly. Hermetic: the human file is
+    committed under outputs/lm/food_inv_joint_de/."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    cfg = RunConfig.parse("informative", "", "lm_priors_human.jsonl")
+    pr = build_priors_kwarg("food_inv_joint_de", cfg, base=False)
+    assert pr["m_latent"].shape == (1, 16, 4), pr["m_latent"].shape
+    assert pr["p_effort"].shape == (1, 16, 4), pr["p_effort"].shape
+    print("✓ build_priors_kwarg loads the human-ceiling priors file (F2)")
 
 
 def _load_prompts_module():
@@ -1247,6 +1352,8 @@ def run_all_tests():
     test_build_priors_kwarg_uniform_is_none()
     test_build_priors_kwarg_empty_active_raises()
     test_build_priors_kwarg_missing_file_raises()
+    test_priors_base_variant_truth_table()
+    test_build_priors_kwarg_human_ceiling_loads()
     test_alternatives_prompt_arms()
     test_prior_prompts_compose_condition_texts()
     test_elicit_priors_cell_grids()

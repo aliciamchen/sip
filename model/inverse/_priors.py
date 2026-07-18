@@ -68,6 +68,37 @@ def reweight_joint(joint, w_latent=None, p_high=None):
     return p / p.sum(axis=(-2, -1), keepdims=True)
 
 
+# The given-relationship studies (1a/1b/3a) are the only ones with a
+# relationship-free *base* priors vintage (`lm_priors_base.jsonl`, elicited
+# without the relationship paragraph); `elicit_priors.py --base` refuses the
+# given-desire studies (2a/2b/3b), which never show a relationship paragraph and
+# whose base ablation shares the standard priors file. Single source of truth for
+# the fit wrappers and the CV dispatcher.
+GIVEN_RELATIONSHIP_SLUGS = frozenset(
+    {"food_inv_desire", "food_inv_joint_de", "nonfood_inv_joint_de"}
+)
+
+
+def priors_base_variant(slug, variant, priors_file=None):
+    """Whether to load the relationship-free *base* priors vintage for this
+    (slug, variant) — the single decision both the fit wrappers and the CV
+    dispatcher use so they never disagree.
+
+    True only when all three hold:
+      - `variant == "base"` (the relationship-invariant ablation);
+      - `slug` is a given-relationship study (the only ones with a base priors
+        vintage; the given-desire studies would route to a nonexistent file);
+      - `priors_file is None` (no explicit `--priors-file`). An explicit priors
+        file is a single materialized vintage (e.g. the human-ceiling
+        `lm_priors_human.jsonl`, which is full-shaped, one row per relationship
+        level) used as-is for every variant, so the loader's base collapse —
+        which drops `intimacy_condition` — must not run on it.
+    """
+    return (
+        variant == "base" and slug in GIVEN_RELATIONSHIP_SLUGS and priors_file is None
+    )
+
+
 def build_priors_kwarg(slug, config, base=False):
     """Assemble the fit helpers' `priors=` dict for one study/variant from the
     elicited prior tables and the RunConfig (spec:
