@@ -42,6 +42,7 @@ transfer between studies.
 
 import contextlib
 import functools
+import json
 import multiprocessing as mp
 import os
 import sys
@@ -84,17 +85,23 @@ from _helpers import (  # noqa: E402
     joint_ie_table_kwargs,
     git_sha,
     load_desire_data,
-    load_fit_results,
     load_intimacy_data,
     load_joint_de_data,
     load_joint_ie_data,
     mixture_nll_1d,
     mixture_nll_2d,
     params_dict_to_array,
+    parse_run_config_args,
     sha256_file,
     verify_fit_manifest,
     write_json,
     write_jsonl,
+)
+from _priors import (  # noqa: E402
+    beta_prior_on_grid,
+    build_priors_kwarg,
+    reweight_grid,
+    reweight_joint,
 )
 from observers import (  # noqa: E402
     VARIANTS_DESIRE,
@@ -102,6 +109,7 @@ from observers import (  # noqa: E402
     VARIANTS_JOINT_DE,
     VARIANTS_JOINT_IE,
 )
+from run_config import RunConfig  # noqa: E402
 from tables import (  # noqa: E402
     INTIMACY_CONDITIONS,
     STUDY_SCENARIO_LABELS,
@@ -148,6 +156,14 @@ def _domain_for(slug):
     return "nonfood" if slug.startswith("nonfood_") else "food"
 
 
+def _grid_prior_active(slug, config):
+    """Whether this run puts an informative Beta prior on a grid latent
+    (desire/intimacy) for `slug`, so the fit vector gains the fitted `prior_nu`
+    at index `n_core`. False for the canonical uniform-prior run and for
+    effort-only priors (the 2-state effort prior adds no shape parameter)."""
+    return any(lat in ("desire", "intimacy") for lat in config.active_latents(slug))
+
+
 # The per-variant (observer_fn, utility_param_names) registries — one per
 # observer family — are the single source of truth in observers.py, imported
 # above and shared with the fit wrappers so fit and CV never disagree on which
@@ -187,43 +203,84 @@ def _fold_row(
     test_nll,
     n_train,
     n_test,
+    extra_param_names=(),
 ):
+    """One `cv_folds.jsonl` diagnostic row. The param vector layout is
+    `[*utility_param_names, alpha_observer, sigma, *extra_param_names]` — the
+    same names-based flattening as `restart_records_to_rows`, so an
+    informative-prior fit's `prior_nu` (in `extra_param_names`) is read from its
+    real index rather than mis-indexed off the vector's tail. Every param is
+    written `param_<name>` except `alpha_observer`, which stays bare."""
     row = {
         "experiment": slug,
         "variant": variant,
         "fold": fold,
         "held_out_scenario": scenario_label,
-        "alpha_observer": float(params_arr[-2]),
-        "param_sigma": float(params_arr[-1]),
         "train_nll": float(train_nll),
         "test_nll": float(test_nll),
         "n_train": int(n_train),
         "n_test": int(n_test),
     }
-    for i, name in enumerate(utility_param_names):
-        row[f"param_{name}"] = float(params_arr[i])
+    names = (
+        list(utility_param_names)
+        + ["alpha_observer", "sigma"]
+        + list(extra_param_names)
+    )
+    for i, name in enumerate(names):
+        key = name if name == "alpha_observer" else f"param_{name}"
+        row[key] = float(params_arr[i])
     return row
 
 
-def _load_verified_warm_start(slug):
-    """Warm-start params for CV folds from the full-data fit, checking
-    provenance when it's available. A missing fit is a loud warning and a cold
-    start (CV still runs — it just refits each fold from a lognormal init
-    instead of the full-data fit, which is slower and skips the leak-mitigation
-    intent, so a fit first is recommended). A fit whose manifest is *present but
-    mismatched* is a hard error via verify_fit_manifest (genuine staleness); a
-    fit with no manifest warns and is used as-is."""
-    fit_path = get_project_root() / "model" / "outputs" / slug / "fit_results.json"
+def _read_fit_results(fit_dir):
+    """Parse `fit_results.json` from an explicit fit directory into the
+    per-variant params dicts the warm start needs.
+
+    Mirrors `_helpers.load_fit_results` but reads the RunConfig's own fit dir
+    (informative/suffixed runs write outside the canonical outputs/<slug>/) and
+    additionally carries `param_prior_nu` when present, so the extended
+    informative-prior warm-start vector round-trips through
+    `params_dict_to_array(..., extra_param_names=("prior_nu",))`."""
+    with open(Path(fit_dir) / "fit_results.json") as f:
+        rows = json.load(f)
+    out = {}
+    for row in rows:
+        variant = str(row["model"])
+        params = {
+            "alpha": float(row.get("param_alpha", 1.0)),
+            "alpha_observer": float(row["alpha_observer"]),
+        }
+        if row.get("param_sigma") is not None:
+            params["sigma"] = float(row["param_sigma"])
+        for pn in ("w_v", "w_d", "w_e", "gamma", "prior_nu"):
+            if row.get(f"param_{pn}") is not None:
+                params[pn] = float(row[f"param_{pn}"])
+        out[variant] = params
+    return out
+
+
+def _load_verified_warm_start(slug, fit_dir):
+    """Warm-start params for CV folds from the full-data fit under THIS run's
+    config (`fit_dir` = `config.outputs_dir(slug)`), checking provenance when
+    it's available. A missing fit is a loud warning and a cold start (CV still
+    runs — it just refits each fold from a lognormal init instead of the
+    full-data fit, which is slower and skips the leak-mitigation intent, so a
+    fit first is recommended). A fit whose manifest is *present but mismatched*
+    is a hard error via verify_fit_manifest (genuine staleness); a fit with no
+    manifest warns and is used as-is."""
+    fit_dir = Path(fit_dir)
+    fit_path = fit_dir / "fit_results.json"
     if not fit_path.exists():
         print(
-            f"WARNING: no fit_results.json for {slug} — CV will cold-start every "
-            f"fold. Run `make fit-{slug}` first for a warm start (faster, and it "
-            f"avoids folds depending on an init that saw the held-out scenario).",
+            f"WARNING: no fit_results.json for {slug} in {fit_dir} — CV will "
+            f"cold-start every fold. Run `make fit-{slug}` first for a warm start "
+            f"(faster, and it avoids folds depending on an init that saw the "
+            f"held-out scenario).",
             file=sys.stderr,
         )
         return {}
-    verify_fit_manifest(slug)
-    return load_fit_results(slug)
+    verify_fit_manifest(slug, output_dir=fit_dir)
+    return _read_fit_results(fit_dir)
 
 
 # The three CV output files written together per study; the manifest hashes
@@ -231,13 +288,13 @@ def _load_verified_warm_start(slug):
 CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
 
 
-def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows):
+def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows, outputs_dir):
     if not trial_ll_rows:
         raise RuntimeError(
             f"CV for {slug} scored no held-out trials — refusing to write "
             "empty outputs. Check the data loader and the fold train/test masks."
         )
-    outputs_dir = get_project_root() / "model" / "outputs" / slug
+    outputs_dir = Path(outputs_dir)
     outputs_dir.mkdir(parents=True, exist_ok=True)
     write_json(outputs_dir / "cv_preds_summary.json", pred_rows)
     write_jsonl(outputs_dir / "cv_folds.jsonl", fold_rows)
@@ -307,18 +364,53 @@ def _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test):
 _CV_W = {}
 
 
-def _cv_worker_init(family, slug, arrays):
-    _CV_W.update(family=family, slug=slug, arrays=arrays)
+def _cv_worker_init(family, slug, arrays, config):
+    _CV_W.update(family=family, slug=slug, arrays=arrays, config=config)
 
 
 @functools.lru_cache(maxsize=None)
 def _tk_cached(family, slug, variant):
     """Per-process cache of a variant's LM table kwargs (the lm_runs.jsonl load
     is a few MB, so build it once per worker per variant, not once per fold).
-    Keyed on (family, slug) too — the joint families serve two slugs each."""
+    Keyed on (family, slug) too — the joint families serve two slugs each. The
+    run config's alternatives vintage comes from `_CV_W["config"]`, which is one
+    fixed config per process (parent and each spawn worker), so it need not be a
+    cache key."""
     fam = _FAMILIES[family]
     _, utility_names = fam["variants"][variant]
-    return fam["table_kwargs"](variant, utility_names, slug)
+    return fam["table_kwargs"](
+        variant, utility_names, slug, suffix=_CV_W["config"].alts_suffix
+    )
+
+
+# Per-process cache of a variant's informative-prior tables (K-broadcast to the
+# feature tables' run count). None in uniform mode — the canonical path never
+# reweights.
+_PRIORS_CACHE = {}
+
+
+def _priors_cached(slug, variant):
+    """Build (once per process, per variant) the `priors=` dict the fold
+    reweights the observer posterior with, or None in uniform mode. The elicited
+    prior tables carry a leading run axis of 1 when the priors were elicited in a
+    single run; tile it to the alternatives tables' K so the per-run reweighting
+    broadcasts (matching the fit helpers)."""
+    key = (slug, variant == "base")
+    if key not in _PRIORS_CACHE:
+        cfg = _CV_W["config"]
+        pr = build_priors_kwarg(slug, cfg, base=(variant == "base"))
+        if pr is not None:
+            k_tables = _tk_cached(_CV_W["family"], slug, variant)["risk_table"].shape[0]
+            pr = {
+                k: (
+                    jnp.repeat(v, k_tables, axis=0)
+                    if v is not None and v.shape[0] == 1 and k_tables > 1
+                    else v
+                )
+                for k, v in pr.items()
+            }
+        _PRIORS_CACHE[key] = pr
+    return _PRIORS_CACHE[key]
 
 
 def _cv_fold(variant, fold, warm, patience):
@@ -372,7 +464,7 @@ def _capped_worker_threads(n_threads=1):
                 os.environ[k] = v
 
 
-def _run_loso(family, slug, workers=None, patience=None):
+def _run_loso(family, slug, workers=None, patience=None, config=None):
     """LOSO CV for one study. Runs the (variant × fold) refits concurrently when
     `workers` > 1 (env `CV_WORKERS`; default from the family registry): folds
     are independent and each refit is deterministic, so the output is identical
@@ -381,11 +473,17 @@ def _run_loso(family, slug, workers=None, patience=None):
     `patience` (env `CV_PATIENCE`, default 100) trims the Adam no-improvement
     tail of each warm-started refit.
 
-    Every completed fold is appended to `outputs/<slug>/cv_checkpoint.jsonl`
+    `config` (a RunConfig; default the canonical uniform-prior config) selects
+    the alternatives vintage, whether the observer posterior is reweighted by an
+    informative prior, which fit dir warm-starts the folds, and where the
+    outputs land. The default keeps the canonical path byte-identical.
+
+    Every completed fold is appended to `<outputs_dir>/cv_checkpoint.jsonl`
     (fingerprint-guarded; see _checkpoint.py), and completed folds found there
     at startup are skipped — so an interrupted multi-hour run resumes instead
     of starting over. The final outputs are still written only when every fold
     is present, so consumers never see a partial set."""
+    config = config or RunConfig()
     fam = _FAMILIES[family]
     # Worker count: explicit arg, then env CV_WORKERS, then the family default
     # from the registry (the joint families default lower — memory-bound).
@@ -406,12 +504,21 @@ def _run_loso(family, slug, workers=None, patience=None):
         )
     arrays = fam["load_arrays"](slug)
     variants = fam["variants"]
-    # Warm-start source: the full-data fit (refits perturb it only slightly),
-    # provenance-verified against fit_manifest.json and the current data CSV.
-    full_fit = _load_verified_warm_start(slug)
+    # Populate the parent's worker state up front: the warm-up `_tk_cached`
+    # calls below read the run config's alternatives suffix from `_CV_W`, and
+    # the sequential path reuses this same state. Spawn workers get their own
+    # copy via the pool `initargs`.
+    _cv_worker_init(family, slug, arrays, config)
+    # The informative-prior fit appends a fitted `prior_nu` to the param vector
+    # (index `n_core`), so the warm start must carry it too — otherwise a length
+    # mismatch is silently mis-sliced. Uniform runs keep the bare vector.
+    extra = ("prior_nu",) if _grid_prior_active(slug, config) else ()
+    # Warm-start source: the full-data fit under THIS config (refits perturb it
+    # only slightly), provenance-verified against fit_manifest.json and the data.
+    full_fit = _load_verified_warm_start(slug, fit_dir=config.outputs_dir(slug))
     warms = {
         v: (
-            np.asarray(params_dict_to_array(full_fit[v], util))
+            np.asarray(params_dict_to_array(full_fit[v], util, extra_param_names=extra))
             if v in full_fit
             else None
         )
@@ -427,13 +534,28 @@ def _run_loso(family, slug, workers=None, patience=None):
     jobs = [(v, f) for v in variants for f in range(n_folds)]
 
     # Resume any completed folds from an interrupted run's checkpoint. The
-    # fingerprint ties them to this run's exact inputs and refit config, so a
-    # resume can never splice folds from different vintages; keys outside this
-    # run's job list are dropped rather than trusted.
-    outputs_dir = get_project_root() / "model" / "outputs" / slug
+    # fingerprint ties them to this run's exact inputs, run config, and refit
+    # config, so a resume can never splice folds from different vintages; keys
+    # outside this run's job list are dropped rather than trusted.
+    outputs_dir = config.outputs_dir(slug)
     outputs_dir.mkdir(parents=True, exist_ok=True)
     ckpt = checkpoint_path(outputs_dir)
-    fingerprint = run_fingerprint(slug, family, patience, N_RESTARTS_CV)
+    fingerprint = run_fingerprint(
+        slug,
+        family,
+        patience,
+        N_RESTARTS_CV,
+        config_fields={
+            "tag": config.tag() if not config.is_canonical else "canonical",
+            "runs": config.runs_filename(False),
+            "priors": (
+                config.priors_filename(False)
+                if config.priors_mode != "uniform"
+                else None
+            ),
+            "fit_dir": str(config.outputs_dir(slug)),
+        },
+    )
     results = {
         k: v for k, v in init_checkpoint(ckpt, fingerprint).items() if k in set(jobs)
     }
@@ -454,7 +576,7 @@ def _run_loso(family, slug, workers=None, patience=None):
                 max_workers=workers,
                 mp_context=mp.get_context("spawn"),
                 initializer=_cv_worker_init,
-                initargs=(family, slug, arrays),
+                initargs=(family, slug, arrays, config),
             ) as ex:
                 futs = {
                     ex.submit(_cv_fold, v, f, warms[v], patience): (v, f)
@@ -480,7 +602,8 @@ def _run_loso(family, slug, workers=None, patience=None):
                     ex.shutdown(wait=False, cancel_futures=True)
                     raise
     elif pending:
-        _cv_worker_init(family, slug, arrays)
+        # `_CV_W` is already populated in the parent above; the sequential path
+        # runs folds in-process, so no re-init is needed.
         for v, f in pending:
             res = _cv_fold(v, f, warms[v], patience)
             results[(v, f)] = res
@@ -514,14 +637,17 @@ def _load_arrays_intimacy(slug):
     )
 
 
-def _tk_intimacy(variant, utility_names, slug):
-    return intimacy_table_kwargs(utility_names)
+def _tk_intimacy(variant, utility_names, slug, suffix=""):
+    return intimacy_table_kwargs(utility_names, suffix=suffix)
 
 
 def _fold_impl_intimacy(variant, fold, warm, patience):
     obs_fn, utility_names = VARIANTS_INTIMACY[variant]
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
+    priors = _priors_cached(slug, variant)  # None in uniform mode
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    n_core = len(utility_names) + 2
     arr = _CV_W["arrays"]
     sc, act = arr["scenario"], arr["action"]
     des, eff = arr["desire"], arr["effort"]
@@ -540,23 +666,37 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
         effort_condition=jnp.asarray(eff[train_mask]),
         response=jnp.asarray(resp[train_mask]),
         table_kwargs=tk,
+        priors=priors,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
     )
-    sigma = float(params[-1])
+    sigma = float(params[n_core - 1])
+    nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, desire, effort, intimacy_101)
-    tables = np.asarray(_build_observer_tables_runs(obs_fn, params, utility_names, tk))
+    tables = np.asarray(
+        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+    )
 
-    # Predicted belief update δ per held-out cell (mean over runs).
+    # Predicted belief update δ per held-out cell (mean over runs). In
+    # informative mode the intimacy posterior is reweighted by its per-cell Beta
+    # prior before the mean (matching the fit's likelihood layer).
     pred_rows = []
     for a_idx in range(N_ACTIONS):
         for r in (0, 1):
             for e in (0, 1):
                 density_runs = tables[:, 0, fold, a_idx, r, e, :]  # (K, 101)
-                deltas = delta_latent(density_runs, GRID_NP, PRIOR_MEAN_F)  # (K,)
+                if use_grid:
+                    w = beta_prior_on_grid(priors["m_latent"][:, fold, r, e], nu)
+                    density_runs = np.asarray(
+                        reweight_grid(jnp.asarray(density_runs), w)
+                    )
+                    lat_pm = np.asarray(w @ GRID_NP)
+                else:
+                    lat_pm = PRIOR_MEAN_F
+                deltas = delta_latent(density_runs, GRID_NP, lat_pm)  # (K,)
                 pred_rows.append(
                     {
                         "experiment": slug,
@@ -574,7 +714,15 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
     ti = np.where(test_mask)[0]
     if len(ti):
         post = tables[:, 0, sc[ti], act[ti], des[ti], eff[ti], :]  # (K, n_test, 101)
-        deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T  # (n_test, K)
+        if use_grid:
+            w_t = beta_prior_on_grid(
+                priors["m_latent"][:, sc[ti], des[ti], eff[ti]], nu
+            )
+            post = np.asarray(reweight_grid(jnp.asarray(post), w_t))
+            lat_pm_t = np.asarray((w_t * GRID_NP).sum(-1))  # (K, n_test)
+        else:
+            lat_pm_t = PRIOR_MEAN_F
+        deltas_t = delta_latent(post, GRID_NP, lat_pm_t).T  # (n_test, K)
         lls = _held_out_ll_1d(deltas_t, resp[ti], sigma)
         test_nll = -float(lls.sum())
         for j, i in enumerate(ti):
@@ -601,16 +749,22 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
+        extra_param_names=("prior_nu",) if use_grid else (),
     )
     return pred_rows, fold_row, trial_ll_rows
 
 
-def main_intimacy():
+def main_intimacy(config=None):
+    config = config or parse_run_config_args()
     slug = "food_inv_intimacy"
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    _write_outputs(slug, *_run_loso("intimacy", slug))
+    _write_outputs(
+        slug,
+        *_run_loso("intimacy", slug, config=config),
+        outputs_dir=config.outputs_dir(slug),
+    )
 
 
 # ==============================================================================
@@ -632,14 +786,17 @@ def _load_arrays_desire(slug):
     )
 
 
-def _tk_desire(variant, utility_names, slug):
-    return desire_table_kwargs(utility_names, base=(variant == "base"))
+def _tk_desire(variant, utility_names, slug, suffix=""):
+    return desire_table_kwargs(utility_names, base=(variant == "base"), suffix=suffix)
 
 
 def _fold_impl_desire(variant, fold, warm, patience):
     obs_fn, utility_names = VARIANTS_DESIRE[variant]
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
+    priors = _priors_cached(slug, variant)  # None in uniform mode
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    n_core = len(utility_names) + 2
     arr = _CV_W["arrays"]
     sc, act = arr["scenario"], arr["action"]
     eff, rel = arr["effort"], arr["rel"]
@@ -658,23 +815,32 @@ def _fold_impl_desire(variant, fold, warm, patience):
         relationship_condition=jnp.asarray(rel[train_mask]),
         response=jnp.asarray(resp[train_mask]),
         table_kwargs=tk,
+        priors=priors,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
     )
-    sigma = float(params[-1])
+    sigma = float(params[n_core - 1])
+    nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
-    tables = np.asarray(_build_observer_tables_runs(obs_fn, params, utility_names, tk))
+    tables = np.asarray(
+        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+    )
 
     pred_rows = []
     for a_idx in range(N_ACTIONS):
         for rel_idx in range(4):
             for e in (0, 1):
-                deltas = delta_latent(
-                    tables[:, 0, fold, a_idx, e, rel_idx, :], GRID_NP, PRIOR_MEAN_F
-                )
+                post = tables[:, 0, fold, a_idx, e, rel_idx, :]  # (K, 101)
+                if use_grid:
+                    w = beta_prior_on_grid(priors["m_latent"][:, fold, e, rel_idx], nu)
+                    post = np.asarray(reweight_grid(jnp.asarray(post), w))
+                    lat_pm = np.asarray(w @ GRID_NP)
+                else:
+                    lat_pm = PRIOR_MEAN_F
+                deltas = delta_latent(post, GRID_NP, lat_pm)
                 pred_rows.append(
                     {
                         "experiment": slug,
@@ -696,7 +862,15 @@ def _fold_impl_desire(variant, fold, warm, patience):
     ti = np.where(test_mask)[0]
     if len(ti):
         post = tables[:, 0, sc[ti], act[ti], eff[ti], rel[ti], :]  # (K, n_test, 101)
-        deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T
+        if use_grid:
+            w_t = beta_prior_on_grid(
+                priors["m_latent"][:, sc[ti], eff[ti], rel[ti]], nu
+            )
+            post = np.asarray(reweight_grid(jnp.asarray(post), w_t))
+            lat_pm_t = np.asarray((w_t * GRID_NP).sum(-1))  # (K, n_test)
+        else:
+            lat_pm_t = PRIOR_MEAN_F
+        deltas_t = delta_latent(post, GRID_NP, lat_pm_t).T
         lls = _held_out_ll_1d(deltas_t, resp[ti], sigma)
         test_nll = -float(lls.sum())
         for j, i in enumerate(ti):
@@ -723,16 +897,22 @@ def _fold_impl_desire(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
+        extra_param_names=("prior_nu",) if use_grid else (),
     )
     return pred_rows, fold_row, trial_ll_rows
 
 
-def main_desire():
+def main_desire(config=None):
+    config = config or parse_run_config_args()
     slug = "food_inv_desire"
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    _write_outputs(slug, *_run_loso("desire", slug))
+    _write_outputs(
+        slug,
+        *_run_loso("desire", slug, config=config),
+        outputs_dir=config.outputs_dir(slug),
+    )
 
 
 # ==============================================================================
@@ -759,9 +939,9 @@ def _load_arrays_joint_de(slug):
     )
 
 
-def _tk_joint_de(variant, utility_names, slug):
+def _tk_joint_de(variant, utility_names, slug, suffix=""):
     return joint_de_table_kwargs(
-        utility_names, domain=_domain_for(slug), base=(variant == "base")
+        utility_names, domain=_domain_for(slug), base=(variant == "base"), suffix=suffix
     )
 
 
@@ -769,6 +949,10 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
     obs_fn, utility_names = VARIANTS_JOINT_DE[variant]
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
+    priors = _priors_cached(slug, variant)  # None in uniform mode
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    use_eff = priors is not None and priors.get("p_effort") is not None
+    n_core = len(utility_names) + 2
     arr = _CV_W["arrays"]
     sc, act = arr["scenario"], arr["action"]
     rel = arr["rel"]
@@ -788,23 +972,40 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
         response_desire=jnp.asarray(rd[train_mask]),
         response_effort=jnp.asarray(re[train_mask]),
         table_kwargs=tk,
+        priors=priors,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
     )
-    sigma = float(params[-1])
+    sigma = float(params[n_core - 1])
+    nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)
-    tables = np.asarray(_build_observer_tables_runs(obs_fn, params, utility_names, tk))
+    tables = np.asarray(
+        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+    )
 
+    # In informative mode the (desire, effort) joint is reweighted by the
+    # per-cell desire Beta prior and/or the elicited P(effort=high) before the
+    # marginal means, matching the fit's likelihood layer; the canonical path
+    # passes None/None (reweight_joint returns the joint unchanged).
     pred_rows = []
     for a_idx in range(N_ACTIONS):
         for rel_idx in range(4):
-            joint_runs = tables[:, 0, fold, a_idx, rel_idx, :, :]  # (K,101,2)
-            d_desire, d_effort = delta_joint(
-                joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
-            )  # each (K,)
+            joint_runs = tables[:, 0, fold, a_idx, rel_idx, :, :]  # (K, 101, 2)
+            if use_grid:
+                w = beta_prior_on_grid(priors["m_latent"][:, fold, rel_idx], nu)
+                lat_pm = np.asarray(w @ GRID_NP)
+            else:
+                w, lat_pm = None, PRIOR_MEAN_F
+            if use_eff:
+                p = priors["p_effort"][:, fold, rel_idx]
+                eff_pm = np.asarray(p)
+            else:
+                p, eff_pm = None, EFFORT_PRIOR_MEAN_F
+            joint_runs = np.asarray(reweight_joint(jnp.asarray(joint_runs), w, p))
+            d_desire, d_effort = delta_joint(joint_runs, GRID_NP, lat_pm, eff_pm)
             pred_rows.append(
                 {
                     "experiment": slug,
@@ -821,9 +1022,18 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
     ti = np.where(test_mask)[0]
     if len(ti):
         joint_t = tables[:, 0, sc[ti], act[ti], rel[ti], :, :]  # (K, n_test, 101, 2)
-        d_desire_t, d_effort_t = delta_joint(
-            joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
-        )  # each (K, n_test)
+        if use_grid:
+            w_t = beta_prior_on_grid(priors["m_latent"][:, sc[ti], rel[ti]], nu)
+            lat_pm_t = np.asarray((w_t * GRID_NP).sum(-1))  # (K, n_test)
+        else:
+            w_t, lat_pm_t = None, PRIOR_MEAN_F
+        if use_eff:
+            p_t = priors["p_effort"][:, sc[ti], rel[ti]]  # (K, n_test)
+            eff_pm_t = np.asarray(p_t)
+        else:
+            p_t, eff_pm_t = None, EFFORT_PRIOR_MEAN_F
+        joint_t = np.asarray(reweight_joint(jnp.asarray(joint_t), w_t, p_t))
+        d_desire_t, d_effort_t = delta_joint(joint_t, GRID_NP, lat_pm_t, eff_pm_t)
         deltas_t = np.stack([d_desire_t, d_effort_t], axis=-1)  # (K, n_test, 2)
         deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
         u_t = np.stack([rd[ti], re[ti]], axis=1)  # (n_test, 2)
@@ -853,15 +1063,21 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
+        extra_param_names=("prior_nu",) if use_grid else (),
     )
     return pred_rows, fold_row, trial_ll_rows
 
 
-def main_joint_de(slug="food_inv_joint_de"):
+def main_joint_de(slug="food_inv_joint_de", config=None):
+    config = config or parse_run_config_args()
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    _write_outputs(slug, *_run_loso("joint_de", slug))
+    _write_outputs(
+        slug,
+        *_run_loso("joint_de", slug, config=config),
+        outputs_dir=config.outputs_dir(slug),
+    )
 
 
 # ==============================================================================
@@ -888,14 +1104,18 @@ def _load_arrays_joint_ie(slug):
     )
 
 
-def _tk_joint_ie(variant, utility_names, slug):
-    return joint_ie_table_kwargs(utility_names, domain=_domain_for(slug))
+def _tk_joint_ie(variant, utility_names, slug, suffix=""):
+    return joint_ie_table_kwargs(utility_names, domain=_domain_for(slug), suffix=suffix)
 
 
 def _fold_impl_joint_ie(variant, fold, warm, patience):
     obs_fn, utility_names = VARIANTS_JOINT_IE[variant]
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
+    priors = _priors_cached(slug, variant)  # None in uniform mode
+    use_grid = priors is not None and priors.get("m_latent") is not None
+    use_eff = priors is not None and priors.get("p_effort") is not None
+    n_core = len(utility_names) + 2
     arr = _CV_W["arrays"]
     sc, act = arr["scenario"], arr["action"]
     des = arr["desire"]
@@ -915,23 +1135,39 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
         response_intimacy=jnp.asarray(ri[train_mask]),
         response_effort=jnp.asarray(re[train_mask]),
         table_kwargs=tk,
+        priors=priors,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
     )
-    sigma = float(params[-1])
+    sigma = float(params[n_core - 1])
+    nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)
-    tables = np.asarray(_build_observer_tables_runs(obs_fn, params, utility_names, tk))
+    tables = np.asarray(
+        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+    )
 
+    # In informative mode the (intimacy, effort) joint is reweighted by the
+    # per-cell intimacy Beta prior and/or the elicited P(effort=high) before the
+    # marginal means; the canonical path passes None/None (joint unchanged).
     pred_rows = []
     for a_idx in range(N_ACTIONS):
         for r in (0, 1):
-            joint_runs = tables[:, 0, fold, a_idx, r, :, :]  # (K,101,2)
-            d_intimacy, d_effort = delta_joint(
-                joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
-            )  # each (K,)
+            joint_runs = tables[:, 0, fold, a_idx, r, :, :]  # (K, 101, 2)
+            if use_grid:
+                w = beta_prior_on_grid(priors["m_latent"][:, fold, r], nu)
+                lat_pm = np.asarray(w @ GRID_NP)
+            else:
+                w, lat_pm = None, PRIOR_MEAN_F
+            if use_eff:
+                p = priors["p_effort"][:, fold, r]
+                eff_pm = np.asarray(p)
+            else:
+                p, eff_pm = None, EFFORT_PRIOR_MEAN_F
+            joint_runs = np.asarray(reweight_joint(jnp.asarray(joint_runs), w, p))
+            d_intimacy, d_effort = delta_joint(joint_runs, GRID_NP, lat_pm, eff_pm)
             pred_rows.append(
                 {
                     "experiment": slug,
@@ -948,9 +1184,18 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
     ti = np.where(test_mask)[0]
     if len(ti):
         joint_t = tables[:, 0, sc[ti], act[ti], des[ti], :, :]  # (K, n_test, 101, 2)
-        d_intimacy_t, d_effort_t = delta_joint(
-            joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
-        )  # each (K, n_test)
+        if use_grid:
+            w_t = beta_prior_on_grid(priors["m_latent"][:, sc[ti], des[ti]], nu)
+            lat_pm_t = np.asarray((w_t * GRID_NP).sum(-1))  # (K, n_test)
+        else:
+            w_t, lat_pm_t = None, PRIOR_MEAN_F
+        if use_eff:
+            p_t = priors["p_effort"][:, sc[ti], des[ti]]  # (K, n_test)
+            eff_pm_t = np.asarray(p_t)
+        else:
+            p_t, eff_pm_t = None, EFFORT_PRIOR_MEAN_F
+        joint_t = np.asarray(reweight_joint(jnp.asarray(joint_t), w_t, p_t))
+        d_intimacy_t, d_effort_t = delta_joint(joint_t, GRID_NP, lat_pm_t, eff_pm_t)
         deltas_t = np.stack([d_intimacy_t, d_effort_t], axis=-1)  # (K,n_test,2)
         deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
         u_t = np.stack([ri[ti], re[ti]], axis=1)  # (n_test, 2)
@@ -980,15 +1225,21 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
+        extra_param_names=("prior_nu",) if use_grid else (),
     )
     return pred_rows, fold_row, trial_ll_rows
 
 
-def main_joint_ie(slug="food_inv_joint_ie"):
+def main_joint_ie(slug="food_inv_joint_ie", config=None):
+    config = config or parse_run_config_args()
     print("=" * 60)
     print(f"LOSO CV: {slug}")
     print("=" * 60)
-    _write_outputs(slug, *_run_loso("joint_ie", slug))
+    _write_outputs(
+        slug,
+        *_run_loso("joint_ie", slug, config=config),
+        outputs_dir=config.outputs_dir(slug),
+    )
 
 
 # ------------------------------------------------------------------------------

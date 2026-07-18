@@ -253,6 +253,43 @@ def test_run_fingerprint_tracks_inputs():
     print("✓ run_fingerprint tracks data, LM tables, warm start, config, code")
 
 
+def test_fingerprint_distinguishes_configs():
+    """Two fingerprints differing only in `config_fields` (canonical vs an
+    informative-priors + suffixed-alts run) must mismatch, so a checkpoint
+    written under one run config is never resumed under another."""
+    slug = "food_inv_desire"
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        _fake_project(root, slug)
+        fp_a = run_fingerprint(
+            slug,
+            "desire",
+            100,
+            2,
+            {"tag": "canonical", "runs": "lm_runs.jsonl", "priors": None},
+            project_root=root,
+        )
+        fp_b = run_fingerprint(
+            slug,
+            "desire",
+            100,
+            2,
+            {
+                "tag": "informative_current",
+                "runs": "lm_runs.jsonl",
+                "priors": "lm_priors.jsonl",
+            },
+            project_root=root,
+        )
+        assert fp_a != fp_b, "config_fields not reflected in the fingerprint"
+        # The no-config default must still fingerprint (and equal the explicit
+        # canonical config), so a plain CV run keeps a stable checkpoint key.
+        fp_default = run_fingerprint(slug, "desire", 100, 2, project_root=root)
+        assert fp_default == fp_a, "default config_fields must be the canonical one"
+        json.dumps(fp_b)  # must stay JSON-serializable for the header
+    print("✓ run_fingerprint distinguishes run configs")
+
+
 def run_all_tests():
     print("=" * 60)
     print("CV checkpoint tests")
@@ -265,6 +302,7 @@ def run_all_tests():
     test_append_rejects_nan()
     test_clear_checkpoint_idempotent()
     test_run_fingerprint_tracks_inputs()
+    test_fingerprint_distinguishes_configs()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)
