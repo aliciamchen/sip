@@ -1000,8 +1000,8 @@ def load_padded_lm_tables_intimacy(runs_filename="lm_runs.jsonl"):
       g:      (16, 3, 2, 2, S)     [scenario, obs, desire, effort, slot]
       prior:  (16, 3, 2, 2, S)
 
-    `runs_filename` selects the elicitation vintage (an alternate side file such
-    as a refusal-hint set); default "lm_runs.jsonl" is the standard source.
+    `runs_filename` selects the source file (default "lm_runs.jsonl"; the
+    `_base` variant routes here for the relationship-free set).
     """
     outputs_dir = (
         Path(__file__).resolve().parent / "outputs" / "lm" / "food_inv_intimacy"

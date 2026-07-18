@@ -64,7 +64,6 @@ ANALYSIS_QMDS := \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix lm-priors-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)) \
-        $(addprefix smoke-alternatives-,$(EXPERIMENTS_INVERSE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
         $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
@@ -132,11 +131,10 @@ help:
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
 	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = preregistered canonical):"
-	@echo "    PRIORS=informative[:<latents>]  ALTS_SUFFIX=_refusal_hint  PRIORS_FILE=<name>"
-	@echo "    (any set var routes outputs to model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
+	@echo "    PRIORS=informative[:<latents>]  PRIORS_FILE=<name>"
+	@echo "    (informative priors route outputs to model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
 	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
-	@echo "  smoke-alternatives-<slug>   (echo-only: prints the K=1 three-arm smoke commands to run by hand)"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -291,18 +289,6 @@ $(addprefix lm-priors-,$(EXPERIMENTS_ALL)): lm-priors-%:
 $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
 	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $* --base
 
-# K=1 three-arm generation smoke for the prompt-change gate (paid; tiny).
-# Runs nothing by itself -- prints the exact commands to run per arm. A static
-# pattern rule over the four food studies (smoke_report.py's supported slugs);
-# a plain `%` implicit rule would be skipped for these .PHONY targets.
-$(addprefix smoke-alternatives-,$(EXPERIMENTS_INVERSE)): smoke-alternatives-%:
-	@echo "K=1 smoke for $*: run each arm then the report:"
-	@echo "  K_RUNS=1 uv run python model/lm/generate_alternatives.py --study $* --arm refusal_hint"
-	@echo "  K_RUNS=1 uv run python model/lm/score_merged.py --study $* --alts-suffix _refusal_hint"
-	@echo "  K_RUNS=1 uv run python model/lm/generate_alternatives.py --study $* --arm refusal_hint_hyp"
-	@echo "  K_RUNS=1 uv run python model/lm/score_merged.py --study $* --alts-suffix _refusal_hint_hyp"
-	@echo "  uv run python model/lm/smoke_report.py --study $*"
-
 # =============================================================================
 # Per-study file-target graph (the incremental core, roster-driven)
 #
@@ -335,14 +321,13 @@ $(addprefix smoke-alternatives-,$(EXPERIMENTS_INVERSE)): smoke-alternatives-%:
 
 # Run-config passthrough for fit-/cv- targets (canonical when unset), e.g.:
 #   make fit-food_inv_joint_de PRIORS=informative
-#   make cv-food_inv_joint_de PRIORS=informative ALTS_SUFFIX=_refusal_hint
+#   make cv-food_inv_joint_de PRIORS=informative:desire PRIORS_FILE=lm_priors_human.jsonl
 # With every var empty CONFIG_FLAGS is empty, so the recipes stay the canonical
-# preregistered invocation (uniform priors, lm_runs.jsonl, outputs/<slug>/);
-# setting any var routes the fit/CV to outputs/<slug>/alt/<tag>/ instead.
+# preregistered invocation (uniform priors, outputs/<slug>/); informative priors
+# route the fit/CV to outputs/<slug>/alt/<tag>/ instead.
 PRIORS ?=
-ALTS_SUFFIX ?=
 PRIORS_FILE ?=
-CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(ALTS_SUFFIX),--alts-suffix $(ALTS_SUFFIX)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE))
+CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE))
 
 define MODEL_PIPELINE_RULES
 model/outputs/$(1)/fit_results.json: \

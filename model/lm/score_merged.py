@@ -216,18 +216,6 @@ _BASE_OVERRIDE = {
 }
 
 
-# Alternatives-vintage suffixes (mirrors generate_alternatives.py's `--arm`).
-# Empty = the canonical tables; the two hinted arms live in suffixed side files.
-ALTS_SUFFIXES = ("", "_refusal_hint", "_refusal_hint_hyp")
-
-
-def _with_suffix(filename, suffix):
-    """Splice a vintage suffix before the `.jsonl` extension
-    (lm_alternatives_base.jsonl + _refusal_hint -> lm_alternatives_base_refusal_hint.jsonl)."""
-    stem, dot, ext = filename.rpartition(".")
-    return f"{stem}{suffix}{dot}{ext}"
-
-
 def _norm(text):
     return text.lower().strip()
 
@@ -616,14 +604,10 @@ def _rate_relationship_values(client, run_id):
         return dict(zip(INTIMACY_LEVELS, ex.map(_rate_one, INTIMACY_LEVELS)))
 
 
-def main(study, scenario_workers=SCENARIO_WORKERS, base=False, alts_suffix=""):
+def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Supported: {sorted(_STUDY_CONFIG.keys())}"
-        )
-    if alts_suffix not in ALTS_SUFFIXES:
-        raise SystemExit(
-            f"Unknown --alts-suffix: {alts_suffix!r}. Supported: {list(ALTS_SUFFIXES)}"
         )
     cfg = dict(_STUDY_CONFIG[study])
     if base:
@@ -638,18 +622,13 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, alts_suffix=""):
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     study_dir.mkdir(parents=True, exist_ok=True)
-    # The vintage suffix selects which alternatives arm to score, and tags the
-    # matching lm_runs output so each arm's scores stay in their own file.
-    alts_path = study_dir / _with_suffix(
-        cfg.get("alternatives", "lm_alternatives.jsonl"), alts_suffix
-    )
-    runs_path = study_dir / _with_suffix(cfg.get("runs", "lm_runs.jsonl"), alts_suffix)
+    alts_path = study_dir / cfg.get("alternatives", "lm_alternatives.jsonl")
+    runs_path = study_dir / cfg.get("runs", "lm_runs.jsonl")
     if not alts_path.exists():
         raise SystemExit(
             f"Alternatives JSONL not found at {alts_path}. Run "
             f"model/lm/generate_alternatives.py --study {study}"
             f"{' --base' if base else ''}"
-            f"{'' if alts_suffix == '' else ' --arm ' + alts_suffix.lstrip('_')}"
             " first."
         )
 
@@ -834,7 +813,6 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, alts_suffix=""):
             stage="score_merged",
             study=study,
             extra={
-                "alts_suffix": alts_suffix,
                 "k_runs": len(run_ids),
                 "score_temperature": TEMPERATURE,
                 "n_scenarios": len(scenarios_df),
@@ -866,20 +844,9 @@ if __name__ == "__main__":
         "(lm_alternatives_base.jsonl) into lm_runs_base.jsonl; skips the per-run "
         "intimacy scalar. Given-relationship studies only.",
     )
-    parser.add_argument(
-        "--alts-suffix",
-        choices=ALTS_SUFFIXES,
-        default="",
-        help="Alternatives vintage to score. '' (default): the canonical "
-        "lm_alternatives{_base}.jsonl -> lm_runs{_base}.jsonl. '_refusal_hint' / "
-        "'_refusal_hint_hyp': score the matching suffixed arm produced by "
-        "generate_alternatives.py --arm, writing the same suffix on lm_runs. "
-        "Scoring prompts are arm-independent, so only the file paths change.",
-    )
     args = parser.parse_args()
     main(
         args.study,
         scenario_workers=args.scenario_workers,
         base=args.base,
-        alts_suffix=args.alts_suffix,
     )

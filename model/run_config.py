@@ -1,10 +1,10 @@
-"""Fit/CV run configuration: which priors the observer uses, which
-alternatives vintage the LM tables come from, and where outputs go.
+"""Fit/CV run configuration: which priors the observer uses, and where outputs
+go.
 
-The canonical config (uniform priors, unsuffixed lm_runs.jsonl) reproduces the
-preregistered pipeline byte-identically and keeps writing outputs/<slug>/.
-Every other combination writes outputs/<slug>/alt/<tag>/ so vintages never
-overwrite each other (spec: notes/2026-07-18-informative-priors-refusal-alts-design.md).
+The canonical config (uniform priors) reproduces the preregistered pipeline
+byte-identically and keeps writing outputs/<slug>/. The informative-prior
+configs (the "build both" priors comparison) write outputs/<slug>/alt/<tag>/ so
+they never overwrite the preregistered baseline.
 """
 
 from dataclasses import dataclass
@@ -24,18 +24,15 @@ INFERRED_LATENTS = {
 }
 GRID_LATENTS = ("desire", "intimacy")
 
-_ALTS_TAG = {"": "current"}  # any other suffix names itself, minus leading "_"
-
 
 @dataclass(frozen=True)
 class RunConfig:
     priors_mode: str = "uniform"  # "uniform" | "informative"
     priors_latents: tuple = ()  # () = all of the study's inferred latents
-    alts_suffix: str = ""  # "" | "_refusal_hint" | "_refusal_hint_hyp"
     priors_file: str | None = None  # None = lm_priors.jsonl
 
     @classmethod
-    def parse(cls, priors, alts_suffix, priors_file):
+    def parse(cls, priors, priors_file):
         mode, _, latents = (priors or "uniform").partition(":")
         if mode not in ("uniform", "informative"):
             raise ValueError(
@@ -48,7 +45,7 @@ class RunConfig:
             raise ValueError(f"unknown latent(s) in --priors: {sorted(unknown)}")
         if mode == "uniform" and latents:
             raise ValueError("--priors uniform takes no :latents suffix")
-        return cls(mode, latents, alts_suffix or "", priors_file or None)
+        return cls(mode, latents, priors_file or None)
 
     @property
     def is_canonical(self):
@@ -63,11 +60,9 @@ class RunConfig:
         return tuple(lat for lat in inferred if lat in self.priors_latents)
 
     def tag(self):
-        pr = self.priors_mode
+        tag = self.priors_mode
         if self.priors_latents:
-            pr += "-" + "-".join(self.priors_latents)
-        alts = _ALTS_TAG.get(self.alts_suffix, self.alts_suffix.lstrip("_"))
-        tag = f"{pr}_{alts}"
+            tag += "-" + "-".join(self.priors_latents)
         if self.priors_file:
             tag += "_" + Path(self.priors_file).stem
         return tag
@@ -75,9 +70,6 @@ class RunConfig:
     def outputs_dir(self, slug):
         root = get_project_root() / "model" / "outputs" / slug
         return root if self.is_canonical else root / "alt" / self.tag()
-
-    def runs_filename(self, base=False):
-        return f"lm_runs{'_base' if base else ''}{self.alts_suffix}.jsonl"
 
     def priors_filename(self, base=False):
         if self.priors_file is not None:

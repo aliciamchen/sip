@@ -57,7 +57,6 @@ def main(config=None):
             utility_names,
             domain="nonfood",
             base=(name == "base"),
-            suffix=config.alts_suffix,
         ),
     )
     # Informative-prior kwargs per variant (None in the canonical uniform config,

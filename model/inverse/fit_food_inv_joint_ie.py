@@ -50,9 +50,7 @@ def main(config=None):
     # table fails up front rather than after hours of fitting earlier variants.
     table_kwargs_by_variant = resolve_variant_table_kwargs(
         VARIANTS,
-        lambda name, utility_names: joint_ie_table_kwargs(
-            utility_names, suffix=config.alts_suffix
-        ),
+        lambda name, utility_names: joint_ie_table_kwargs(utility_names),
     )
     # Informative-prior kwargs per variant (None in the canonical uniform config,
     # which keeps the fit byte-identical). The given-desire studies show no

@@ -975,26 +975,23 @@ def test_parse_run_config_args_defaults():
 
 
 def test_parse_run_config_args_informative():
-    """--priors informative:desire + --alts-suffix + --priors-file parse into
-    the matching RunConfig fields (and it is not canonical)."""
+    """--priors informative:desire + --priors-file parse into the matching
+    RunConfig fields (and it is not canonical)."""
     from _helpers import parse_run_config_args
 
     cfg = parse_run_config_args(
         [
             "--priors",
             "informative:desire",
-            "--alts-suffix",
-            "_refusal_hint",
             "--priors-file",
             "lm_priors_human.jsonl",
         ]
     )
     assert cfg.priors_mode == "informative"
     assert cfg.priors_latents == ("desire",)
-    assert cfg.alts_suffix == "_refusal_hint"
     assert cfg.priors_file == "lm_priors_human.jsonl"
     assert not cfg.is_canonical
-    print("✓ parse_run_config_args parses informative priors + suffix + file")
+    print("✓ parse_run_config_args parses informative priors + file")
 
 
 def test_build_priors_kwarg_uniform_is_none():
@@ -1016,7 +1013,7 @@ def test_build_priors_kwarg_empty_active_raises():
     from run_config import RunConfig
 
     # food_inv_joint_de infers (desire, effort); intimacy is not among them.
-    cfg = RunConfig.parse("informative:intimacy", "", None)
+    cfg = RunConfig.parse("informative:intimacy", None)
     try:
         build_priors_kwarg("food_inv_joint_de", cfg)
     except ValueError as e:
@@ -1036,9 +1033,7 @@ def test_build_priors_kwarg_missing_file_raises():
 
     from run_config import RunConfig
 
-    cfg = RunConfig.parse(
-        "informative", "", "lm_priors_definitely_absent_fixture.jsonl"
-    )
+    cfg = RunConfig.parse("informative", "lm_priors_definitely_absent_fixture.jsonl")
     try:
         build_priors_kwarg("food_inv_joint_de", cfg)
     except FileNotFoundError as e:
@@ -1082,7 +1077,7 @@ def test_build_priors_kwarg_human_ceiling_loads():
 
     from run_config import RunConfig
 
-    cfg = RunConfig.parse("informative", "", "lm_priors_human.jsonl")
+    cfg = RunConfig.parse("informative", "lm_priors_human.jsonl")
     pr = build_priors_kwarg("food_inv_joint_de", cfg, base=False)
     assert pr["m_latent"].shape == (1, 16, 4), pr["m_latent"].shape
     assert pr["p_effort"].shape == (1, 16, 4), pr["p_effort"].shape
@@ -1116,20 +1111,15 @@ def _load_generate_alternatives_module():
     return mod
 
 
-def test_alternatives_prompt_arms():
+def test_alternatives_prompt_latent_awareness():
     prompts = _load_prompts_module()
 
-    base_sp = prompts.alternatives_system_prompt()
-    assert base_sp == prompts.ALTERNATIVES_SYSTEM_PROMPT
-    assert "nothing is shared at all" not in base_sp
-    hint_sp = prompts.alternatives_system_prompt(refusal_hint=True)
-    assert (
-        "including options where nothing is shared at all (declining, "
-        "keeping it to oneself, or forgoing it)" in hint_sp
-    )
-    # the clause replaces the differ-in sentence's period, once
-    assert hint_sp.count("nothing is shared at all") == 1
+    # No refusal clause anywhere; single system prompt form.
+    assert "nothing is shared at all" not in prompts.ALTERNATIVES_SYSTEM_PROMPT
 
+    # Latent-awareness is always driven by the caller's per-study kwargs. 1b
+    # (infers desire + effort): effort hypotheses + desire unknown, inserted
+    # after the condition paragraphs and before the observed action.
     up = prompts.alternatives_user_prompt(
         "VIG.",
         "They shared.",
@@ -1141,7 +1131,6 @@ def test_alternatives_prompt_arms():
     assert up.index("LOW PARA.") < up.index("HIGH PARA.")
     # following the effort block (1b/3a), the desire line says "also"
     assert "You also do not know how much the two people want the hot dog" in up
-    # epistemic block sits after the condition paragraphs, before the action
     assert up.index("maximally formal") < up.index("One of the following")
     assert up.index("One of the following") < up.index("They shared.")
 
@@ -1152,20 +1141,20 @@ def test_alternatives_prompt_arms():
     assert "You do not know how much the two people want the hot dog" in up_1a
     assert "also" not in up_1a
 
+    # 2a/2b form: relationship unknown.
     up2 = prompts.alternatives_user_prompt("VIG.", "ACT.", unknown_intimacy=True)
     assert "do not know how close or formal" in up2
 
-    # Output-path suffixing (the vintage side files each arm writes).
+    # Output path is the single default vintage (no arm suffix).
     ga = _load_generate_alternatives_module()
     assert (
-        ga._output_path_for("food_inv_joint_de", False, "refusal_hint").name
-        == "lm_alternatives_refusal_hint.jsonl"
+        ga._output_path_for("food_inv_joint_de", False).name == "lm_alternatives.jsonl"
     )
     assert (
-        ga._output_path_for("food_inv_desire", True, "refusal_hint_hyp").name
-        == "lm_alternatives_base_refusal_hint_hyp.jsonl"
+        ga._output_path_for("food_inv_desire", True).name
+        == "lm_alternatives_base.jsonl"
     )
-    print("✓ alternatives prompt arms + suffixed output paths")
+    print("✓ alternatives prompt always latent-aware; single default vintage")
 
 
 def test_prior_prompts_compose_condition_texts():
@@ -1362,7 +1351,7 @@ def run_all_tests():
     test_build_priors_kwarg_missing_file_raises()
     test_priors_base_variant_truth_table()
     test_build_priors_kwarg_human_ceiling_loads()
-    test_alternatives_prompt_arms()
+    test_alternatives_prompt_latent_awareness()
     test_prior_prompts_compose_condition_texts()
     test_elicit_priors_cell_grids()
     test_build_human_prior_rows_grouping()

@@ -379,9 +379,7 @@ def _tk_cached(family, slug, variant):
     cache key."""
     fam = _FAMILIES[family]
     _, utility_names = fam["variants"][variant]
-    return fam["table_kwargs"](
-        variant, utility_names, slug, suffix=_CV_W["config"].alts_suffix
-    )
+    return fam["table_kwargs"](variant, utility_names, slug)
 
 
 # Per-process cache of a variant's informative-prior tables (K-broadcast to the
@@ -550,7 +548,7 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
         N_RESTARTS_CV,
         config_fields={
             "tag": config.tag() if not config.is_canonical else "canonical",
-            "runs": config.runs_filename(False),
+            "runs": "lm_runs.jsonl",
             "priors": (
                 config.priors_filename(False)
                 if config.priors_mode != "uniform"
@@ -640,8 +638,8 @@ def _load_arrays_intimacy(slug):
     )
 
 
-def _tk_intimacy(variant, utility_names, slug, suffix=""):
-    return intimacy_table_kwargs(utility_names, suffix=suffix)
+def _tk_intimacy(variant, utility_names, slug):
+    return intimacy_table_kwargs(utility_names)
 
 
 def _fold_impl_intimacy(variant, fold, warm, patience):
@@ -789,8 +787,8 @@ def _load_arrays_desire(slug):
     )
 
 
-def _tk_desire(variant, utility_names, slug, suffix=""):
-    return desire_table_kwargs(utility_names, base=(variant == "base"), suffix=suffix)
+def _tk_desire(variant, utility_names, slug):
+    return desire_table_kwargs(utility_names, base=(variant == "base"))
 
 
 def _fold_impl_desire(variant, fold, warm, patience):
@@ -942,9 +940,9 @@ def _load_arrays_joint_de(slug):
     )
 
 
-def _tk_joint_de(variant, utility_names, slug, suffix=""):
+def _tk_joint_de(variant, utility_names, slug):
     return joint_de_table_kwargs(
-        utility_names, domain=_domain_for(slug), base=(variant == "base"), suffix=suffix
+        utility_names, domain=_domain_for(slug), base=(variant == "base")
     )
 
 
@@ -1107,8 +1105,8 @@ def _load_arrays_joint_ie(slug):
     )
 
 
-def _tk_joint_ie(variant, utility_names, slug, suffix=""):
-    return joint_ie_table_kwargs(utility_names, domain=_domain_for(slug), suffix=suffix)
+def _tk_joint_ie(variant, utility_names, slug):
+    return joint_ie_table_kwargs(utility_names, domain=_domain_for(slug))
 
 
 def _fold_impl_joint_ie(variant, fold, warm, patience):

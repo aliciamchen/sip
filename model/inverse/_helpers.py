@@ -57,17 +57,12 @@ def parse_run_config_args(argv=None, description=None):
         help="uniform | informative | informative:<latent,...> (e.g. informative:desire)",
     )
     p.add_argument(
-        "--alts-suffix",
-        default="",
-        help='alternatives vintage suffix: "" | _refusal_hint | _refusal_hint_hyp',
-    )
-    p.add_argument(
         "--priors-file",
         default=None,
         help="override the priors JSONL name (e.g. lm_priors_human.jsonl)",
     )
     a = p.parse_args(argv)
-    return RunConfig.parse(a.priors, a.alts_suffix, a.priors_file)
+    return RunConfig.parse(a.priors, a.priors_file)
 
 
 def _fit_with_adam(
@@ -787,7 +782,7 @@ def _padded_table_kwargs(
     return kw
 
 
-def desire_table_kwargs(utility_param_names, domain="food", base=False, suffix=""):
+def desire_table_kwargs(utility_param_names, domain="food", base=False):
     """Padded LM tables for Study 1a (food_inv_desire). Observer's actor
     softmaxes over LM-generated alternatives per (scenario, observed_action,
     effort, intimacy) cell. Desire is inferred (no desire scalar); intimacy is
@@ -797,19 +792,14 @@ def desire_table_kwargs(utility_param_names, domain="food", base=False, suffix="
     relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
     across the relationship axis, so the base table — and the base model's
     predictions — are relationship-invariant. full/discomfort_only keep the
-    relationship-conditioned `lm_runs.jsonl`.
-
-    `suffix` selects an alternate elicitation vintage (e.g. a refusal-hint side
-    file `lm_runs<suffix>.jsonl`); default "" is the standard file, keeping the
-    canonical fit byte-identical. The suffix threads into both the padded
-    alternatives loader and the per-run relationship-magnitude loader."""
+    relationship-conditioned `lm_runs.jsonl`."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_desire
 
     if domain != "food":
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
-    runs_filename = f"lm_runs{'_base' if base else ''}{suffix}.jsonl"
+    runs_filename = f"lm_runs{'_base' if base else ''}.jsonl"
     loader = (
         (
             lambda: load_padded_lm_tables_desire(
@@ -836,12 +826,11 @@ def desire_table_kwargs(utility_param_names, domain="food", base=False, suffix="
     )
 
 
-def intimacy_table_kwargs(utility_param_names, domain="food", suffix=""):
+def intimacy_table_kwargs(utility_param_names, domain="food"):
     """Padded LM tables for Study 2a (food_inv_intimacy). Cell grid
     (scenario, observed_action, desire, effort); infers intimacy (continuous, no
     relationship_values). Desire is given, so the per-condition desire scalar is
-    loaded for full/base. 2a has no base variant, so only the standard
-    `lm_runs<suffix>.jsonl` vintage is used (default "" is byte-identical)."""
+    loaded for full/base. 2a has no base variant."""
     from tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_intimacy,
@@ -851,7 +840,7 @@ def intimacy_table_kwargs(utility_param_names, domain="food", suffix=""):
         raise NotImplementedError(
             "Padded LM tables are only available for the food domain."
         )
-    runs_filename = f"lm_runs{suffix}.jsonl"
+    runs_filename = "lm_runs.jsonl"
     return _padded_table_kwargs(
         lambda: load_padded_lm_tables_intimacy(runs_filename=runs_filename),
         utility_param_names,
@@ -863,7 +852,7 @@ def intimacy_table_kwargs(utility_param_names, domain="food", suffix=""):
     )
 
 
-def joint_de_table_kwargs(utility_param_names, domain="food", base=False, suffix=""):
+def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
     """Padded LM tables for the joint desire+effort studies: Study 1b
     (food_inv_joint_de, domain="food") and Study 3a (nonfood_inv_joint_de,
     domain="nonfood"). Cell grid (scenario, observed_action, intimacy); jointly
@@ -872,18 +861,14 @@ def joint_de_table_kwargs(utility_param_names, domain="food", base=False, suffix
 
     `base=True` (the base ablation, which has no intimacy term) loads the
     relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
-    across the relationship axis, exactly as in `desire_table_kwargs`.
-
-    `suffix` selects an alternate elicitation vintage (`lm_runs<suffix>.jsonl` /
-    `lm_runs_base<suffix>.jsonl`); default "" is byte-identical, threading into
-    both the padded alternatives loader and the relationship-magnitude loader."""
+    across the relationship axis, exactly as in `desire_table_kwargs`."""
     from tables import load_lm_relationship_values, load_padded_lm_tables_joint_de
 
     slug, study = {
         "food": ("food_inv_joint_de", "Study 1b"),
         "nonfood": ("nonfood_inv_joint_de", "Study 3a"),
     }[domain]
-    runs_filename = f"lm_runs{'_base' if base else ''}{suffix}.jsonl"
+    runs_filename = f"lm_runs{'_base' if base else ''}.jsonl"
     loader = lambda: load_padded_lm_tables_joint_de(  # noqa: E731
         slug=slug,
         runs_filename=runs_filename,
@@ -904,14 +889,13 @@ def joint_de_table_kwargs(utility_param_names, domain="food", base=False, suffix
     )
 
 
-def joint_ie_table_kwargs(utility_param_names, domain="food", suffix=""):
+def joint_ie_table_kwargs(utility_param_names, domain="food"):
     """Padded LM tables for the joint intimacy+effort studies: Study 2b
     (food_inv_joint_ie, domain="food") and Study 3b (nonfood_inv_joint_ie,
     domain="nonfood"). Cell grid (scenario, observed_action, desire); infers
     (intimacy, effort) (continuous intimacy, no relationship_values). Desire is
     given, so the per-condition desire scalar is loaded for full/base. 2b/3b have
-    no base variant, so only the standard `lm_runs<suffix>.jsonl` vintage is used
-    (default "" is byte-identical)."""
+    no base variant."""
     from tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_joint_ie,
@@ -921,7 +905,7 @@ def joint_ie_table_kwargs(utility_param_names, domain="food", suffix=""):
         "food": ("food_inv_joint_ie", "Study 2b"),
         "nonfood": ("nonfood_inv_joint_ie", "Study 3b"),
     }[domain]
-    runs_filename = f"lm_runs{suffix}.jsonl"
+    runs_filename = "lm_runs.jsonl"
     return _padded_table_kwargs(
         lambda: load_padded_lm_tables_joint_ie(slug=slug, runs_filename=runs_filename),
         utility_param_names,

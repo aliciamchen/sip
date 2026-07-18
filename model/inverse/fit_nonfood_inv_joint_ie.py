@@ -54,7 +54,7 @@ def main(config=None):
     table_kwargs_by_variant = resolve_variant_table_kwargs(
         VARIANTS,
         lambda name, utility_names: joint_ie_table_kwargs(
-            utility_names, domain="nonfood", suffix=config.alts_suffix
+            utility_names, domain="nonfood"
         ),
     )
     # Informative-prior kwargs per variant (None in the canonical uniform config,

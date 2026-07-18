@@ -366,53 +366,25 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 # anything at all). This is acknowledged and defended in the SI
 # elicitation-details section of the manuscript.
 
-# The differ-in sentence is spliced at generation time so the `refusal_hint`
-# arm can append a clause to it without duplicating the whole prompt body.
-# `_DIFFER_SENTENCE` carries NO trailing period (the builder adds it); the arm
-# clause goes between the sentence and its period.
-_DIFFER_SENTENCE = (
-    "The options may differ in how much physical closeness, direct contact, "
-    "or personal disclosure they involve"
-)
-# `refusal_hint` arm: nudges the set to include no-share / decline / forgo
-# options. Like the rest of this prompt, the clause is IDENTICAL for every cell
-# and condition, so it cannot produce condition effects — it only shifts the
-# overall coverage of the comparison set.
-_REFUSAL_CLAUSE = (
-    " — including options where nothing is shared at all (declining, keeping "
-    "it to oneself, or forgoing it)"
-)
-
-
-def alternatives_system_prompt(refusal_hint=False):
-    """Build the alternative-generation system prompt.
-
-    `refusal_hint=True` splices `_REFUSAL_CLAUSE` into the differ-in sentence
-    (the `refusal_hint` / `refusal_hint_hyp` generation arms). The default
-    (`refusal_hint=False`) is byte-identical to the original canonical prompt
-    and is exported as the module constant `ALTERNATIVES_SYSTEM_PROMPT` for the
-    existing callers and the SI export.
-    """
-    differ = _DIFFER_SENTENCE + (_REFUSAL_CLAUSE if refusal_hint else "") + "."
-    body = f"""In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
+ALTERNATIVES_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
 Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between.
 
 The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
 
-Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, sharing the same physical space, or telling the other person something in more or less detail, directly or indirectly. {differ}
+Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, sharing the same physical space, or telling the other person something in more or less detail, directly or indirectly. The options may differ in how much physical closeness, direct contact, or personal disclosure they involve.
 
 Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
 Respond ONLY with a JSON array in this exact format, no explanation:
 [
-  {{"action": "description of alternative 1"}},
-  {{"action": "description of alternative 2"}}
+  {"action": "description of alternative 1"},
+  {"action": "description of alternative 2"}
 ]"""
-    return f"{_PREAMBLE_RATING}\n\n{body}"
-
-
-ALTERNATIVES_SYSTEM_PROMPT = alternatives_system_prompt()
+)
 
 
 # Relationship-condition descriptors keyed by the verbal intimacy-condition slug
@@ -460,11 +432,13 @@ def alternatives_user_prompt(
     via the shared `RELATIONSHIP_DESCRIPTORS` dict so the LM sees the same
     qualitative descriptor humans see.
 
-    The hypothesis-aware generation arm (`refusal_hint_hyp`) additionally makes
-    the LM epistemically aware of the latent(s) the study infers — the very
-    quantities the observer-visible paragraphs above deliberately withhold — so
-    the generated set spans the range those latents could take. Inserted after
-    the given-condition paragraphs and before the observed action:
+    The prompt also always makes the LM epistemically aware of the latent(s) the
+    study infers — the very quantities the observer-visible paragraphs above
+    deliberately withhold — so the generated set spans the range those latents
+    could take, mirroring the participant, who has seen the DV questions and so
+    knows which quantities the trial leaves open. Inserted after the
+    given-condition paragraphs and before the observed action, driven by which
+    latents the study infers (the caller always supplies these):
 
       - `effort_hypotheses`: a `(low_text, high_text)` pair of the two effort
         paragraphs, presented as two situations one of which holds (effort-
@@ -474,8 +448,8 @@ def alternatives_user_prompt(
       - `unknown_intimacy`: flags the relationship as unknown (intimacy-inferred
         studies 2a/2b/3b).
 
-    These are condition-independent within a study, so like the refusal hint
-    they shape only the coverage of the comparison set, not condition effects.
+    These are condition-independent within a study, so they shape only the
+    coverage of the comparison set, not condition effects.
     """
     parts = [f"Scenario: {vignette}"]
     if desire_text is not None:
