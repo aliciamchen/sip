@@ -1,21 +1,242 @@
 subject_id,gender,age,understood,comments,attention_passed,memory_correct_count,comprehension_attempt
-6a22516b-8eed-549e-ba1e-0d292a0eb612,female,46,yes,,True,3,1
-70973d33-a0e3-54e5-95fa-19a8238d0d1e,female,31,yes,it took longer than 20 miniuets. the reward is too low for the effort.,True,3,2
-c90743c8-ac27-5892-9a6a-563fe12c540e,female,52,yes,,True,3,3
-64098ec2-265f-55be-92c5-ad28407cbc17,female,41,yes,,True,3,1
-2be6294c-4222-55b6-b5fe-ce0cbebe84af,female,63,yes,"It almost seemed like what I chose triggered an opposite scenario.  There was no way to predict any of the outcomes because no important no meaningful information was included.  The outcomes felt random which it is in real life, so not sure what was being tested.  
-
-Maybe tolerance to uncertainty.",True,3,1
-d73f5fee-d17d-5f82-b044-02919cb4a6bb,female,18,yes,,True,3,1
-277b71a5-9dbf-5db4-b18c-9c6b58bfd0d3,female,72,yes,N/A,True,3,2
-ea0517fc-9e64-5f4e-883b-45b1e01ded11,female,19,yes,,True,2,1
-f9c74ca1-befc-585f-8497-c2bb39bc17dd,female,59,yes,none,True,3,1
-7a1f8091-3c33-53f8-aa6c-05f041d5830d,male,22,yes,,True,2,1
-2155eec6-925c-5a2c-9428-eb59a1872b7e,female,34,yes,,True,3,3
-d2a85724-d855-5c8a-a8c9-27a7b7a3443c,male,64,yes,,True,3,1
-6b195580-82a0-5f5d-9330-4f7162d5bbf3,female,32,yes,,True,3,1
-b93ab221-6e99-562a-88bf-795e98fc4aac,male,41,yes,,True,2,1
-be0e8af7-0a39-5aac-881b-996655f02e49,female,56,yes,I thought the study overall was thought provoking. A few of the scenarios turned out differently than I expected.,True,3,1
-260d4ae9-39b8-566b-b12b-a73acc6b7b65,male,40,yes,fun!,True,3,1
-0ca7ef6c-69f2-548b-b201-2465d5231c73,female,34,yes,,True,3,1
-90bbbffe-f3a9-5a6c-af6e-0522d2f1554a,male,48,yes,No,True,3,1
+65d4ef84-feb9-515c-b271-eddbe23f3b62,male,38,yes,,True,3,1
+2206f2a4-e560-5e22-bbcf-6efafe7ee925,male,52,yes,,True,3,2
+62a92b72-85a3-5e00-84c3-e622cfb08197,female,25,yes,none,True,3,3
+abdbcf08-87dd-54b9-86f0-be6b02de14fa,female,57,yes,Have a great day!!,True,3,3
+b977fef4-805a-54ae-b2b4-52273dec36a0,male,63,yes,,True,3,1
+77efaaef-2c14-5736-b2c3-c7ce97504790,female,49,yes,,True,3,1
+325ab20e-65b5-56b8-ae2a-38d61fd34aaa,female,44,yes,,True,3,1
+aa90ddf6-6f3e-549f-8b50-405baf4361f5,female,39,yes,Great survey,True,3,2
+bf9ebd7b-1e8d-59e8-80c8-d6cb425bd08d,female,30,yes,,True,3,2
+d317376f-1625-5280-a7bd-394d0add7400,female,34,yes,none,True,3,1
+a7b9f864-93be-55ff-8611-6c9816188287,male,42,yes,,True,3,1
+797c16fc-4869-5d4c-8997-951093832ca0,female,35,yes,"Some of these were easier to infer; others were more difficult. I liked the format of the attention check, that incorrect answers don't end the study, and you still have an opportunity to get paid.",True,3,1
+febc130c-e580-57b7-8a77-8d796d8ec2f5,female,23,yes,,True,3,2
+c5413e26-2318-5366-95da-42e5dd7230d6,female,29,yes,,True,3,1
+1ae780d5-297c-53c9-908c-42c961e5edea,female,48,yes,,True,3,3
+0dc5d2ba-0305-5449-8071-2c5b0f13ab40,male,37,yes,N/A,True,2,1
+36f53a78-c9f7-524f-acd6-dfdfa3cbe359,female,40,yes,,True,2,3
+fa875fb9-091c-597d-bf78-388cb9cdd26f,male,31,yes,,True,3,1
+29e604df-285b-5182-ae20-30e7ee167f21,female,63,yes,,True,3,1
+3812a47a-d392-59e1-b194-b5e985822672,female,30,yes,,True,3,1
+8493a55c-2129-5e94-8ede-9475e26eea83,female,62,yes,I appreciate the dark font. The only way I'd be a scammer is if someone hacked into my account. I'm glad I have good memory. ,True,3,1
+9f2816f4-2f46-5ca0-b92b-993f153e4b4a,male,55,yes,,True,2,1
+bd967bd1-bd00-52dc-a776-95ecee88d2d9,female,31,yes,"None at this time, other than this was super interesting. ",True,3,1
+e6735a48-2238-5d5e-8304-46664b4f9434,female,41,yes,,True,3,2
+0a962052-8f0e-59bd-bf20-1d3af3322bba,female,19,yes,,True,3,3
+5e4aaf2f-a63f-58de-b73b-faa14c072387,male,40,yes,,True,3,2
+e283e1bb-89c6-5a83-9439-5ea4737bafb3,female,44,yes,,True,3,2
+faca052d-4569-571d-b308-b834435f1826,female,58,yes,,True,2,1
+e716d8f8-dc5e-5d52-b784-7aa007a97d09,male,28,yes,The study was great and engaging.,True,3,1
+34d5e951-7206-5ce6-89e7-b35dd23eb28e,female,61,yes,This was interesting - I appreciated the scenario's.  Have a nice weekend.,True,3,1
+67cf6bd0-538c-5aae-bfb5-805e843568b9,male,31,yes,,True,3,1
+ced0ef6d-94a3-5b58-9b71-f7ee0c73d546,female,40,yes,na,True,1,1
+bf700e30-ce39-59e4-9b7d-cf6fc0126c89,male,46,yes,This survey made no sense. ,True,3,1
+2584b0ab-05cf-553e-bf9d-02061f69453b,female,64,yes,,True,3,1
+d6f0f40b-64f3-56ed-aa8b-892a3ff5e3c0,male,42,yes,,True,3,1
+3f585fbf-f856-5b1d-b241-79cdf040b7b0,female,41,yes,none,True,3,3
+2234c7ff-bf0a-5157-ad1d-e5941e189570,male,55,yes,,True,3,2
+0c2705a8-ad7c-5e2c-939e-00821290da69,female,29,yes,,True,3,1
+fc0b1617-20f2-5e99-97b5-342a1720b5ac,female,61,yes,,True,3,1
+b51e3627-584a-5fde-99d7-1c08100009f3,male,33,yes,,True,3,1
+7d5fd936-8f3c-5f82-bdd1-a1f2fee8895d,male,43,yes,,True,3,2
+b753e6b6-854f-54e1-87d9-ae7cf8681df6,female,29,yes,,True,3,1
+3660e7d9-60cd-5758-9344-a16ef7b4adc8,female,57,yes,Thank you!  ,True,3,1
+3c55c946-824e-51ac-b851-7c1a282a68b8,male,30,yes,thank you for this study,True,3,2
+9b260fa2-c214-5b3d-93c5-870dd6de69a5,male,63,yes,no other comments/suggestions,True,3,1
+752f4e42-1880-56a3-ad6c-c7311c5ad517,male,43,yes,,True,3,1
+b58d4e1e-cdc4-5ce9-bf2e-31f27986bf56,male,45,yes,,True,3,1
+96c66f5f-f660-5809-94da-cd181db485c9,male,35,yes,Thanks!,True,3,1
+6d20adfb-f4d6-5c2e-8a27-f5c3c54b07e2,male,42,yes,None,True,2,1
+6449e780-8ade-55e8-a60f-44dc91651cb1,male,46,yes,,True,2,1
+02e508b3-08fb-538c-98a1-07008d827c02,female,28,yes,,True,3,1
+a47ae440-0d30-5d4e-9a56-09a1e48cce23,male,40,yes,,True,3,3
+93dfabf7-80e0-53e0-9024-2b2df21fed8c,female,48,yes,,True,3,1
+3bd64534-af5e-539b-8d9d-2f90aed38e28,female,38,yes,,True,2,2
+c715c032-c080-5cda-9cf5-fe6a1556fe48,male,26,yes,,True,3,1
+b6d6bcc5-c5c6-5e0c-8b0c-d26bbbcb7927,male,46,yes,,True,3,3
+7da2dd43-dabf-507e-a6db-ba40c65a155a,male,81,yes,,True,3,1
+f8dd14f6-063f-5020-94cf-a1fce8a6b260,male,46,yes,,True,3,1
+e39b8450-e42b-5b33-9eda-d67e6cac13b4,male,43,yes,thanks,True,2,2
+e8daaa7a-0392-531c-b33e-228bedd98864,female,33,yes,None,True,2,2
+dca6c6f0-3a14-5d37-8cd2-aa280394c655,female,31,yes,The instructions were clear and the scenarios were interesting.,True,3,1
+552e381b-8d42-5fc7-9714-03c691fc98fe,female,21,yes,,True,3,1
+115e5be3-9ff8-504a-99cc-27d90a3f2422,male,34,yes,None,True,3,1
+621ea194-377e-5a45-84bf-23448b869dc8,female,26,yes,,True,3,1
+a49fccaa-2a11-51bf-9aaf-e882cf8cff39,male,38,yes,Thanks!,True,3,1
+6c23189f-d71e-58a6-86c7-8fec83585a29,male,40,yes,no suggestions,True,3,1
+54c71f37-a359-58a9-a5e4-c2bd61b67c28,female,33,yes,,True,3,1
+b62537d3-f6bd-529a-b122-6f7eff88b2b1,female,24,yes,,True,3,2
+b534cd50-037b-58c5-a259-8614ce3fa90c,male,45,yes,,True,3,1
+07d723d9-cf16-5237-9cc4-c550119a706d,female,60,yes,,True,3,2
+c478841a-29df-5e34-931a-202798be8934,male,31,yes,None. Thank you.,True,3,1
+2c1f107e-c83f-523f-9afa-816508c8b300,female,28,yes,,True,3,2
+150f389c-1078-551f-a94c-9f9e2a77486c,female,53,yes,n/a,True,2,3
+a829c608-a581-587f-a979-bde590841274,male,30,yes,this was fun ,True,3,2
+a185d09f-6793-5fa4-9cab-5c67121c2f1e,female,22,yes,,True,3,1
+d31cfa11-e521-54d8-9b1a-9836885f3800,female,43,yes,,True,2,1
+9dab8c0b-b290-5aa6-8445-9d0ce54e46d1,female,44,yes,N/A,True,3,1
+f3efe1e7-e616-5478-a9d4-98450746e9b6,female,66,yes,"When I say I understood, I barely understood, and this was tedious to the nth degree.",True,3,3
+d270813a-4f01-55a6-949d-03d42082de22,male,42,yes,,True,3,1
+18370113-ce57-577c-9a48-3b8101704853,male,27,yes,,True,2,1
+3999c267-65f3-58f5-81f3-d52e11cadaf2,male,25,yes,,True,3,3
+9fd7d409-5b54-51ba-b873-41658d9abc7c,male,47,yes,,True,3,1
+79e5b940-3a20-56bd-823f-5dff3031c547,male,18,yes,,True,3,1
+bc47622d-00dd-5621-a2d1-c13faad59abb,female,35,yes,N/A,True,3,1
+ab95bce0-830c-5dd0-88e8-4bb5b26a8de6,female,26,yes,no,True,3,2
+ef38b3bd-4410-5f24-bb44-5da5db6fdbf4,female,33,yes,,True,3,1
+4e441571-0100-56bb-a6ba-b7ee5b06b4bd,male,28,yes,n/a,True,3,1
+41419735-70fb-5ba6-824f-10ee57b12e66,male,46,yes,thanks for the opportunity,True,3,1
+6de7f2fe-ac04-53be-9c0d-826839af83b6,female,79,yes,,True,3,1
+d04b9fb1-9b65-50a3-9bf1-720333362810,female,40,yes,,True,3,2
+a0041385-65f8-5d29-a9be-aaa818152680,male,31,yes,I was expecting more variety in the choices.,True,3,2
+3b6a331a-795a-5a5c-aa4e-bb606c31f75b,female,31,yes,No,True,3,2
+43000b97-916c-55e7-94fd-1431cf659ec9,female,54,yes,,True,3,2
+f58e136b-2c27-5315-a6e7-20bc45725512,female,39,yes,,True,3,2
+70b80e8f-347a-5133-9559-df682936a1e6,female,24,yes,,True,3,1
+f9b6ab62-7aac-5371-a209-f690f311316f,female,37,yes,I enjoyed taking this survey. Thank you!,True,3,1
+b0dcc76b-1595-5983-b282-66a0176fd821,male,31,yes,none,True,3,1
+77e1e1ef-cb55-5c1a-8b38-35433995aa43,female,26,yes,,True,3,1
+bbe142e3-fdb5-5dd8-b2b2-63ebd3e201a6,male,42,yes,,True,3,2
+1c13074d-5a4e-56b9-96a3-291f6a554c3e,male,32,yes,"I may have answered one of the attention check questions wrong because I'm just bad with names. Also, this study took much longer than 20 minutes to complete. It took me at least 35 - 40 minutes. I am a slow reader, but please update the amount of time needed to complete it if possible.",True,3,1
+0aeb26dd-9f22-5fb2-8b1a-b58aa93ab486,male,34,yes,na,True,3,1
+bb4a2934-ffee-5af4-855d-a831b34e4609,female,50,yes,no,True,3,1
+17ee0a6e-c347-5fb2-8bb8-1194b9cb7b35,female,52,yes,,True,2,2
+79c3ad57-b772-5bba-9408-d16ba82673bc,female,20,yes,,True,3,1
+d05086d0-ab51-56c7-8ecd-7194916ac859,male,20,yes,Remembering the specific variation of the name in the memory checks was a little difficult despite the situation being very memorable. ,True,3,1
+bbd81aff-32d2-5870-8949-4fc7d5679c27,male,37,yes,,True,3,1
+6146043f-9f39-56dc-95b6-6c30d2834e06,male,30,yes,,True,0,1
+2e5c8c2f-7371-50c1-82e9-79bc5c743364,female,58,yes,NA,True,3,1
+564d8fa8-de36-5014-9fac-cf0e640d5f07,male,32,yes,,True,3,1
+12a72aa5-9982-583e-b583-53d70d759c6c,female,45,yes,,True,3,1
+4d425393-9704-531d-a942-c783c7f7a3ed,female,48,yes,,True,3,1
+e5e27019-bd0d-5665-a988-59318549aad1,male,42,yes,N/A,True,3,1
+2c3f26fb-6634-55c1-97f4-1d6f5ce55f81,male,24,yes,,True,3,3
+79d190d6-2ade-5c56-a1b2-4954745a0b4b,male,25,yes,Thank you for the opportunity to participate. I enjoyed completing this survey.,True,3,1
+ca38103b-64fa-572e-a61a-de1edc610bfa,female,22,yes,,True,3,2
+de1cc138-76a8-5d74-a928-1e2b90324952,female,31,yes,,True,3,1
+cee62669-1e26-5a52-8ab7-51a39c27b7c9,male,42,yes,Everything worked fine and was understandable.,True,3,1
+ef58bb81-facb-5703-8402-ff3ed002ea99,male,49,yes,,True,3,2
+0d9aeb91-6a37-5884-9a03-a35328db9647,female,50,yes,N/A,True,3,1
+b73ac0e4-3f67-5206-a067-e3f4ba189d87,male,19,yes,N/A,True,3,1
+dac5f1fc-94c6-577e-8ffe-abd65a4c5da3,male,20,yes,,True,3,1
+09925d67-5de8-5f1d-89bd-543d4acc7f81,male,55,yes,,True,3,1
+9fcebf2a-ba0a-55b2-999d-357b5277afcc,male,25,yes,,True,3,1
+8adcb0ea-989c-5c7e-84f4-ec9a795e1016,male,36,yes,None,True,3,1
+cfbdea5f-1de5-532f-b46a-6fdd3779bb94,male,34,yes,This was an interesting study.,True,3,1
+06e8089e-dc77-5adf-86cc-33e67988aa95,female,50,yes,no,True,3,2
+d327efd1-2a20-5e51-ab37-2e6cae937ee5,male,64,yes,,True,3,1
+e9d04e54-6513-58a0-8f87-d7997ab849cd,male,47,yes,Very interesting survey.,True,3,2
+bde588fe-f0f1-5296-ba2f-a08d305733a3,female,24,yes,"I really liked putting myself in these situations, it was interesting. Thanks for your study!",True,3,1
+239e41a2-92ab-5671-8622-e1e301f36ecd,female,67,yes,,True,3,1
+3512d926-a6b6-5915-ac11-d697e3642338,male,39,yes,the study was pretty straight forward,True,3,1
+f9e14ecb-a407-5868-903a-312120f6ecc5,male,34,yes,no comment,True,3,2
+6b3a2660-9b3f-5af3-b5ac-e344d3976f89,male,47,yes,None,True,3,1
+851a02ae-d104-5f4c-8e81-d32641edf86d,female,18,no,,True,3,1
+d2bad326-9b73-54b6-b217-740c9d9abb4f,male,65,yes,,True,3,1
+5b0ac605-7e7a-52af-8ddd-8a3cf5c6e0b9,male,24,yes,no,True,3,2
+df8f1aa5-7986-59de-b13e-3edc6c0ee863,female,25,yes,,True,3,1
+a40c9f76-55c1-5a9a-b78d-70c0c8ea49a5,female,32,yes,,True,3,1
+0cc0fd34-8c58-5ce1-90fb-a550d690fc4d,female,39,yes,not at this time,True,3,1
+996761fa-52c1-542a-b7b7-45cc07ca67c3,female,43,yes,,True,2,1
+1af9964f-c307-5b0a-8db0-d70be9eb6c7b,female,57,yes,All good,True,3,1
+30e864e0-c7f1-5abc-bb5d-f6670c3f79a6,female,30,yes,,True,3,3
+967ed098-ec41-5552-98ba-2a9a1a8bc23a,male,47,yes,,True,3,1
+c7b52af0-516e-5c9c-9ebc-7f80a173cfbf,male,20,yes,,True,3,2
+f6d9cf04-6f94-53ee-8e8d-7fd98146d28b,female,31,yes,,True,3,1
+dc30d31f-0e34-5567-91ac-5f2c8c3407df,male,49,yes,"Interesting study, thanks for providing!",True,2,2
+104c761a-fcf7-537e-94bf-41eb5647095c,male,32,yes,This study was insightful and clear to follow.,True,3,1
+3cb98585-27bf-533f-b9a0-138eabf62ccf,male,30,yes,,True,3,1
+86d007e3-555c-50b1-ba12-3f72abd1d632,male,25,yes,,True,3,1
+cf215421-13b6-52c5-8016-186c069fa824,nonconforming,23,yes,,True,3,1
+66767c45-691b-5aa3-b8f0-e11542d270b1,female,43,yes,,True,3,1
+165e4dda-e616-55b4-a5b0-87469b20c0df,male,31,yes,none,True,2,1
+a5ff46c9-5a06-549e-9872-7b9b94202944,female,63,yes,,True,3,2
+3ff737c6-b4a2-5f5c-8b22-5b22cba31101,female,19,yes,,True,3,1
+b4a12107-3ef3-5642-ab3b-ebf2b32e8b62,female,50,yes,,True,3,1
+28d22c41-be18-5449-86dd-31d4fd008085,male,25,yes,,True,2,1
+86b9be94-13ae-59ee-81d6-31ea1078760b,male,33,yes,None,True,3,3
+794b0cd3-577d-5a96-a7d1-08da9c2f4d92,female,36,yes,,True,3,1
+6734ff5e-0d22-5946-9e70-6f95385b69da,female,22,yes,,True,3,2
+52a2c20c-2e2b-55b7-8221-88ea96dda82b,male,51,yes,Here is my Prolific ID - 560379c9e372c00011bd4a90,True,3,1
+601eddea-cab0-58f2-a070-60c8a4b0a2b4,nonconforming,19,yes,Thanks for a cool survey!,True,3,1
+7d45e760-6462-5b41-bbb2-1cbce631d174,female,39,yes,,True,3,2
+d3353a47-2f10-503b-844e-8ff399103fcf,male,45,yes,None.,True,3,2
+ec5fe096-eb2f-5ec2-bc47-66b21fcad6cd,female,30,yes,I don't have any further comments or suggestions. Thank you for allowing me to participate in your study!,True,3,1
+91547165-c937-5bd7-b990-b1c3e7ba3cd3,male,38,yes,,True,2,2
+f761f999-e01a-5ce7-87ff-9599d220c134,male,40,yes,,True,3,1
+755a33f2-cfca-53df-8f95-a3b8ab3d6399,female,51,yes,,True,3,1
+422b430d-968b-56f1-b7e4-140621666c75,female,36,yes,None.,True,3,2
+1cc27244-138a-57b7-aa6f-7bb8e9efd6d6,male,27,yes,,True,3,2
+1c518fdc-7c8a-5ac9-b301-efa76c15e589,female,29,yes,,True,3,1
+b0b04d54-e576-5ae5-bcec-a111961512aa,male,43,yes,N/A,True,3,1
+d76ba4f4-078c-51f6-a405-f83cd64b31f6,female,38,yes,,True,1,2
+b7bf652c-52a6-5708-a74d-aaf56465f32c,male,40,yes,,True,3,1
+1ef1694c-f265-54b1-aebc-98839c035d70,female,30,yes,,True,3,1
+6cac2a11-0af1-52ba-961b-d8be71e5db6f,male,28,yes,nothing,True,3,3
+fb4e0e7a-59a1-55fb-a0b8-f93ec19ac3cd,female,43,yes,,True,3,2
+257be6a5-1323-580d-ac3c-c7bbe2a53466,male,43,yes,,True,3,3
+eb6028ea-3000-5fc6-87a2-1a22e17b9de5,male,67,yes,,True,3,1
+3f0c16c0-f2e9-5219-b73a-bd933ed11663,male,28,yes,,True,3,1
+15374397-2cfc-5aba-bc5a-a87ec8b56c5b,female,40,yes,,True,3,1
+969251b3-0350-5654-b0c2-8f8634184b0f,male,29,yes,,True,3,1
+03afd378-3a94-554d-b465-077276df8e70,male,21,yes,,True,3,1
+ed81dc62-c81c-599d-860c-eed7d3788270,male,31,yes,Thanks for the studies. ,True,3,1
+c29b2158-3a27-50d9-8d07-dc237c3761ed,male,30,yes,,True,1,1
+30680a3c-4fbd-509a-907f-e5263da3fb81,male,30,yes,none,True,3,1
+05e5f2a0-abb3-5fd9-8c6d-b71127174a6e,male,32,yes,,True,2,1
+71f55e8a-70e2-5d23-8815-77fdab547dc4,female,69,yes,,True,3,2
+245eb074-4452-538a-80f3-c319abd229ef,nonconforming,38,yes,,True,3,1
+6ecdc0f1-19e4-5257-abb9-58c61ce237fc,female,50,yes,,True,3,1
+a3d40f58-b94c-56a4-b452-e546a79efba9,male,28,yes,,True,3,1
+126d6dfb-a462-5d46-a6bb-797d07d64cc6,female,38,yes,,True,3,1
+e164ce8e-2b46-5301-a022-01f31866aad1,male,73,yes,,True,3,2
+93ffd36b-6e51-5790-b083-480cd5bbb269,male,48,yes,None,True,3,1
+cf41506d-d6a8-57ec-bba0-c84852e51a9a,female,43,yes,,True,3,2
+b080341b-61f8-56a3-ad6e-bd01bbead90b,female,38,yes,,True,3,1
+aa91709a-d5c9-583b-91f0-53c5f653cddd,female,28,yes,,True,3,3
+b1b4f360-ada3-54a7-baca-90e36ffc52de,female,43,yes,,True,3,1
+719cb68d-ef12-5491-9a4d-934dbe00c4ae,male,21,yes,No,True,3,1
+f6d7c7a3-fc25-5c37-b102-7bd53493ed5c,female,29,yes,"This was a fun and engaging survey, thank you!",True,3,2
+56df16f2-8667-5727-b3bd-018d58ecd67f,female,40,yes,,True,2,2
+d93414da-2566-55dd-8652-bb02e40ac6d8,male,61,yes,,True,3,1
+8fdf9598-096b-54bb-b329-f61a57f6c5fd,male,58,yes,"not at this time, thank you",True,3,1
+e1303ff3-6737-5db2-b22f-edffe2351348,male,73,yes,Enjoyed the study!,True,3,1
+aa7349a7-6ef3-5d8d-9eb4-3d5856a17a92,male,46,yes,NA,True,3,1
+0c8c03c6-64a6-56ca-a1b2-89b83dedd540,male,23,yes,"The comprehension check was a little confusing, I think adding visuals in some sense might make things clearer, regardless it drove the point across.",True,2,3
+f99fb35c-14c1-5e2e-b741-56f808999f83,female,39,yes,no comment,True,0,1
+650e4060-efc9-5c88-b1a5-41cb7ed866e8,male,34,yes,n/a,True,3,1
+2ff85d95-9d5a-55e9-aa79-7837aa492d7f,female,36,yes,,True,2,2
+90e50f02-1128-5c69-a762-be32669aea03,male,51,yes,no,True,3,1
+b8e2ca41-60eb-5bb5-994b-42164b13b029,female,64,yes,"It was hard to follow all the different names and scenarios but I did it!  I tried my best.  I think if the names were more common for people in the USA, it would have been easier to get past the names and think more of the scenarios.",True,3,1
+397662bb-5a6b-5435-8495-084dee2c047e,male,25,yes,,True,3,2
+70e97083-7567-5bb7-bd5d-a3ce9c0f27c1,male,55,yes,none,True,3,2
+140f6eb0-e37f-576e-812c-e77ca434d050,male,46,yes,,True,2,3
+5b5bef71-ae27-50a8-879f-af03a8480329,male,36,yes,No other comments. ,True,3,1
+b9d5e4fa-ee91-5fa0-8ff8-18539b0a1864,female,34,yes,,True,3,1
+e7da375e-12f9-5924-a5ca-850e724c67ab,female,32,yes,Thank you for this opportunity! :),True,3,1
+1d265d66-a22a-5760-a549-9d502b5bc574,male,29,yes,,True,3,1
+516c29df-1888-558a-abd8-c377b0473eac,female,35,yes,NO,True,3,1
+642a012e-1c8d-549e-8213-ebfbbb7f516d,male,19,yes,,True,3,1
+a8830a46-dc4a-5dfa-a7da-ca01b74cad88,male,44,yes,,True,3,1
+067abc0f-d60c-530e-a0b2-ad0556438a10,female,46,yes,,True,3,1
+685110cc-6957-55c1-92b7-757497dfa80f,male,40,yes,Survey was clear.,True,3,1
+d6dedde7-82e3-563a-8aa3-eb91ce233176,female,53,yes,,True,2,3
+6d327e25-671b-5850-a15d-7639d41aa2ee,female,35,yes,,True,2,1
+16446297-1811-5744-b4e2-085a34aa36af,female,30,yes,none,True,3,1
+8565d4e2-7930-5ab2-9f65-04ed542aca23,female,39,yes,,True,2,3
+27494bdd-38f0-58b3-b334-2e8552bbe60b,male,26,yes,,True,3,2
+66496f5d-d3e1-5d85-8803-d8f1451049d9,male,24,yes,N/A,True,2,1
+ff1ffd82-3448-5b62-bea1-53c16e6bfdd1,male,65,yes,,True,2,2
+d5fe1ce7-6cdf-5491-b177-d53b5b9812be,female,35,yes,,True,3,1
+ccd2b5d2-850e-5c67-9406-e7a0e4cf70c7,female,37,yes,None at this time.,True,3,1
+cba58d94-14c0-50e1-99a8-cbe518997776,male,20,yes,,True,3,1
+7f0357b3-68fb-55e2-b396-2538c7f20460,female,71,yes,"I wished I could have written the solution to the problem myself versus trying to make it fit between the 2 given versions sometimes which neither scenario on either ends ""fit"" the solution.",True,3,2
+e16eed4d-f84c-59f9-a40d-ec788ac9251f,female,48,yes,,True,3,1
+1673d040-6b06-54b8-aec1-042120500cb9,female,23,yes,it was fun!,True,3,1
+7fc60ca8-d373-55f1-8e06-df41e736bb16,female,20,yes,Thank you for this opportunity! It challenged me in a good way.,True,3,1
+4e8681fd-9572-51ac-833e-34719fddcaee,male,49,yes,interesting study,True,2,1
+ba09150f-8b23-5e14-90cd-569525dd4cba,male,28,yes,,True,3,2
+b7fee2c8-c526-5f44-a243-99ea2db2022a,female,25,yes,,True,3,2
+8270d013-c0a8-508b-ab0c-b84f2e9e5e1d,female,50,yes,interesting study!!,True,3,1
+6522b84c-8f35-5c69-8260-dfe28c23733c,female,49,yes,,True,3,1
