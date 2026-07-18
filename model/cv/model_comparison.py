@@ -282,6 +282,77 @@ def run_study(slug, n_boot, seed):
     return result
 
 
+def _config_dir(slug, tag):
+    root = get_project_root() / "model" / "outputs" / slug
+    return root if tag == "canonical" else root / "alt" / tag
+
+
+def compare_configs(slug, tag_a, tag_b, n_boot, seed):
+    """Matched-trial held-out-LL comparison between two run configs of the
+    same study (the attribution grid; spec 2026-07-18). Both configs' CV
+    manifests are verified against the same data CSV, then per-variant
+    (subject, scenario)-matched LL differences get the standard participant
+    bootstrap."""
+    rng = np.random.default_rng(seed)
+    frames = {}
+    for tag in (tag_a, tag_b):
+        d = _config_dir(slug, tag)
+        path = d / "cv_trial_ll.jsonl"
+        if not path.exists():
+            raise FileNotFoundError(f"{path} missing — run CV for config {tag} first")
+        _verify_cv_manifest(slug, d)
+        frames[tag] = pd.DataFrame(read_jsonl(path))
+    result = {
+        "experiment": slug,
+        "comparison": f"{tag_b}_minus_{tag_a}",
+        "n_boot": n_boot,
+        "seed": seed,
+        "per_variant": [],
+    }
+    common = sorted(set(frames[tag_a]["model"]) & set(frames[tag_b]["model"]))
+    for variant in common:
+        a = frames[tag_a][frames[tag_a]["model"] == variant]
+        b = frames[tag_b][frames[tag_b]["model"] == variant]
+        wide = a.merge(
+            b, on=["subject_id", "scenario_label"], suffixes=("_a", "_b"), how="inner"
+        )
+        if len(wide) != len(a) or len(wide) != len(b):
+            raise RuntimeError(
+                f"{slug}/{variant}: trial sets differ between configs "
+                f"({len(a)} vs {len(b)}, matched {len(wide)}) — different data "
+                "vintages; re-run CV."
+            )
+        diff = (wide["held_out_ll_b"] - wide["held_out_ll_a"]).to_numpy()
+        boots = _bootstrap_mean_by_subject(
+            diff, wide["subject_id"].to_numpy(), n_boot, rng
+        )
+        result["per_variant"].append(
+            {
+                "variant": variant,
+                "mean_ll_a": float(wide["held_out_ll_a"].mean()),
+                "mean_ll_b": float(wide["held_out_ll_b"].mean()),
+                "mean_per_trial_ll_diff": float(diff.mean()),
+                "ci_95": [
+                    float(np.percentile(boots, 2.5)),
+                    float(np.percentile(boots, 97.5)),
+                ],
+            }
+        )
+    out_dir = get_project_root() / "model" / "outputs" / slug / "alt"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"compare_{tag_a}_vs_{tag_b}.json"
+    write_json(out_path, result)
+    print(f"\n=== {slug}: {tag_b} − {tag_a} (per-trial held-out LL) ===")
+    for row in result["per_variant"]:
+        lo, hi = row["ci_95"]
+        print(
+            f"  {row['variant']}: {row['mean_per_trial_ll_diff']:+.4f} "
+            f"[{lo:+.4f}, {hi:+.4f}]  ({row['mean_ll_a']:.4f} -> {row['mean_ll_b']:.4f})"
+        )
+    print(f"  wrote {out_path}")
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
@@ -293,7 +364,23 @@ def main():
     )
     parser.add_argument("--n-boot", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--compare-configs",
+        nargs=2,
+        metavar=("TAG_A", "TAG_B"),
+        default=None,
+        help="Matched-trial held-out-LL comparison between two run configs of "
+        "one study. Each tag is `canonical` (outputs/<slug>) or an alt/ tag "
+        "(outputs/<slug>/alt/<tag>). Requires --study to name a single study.",
+    )
     args = parser.parse_args()
+
+    if args.compare_configs is not None:
+        if args.study == "all":
+            parser.error("--compare-configs requires --study to name a single study")
+        tag_a, tag_b = args.compare_configs
+        compare_configs(args.study, tag_a, tag_b, n_boot=args.n_boot, seed=args.seed)
+        return
 
     slugs = list(STUDY_SPECS) if args.study == "all" else [args.study]
     for slug in slugs:
