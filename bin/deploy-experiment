@@ -139,7 +139,11 @@ if $check_only; then
 fi
 $lib_only || ensure_artifacts_current
 
-rsync_flags=(-av --delete "${EXCLUDES[@]}")
+# --checksum: the artifact guard regenerates all generated files before every
+# push, freshening their mtimes, so rsync's default size+mtime quick-check
+# would re-send every experiment's artifacts; comparing content hashes keeps
+# the transfer list limited to files that actually changed.
+rsync_flags=(-avc --delete "${EXCLUDES[@]}")
 $dry_run && rsync_flags+=(--dry-run)
 
 # Multiplex SSH across the (potentially two) rsync invocations so the password
