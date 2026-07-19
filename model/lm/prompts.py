@@ -372,7 +372,7 @@ ALTERNATIVES_SYSTEM_PROMPT = (
 
 Your job is to list the actions the two people were realistically choosing between — the set you would use to interpret the action they actually took.
 
-Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
+If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
 Respond ONLY with a JSON array in this exact format, no explanation:
 [
