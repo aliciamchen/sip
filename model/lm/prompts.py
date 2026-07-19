@@ -356,26 +356,21 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 #     but must construct a smaller, context-sensitive comparison set —
 #     what this prompt operationalizes.
 #
-# The "sharing can happen in different ways" hint enumerates sharing modes
-# across all three stimulus domains (physical portioning/vessels/contact,
-# shared space, and graded/indirect disclosure) so that generation is
-# scaffolded symmetrically for the food and nonfood sets. The hint is
+# Generation is framed as interpretation-driven: the observer lists the set it
+# would use to read the observed action, not an exhaustive catalog of what was
+# technically possible. A single bare note ("sharing can be physical ... or a
+# matter of telling the other person something") keeps the disclosure/space
+# modes available for the nonfood set without pushing for breadth. That note is
 # IDENTICAL for every cell and condition, so it cannot produce condition
-# effects; it shapes only the overall coverage of the comparison set (the
-# observer model needs feature contrast among alternatives to infer
-# anything at all). This is acknowledged and defended in the SI
-# elicitation-details section of the manuscript.
+# effects; it only keeps a sharing mode from being missed. This is acknowledged
+# in the SI elicitation-details section of the manuscript.
 
 ALTERNATIVES_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
     + "\n\n"
     + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
-Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between.
-
-The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
-
-Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, sharing the same physical space, or telling the other person something in more or less detail, directly or indirectly. The options may differ in how much physical closeness, direct contact, or personal disclosure they involve.
+Your job is to list the actions the two people were realistically choosing between — the set you would use to interpret the action they actually took.
 
 Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
@@ -450,6 +445,15 @@ def alternatives_user_prompt(
 
     These are condition-independent within a study, so they shape only the
     coverage of the comparison set, not condition effects.
+
+    The closing instruction names those same inferred latent(s) as the DV
+    question(s) the listing serves ("... judge how much they would like X and
+    how likely each of the two situations above is"), phrased to match the
+    experiment's DVs (effort is the posterior over the two shown situations;
+    intimacy is formal-vs-intimate), so the LM lists the set an observer would
+    use to answer them from the observed action. It falls back to a generic
+    interpretation framing when no latent kwargs are passed (the SI template
+    render).
     """
     parts = [f"Scenario: {vignette}"]
     if desire_text is not None:
@@ -472,20 +476,48 @@ def alternatives_user_prompt(
         # in 1a it is the sole epistemic statement and "also" would dangle.
         also = "also " if effort_hypotheses is not None else ""
         parts.append(
-            f"You {also}do not know how much the two people want "
+            f"You {also}do not know how much the two people would like "
             f"{unknown_desire_object}."
         )
     if unknown_intimacy:
         parts.append(
-            "You do not know how close or formal the two people's relationship is."
+            "You do not know how formal or intimate the two people's relationship is."
         )
     parts.append(
         f"\nThe two people took the following action:\n{observed_action_text}\n"
     )
-    parts.append(
-        "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Do not include the action they actually took."
-    )
+    # Closing frames the listing as the comparison set for judging the study's
+    # inferred latent(s) from the observed action. DV labels are built from
+    # whichever latent kwargs the caller passed; a generic framing is used when
+    # none are (the SI template render, which shows only given conditions).
+    dv_labels = []
+    if unknown_desire_object is not None:
+        dv_labels.append(f"how much they would like {unknown_desire_object}")
+    if unknown_intimacy:
+        dv_labels.append("how formal or intimate they are")
+    if effort_hypotheses is not None:
+        # Effort is inferred as a posterior over the two situations shown above,
+        # so the label points back to them rather than naming a magnitude. Kept
+        # last so the "above" back-reference reads naturally after the others.
+        dv_labels.append("how likely each of the two situations above is")
+    if len(dv_labels) > 2:
+        dv_phrase = ", ".join(dv_labels[:-1]) + ", and " + dv_labels[-1]
+    elif len(dv_labels) == 2:
+        dv_phrase = f"{dv_labels[0]} and {dv_labels[1]}"
+    else:
+        dv_phrase = dv_labels[0] if dv_labels else None
+    if dv_phrase is not None:
+        parts.append(
+            "List the actions the two people were choosing between — the "
+            "comparison set you would use to interpret their choice and judge "
+            f"{dv_phrase}. Do not include the action they actually took."
+        )
+    else:
+        parts.append(
+            "List the actions the two people were choosing between — the "
+            "comparison set you would use to interpret their choice. Do not "
+            "include the action they actually took."
+        )
     return "\n".join(parts)
 
 

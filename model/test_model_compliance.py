@@ -1130,7 +1130,7 @@ def test_alternatives_prompt_latent_awareness():
     assert "One of the following is true of the situation" in up
     assert up.index("LOW PARA.") < up.index("HIGH PARA.")
     # following the effort block (1b/3a), the desire line says "also"
-    assert "You also do not know how much the two people want the hot dog" in up
+    assert "You also do not know how much the two people would like the hot dog" in up
     assert up.index("maximally formal") < up.index("One of the following")
     assert up.index("One of the following") < up.index("They shared.")
 
@@ -1138,12 +1138,12 @@ def test_alternatives_prompt_latent_awareness():
     up_1a = prompts.alternatives_user_prompt(
         "VIG.", "ACT.", unknown_desire_object="the hot dog"
     )
-    assert "You do not know how much the two people want the hot dog" in up_1a
+    assert "You do not know how much the two people would like the hot dog" in up_1a
     assert "also" not in up_1a
 
     # 2a/2b form: relationship unknown.
     up2 = prompts.alternatives_user_prompt("VIG.", "ACT.", unknown_intimacy=True)
-    assert "do not know how close or formal" in up2
+    assert "do not know how formal or intimate" in up2
 
     # Output path is the single default vintage (no arm suffix).
     ga = _load_generate_alternatives_module()
