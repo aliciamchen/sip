@@ -106,6 +106,8 @@ The PRIMARY model-comparison metric is **per-trial held-out log-likelihood** und
 
 ### Informative-prior configs
 
+> **Status (2026-07-19): evaluated, not adopted as the reported model.** A full K=20 evaluation on 1b found informative priors *suppress* the formal>intimate effort gradient — they hand the fit a competing explanation for the belief-updates, driving α→~9 (or, with α pinned, γ→0) — while only improving the low-risk-dip magnitude. **Uniform/canonical is the reported model**; the effort gradient is a structural limitation, so don't re-pursue informative priors as a way to fix it. See `notes/decisions.md` (2026-07-19) and `notes/2026-07-19-tight-prompt-k20-RESULTS.md`. The machinery below stays as available tooling for exploration.
+
 A **run config** selects which prior the observer uses, defaulting to the preregistered canonical pipeline (uniform priors over the latent grids, outputs under `outputs/<slug>/`). Both `fit_<slug>.py` and the CV dispatcher parse it from two shared flags (`_helpers.parse_run_config_args` → `RunConfig` in `model/run_config.py`):
 
 - `--priors uniform|informative|informative:<latents>` — `uniform` (default) is the preregistered path; `informative` reweights all of the study's inferred latents; `informative:<latents>` (comma list, e.g. `informative:desire`) reweights only the named subset, for the per-latent attribution grid. The informative prior is a discretized **Beta(mean m, concentration ν)** over the grid latents with one ν fitted per study — the field `param_prior_nu`, one extra slot on every ablation's parameter vector, nesting uniform at (m = 0.5, ν = 2); the 2-state effort latent uses the elicited scalar P(high) directly, with no new parameter.
