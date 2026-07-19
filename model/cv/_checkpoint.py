@@ -44,7 +44,27 @@ CHECKPOINT_NAME = "cv_checkpoint.jsonl"
 
 # The LM table files whose contents feed the observer tables (the base file
 # exists only for the given-relationship studies; hash whichever are present).
+# These are the canonical (unsuffixed) names; a non-canonical run config swaps
+# in its own vintage via `config_fields["runs"]` (see `run_fingerprint`).
 _LM_TABLE_NAMES = ("lm_runs.jsonl", "lm_runs_base.jsonl")
+
+# The default config descriptor a plain (canonical) CV run fingerprints under.
+# Kept as a module constant so the no-config default and the checkpoint header
+# agree on the exact dict.
+_CANONICAL_CONFIG = {"tag": "canonical", "runs": "lm_runs.jsonl", "priors": None}
+
+
+def _base_sibling(name):
+    """The `_base` companion of an LM table vintage: `lm_runs<suffix>.jsonl` →
+    `lm_runs_base<suffix>.jsonl` (the relationship-free set for the base
+    ablation), and likewise `lm_priors<...>.jsonl` → `lm_priors_base<...>.jsonl`.
+    Returns None when the name doesn't follow the `lm_<kind>...` shape (e.g. an
+    absolute-path override), so the caller just hashes the single file."""
+    for prefix in ("lm_runs", "lm_priors"):
+        if name.startswith(prefix) and not name.startswith(prefix + "_base"):
+            return name.replace(prefix, prefix + "_base", 1)
+    return None
+
 
 # The model-math sources whose content determines a fold refit's result: the
 # fit/likelihood helpers, the memo model stack, and the dispatcher's fold
@@ -76,7 +96,9 @@ def _sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run_fingerprint(slug, family, patience, n_restarts, project_root=None):
+def run_fingerprint(
+    slug, family, patience, n_restarts, config_fields=None, project_root=None
+):
     """Fingerprint of everything that determines a fold refit's result.
 
     Content hashes (not mtimes) of the study's data CSV, its LM run tables,
@@ -87,6 +109,16 @@ def run_fingerprint(slug, family, patience, n_restarts, project_root=None):
     1-thread vs 4-thread workers in the interrupt/resume smoke), so a resume
     may change CV_WORKERS or CV_WORKER_THREADS freely — including retuning
     threads partway through a long run.
+
+    `config_fields` (the RunConfig descriptor: `{"tag", "runs", "priors",
+    "fit_dir"}`) ties the checkpoint to the run configuration, so a canonical
+    run and an informative-priors / suffixed-alternatives run over the same
+    study never resume from each other's folds. It selects which LM run tables
+    (the config's `runs` vintage + its `_base` sibling), which prior tables
+    (when informative), and which fit directory (`fit_dir`) feed the hash. The
+    default is the canonical descriptor, so a plain CV run's fingerprint is the
+    pre-config one plus the constant `"config"` key (a one-time checkpoint
+    invalidation on upgrade).
     """
     if project_root is None:
         from utils import get_project_root  # deferred: repo import, tests inject
@@ -94,15 +126,40 @@ def run_fingerprint(slug, family, patience, n_restarts, project_root=None):
         project_root = get_project_root()
     root = Path(project_root)
     lm_dir = root / "model" / "outputs" / "lm" / slug
+    config = config_fields or _CANONICAL_CONFIG
+
+    # LM run tables: the config's alternatives vintage plus its `_base` sibling
+    # (the relationship-free set for the base ablation), keyed by file name.
+    runs_name = config.get("runs", _CANONICAL_CONFIG["runs"])
+    lm_names = [runs_name]
+    if (sib := _base_sibling(runs_name)) is not None:
+        lm_names.append(sib)
+    # Priors tables (informative runs only): the config's priors file plus its
+    # `_base` sibling, hashed alongside the run tables.
+    priors_name = config.get("priors")
+    if priors_name:
+        lm_names.append(priors_name)
+        if (sib := _base_sibling(priors_name)) is not None:
+            lm_names.append(sib)
+    lm_sha = {name: _sha256(lm_dir / name) for name in lm_names}
+
+    # Warm-start fit from the config's own fit directory (informative/suffixed
+    # runs write outside the canonical outputs/<slug>/); default is canonical.
+    fit_dir = config.get("fit_dir")
+    warm_path = (
+        Path(fit_dir) if fit_dir else root / "model" / "outputs" / slug
+    ) / "fit_results.json"
+
     return {
         "version": CHECKPOINT_VERSION,
         "slug": slug,
         "family": family,
         "patience": int(patience),
         "n_restarts": int(n_restarts),
+        "config": config,
         "data_sha256": _sha256(root / "data" / slug / "main_trials_long.csv"),
-        "lm_sha256": {name: _sha256(lm_dir / name) for name in _LM_TABLE_NAMES},
-        "warm_sha256": _sha256(root / "model" / "outputs" / slug / "fit_results.json"),
+        "lm_sha256": lm_sha,
+        "warm_sha256": _sha256(warm_path),
         "code_sha256": {rel: _sha256(root / rel) for rel in _CODE_FILES},
     }
 

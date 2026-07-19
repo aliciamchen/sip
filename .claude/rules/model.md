@@ -104,6 +104,27 @@ The PRIMARY model-comparison metric is **per-trial held-out log-likelihood** und
 - `cv_<slug>.py` — one per experiment, a thin wrapper around the dispatcher main.
 - `model_comparison.py` — the paper's numbers, from the CV outputs (`make model-comparison`): full − ablation per-trial held-out LL differences with participant-bootstrap 95% CIs (1,000 resamples), plus the secondary condition-averaged model-vs-human Pearson correlations with subject-cluster bootstrap CIs → `outputs/<slug>/cv_model_comparison.json`.
 
+### Informative-prior configs
+
+A **run config** selects which prior the observer uses, defaulting to the preregistered canonical pipeline (uniform priors over the latent grids, outputs under `outputs/<slug>/`). Both `fit_<slug>.py` and the CV dispatcher parse it from two shared flags (`_helpers.parse_run_config_args` → `RunConfig` in `model/run_config.py`):
+
+- `--priors uniform|informative|informative:<latents>` — `uniform` (default) is the preregistered path; `informative` reweights all of the study's inferred latents; `informative:<latents>` (comma list, e.g. `informative:desire`) reweights only the named subset, for the per-latent attribution grid. The informative prior is a discretized **Beta(mean m, concentration ν)** over the grid latents with one ν fitted per study — the field `param_prior_nu`, one extra slot on every ablation's parameter vector, nesting uniform at (m = 0.5, ν = 2); the 2-state effort latent uses the elicited scalar P(high) directly, with no new parameter.
+- `--priors-file <name>` — override the priors JSONL name (default `lm_priors.jsonl`); used by the human-ceiling check below.
+
+The Makefile passes these through on `fit-<slug>` / `cv-<slug>` via the `PRIORS` and `PRIORS_FILE` variables (assembled into `CONFIG_FLAGS`), e.g. `make cv-food_inv_joint_de PRIORS=informative`.
+
+**Where the prior enters.** Every observer is a Bayes inversion of the actor under a *uniform* latent prior, so the informative-prior posterior is exactly the uniform-prior posterior reweighted by the prior and renormalized (`post_inf ∝ prior · post_unif`) — the prior lives entirely at the likelihood layer in `model/inverse/_priors.py`, the observers (fast and memo reference) are untouched, and the uniform path stays byte-identical (enforced by the `test_model_compliance.py` nesting tests).
+
+**Output layout.** The canonical config (uniform priors) keeps writing `outputs/<slug>/`, byte-identical to the pre-config pipeline. Each informative config writes the same file set + manifests under `outputs/<slug>/alt/<tag>/`, where the tag encodes the config (`RunConfig.tag()`: e.g. `informative`, `informative-desire`, `informative_lm_priors_human`). The CV checkpoint fingerprint hashes `lm_priors*.jsonl` and the flag values alongside the data / tables / warm-start / model-code, so config vintages can never splice.
+
+**Prior elicitation** (`model/lm/elicit_priors.py --study <slug> [--base]`, `K_RUNS` env) is a standalone stage, decoupled from the alternatives pipeline: for each (scenario × prior-visible conditions) cell it elicits the study's PRIOR-stage scalars (desire / effort P(high) / intimacy, mirroring the human prior-stage questions) into `outputs/lm/<slug>/lm_priors.jsonl` (or `lm_priors_base.jsonl`), loaded by `tables.load_lm_priors`. `make lm-priors` runs the food four plus the given-relationship base pair; `lm-priors-<slug>` / `lm-priors-base-<slug>` cover the rest; smoke with `K_RUNS=1` and preview the call count with `--dry-run`.
+
+**Latent-aware alternative generation.** `generate_alternatives.py` always conditions the LM on the latent(s) the study infers — the two effort paragraphs framed as an explicit unknown (effort-inferred studies), the desire object flagged unknown-magnitude (desire-inferred), the relationship flagged unknown (intimacy-inferred) — inserted into each cell's user prompt after the given-condition paragraphs (`prompts.alternatives_user_prompt` + `generate_alternatives._latent_awareness_kwargs`). This mirrors the participant, who has seen the DV questions and so knows which quantities the trial leaves open. It is condition-independent within a study, so it shapes only the coverage of the comparison set, not condition effects.
+
+**Config comparison.** `model_comparison.py --compare-configs <a> <b>` scores two config dirs (`canonical`, or a tag) on the trials they share, matching on (subject_id, scenario_label) and reporting the mean per-trial held-out LL difference with the standard participant bootstrap; it verifies both manifests against the same data CSV, and writes `outputs/<slug>/alt/compare_<a>_vs_<b>.json`.
+
+**Human-prior ceiling check.** `model/inverse/make_human_priors.py --study <slug>` builds `lm_priors_human.jsonl` (K=1) from the data CSVs' prior-stage cell means; fitting with `--priors informative --priors-file lm_priors_human.jsonl` bounds how much LM prior quality costs relative to humans. Diagnostic only — it feeds human data into the model, so it is never a paper configuration.
+
 ### Outputs (`model/outputs/`)
 
 Per `outputs/<slug>/` (JSON / JSON Lines):

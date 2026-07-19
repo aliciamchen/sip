@@ -52,6 +52,7 @@ from observers import (
     observer_joint_ie_full,
 )
 from tables import (
+    INTIMACY_CONDITIONS,
     MAX_ACTIONS,
     N_ACTIONS,
     RELATIONSHIP_LEVEL_VALUES,
@@ -66,6 +67,8 @@ from utility import (
     get_utility_discomfort_only_padded_desire,
     get_utility_full_padded_desire,
 )
+
+from make_human_priors import build_human_prior_rows
 
 N_S = len(SCENARIO_LABELS)  # 16
 N_O = N_ACTIONS  # 3 observed actions
@@ -661,6 +664,657 @@ def test_fit_manifest_round_trip():
             raise AssertionError("tampered fit_results.json was not refused")
 
 
+def test_beta_prior_on_grid_normalizes_and_nests_uniform():
+    from _priors import GRID, beta_prior_on_grid
+
+    # exact uniform at (m=0.5, nu=2): Beta(1,1) has zero log-pdf everywhere
+    w = beta_prior_on_grid(jnp.array(0.5), 2.0)
+    assert w.shape == (101,)
+    assert jnp.allclose(w, jnp.ones(101) / 101, atol=1e-7)
+    # normalization + mean recovery for concentrated priors, batched input
+    ms = jnp.array([0.2, 0.5, 0.8])
+    for nu in (2.0, 8.0, 32.0):
+        w = beta_prior_on_grid(ms, nu)  # (3, 101)
+        assert jnp.allclose(w.sum(-1), 1.0, atol=1e-6)
+        means = w @ GRID
+        assert jnp.all(jnp.diff(means) > 0)  # monotone in m
+        if nu >= 8.0:
+            assert jnp.max(jnp.abs(means - ms)) < 0.03
+    print("✓ beta_prior_on_grid normalizes, nests uniform, recovers the mean")
+
+
+def test_reweight_grid_uniform_weights_is_identity():
+    from _priors import GRID, beta_prior_on_grid, reweight_grid
+
+    rng = np.random.default_rng(0)
+    post = rng.dirichlet(np.ones(101), size=(4,))  # (4, 101)
+    w = beta_prior_on_grid(jnp.full((4,), 0.5), 2.0)
+    out = reweight_grid(jnp.asarray(post), w)
+    assert jnp.allclose(out, post, atol=1e-6)
+    # informative prior shifts the posterior mean toward the prior mean
+    w_hi = beta_prior_on_grid(jnp.full((4,), 0.9), 8.0)
+    out_hi = reweight_grid(jnp.asarray(post), w_hi)
+    assert jnp.all(out_hi @ GRID > jnp.asarray(post) @ GRID)
+    assert jnp.allclose(out_hi.sum(-1), 1.0, atol=1e-6)
+    print("✓ reweight_grid is identity under uniform weights, shifts under prior")
+
+
+def test_reweight_joint_matches_manual_and_nests_uniform():
+    from _priors import beta_prior_on_grid, reweight_joint
+
+    rng = np.random.default_rng(1)
+    j = rng.dirichlet(np.ones(202), size=(3,)).reshape(3, 101, 2)
+    j = jnp.asarray(j)
+    assert reweight_joint(j) is j  # both None: no-op
+    out_u = reweight_joint(
+        j, beta_prior_on_grid(jnp.full((3,), 0.5), 2.0), jnp.full((3,), 0.5)
+    )
+    assert jnp.allclose(out_u, j, atol=1e-6)
+    # manual reference for an informative case
+    w = beta_prior_on_grid(jnp.full((3,), 0.3), 8.0)  # (3, 101)
+    p = jnp.full((3,), 0.2)
+    ref = j * w[:, :, None] * jnp.stack([1 - p, p], -1)[:, None, :]
+    ref = ref / ref.sum((-2, -1), keepdims=True)
+    assert jnp.allclose(reweight_joint(j, w, p), ref, atol=1e-6)
+    print("✓ reweight_joint matches manual reference and nests uniform")
+
+
+def _tiny_joint_ie_table_kwargs(K=2):
+    """K-run joint_ie observer table kwargs for the nesting test: K independent
+    seeded single-run slices from `_synthetic_joint_tables` stacked on a leading
+    run axis (the shape `_build_observer_tables_runs` vmaps over). Gives
+    risk (K,16,3,2,S), effort (K,16,3,2,2,S), g/prior (K,16,3,2,S), and
+    desire_table (K,16,2) — the production 2b run-axis shapes."""
+    runs = [_synthetic_joint_tables("joint_ie", seed=100 + k) for k in range(K)]
+    return {key: jnp.stack([r[key] for r in runs], axis=0) for key in runs[0]}
+
+
+def test_informative_prior_nests_uniform_fit_loss():
+    """priors with m=0.5 everywhere and nu fixed at 2 must reproduce the
+    uniform-path loss AND its gradient exactly at the shared coordinates (spec:
+    uniform nested). The value nesting is checked through the real fit; the
+    gradient nesting reconstructs the fit's joint_ie loss (from the same public
+    helpers the fit closure calls) so it can be differentiated, and pins that
+    reconstruction to the fit by matching its recorded init NLL — so the
+    reconstruction can't silently drift out of sync with the fit."""
+    from observers import VARIANTS_JOINT_IE
+
+    obs_fn, utility_names = VARIANTS_JOINT_IE["full"]
+    tk = _tiny_joint_ie_table_kwargs()  # the synthetic-table fixture (K=2)
+    K = tk["risk_table"].shape[0]
+    n_scen = tk["risk_table"].shape[1]
+    n_core = len(utility_names) + 2
+    action = jnp.array([0, 1, 2, 1])
+    scen = jnp.array([0, 1, 2, 3])
+    des = jnp.array([0, 1, 0, 1])
+    u_int = jnp.array([0.1, -0.2, 0.05, 0.3])
+    u_eff = jnp.array([-0.1, 0.2, 0.0, -0.3])
+
+    from _helpers import fit_joint_ie_observer_joint
+
+    # Probe each loss at a fixed init via a 1-restart, max_steps=1 fit and
+    # compare the recorded init NLLs (the loss at the same point).
+    init_uniform = jnp.ones(n_core)
+    _, nll_u, rec_u = fit_joint_ie_observer_joint(
+        obs_fn,
+        utility_names,
+        action,
+        scen,
+        des,
+        u_int,
+        u_eff,
+        tk,
+        n_restarts=1,
+        init_params=init_uniform,
+        max_steps=1,
+        verbose=False,
+    )
+    priors = {
+        "m_latent": jnp.full((K, n_scen, 2), 0.5),
+        "p_effort": jnp.full((K, n_scen, 2), 0.5),
+    }
+    init_inf = jnp.concatenate([init_uniform, jnp.array([2.0])])  # nu = 2
+    _, nll_i, rec_i = fit_joint_ie_observer_joint(
+        obs_fn,
+        utility_names,
+        action,
+        scen,
+        des,
+        u_int,
+        u_eff,
+        tk,
+        n_restarts=1,
+        init_params=init_inf,
+        max_steps=1,
+        verbose=False,
+        priors=priors,
+    )
+    assert abs(rec_u[0]["nll"] - rec_i[0]["nll"]) < 1e-4, (
+        f"informative m=0.5/nu=2 must nest uniform: "
+        f"{rec_u[0]['nll']} vs {rec_i[0]['nll']}"
+    )
+
+    # Gradient nesting: reconstruct the fit's joint_ie loss (parametrized by the
+    # priors dict) so jax.grad can be taken, anchored to the real fit by matching
+    # its recorded init NLL, then compare d(loss)/d(shared params).
+    from _helpers import (
+        EFFORT_PRIOR_MEAN,
+        GRID,
+        PRIOR_MEAN,
+        _build_observer_tables_runs,
+        delta_joint,
+        mixture_nll_2d,
+    )
+    from _priors import beta_prior_on_grid, reweight_joint
+
+    def loss(params, pr):
+        use_grid = pr is not None and pr.get("m_latent") is not None
+        use_eff = pr is not None and pr.get("p_effort") is not None
+        tables = _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+        sigma = params[n_core - 1]
+        nu = params[n_core] if use_grid else None
+
+        def nll_trial(a, s, r, ui, ue):
+            joint = tables[:, 0, s, a, r, :, :]  # (K, 101, 2)
+            if use_grid:
+                w = beta_prior_on_grid(pr["m_latent"][:, s, r], nu)
+                lat_pm = w @ GRID
+            else:
+                w, lat_pm = None, PRIOR_MEAN
+            if use_eff:
+                p = pr["p_effort"][:, s, r]
+                eff_pm = p
+            else:
+                p, eff_pm = None, EFFORT_PRIOR_MEAN
+            joint = reweight_joint(joint, w, p)
+            d_i, d_e = delta_joint(joint, GRID, lat_pm, eff_pm)
+            return mixture_nll_2d(
+                jnp.array([ui, ue]), jnp.stack([d_i, d_e], axis=1), sigma
+            )
+
+        return jnp.sum(jax.vmap(nll_trial)(action, scen, des, u_int, u_eff))
+
+    # Anchor: the reconstruction reproduces the real fit's init loss (so a later
+    # divergence between fit and reconstruction fails here, not silently).
+    assert abs(float(loss(init_uniform, None)) - rec_u[0]["nll"]) < 1e-3
+    assert abs(float(loss(init_inf, priors)) - rec_i[0]["nll"]) < 1e-3
+
+    g_u = jax.grad(lambda p: loss(p, None))(init_uniform)  # (n_core,)
+    g_i = jax.grad(lambda p: loss(p, priors))(init_inf)  # (n_core + 1,)
+    assert jnp.allclose(g_u, g_i[:n_core], atol=1e-4), (
+        f"informative gradient must nest uniform on the shared params: "
+        f"{np.asarray(g_u)} vs {np.asarray(g_i[:n_core])}"
+    )
+    print(
+        "✓ informative prior (m=0.5, nu=2) nests the uniform-path fit loss + gradient"
+    )
+
+
+def _tmpdir():
+    """A fresh temp directory as a Path (the file has no shared fixture helper)."""
+    return Path(tempfile.mkdtemp())
+
+
+def _write_priors_fixture(tmp_path, slug, rows):
+    import json as _json
+
+    d = tmp_path / "model" / "outputs" / "lm" / slug
+    d.mkdir(parents=True)
+    with open(d / "lm_priors.jsonl", "w") as f:
+        for r in rows:
+            f.write(_json.dumps(r) + "\n")
+    return d / "lm_priors.jsonl"
+
+
+def test_load_lm_priors_joint_de_shapes_and_values():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": k,
+            "scenario_label": s,
+            "intimacy_condition": lvl,
+            "prior_desire": 0.7,
+            "prior_effort_high": 0.3,
+        }
+        for k in range(2)
+        for s in SCENARIO_LABELS
+        for lvl in INTIMACY_CONDITIONS
+    ]
+    path = _write_priors_fixture(_tmpdir(), "food_inv_joint_de", rows)
+    out = load_lm_priors("food_inv_joint_de", filename=str(path))
+    assert out["desire_m"].shape == (2, 16, 4)
+    assert out["effort_p"].shape == (2, 16, 4)
+    # Stored float32 (as every loader here), so compare with a float32 tolerance.
+    assert abs(float(out["desire_m"][0, 0, 0]) - 0.7) < 1e-6
+    print("✓ load_lm_priors joint_de shapes and values")
+
+
+def test_load_lm_priors_missing_cell_raises():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": 0,
+            "scenario_label": s,
+            "intimacy_condition": lvl,
+            "prior_desire": 0.5,
+            "prior_effort_high": 0.5,
+        }
+        for s in SCENARIO_LABELS
+        for lvl in INTIMACY_CONDITIONS
+    ][:-1]  # drop one cell
+    path = _write_priors_fixture(_tmpdir(), "food_inv_joint_de", rows)
+    try:
+        load_lm_priors("food_inv_joint_de", filename=str(path))
+        assert False, "expected ValueError on missing cell"
+    except ValueError:
+        print("✓ load_lm_priors raises on a missing cell")
+
+
+def test_load_lm_priors_out_of_range_raises():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": 0,
+            "scenario_label": s,
+            "intimacy_condition": lvl,
+            "prior_desire": 1.7,  # out of [0, 1]
+            "prior_effort_high": 0.5,
+        }
+        for s in SCENARIO_LABELS
+        for lvl in INTIMACY_CONDITIONS
+    ]
+    path = _write_priors_fixture(_tmpdir(), "food_inv_joint_de", rows)
+    try:
+        load_lm_priors("food_inv_joint_de", filename=str(path))
+        assert False, "expected ValueError on out-of-range scalar"
+    except ValueError:
+        print("✓ load_lm_priors raises on an out-of-range scalar")
+
+
+def test_load_lm_priors_base_broadcasts_relationship():
+    from tables import SCENARIO_LABELS, load_lm_priors
+
+    rows = [
+        {
+            "run_id": 0,
+            "scenario_label": s,
+            "prior_desire": 0.6,
+            "prior_effort_high": 0.4,
+        }
+        for s in SCENARIO_LABELS
+    ]
+    d = _tmpdir() / "model" / "outputs" / "lm" / "food_inv_joint_de"
+    d.mkdir(parents=True)
+    import json as _json
+
+    with open(d / "lm_priors_base.jsonl", "w") as f:
+        for r in rows:
+            f.write(_json.dumps(r) + "\n")
+    out = load_lm_priors(
+        "food_inv_joint_de", base=True, filename=str(d / "lm_priors_base.jsonl")
+    )
+    assert out["desire_m"].shape == (1, 16, 4)
+    assert jnp.allclose(out["desire_m"][0, :, 0], out["desire_m"][0, :, 3])
+    print("✓ load_lm_priors base broadcasts across the relationship axis")
+
+
+def test_parse_run_config_args_defaults():
+    """No flags → the canonical RunConfig (uniform priors, no alts suffix, no
+    priors-file override), which routes outputs to outputs/<slug>/."""
+    from _helpers import parse_run_config_args
+
+    from run_config import RunConfig
+
+    cfg = parse_run_config_args([])
+    assert cfg == RunConfig(), f"defaults not canonical: {cfg}"
+    assert cfg.is_canonical
+    print("✓ parse_run_config_args defaults to the canonical config")
+
+
+def test_parse_run_config_args_informative():
+    """--priors informative:desire + --priors-file parse into the matching
+    RunConfig fields (and it is not canonical)."""
+    from _helpers import parse_run_config_args
+
+    cfg = parse_run_config_args(
+        [
+            "--priors",
+            "informative:desire",
+            "--priors-file",
+            "lm_priors_human.jsonl",
+        ]
+    )
+    assert cfg.priors_mode == "informative"
+    assert cfg.priors_latents == ("desire",)
+    assert cfg.priors_file == "lm_priors_human.jsonl"
+    assert not cfg.is_canonical
+    print("✓ parse_run_config_args parses informative priors + file")
+
+
+def test_build_priors_kwarg_uniform_is_none():
+    """Uniform mode (the canonical default) yields no priors kwarg — the fit
+    stays on the byte-identical uniform path."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    assert build_priors_kwarg("food_inv_joint_de", RunConfig()) is None
+    print("✓ build_priors_kwarg returns None in uniform mode")
+
+
+def test_build_priors_kwarg_empty_active_raises():
+    """informative:<latent> naming a latent the study does NOT infer leaves
+    `active` empty; build_priors_kwarg must raise (not silently run canonical)."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    # food_inv_joint_de infers (desire, effort); intimacy is not among them.
+    cfg = RunConfig.parse("informative:intimacy", None)
+    try:
+        build_priors_kwarg("food_inv_joint_de", cfg)
+    except ValueError as e:
+        assert "desire" in str(e) and "effort" in str(e), f"latents not named: {e}"
+        print("✓ build_priors_kwarg raises when the named latent isn't inferred")
+    else:
+        raise AssertionError("empty active latents were not rejected")
+
+
+def test_build_priors_kwarg_missing_file_raises():
+    """informative priors whose priors file is absent must fail fast with the
+    `make lm-priors-<slug>` hint (not fall back to uniform). Points at a
+    guaranteed-absent fixture filename (via --priors-file) rather than relying on
+    a real study genuinely lacking its lm_priors.jsonl — so the test stays
+    hermetic the day nonfood priors are elicited."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    cfg = RunConfig.parse("informative", "lm_priors_definitely_absent_fixture.jsonl")
+    try:
+        build_priors_kwarg("food_inv_joint_de", cfg)
+    except FileNotFoundError as e:
+        assert "make lm-priors-food_inv_joint_de" in str(e), f"missing hint: {e}"
+        print("✓ build_priors_kwarg raises FileNotFoundError with the make hint")
+    else:
+        raise AssertionError("missing priors file was not rejected")
+
+
+def test_priors_base_variant_truth_table():
+    """priors_base_variant (F1/F2): the base priors vintage is routed to only for
+    (given-relationship study, base variant, no explicit --priors-file). A
+    given-desire study, a non-base variant, or an explicit priors-file each
+    return False (the latter is the F2 fix — an explicit vintage is used as-is,
+    never through the loader's base collapse)."""
+    from _priors import priors_base_variant
+
+    # given-desire study has no base priors vintage → never base
+    assert priors_base_variant("food_inv_intimacy", "base", None) is False
+    # given-relationship study, base variant, default file → base vintage
+    assert priors_base_variant("food_inv_joint_de", "base", None) is True
+    # explicit --priors-file collapses every variant to base=False (F2)
+    assert (
+        priors_base_variant("food_inv_joint_de", "base", "lm_priors_human.jsonl")
+        is False
+    )
+    # non-base variant → never base
+    assert priors_base_variant("food_inv_joint_de", "full", None) is False
+    print("✓ priors_base_variant truth table (F1/F2)")
+
+
+def test_build_priors_kwarg_human_ceiling_loads():
+    """F2 regression: fitting with an explicit --priors-file (the full-shaped
+    human-ceiling lm_priors_human.jsonl, one row per relationship level) must
+    load for the base variant WITHOUT the loader's base collapse — which would
+    drop intimacy_condition and raise a conflicting-write ValueError.
+    priors_base_variant forces base=False for an explicit file, so the
+    full-shaped (1, 16, 4) arrays load cleanly. Hermetic: the human file is
+    committed under outputs/lm/food_inv_joint_de/."""
+    from _priors import build_priors_kwarg
+
+    from run_config import RunConfig
+
+    cfg = RunConfig.parse("informative", "lm_priors_human.jsonl")
+    pr = build_priors_kwarg("food_inv_joint_de", cfg, base=False)
+    assert pr["m_latent"].shape == (1, 16, 4), pr["m_latent"].shape
+    assert pr["p_effort"].shape == (1, 16, 4), pr["p_effort"].shape
+    print("✓ build_priors_kwarg loads the human-ceiling priors file (F2)")
+
+
+def _load_prompts_module():
+    """Load model/lm/prompts.py in isolation (no package import machinery), so
+    the prompt tests exercise the source file directly."""
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "prompts", Path(__file__).resolve().parent / "lm" / "prompts.py"
+    )
+    prompts = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(prompts)
+    return prompts
+
+
+def _load_generate_alternatives_module():
+    """Load model/lm/generate_alternatives.py in isolation, for its importable,
+    API-free helpers (e.g. `_output_path_for`)."""
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "generate_alternatives",
+        Path(__file__).resolve().parent / "lm" / "generate_alternatives.py",
+    )
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_alternatives_prompt_latent_awareness():
+    prompts = _load_prompts_module()
+
+    # No refusal clause anywhere; single system prompt form.
+    assert "nothing is shared at all" not in prompts.ALTERNATIVES_SYSTEM_PROMPT
+
+    # Latent-awareness is always driven by the caller's per-study kwargs. 1b
+    # (infers desire + effort): effort hypotheses + desire unknown, inserted
+    # after the condition paragraphs and before the observed action.
+    up = prompts.alternatives_user_prompt(
+        "VIG.",
+        "They shared.",
+        intimacy_level="max_formal",
+        effort_hypotheses=("LOW PARA.", "HIGH PARA."),
+        unknown_desire_object="the hot dog",
+    )
+    assert "One of the following is true of the situation" in up
+    assert up.index("LOW PARA.") < up.index("HIGH PARA.")
+    # following the effort block (1b/3a), the desire line says "also"
+    assert "You also do not know how much the two people would like the hot dog" in up
+    assert up.index("maximally formal") < up.index("One of the following")
+    assert up.index("One of the following") < up.index("They shared.")
+
+    # 1a form: desire line is the sole epistemic statement — no dangling "also"
+    up_1a = prompts.alternatives_user_prompt(
+        "VIG.", "ACT.", unknown_desire_object="the hot dog"
+    )
+    assert "You do not know how much the two people would like the hot dog" in up_1a
+    assert "also" not in up_1a
+
+    # 2a/2b form: relationship unknown.
+    up2 = prompts.alternatives_user_prompt("VIG.", "ACT.", unknown_intimacy=True)
+    assert "do not know how formal or intimate" in up2
+
+    # Output path is the single default vintage (no arm suffix).
+    ga = _load_generate_alternatives_module()
+    assert (
+        ga._output_path_for("food_inv_joint_de", False).name == "lm_alternatives.jsonl"
+    )
+    assert (
+        ga._output_path_for("food_inv_desire", True).name
+        == "lm_alternatives_base.jsonl"
+    )
+    print("✓ alternatives prompt always latent-aware; single default vintage")
+
+
+def test_prior_prompts_compose_condition_texts():
+    prompts = _load_prompts_module()
+
+    up = prompts.prior_desire_user_prompt(
+        "VIGNETTE.", "the hot dog", condition_texts=("REL.", "EFFORT.")
+    )
+    assert "VIGNETTE." in up and "REL." in up and "EFFORT." in up
+    assert "the hot dog" in up and '"desire"' in up
+    assert prompts.PRIOR_DESIRE_SYSTEM_PROMPT.startswith(
+        "You are a participant in a human study"
+    )
+
+    ue = prompts.prior_effort_user_prompt("VIGNETTE.", "LOW TEXT.", "HIGH TEXT.")
+    assert ue.index("LOW TEXT.") < ue.index("HIGH TEXT.")  # low = 0 endpoint
+    assert '"effort"' in ue
+
+    ui = prompts.prior_intimacy_user_prompt("VIGNETTE.", condition_texts=("DESIRE.",))
+    assert "relationship" in ui and '"intimacy"' in ui
+    assert "0" in prompts.PRIOR_INTIMACY_SYSTEM_PROMPT
+    print("✓ prior prompts compose condition texts and expose the scalar keys")
+
+
+def test_elicit_priors_cell_grids():
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "elicit_priors", Path(__file__).resolve().parent / "lm" / "elicit_priors.py"
+    )
+    ep = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(ep)
+
+    cells_1a = ep._build_prior_cells("food_inv_desire", base=False)
+    assert len(cells_1a) == 16 * 2 * 4  # scenario x effort x relationship
+    assert cells_1a[0]["quantities"] == ("prior_desire",)
+    assert len(ep._build_prior_cells("food_inv_desire", base=True)) == 16 * 2
+
+    cells_1b = ep._build_prior_cells("food_inv_joint_de", base=False)
+    assert len(cells_1b) == 16 * 4
+    assert set(cells_1b[0]["quantities"]) == {"prior_desire", "prior_effort_high"}
+    # relationship sentence present in condition_texts, effort paragraphs held
+    # out of condition_texts (they are the effort question's endpoints)
+    assert any("relationship" in t for t in cells_1b[0]["condition_texts"])
+
+    cells_2a = ep._build_prior_cells("food_inv_intimacy", base=False)
+    assert len(cells_2a) == 16 * 2 * 2
+    assert cells_2a[0]["quantities"] == ("prior_intimacy",)
+    assert len(cells_2a[0]["condition_texts"]) == 2  # desire + effort paragraphs
+
+    cells_2b = ep._build_prior_cells("food_inv_joint_ie", base=False)
+    assert len(cells_2b) == 16 * 2
+    assert set(cells_2b[0]["quantities"]) == {"prior_intimacy", "prior_effort_high"}
+    print("✓ elicit_priors cell grids have the expected shapes and quantities")
+
+
+def test_build_human_prior_rows_grouping():
+    """make_human_priors.build_human_prior_rows: prior-stage filter, per-cell
+    mean over subjects, condition renaming, and the [0, 1] pass-through (the
+    human ratings are already normalized, so there is no rescaling)."""
+    # joint_de: two elicited quantities, one prior-visible condition (intimacy).
+    df = pd.DataFrame(
+        [
+            # apples / max_formal: two prior subjects + a posterior row to exclude
+            {
+                "scenario_label": "apples",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "desire_rating": 0.2,
+                "effort_rating": 0.6,
+            },
+            {
+                "scenario_label": "apples",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "desire_rating": 0.4,
+                "effort_rating": 0.8,
+            },
+            {
+                "scenario_label": "apples",
+                "intimacy": "max_formal",
+                "stage": "posterior",
+                "desire_rating": 0.99,
+                "effort_rating": 0.99,
+            },
+            # pizza / max_intimate: single prior subject
+            {
+                "scenario_label": "pizza",
+                "intimacy": "max_intimate",
+                "stage": "prior",
+                "desire_rating": 0.1,
+                "effort_rating": 0.5,
+            },
+        ]
+    )
+    rows = build_human_prior_rows(df, "food_inv_joint_de")
+    assert len(rows) == 2  # the posterior row does not add a cell
+    by_cell = {(r["scenario_label"], r["intimacy_condition"]): r for r in rows}
+    apples = by_cell[("apples", "max_formal")]
+    assert apples["run_id"] == 0
+    assert "intimacy_condition" in apples and "intimacy" not in apples  # renamed
+    assert abs(apples["prior_desire"] - 0.3) < 1e-9  # mean(0.2, 0.4), prior only
+    assert abs(apples["prior_effort_high"] - 0.7) < 1e-9  # mean(0.6, 0.8), no posterior
+    pizza = by_cell[("pizza", "max_intimate")]
+    assert abs(pizza["prior_desire"] - 0.1) < 1e-9
+    assert abs(pizza["prior_effort_high"] - 0.5) < 1e-9
+
+    # desire (1a): single quantity read from `response`, two prior-visible
+    # conditions (effort + intimacy) -> two renamed condition keys.
+    df1a = pd.DataFrame(
+        [
+            {
+                "scenario_label": "apples",
+                "effort": "low",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "response": 0.2,
+            },
+            {
+                "scenario_label": "apples",
+                "effort": "low",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "response": 0.6,
+            },
+            {
+                "scenario_label": "apples",
+                "effort": "high",
+                "intimacy": "max_formal",
+                "stage": "prior",
+                "response": 0.9,
+            },
+            {
+                "scenario_label": "apples",
+                "effort": "low",
+                "intimacy": "max_formal",
+                "stage": "posterior",
+                "response": 0.99,
+            },
+        ]
+    )
+    rows1a = build_human_prior_rows(df1a, "food_inv_desire")
+    assert len(rows1a) == 2  # (low, max_formal) and (high, max_formal)
+    assert set(rows1a[0]) == {
+        "run_id",
+        "scenario_label",
+        "effort_condition",
+        "intimacy_condition",
+        "prior_desire",
+    }
+    cells = {(r["effort_condition"], r["intimacy_condition"]): r for r in rows1a}
+    assert (
+        abs(cells[("low", "max_formal")]["prior_desire"] - 0.4) < 1e-9
+    )  # mean(0.2, 0.6)
+    assert abs(cells[("high", "max_formal")]["prior_desire"] - 0.9) < 1e-9
+    print(
+        "✓ build_human_prior_rows groups prior-stage ratings per cell with renamed conditions"
+    )
+
+
 def run_all_tests():
     print("=" * 60)
     print("Active model compliance tests")
@@ -682,6 +1336,25 @@ def run_all_tests():
     test_fit_multistart_raises_on_all_nan()
     test_fit_manifest_round_trip()
     test_delta_helpers_match_reference()
+    test_beta_prior_on_grid_normalizes_and_nests_uniform()
+    test_reweight_grid_uniform_weights_is_identity()
+    test_reweight_joint_matches_manual_and_nests_uniform()
+    test_informative_prior_nests_uniform_fit_loss()
+    test_load_lm_priors_joint_de_shapes_and_values()
+    test_load_lm_priors_missing_cell_raises()
+    test_load_lm_priors_out_of_range_raises()
+    test_load_lm_priors_base_broadcasts_relationship()
+    test_parse_run_config_args_defaults()
+    test_parse_run_config_args_informative()
+    test_build_priors_kwarg_uniform_is_none()
+    test_build_priors_kwarg_empty_active_raises()
+    test_build_priors_kwarg_missing_file_raises()
+    test_priors_base_variant_truth_table()
+    test_build_priors_kwarg_human_ceiling_loads()
+    test_alternatives_prompt_latent_awareness()
+    test_prior_prompts_compose_condition_texts()
+    test_elicit_priors_cell_grids()
+    test_build_human_prior_rows_grouping()
     print("=" * 60)
     print("All tests passed!")
     print("=" * 60)

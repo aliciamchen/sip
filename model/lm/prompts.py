@@ -356,28 +356,23 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 #     but must construct a smaller, context-sensitive comparison set —
 #     what this prompt operationalizes.
 #
-# The "sharing can happen in different ways" hint enumerates sharing modes
-# across all three stimulus domains (physical portioning/vessels/contact,
-# shared space, and graded/indirect disclosure) so that generation is
-# scaffolded symmetrically for the food and nonfood sets. The hint is
+# Generation is framed as interpretation-driven: the observer lists the set it
+# would use to read the observed action, not an exhaustive catalog of what was
+# technically possible. A single bare note ("sharing can be physical ... or a
+# matter of telling the other person something") keeps the disclosure/space
+# modes available for the nonfood set without pushing for breadth. That note is
 # IDENTICAL for every cell and condition, so it cannot produce condition
-# effects; it shapes only the overall coverage of the comparison set (the
-# observer model needs feature contrast among alternatives to infer
-# anything at all). This is acknowledged and defended in the SI
-# elicitation-details section of the manuscript.
+# effects; it only keeps a sharing mode from being missed. This is acknowledged
+# in the SI elicitation-details section of the manuscript.
 
 ALTERNATIVES_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
     + "\n\n"
     + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. You will be told what action they took in the situation.
 
-Your job is to list the alternative actions that would come to mind to a reasonable person in this situation — the set of options you think the two people were realistically choosing between.
+Your job is to list the actions the two people were realistically choosing between — the set you would use to interpret the action they actually took.
 
-The alternatives should be things the two people could have done at the moment they chose the observed action — not changes to decisions they had already made earlier in the scenario.
-
-Cover the realistic range of options. Note that sharing can happen in different ways — taking turns, dividing into separate portions, using one shared item or vessel, direct contact, sharing the same physical space, or telling the other person something in more or less detail, directly or indirectly. The options may differ in how much physical closeness, direct contact, or personal disclosure they involve.
-
-Aim for a small, focused set. If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
+If you're not confident an alternative is something the people would realistically consider — not just something technically possible — leave it out. It's better to return fewer strong alternatives than to pad the list. Do not include the action they actually took.
 
 Respond ONLY with a JSON array in this exact format, no explanation:
 [
@@ -410,6 +405,9 @@ def alternatives_user_prompt(
     effort_text=None,
     intimacy_level=None,
     desire_text=None,
+    effort_hypotheses=None,
+    unknown_desire_object=None,
+    unknown_intimacy=False,
 ):
     """Build the user prompt for the alternative-generation call in the 3-action
     inverse experiments (Studies 1a, 1b, 2a, 2b).
@@ -428,6 +426,34 @@ def alternatives_user_prompt(
     somewhat_formal / somewhat_intimate / max_intimate) when provided; it's rendered
     via the shared `RELATIONSHIP_DESCRIPTORS` dict so the LM sees the same
     qualitative descriptor humans see.
+
+    The prompt also always makes the LM epistemically aware of the latent(s) the
+    study infers — the very quantities the observer-visible paragraphs above
+    deliberately withhold — so the generated set spans the range those latents
+    could take, mirroring the participant, who has seen the DV questions and so
+    knows which quantities the trial leaves open. Inserted after the
+    given-condition paragraphs and before the observed action, driven by which
+    latents the study infers (the caller always supplies these):
+
+      - `effort_hypotheses`: a `(low_text, high_text)` pair of the two effort
+        paragraphs, presented as two situations one of which holds (effort-
+        inferred studies 1b/2b/3a/3b).
+      - `unknown_desire_object`: names the desire object as unknown-magnitude
+        (desire-inferred studies 1a/1b/3a).
+      - `unknown_intimacy`: flags the relationship as unknown (intimacy-inferred
+        studies 2a/2b/3b).
+
+    These are condition-independent within a study, so they shape only the
+    coverage of the comparison set, not condition effects.
+
+    The closing instruction names those same inferred latent(s) as the DV
+    question(s) the listing serves ("... judge how much they would like X and
+    how likely each of the two situations above is"), phrased to match the
+    experiment's DVs (effort is the posterior over the two shown situations;
+    intimacy is formal-vs-intimate), so the LM lists the set an observer would
+    use to answer them from the observed action. It falls back to a generic
+    interpretation framing when no latent kwargs are passed (the SI template
+    render).
     """
     parts = [f"Scenario: {vignette}"]
     if desire_text is not None:
@@ -439,13 +465,59 @@ def alternatives_user_prompt(
             f"The two people are in a relationship they would describe as "
             f"{RELATIONSHIP_DESCRIPTORS[intimacy_level]}."
         )
+    if effort_hypotheses is not None:
+        low_text, high_text = effort_hypotheses
+        parts.append(
+            "One of the following is true of the situation, but you do not "
+            f"know which:\n- {low_text}\n- {high_text}"
+        )
+    if unknown_desire_object is not None:
+        # "also" only when this follows the effort-hypotheses block (1b/3a);
+        # in 1a it is the sole epistemic statement and "also" would dangle.
+        also = "also " if effort_hypotheses is not None else ""
+        parts.append(
+            f"You {also}do not know how much the two people would like "
+            f"{unknown_desire_object}."
+        )
+    if unknown_intimacy:
+        parts.append(
+            "You do not know how formal or intimate the two people's relationship is."
+        )
     parts.append(
         f"\nThe two people took the following action:\n{observed_action_text}\n"
     )
-    parts.append(
-        "List the set of plausible alternative ways the two people could "
-        "have handled the situation instead. Do not include the action they actually took."
-    )
+    # Closing frames the listing as the comparison set for judging the study's
+    # inferred latent(s) from the observed action. DV labels are built from
+    # whichever latent kwargs the caller passed; a generic framing is used when
+    # none are (the SI template render, which shows only given conditions).
+    dv_labels = []
+    if unknown_desire_object is not None:
+        dv_labels.append(f"how much they would like {unknown_desire_object}")
+    if unknown_intimacy:
+        dv_labels.append("how formal or intimate they are")
+    if effort_hypotheses is not None:
+        # Effort is inferred as a posterior over the two situations shown above,
+        # so the label points back to them rather than naming a magnitude. Kept
+        # last so the "above" back-reference reads naturally after the others.
+        dv_labels.append("how likely each of the two situations above is")
+    if len(dv_labels) > 2:
+        dv_phrase = ", ".join(dv_labels[:-1]) + ", and " + dv_labels[-1]
+    elif len(dv_labels) == 2:
+        dv_phrase = f"{dv_labels[0]} and {dv_labels[1]}"
+    else:
+        dv_phrase = dv_labels[0] if dv_labels else None
+    if dv_phrase is not None:
+        parts.append(
+            "List the actions the two people were choosing between — the "
+            "comparison set you would use to interpret their choice and judge "
+            f"{dv_phrase}. Do not include the action they actually took."
+        )
+    else:
+        parts.append(
+            "List the actions the two people were choosing between — the "
+            "comparison set you would use to interpret their choice. Do not "
+            "include the action they actually took."
+        )
     return "\n".join(parts)
 
 
@@ -528,3 +600,89 @@ def relationship_user_prompt(descriptor):
         "On a scale from 0 to 100, how intimate is this relationship? Respond "
         'with {"intimacy": <number>}.'
     )
+
+
+# ==============================================================================
+# Public API: prior scalars (informative-prior configs; see
+# notes/2026-07-18-informative-priors-refusal-alts-design.md)
+# ==============================================================================
+# Each prompt mirrors the human PRIOR-stage question exactly: the LM sees the
+# vignette plus the same given-condition paragraphs the participant sees before
+# the action is revealed, and answers the same question the participant's
+# slider asks, with the same endpoints. One rating per (run, scenario,
+# prior-visible conditions); no action text appears anywhere.
+
+PRIOR_DESIRE_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. Before knowing anything about what they decide to do, judge how much the two people would like the thing at stake in the scenario, on a scale from 0 (would not like it at all) to 100 (would like it extremely). Rate only how much they would like it — not what they might do, how much effort anything takes, or how the two people are related.
+
+Respond with a JSON object in this exact format, no explanation:
+{"desire": <number>}"""
+)
+
+
+def prior_desire_user_prompt(vignette, desire_object, condition_texts=()):
+    """Prior-desire rating (1a/1b): the participant's prior-stage screen minus
+    the action. `condition_texts` are the given-condition paragraphs the study
+    shows before the prior rating (1a: relationship sentence + effort
+    paragraph; 1b: relationship sentence; base variants: no relationship)."""
+    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts.append(
+        f"\nBefore observing what the two people decide to do: on a scale "
+        f"from 0 to 100, how much do you think they would like "
+        f'{desire_object}? Respond with {{"desire": <number>}}.'
+    )
+    return "\n".join(parts)
+
+
+PRIOR_EFFORT_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them, followed by two descriptions of what the situation might be like. Before knowing anything about what the two people decide to do, judge which of the two situations you think is more likely, on a scale from 0 (the FIRST situation is certainly the case) to 100 (the SECOND situation is certainly the case), where 50 means the two situations are equally likely.
+
+Respond with a JSON object in this exact format, no explanation:
+{"effort": <number>}"""
+)
+
+
+def prior_effort_user_prompt(
+    vignette, effort_low_text, effort_high_text, condition_texts=()
+):
+    """Prior-effort rating (1b/2b): mirrors the human effort slider, whose
+    endpoints are the scenario's two effort paragraphs with "Equally likely"
+    at the midpoint. The low-effort paragraph is the 0 endpoint (first), the
+    high-effort paragraph the 100 endpoint (second), matching the human
+    slider's left-to-right order; the response maps to P(high effort) =
+    value / 100."""
+    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts.append(f"\nFirst situation: {effort_low_text}")
+    parts.append(f"Second situation: {effort_high_text}")
+    parts.append(
+        "\nOn a scale from 0 (certainly the first situation) to 100 "
+        "(certainly the second situation), which situation do you think is "
+        'more likely? Respond with {"effort": <number>}.'
+    )
+    return "\n".join(parts)
+
+
+PRIOR_INTIMACY_SYSTEM_PROMPT = (
+    _PREAMBLE_RATING
+    + "\n\n"
+    + """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. Before knowing anything about what they decide to do, judge how the two people would describe their relationship, on a scale from 0 (maximally formal) to 100 (maximally intimate), where 50 means neither formal nor intimate.
+
+Respond with a JSON object in this exact format, no explanation:
+{"intimacy": <number>}"""
+)
+
+
+def prior_intimacy_user_prompt(vignette, condition_texts=()):
+    """Prior-intimacy rating (2a/2b): the participant's prior-stage screen
+    minus the action (2a: desire + effort paragraphs; 2b: desire paragraph)."""
+    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts.append(
+        "\nBefore observing what the two people decide to do: on a scale "
+        "from 0 to 100, how do you think they would describe their "
+        'relationship? Respond with {"intimacy": <number>}.'
+    )
+    return "\n".join(parts)

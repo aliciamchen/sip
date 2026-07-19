@@ -55,13 +55,15 @@ ANALYSIS_QMDS := \
   food-inv-joint-ie-analysis
 
 .PHONY: all help test clean \
-        data lm lm-alternatives lm-base \
+        data lm lm-alternatives lm-base lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-results \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
+        $(addprefix lm-priors-,$(EXPERIMENTS_ALL)) \
+        $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
         $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
@@ -123,10 +125,16 @@ help:
 	@echo "  lm-nonfood            (LM elicitation for the 2 nonfood studies, 3a + 3b)"
 	@echo "  lm-base               (relationship-free alternatives for the base model;"
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
+	@echo "  lm-priors             (prior-scalar elicitation for the informative-prior configs;"
+	@echo "                         4 food studies + the given-relationship base pair; smoke with K_RUNS=1)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
+	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = preregistered canonical):"
+	@echo "    PRIORS=informative[:<latents>]  PRIORS_FILE=<name>"
+	@echo "    (informative priors route outputs to model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
+	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -263,6 +271,24 @@ $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base
 	uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
 
+# Prior-scalar elicitation (informative-prior configs; cheap, ~$5 for the food
+# four at K=20). This is a standalone stage, decoupled from the alternatives
+# pipeline: for each (scenario x prior-visible conditions) cell it elicits the
+# study's PRIOR-stage scalars (K_RUNS runs) into lm_priors{_base}.jsonl, which
+# the informative-prior fit configs load via tables.load_lm_priors. `lm-priors`
+# runs the four food studies plus the base variants of the given-relationship
+# pair; per-study `lm-priors-<slug>` (any of the six) and `lm-priors-base-<slug>`
+# (given-relationship studies only) cover the rest. Smoke with K_RUNS=1 and
+# preview the call count with a --dry-run first.
+lm-priors: $(addprefix lm-priors-,$(EXPERIMENTS_INVERSE)) \
+           lm-priors-base-food_inv_desire lm-priors-base-food_inv_joint_de
+
+$(addprefix lm-priors-,$(EXPERIMENTS_ALL)): lm-priors-%:
+	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $*
+
+$(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
+	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $* --base
+
 # =============================================================================
 # Per-study file-target graph (the incremental core, roster-driven)
 #
@@ -293,19 +319,29 @@ $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 # recipe writes the whole set atomically, and `clean` removes it as a set.
 # =============================================================================
 
+# Run-config passthrough for fit-/cv- targets (canonical when unset), e.g.:
+#   make fit-food_inv_joint_de PRIORS=informative
+#   make cv-food_inv_joint_de PRIORS=informative:desire PRIORS_FILE=lm_priors_human.jsonl
+# With every var empty CONFIG_FLAGS is empty, so the recipes stay the canonical
+# preregistered invocation (uniform priors, outputs/<slug>/); informative priors
+# route the fit/CV to outputs/<slug>/alt/<tag>/ instead.
+PRIORS ?=
+PRIORS_FILE ?=
+CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE))
+
 define MODEL_PIPELINE_RULES
 model/outputs/$(1)/fit_results.json: \
     $$(wildcard data/$(1)/main_trials_long.csv) \
     model/outputs/lm/$(1)/lm_runs.jsonl \
     $$(if $$(filter $(1),$$(EXPERIMENTS_BASE)),model/outputs/lm/$(1)/lm_runs_base.jsonl)
-	uv run python model/inverse/fit_$(1).py
+	uv run python model/inverse/fit_$(1).py $$(CONFIG_FLAGS)
 
 model/outputs/$(1)/cv_trial_ll.jsonl: \
     $$(wildcard data/$(1)/main_trials_long.csv) \
     model/outputs/lm/$(1)/lm_runs.jsonl \
     $$(if $$(filter $(1),$$(EXPERIMENTS_BASE)),model/outputs/lm/$(1)/lm_runs_base.jsonl) \
     model/outputs/$(1)/fit_results.json
-	CV_WORKERS=$$(CV_WORKERS) CV_WORKER_THREADS=$$(CV_WORKER_THREADS) uv run python model/cv/cv_$(1).py
+	CV_WORKERS=$$(CV_WORKERS) CV_WORKER_THREADS=$$(CV_WORKER_THREADS) uv run python model/cv/cv_$(1).py $$(CONFIG_FLAGS)
 
 # Phony aliases keep `make fit-<slug>` / `make cv-<slug>` working by name; the
 # recipe lives on the file target, so they no-op when the output is current.
@@ -552,6 +588,7 @@ deploy-explorer: explorer
 
 test:
 	uv run python model/test_model_compliance.py
+	uv run python model/test_run_config.py
 	uv run python model/cv/test_checkpoint.py
 	uv run python analysis/test_json_to_csv.py
 	uv run python test_roster_sync.py

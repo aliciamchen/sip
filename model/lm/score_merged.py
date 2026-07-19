@@ -628,7 +628,8 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
         raise SystemExit(
             f"Alternatives JSONL not found at {alts_path}. Run "
             f"model/lm/generate_alternatives.py --study {study}"
-            f"{' --base' if base else ''} first."
+            f"{' --base' if base else ''}"
+            " first."
         )
 
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
@@ -844,4 +845,8 @@ if __name__ == "__main__":
         "intimacy scalar. Given-relationship studies only.",
     )
     args = parser.parse_args()
-    main(args.study, scenario_workers=args.scenario_workers, base=args.base)
+    main(
+        args.study,
+        scenario_workers=args.scenario_workers,
+        base=args.base,
+    )
