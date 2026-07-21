@@ -5,392 +5,391 @@
   "clusters": [
     {
       "scenario": "apples",
-      "cluster": 1,
-      "size": 110,
+      "cluster": 5,
+      "size": 32,
       "exemplars": [
-        "Haoyu asks Camille to take a bite of the apple she picked and then Haoyu takes a bite of the same apple",
-        "Camille eats the whole apple and then picks another one for Haoyu to taste",
-        "Haoyu picks an apple from the same tree as Camille and they both take bites"
+        "Haoyu picks a separate Jonagold apple from the same tree or a nearby tree",
+        "Haoyu picks a separate Jonagold apple from the same tree or a nearby tree for herself to taste",
+        "Haoyu picks a separate Jonagold apple from the same tree or a nearby tree to taste"
+      ]
+    },
+    {
+      "scenario": "apples",
+      "cluster": 1,
+      "size": 14,
+      "exemplars": [
+        "Haoyu asks Camille if she can have a bite of the apple Camille picked",
+        "Haoyu asks Camille for a bite of the apple she picked",
+        "Haoyu asks Camille if she can take a bite of the apple Camille picked"
       ]
     },
     {
       "scenario": "apples",
       "cluster": 3,
-      "size": 39,
+      "size": 7,
       "exemplars": [
-        "Camille and Haoyu could have moved on to the next aisle to try a different apple variety",
-        "Camille and Haoyu could have walked to a different aisle to try a different variety of apple together",
-        "Camille and Haoyu could have walked to a different aisle to find another apple variety to taste"
-      ]
-    },
-    {
-      "scenario": "apples",
-      "cluster": 5,
-      "size": 39,
-      "exemplars": [
-        "One person picks an apple and eats it by themselves, while the other person does not eat an apple at this time",
-        "One person picks an apple and eats it, then the other person picks a separate apple to eat",
-        "One person picks an apple and eats it themselves, while the other person picks a different apple or waits to try a different variety"
-      ]
-    },
-    {
-      "scenario": "apples",
-      "cluster": 0,
-      "size": 25,
-      "exemplars": [
-        "Each picks their own separate Jonagold apple to eat",
-        "Each picks their own Jonagold apple to eat separately",
-        "Each picks their own Jonagold apple from the tree to taste individually"
+        "Camille eats the apple by herself, without offering any to Haoyu",
+        "Camille eats the entire apple herself, not offering any to Haoyu",
+        "Camille eats the entire apple herself, without offering any to Haoyu"
       ]
     },
     {
       "scenario": "apples",
       "cluster": 4,
-      "size": 22,
+      "size": 7,
       "exemplars": [
-        "They move to a different aisle to try a different apple variety",
-        "They move on to a different aisle to try a different apple variety",
-        "They decide to move to a different aisle to try a different apple variety together"
+        "Haoyu does not eat an apple at this time and they move on to a different part of the orchard to explore other varieties",
+        "Haoyu does not eat an apple at this time and they move on to a different part of the orchard together",
+        "Haoyu does not eat an apple at this time and they move on to a different part of the orchard"
+      ]
+    },
+    {
+      "scenario": "apples",
+      "cluster": 0,
+      "size": 3,
+      "exemplars": [
+        "They move on to a different aisle to try a different apple variety together",
+        "They move on to a different aisle to try a different variety of apple",
+        "Haoyu waits to explore other aisles with Camille to taste a different apple variety together"
       ]
     },
     {
       "scenario": "apples",
       "cluster": 2,
-      "size": 21,
+      "size": 2,
       "exemplars": [
-        "Camille cuts the apple in half and shares it with Haoyu",
-        "Camille cuts the apple she picked in half and shares one half with Haoyu",
-        "Camille cuts the apple she picked into halves or quarters and shares it with Haoyu"
-      ]
-    },
-    {
-      "scenario": "basketball",
-      "cluster": 0,
-      "size": 56,
-      "exemplars": [
-        "They ask someone nearby if they can buy a hot dog for them and they will pay them back later",
-        "They ask someone nearby if they can buy a hot dog and get paid back later",
-        "They ask someone nearby if they can buy a hot dog and pay them back later"
-      ]
-    },
-    {
-      "scenario": "basketball",
-      "cluster": 5,
-      "size": 46,
-      "exemplars": [
-        "They look for another vendor that accepts card payments",
-        "They look for a different vendor that accepts credit or debit cards",
-        "They look for another vendor in the arena that accepts credit or debit cards"
+        "Camille eats the apple by herself",
+        "Camille eats the entire apple herself"
       ]
     },
     {
       "scenario": "basketball",
       "cluster": 4,
-      "size": 42,
+      "size": 31,
       "exemplars": [
-        "They decide not to buy a hot dog at all and look for other food options that accept card payment",
-        "They decide not to buy a hot dog at all and look for other food options that accept card payments",
-        "They decide not to get a hot dog at all and look for other food options that accept card payment"
+        "One of them goes to the sit-down restaurant to get knives to cut the hot dog",
+        "They go to the sit-down restaurant to get knives before returning to buy a hot dog",
+        "One of them goes to the sit-down restaurant to get a knife to cut the hot dog"
+      ]
+    },
+    {
+      "scenario": "basketball",
+      "cluster": 0,
+      "size": 30,
+      "exemplars": [
+        "They find a way to share the hot dog, such as cutting it in half",
+        "They cut the hot dog in half to share it, if knives are available",
+        "They look for a way to split the hot dog, such as by cutting it with a knife if one is available"
+      ]
+    },
+    {
+      "scenario": "basketball",
+      "cluster": 5,
+      "size": 27,
+      "exemplars": [
+        "One of them buys the hot dog and eats it while the other goes without",
+        "One person buys the hot dog and eats it, while the other person goes without",
+        "One of them buys the hot dog and eats it"
+      ]
+    },
+    {
+      "scenario": "basketball",
+      "cluster": 2,
+      "size": 24,
+      "exemplars": [
+        "Josh buys and eats the hot dog while Carissa goes without",
+        "Carissa buys and eats the hot dog while Josh goes without",
+        "Josh buys the hot dog and Carissa doesn't get one"
       ]
     },
     {
       "scenario": "basketball",
       "cluster": 3,
-      "size": 39,
+      "size": 24,
       "exemplars": [
-        "Josh buys the hot dog and eats it all, while Carissa goes without",
-        "Josh buys the hot dog and Carissa goes without",
-        "Carissa buys the hot dog and Josh goes without"
+        "They decide not to buy a hot dog and look for another food option",
+        "They decide not to buy a hot dog",
+        "They decide not to buy a hot dog and look for other food options"
       ]
     },
     {
       "scenario": "basketball",
+      "cluster": 1,
+      "size": 15,
+      "exemplars": [
+        "They look for an alternative food vendor that accepts card payments or has a different payment policy",
+        "They look for an alternative food vendor that accepts card payments or has a different pricing",
+        "They look for an alternative food vendor that accepts card payments"
+      ]
+    },
+    {
+      "scenario": "birthday",
+      "cluster": 4,
+      "size": 29,
+      "exemplars": [
+        "One person eats the full slice and the other does not have any cake",
+        "One person eats the whole slice and the other does not have any cake",
+        "One person eats the whole slice and the other doesn't have any cake"
+      ]
+    },
+    {
+      "scenario": "birthday",
+      "cluster": 2,
+      "size": 25,
+      "exemplars": [
+        "Each eat a full slice by themselves",
+        "Each eat a whole slice by themselves",
+        "each eat a full slice by themselves"
+      ]
+    },
+    {
+      "scenario": "birthday",
+      "cluster": 1,
+      "size": 19,
+      "exemplars": [
+        "Lio takes a whole slice of cake and Mitchell takes a whole slice of cake",
+        "Lio takes a slice of cake and Mitchell takes a slice of cake",
+        "Lio and Mitchell each take a whole slice of cake"
+      ]
+    },
+    {
+      "scenario": "birthday",
+      "cluster": 3,
+      "size": 19,
+      "exemplars": [
+        "Ask for an extra plate and fork to split the slice between them",
+        "ask for an extra plate and fork so they can share the slice without having to eat from the same plate",
+        "They ask for an extra plate and fork to split the slice between two plates"
+      ]
+    },
+    {
+      "scenario": "birthday",
+      "cluster": 5,
+      "size": 10,
+      "exemplars": [
+        "obtain an extra fork and plate to share the slice, with each person eating from their own plate",
+        "get extra utensils and plates to share a slice, with each person eating from their own plate",
+        "Get extra utensils and plates to share a slice, each eating from their own plate"
+      ]
+    },
+    {
+      "scenario": "birthday",
+      "cluster": 0,
+      "size": 5,
+      "exemplars": [
+        "One of them goes to get an extra fork and plate from the kitchen to divide the slice between two plates",
+        "go to the kitchen to get an extra plate and fork to divide one slice between them",
+        "get an extra plate and fork to split the slice between them"
+      ]
+    },
+    {
+      "scenario": "brunch",
+      "cluster": 5,
+      "size": 37,
+      "exemplars": [
+        "take turns eating the pancakes, with one person using their own utensils at a time",
+        "take turns eating the pancakes, with one person using their utensils and then the other person using theirs",
+        "taking turns eating the pancakes, with one person using their own utensils at a time"
+      ]
+    },
+    {
+      "scenario": "brunch",
+      "cluster": 4,
+      "size": 31,
+      "exemplars": [
+        "get extra utensils from the utensils station to eat the pancakes",
+        "order the pancakes and get extra utensils from the utensils station",
+        "order the pancakes and get extra utensils to eat from the shared stack"
+      ]
+    },
+    {
+      "scenario": "brunch",
+      "cluster": 0,
+      "size": 29,
+      "exemplars": [
+        "ask for the pancakes to be split into separate servings, with each person getting their own stack or portion",
+        "ask for the pancakes to be split into separate servings",
+        "asking the server to divide the pancakes onto separate plates for each of them"
+      ]
+    },
+    {
+      "scenario": "brunch",
+      "cluster": 2,
+      "size": 29,
+      "exemplars": [
+        "not order the pancakes due to already being full",
+        "not order the pancakes, due to already being full",
+        "not order the pancakes because they are too full"
+      ]
+    },
+    {
+      "scenario": "brunch",
+      "cluster": 3,
+      "size": 20,
+      "exemplars": [
+        "order the pancakes, but each get their own",
+        "order the pancakes, but each get their own stack",
+        "order the pancakes, one for each of them"
+      ]
+    },
+    {
+      "scenario": "brunch",
+      "cluster": 1,
+      "size": 16,
+      "exemplars": [
+        "eat the pancakes directly from the serving plate without using extra utensils",
+        "eat the pancakes directly from the serving plate, without using extra utensils",
+        "eat the pancakes directly from the serving plate, without using individual plates"
+      ]
+    },
+    {
+      "scenario": "cooking",
+      "cluster": 0,
+      "size": 54,
+      "exemplars": [
+        "Serve themselves some pasta for dinner using the plate on the counter",
+        "Serve themselves some pasta for dinner tonight using the plate on the counter",
+        "get a clean plate and utensils from the cabinets to serve themselves some pasta for dinner"
+      ]
+    },
+    {
+      "scenario": "cooking",
       "cluster": 2,
       "size": 37,
       "exemplars": [
-        "They cut the hot dog in half and each eat their portion",
-        "They take turns eating the hot dog, cutting it in half to share",
-        "They take turns eating the hot dog, buying just one to share"
+        "getting plates and utensils from the cabinet to eat their portions separately",
+        "getting additional plates and utensils from the cabinets to eat their portions separately",
+        "get additional plates and utensils from the cabinets to eat their individual portions"
       ]
     },
     {
-      "scenario": "basketball",
-      "cluster": 1,
-      "size": 33,
-      "exemplars": [
-        "One of them goes to an ATM or another location to get more cash to buy two hot dogs",
-        "One of them goes to an ATM or a store to get more cash to buy two hot dogs",
-        "One of them goes to an ATM or a store outside to get more cash to buy two hot dogs"
-      ]
-    },
-    {
-      "scenario": "birthday",
-      "cluster": 0,
-      "size": 91,
-      "exemplars": [
-        "They ask for a smaller slice or if the cake can be cut into smaller portions",
-        "They ask for a smaller slice or if the birthday person can cut the slices into smaller portions",
-        "They ask for a smaller slice or if the birthday person can cut a smaller portion for them to share"
-      ]
-    },
-    {
-      "scenario": "birthday",
+      "scenario": "cooking",
       "cluster": 5,
-      "size": 66,
-      "exemplars": [
-        "One person eats the whole slice while the other doesn't have any",
-        "One of them takes a whole slice and they share it between the two of them",
-        "one person eats the whole slice and the other doesn't have any"
-      ]
-    },
-    {
-      "scenario": "birthday",
-      "cluster": 3,
-      "size": 64,
-      "exemplars": [
-        "Take turns eating the slice, with one person eating a portion and then passing the plate and fork to the other",
-        "They take turns eating the slice, with one person eating a few bites and then passing it to the other",
-        "Take turns eating the slice, with one person eating a portion and then passing the plate and fork to the other person"
-      ]
-    },
-    {
-      "scenario": "birthday",
-      "cluster": 1,
-      "size": 50,
-      "exemplars": [
-        "Lio eats the whole slice and Mitchell doesn't have any, or vice versa",
-        "Lio eats the whole slice and Mitchell does not have any, or vice versa",
-        "Lio eats the whole slice and Mitchell doesn't have any"
-      ]
-    },
-    {
-      "scenario": "birthday",
-      "cluster": 2,
-      "size": 38,
-      "exemplars": [
-        "Ask for the slice to be cut in half, with each half placed on a separate plate, and then eat their respective halves with separate forks",
-        "Cut the slice in half and eat their respective halves from separate plates or using separate forks if available",
-        "Ask for the slice to be cut in half, with each half placed on a separate plate, and use separate forks to eat"
-      ]
-    },
-    {
-      "scenario": "birthday",
-      "cluster": 4,
       "size": 23,
       "exemplars": [
-        "Ask the birthday person or server for an extra fork so they can share the slice but eat with separate utensils",
-        "Ask the birthday person or server for an extra fork so they can share the slice but eat from the same plate with their own utensils",
-        "Ask the birthday person or someone else for an extra fork so they can share the slice but eat with separate utensils"
-      ]
-    },
-    {
-      "scenario": "brunch",
-      "cluster": 4,
-      "size": 60,
-      "exemplars": [
-        "order the pancakes and take turns eating from the stack, one person at a time",
-        "take turns eating pancakes from the shared stack, one person at a time",
-        "order the pancakes and take turns eating directly from the shared stack"
-      ]
-    },
-    {
-      "scenario": "brunch",
-      "cluster": 2,
-      "size": 48,
-      "exemplars": [
-        "order the pancakes and ask the server to split the stack onto two separate plates",
-        "Order the pancakes and ask the server to divide them onto separate plates",
-        "Order the pancakes and ask the server to divide them into two separate portions"
-      ]
-    },
-    {
-      "scenario": "brunch",
-      "cluster": 1,
-      "size": 47,
-      "exemplars": [
-        "order a smaller dessert, such as a single pancake or a different dessert option, to share",
-        "order a smaller dessert, such as a single pancake or a different dessert option",
-        "order a smaller dessert, like a single pancake or a different dessert option, to share"
-      ]
-    },
-    {
-      "scenario": "brunch",
-      "cluster": 0,
-      "size": 45,
-      "exemplars": [
-        "order the stack of pancakes to share",
-        "order a stack of pancakes for each of them to eat individually",
-        "Order the stack of pancakes to share"
-      ]
-    },
-    {
-      "scenario": "brunch",
-      "cluster": 3,
-      "size": 28,
-      "exemplars": [
-        "Decide not to order the pancakes at all, since they were already somewhat full",
-        "Decide not to order the pancakes at all, since they were already somewhat full from their main dishes",
-        "decide not to order the pancakes at all because they are too full"
-      ]
-    },
-    {
-      "scenario": "brunch",
-      "cluster": 5,
-      "size": 16,
-      "exemplars": [
-        "Take turns eating from the shared stack, using one utensil",
-        "Take turns eating from the shared stack, using one serving utensil",
-        "take turns eating from the shared stack, using one utensil"
+        "wait for the dishwasher cycle to finish to get clean plates and utensils to eat their individual portions",
+        "Wait for the dishwasher cycle to finish to get clean plates and utensils to eat their individual portions",
+        "wait for the dishwasher cycle to finish to get clean plates and utensils to eat from separately"
       ]
     },
     {
       "scenario": "cooking",
-      "cluster": 0,
-      "size": 70,
+      "cluster": 1,
+      "size": 15,
       "exemplars": [
-        "Eat directly from the pot, taking turns with the same fork or using separate forks",
-        "Take turns eating from the pot with a single fork",
-        "Take turns eating directly from the pot, using one set of utensils"
+        "not eat any pasta tonight and save it all for the event the next day",
+        "Not eat any pasta tonight and save it all for the event the next day",
+        "Not eat any of the pasta tonight and save it all for the event the next day"
+      ]
+    },
+    {
+      "scenario": "cooking",
+      "cluster": 3,
+      "size": 10,
+      "exemplars": [
+        "Each getting their own plate and utensils to eat a portion of the pasta",
+        "Each gets their own plate and utensils to eat a portion of the pasta",
+        "Each gets their own plate and utensils from the cabinet to eat a portion of the pasta"
       ]
     },
     {
       "scenario": "cooking",
       "cluster": 4,
-      "size": 51,
+      "size": 8,
       "exemplars": [
-        "Serve the pasta onto the plate already on the counter and eat from it together, using the utensils already on the plate",
-        "Serve the pasta onto the plate already on the counter and eat from it together, using their own utensils",
-        "Serve the pasta onto the plate already on the counter and eat from it together, using the utensils that were on the plate"
-      ]
-    },
-    {
-      "scenario": "cooking",
-      "cluster": 5,
-      "size": 44,
-      "exemplars": [
-        "One of them takes a small portion of the pasta to taste and eat for dinner, while the other doesn't have any",
-        "One of them takes a small portion of the pasta to taste and eat for dinner, while the other does not",
-        "One of them takes a small portion of the pasta to eat for dinner tonight, while the other does not"
-      ]
-    },
-    {
-      "scenario": "cooking",
-      "cluster": 1,
-      "size": 29,
-      "exemplars": [
-        "Liana and Serina serve themselves each a portion of the pasta from the batch to eat for dinner tonight",
-        "Liana and Serina each serve themselves a portion of the pasta from the batch to eat for dinner tonight",
-        "Liana and Serina serve themselves each a portion of pasta from the batch to eat for dinner tonight"
-      ]
-    },
-    {
-      "scenario": "cooking",
-      "cluster": 2,
-      "size": 28,
-      "exemplars": [
-        "Decide not to eat any of the pasta tonight and leave it all for the event the next day",
-        "Decide not to eat any of the pasta tonight and just pack it up for the event the next day",
-        "Decide not to eat any of the pasta tonight and just pack it all up for the event the next day"
-      ]
-    },
-    {
-      "scenario": "cooking",
-      "cluster": 3,
-      "size": 25,
-      "exemplars": [
-        "They divide the batch of pasta into two parts: one smaller portion for them to share or eat separately for dinner tonight, and the rest for the party",
-        "Dividing the pasta into two equal portions and eating from separate plates with separate forks",
-        "Divide the pasta into two equal portions on two separate plates and eat with separate forks"
-      ]
-    },
-    {
-      "scenario": "dip",
-      "cluster": 3,
-      "size": 98,
-      "exemplars": [
-        "One person tastes the dips first and then the other person tastes them",
-        "One of them tastes the dips and then reports back to the other on the flavors",
-        "One person tastes the dips while the other does not, then reports back to the other person about the flavors"
-      ]
-    },
-    {
-      "scenario": "dip",
-      "cluster": 4,
-      "size": 87,
-      "exemplars": [
-        "They use one small bowl or plate and take turns tasting the dips with chips",
-        "They use a single plate to hold the tasting portions of the dips and take turns tasting them with the chips",
-        "They use a single small bowl or plate to taste the dips together, taking turns dipping chips"
+        "They decide not to eat any of the pasta tonight and save it all for the event the next day",
+        "They decide not to eat any pasta tonight and save it all for the event the next day",
+        "They decide not to eat any of the pasta for dinner tonight and save it all for the event the next day"
       ]
     },
     {
       "scenario": "dip",
       "cluster": 1,
-      "size": 51,
-      "exemplars": [
-        "use separate chips or utensils for each person to taste the dips",
-        "Use separate chips or utensils for each person to taste the dips",
-        "use separate chips or utensils for each person to sample the dips"
-      ]
-    },
-    {
-      "scenario": "dip",
-      "cluster": 2,
-      "size": 29,
-      "exemplars": [
-        "They each get their own separate tasting portions of each dip in individual bowls",
-        "Each gets their own bowl with a separate tasting portion of each dip",
-        "They each get their own separate spoons or bowls to taste the dips individually"
-      ]
-    },
-    {
-      "scenario": "dip",
-      "cluster": 5,
-      "size": 22,
-      "exemplars": [
-        "They don't taste the dips at all before putting them out for the party",
-        "They don't bother tasting the dips before putting them out for the party",
-        "They don't bother to taste the dips before putting them out for the party"
-      ]
-    },
-    {
-      "scenario": "dip",
-      "cluster": 0,
-      "size": 21,
-      "exemplars": [
-        "They use separate chips for each dip, or use a new chip each time they taste a dip",
-        "They use separate chips for each dip to taste",
-        "They use separate chips for each dip taste, not reusing the same chip"
-      ]
-    },
-    {
-      "scenario": "drinks",
-      "cluster": 1,
-      "size": 76,
-      "exemplars": [
-        "They ask the bartender if they can split the special cocktail",
-        "They ask the bartender if they can make another serving of the special cocktail",
-        "They ask the bartender if they can get another serving of the special cocktail"
-      ]
-    },
-    {
-      "scenario": "drinks",
-      "cluster": 3,
-      "size": 38,
-      "exemplars": [
-        "One of them offers to buy the other a different drink in exchange for the special cocktail",
-        "One person offers to buy the other a different drink in exchange for taking the special cocktail",
-        "One of them offers to buy the other a different drink or a future drink in exchange for taking the special cocktail"
-      ]
-    },
-    {
-      "scenario": "drinks",
-      "cluster": 0,
       "size": 35,
       "exemplars": [
-        "decide not to drink the cocktail and get something else instead",
-        "decide not to have the cocktail and both get a different drink instead",
-        "decide not to have the cocktail and order something else instead"
+        "They get out the small appetizer plates to use for tasting the dips before the party",
+        "They retrieve the small appetizer plates and use those to taste the dips before the party",
+        "They get the small appetizer plates and use those to taste the dips before the party"
+      ]
+    },
+    {
+      "scenario": "dip",
+      "cluster": 2,
+      "size": 28,
+      "exemplars": [
+        "They do not use any plates and just taste the dips directly from the serving bowls",
+        "They do not use plates and instead taste the dips directly from the serving bowls",
+        "They skip using plates and just taste the dips directly from the serving bowls"
+      ]
+    },
+    {
+      "scenario": "dip",
+      "cluster": 3,
+      "size": 26,
+      "exemplars": [
+        "not taste the dips before putting them out for the party",
+        "not taste the dips before putting them out for the party guests",
+        "They do not taste the dips before putting them out for the party"
+      ]
+    },
+    {
+      "scenario": "dip",
+      "cluster": 0,
+      "size": 25,
+      "exemplars": [
+        "using separate small bowls or plates for each person to taste the dips",
+        "use separate small bowls or plates for each person to taste the dips",
+        "using separate bowls for each person to taste the dips"
+      ]
+    },
+    {
+      "scenario": "dip",
+      "cluster": 5,
+      "size": 18,
+      "exemplars": [
+        "They get one small appetizer plate, divide the tasting portions onto it, and take turns trying the dips with chips from the same plate",
+        "They use one small appetizer plate, taking turns tasting the dips and chips from it",
+        "They get one small appetizer plate, divide the tasting portions onto it, and take turns tasting the dips with chips from the same plate"
+      ]
+    },
+    {
+      "scenario": "dip",
+      "cluster": 4,
+      "size": 5,
+      "exemplars": [
+        "take turns tasting from the same bowl, but not double-dipping",
+        "taking turns tasting from the same bowl, but not double-dipping",
+        "taking turns tasting from the same bowl, with one person tasting and then the other"
+      ]
+    },
+    {
+      "scenario": "drinks",
+      "cluster": 1,
+      "size": 32,
+      "exemplars": [
+        "They ask the bartender or someone else for an extra cup to split the cocktail into two servings",
+        "They ask the bartender or someone else for an extra cup so they can split the cocktail into two servings",
+        "They ask the bartender or someone else for an extra cup so they can split the cocktail into two separate servings"
+      ]
+    },
+    {
+      "scenario": "drinks",
+      "cluster": 0,
+      "size": 27,
+      "exemplars": [
+        "They ask the bartender if they can make another one or if there are any other options",
+        "They ask the bartender if they can make another one or if there are any other similar options",
+        "They ask the bartender if they can make another one or if there's anything similar available"
+      ]
+    },
+    {
+      "scenario": "drinks",
+      "cluster": 5,
+      "size": 21,
+      "exemplars": [
+        "One of them drinks the special cocktail",
+        "They take turns drinking the special cocktail from the same cup",
+        "One of them drinks the special cocktail while the other does not"
       ]
     },
     {
@@ -398,258 +397,249 @@
       "cluster": 2,
       "size": 19,
       "exemplars": [
-        "Ria drinks the cocktail and Noah orders a different drink",
-        "Noah drinks the cocktail and Ria orders a different drink",
-        "Noah drinks the entire cocktail and Ria gets a different drink"
+        "Ria drinks the entire cocktail and Noah does not get any",
+        "Noah drinks the entire cocktail and Ria does not get any",
+        "Ria drinks the entire cocktail and Noah doesn't have any"
       ]
     },
     {
       "scenario": "drinks",
-      "cluster": 5,
+      "cluster": 4,
       "size": 17,
       "exemplars": [
-        "They flip a coin to decide who gets the cocktail",
-        "They flip a coin to decide who gets to drink the cocktail",
-        "They flip a coin to decide who gets the special cocktail"
+        "They decide not to drink the cocktail at all and move on to something else",
+        "They decide not to drink the cocktail at all and look for something else",
+        "They decide not to drink the cocktail at all and leave it"
       ]
     },
     {
       "scenario": "drinks",
-      "cluster": 4,
-      "size": 2,
-      "exemplars": [
-        "They decide to share the cup and take turns sipping from it",
-        "They take turns sipping from the same cup"
-      ]
-    },
-    {
-      "scenario": "driving",
-      "cluster": 5,
-      "size": 66,
-      "exemplars": [
-        "They look for a different coffee machine or a store at the gas station to get another cup of coffee",
-        "They try to find another coffee machine or a different gas station to get another cup of coffee",
-        "They try to find another coffee machine or a store at the gas station that can provide them with another cup of coffee"
-      ]
-    },
-    {
-      "scenario": "driving",
-      "cluster": 2,
-      "size": 54,
-      "exemplars": [
-        "Katherine drinks the coffee, and they stop at another location to get coffee for Danielle",
-        "Katherine drinks the coffee, and they stop at another location to get Danielle a cup of coffee",
-        "Katherine drinks the entire cup of coffee, and they look for another place to stop for Danielle to get coffee"
-      ]
-    },
-    {
-      "scenario": "driving",
-      "cluster": 1,
-      "size": 43,
-      "exemplars": [
-        "one person drinks the entire filled cup and the other goes without coffee",
-        "One person drinks the full cup and the other goes without coffee",
-        "One person drinks the entire filled cup, and the other goes without coffee"
-      ]
-    },
-    {
-      "scenario": "driving",
-      "cluster": 4,
-      "size": 33,
-      "exemplars": [
-        "They share the coffee by pouring it into two smaller containers or cups to split it",
-        "They share the coffee by pouring it into two smaller containers or cups if available",
-        "They share the coffee by pouring it into two separate containers, if available"
-      ]
-    },
-    {
-      "scenario": "driving",
       "cluster": 3,
-      "size": 32,
+      "size": 11,
       "exemplars": [
-        "They decide to stop at a different location, like a restaurant, to get coffee",
-        "They decide to stop at a different location, like a cafe or restaurant, to get more coffee",
-        "They decide to stop at a different location, such as a restaurant, to get coffee"
+        "They flip a coin or use some other random method to decide who gets the cocktail",
+        "They flip a coin or come up with some other random method to decide who gets the cocktail",
+        "They flip a coin or come up with some other method to decide who gets the cocktail"
       ]
     },
     {
       "scenario": "driving",
-      "cluster": 0,
-      "size": 25,
-      "exemplars": [
-        "They buy a different type of caffeinated beverage, like energy drinks or soda",
-        "They buy a different type of caffeinated beverage, like energy drinks or tea",
-        "They decide to buy a different type of caffeinated beverage, such as energy drinks or soda"
-      ]
-    },
-    {
-      "scenario": "fair",
-      "cluster": 4,
-      "size": 71,
-      "exemplars": [
-        "They put the corn aside and eat the funnel cake and fried cheese first, deciding what to do with the corn later",
-        "offer the corn to one person and let them have it all, while the other eats the funnel cake and fried cheese",
-        "split the funnel cake and fried cheese, but have one person eat the corn and the other eat the rest of the food"
-      ]
-    },
-    {
-      "scenario": "fair",
-      "cluster": 0,
-      "size": 51,
-      "exemplars": [
-        "put all the food in the middle of the plate and take turns picking items to eat",
-        "Put all the food in the middle of the table and eat together, serving themselves from the shared plate",
-        "Put all the food in the middle of the plate and pick from it together"
-      ]
-    },
-    {
-      "scenario": "fair",
-      "cluster": 1,
-      "size": 50,
-      "exemplars": [
-        "decide who gets the corn and the other person gets the other food",
-        "decide who gets to eat the corn and who gets the other food",
-        "eat the other food first and save the corn to share or decide on later"
-      ]
-    },
-    {
-      "scenario": "fair",
-      "cluster": 3,
-      "size": 37,
-      "exemplars": [
-        "Take turns eating the corn, one person eating some and then passing it to the other",
-        "take turns eating the corn, with one person eating some and then passing it to the other",
-        "take turns eating the corn, alternating bites"
-      ]
-    },
-    {
-      "scenario": "fair",
-      "cluster": 5,
-      "size": 32,
-      "exemplars": [
-        "cut the corn into two pieces and divide it between them",
-        "Cut the corn into two pieces and divide it between them",
-        "Cut the corn into two pieces and split it between them"
-      ]
-    },
-    {
-      "scenario": "fair",
-      "cluster": 2,
-      "size": 27,
-      "exemplars": [
-        "cut the corn in half and each person eats their own half",
-        "cut the skewer of corn in half and each eat from their own half",
-        "cut the corn in half and each eat their own half"
-      ]
-    },
-    {
-      "scenario": "gala",
-      "cluster": 4,
-      "size": 87,
-      "exemplars": [
-        "They pour a small amount of each other's drink into their own glass to try a mix or compare flavors",
-        "They pour a small amount of each other's drink into their own glass to try a mix or compare",
-        "They pour a small amount of each other's drink into their own glass to mix and try"
-      ]
-    },
-    {
-      "scenario": "gala",
-      "cluster": 1,
-      "size": 58,
-      "exemplars": [
-        "They ask the bartender for two small sample glasses so they can pour a small amount of each other's drinks to try",
-        "They ask the bartender for two small sample glasses to pour a little of each other's drinks into",
-        "They ask the bartender for two small sample glasses of each other's drink"
-      ]
-    },
-    {
-      "scenario": "gala",
-      "cluster": 5,
-      "size": 35,
-      "exemplars": [
-        "They use a spoon or straw to take a small taste of each other's drink without drinking directly from the glass",
-        "They use a spoon or straw to take a small taste of each other's drinks without drinking directly from the glass",
-        "They use a straw or spoon to take a small taste of each other's drinks without drinking directly from the glass"
-      ]
-    },
-    {
-      "scenario": "gala",
-      "cluster": 2,
-      "size": 27,
-      "exemplars": [
-        "They decline to try each other's drinks at all and stick to their own orders",
-        "They decide not to try each other's drinks at all and stick to their own orders",
-        "They choose not to try each other's drinks at all and stick to their own orders"
-      ]
-    },
-    {
-      "scenario": "gala",
-      "cluster": 3,
-      "size": 26,
-      "exemplars": [
-        "Elena and Todd exchange drinks for a sip to try each other's",
-        "Elena and Todd exchange their drinks for a moment to try each other's",
-        "Elena and Todd pour a small amount of each other's drinks into each other's glasses to try them"
-      ]
-    },
-    {
-      "scenario": "gala",
-      "cluster": 0,
-      "size": 25,
-      "exemplars": [
-        "They take a sip of each other's drinks directly from each other's glasses",
-        "They take sips of each other's drinks directly from each other's glasses",
-        "They take small sips of each other's drinks directly from each other's glasses"
-      ]
-    },
-    {
-      "scenario": "hike",
-      "cluster": 3,
-      "size": 89,
-      "exemplars": [
-        "Tony offers Alvin the whole sandwich and Alvin eats it",
-        "Tony offers Alvin the sandwich and Alvin eats it",
-        "Tony offers Alvin the entire sandwich, and Alvin eats it"
-      ]
-    },
-    {
-      "scenario": "hike",
-      "cluster": 2,
-      "size": 47,
-      "exemplars": [
-        "Alvin declines Tony's offer of the sandwich and they both go without eating",
-        "Alvin declines to eat any of Tony's sandwich, waiting to find other food later",
-        "Alvin declines to eat any of Tony's sandwich and they continue hiking"
-      ]
-    },
-    {
-      "scenario": "hike",
       "cluster": 1,
       "size": 29,
       "exemplars": [
-        "Alvin offers to go find more food or buy some from another hiker",
-        "Tony tells Alvin he can't spare any food and they should keep hiking to find a place to buy more",
-        "Tony suggests they stop at a store or restaurant after the hike to get Alvin some food"
+        "Danielle drinks the entire cup of coffee and Katherine goes without",
+        "Danielle drinks the whole cup of coffee and Katherine goes without",
+        "Danielle drinks the full cup of coffee and Katherine goes without"
+      ]
+    },
+    {
+      "scenario": "driving",
+      "cluster": 0,
+      "size": 26,
+      "exemplars": [
+        "One of them goes to find another cup to get more coffee",
+        "One of them goes to get another cup to see if they can pour more coffee into it",
+        "One of them goes to get a second cup to pour the remaining coffee into, if available"
+      ]
+    },
+    {
+      "scenario": "driving",
+      "cluster": 2,
+      "size": 12,
+      "exemplars": [
+        "Danielle goes to get another cup of coffee from somewhere else in the car or at the gas station",
+        "Danielle goes to get another cup of coffee, either from a stack of empty cups or by asking at the counter",
+        "Danielle goes to get another cup of coffee, either from the stack of empty cups or by asking at the counter"
+      ]
+    },
+    {
+      "scenario": "driving",
+      "cluster": 3,
+      "size": 9,
+      "exemplars": [
+        "Danielle gets a second cup of coffee from the available stack and they both have coffee",
+        "Danielle gets a second cup of coffee for Katherine",
+        "They go to the counter to get another cup so they both can have coffee"
+      ]
+    },
+    {
+      "scenario": "driving",
+      "cluster": 4,
+      "size": 9,
+      "exemplars": [
+        "They look for an alternative source of coffee, such as a different gas station or a coffee shop",
+        "They look for another source of coffee, such as a different machine or a nearby store",
+        "They look for an alternative source of coffee, such as a different machine or a nearby cafe"
+      ]
+    },
+    {
+      "scenario": "driving",
+      "cluster": 5,
+      "size": 8,
+      "exemplars": [
+        "They share the one cup of coffee",
+        "They share the single cup of coffee",
+        "They share the coffee"
+      ]
+    },
+    {
+      "scenario": "fair",
+      "cluster": 5,
+      "size": 61,
+      "exemplars": [
+        "cut the corn off the cob and divide it between them",
+        "cut the corn off the cob and divide it between two plates",
+        "cut the corn in half and split it between them"
+      ]
+    },
+    {
+      "scenario": "fair",
+      "cluster": 3,
+      "size": 48,
+      "exemplars": [
+        "ask each other if the other wants the corn and give it to the one who wants it more",
+        "ask each other if the other wants the corn and give it to them if they do",
+        "ask each other if they want the corn, and give it to the one who wants it more"
+      ]
+    },
+    {
+      "scenario": "fair",
+      "cluster": 1,
+      "size": 43,
+      "exemplars": [
+        "eat the corn directly from the skewer, possibly taking turns",
+        "eat the corn directly off the skewer, alternating bites or taking turns",
+        "They eat the corn directly off the skewer, taking turns or alternating bites"
+      ]
+    },
+    {
+      "scenario": "fair",
+      "cluster": 2,
+      "size": 39,
+      "exemplars": [
+        "split each type of food into two portions and share them with each other",
+        "divide each type of food in half and share it with each other",
+        "split each type of food in half and share it with each other"
+      ]
+    },
+    {
+      "scenario": "fair",
+      "cluster": 4,
+      "size": 28,
+      "exemplars": [
+        "go to the other side of the fair to get cutlery and then divide all the food, including the corn, to share",
+        "go to the cutlery station on the other side of the fair to get utensils to divide the food",
+        "go to the cutlery station on the other side of the fair to get utensils so they can divide the food and share it"
+      ]
+    },
+    {
+      "scenario": "fair",
+      "cluster": 0,
+      "size": 27,
+      "exemplars": [
+        "put the food in the middle and serve themselves, taking turns picking which items to take",
+        "ask each other what they want and divide the food accordingly",
+        "put the food in the middle and serve themselves, taking turns picking items"
+      ]
+    },
+    {
+      "scenario": "gala",
+      "cluster": 4,
+      "size": 64,
+      "exemplars": [
+        "asking the server for extra straws so they can try each other's drinks",
+        "asking a server for extra straws to use to try each other's drinks",
+        "asking a server for extra straws so they can try each other's drinks"
+      ]
+    },
+    {
+      "scenario": "gala",
+      "cluster": 0,
+      "size": 49,
+      "exemplars": [
+        "trying each other's drinks by sharing the same straw or drinking directly from each other's glass",
+        "try each other's drinks by sharing the same straw or drinking directly from each other's glasses",
+        "try each other's drinks by sharing the same straw or drinking directly from each other's glass"
+      ]
+    },
+    {
+      "scenario": "gala",
+      "cluster": 2,
+      "size": 12,
+      "exemplars": [
+        "Elena and Todd decide to share their drinks with each other, swapping sips",
+        "Elena and Todd decide to share their drinks, taking turns sipping from each other's glasses",
+        "Elena and Todd decide to share their drinks with each other, taking sips from both"
+      ]
+    },
+    {
+      "scenario": "gala",
+      "cluster": 5,
+      "size": 12,
+      "exemplars": [
+        "flag down a server to bring extra straws, if available",
+        "flag down a server to bring extra straws if they are not readily available",
+        "flag down a server to bring extra straws"
+      ]
+    },
+    {
+      "scenario": "gala",
+      "cluster": 1,
+      "size": 10,
+      "exemplars": [
+        "Elena asks Todd if she can try his pumpkin spice martini and Todd agrees",
+        "Elena asks Todd if she can try his pumpkin spice martini, and then Todd tries her apple pie espresso martini",
+        "Elena asks Todd if she can try his pumpkin spice martini, and he either agrees or declines"
+      ]
+    },
+    {
+      "scenario": "gala",
+      "cluster": 3,
+      "size": 5,
+      "exemplars": [
+        "not try each other's drinks at all",
+        "not trying each other's drinks at all",
+        "not try each other's drinks"
       ]
     },
     {
       "scenario": "hike",
       "cluster": 4,
+      "size": 61,
+      "exemplars": [
+        "Tony cuts the sandwich in half and offers half to Alvin",
+        "Tony cuts the sandwich in half and gives one half to Alvin",
+        "Tony offers the sandwich to Alvin, letting him eat the whole thing"
+      ]
+    },
+    {
+      "scenario": "hike",
+      "cluster": 1,
       "size": 27,
       "exemplars": [
-        "Tony suggests they wait until they finish the hike to get more food",
-        "Tony suggests they wait until they finish the hike to get food",
-        "Tony suggests they wait until they finish the hike to eat"
+        "Tony eats the sandwich himself and doesn't offer any to Alvin",
+        "Tony eats the sandwich himself and does not offer any to Alvin",
+        "Tony eats the sandwich himself, not offering any to Alvin"
       ]
     },
     {
       "scenario": "hike",
       "cluster": 0,
-      "size": 26,
+      "size": 16,
       "exemplars": [
-        "Tony breaks the sandwich into smaller pieces and they both eat a portion",
-        "Tony breaks the sandwich into smaller pieces and they take turns eating the pieces",
-        "Tony tears the sandwich into smaller pieces and they both eat from the pieces"
+        "Tony suggests they find a place to buy more food or wait until they get back to civilization to eat",
+        "Tony offers to go find more food or wait until they get back to civilization to eat",
+        "Tony suggests they find another source of food or wait until they get back"
+      ]
+    },
+    {
+      "scenario": "hike",
+      "cluster": 2,
+      "size": 12,
+      "exemplars": [
+        "Tony offers to buy Alvin a snack at a store or restaurant after the hike",
+        "Tony offers to buy Alvin a snack at a store or cafe after the hike",
+        "Alvin offers to buy Tony a snack or meal after the hike in return for some of Tony's food"
       ]
     },
     {
@@ -657,309 +647,319 @@
       "cluster": 5,
       "size": 10,
       "exemplars": [
-        "Tony and Alvin decide to share one of Alvin's energy bars that he might have missed in his pack",
-        "Tony and Alvin decide to share one of Alvin's energy bars that he still has, if any are left",
-        "Tony and Alvin decide to share one of Alvin's remaining energy bars if he has any left"
+        "Tony suggests they head back or to a nearby location to purchase more food",
+        "Tony suggests they find a place to buy more food or wait until they get back",
+        "Tony suggests they go back to camp or a nearby store to buy more food"
       ]
     },
     {
-      "scenario": "oysters",
-      "cluster": 1,
-      "size": 103,
-      "exemplars": [
-        "They could have asked the server to shuck the oysters and divide the meat onto two separate plates, so they each had their own portion of each type of oyster.",
-        "They could have asked the server to shuck the oysters and divide the meat onto two separate plates, so each person gets a portion of each type of oyster.",
-        "They could have asked the server to shuck the oysters and divide the meat onto two separate plates, so each person could try all the types without sharing the same shell."
-      ]
-    },
-    {
-      "scenario": "oysters",
-      "cluster": 4,
-      "size": 73,
-      "exemplars": [
-        "They split each type of oyster in half and shared them with each other",
-        "They split each oyster in half and shared them with each other, so they both get to try all the types",
-        "They split each oyster in half and shared the halves with each other"
-      ]
-    },
-    {
-      "scenario": "oysters",
+      "scenario": "hike",
       "cluster": 3,
-      "size": 59,
+      "size": 3,
       "exemplars": [
-        "divide the oyster platter into two portions, with one person getting some types of oysters and the other person getting the rest",
-        "divide the oysters into two portions, with each person getting some of each type to eat on their own",
-        "order two of the oyster platter and divide the types between them, so each person gets a whole oyster of certain types"
-      ]
-    },
-    {
-      "scenario": "oysters",
-      "cluster": 2,
-      "size": 49,
-      "exemplars": [
-        "They could have taken turns eating a whole oyster of each type, with one person eating the first oyster, the second person eating the second, and so on.",
-        "Will and Jay could have taken turns eating a whole oyster of one type, then the other person eats a whole oyster of the same type, alternating through the different types.",
-        "They could have taken turns eating a whole oyster, with one person eating the first oyster, the second person eating the second, and so on."
+        "Tony and Alvin continue hiking without taking a break to eat",
+        "Tony suggests they both go without eating until they finish their hike",
+        "Tony and Alvin look for wild berries or other natural food sources to sustain themselves"
       ]
     },
     {
       "scenario": "oysters",
       "cluster": 5,
-      "size": 46,
-      "exemplars": [
-        "take turns eating whole oysters, with each person eating one type before the other person tries the same type",
-        "take turns eating whole oysters, with each person eating one type before the other person eats the same type",
-        "take turns eating whole oysters, with each person eating one type before the other eats the same type"
-      ]
-    },
-    {
-      "scenario": "oysters",
-      "cluster": 0,
-      "size": 29,
-      "exemplars": [
-        "eat directly from the same platter, taking turns selecting an oyster to eat",
-        "eat directly from the same plate, taking turns picking up oysters with their forks",
-        "eat directly from the same plate, using their forks to pick up oyster halves from the shared plate"
-      ]
-    },
-    {
-      "scenario": "social",
-      "cluster": 1,
-      "size": 37,
-      "exemplars": [
-        "One of them offers to go get more ice cream from somewhere else, such as a nearby store",
-        "One of them offers to get ice cream from somewhere else, like a nearby store",
-        "One of them offers to get ice cream from somewhere else, such as a nearby store"
-      ]
-    },
-    {
-      "scenario": "social",
-      "cluster": 2,
-      "size": 37,
-      "exemplars": [
-        "They decide not to eat the ice cream cone and both choose cookies or other desserts instead",
-        "They decide not to eat the ice cream cone and both choose a different dessert, such as cookies",
-        "They leave the ice cream cone and both choose cookies or other desserts instead"
-      ]
-    },
-    {
-      "scenario": "social",
-      "cluster": 3,
       "size": 27,
       "exemplars": [
-        "Sonia eats the ice cream cone and Alan chooses a cookie instead",
-        "Alan eats the ice cream cone and Sonia chooses a cookie instead",
-        "Sonia eats the ice cream cone and Alan chooses a cookie"
+        "alternate eating whole oysters, with one person eating one type and the other eating another type, and then switching",
+        "take turns eating whole oysters, with one person eating one oyster and then the other person eating the next one",
+        "take turns eating whole oysters, one person eating one oyster and then the other person eating the next one"
       ]
     },
     {
-      "scenario": "social",
-      "cluster": 5,
+      "scenario": "oysters",
+      "cluster": 2,
       "size": 24,
       "exemplars": [
-        "They take turns eating the ice cream cone, with one person eating a portion and then handing it to the other",
-        "They take turns eating the ice cream cone, with one person eating a bit and then handing it to the other",
-        "They take turns eating the ice cream cone, with one person eating some and then handing it to the other"
+        "Order two separate platters, one for each person, with one of each type of oyster",
+        "order separate oyster platters, each with one of each type of oyster",
+        "order two separate oyster platters, one for each person"
       ]
     },
     {
-      "scenario": "social",
+      "scenario": "oysters",
       "cluster": 0,
-      "size": 23,
+      "size": 21,
       "exemplars": [
-        "They flip a coin to decide who gets the ice cream cone",
-        "They flip a coin to see who gets the ice cream cone",
-        "They flip a coin or draw straws to decide who gets the ice cream cone"
+        "alternate eating oysters from the platter, with each person taking a whole oyster in turn",
+        "alternate eating whole oysters from the platter, taking turns",
+        "alternate eating oysters from the platter, with each person eating a whole oyster in turn"
       ]
     },
     {
-      "scenario": "social",
+      "scenario": "oysters",
       "cluster": 4,
-      "size": 23,
+      "size": 16,
       "exemplars": [
-        "They cut the ice cream cone in half and each take a portion",
-        "They cut the ice cream cone in half and each eats a portion",
-        "They cut the ice cream cone in half and each eat a half"
+        "split each type of oyster in half and share them with each other",
+        "split each oyster in half and share them with each other",
+        "split each oyster in half and share with each other"
       ]
     },
     {
-      "scenario": "soup",
-      "cluster": 5,
-      "size": 70,
-      "exemplars": [
-        "They swap spoons to taste each other's soups from each other's bowls",
-        "They use the same spoon to take turns tasting each other's soup from the original bowls",
-        "They take turns tasting a small amount of soup from the other's bowl using their own spoons"
-      ]
-    },
-    {
-      "scenario": "soup",
-      "cluster": 4,
-      "size": 68,
-      "exemplars": [
-        "They pour some of each other's soup into their own bowls to try",
-        "They spoon some of each other's soup into their own bowls to try",
-        "They spoon some of each other's soup into their own bowl to try"
-      ]
-    },
-    {
-      "scenario": "soup",
-      "cluster": 3,
-      "size": 66,
-      "exemplars": [
-        "They ask the waiter to split each soup into two bowls initially, so they each get a portion of both soups",
-        "They ask the waiter to split each of their soups into two bowls initially, so they each get a portion of both soups",
-        "They ask the waiter to split each of their soups into two bowls initially, so they each get a portion of both"
-      ]
-    },
-    {
-      "scenario": "soup",
+      "scenario": "oysters",
       "cluster": 1,
-      "size": 39,
+      "size": 13,
       "exemplars": [
-        "Christina and Tanya spoon some of each other's soup into their own bowls to try",
-        "Christina and Tanya take turns trying a small amount of each other's soup from their own bowls",
-        "Christina and Tanya spoon some of each other's soup into their own bowls, creating a mix of both soups to try"
+        "They order one oyster platter and take turns eating whole oysters from the same plate",
+        "Take turns eating whole oysters off a single plate",
+        "Take turns eating whole oysters from a single plate"
       ]
     },
     {
-      "scenario": "soup",
-      "cluster": 2,
-      "size": 35,
+      "scenario": "oysters",
+      "cluster": 3,
+      "size": 7,
       "exemplars": [
-        "They could have decided not to share their soups with each other at all",
-        "They could have decided not to share their soups with each other",
-        "They could have decided not to share their soups at all and eaten only their own"
+        "Ask the server for extra small plates and forks to split the oysters",
+        "They ask the server for extra small plates and forks to split the oysters and share the different types",
+        "ask the server for extra small plates and forks to split the oysters"
       ]
     },
     {
-      "scenario": "soup",
-      "cluster": 0,
-      "size": 33,
-      "exemplars": [
-        "They ask the waiter if they can get a small tasting portion of each other's soup",
-        "They ask the waiter to bring them a small portion of each other's soup to taste",
-        "They ask the waiter to bring them a small tasting portion of the other's soup"
-      ]
-    },
-    {
-      "scenario": "takeout",
-      "cluster": 4,
-      "size": 52,
-      "exemplars": [
-        "One person uses the honey mustard sauce and the other uses ketchup packets",
-        "One person uses the honey mustard sauce and the other uses the ketchup packets",
-        "One person could have used the honey mustard sauce and the other used the ketchup packets"
-      ]
-    },
-    {
-      "scenario": "takeout",
+      "scenario": "social",
       "cluster": 5,
-      "size": 50,
+      "size": 38,
       "exemplars": [
-        "take turns using the honey mustard sauce, with one person dipping all their chicken tenders first, then the other person using it",
-        "take turns using the honey mustard sauce, with one person dipping all of their chicken tenders first and then the other person using it",
-        "take turns dipping their chicken tenders into the honey mustard sauce, with one person dipping all of their tenders before the other person starts"
+        "One of them goes to find another ice cream cone or asks the hosts if there is any more ice cream available",
+        "One of them goes to find another ice cream cone or alternative, such as asking the hosts if there is any more ice cream available",
+        "One of them goes to get another ice cream cone or asks the hosts if there is any more ice cream available"
       ]
     },
     {
-      "scenario": "takeout",
+      "scenario": "social",
       "cluster": 1,
       "size": 34,
       "exemplars": [
-        "ask the hotel staff if they have any additional honey mustard sauce or other dipping sauces available",
-        "ask the hotel or restaurant staff if they have any additional honey mustard sauce that could be provided",
-        "ask the hotel staff if they have any additional honey mustard sauce or other condiments available"
+        "One of them goes to the kitchen to get spoons so they can share the ice cream cone by scooping it into two portions",
+        "One of them goes to get spoons so they can share the ice cream cone more cleanly",
+        "One of them goes to get spoons from the kitchen so they can share the ice cream more easily"
       ]
     },
     {
-      "scenario": "takeout",
+      "scenario": "social",
+      "cluster": 0,
+      "size": 33,
+      "exemplars": [
+        "They decide to forgo the ice cream cone and both get cookies or other desserts",
+        "They decide to forgo the ice cream and both get cookies or other desserts",
+        "They abandon the idea of having ice cream and both choose a different dessert, such as cookies"
+      ]
+    },
+    {
+      "scenario": "social",
+      "cluster": 4,
+      "size": 18,
+      "exemplars": [
+        "They decide to share the ice cream cone by taking turns eating it with the same spoon",
+        "They decide to share the ice cream cone by taking turns eating from it with a single spoon",
+        "They share the ice cream cone by taking turns eating directly from it"
+      ]
+    },
+    {
+      "scenario": "social",
+      "cluster": 2,
+      "size": 16,
+      "exemplars": [
+        "Alan eats the ice cream cone and Sonia chooses a different dessert, such as a cookie",
+        "Sonia eats the ice cream cone and Alan chooses a different dessert, such as a cookie",
+        "Alan eats the ice cream cone and then Sonia gets a different dessert, such as a cookie"
+      ]
+    },
+    {
+      "scenario": "social",
+      "cluster": 3,
+      "size": 14,
+      "exemplars": [
+        "One of them takes the ice cream cone and they figure out a way to share it",
+        "They decide to share the ice cream cone",
+        "They decide to take the ice cream cone and share it between them"
+      ]
+    },
+    {
+      "scenario": "soup",
+      "cluster": 0,
+      "size": 44,
+      "exemplars": [
+        "directly spoon some of their own soup into the other person's bowl",
+        "spoon some of their own soup directly into the other person's bowl",
+        "Directly spoon some of their own soup into the other person's bowl"
+      ]
+    },
+    {
+      "scenario": "soup",
+      "cluster": 4,
+      "size": 36,
+      "exemplars": [
+        "Use their own spoons to take turns tasting a small amount from each other's bowls without switching",
+        "Use their own spoons to take turns tasting a small amount from each other's bowl without switching bowls",
+        "Use their own spoons to take turns tasting small amounts from each other's bowls without moving the bowls"
+      ]
+    },
+    {
+      "scenario": "soup",
       "cluster": 3,
       "size": 32,
       "exemplars": [
-        "They could have tried to contact the restaurant to ask for an additional honey mustard sauce to be delivered",
-        "They could have contacted the restaurant to request an additional container of honey mustard sauce",
-        "They could have tried to contact the restaurant to see if they could deliver an additional container of honey mustard sauce"
+        "Ask the server for an extra bowl so they can split each other's soups",
+        "ask the server for an extra bowl so they can split each other's soups",
+        "Ask the server for an extra bowl so they can share each other's soups"
       ]
     },
     {
-      "scenario": "takeout",
-      "cluster": 0,
+      "scenario": "soup",
+      "cluster": 2,
       "size": 28,
       "exemplars": [
-        "They share the honey mustard dipping sauce by dividing it between two separate containers or plates",
-        "share the single container of honey mustard dipping sauce by dipping from it together",
-        "They share the single honey mustard container by dividing its contents into two separate portions"
+        "They ask for an extra bowl to share each other's soups",
+        "They ask the server to bring them a small portion of each other's soup",
+        "They ask the server to bring them a sample of each other's soup"
+      ]
+    },
+    {
+      "scenario": "soup",
+      "cluster": 5,
+      "size": 22,
+      "exemplars": [
+        "They eat their own soups without offering any to each other",
+        "They eat their own soups and do not share with each other",
+        "eat their own soups without offering any to each other"
+      ]
+    },
+    {
+      "scenario": "soup",
+      "cluster": 1,
+      "size": 11,
+      "exemplars": [
+        "They do not offer to share their soups with each other",
+        "They do not share their soups with each other",
+        "They do not attempt to share or taste each other's soups"
       ]
     },
     {
       "scenario": "takeout",
       "cluster": 2,
-      "size": 27,
+      "size": 38,
       "exemplars": [
-        "Divide the honey mustard sauce into two separate portions, such as by pouring it into two separate containers or onto two separate plates",
-        "Divide the honey mustard sauce into two separate portions, such as by pouring it into two cups or onto two plates",
-        "Divide the honey mustard sauce into two separate portions, such as by pouring it into two empty cups or onto two separate plates"
+        "go to the hotel lobby to get a surface or extra containers to divide the honey mustard sauce",
+        "go to the hotel lobby to get extra containers or a surface to divide the honey mustard sauce",
+        "Go to the hotel lobby to get extra containers or a surface to divide the honey mustard sauce"
       ]
     },
     {
-      "scenario": "wedding",
+      "scenario": "takeout",
       "cluster": 3,
-      "size": 101,
+      "size": 34,
       "exemplars": [
-        "They could have decided to order one of each dish to share, splitting both plates between them",
-        "They could have ordered one of each dish to share between them",
-        "They could have ordered one of each dish to share, with the intention of splitting both plates"
+        "One person uses the honey mustard sauce and the other uses the ketchup packets",
+        "One of them uses the honey mustard sauce and the other uses the ketchup packets",
+        "One person uses the honey mustard sauce and the other uses ketchup"
       ]
     },
     {
-      "scenario": "wedding",
-      "cluster": 0,
-      "size": 67,
+      "scenario": "takeout",
+      "cluster": 4,
+      "size": 24,
       "exemplars": [
-        "Ask the waiter if they could get a small tasting portion of the other's dish to try",
-        "Ask the waiter if they could get a small taste or sample of the other's dish",
-        "ask the waiter if they could get a small taste or sample of the other's dish"
+        "take turns dipping their chicken tenders into the honey mustard sauce, so that one person dips and then the other",
+        "take turns dipping their chicken tenders into the honey mustard sauce, with each person dipping and then passing the sauce to the other",
+        "take turns dipping their chicken tenders into the single container of honey mustard sauce"
+      ]
+    },
+    {
+      "scenario": "takeout",
+      "cluster": 1,
+      "size": 21,
+      "exemplars": [
+        "They pour the honey mustard sauce into one of the extra containers, if available, and share it",
+        "They use the available extra sauce containers to pour out and divide the honey mustard sauce",
+        "They pour out and divide the honey mustard sauce using extra containers from the takeout"
+      ]
+    },
+    {
+      "scenario": "takeout",
+      "cluster": 0,
+      "size": 15,
+      "exemplars": [
+        "take turns using the honey mustard sauce, with one person using it all before the other starts",
+        "take turns using the honey mustard sauce, with one person using it all before the other person uses it",
+        "take turns using the honey mustard sauce, with one person using it all for their tenders before the other person uses it"
+      ]
+    },
+    {
+      "scenario": "takeout",
+      "cluster": 5,
+      "size": 14,
+      "exemplars": [
+        "use the ketchup packets as a dipping sauce instead of the honey mustard",
+        "use the ketchup packets as their dipping sauce instead of the honey mustard",
+        "Use the ketchup packets as a dipping sauce instead of the honey mustard"
       ]
     },
     {
       "scenario": "wedding",
       "cluster": 1,
-      "size": 64,
+      "size": 45,
       "exemplars": [
-        "Maxwell and Ralph could have shared their dishes, with Maxwell giving some of his mushroom risotto to Ralph and Ralph giving some of his coconut curry salmon to Maxwell",
-        "Maxwell and Ralph exchange a portion of their meals so they can each try both dishes",
-        "Maxwell and Ralph exchange a portion of their meals so they can both try each dish"
+        "asking each other if they can try a small bite of the other's dish",
+        "asking each other if they can try a small amount of the other's dish",
+        "exchanging a portion of their main courses to try each other's dish"
       ]
     },
     {
       "scenario": "wedding",
-      "cluster": 4,
-      "size": 56,
+      "cluster": 0,
+      "size": 42,
       "exemplars": [
-        "take turns trying a small portion of the other's dish using their own utensils",
-        "take turns eating from each other's plate using their own utensils",
-        "take turns eating from each other's plate using their original utensils"
+        "eating only from their own plates, without sharing or swapping food",
+        "eat only from their own plates, without sharing or swapping food",
+        "eat only from their own plates, without sharing or tasting the other's dish"
       ]
     },
     {
       "scenario": "wedding",
       "cluster": 5,
-      "size": 46,
+      "size": 38,
       "exemplars": [
-        "They could have stuck to eating only from their own plate, without trying the other's dish",
-        "They could have stuck to eating only from their own plate, without trying the other person's dish",
-        "They could have stuck to eating only from their own plate, without trying any of the other person's food"
+        "use their original utensils to take small portions of food from the other's plate",
+        "use their original utensils to take small portions from each other's plate",
+        "use their original utensils to take food from the other's plate"
       ]
     },
     {
       "scenario": "wedding",
       "cluster": 2,
-      "size": 36,
+      "size": 25,
       "exemplars": [
-        "Cut their meal in half and swap halves with each other",
-        "ask to swap plates halfway through the meal so each person could finish the other's dish",
-        "Offer to swap plates halfway through the meal so each person can finish the other's dish"
+        "ask the server for an extra fork or utensils to taste the other's dish",
+        "ask a server for an extra utensil to use when trying the other's dish",
+        "ask the server for an extra fork or utensils to use for tasting the other's dish"
+      ]
+    },
+    {
+      "scenario": "wedding",
+      "cluster": 3,
+      "size": 22,
+      "exemplars": [
+        "asking the server for an extra plate or utensils so they can split the dishes more formally",
+        "asking the server for an extra plate or utensils so they can split the dishes formally",
+        "Asking the server for an extra plate or utensils so they can split the dishes more formally"
+      ]
+    },
+    {
+      "scenario": "wedding",
+      "cluster": 4,
+      "size": 17,
+      "exemplars": [
+        "not try each other's dishes and stick to their own meal",
+        "not try each other's food and stick to their own meal",
+        "not try each other's food and stick to their own dish"
       ]
     }
   ]
