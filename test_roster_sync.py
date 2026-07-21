@@ -25,7 +25,10 @@ def parse_make_list(text, name):
     """Words assigned to a Makefile `NAME := ...` variable, joining
     backslash-continuation lines."""
     joined = text.replace("\\\n", " ")
-    m = re.search(rf"^{name}\s*:=\s*(.*)$", joined, re.MULTILINE)
+    # Horizontal whitespace only around ':=' — a bare '\s*' would let an EMPTY
+    # value (e.g. `EXPERIMENTS_NONFOOD :=` after the Study 3 roster move) swallow
+    # the following newline and mis-read the next line as the value.
+    m = re.search(rf"^{name}[ \t]*:=[ \t]*(.*)$", joined, re.MULTILINE)
     if m is None:
         raise AssertionError(f"Makefile variable {name} not found")
     return [w for w in m.group(1).split() if not w.startswith("$(")]

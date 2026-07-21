@@ -32,16 +32,16 @@ Core analysis files (named after their data folder, not paper experiment number)
 
 ### Active analysis qmds
 
-One qmd per food study, each reporting demographics and a data glimpse behind
+One qmd per study (all six), each reporting demographics and a data glimpse behind
 `have_data <- file.exists(...)` guards (not `exists("df")`, which is always
-TRUE because of `stats::df`). The nonfood studies (3a/3b) have no qmds — they
-can get demographics qmds when their data land, and the figures come from
-Python either way:
+TRUE because of `stats::df`). The figures come from Python either way:
 
 - `food-inv-desire-analysis.qmd` — Study 1a: infer desire under known effort + intimacy (continuous 0–100 DV).
 - `food-inv-joint-de-analysis.qmd` — Study 1b: joint over desire × effort given intimacy.
 - `food-inv-intimacy-analysis.qmd` — Study 2a: infer intimacy under known desire + effort.
 - `food-inv-joint-ie-analysis.qmd` — Study 2b: joint over intimacy × effort given desire.
+- `nonfood-inv-joint-de-analysis.qmd` — Study 3a: 1b's design on the non-food set.
+- `nonfood-inv-joint-ie-analysis.qmd` — Study 3b: 2b's design on the non-food set.
 
 ## Commands
 
@@ -62,6 +62,8 @@ quarto render analysis/food-inv-desire-analysis.qmd
 quarto render analysis/food-inv-joint-de-analysis.qmd
 quarto render analysis/food-inv-intimacy-analysis.qmd
 quarto render analysis/food-inv-joint-ie-analysis.qmd
+quarto render analysis/nonfood-inv-joint-de-analysis.qmd
+quarto render analysis/nonfood-inv-joint-ie-analysis.qmd
 ```
 
 Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd. The results figures are `make figures-results` (see the Makefile's figure section and `figures/scripts/`).

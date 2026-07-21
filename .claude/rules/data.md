@@ -12,7 +12,7 @@ Each experiment folder is named after its slug and contains:
 - `main_trials_long.csv` — long format with excluded participants removed; this is what the analysis qmds load.
 - `exit_survey.csv` — demographics and attention/memory checks.
 
-The active roster is six inverse experiments under `data/<slug>/` — `food_inv_desire` (1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b), `nonfood_inv_joint_de` (3a), `nonfood_inv_joint_ie` (3b). Studies 1a, 1b, and 2a have reached their target samples (~480 / 240 / 240 participants after exclusions); Study 3a currently holds pilot data only (~18 participants); Studies 2b and 3b have not been collected yet (their `data/<slug>/` folders appear once collection starts).
+The active roster is six inverse experiments under `data/<slug>/` — `food_inv_desire` (1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b), `nonfood_inv_joint_de` (3a), `nonfood_inv_joint_ie` (3b). All six now have full samples (retained after exclusions: 1a ~480; 1b, 2a, 3a, 3b ~240 each; 2b ~120); all are in the Makefile's `EXPERIMENTS_INVERSE` as of the 2026-07-21 roster move.
 
 `data/legacy/` holds archived data from earlier experiments (forward-planning, pre-3-action inverse, side projects, and the original Study 1a pilot) that are no longer part of the pipeline — their model and analysis code was removed; only the data is kept for reproducibility. It's documented in [data/legacy/README.md](../../data/legacy/README.md). The forward-planning and Study 1a pilot CSVs are tracked; the superseded inverse experiments, `pilots/`, and `planning_comm/` are local-only (scoped `data/legacy/*` gitignore rules).
 
