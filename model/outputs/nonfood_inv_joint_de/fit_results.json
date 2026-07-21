@@ -1,0 +1,37 @@
+[
+  {
+    "model": "full",
+    "experiment": "nonfood_inv_joint_de",
+    "nll": 2551.63916015625,
+    "n_params": 6,
+    "param_alpha": 1.0,
+    "alpha_observer": 2.9354922771453857,
+    "param_sigma": 0.32105061411857605,
+    "param_w_v": 4.190140247344971,
+    "param_w_d": 1.7011514902114868,
+    "param_w_e": 1.9717093706130981,
+    "param_gamma": 2.340333938598633
+  },
+  {
+    "model": "discomfort_only",
+    "experiment": "nonfood_inv_joint_de",
+    "nll": 3562.31982421875,
+    "n_params": 4,
+    "param_alpha": 1.0,
+    "alpha_observer": 9.999999974752427e-07,
+    "param_sigma": 0.3855244815349579,
+    "param_w_d": 1.9126189947128296,
+    "param_gamma": 0.5162550806999207
+  },
+  {
+    "model": "base",
+    "experiment": "nonfood_inv_joint_de",
+    "nll": 2699.02880859375,
+    "n_params": 4,
+    "param_alpha": 1.0,
+    "alpha_observer": 4.741420745849609,
+    "param_sigma": 0.3319226801395416,
+    "param_w_v": 2.0497210025787354,
+    "param_w_e": 1.031554102897644
+  }
+]

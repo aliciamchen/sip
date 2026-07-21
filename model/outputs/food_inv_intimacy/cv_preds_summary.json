@@ -5,7 +5,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.16857798397541046,
+    "delta_intimacy": -0.16486357152462006,
     "model": "full"
   },
   {
@@ -14,7 +14,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.18933795392513275,
+    "delta_intimacy": -0.23497310280799866,
     "model": "full"
   },
   {
@@ -23,7 +23,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.11728063970804214,
+    "delta_intimacy": -0.16538755595684052,
     "model": "full"
   },
   {
@@ -32,7 +32,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.19250549376010895,
+    "delta_intimacy": -0.2357991486787796,
     "model": "full"
   },
   {
@@ -41,7 +41,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.13811060786247253,
+    "delta_intimacy": -0.1621663123369217,
     "model": "full"
   },
   {
@@ -50,7 +50,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1771121323108673,
+    "delta_intimacy": -0.08628228306770325,
     "model": "full"
   },
   {
@@ -59,7 +59,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.15685705840587616,
+    "delta_intimacy": -0.14914797246456146,
     "model": "full"
   },
   {
@@ -68,7 +68,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.2334006130695343,
+    "delta_intimacy": -0.16036535799503326,
     "model": "full"
   },
   {
@@ -77,7 +77,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.3673824667930603,
+    "delta_intimacy": 0.3197593092918396,
     "model": "full"
   },
   {
@@ -86,7 +86,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.27523648738861084,
+    "delta_intimacy": 0.22271928191184998,
     "model": "full"
   },
   {
@@ -95,7 +95,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.36345916986465454,
+    "delta_intimacy": 0.31263789534568787,
     "model": "full"
   },
   {
@@ -104,7 +104,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.18590357899665833,
+    "delta_intimacy": 0.23373088240623474,
     "model": "full"
   },
   {
@@ -113,7 +113,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.040807947516441345,
+    "delta_intimacy": -0.017673898488283157,
     "model": "full"
   },
   {
@@ -122,7 +122,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.09577620029449463,
+    "delta_intimacy": -0.06589066982269287,
     "model": "full"
   },
   {
@@ -131,7 +131,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.17333467304706573,
+    "delta_intimacy": -0.11800874769687653,
     "model": "full"
   },
   {
@@ -140,7 +140,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.18608823418617249,
+    "delta_intimacy": -0.1261439025402069,
     "model": "full"
   },
   {
@@ -149,7 +149,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.17034271359443665,
+    "delta_intimacy": 0.2192731350660324,
     "model": "full"
   },
   {
@@ -158,7 +158,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.1408034861087799,
+    "delta_intimacy": 0.22379183769226074,
     "model": "full"
   },
   {
@@ -167,7 +167,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.059568196535110474,
+    "delta_intimacy": 0.1815054714679718,
     "model": "full"
   },
   {
@@ -176,7 +176,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.019144920632243156,
+    "delta_intimacy": 0.22796893119812012,
     "model": "full"
   },
   {
@@ -185,7 +185,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.3265857696533203,
+    "delta_intimacy": 0.3644710183143616,
     "model": "full"
   },
   {
@@ -194,7 +194,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3754310607910156,
+    "delta_intimacy": 0.361429363489151,
     "model": "full"
   },
   {
@@ -203,7 +203,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.270101934671402,
+    "delta_intimacy": 0.2928667366504669,
     "model": "full"
   },
   {
@@ -212,7 +212,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2930503189563751,
+    "delta_intimacy": 0.3151008188724518,
     "model": "full"
   },
   {
@@ -221,7 +221,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.08009370416402817,
+    "delta_intimacy": -0.08918066322803497,
     "model": "full"
   },
   {
@@ -230,7 +230,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1547674685716629,
+    "delta_intimacy": -0.04981045052409172,
     "model": "full"
   },
   {
@@ -239,7 +239,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1043328195810318,
+    "delta_intimacy": -0.1100647896528244,
     "model": "full"
   },
   {
@@ -248,7 +248,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1802019327878952,
+    "delta_intimacy": -0.06823297590017319,
     "model": "full"
   },
   {
@@ -257,7 +257,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.033605992794036865,
+    "delta_intimacy": 0.05912568420171738,
     "model": "full"
   },
   {
@@ -266,7 +266,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.09281761944293976,
+    "delta_intimacy": 0.0547647699713707,
     "model": "full"
   },
   {
@@ -275,7 +275,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.054588682949543,
+    "delta_intimacy": 0.05958579108119011,
     "model": "full"
   },
   {
@@ -284,7 +284,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1974479854106903,
+    "delta_intimacy": -0.03299974277615547,
     "model": "full"
   },
   {
@@ -293,7 +293,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.328620970249176,
+    "delta_intimacy": 0.329902708530426,
     "model": "full"
   },
   {
@@ -302,7 +302,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3209354281425476,
+    "delta_intimacy": 0.3424491286277771,
     "model": "full"
   },
   {
@@ -311,7 +311,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.31788986921310425,
+    "delta_intimacy": 0.33432838320732117,
     "model": "full"
   },
   {
@@ -320,7 +320,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2596334218978882,
+    "delta_intimacy": 0.3377683162689209,
     "model": "full"
   },
   {
@@ -329,7 +329,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.12468607723712921,
+    "delta_intimacy": -0.10796903073787689,
     "model": "full"
   },
   {
@@ -338,7 +338,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.10559199750423431,
+    "delta_intimacy": -0.10264810174703598,
     "model": "full"
   },
   {
@@ -347,7 +347,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.14649249613285065,
+    "delta_intimacy": -0.11701039224863052,
     "model": "full"
   },
   {
@@ -356,7 +356,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.13019564747810364,
+    "delta_intimacy": -0.11613638699054718,
     "model": "full"
   },
   {
@@ -365,7 +365,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09381797909736633,
+    "delta_intimacy": -0.09457437694072723,
     "model": "full"
   },
   {
@@ -374,7 +374,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.08406110107898712,
+    "delta_intimacy": -0.11118290573358536,
     "model": "full"
   },
   {
@@ -383,7 +383,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.12439902126789093,
+    "delta_intimacy": -0.115878626704216,
     "model": "full"
   },
   {
@@ -392,7 +392,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1610201895236969,
+    "delta_intimacy": -0.1013336330652237,
     "model": "full"
   },
   {
@@ -401,7 +401,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.24364116787910461,
+    "delta_intimacy": 0.23405320942401886,
     "model": "full"
   },
   {
@@ -410,7 +410,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.273408442735672,
+    "delta_intimacy": 0.24870626628398895,
     "model": "full"
   },
   {
@@ -419,7 +419,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.20844829082489014,
+    "delta_intimacy": 0.24916961789131165,
     "model": "full"
   },
   {
@@ -428,7 +428,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.21960484981536865,
+    "delta_intimacy": 0.27174243330955505,
     "model": "full"
   },
   {
@@ -437,7 +437,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09281342476606369,
+    "delta_intimacy": -0.04190141707658768,
     "model": "full"
   },
   {
@@ -446,7 +446,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1265476644039154,
+    "delta_intimacy": -0.10952355712652206,
     "model": "full"
   },
   {
@@ -455,7 +455,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.21136002242565155,
+    "delta_intimacy": -0.10792561620473862,
     "model": "full"
   },
   {
@@ -464,7 +464,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.22970104217529297,
+    "delta_intimacy": -0.12858878076076508,
     "model": "full"
   },
   {
@@ -473,7 +473,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.1384158879518509,
+    "delta_intimacy": -0.14854589104652405,
     "model": "full"
   },
   {
@@ -482,7 +482,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.18651549518108368,
+    "delta_intimacy": -0.1425829380750656,
     "model": "full"
   },
   {
@@ -491,7 +491,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.2767934501171112,
+    "delta_intimacy": -0.18015721440315247,
     "model": "full"
   },
   {
@@ -500,7 +500,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.253059446811676,
+    "delta_intimacy": -0.16892921924591064,
     "model": "full"
   },
   {
@@ -509,7 +509,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.34357601404190063,
+    "delta_intimacy": 0.3299296200275421,
     "model": "full"
   },
   {
@@ -518,7 +518,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.32520201802253723,
+    "delta_intimacy": 0.3003596365451813,
     "model": "full"
   },
   {
@@ -527,7 +527,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2418355494737625,
+    "delta_intimacy": 0.298134446144104,
     "model": "full"
   },
   {
@@ -536,7 +536,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2426023930311203,
+    "delta_intimacy": 0.270912230014801,
     "model": "full"
   },
   {
@@ -545,7 +545,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.10992854833602905,
+    "delta_intimacy": -0.08386503159999847,
     "model": "full"
   },
   {
@@ -554,7 +554,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.07537376880645752,
+    "delta_intimacy": -0.07329797744750977,
     "model": "full"
   },
   {
@@ -563,7 +563,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.15111330151557922,
+    "delta_intimacy": -0.1105094775557518,
     "model": "full"
   },
   {
@@ -572,7 +572,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.14512896537780762,
+    "delta_intimacy": -0.11019867658615112,
     "model": "full"
   },
   {
@@ -581,7 +581,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.16517509520053864,
+    "delta_intimacy": -0.11859093606472015,
     "model": "full"
   },
   {
@@ -590,7 +590,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.17059794068336487,
+    "delta_intimacy": -0.13485963642597198,
     "model": "full"
   },
   {
@@ -599,7 +599,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.20092293620109558,
+    "delta_intimacy": -0.12294666469097137,
     "model": "full"
   },
   {
@@ -608,7 +608,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.21989861130714417,
+    "delta_intimacy": -0.14467328786849976,
     "model": "full"
   },
   {
@@ -617,7 +617,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.31060105562210083,
+    "delta_intimacy": 0.32988446950912476,
     "model": "full"
   },
   {
@@ -626,7 +626,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2945968508720398,
+    "delta_intimacy": 0.35693174600601196,
     "model": "full"
   },
   {
@@ -635,7 +635,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2893635332584381,
+    "delta_intimacy": 0.32956090569496155,
     "model": "full"
   },
   {
@@ -644,7 +644,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2844417691230774,
+    "delta_intimacy": 0.35995641350746155,
     "model": "full"
   },
   {
@@ -653,7 +653,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.04198411852121353,
+    "delta_intimacy": -0.05847420543432236,
     "model": "full"
   },
   {
@@ -662,7 +662,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.013323353603482246,
+    "delta_intimacy": -0.014489677734673023,
     "model": "full"
   },
   {
@@ -671,7 +671,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1563883274793625,
+    "delta_intimacy": -0.12407789379358292,
     "model": "full"
   },
   {
@@ -680,7 +680,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.14889401197433472,
+    "delta_intimacy": -0.08456231653690338,
     "model": "full"
   },
   {
@@ -689,7 +689,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.1450224220752716,
+    "delta_intimacy": 0.21266813576221466,
     "model": "full"
   },
   {
@@ -698,7 +698,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.10721657425165176,
+    "delta_intimacy": 0.22816631197929382,
     "model": "full"
   },
   {
@@ -707,7 +707,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.001157292746938765,
+    "delta_intimacy": 0.18316411972045898,
     "model": "full"
   },
   {
@@ -716,7 +716,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.08607930690050125,
+    "delta_intimacy": 0.19829149544239044,
     "model": "full"
   },
   {
@@ -725,7 +725,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.38180309534072876,
+    "delta_intimacy": 0.3482980728149414,
     "model": "full"
   },
   {
@@ -734,7 +734,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3710246980190277,
+    "delta_intimacy": 0.3478946387767792,
     "model": "full"
   },
   {
@@ -743,7 +743,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.30139046907424927,
+    "delta_intimacy": 0.2897912859916687,
     "model": "full"
   },
   {
@@ -752,7 +752,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2566174566745758,
+    "delta_intimacy": 0.283393919467926,
     "model": "full"
   },
   {
@@ -761,7 +761,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.12307856231927872,
+    "delta_intimacy": -0.11637397110462189,
     "model": "full"
   },
   {
@@ -770,7 +770,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.09795847535133362,
+    "delta_intimacy": -0.11350645124912262,
     "model": "full"
   },
   {
@@ -779,7 +779,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1233472004532814,
+    "delta_intimacy": -0.12632547318935394,
     "model": "full"
   },
   {
@@ -788,7 +788,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1262608915567398,
+    "delta_intimacy": -0.12642347812652588,
     "model": "full"
   },
   {
@@ -797,7 +797,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.024285938590765,
+    "delta_intimacy": 0.032200612127780914,
     "model": "full"
   },
   {
@@ -806,7 +806,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.05054645612835884,
+    "delta_intimacy": -0.022533683106303215,
     "model": "full"
   },
   {
@@ -815,7 +815,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.05918879061937332,
+    "delta_intimacy": 0.09727568924427032,
     "model": "full"
   },
   {
@@ -824,7 +824,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.03384660556912422,
+    "delta_intimacy": -0.057056207209825516,
     "model": "full"
   },
   {
@@ -833,7 +833,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.36554956436157227,
+    "delta_intimacy": 0.3427032232284546,
     "model": "full"
   },
   {
@@ -842,7 +842,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3455323278903961,
+    "delta_intimacy": 0.3280796706676483,
     "model": "full"
   },
   {
@@ -851,7 +851,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.29107746481895447,
+    "delta_intimacy": 0.33776694536209106,
     "model": "full"
   },
   {
@@ -860,7 +860,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2994023859500885,
+    "delta_intimacy": 0.30742329359054565,
     "model": "full"
   },
   {
@@ -869,7 +869,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.10265590995550156,
+    "delta_intimacy": -0.10862720012664795,
     "model": "full"
   },
   {
@@ -878,7 +878,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.14730045199394226,
+    "delta_intimacy": -0.07462014257907867,
     "model": "full"
   },
   {
@@ -887,7 +887,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1862264722585678,
+    "delta_intimacy": -0.16121233999729156,
     "model": "full"
   },
   {
@@ -896,7 +896,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.19679202139377594,
+    "delta_intimacy": -0.1492486447095871,
     "model": "full"
   },
   {
@@ -905,7 +905,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.11841581761837006,
+    "delta_intimacy": -0.10945198684930801,
     "model": "full"
   },
   {
@@ -914,7 +914,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.14525678753852844,
+    "delta_intimacy": -0.11568410694599152,
     "model": "full"
   },
   {
@@ -923,7 +923,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1615907847881317,
+    "delta_intimacy": -0.1392628252506256,
     "model": "full"
   },
   {
@@ -932,7 +932,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.18946431577205658,
+    "delta_intimacy": -0.13285702466964722,
     "model": "full"
   },
   {
@@ -941,7 +941,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.3203987777233124,
+    "delta_intimacy": 0.3062601387500763,
     "model": "full"
   },
   {
@@ -950,7 +950,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3199009299278259,
+    "delta_intimacy": 0.3221198618412018,
     "model": "full"
   },
   {
@@ -959,7 +959,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2817153334617615,
+    "delta_intimacy": 0.2639707028865814,
     "model": "full"
   },
   {
@@ -968,7 +968,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2764427065849304,
+    "delta_intimacy": 0.3111238181591034,
     "model": "full"
   },
   {
@@ -977,7 +977,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.13515734672546387,
+    "delta_intimacy": -0.16960878670215607,
     "model": "full"
   },
   {
@@ -986,7 +986,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.13122901320457458,
+    "delta_intimacy": -0.17041516304016113,
     "model": "full"
   },
   {
@@ -995,7 +995,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.19355562329292297,
+    "delta_intimacy": -0.2292160987854004,
     "model": "full"
   },
   {
@@ -1004,7 +1004,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.2624310255050659,
+    "delta_intimacy": -0.22225375473499298,
     "model": "full"
   },
   {
@@ -1013,7 +1013,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.05718495324254036,
+    "delta_intimacy": 0.0030447065364569426,
     "model": "full"
   },
   {
@@ -1022,7 +1022,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.14698925614356995,
+    "delta_intimacy": 0.08254935592412949,
     "model": "full"
   },
   {
@@ -1031,7 +1031,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.07999150454998016,
+    "delta_intimacy": -0.10044510662555695,
     "model": "full"
   },
   {
@@ -1040,7 +1040,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.10261233896017075,
+    "delta_intimacy": -0.014219162985682487,
     "model": "full"
   },
   {
@@ -1049,7 +1049,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.28902533650398254,
+    "delta_intimacy": 0.26417607069015503,
     "model": "full"
   },
   {
@@ -1058,7 +1058,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.29820308089256287,
+    "delta_intimacy": 0.30734220147132874,
     "model": "full"
   },
   {
@@ -1067,7 +1067,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.16875630617141724,
+    "delta_intimacy": 0.193679541349411,
     "model": "full"
   },
   {
@@ -1076,7 +1076,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.13623765110969543,
+    "delta_intimacy": 0.20141200721263885,
     "model": "full"
   },
   {
@@ -1085,7 +1085,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.1398143619298935,
+    "delta_intimacy": -0.16754834353923798,
     "model": "full"
   },
   {
@@ -1094,7 +1094,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.16206273436546326,
+    "delta_intimacy": -0.15786103904247284,
     "model": "full"
   },
   {
@@ -1103,7 +1103,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.2065722495317459,
+    "delta_intimacy": -0.19477598369121552,
     "model": "full"
   },
   {
@@ -1112,7 +1112,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.20479051768779755,
+    "delta_intimacy": -0.18294620513916016,
     "model": "full"
   },
   {
@@ -1121,7 +1121,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.09879222512245178,
+    "delta_intimacy": 0.1165536493062973,
     "model": "full"
   },
   {
@@ -1130,7 +1130,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.10985329002141953,
+    "delta_intimacy": 0.04099497199058533,
     "model": "full"
   },
   {
@@ -1139,7 +1139,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.0003043323813471943,
+    "delta_intimacy": 0.02679925598204136,
     "model": "full"
   },
   {
@@ -1148,7 +1148,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.0010549739236012101,
+    "delta_intimacy": -0.0117575628682971,
     "model": "full"
   },
   {
@@ -1157,7 +1157,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2830262780189514,
+    "delta_intimacy": 0.24147161841392517,
     "model": "full"
   },
   {
@@ -1166,7 +1166,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.30243828892707825,
+    "delta_intimacy": 0.23253384232521057,
     "model": "full"
   },
   {
@@ -1175,7 +1175,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.1997898370027542,
+    "delta_intimacy": 0.02502049133181572,
     "model": "full"
   },
   {
@@ -1184,7 +1184,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.20511284470558167,
+    "delta_intimacy": 0.11928173154592514,
     "model": "full"
   },
   {
@@ -1193,7 +1193,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09746505320072174,
+    "delta_intimacy": -0.22733059525489807,
     "model": "full"
   },
   {
@@ -1202,7 +1202,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1045675128698349,
+    "delta_intimacy": -0.22775673866271973,
     "model": "full"
   },
   {
@@ -1211,7 +1211,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.11263766139745712,
+    "delta_intimacy": -0.2503594756126404,
     "model": "full"
   },
   {
@@ -1220,7 +1220,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.15721146762371063,
+    "delta_intimacy": -0.24412885308265686,
     "model": "full"
   },
   {
@@ -1229,7 +1229,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.013568158261477947,
+    "delta_intimacy": 0.010495327413082123,
     "model": "full"
   },
   {
@@ -1238,7 +1238,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.0836113914847374,
+    "delta_intimacy": 0.030807673931121826,
     "model": "full"
   },
   {
@@ -1247,7 +1247,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.031129341572523117,
+    "delta_intimacy": 0.029576504603028297,
     "model": "full"
   },
   {
@@ -1256,7 +1256,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.08071102201938629,
+    "delta_intimacy": 0.05066782236099243,
     "model": "full"
   },
   {
@@ -1265,7 +1265,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.3408489525318146,
+    "delta_intimacy": 0.27888426184654236,
     "model": "full"
   },
   {
@@ -1274,7 +1274,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2903015911579132,
+    "delta_intimacy": 0.3131831884384155,
     "model": "full"
   },
   {
@@ -1283,7 +1283,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.342818021774292,
+    "delta_intimacy": 0.3121653199195862,
     "model": "full"
   },
   {
@@ -1292,7 +1292,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.25748491287231445,
+    "delta_intimacy": 0.3026382029056549,
     "model": "full"
   },
   {
@@ -1301,7 +1301,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.0802006646990776,
+    "delta_intimacy": -0.14445726573467255,
     "model": "full"
   },
   {
@@ -1310,7 +1310,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.062424562871456146,
+    "delta_intimacy": -0.09063918888568878,
     "model": "full"
   },
   {
@@ -1319,7 +1319,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.13320280611515045,
+    "delta_intimacy": -0.23078553378582,
     "model": "full"
   },
   {
@@ -1328,7 +1328,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1445852667093277,
+    "delta_intimacy": -0.244291752576828,
     "model": "full"
   },
   {
@@ -1337,7 +1337,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.09854061901569366,
+    "delta_intimacy": 0.1683855652809143,
     "model": "full"
   },
   {
@@ -1346,7 +1346,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.11442296206951141,
+    "delta_intimacy": 0.15237265825271606,
     "model": "full"
   },
   {
@@ -1355,7 +1355,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.007167940028011799,
+    "delta_intimacy": 0.10512348264455795,
     "model": "full"
   },
   {
@@ -1364,7 +1364,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.02260581962764263,
+    "delta_intimacy": 0.027794551104307175,
     "model": "full"
   },
   {
@@ -1373,7 +1373,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.3665711283683777,
+    "delta_intimacy": 0.33550530672073364,
     "model": "full"
   },
   {
@@ -1382,7 +1382,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.368354856967926,
+    "delta_intimacy": 0.3426523804664612,
     "model": "full"
   },
   {
@@ -1391,7 +1391,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2902914881706238,
+    "delta_intimacy": 0.1852685958147049,
     "model": "full"
   },
   {
@@ -1400,7 +1400,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2914186120033264,
+    "delta_intimacy": 0.21943488717079163,
     "model": "full"
   },
   {
@@ -1409,7 +1409,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.12284187972545624,
+    "delta_intimacy": -0.18798793852329254,
     "model": "full"
   },
   {
@@ -1418,7 +1418,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.12176500260829926,
+    "delta_intimacy": -0.20560869574546814,
     "model": "full"
   },
   {
@@ -1427,7 +1427,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.22052404284477234,
+    "delta_intimacy": -0.21081843972206116,
     "model": "full"
   },
   {
@@ -1436,7 +1436,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.24101416766643524,
+    "delta_intimacy": -0.21878159046173096,
     "model": "full"
   },
   {
@@ -1445,7 +1445,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.0837278962135315,
+    "delta_intimacy": -0.03901941329240799,
     "model": "full"
   },
   {
@@ -1454,7 +1454,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.08253268897533417,
+    "delta_intimacy": -0.04235381633043289,
     "model": "full"
   },
   {
@@ -1463,7 +1463,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.03797762468457222,
+    "delta_intimacy": -0.06165332719683647,
     "model": "full"
   },
   {
@@ -1472,7 +1472,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.128275528550148,
+    "delta_intimacy": -0.07786686718463898,
     "model": "full"
   },
   {
@@ -1481,7 +1481,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.32553404569625854,
+    "delta_intimacy": 0.22186832129955292,
     "model": "full"
   },
   {
@@ -1490,7 +1490,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.33291712403297424,
+    "delta_intimacy": 0.23423373699188232,
     "model": "full"
   },
   {
@@ -1499,7 +1499,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.17944611608982086,
+    "delta_intimacy": 0.18632052838802338,
     "model": "full"
   },
   {
@@ -1508,7 +1508,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.16204828023910522,
+    "delta_intimacy": 0.18874332308769226,
     "model": "full"
   },
   {
@@ -1517,7 +1517,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09233018010854721,
+    "delta_intimacy": -0.044504810124635696,
     "model": "full"
   },
   {
@@ -1526,7 +1526,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.13615082204341888,
+    "delta_intimacy": -0.041900385171175,
     "model": "full"
   },
   {
@@ -1535,7 +1535,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.12428577244281769,
+    "delta_intimacy": -0.04935988783836365,
     "model": "full"
   },
   {
@@ -1544,7 +1544,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.214546799659729,
+    "delta_intimacy": -0.13604798913002014,
     "model": "full"
   },
   {
@@ -1553,7 +1553,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.0700712651014328,
+    "delta_intimacy": -0.08245284855365753,
     "model": "full"
   },
   {
@@ -1562,7 +1562,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.04985029622912407,
+    "delta_intimacy": -0.10687893629074097,
     "model": "full"
   },
   {
@@ -1571,7 +1571,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.10767443478107452,
+    "delta_intimacy": -0.10475696623325348,
     "model": "full"
   },
   {
@@ -1580,7 +1580,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.111692413687706,
+    "delta_intimacy": -0.11993207782506943,
     "model": "full"
   },
   {
@@ -1589,7 +1589,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.29489725828170776,
+    "delta_intimacy": 0.2625652849674225,
     "model": "full"
   },
   {
@@ -1598,7 +1598,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.24997875094413757,
+    "delta_intimacy": 0.21281976997852325,
     "model": "full"
   },
   {
@@ -1607,7 +1607,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.24499574303627014,
+    "delta_intimacy": 0.235356405377388,
     "model": "full"
   },
   {
@@ -1616,7 +1616,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.19089125096797943,
+    "delta_intimacy": 0.22591254115104675,
     "model": "full"
   },
   {
@@ -1625,7 +1625,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.19657528400421143,
+    "delta_intimacy": -0.28580400347709656,
     "model": "full"
   },
   {
@@ -1634,7 +1634,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.19728437066078186,
+    "delta_intimacy": -0.2734842002391815,
     "model": "full"
   },
   {
@@ -1643,7 +1643,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.19699041545391083,
+    "delta_intimacy": -0.2524978518486023,
     "model": "full"
   },
   {
@@ -1652,7 +1652,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.2158619612455368,
+    "delta_intimacy": -0.25108078122138977,
     "model": "full"
   },
   {
@@ -1661,7 +1661,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.0014716029400005937,
+    "delta_intimacy": -0.021595889702439308,
     "model": "full"
   },
   {
@@ -1670,7 +1670,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.025100916624069214,
+    "delta_intimacy": -0.06660588830709457,
     "model": "full"
   },
   {
@@ -1679,7 +1679,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.09134666621685028,
+    "delta_intimacy": -0.008184300735592842,
     "model": "full"
   },
   {
@@ -1688,7 +1688,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.14573465287685394,
+    "delta_intimacy": -0.05693051964044571,
     "model": "full"
   },
   {
@@ -1697,7 +1697,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.26148393750190735,
+    "delta_intimacy": 0.1453237235546112,
     "model": "full"
   },
   {
@@ -1706,7 +1706,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2580978572368622,
+    "delta_intimacy": 0.1761026680469513,
     "model": "full"
   },
   {
@@ -1715,7 +1715,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.22106656432151794,
+    "delta_intimacy": 0.18154248595237732,
     "model": "full"
   },
   {
@@ -1724,7 +1724,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.1719634234905243,
+    "delta_intimacy": 0.18823865056037903,
     "model": "full"
   },
   {
@@ -1733,7 +1733,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.212040975689888,
+    "delta_intimacy": -0.17513665556907654,
     "model": "discomfort_only"
   },
   {
@@ -1742,7 +1742,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1676938235759735,
+    "delta_intimacy": -0.23228618502616882,
     "model": "discomfort_only"
   },
   {
@@ -1751,7 +1751,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.17583374679088593,
+    "delta_intimacy": -0.17525920271873474,
     "model": "discomfort_only"
   },
   {
@@ -1760,7 +1760,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.16653603315353394,
+    "delta_intimacy": -0.2201431542634964,
     "model": "discomfort_only"
   },
   {
@@ -1769,7 +1769,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.15256063640117645,
+    "delta_intimacy": -0.20871002972126007,
     "model": "discomfort_only"
   },
   {
@@ -1778,7 +1778,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.12906666100025177,
+    "delta_intimacy": -0.10631011426448822,
     "model": "discomfort_only"
   },
   {
@@ -1787,7 +1787,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.2155170440673828,
+    "delta_intimacy": -0.1976517140865326,
     "model": "discomfort_only"
   },
   {
@@ -1796,7 +1796,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.17416557669639587,
+    "delta_intimacy": -0.20630204677581787,
     "model": "discomfort_only"
   },
   {
@@ -1805,7 +1805,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.32018446922302246,
+    "delta_intimacy": 0.28631848096847534,
     "model": "discomfort_only"
   },
   {
@@ -1814,7 +1814,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.30449730157852173,
+    "delta_intimacy": 0.2713663578033447,
     "model": "discomfort_only"
   },
   {
@@ -1823,7 +1823,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.30675244331359863,
+    "delta_intimacy": 0.2834097445011139,
     "model": "discomfort_only"
   },
   {
@@ -1832,7 +1832,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2933315634727478,
+    "delta_intimacy": 0.2708664536476135,
     "model": "discomfort_only"
   },
   {
@@ -1841,7 +1841,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.07637277990579605,
+    "delta_intimacy": -0.024175183847546577,
     "model": "discomfort_only"
   },
   {
@@ -1850,7 +1850,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.16115817427635193,
+    "delta_intimacy": -0.10869091749191284,
     "model": "discomfort_only"
   },
   {
@@ -1859,7 +1859,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.15693578124046326,
+    "delta_intimacy": -0.07565510272979736,
     "model": "discomfort_only"
   },
   {
@@ -1868,7 +1868,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.15890094637870789,
+    "delta_intimacy": -0.09307458996772766,
     "model": "discomfort_only"
   },
   {
@@ -1877,7 +1877,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.1312258094549179,
+    "delta_intimacy": 0.18972957134246826,
     "model": "discomfort_only"
   },
   {
@@ -1886,7 +1886,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.06376899033784866,
+    "delta_intimacy": 0.1689361035823822,
     "model": "discomfort_only"
   },
   {
@@ -1895,7 +1895,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.11688832193613052,
+    "delta_intimacy": 0.1953141689300537,
     "model": "discomfort_only"
   },
   {
@@ -1904,7 +1904,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.09331409633159637,
+    "delta_intimacy": 0.19215914607048035,
     "model": "discomfort_only"
   },
   {
@@ -1913,7 +1913,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2771846652030945,
+    "delta_intimacy": 0.3122430741786957,
     "model": "discomfort_only"
   },
   {
@@ -1922,7 +1922,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.31369325518608093,
+    "delta_intimacy": 0.30905216932296753,
     "model": "discomfort_only"
   },
   {
@@ -1931,7 +1931,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2802804708480835,
+    "delta_intimacy": 0.30245402455329895,
     "model": "discomfort_only"
   },
   {
@@ -1940,7 +1940,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.3087410628795624,
+    "delta_intimacy": 0.31298956274986267,
     "model": "discomfort_only"
   },
   {
@@ -1949,7 +1949,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09535268694162369,
+    "delta_intimacy": -0.07500028610229492,
     "model": "discomfort_only"
   },
   {
@@ -1958,7 +1958,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1199248656630516,
+    "delta_intimacy": -0.04294003173708916,
     "model": "discomfort_only"
   },
   {
@@ -1967,7 +1967,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.09117373824119568,
+    "delta_intimacy": -0.08504457771778107,
     "model": "discomfort_only"
   },
   {
@@ -1976,7 +1976,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.12198816239833832,
+    "delta_intimacy": -0.05585681274533272,
     "model": "discomfort_only"
   },
   {
@@ -1985,7 +1985,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09396912157535553,
+    "delta_intimacy": 0.05237697809934616,
     "model": "discomfort_only"
   },
   {
@@ -1994,7 +1994,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.10987357050180435,
+    "delta_intimacy": 0.04960182309150696,
     "model": "discomfort_only"
   },
   {
@@ -2003,7 +2003,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.08628681302070618,
+    "delta_intimacy": 0.05377550795674324,
     "model": "discomfort_only"
   },
   {
@@ -2012,7 +2012,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.13862082362174988,
+    "delta_intimacy": -0.0278615839779377,
     "model": "discomfort_only"
   },
   {
@@ -2021,7 +2021,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.26133811473846436,
+    "delta_intimacy": 0.2804241478443146,
     "model": "discomfort_only"
   },
   {
@@ -2030,7 +2030,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2920908033847809,
+    "delta_intimacy": 0.2919537425041199,
     "model": "discomfort_only"
   },
   {
@@ -2039,7 +2039,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.25877806544303894,
+    "delta_intimacy": 0.2842480540275574,
     "model": "discomfort_only"
   },
   {
@@ -2048,7 +2048,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.292224258184433,
+    "delta_intimacy": 0.292385071516037,
     "model": "discomfort_only"
   },
   {
@@ -2057,7 +2057,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.17030921578407288,
+    "delta_intimacy": -0.09299752861261368,
     "model": "discomfort_only"
   },
   {
@@ -2066,7 +2066,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.14841938018798828,
+    "delta_intimacy": -0.08730959892272949,
     "model": "discomfort_only"
   },
   {
@@ -2075,7 +2075,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.12519313395023346,
+    "delta_intimacy": -0.09299752861261368,
     "model": "discomfort_only"
   },
   {
@@ -2084,7 +2084,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.08762075006961823,
+    "delta_intimacy": -0.09185309708118439,
     "model": "discomfort_only"
   },
   {
@@ -2093,7 +2093,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.09117813408374786,
+    "delta_intimacy": -0.06144203990697861,
     "model": "discomfort_only"
   },
   {
@@ -2102,7 +2102,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.07189658284187317,
+    "delta_intimacy": -0.07502585649490356,
     "model": "discomfort_only"
   },
   {
@@ -2111,7 +2111,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.08340481668710709,
+    "delta_intimacy": -0.09137304127216339,
     "model": "discomfort_only"
   },
   {
@@ -2120,7 +2120,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.10687144845724106,
+    "delta_intimacy": -0.0688096210360527,
     "model": "discomfort_only"
   },
   {
@@ -2129,7 +2129,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2692522704601288,
+    "delta_intimacy": 0.240492582321167,
     "model": "discomfort_only"
   },
   {
@@ -2138,7 +2138,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.29091328382492065,
+    "delta_intimacy": 0.24770061671733856,
     "model": "discomfort_only"
   },
   {
@@ -2147,7 +2147,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.25565844774246216,
+    "delta_intimacy": 0.25279515981674194,
     "model": "discomfort_only"
   },
   {
@@ -2156,7 +2156,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2838232219219208,
+    "delta_intimacy": 0.27547475695610046,
     "model": "discomfort_only"
   },
   {
@@ -2165,7 +2165,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.13225872814655304,
+    "delta_intimacy": -0.041157424449920654,
     "model": "discomfort_only"
   },
   {
@@ -2174,7 +2174,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.13800689578056335,
+    "delta_intimacy": -0.10188654810190201,
     "model": "discomfort_only"
   },
   {
@@ -2183,7 +2183,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1726432740688324,
+    "delta_intimacy": -0.08242996037006378,
     "model": "discomfort_only"
   },
   {
@@ -2192,7 +2192,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.15560081601142883,
+    "delta_intimacy": -0.0875285193324089,
     "model": "discomfort_only"
   },
   {
@@ -2201,7 +2201,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.17791569232940674,
+    "delta_intimacy": -0.1584303081035614,
     "model": "discomfort_only"
   },
   {
@@ -2210,7 +2210,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.14483024179935455,
+    "delta_intimacy": -0.14593461155891418,
     "model": "discomfort_only"
   },
   {
@@ -2219,7 +2219,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.2602681815624237,
+    "delta_intimacy": -0.18166476488113403,
     "model": "discomfort_only"
   },
   {
@@ -2228,7 +2228,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.16844555735588074,
+    "delta_intimacy": -0.1597263365983963,
     "model": "discomfort_only"
   },
   {
@@ -2237,7 +2237,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.28125491738319397,
+    "delta_intimacy": 0.28615957498550415,
     "model": "discomfort_only"
   },
   {
@@ -2246,7 +2246,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.29522019624710083,
+    "delta_intimacy": 0.27695220708847046,
     "model": "discomfort_only"
   },
   {
@@ -2255,7 +2255,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2761877179145813,
+    "delta_intimacy": 0.28615957498550415,
     "model": "discomfort_only"
   },
   {
@@ -2264,7 +2264,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.29824531078338623,
+    "delta_intimacy": 0.26460251212120056,
     "model": "discomfort_only"
   },
   {
@@ -2273,7 +2273,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.0918450802564621,
+    "delta_intimacy": -0.06642571836709976,
     "model": "discomfort_only"
   },
   {
@@ -2282,7 +2282,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.06412903219461441,
+    "delta_intimacy": -0.06060108542442322,
     "model": "discomfort_only"
   },
   {
@@ -2291,7 +2291,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.12267454713582993,
+    "delta_intimacy": -0.0883408710360527,
     "model": "discomfort_only"
   },
   {
@@ -2300,7 +2300,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.09488002210855484,
+    "delta_intimacy": -0.09457716345787048,
     "model": "discomfort_only"
   },
   {
@@ -2309,7 +2309,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.16533367335796356,
+    "delta_intimacy": -0.1135745644569397,
     "model": "discomfort_only"
   },
   {
@@ -2318,7 +2318,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.14513853192329407,
+    "delta_intimacy": -0.1320289671421051,
     "model": "discomfort_only"
   },
   {
@@ -2327,7 +2327,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.20516642928123474,
+    "delta_intimacy": -0.14600393176078796,
     "model": "discomfort_only"
   },
   {
@@ -2336,7 +2336,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1724434643983841,
+    "delta_intimacy": -0.14158305525779724,
     "model": "discomfort_only"
   },
   {
@@ -2345,7 +2345,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.31742629408836365,
+    "delta_intimacy": 0.2889939844608307,
     "model": "discomfort_only"
   },
   {
@@ -2354,7 +2354,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.32701656222343445,
+    "delta_intimacy": 0.3007137179374695,
     "model": "discomfort_only"
   },
   {
@@ -2363,7 +2363,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.3041890263557434,
+    "delta_intimacy": 0.268472284078598,
     "model": "discomfort_only"
   },
   {
@@ -2372,7 +2372,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.31198304891586304,
+    "delta_intimacy": 0.29083773493766785,
     "model": "discomfort_only"
   },
   {
@@ -2381,7 +2381,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.06930731981992722,
+    "delta_intimacy": -0.08018966764211655,
     "model": "discomfort_only"
   },
   {
@@ -2390,7 +2390,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.04696670174598694,
+    "delta_intimacy": -0.054572694003582,
     "model": "discomfort_only"
   },
   {
@@ -2399,7 +2399,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1064055934548378,
+    "delta_intimacy": -0.07911999523639679,
     "model": "discomfort_only"
   },
   {
@@ -2408,7 +2408,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1104181632399559,
+    "delta_intimacy": -0.0788150429725647,
     "model": "discomfort_only"
   },
   {
@@ -2417,7 +2417,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.12365571409463882,
+    "delta_intimacy": 0.1905297040939331,
     "model": "discomfort_only"
   },
   {
@@ -2426,7 +2426,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.07875189930200577,
+    "delta_intimacy": 0.18739713728427887,
     "model": "discomfort_only"
   },
   {
@@ -2435,7 +2435,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.08839360624551773,
+    "delta_intimacy": 0.20047688484191895,
     "model": "discomfort_only"
   },
   {
@@ -2444,7 +2444,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.035569529980421066,
+    "delta_intimacy": 0.19087126851081848,
     "model": "discomfort_only"
   },
   {
@@ -2453,7 +2453,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.326158344745636,
+    "delta_intimacy": 0.3053068220615387,
     "model": "discomfort_only"
   },
   {
@@ -2462,7 +2462,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.32457560300827026,
+    "delta_intimacy": 0.3068224787712097,
     "model": "discomfort_only"
   },
   {
@@ -2471,7 +2471,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.3173185884952545,
+    "delta_intimacy": 0.30560269951820374,
     "model": "discomfort_only"
   },
   {
@@ -2480,7 +2480,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.31934854388237,
+    "delta_intimacy": 0.3103027939796448,
     "model": "discomfort_only"
   },
   {
@@ -2489,7 +2489,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.15491648018360138,
+    "delta_intimacy": -0.08117280900478363,
     "model": "discomfort_only"
   },
   {
@@ -2498,7 +2498,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.09298088401556015,
+    "delta_intimacy": -0.08988571166992188,
     "model": "discomfort_only"
   },
   {
@@ -2507,7 +2507,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1143764853477478,
+    "delta_intimacy": -0.08050412684679031,
     "model": "discomfort_only"
   },
   {
@@ -2516,7 +2516,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.0842832550406456,
+    "delta_intimacy": -0.0917363315820694,
     "model": "discomfort_only"
   },
   {
@@ -2525,7 +2525,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.08262814581394196,
+    "delta_intimacy": 0.035581767559051514,
     "model": "discomfort_only"
   },
   {
@@ -2534,7 +2534,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.08004708588123322,
+    "delta_intimacy": -0.000879104423802346,
     "model": "discomfort_only"
   },
   {
@@ -2543,7 +2543,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.10934662818908691,
+    "delta_intimacy": 0.09009917825460434,
     "model": "discomfort_only"
   },
   {
@@ -2552,7 +2552,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.09165332466363907,
+    "delta_intimacy": -0.00036257802275940776,
     "model": "discomfort_only"
   },
   {
@@ -2561,7 +2561,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.3341367840766907,
+    "delta_intimacy": 0.3045082986354828,
     "model": "discomfort_only"
   },
   {
@@ -2570,7 +2570,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.33620065450668335,
+    "delta_intimacy": 0.29566463828086853,
     "model": "discomfort_only"
   },
   {
@@ -2579,7 +2579,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.327958881855011,
+    "delta_intimacy": 0.30478402972221375,
     "model": "discomfort_only"
   },
   {
@@ -2588,7 +2588,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.3304394483566284,
+    "delta_intimacy": 0.2896672785282135,
     "model": "discomfort_only"
   },
   {
@@ -2597,7 +2597,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.11469234526157379,
+    "delta_intimacy": -0.10985033214092255,
     "model": "discomfort_only"
   },
   {
@@ -2606,7 +2606,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1288222372531891,
+    "delta_intimacy": -0.07788471132516861,
     "model": "discomfort_only"
   },
   {
@@ -2615,7 +2615,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.16640612483024597,
+    "delta_intimacy": -0.15593066811561584,
     "model": "discomfort_only"
   },
   {
@@ -2624,7 +2624,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.14925411343574524,
+    "delta_intimacy": -0.13609102368354797,
     "model": "discomfort_only"
   },
   {
@@ -2633,7 +2633,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.11345704644918442,
+    "delta_intimacy": -0.09953494369983673,
     "model": "discomfort_only"
   },
   {
@@ -2642,7 +2642,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.12044475227594376,
+    "delta_intimacy": -0.10546915233135223,
     "model": "discomfort_only"
   },
   {
@@ -2651,7 +2651,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.12408498674631119,
+    "delta_intimacy": -0.11396060138940811,
     "model": "discomfort_only"
   },
   {
@@ -2660,7 +2660,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1458326280117035,
+    "delta_intimacy": -0.09241364896297455,
     "model": "discomfort_only"
   },
   {
@@ -2669,7 +2669,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.29895374178886414,
+    "delta_intimacy": 0.28334376215934753,
     "model": "discomfort_only"
   },
   {
@@ -2678,7 +2678,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3090437352657318,
+    "delta_intimacy": 0.2842022776603699,
     "model": "discomfort_only"
   },
   {
@@ -2687,7 +2687,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.29458552598953247,
+    "delta_intimacy": 0.29223838448524475,
     "model": "discomfort_only"
   },
   {
@@ -2696,7 +2696,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2999681830406189,
+    "delta_intimacy": 0.29066166281700134,
     "model": "discomfort_only"
   },
   {
@@ -2705,7 +2705,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.18301083147525787,
+    "delta_intimacy": -0.18040481209754944,
     "model": "discomfort_only"
   },
   {
@@ -2714,7 +2714,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.10529278218746185,
+    "delta_intimacy": -0.18156211078166962,
     "model": "discomfort_only"
   },
   {
@@ -2723,7 +2723,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.20299120247364044,
+    "delta_intimacy": -0.20799079537391663,
     "model": "discomfort_only"
   },
   {
@@ -2732,7 +2732,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.12693306803703308,
+    "delta_intimacy": -0.1749769151210785,
     "model": "discomfort_only"
   },
   {
@@ -2741,7 +2741,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.02114485763013363,
+    "delta_intimacy": 0.03918471187353134,
     "model": "discomfort_only"
   },
   {
@@ -2750,7 +2750,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.13644544780254364,
+    "delta_intimacy": 0.10566524416208267,
     "model": "discomfort_only"
   },
   {
@@ -2759,7 +2759,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.00331106036901474,
+    "delta_intimacy": 0.022625375539064407,
     "model": "discomfort_only"
   },
   {
@@ -2768,7 +2768,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.04904802888631821,
+    "delta_intimacy": 0.08359197527170181,
     "model": "discomfort_only"
   },
   {
@@ -2777,7 +2777,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2592259347438812,
+    "delta_intimacy": 0.253787636756897,
     "model": "discomfort_only"
   },
   {
@@ -2786,7 +2786,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.3139912784099579,
+    "delta_intimacy": 0.28206905722618103,
     "model": "discomfort_only"
   },
   {
@@ -2795,7 +2795,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2089196890592575,
+    "delta_intimacy": 0.21469470858573914,
     "model": "discomfort_only"
   },
   {
@@ -2804,7 +2804,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.3121800720691681,
+    "delta_intimacy": 0.2904652953147888,
     "model": "discomfort_only"
   },
   {
@@ -2813,7 +2813,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.1897207349538803,
+    "delta_intimacy": -0.1850348263978958,
     "model": "discomfort_only"
   },
   {
@@ -2822,7 +2822,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.2095508575439453,
+    "delta_intimacy": -0.1762278974056244,
     "model": "discomfort_only"
   },
   {
@@ -2831,7 +2831,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.21404898166656494,
+    "delta_intimacy": -0.17523029446601868,
     "model": "discomfort_only"
   },
   {
@@ -2840,7 +2840,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.17885273694992065,
+    "delta_intimacy": -0.17063918709754944,
     "model": "discomfort_only"
   },
   {
@@ -2849,7 +2849,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.10671104490756989,
+    "delta_intimacy": 0.141862690448761,
     "model": "discomfort_only"
   },
   {
@@ -2858,7 +2858,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.08802762627601624,
+    "delta_intimacy": 0.06605499237775803,
     "model": "discomfort_only"
   },
   {
@@ -2867,7 +2867,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.12351678311824799,
+    "delta_intimacy": 0.13157996535301208,
     "model": "discomfort_only"
   },
   {
@@ -2876,7 +2876,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.08612415939569473,
+    "delta_intimacy": 0.06980067491531372,
     "model": "discomfort_only"
   },
   {
@@ -2885,7 +2885,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2328428030014038,
+    "delta_intimacy": 0.23588845133781433,
     "model": "discomfort_only"
   },
   {
@@ -2894,7 +2894,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2631339430809021,
+    "delta_intimacy": 0.2260463982820511,
     "model": "discomfort_only"
   },
   {
@@ -2903,7 +2903,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2347729504108429,
+    "delta_intimacy": 0.037536658346652985,
     "model": "discomfort_only"
   },
   {
@@ -2912,7 +2912,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2670096457004547,
+    "delta_intimacy": 0.1677439957857132,
     "model": "discomfort_only"
   },
   {
@@ -2921,7 +2921,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.14371410012245178,
+    "delta_intimacy": -0.20633181929588318,
     "model": "discomfort_only"
   },
   {
@@ -2930,7 +2930,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1434999406337738,
+    "delta_intimacy": -0.20781917870044708,
     "model": "discomfort_only"
   },
   {
@@ -2939,7 +2939,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.1447640210390091,
+    "delta_intimacy": -0.2102770060300827,
     "model": "discomfort_only"
   },
   {
@@ -2948,7 +2948,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.15262772142887115,
+    "delta_intimacy": -0.21307754516601562,
     "model": "discomfort_only"
   },
   {
@@ -2957,7 +2957,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.03816790506243706,
+    "delta_intimacy": -0.0023556083906441927,
     "model": "discomfort_only"
   },
   {
@@ -2966,7 +2966,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.041354887187480927,
+    "delta_intimacy": 0.0033961236476898193,
     "model": "discomfort_only"
   },
   {
@@ -2975,7 +2975,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.010460088029503822,
+    "delta_intimacy": -0.007077618036419153,
     "model": "discomfort_only"
   },
   {
@@ -2984,7 +2984,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.03154858201742172,
+    "delta_intimacy": 0.013811275362968445,
     "model": "discomfort_only"
   },
   {
@@ -2993,7 +2993,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2672886550426483,
+    "delta_intimacy": 0.2347523421049118,
     "model": "discomfort_only"
   },
   {
@@ -3002,7 +3002,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2759726047515869,
+    "delta_intimacy": 0.25779634714126587,
     "model": "discomfort_only"
   },
   {
@@ -3011,7 +3011,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.28447404503822327,
+    "delta_intimacy": 0.25320377945899963,
     "model": "discomfort_only"
   },
   {
@@ -3020,7 +3020,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.2588666081428528,
+    "delta_intimacy": 0.2522825598716736,
     "model": "discomfort_only"
   },
   {
@@ -3029,7 +3029,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.14027521014213562,
+    "delta_intimacy": -0.11599253118038177,
     "model": "discomfort_only"
   },
   {
@@ -3038,7 +3038,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.12675705552101135,
+    "delta_intimacy": -0.07365037500858307,
     "model": "discomfort_only"
   },
   {
@@ -3047,7 +3047,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.10446330159902573,
+    "delta_intimacy": -0.10324461758136749,
     "model": "discomfort_only"
   },
   {
@@ -3056,7 +3056,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.13121850788593292,
+    "delta_intimacy": -0.12993112206459045,
     "model": "discomfort_only"
   },
   {
@@ -3065,7 +3065,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.0381806306540966,
+    "delta_intimacy": 0.1624150425195694,
     "model": "discomfort_only"
   },
   {
@@ -3074,7 +3074,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.050622086971998215,
+    "delta_intimacy": 0.15421846508979797,
     "model": "discomfort_only"
   },
   {
@@ -3083,7 +3083,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.014191326685249805,
+    "delta_intimacy": 0.16618311405181885,
     "model": "discomfort_only"
   },
   {
@@ -3092,7 +3092,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.026935255154967308,
+    "delta_intimacy": 0.13002368807792664,
     "model": "discomfort_only"
   },
   {
@@ -3101,7 +3101,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2785511314868927,
+    "delta_intimacy": 0.2916075587272644,
     "model": "discomfort_only"
   },
   {
@@ -3110,7 +3110,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.2914842367172241,
+    "delta_intimacy": 0.2963883876800537,
     "model": "discomfort_only"
   },
   {
@@ -3119,7 +3119,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2799268364906311,
+    "delta_intimacy": 0.27635353803634644,
     "model": "discomfort_only"
   },
   {
@@ -3128,7 +3128,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.3021196722984314,
+    "delta_intimacy": 0.2797962427139282,
     "model": "discomfort_only"
   },
   {
@@ -3137,7 +3137,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.1978776901960373,
+    "delta_intimacy": -0.19134560227394104,
     "model": "discomfort_only"
   },
   {
@@ -3146,7 +3146,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.20017489790916443,
+    "delta_intimacy": -0.21402783691883087,
     "model": "discomfort_only"
   },
   {
@@ -3155,7 +3155,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.21000166237354279,
+    "delta_intimacy": -0.20313367247581482,
     "model": "discomfort_only"
   },
   {
@@ -3164,7 +3164,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.20846596360206604,
+    "delta_intimacy": -0.21422478556632996,
     "model": "discomfort_only"
   },
   {
@@ -3173,7 +3173,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.026427894830703735,
+    "delta_intimacy": 0.002749574137851596,
     "model": "discomfort_only"
   },
   {
@@ -3182,7 +3182,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.02096901834011078,
+    "delta_intimacy": 0.011977225542068481,
     "model": "discomfort_only"
   },
   {
@@ -3191,7 +3191,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.012908928096294403,
+    "delta_intimacy": 0.009740037843585014,
     "model": "discomfort_only"
   },
   {
@@ -3200,7 +3200,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.03931920602917671,
+    "delta_intimacy": 0.006275867111980915,
     "model": "discomfort_only"
   },
   {
@@ -3209,7 +3209,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.23369166254997253,
+    "delta_intimacy": 0.23033404350280762,
     "model": "discomfort_only"
   },
   {
@@ -3218,7 +3218,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.24324841797351837,
+    "delta_intimacy": 0.23619027435779572,
     "model": "discomfort_only"
   },
   {
@@ -3227,7 +3227,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.18013259768486023,
+    "delta_intimacy": 0.21560458838939667,
     "model": "discomfort_only"
   },
   {
@@ -3236,7 +3236,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.20940592885017395,
+    "delta_intimacy": 0.23407196998596191,
     "model": "discomfort_only"
   },
   {
@@ -3245,7 +3245,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.1143762469291687,
+    "delta_intimacy": -0.033989764750003815,
     "model": "discomfort_only"
   },
   {
@@ -3254,7 +3254,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.1214895248413086,
+    "delta_intimacy": -0.031107604503631592,
     "model": "discomfort_only"
   },
   {
@@ -3263,7 +3263,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.10339321196079254,
+    "delta_intimacy": -0.024945151060819626,
     "model": "discomfort_only"
   },
   {
@@ -3272,7 +3272,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.1382068693637848,
+    "delta_intimacy": -0.07679468393325806,
     "model": "discomfort_only"
   },
   {
@@ -3281,7 +3281,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.0867876261472702,
+    "delta_intimacy": -0.043373964726924896,
     "model": "discomfort_only"
   },
   {
@@ -3290,7 +3290,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.056196726858615875,
+    "delta_intimacy": -0.0609855055809021,
     "model": "discomfort_only"
   },
   {
@@ -3299,7 +3299,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.06322583556175232,
+    "delta_intimacy": -0.04012451693415642,
     "model": "discomfort_only"
   },
   {
@@ -3308,7 +3308,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.07145766913890839,
+    "delta_intimacy": -0.04691583663225174,
     "model": "discomfort_only"
   },
   {
@@ -3317,7 +3317,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.2711373269557953,
+    "delta_intimacy": 0.2622479498386383,
     "model": "discomfort_only"
   },
   {
@@ -3326,7 +3326,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.27711206674575806,
+    "delta_intimacy": 0.2481805384159088,
     "model": "discomfort_only"
   },
   {
@@ -3335,7 +3335,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.2805662155151367,
+    "delta_intimacy": 0.26153725385665894,
     "model": "discomfort_only"
   },
   {
@@ -3344,7 +3344,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.28069186210632324,
+    "delta_intimacy": 0.2664061188697815,
     "model": "discomfort_only"
   },
   {
@@ -3353,7 +3353,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.21474230289459229,
+    "delta_intimacy": -0.26441875100135803,
     "model": "discomfort_only"
   },
   {
@@ -3362,7 +3362,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -0.21842852234840393,
+    "delta_intimacy": -0.24606402218341827,
     "model": "discomfort_only"
   },
   {
@@ -3371,7 +3371,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.21276085078716278,
+    "delta_intimacy": -0.2309393584728241,
     "model": "discomfort_only"
   },
   {
@@ -3380,7 +3380,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.23070769011974335,
+    "delta_intimacy": -0.21963000297546387,
     "model": "discomfort_only"
   },
   {
@@ -3389,7 +3389,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -0.001641525304876268,
+    "delta_intimacy": 0.05847470089793205,
     "model": "discomfort_only"
   },
   {
@@ -3398,7 +3398,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.01637362316250801,
+    "delta_intimacy": 0.029029274359345436,
     "model": "discomfort_only"
   },
   {
@@ -3407,7 +3407,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -0.043068528175354004,
+    "delta_intimacy": 0.05986129492521286,
     "model": "discomfort_only"
   },
   {
@@ -3416,7 +3416,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -0.11805534362792969,
+    "delta_intimacy": 0.042049020528793335,
     "model": "discomfort_only"
   },
   {
@@ -3425,7 +3425,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 0.23222942650318146,
+    "delta_intimacy": 0.23276929557323456,
     "model": "discomfort_only"
   },
   {
@@ -3434,7 +3434,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 0.24249982833862305,
+    "delta_intimacy": 0.2486756592988968,
     "model": "discomfort_only"
   },
   {
@@ -3443,7 +3443,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 0.21680942177772522,
+    "delta_intimacy": 0.2391783744096756,
     "model": "discomfort_only"
   },
   {
@@ -3452,7 +3452,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 0.21674375236034393,
+    "delta_intimacy": 0.2383873015642166,
     "model": "discomfort_only"
   },
   {
@@ -3461,7 +3461,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 8.34465012644614e-08,
+    "delta_intimacy": 8.642673776648735e-08,
     "model": "base"
   },
   {
@@ -3470,7 +3470,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 1.1324882365215672e-07,
+    "delta_intimacy": 1.1622906015418266e-07,
     "model": "base"
   },
   {
@@ -3479,336 +3479,12 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
+    "delta_intimacy": 8.642673776648735e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "apples",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.01327898960335e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.0728835775353218e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.1324882365215672e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 9.536743306171047e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 7.748603536583687e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 9.536743306171047e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.3113022134803032e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.1324882365215672e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "apples",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.1920928955078125e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.2516974834397843e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4305115314527939e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4305115314527939e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.2814999195143173e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.370906801412275e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.2516974834397843e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.2814999195143173e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4007090953782608e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.341104507446289e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.370906801412275e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.341104507446289e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "basketball",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.2516974834397843e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "birthday",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.2516974834397843e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.3113022134803032e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.1920928955078125e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
@@ -3817,161 +3493,17 @@
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
+    "scenario_label": "apples",
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 1.3113022134803032e-07,
+    "delta_intimacy": 6.258487417198921e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
+    "scenario_label": "apples",
     "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.3113022134803032e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.0728835775353218e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.1920928955078125e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "brunch",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.1920928955078125e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 7.748603536583687e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 9.238719655968453e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 7.450580596923828e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 3.5762788286319847e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.01327898960335e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 7.152557657263969e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 9.238719655968453e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 9.834766245830906e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 3.8743017682918435e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
-    "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
     "delta_intimacy": 6.854534007061375e-08,
@@ -3979,7 +3511,151 @@
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "cooking",
+    "scenario_label": "apples",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.0728835775353218e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "apples",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 8.046627186786282e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "apples",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.1622906015418266e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "apples",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.1026859425555813e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "apples",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.2814999195143173e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "apples",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 8.940696716308594e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 5.21540641784668e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": -2.9802322831784522e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 4.023313593393141e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 4.023313593393141e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 5.364417887676609e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.3841858265427618e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 6.407499597571586e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 3.5762788286319847e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
@@ -3988,11 +3664,335 @@
   },
   {
     "experiment": "food_inv_intimacy",
+    "scenario_label": "basketball",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": -3.4272670035306874e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.0430812658057675e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 5.5134297127779064e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": -7.450580596923828e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 4.619359827984226e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 7.003545476891304e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": -7.450580596923828e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161415892261e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 8.642673776648735e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "birthday",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 4.619359827984226e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.9371508841459217e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": -5.364417887676609e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": -2.2351741790771484e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.9371508841459217e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.9371508841459217e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.9371508841459217e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "brunch",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 8.34465012644614e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 7.152557657263969e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": -2.533197474008375e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 5.21540641784668e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.2351741790771484e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 3.278255533700758e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": -5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 7.003545476891304e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 3.278255533700758e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "cooking",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 4.17232506322307e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
     "scenario_label": "cooking",
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 9.238719655968453e-08,
+    "delta_intimacy": 4.917383122915453e-08,
     "model": "base"
   },
   {
@@ -4001,7 +4001,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -1.0430812658057675e-08,
+    "delta_intimacy": 3.5762788286319847e-08,
     "model": "base"
   },
   {
@@ -4010,7 +4010,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 7.599592066753758e-08,
+    "delta_intimacy": 6.258487417198921e-08,
     "model": "base"
   },
   {
@@ -4019,7 +4019,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 5.811453007709133e-08,
+    "delta_intimacy": 5.662441182607836e-08,
     "model": "base"
   },
   {
@@ -4028,7 +4028,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 3.725290298461914e-08,
+    "delta_intimacy": 8.642673776648735e-08,
     "model": "base"
   },
   {
@@ -4037,49 +4037,13 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -4.470348535789981e-09,
+    "delta_intimacy": 4.7683716530855236e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "dip",
     "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 4.3213368883243675e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "dip",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 9.834766245830906e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "dip",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": -1.4901161415892261e-09,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "dip",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 6.854534007061375e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "dip",
-    "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
     "delta_intimacy": 3.5762788286319847e-08,
@@ -4088,10 +4052,46 @@
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "dip",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "dip",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 5.06639494801675e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "dip",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 4.470348358154297e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "dip",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 6.556511067401516e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "dip",
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 6.705522537231445e-08,
+    "delta_intimacy": 6.258487417198921e-08,
     "model": "base"
   },
   {
@@ -4100,7 +4100,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 1.7881394143159923e-08,
+    "delta_intimacy": 5.662441182607836e-08,
     "model": "base"
   },
   {
@@ -4109,7 +4109,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
+    "delta_intimacy": 5.06639494801675e-08,
     "model": "base"
   },
   {
@@ -4118,7 +4118,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
+    "delta_intimacy": 8.34465012644614e-08,
     "model": "base"
   },
   {
@@ -4127,157 +4127,85 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "drinks",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 6.556511067401516e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
     "delta_intimacy": 5.960464477539063e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 7.152557657263969e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
+    "scenario_label": "drinks",
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 1.1324882365215672e-07,
+    "delta_intimacy": 9.983777715660835e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
+    "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 7.748603536583687e-08,
+    "delta_intimacy": 5.960464477539063e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
+    "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 8.642673776648735e-08,
+    "delta_intimacy": 8.34465012644614e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
+    "scenario_label": "drinks",
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 8.791685246478664e-08,
+    "delta_intimacy": 7.301569127093899e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "driving",
+    "scenario_label": "drinks",
     "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 7.450580596923828e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "drinks",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 6.258487417198921e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "drinks",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.01327898960335e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "drinks",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 9.238719655968453e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "drinks",
+    "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
     "delta_intimacy": 1.1622906015418266e-07,
@@ -4286,9 +4214,72 @@
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "driving",
-    "action": 2,
+    "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
+    "delta_intimacy": -2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.01327898960335e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.3113022134803032e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 8.940696716308594e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "driving",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
     "delta_intimacy": 7.748603536583687e-08,
     "model": "base"
   },
@@ -4297,302 +4288,23 @@
     "scenario_label": "driving",
     "action": 2,
     "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 4.7683716530855236e-08,
+    "effort_condition": "low",
+    "delta_intimacy": 5.364417887676609e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "driving",
     "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 7.152557657263969e-08,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.7881394143159923e-08,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "driving",
     "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "fair",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "gala",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 9.536743306171047e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 9.536743306171047e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
-    "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
     "delta_intimacy": 6.556511067401516e-08,
@@ -4600,26 +4312,242 @@
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
+    "scenario_label": "driving",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 7.152557657263969e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": -2.533197474008375e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": -1.7881394143159923e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161415892261e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.639127766850379e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.0430812658057675e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 9.536743306171047e-08,
+    "delta_intimacy": -2.9802322831784522e-09,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "hike",
+    "scenario_label": "fair",
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 9.536743306171047e-08,
+    "delta_intimacy": -2.2351741790771484e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 6.556511067401516e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "fair",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 4.470348535789981e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "gala",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "hike",
-    "action": 2,
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 8.940696716308594e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
     "delta_intimacy": 7.152557657263969e-08,
@@ -4628,10 +4556,82 @@
   {
     "experiment": "food_inv_intimacy",
     "scenario_label": "hike",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 8.046627186786282e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 8.642673776648735e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 9.238719655968453e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 5.960464477539063e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 4.7683716530855236e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 6.109475947368992e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 9.536743306171047e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 3.5762788286319847e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "hike",
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
+    "delta_intimacy": 1.341104507446289e-07,
     "model": "base"
   },
   {
@@ -4640,7 +4640,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 5.960464477539063e-08,
+    "delta_intimacy": 1.1324882365215672e-07,
     "model": "base"
   },
   {
@@ -4649,7 +4649,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 1.01327898960335e-07,
+    "delta_intimacy": 1.4305115314527939e-07,
     "model": "base"
   },
   {
@@ -4658,7 +4658,7 @@
     "action": 0,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 1.1324882365215672e-07,
+    "delta_intimacy": 1.2516974834397843e-07,
     "model": "base"
   },
   {
@@ -4667,7 +4667,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 1.3113022134803032e-07,
+    "delta_intimacy": 1.4901161193847656e-07,
     "model": "base"
   },
   {
@@ -4676,7 +4676,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": 1.1324882365215672e-07,
+    "delta_intimacy": 1.4901161193847656e-07,
     "model": "base"
   },
   {
@@ -4694,6 +4694,15 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
+    "delta_intimacy": 1.4305115314527939e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "oysters",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
     "delta_intimacy": 1.370906801412275e-07,
     "model": "base"
   },
@@ -4702,301 +4711,76 @@
     "scenario_label": "oysters",
     "action": 1,
     "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "oysters",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "oysters",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.2516974834397843e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "oysters",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "oysters",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4305115314527939e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 0,
+    "desire_condition": "high",
     "effort_condition": "low",
     "delta_intimacy": 1.1324882365215672e-07,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "oysters",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.3113022134803032e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "oysters",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.0728835775353218e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "oysters",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.1324882365215672e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "oysters",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.3113022134803032e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "oysters",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.1920928955078125e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
     "scenario_label": "social",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4007090953782608e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.2218951894737984e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4007090953782608e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4007090953782608e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4007090953782608e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "social",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 2,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "soup",
-    "action": 2,
-    "desire_condition": "high",
-    "effort_condition": "high",
-    "delta_intimacy": 1.4901161193847656e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": 1.1324882365215672e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
-    "action": 0,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
-    "action": 0,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 8.940696716308594e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
@@ -5005,47 +4789,263 @@
   },
   {
     "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
+    "scenario_label": "social",
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 1.1324882365215672e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
-    "action": 1,
-    "desire_condition": "low",
-    "effort_condition": "high",
-    "delta_intimacy": 1.3113022134803032e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "low",
-    "delta_intimacy": 1.1920928955078125e-07,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "takeout",
-    "action": 1,
-    "desire_condition": "high",
-    "effort_condition": "high",
     "delta_intimacy": 1.2516974834397843e-07,
     "model": "base"
   },
   {
     "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "social",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 1.370906801412275e-07,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 2,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "soup",
+    "action": 2,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": -6.556511067401516e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 4.17232506322307e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 0,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 5.364417887676609e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "low",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 1,
+    "desire_condition": "low",
+    "effort_condition": "high",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "low",
+    "delta_intimacy": 5.364417887676609e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "takeout",
+    "action": 1,
+    "desire_condition": "high",
+    "effort_condition": "high",
+    "delta_intimacy": 7.301569127093899e-08,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
     "scenario_label": "takeout",
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": 1.0728835775353218e-07,
+    "delta_intimacy": 2.9802322387695312e-08,
     "model": "base"
   },
   {
@@ -5054,7 +5054,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": 1.3113022134803032e-07,
+    "delta_intimacy": 4.17232506322307e-08,
     "model": "base"
   },
   {
@@ -5063,7 +5063,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": 1.1920928955078125e-07,
+    "delta_intimacy": 5.364417887676609e-08,
     "model": "base"
   },
   {
@@ -5072,6 +5072,15 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
+    "delta_intimacy": 0.0,
+    "model": "base"
+  },
+  {
+    "experiment": "food_inv_intimacy",
+    "scenario_label": "wedding",
+    "action": 0,
+    "desire_condition": "low",
+    "effort_condition": "low",
     "delta_intimacy": 1.1324882365215672e-07,
     "model": "base"
   },
@@ -5080,17 +5089,8 @@
     "scenario_label": "wedding",
     "action": 0,
     "desire_condition": "low",
-    "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "model": "base"
-  },
-  {
-    "experiment": "food_inv_intimacy",
-    "scenario_label": "wedding",
-    "action": 0,
-    "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 6.258487417198921e-08,
     "model": "base"
   },
   {
@@ -5099,7 +5099,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 8.940696716308594e-08,
     "model": "base"
   },
   {
@@ -5108,7 +5108,7 @@
     "action": 0,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 8.940696716308594e-08,
     "model": "base"
   },
   {
@@ -5117,7 +5117,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 8.940696716308594e-08,
     "model": "base"
   },
   {
@@ -5126,7 +5126,7 @@
     "action": 1,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 8.642673776648735e-08,
     "model": "base"
   },
   {
@@ -5135,7 +5135,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 1.3113022134803032e-07,
     "model": "base"
   },
   {
@@ -5144,7 +5144,7 @@
     "action": 1,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 1.1026859425555813e-07,
     "model": "base"
   },
   {
@@ -5153,7 +5153,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 1.1026859425555813e-07,
     "model": "base"
   },
   {
@@ -5162,7 +5162,7 @@
     "action": 2,
     "desire_condition": "low",
     "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 1.1026859425555813e-07,
     "model": "base"
   },
   {
@@ -5171,7 +5171,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 1.01327898960335e-07,
     "model": "base"
   },
   {
@@ -5180,7 +5180,7 @@
     "action": 2,
     "desire_condition": "high",
     "effort_condition": "high",
-    "delta_intimacy": -2.9802322387695312e-08,
+    "delta_intimacy": 9.834766245830906e-08,
     "model": "base"
   }
 ]

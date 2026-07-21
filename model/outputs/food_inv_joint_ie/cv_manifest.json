@@ -1,11 +1,11 @@
 {
   "experiment": "food_inv_joint_ie",
-  "timestamp": "2026-07-18T01:25:35.227520+00:00",
-  "git_sha": "e99b046ace684eaa39a91d8fa95dbb33773fa9f7",
+  "timestamp": "2026-07-19T09:53:35.118812+00:00",
+  "git_sha": "477500652e95e4c01c8791c2a09876c1cf909bde",
   "outputs": {
-    "cv_preds_summary.json": "c801f565e4bdbc6c4891e2a9630c2ec7d9faf1a24da44c538df17a0b77ec1ac1",
-    "cv_folds.jsonl": "19241acb4ff06dd28e91f5c704a9d06e4c02e5a59f0a45efed0a23c7951a96be",
-    "cv_trial_ll.jsonl": "53d9d76ff417d132db46565b46e925cd697ac497a1bbef8cefe6a7df2876b40d"
+    "cv_preds_summary.json": "ccc92a182e8f9b4c388252baf062c18cdba4e32c5eb970ab5d67dae05d1e3e87",
+    "cv_folds.jsonl": "dedf0a26320b4937f8fb497ce4d1c30fe84e7f858129f581deba5ac5c2637a2f",
+    "cv_trial_ll.jsonl": "7024bca1945c9c4430df83e084a98ef7f6e3173974abfa96171a081ebeabec3c"
   },
   "input_data": {
     "path": "data/food_inv_joint_ie/main_trials_long.csv",

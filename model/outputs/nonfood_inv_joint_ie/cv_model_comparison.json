@@ -1,0 +1,92 @@
+{
+  "experiment": "nonfood_inv_joint_ie",
+  "n_boot": 1000,
+  "seed": 0,
+  "n_subjects": 238,
+  "n_trials_per_model": 3808,
+  "mean_held_out_ll_per_trial": {
+    "base": -0.6287063419380609,
+    "discomfort_only": -0.6028411735882279,
+    "full": -0.5010135003811672
+  },
+  "primary": [
+    {
+      "comparison": "full_minus_base",
+      "mean_per_trial_ll_diff": 0.12769284155689367,
+      "ci_95": [
+        0.10969769073211971,
+        0.14534974660364394
+      ]
+    },
+    {
+      "comparison": "full_minus_discomfort_only",
+      "mean_per_trial_ll_diff": 0.10182767320706063,
+      "ci_95": [
+        0.07659140932882408,
+        0.12792745329236158
+      ]
+    }
+  ],
+  "secondary_correlations": [
+    {
+      "model": "base",
+      "dv": "intimacy",
+      "r": -0.021950127803734672,
+      "ci_95": [
+        -0.06515041436917508,
+        0.022549051386326516
+      ],
+      "n_cells": 96
+    },
+    {
+      "model": "base",
+      "dv": "effort",
+      "r": 0.5945117236674049,
+      "ci_95": [
+        0.5204603452569285,
+        0.6211265828341248
+      ],
+      "n_cells": 96
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "intimacy",
+      "r": 0.8477098892665779,
+      "ci_95": [
+        0.8078330002013024,
+        0.8551876554282116
+      ],
+      "n_cells": 96
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "effort",
+      "r": 0.17825906291663407,
+      "ci_95": [
+        0.12029918106673071,
+        0.221564996511061
+      ],
+      "n_cells": 96
+    },
+    {
+      "model": "full",
+      "dv": "intimacy",
+      "r": 0.8717134476808717,
+      "ci_95": [
+        0.8334025733538453,
+        0.8775311136789702
+      ],
+      "n_cells": 96
+    },
+    {
+      "model": "full",
+      "dv": "effort",
+      "r": 0.5995654646822461,
+      "ci_95": [
+        0.531724205073868,
+        0.6274970504357475
+      ],
+      "n_cells": 96
+    }
+  ]
+}
