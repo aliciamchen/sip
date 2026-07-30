@@ -49,9 +49,10 @@ model/outputs/*/cv_checkpoint.jsonl
 # are the unsuffixed lm_alternatives/lm_runs files, which stay committed. If an
 # arm IS adopted, it is promoted by re-eliciting into the canonical filenames,
 # never by committing the diag vintage.
-model/outputs/lm/*/*_diag.jsonl
-model/outputs/lm/*/*_diag.*.jsonl
-model/outputs/lm/*/*_diag.manifest.json
+# One glob rather than per-suffix rules: the sidecars have grown (.rationale,
+# .empty_units, .manifest) and a saved-aside vintage adds an infix, both of which
+# escaped the narrower patterns. No canonical filename contains "_diag".
+model/outputs/lm/*/*_diag*
 
 .positai
 .claude/worktrees/ 
