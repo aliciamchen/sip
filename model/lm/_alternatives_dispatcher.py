@@ -106,7 +106,15 @@ def _dedup_alternatives(alts):
     return out
 
 
-def elicit_alternatives(client, user_prompt, temperature, seed=None):
+def elicit_alternatives(
+    client,
+    user_prompt,
+    temperature,
+    seed=None,
+    system_prompt=None,
+    max_tokens=None,
+    with_raw=False,
+):
     """Elicit alternatives for one (cell, run). Up to MAX_PARSE_RETRIES tries to
     land a parseable response; transient errors inside each call are retried by
     the SDK via ``max_retries=MAX_RETRIES``. Returns the (possibly empty) list
@@ -124,13 +132,13 @@ def elicit_alternatives(client, user_prompt, temperature, seed=None):
     stays WITHIN a run; cross-run repetition is preserved.
     """
     messages = [
-        {"role": "system", "content": ALTERNATIVES_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt or ALTERNATIVES_SYSTEM_PROMPT},
         {"role": "user", "content": user_prompt},
     ]
     retrying_client = client.with_options(max_retries=MAX_RETRIES)
     create_kwargs = dict(
         model=MODEL_ID,
-        max_tokens=MAX_TOKENS,
+        max_tokens=max_tokens or MAX_TOKENS,
         temperature=temperature,
     )
     for attempt in range(MAX_PARSE_RETRIES):
@@ -154,7 +162,10 @@ def elicit_alternatives(client, user_prompt, temperature, seed=None):
                 continue
             parsed = parse_alternatives(choice.message.content)
             if parsed is not None:
-                return _dedup_alternatives(parsed)
+                deduped = _dedup_alternatives(parsed)
+                # with_raw returns the full response text alongside the parsed
+                # alternatives (the CoT arm stores it as the reasoning record).
+                return (deduped, choice.message.content) if with_raw else deduped
         except Exception as e:
             print(f"  Attempt {attempt + 1} error: {e}", flush=True)
     print(
@@ -162,4 +173,4 @@ def elicit_alternatives(client, user_prompt, temperature, seed=None):
         "for a future invocation.",
         flush=True,
     )
-    return None
+    return (None, None) if with_raw else None

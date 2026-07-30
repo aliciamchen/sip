@@ -89,7 +89,7 @@ help:
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
-	@echo "  test       - model compliance + data-converter + roster-sync tests"
+	@echo "  test       - model compliance + elicitation-guard + data-converter + roster-sync tests"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/outputs/"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/outputs/"
@@ -123,7 +123,7 @@ help:
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
-	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = preregistered canonical):"
+	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = preregistered):"
 	@echo "    PRIORS=informative[:<latents>]  PRIORS_FILE=<name>"
 	@echo "    (informative priors route outputs to model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
@@ -309,10 +309,10 @@ $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
 # recipe writes the whole set atomically, and `clean` removes it as a set.
 # =============================================================================
 
-# Run-config passthrough for fit-/cv- targets (canonical when unset), e.g.:
+# Run-config passthrough for fit-/cv- targets (preregistered when unset), e.g.:
 #   make fit-food_inv_joint_de PRIORS=informative
 #   make cv-food_inv_joint_de PRIORS=informative:desire PRIORS_FILE=lm_priors_human.jsonl
-# With every var empty CONFIG_FLAGS is empty, so the recipes stay the canonical
+# With every var empty CONFIG_FLAGS is empty, so the recipes stay the preregistered
 # preregistered invocation (uniform priors, outputs/<slug>/); informative priors
 # route the fit/CV to outputs/<slug>/alt/<tag>/ instead.
 PRIORS ?=
@@ -596,6 +596,7 @@ test:
 	uv run python model/test_model_compliance.py
 	uv run python model/test_run_config.py
 	uv run python model/cv/test_checkpoint.py
+	uv run python model/lm/test_elicitation_guards.py
 	uv run python analysis/test_json_to_csv.py
 	uv run python test_roster_sync.py
 

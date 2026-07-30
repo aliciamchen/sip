@@ -41,6 +41,18 @@ model/model_viz_nonfit/
 # committed CV artifacts are the cv_* outputs, never this side file.
 model/outputs/*/cv_checkpoint.jsonl
 
+# Diagnostic-arm LM elicitations, written by `generate_alternatives.py
+# --arm-output-only` and `score_merged.py --arm`. These exist to evaluate a
+# prompt edit side-by-side against the committed tables without displacing
+# them, so they are throwaway by construction: a K=1 smoke, a candidate
+# vintage, an arm that may never be adopted. The tables the reported fits read
+# are the unsuffixed lm_alternatives/lm_runs files, which stay committed. If an
+# arm IS adopted, it is promoted by re-eliciting into the canonical filenames,
+# never by committing the diag vintage.
+model/outputs/lm/*/*_diag.jsonl
+model/outputs/lm/*/*_diag.*.jsonl
+model/outputs/lm/*/*_diag.manifest.json
+
 .positai
 .claude/worktrees/ 
 

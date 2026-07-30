@@ -604,7 +604,7 @@ def _rate_relationship_values(client, run_id):
         return dict(zip(INTIMACY_LEVELS, ex.map(_rate_one, INTIMACY_LEVELS)))
 
 
-def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
+def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Supported: {sorted(_STUDY_CONFIG.keys())}"
@@ -617,6 +617,14 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False):
                 f"{study!r} has no relationship paragraph."
             )
         cfg.update(_BASE_OVERRIDE[study])
+    if arm:
+        # Arm-vintage mode (2026-07-28): score a prompt-arm alternatives file
+        # (written by generate_alternatives.py --arm-output-only) into its own
+        # runs vintage, leaving the canonical lm_runs.jsonl untouched.
+        if base:
+            raise SystemExit("--arm and --base are mutually exclusive.")
+        cfg["alternatives"] = "lm_alternatives_diag.jsonl"
+        cfg["runs"] = "lm_runs_diag.jsonl"
     api_key = load_api_key()
 
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
@@ -844,9 +852,16 @@ if __name__ == "__main__":
         "(lm_alternatives_base.jsonl) into lm_runs_base.jsonl; skips the per-run "
         "intimacy scalar. Given-relationship studies only.",
     )
+    parser.add_argument(
+        "--arm",
+        action="store_true",
+        help="Score the prompt-arm alternatives vintage "
+        "(lm_alternatives_diag.jsonl) into lm_runs_diag.jsonl.",
+    )
     args = parser.parse_args()
     main(
         args.study,
         scenario_workers=args.scenario_workers,
         base=args.base,
+        arm=args.arm,
     )

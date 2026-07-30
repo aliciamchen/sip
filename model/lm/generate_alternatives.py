@@ -311,7 +311,21 @@ def _build_cells(scenarios_df, cfg, study):
     return cells
 
 
-def main(study, base=False):
+# Studies the diagnostic side-by-side vintage is available for. All six: the
+# mode only means "write somewhere that isn't canonical", and every study needs
+# it — a prompt-edit smoke must be able to check 1a and 2a without displacing the
+# canonical tables that the current fits and figures are built on. (It was the
+# four effort-inferring studies while the arm work was 1b-focused.)
+_DIAG_STUDIES = tuple(_STUDY_CONFIG)
+
+
+# The alternatives prompt reasons before answering, so a completion carries the
+# prose as well as the array and needs the larger budget (the rating stages'
+# default is 800). One value, not a mode: there is only one prompt.
+ALT_MAX_TOKENS = 1400
+
+
+def main(study, base=False, arm_output_only=False):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Currently supported: "
@@ -325,6 +339,17 @@ def main(study, base=False):
                 f"with a relationship paragraph to drop); {study!r} has none."
             )
         cfg.update(_BASE_OVERRIDE[study])
+    if arm_output_only:
+        # Prompt-arm smokes (2026-07-28): route output to a separate vintage,
+        # leaving the canonical lm_alternatives.jsonl untouched, so prompt
+        # edits can be evaluated against the committed-vintage baseline
+        # (model/diagnostics/coverage_smoke.py). Effort-inferring studies only.
+        if study not in _DIAG_STUDIES or base:
+            raise SystemExit(
+                "the arm-output mode is defined for the standard (non-base) "
+                f"elicitation of {_DIAG_STUDIES}; got {study!r} base={base}."
+            )
+        cfg["output"] = "lm_alternatives_diag.jsonl"
     api_key = load_api_key()
 
     print(f"Loading scenarios (study={study})...", flush=True)
@@ -335,6 +360,8 @@ def main(study, base=False):
     client = Together(api_key=api_key)
 
     output_path = _output_path_for(study, base)
+    if arm_output_only:
+        output_path = output_path.with_name(cfg["output"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     cell_cols = cfg["cell_cols"]
@@ -380,9 +407,22 @@ def main(study, base=False):
         flush=True,
     )
 
+    # The prompt reasons before answering, so every completion carries prose the
+    # parser discards. Keep it: it is the record of how each comparison set was
+    # arrived at, and it is what a coverage audit reads.
+    reasoning_path = output_path.with_name(
+        output_path.name.replace(".jsonl", ".reasoning.jsonl")
+    )
+    # Merge existing reasoning records on resume, so a K-extension run doesn't
+    # clobber the reasoning of already-elicited (cell, run) units.
+    reasoning_rows = (
+        read_jsonl_checked(reasoning_path) if reasoning_path.exists() else []
+    )
+
     def _checkpoint():
         write_jsonl_atomic(output_path, _sorted_rows(results, cell_cols))
         write_jsonl_atomic(empty_units_path, _sorted_rows(empty_units, cell_cols))
+        write_jsonl_atomic(reasoning_path, reasoning_rows)
 
     completed = 0
     n_new_units = 0
@@ -395,12 +435,24 @@ def main(study, base=False):
                 c["user_prompt"],
                 ALT_GEN_TEMPERATURE,
                 _run_seed(c, cell_cols, run),
+                max_tokens=ALT_MAX_TOKENS,
+                with_raw=True,
             ): (c, run)
             for c, run in pending
         }
         for fut in as_completed(future_to_unit):
             cell, run = future_to_unit[fut]
-            alts = fut.result()
+            alts, raw_text = fut.result()
+            if alts is not None:
+                reasoning_rows.append(
+                    {
+                        "scenario_label": cell["scenario_label"],
+                        "observed_action": cell["observed_action"],
+                        **{col: cell[col] for col in cell_cols},
+                        "run_id": run,
+                        "reasoning": raw_text,
+                    }
+                )
             completed += 1
             cond_str = " | ".join(f"{c}={cell[c]}" for c in cell_cols)
             unit_str = (
@@ -474,6 +526,7 @@ def main(study, base=False):
             extra={
                 "k_runs": N_RUNS_ALT,
                 "gen_temperature": ALT_GEN_TEMPERATURE,
+                "max_tokens": ALT_MAX_TOKENS,
                 "n_cells": len(all_cells),
                 "n_alternatives": len(results),
                 "n_empty_units": len(empty_units),
@@ -519,5 +572,16 @@ if __name__ == "__main__":
         "paragraph (given-relationship studies only), writing a separate "
         "lm_alternatives_base.jsonl.",
     )
+    parser.add_argument(
+        "--arm-output-only",
+        action="store_true",
+        help="Route output to lm_alternatives_diag.jsonl WITHOUT appending "
+        "the clause — for smoking prompt edits made directly in prompts.py "
+        "against the committed-vintage baseline.",
+    )
     args = parser.parse_args()
-    main(args.study, base=args.base)
+    main(
+        args.study,
+        base=args.base,
+        arm_output_only=args.arm_output_only,
+    )

@@ -39,17 +39,24 @@ from utils import get_project_root
 
 # Together AI configuration shared across all rating call sites.
 MODEL_ID = "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-# Default repeat count for `get_ratings_concurrent`. The active K-run pipeline
-# passes num_runs=1 (each elicitation run is scored once; the K runs are the
-# variation axis), so this default is no longer exercised by score_merged.
-NUM_RUNS = 10
 TEMPERATURE = 0.2
 
+# `get_ratings_concurrent` deliberately has NO default for `num_runs`. It used to
+# default to 10, from the pre-K-run design where a rating was the mean of ten
+# calls. Every live caller now passes num_runs=1 — each elicitation run is scored
+# once, and the K runs are the variation axis — so the default was dead, but it
+# was dead in the expensive direction: a new call site that forgot the argument
+# would silently make 10x the API calls. Requiring it turns that into a
+# TypeError at the call site.
+#
 # Together SDK default is 2; the workload is non-interactive so a slightly
 # larger budget is cheaper than re-running an entire scenario.
 MAX_RETRIES = 5
 
-# Default thread-pool size for fanning out the NUM_RUNS-per-scenario calls.
+# Thread-pool size when a caller does fan out more than one run. With num_runs=1
+# throughout the active pipeline the pool holds a single task, so this bounds
+# nothing in practice; it stays because the fan-out mechanism is still correct
+# and cheap, and a diagnostic may legitimately want repeats.
 MAX_WORKERS = 10
 
 
@@ -229,7 +236,7 @@ def get_ratings_concurrent(
     system_prompt,
     user_prompt,
     parse_fn,
-    num_runs=NUM_RUNS,
+    num_runs,
     *,
     model_id=MODEL_ID,
     max_tokens=200,
@@ -392,7 +399,13 @@ def guard_resume_prompt_mismatch(output_path):
     prompts.py this hard-errors, unless ``LM_RESUME_PROMPT_MISMATCH=allow`` is
     set — in which case the mixed provenance is recorded honestly by
     ``write_run_manifest`` (the superseded hash lands in
-    ``prompt_sha_history``)."""
+    ``prompt_sha_history``).
+
+    The file hash is sufficient because each stage has exactly ONE prompt: any
+    change to what gets sent is a change to prompts.py. Adding a second variant
+    of a stage's prompt, selectable at run time, would break that — two runs
+    would share a hash while sending different text — so don't.
+    """
     manifest = read_run_manifest(output_path)
     if manifest is None:
         return
