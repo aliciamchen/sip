@@ -1,10 +1,16 @@
 """Fit/CV run configuration: which priors the observer uses, and where outputs
 go.
 
-The canonical config (uniform priors) reproduces the preregistered pipeline
+The default config (uniform priors) reproduces the **preregistered** pipeline
 byte-identically and keeps writing outputs/<slug>/. The informative-prior
 configs (the "build both" priors comparison) write outputs/<slug>/alt/<tag>/ so
 they never overwrite the preregistered baseline.
+
+Note on naming: this used to be called the "canonical" config, which read as
+"the authoritative one". It isn't — the fits reported in the paper add the
+surprise-weighted comparison-set reweighting on top of this config, so
+"canonical" pointed at the wrong model. It means *preregistered*: uniform
+priors, as every prereg specifies. Renamed 2026-07-30.
 """
 
 from dataclasses import dataclass
@@ -48,7 +54,10 @@ class RunConfig:
         return cls(mode, latents, priors_file or None)
 
     @property
-    def is_canonical(self):
+    def is_preregistered(self):
+        """True for the default (uniform-prior) config — the one the preregs
+        specify. Not "the reported model": the paper's fits layer the
+        comparison-set reweighting on top of this."""
         return self == RunConfig()
 
     def active_latents(self, slug):
@@ -69,7 +78,7 @@ class RunConfig:
 
     def outputs_dir(self, slug):
         root = get_project_root() / "model" / "outputs" / slug
-        return root if self.is_canonical else root / "alt" / self.tag()
+        return root if self.is_preregistered else root / "alt" / self.tag()
 
     def priors_filename(self, base=False):
         if self.priors_file is not None:

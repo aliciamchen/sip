@@ -10,21 +10,21 @@ from run_config import INFERRED_LATENTS, RunConfig
 from utils import get_project_root
 
 
-def test_canonical_default():
+def test_preregistered_default():
     c = RunConfig()
-    assert c.is_canonical
+    assert c.is_preregistered
     assert c.outputs_dir("food_inv_desire") == (
         get_project_root() / "model" / "outputs" / "food_inv_desire"
     )
     assert c.priors_filename(base=False) == "lm_priors.jsonl"
     assert c.priors_filename(base=True) == "lm_priors_base.jsonl"
     assert c.active_latents("food_inv_joint_de") == ()
-    print("✓ canonical default config keeps the preregistered layout")
+    print("✓ default config keeps the preregistered layout")
 
 
 def test_parse_informative_all_latents():
     c = RunConfig.parse("informative", None)
-    assert not c.is_canonical
+    assert not c.is_preregistered
     assert c.tag() == "informative"
     assert c.active_latents("food_inv_joint_de") == ("desire", "effort")
     assert c.active_latents("food_inv_intimacy") == ("intimacy",)

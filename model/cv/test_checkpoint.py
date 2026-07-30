@@ -254,7 +254,7 @@ def test_run_fingerprint_tracks_inputs():
 
 
 def test_fingerprint_distinguishes_configs():
-    """Two fingerprints differing only in `config_fields` (canonical vs an
+    """Two fingerprints differing only in `config_fields` (preregistered vs an
     informative-priors + suffixed-alts run) must mismatch, so a checkpoint
     written under one run config is never resumed under another."""
     slug = "food_inv_desire"
@@ -266,7 +266,7 @@ def test_fingerprint_distinguishes_configs():
             "desire",
             100,
             2,
-            {"tag": "canonical", "runs": "lm_runs.jsonl", "priors": None},
+            {"tag": "preregistered", "runs": "lm_runs.jsonl", "priors": None},
             project_root=root,
         )
         fp_b = run_fingerprint(
@@ -283,9 +283,9 @@ def test_fingerprint_distinguishes_configs():
         )
         assert fp_a != fp_b, "config_fields not reflected in the fingerprint"
         # The no-config default must still fingerprint (and equal the explicit
-        # canonical config), so a plain CV run keeps a stable checkpoint key.
+        # preregistered config), so a plain CV run keeps a stable checkpoint key.
         fp_default = run_fingerprint(slug, "desire", 100, 2, project_root=root)
-        assert fp_default == fp_a, "default config_fields must be the canonical one"
+        assert fp_default == fp_a, "default config_fields must be the preregistered one"
         json.dumps(fp_b)  # must stay JSON-serializable for the header
     print("✓ run_fingerprint distinguishes run configs")
 

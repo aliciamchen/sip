@@ -56,7 +56,7 @@ def reweight_grid(post, w):
 def reweight_joint(joint, w_latent=None, p_high=None):
     """(..., n_grid, 2) joint posterior reweighted by a grid-latent prior
     and/or a 2-state effort prior; None leaves that axis at the observer's
-    uniform prior. Both None returns the input unchanged (canonical path)."""
+    uniform prior. Both None returns the input unchanged (the preregistered path)."""
     if w_latent is None and p_high is None:
         return joint
     p = joint
@@ -104,7 +104,7 @@ def build_priors_kwarg(slug, config, base=False):
     elicited prior tables and the RunConfig (spec:
     notes/2026-07-18-informative-priors-refusal-alts-design.md).
 
-    Returns None in uniform mode (the canonical byte-identical path). In
+    Returns None in uniform mode (the preregistered byte-identical path). In
     informative mode it loads the study's per-run, per-cell prior scalars and
     keeps only the latents the study actually infers (mapping the grid latents
     desire/intimacy → `m_latent` and the 2-state effort latent → `p_effort`),
@@ -120,7 +120,7 @@ def build_priors_kwarg(slug, config, base=False):
       - `--priors informative:<latent>` naming only latent(s) this study does
         NOT infer (so `active` is empty) → ValueError naming the study's
         inferred latents, rather than returning None and silently running the
-        canonical uniform fit while the user believes it is informative.
+        preregistered uniform fit while the user believes it is informative.
     """
     active = config.active_latents(slug)
     if not active:
@@ -131,7 +131,7 @@ def build_priors_kwarg(slug, config, base=False):
                 f"--priors informative:{','.join(config.priors_latents)} names no "
                 f"latent that {slug} infers (it infers "
                 f"{', '.join(INFERRED_LATENTS[slug])}); the requested prior would "
-                "silently run the canonical uniform fit. Name one of the study's "
+                "silently run the preregistered uniform fit. Name one of the study's "
                 "inferred latents or drop the :latent qualifier."
             )
         return None
