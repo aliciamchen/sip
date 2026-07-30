@@ -42,9 +42,8 @@ from utils import get_project_root
 
 
 def parse_run_config_args(argv=None, description=None):
-    """Shared CLI for the fit wrappers and CV scripts: the run configuration
-    (spec: notes/2026-07-18-informative-priors-refusal-alts-design.md). The
-    default (no flags) is the preregistered config — uniform priors,
+    """Shared CLI for the fit wrappers and CV scripts: the run configuration.
+    The default (no flags) is the preregistered config — uniform priors,
     the unsuffixed lm_runs.jsonl vintage, outputs to outputs/<slug>/ — so a plain
     invocation stays byte-identical to the pre-config pipeline."""
     import argparse
@@ -68,25 +67,26 @@ def parse_run_config_args(argv=None, description=None):
 
 # Optional upper bound on the observer inverse temperature. DEFAULT: OFF.
 #
-# History (2026-07-29/30): until the log-space sharpening landed, float32 could
-# not represent the likelihood for alpha_observer above roughly 15-20 (a diffuse
-# latent row's entries, raised to that power, underflow), so every fit in this
-# project — including every preregistered analysis — was silently confined below
-# it. Removing that numerical fence revealed a second, genuine local optimum for
-# Study 1b's preregistered model at alpha_observer ~ 30, and a held-out check
-# showed it GENERALIZES BETTER (+0.0047 [+0.0020, +0.0074] per trial). A bound
-# was briefly imposed and then dropped: the preregistration specified a model and
-# maximum likelihood, not a ceiling on alpha_observer, so reporting the actual
-# MLE is fidelity to it — retaining the ceiling would have preserved an
-# arithmetic artifact and, worse, handicapped the comparison baselines that
-# `full - ablation` is measured against.
+# Why there is a bound to speak of at all: under the float32 power-form
+# sharpening this project used previously, the likelihood was not representable
+# for alpha_observer above roughly 15-20 (a diffuse latent row's entries, raised
+# to that power, underflow — see observers._sharpened_posterior_logspace). Every
+# fit was therefore silently confined below that ceiling. Computing the
+# likelihood correctly removes the fence, and doing so reveals a second, genuine
+# local optimum for Study 1b at alpha_observer ~ 30 which a held-out check shows
+# GENERALIZES BETTER (+0.0047 [+0.0020, +0.0074] per trial).
 #
-# The reproducibility concern that motivated the bound (two well-separated
-# optima, so the reported fit depends on where the optimizer starts) is handled
-# instead by ALPHA_OBS_SEEDS below: every fit deliberately starts from both
-# basins and keeps the better one, and `fit_restarts.jsonl` records what each
-# restart found. The bound machinery is kept for diagnostic use — set
-# ALPHA_OBS_MAX to a float to re-enable it.
+# The bound stays off because the preregistration specified a model and maximum
+# likelihood, not a ceiling on alpha_observer: reporting the actual MLE is
+# fidelity to it. Imposing one would preserve an arithmetic artifact and, worse,
+# handicap the ablation baselines that `full - ablation` is measured against.
+#
+# The reproducibility concern a bound would address — two well-separated optima,
+# so the reported fit depends on where the optimizer starts — is handled instead
+# by ALPHA_OBS_SEEDS below: every fit deliberately starts from both basins and
+# keeps the better one, and `fit_restarts.jsonl` records what each restart found.
+# The bound machinery is kept for diagnostic use — set ALPHA_OBS_MAX to a float
+# to re-enable it.
 ALPHA_OBS_MAX = None
 
 # Explicit alpha_observer starting points, so a fit covers both known basins
@@ -177,9 +177,7 @@ def _fit_with_adam(
 
         updates, opt_state = opt.update(grad, opt_state)
         params = optax.apply_updates(params, updates)
-        params = jnp.clip(
-            params, 1e-6, jnp.inf if upper is None else upper
-        )
+        params = jnp.clip(params, 1e-6, jnp.inf if upper is None else upper)
 
     best_nll = float(best_nll)
     if verbose:

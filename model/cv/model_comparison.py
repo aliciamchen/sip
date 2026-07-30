@@ -304,7 +304,7 @@ def _config_dir(slug, tag):
 
 def compare_configs(slug, tag_a, tag_b, n_boot, seed):
     """Matched-trial held-out-LL comparison between two run configs of the
-    same study (the attribution grid; spec 2026-07-18). Both configs' CV
+    same study (the attribution grid). Both configs' CV
     manifests are verified against the same data CSV, then per-variant
     (subject, scenario)-matched LL differences get the standard participant
     bootstrap."""

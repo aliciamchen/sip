@@ -8,8 +8,10 @@ not price the observed action first-order):
 
 with S the surprise of the observed action under the baseline (ungated) actor
 policy, v(a) a per-question sensitivity score, and eta a single fitted gain per
-study, nested at eta = 0. Manuscript: SIP_journal/main.tex, sec:surprise-gate;
-full development in notes/candidate-sweep-2026-07-28/RESULTS.md.
+study, nested at eta = 0. The manuscript states the rule in the methods and
+develops the formal detail in the SI: the forgone-value reading of S, the
+criterion that decides which questions are reweighted, and the specification
+checks.
 
 Design, deliberately mirroring `_priors.py`: the reweighting lives entirely at
 the likelihood layer. It produces a replacement `prior_table` for the observer's
@@ -29,7 +31,7 @@ contrastive-only in each study):
     3b  nonfood_inv_joint_ie  intimacy + physical state            -> |d risk| + swing
 
 Ablations carry the reweighting only for the contrastive-only questions THEIR
-OWN utility prices (user decision 2026-07-29, rule b), so that
+OWN utility prices, so that
 `full - ablation` isolates the utility term rather than mixing in the mechanism:
 `base` has no discomfort term (no intimacy channel) and `discomfort_only` has no
 effort term (no world-state channel). `variant_targets` encodes this; a variant

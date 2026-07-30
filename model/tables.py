@@ -395,8 +395,7 @@ _PRIOR_OUT_KEY = {
 
 
 def load_lm_priors(slug, base=False, filename=None):
-    """Per-run, per-cell prior scalars for the informative-prior configs
-    (spec: notes/2026-07-18-informative-priors-refusal-alts-design.md).
+    """Per-run, per-cell prior scalars for the informative-prior configs.
 
     Reads outputs/lm/<slug>/lm_priors{_base}.jsonl (one record per run x
     scenario x prior-visible conditions; `filename` overrides, absolute paths

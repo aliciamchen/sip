@@ -1,5 +1,13 @@
-"""Informative-prior machinery for the inverse fits (spec:
-notes/2026-07-18-informative-priors-refusal-alts-design.md).
+"""Informative-prior machinery for the inverse fits.
+
+STATUS: evaluated, not adopted as the reported model. A full K=20 evaluation
+found informative priors suppress the formal>intimate effort gradient -- they
+hand the fit a competing explanation for the belief-update data, driving
+alpha_observer up or collapsing gamma -- while only improving the low-risk-dip
+magnitude. Every preregistration specifies uniform priors, and the reported
+fits use them. This module stays as a switchable configuration so the question
+can be answered with a run rather than an argument; it is not on the reported
+path.
 
 Every observer in observers.py is a Bayes inversion of the actor policy under
 a UNIFORM latent prior, so an informative-prior posterior is exactly the
@@ -101,8 +109,7 @@ def priors_base_variant(slug, variant, priors_file=None):
 
 def build_priors_kwarg(slug, config, base=False):
     """Assemble the fit helpers' `priors=` dict for one study/variant from the
-    elicited prior tables and the RunConfig (spec:
-    notes/2026-07-18-informative-priors-refusal-alts-design.md).
+    elicited prior tables and the RunConfig.
 
     Returns None in uniform mode (the preregistered byte-identical path). In
     informative mode it loads the study's per-run, per-cell prior scalars and

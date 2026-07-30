@@ -340,7 +340,7 @@ def main(study, base=False, arm_output_only=False):
             )
         cfg.update(_BASE_OVERRIDE[study])
     if arm_output_only:
-        # Prompt-arm smokes (2026-07-28): route output to a separate vintage,
+        # Prompt-arm smokes: route output to a separate vintage,
         # leaving the canonical lm_alternatives.jsonl untouched, so prompt
         # edits can be evaluated against the committed-vintage baseline
         # (model/diagnostics/coverage_smoke.py). Effort-inferring studies only.

@@ -10,19 +10,24 @@ Three model variants per observer: `_full`, `_discomfort_only`, `_base`.
 
 All twelve observers are plain-JAX Bayesian inversions of the actor memos,
 computed in log space (`_sharpened_posterior_logspace`): the observer posterior
-is a masked softmax of alpha_observer * log(actor policy) over the latent
-axes. The joint families were converted first for memory (the memo joint
-indicator expectation compiled to a ~202 x 202 latent cross-product per cell —
-~7.5 GB of XLA temps per gradient step at K=20); the single-latent families
-followed on 2026-07-29 when the sharpening moved to log space, because their
-memo `wpp = E[latent == z] ** alpha_observer` powering carries the same float32
-underflow (entire diffuse rows collapsed to zero above alpha_observer ~ 15-20,
-silently fencing the optimizer) and cannot be stabilized from outside the
-generated code. The original memo observers are kept as `_*_memo_reference` —
-the authoritative statement of the model semantics; CHANGE MODEL SEMANTICS IN
-BOTH — and `test_model_compliance.py` verifies the fast path against them on
-every variant, in the parameter regime where the references are numerically
-healthy.
+is a masked softmax of alpha_observer * log(actor policy) over the latent axes.
+
+Two reasons the plain-JAX form is used rather than the memo-generated one, both
+of which the generated code cannot be made to avoid from outside:
+
+  - Memory. The memo joint indicator expectation compiles to a ~202 x 202
+    latent cross-product per cell, ~7.5 GB of XLA temps per gradient step at
+    K = 20.
+  - Numerics. Memo's `wpp = E[latent == z] ** alpha_observer` raises a
+    normalized row to a power, which underflows in float32: an entire diffuse
+    latent row collapses to zero above alpha_observer ~ 15-20, silently fencing
+    the optimizer out of that region. Log space subtracts the row max before
+    exponentiating and is exact at any alpha.
+
+The memo observers are kept as `_*_memo_reference` — the authoritative statement
+of the model semantics; CHANGE MODEL SEMANTICS IN BOTH — and
+`test_model_compliance.py` verifies the fast path against them on every variant,
+in the parameter regime where the references are numerically healthy.
 
 Dependency layer 3: imports from `tables.py` and `actors.py`.
 """
@@ -886,19 +891,19 @@ def _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes):
     posterior over the trailing `n_latent_axes` latent axes, computed in log
     space: a masked softmax of alpha_observer * log(policy).
 
-    Mathematically identical to the earlier normalize -> power -> renormalize
-    formulation (the normalization constant cancels inside the softmax), but
-    immune to its float32 failure: powering a normalized row raised diffuse
-    entries (~5e-3 over a 202-bin row) to ~1e-51 at alpha_observer ~ 22 —
-    below float32's ~1e-45 floor — so entire rows underflowed to zero and
-    renormalized to garbage, silently fencing the optimizer out of the
-    high-alpha region (the same parameter vector scored 1573 in float64 and
-    16900 in float32). In log space the row max is subtracted before
-    exponentiating, so the dominant entries survive at any alpha and the
-    computed object is the likelihood the equations define. Adopted 2026-07-29
-    (user decision, full refit of all studies planned): this deliberately
-    changes gradients relative to the pre-2026-07-29 fit vintage, and is why
-    every fit and CV output must be regenerated rather than mixed.
+    Mathematically identical to a normalize -> power -> renormalize formulation
+    (the normalization constant cancels inside the softmax), but immune to its
+    float32 failure: powering a normalized row raises diffuse entries (~5e-3
+    over a 202-bin row) to ~1e-51 at alpha_observer ~ 22 — below float32's
+    ~1e-45 floor — so entire rows underflow to zero and renormalize to garbage,
+    silently fencing the optimizer out of the high-alpha region. The same
+    parameter vector scored 1573 in float64 and 16900 in float32. Subtracting
+    the row max before exponentiating keeps the dominant entries representable
+    at any alpha, so the computed object is the likelihood the equations define.
+
+    Because the two formulations differ numerically in exactly the regime the
+    optimizer visits, fits are not comparable across them: a set of fit and CV
+    outputs must be generated entirely under one or the other, never mixed.
 
     Zero-probability entries stay exactly 0. Two sources of them: padded null
     slots (whose prior is `tables.NULL_EPSILON` = 1e-8, so their policy is a
@@ -917,9 +922,9 @@ def _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes):
     overflows to +inf, and although the outer `where` zeroes the forward value,
     the backward pass then evaluates 0 * inf = NaN and — because `m` is shared
     across the row — poisons the gradient of every entry in it, valid ones
-    included. Guarding only the output was a real bug here (caught in review
-    2026-07-29): it reintroduced a high-alpha gradient cliff for mixed rows,
-    the very failure this rewrite exists to remove."""
+    included. This is not hypothetical: guarding only the output was a real bug
+    here, and it reintroduced a high-alpha gradient cliff for mixed rows, the
+    very failure this formulation exists to remove."""
     axes = tuple(range(policy.ndim - n_latent_axes, policy.ndim))
     positive = policy > 0.0
     # Sanitize before log: masked entries evaluate on 1.0 -> logit 0.0.
@@ -1128,7 +1133,7 @@ def _build_variants(full_fn, discomfort_only_fn, base_fn):
 # `_sharpened_posterior_logspace`). The memo originals above are kept as
 # `_observer_*_memo_reference` — the authoritative statement of the semantics;
 # change model semantics in both — and test_model_compliance.py enforces
-# fast ≡ reference on every variant. Converted 2026-07-29 alongside the
+# fast ≡ reference on every variant. Converted alongside the
 # log-space sharpening: the powering these memos apply inside `wpp`
 # (E[latent == z] ** alpha_observer) has the same float32 underflow as the old
 # joint path and cannot be stabilized from outside the generated code.

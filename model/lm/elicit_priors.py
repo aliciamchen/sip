@@ -6,8 +6,10 @@ K_RUNS runs, the LM answers the study's PRIOR-stage questions (mirroring the
 human screens exactly; see prompts.py PRIOR_*). Writes
 outputs/lm/<slug>/lm_priors{_base}.jsonl — one record per (run, cell) with the
 elicited scalars rescaled to [0, 1] — decoupled from the alternatives pipeline
-so priors pair with any alternatives vintage by run index (spec:
-notes/2026-07-18-informative-priors-refusal-alts-design.md).
+so priors pair with any alternatives vintage by run index.
+
+This stage feeds the informative-prior configs, which were evaluated and not
+adopted as the reported model (see model/inverse/_priors.py).
 
 Usage:
     uv run python model/lm/elicit_priors.py --study food_inv_joint_de

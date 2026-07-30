@@ -70,7 +70,7 @@ _PREAMBLE_RATING = (
 # The alternatives generator gets its own preamble: it reasons step by step
 # before answering, where every rating stage answers from intuition. Listing the
 # comparison set is a constructive task and the reasoning measurably improves the
-# set's coverage of high-risk sharing (adopted 2026-07-28); a rating is a snap
+# set's coverage of high-risk sharing; a rating is a snap
 # judgment we want unreasoned, to mirror the participant.
 _PREAMBLE_ALTERNATIVES = (
     "You are a participant in a human study. Respond as if you were a "
@@ -656,8 +656,8 @@ def relationship_user_prompt(descriptor):
 
 
 # ==============================================================================
-# Public API: prior scalars (informative-prior configs; see
-# notes/2026-07-18-informative-priors-refusal-alts-design.md)
+# Public API: prior scalars (for the informative-prior configs, which are
+# available tooling rather than the reported model — see _priors.py)
 # ==============================================================================
 # Each prompt mirrors the human PRIOR-stage question exactly: the LM sees the
 # vignette plus the same given-condition paragraphs the participant sees before

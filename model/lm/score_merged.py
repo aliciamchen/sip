@@ -618,7 +618,7 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
             )
         cfg.update(_BASE_OVERRIDE[study])
     if arm:
-        # Arm-vintage mode (2026-07-28): score a prompt-arm alternatives file
+        # Arm-vintage mode: score a prompt-arm alternatives file
         # (written by generate_alternatives.py --arm-output-only) into its own
         # runs vintage, leaving the canonical lm_runs.jsonl untouched.
         if base:

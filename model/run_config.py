@@ -10,7 +10,7 @@ Note on naming: this used to be called the "canonical" config, which read as
 "the authoritative one". It isn't — the fits reported in the paper add the
 surprise-weighted comparison-set reweighting on top of this config, so
 "canonical" pointed at the wrong model. It means *preregistered*: uniform
-priors, as every prereg specifies. Renamed 2026-07-30.
+priors, as every prereg specifies.
 """
 
 from dataclasses import dataclass
