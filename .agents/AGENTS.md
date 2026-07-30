@@ -6,8 +6,8 @@ Guidance for Codex sessions working in this repository. Project overview, the ex
 
 - The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/cv scripts can also be imported as modules if needed.
 - The active roster is six inverse-planning studies, all on the 3-action structure: `food_inv_desire` (Study 1a), `food_inv_joint_de` (Study 1b), `food_inv_intimacy` (Study 2a), `food_inv_joint_ie` (Study 2b) on the food scenario set, plus `nonfood_inv_joint_de` (Study 3a, mirroring 1b) and `nonfood_inv_joint_ie` (Study 3b, mirroring 2b) on the nonfood set. The nonfood pair reuses the food joint studies' observers, fit helpers, and CV dispatcher — only the stimulus set, scenario labels, and LM tables differ (`domain="nonfood"` in the table-kwargs builders; `STUDY_SCENARIO_LABELS` in `model/tables.py`).
-- Per-experiment scripts (e.g. `model/inverse/fit_food_inv_intimacy.py`) are thin wrappers that import shared logic from `_inverse_dispatcher.py` (cv/) or `_helpers.py` (inverse/) and call its main with their hardcoded slug. To trace what a script does, follow the import.
-- The experiment roster lives in the `Makefile`: `EXPERIMENTS_INVERSE` holds the food studies (the data-dependent aggregates `make data`/`fit`/`cv`/`analysis` run over these), `EXPERIMENTS_NONFOOD` the two nonfood studies (no participant data yet — the Makefile's roster comment lists everything to change when Study 3 data lands). `make all` runs fit → cv → model-comparison → analysis over `EXPERIMENTS_INVERSE` as sequential sub-makes, so the stages stay ordered even under `make -j` (CV produces the out-of-sample predictions; there is no separate predict stage); per-study targets (`lm-/fit-/cv-/data-<slug>`) cover all six.
+- Per-experiment scripts are genuinely thin wrappers (~25 lines) that call a shared dispatcher with their hardcoded slug: `model/inverse/fit_<slug>.py` → `_fit_dispatcher.main(slug)`, `model/cv/cv_<slug>.py` → `_inverse_dispatcher.main_<family>(slug)`. The whole fit and CV protocol lives in those two dispatchers, keyed by a `_FAMILIES` registry; a wrapper carries nothing but its slug and docstring, and `model/test_fit_protocol.py` enforces that. To trace what a script does, follow the import.
+- The experiment roster lives in the `Makefile`: `EXPERIMENTS_INVERSE` holds all six studies (the Study 3 nonfood pair was folded in on 2026-07-21, once their data, LM tables, fits/CV, and analysis qmds all existed), and the data-dependent aggregates `make data`/`fit`/`cv`/`model-comparison`/`analysis` run over it. `EXPERIMENTS_NONFOOD` is kept but empty (the roster-sync test reads both lists; it's the holding list for any future not-yet-data-complete study family). `make all` runs fit → cv → model-comparison → figures → analysis over `EXPERIMENTS_INVERSE` as sequential sub-makes, so the stages stay ordered even under `make -j` (CV produces the out-of-sample predictions; there is no separate predict stage); per-study targets (`lm-/fit-/cv-/data-<slug>`) cover the roster too.
 
 ## Legacy data
 
@@ -27,6 +27,13 @@ The manuscript (`SIP_journal/main.tex`) is generally the most up-to-date descrip
 The reverse can also happen: the user sometimes develops code first (a new prompt, a new fitting procedure, a new pipeline stage) before writing it up. In that case the code is ahead of the manuscript, and the manuscript needs to catch up rather than the code being rolled back. So discrepancies don't have a single default direction — they usually mean either the code needs an update or the manuscript needs one.
 
 When you spot a discrepancy, don't silently reconcile it. Surface it: name the divergence, say which side looks newer based on context (recent edits, conversation, git log), and ask which direction to update before changing either one.
+
+## Decisions log
+
+`notes/decisions.md` (local-only, like the rest of `notes/`) records design and methods decisions reached in conversation, so they don't get re-derived from scratch. Two obligations:
+
+- **Before answering a design/methods question**, check the log. If a decision exists, start from its recorded rationale rather than re-litigating — the user may still overturn it, but deliberately.
+- **At the end of a consulting or design discussion that reaches a conclusion**, propose an entry: date, the question, the decision, the why, and whether it's firm or provisional. Don't append without showing the proposed entry first.
 
 ## Submission status
 
@@ -48,8 +55,12 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                                                               ↓
                                   model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
-          paper figures: Python scripts in figures/scripts/ → figures/outputs/
+          paper figures: Python scripts in figures/scripts/ (styled by plot_style.py) → figures/outputs/
+                                                              ↓
+                     make sync-journal-figures → SIP_journal/figures/ (Overleaf)
 ```
+
+The R/Quarto qmds in `analysis/` report demographics and data checks only — every figure comes from the Python scripts in `figures/scripts/` (the main results figures, run with `make figures-results`; the SI LM figures, run with `make figures-lm-si`) and the model-comparison statistics from `model/cv/model_comparison.py` (see `.claude/rules/analysis.md`).
 
 ## Common commands
 
@@ -68,6 +79,11 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
 - For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
+- Before committing a nontrivial change under `model/` (fitting/likelihood logic, data
+  loaders, CV, new pipeline stages — not figure styling or prose), make sure the test
+  suite passes. `.codex/hooks/pre-commit-model-check.sh` enforces this automatically:
+  it fires on `git commit`, and when any staged file is under `model/` it runs the
+  suite and blocks the commit on failure.
 - When changing AGENTS.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 
 ## Utility helpers
@@ -75,3 +91,4 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 - `utils.py` — `get_project_root()` for constructing paths relative to project root.
 - `analysis/utils.R` — shared R helpers for the qmds and exploratory scripts: `report_demographics()`, `calculate_belief_update()`, the model JSON readers, and the condition factor orders. No plotting code — that all moved to Python.
 - `plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/outputs/`, plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-results` regenerates the main results set; `make figures-lm-si` the LM SI set.
+- `figures/scripts/` — all figure-generation scripts write their output to `figures/outputs/`. The main results scripts are one per paper figure (`figure_study1a/1b/2/3.py`, `figure_model_scatter.py`, `figure_ll_comparison.py`), with shared data prep in `_data.py` (reusing `model/cv/model_comparison.py`'s cell specs and loaders) and panel functions in `_panels.py` / `_joint.py`. Each renders the panels whose inputs exist, skips the rest with a printed note, and warns when CV outputs are stale relative to the data CSV. The schematic script writes its Illustrator-linked sub-panels to `figures/schematic_panels/` instead (SVG + PDF).

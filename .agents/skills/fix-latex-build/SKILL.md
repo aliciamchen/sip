@@ -18,12 +18,12 @@ Both are fixed the same way: clear the PAR cache, then rebuild in a scratch dir 
 Run the bundled script from the repo root. It diagnoses, clears the cache, rebuilds outside Dropbox, verifies, and copies the good artifacts back:
 
 ```bash
-bash .Codex/skills/fix-latex-build/rebuild-outside-dropbox.sh
+bash .agents/skills/fix-latex-build/rebuild-outside-dropbox.sh
 ```
 
 - Defaults to `SIP_journal/main.tex`. For the CogSci fork or another project/file, pass them:
   ```bash
-  bash .Codex/skills/fix-latex-build/rebuild-outside-dropbox.sh cogsci-cr/cogsci-2026 main.tex
+  bash .agents/skills/fix-latex-build/rebuild-outside-dropbox.sh cogsci-cr/cogsci-2026 main.tex
   ```
 - `--check` diagnoses only (no cache clear, no rebuild, nothing modified) — use it to see *which* failure mode is present before acting.
 - `--force` rebuilds even if a local latex/biber process is detected (by default the script refuses, to avoid racing a build that is actually running).

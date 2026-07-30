@@ -150,7 +150,7 @@ uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 # or per-domain aggregates (sequential), or in parallel processes:
 make lm-alternatives                               # the 4 food studies, K=20
-make lm-nonfood                                    # the 2 nonfood studies (3a + 3b)
+make lm-nonfood_inv_joint_de lm-nonfood_inv_joint_ie  # the 2 nonfood studies (3a + 3b)
 make lm-alternatives K_RUNS=1                      # cheap K=1 smoke test first
 make -j4 lm-alternatives SCENARIO_WORKERS=2 CELL_WORKERS=8   # 4 studies in parallel
 ```
