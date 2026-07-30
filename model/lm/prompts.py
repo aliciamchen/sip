@@ -545,10 +545,11 @@ def alternatives_user_prompt(
         parts.append(
             "One of the following is true of the situation, but you do not "
             f"know which:\n- {low_text}\n- {high_text}\n"
-            "Note: Describe any action you list 'unconditionally', as something the "
+            "Note: Describe any action you list unconditionally, as something the "
             "two people could attempt in either situation — do not build "
             '"if" clauses about the unknown situation into the action '
-            "description."
+            "description. The situation affects how much work an action takes, "
+            "not whether it is available."
         )
     if unknown_desire_object is not None:
         # "also" only when this follows the effort-hypotheses block (1b/3a);
