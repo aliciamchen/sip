@@ -67,12 +67,7 @@ _PREAMBLE_RATING = (
 )
 
 # The alternatives generator gets its own preamble, identical to the rating one
-# except that it drops "just going off your intuition". Listing the comparison
-# set is a constructive task, so an intuition-only instruction would work against
-# it; a rating is a snap judgment, where mirroring the participant is the point.
-# The request for a step-by-step explanation lives only in the prompt's closing
-# instruction, not here — it appeared in both while the chain-of-thought arm was
-# assembled by string substitution, which duplicated it for no reason.
+# except that it drops "just going off your intuition".
 _PREAMBLE_ALTERNATIVES = (
     "You are a participant in a human study. Respond as if you were a "
     "regular adult from the United States."
@@ -249,7 +244,7 @@ Use this scale from 0 to 6 (continuous values allowed):
 
 _EFFORT_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate the total cost the two people would need to bear to carry it out — the physical, executional, and temporal cost of completing the action. Count required work regardless of which person performs it, including work divided between them. The cost types below all count; integrate across them into a single rating:
+For each action, evaluate the total physical, executional, and temporal cost of completing the action. Count required work regardless of which person performs it, including work divided between them. The cost types below all count; integrate across them into a single rating:
 
 - Physical motor cost: how much bodily work the action requires (preparing, serving, cutting, pouring, handing over, cleaning, wiping, drying, tidying, rearranging, applying).
 - Equipment and preparation cost: whether the action needs extra items or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces) that either person has to obtain, set up, or take care of.
@@ -417,15 +412,6 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 # IDENTICAL for every cell and condition, so it cannot produce condition
 # effects; it only keeps a sharing mode from being missed. This is acknowledged
 # in the SI elicitation-details section of the manuscript.
-#
-# The generation prompt asks for an explanation before answering, in its closing
-# instruction. That format raised high-risk-share swing coverage from 66.5% to
-# 75.5% on Study 1b, so it was adopted for the stage; the measured arm also
-# repeated the request in the preamble, which has since been dropped as
-# redundant. There is deliberately only ONE alternatives prompt.
-# The generated explanation is retained as a rationale for auditing the
-# resulting comparison set; it is not treated as evidence about the model's
-# internal reasoning process.
 
 # VINTAGE MARKER (2026-07-30) --------------------------------------------------
 # The current prompt source is intentionally AHEAD of the canonical LM tables,
@@ -469,8 +455,7 @@ First, briefly explain step by step which actions the two people were realistica
 
 # Relationship-condition descriptors keyed by the verbal intimacy-condition slug
 # (the experiments store intimacy as a slug, never a numeric code). These are the
-# de-anchored verbal exemplars human participants see — no "X out of 100" numeric
-# anchor. The same descriptors are used both to condition alternative generation
+# de-anchored verbal exemplars human participants see. The same descriptors are used both to condition alternative generation
 # (here, via `alternatives_user_prompt`) and to elicit the per-level intimacy
 # magnitude (`relationship_user_prompt`), so the LM sees exactly what participants
 # see and the intimacy rating is not circular. See `intimacy_texts` /
@@ -560,11 +545,10 @@ def alternatives_user_prompt(
         parts.append(
             "One of the following is true of the situation, but you do not "
             f"know which:\n- {low_text}\n- {high_text}\n"
-            "Describe any action you list unconditionally, as something the "
+            "Note: Describe any action you list 'unconditionally', as something the "
             "two people could attempt in either situation — do not build "
             '"if" clauses about the unknown situation into the action '
-            "description; the same action may simply turn out easy or hard "
-            "depending on which situation holds."
+            "description."
         )
     if unknown_desire_object is not None:
         # "also" only when this follows the effort-hypotheses block (1b/3a);
