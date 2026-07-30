@@ -22,11 +22,33 @@ plus **both** skill trees, `.claude/skills/*/SKILL.md` and
 worse when stale because they instruct rather than inform — **this file
 included**.
 
-The two trees are hand-duplicated copies of the same skills, so also diff them
-against each other: they have drifted before, and the `.agents` copies once
-referenced a `.Codex/` directory that has never existed. Same for
-`.claude/CLAUDE.md` vs `.agents/AGENTS.md`, which are near-identical modulo the
-agent name — check the pair, not each file alone.
+### Check the mirrored pairs, not each file alone
+
+Three pairs are maintained by hand as near-copies, and each one has drifted. The
+failure is always directional: the newer edit lands on the Claude side and the
+Codex side silently keeps the old version. That is worse for instructions than
+for docs, because they direct behaviour rather than inform it. Diff each pair
+modulo the agent name and report any difference that is not just "Claude" vs
+"Codex":
+
+```
+diff <(sed 's/Claude/AGENT/g' .claude/CLAUDE.md)     <(sed 's/Codex/AGENT/g' .agents/AGENTS.md)
+diff <(sed 's/Claude/AGENT/g' ~/.claude/CLAUDE.md)   <(sed 's/Codex/AGENT/g' ~/.codex/AGENTS.md)
+for n in .claude/skills/*/; do diff "$n/SKILL.md" ".agents/skills/$(basename $n)/SKILL.md"; done
+```
+
+1. **`.claude/CLAUDE.md` vs `.agents/AGENTS.md`** (project). AGENTS.md once
+   claimed `EXPERIMENTS_NONFOOD` holds the nonfood studies with "no participant
+   data yet", long after Study 3 went live and that list was emptied.
+2. **`~/.claude/CLAUDE.md` vs `~/.codex/AGENTS.md`** (global preferences —
+   outside the repo, but in scope precisely because nothing else audits them).
+   The commit-message convention was updated in one and not the other.
+3. **The two skill trees.** Seven of eleven copies diverged at once, and the
+   `.agents` copies referenced a `.Codex/` directory that has never existed.
+
+Expected, legitimate differences: the agent's name, `.claude/` vs `.agents/`
+paths, and tool-specific instructions (Claude slash commands, Codex hooks).
+Everything else is drift.
 
 Never search inside `.claude/worktrees/`: those are checkouts of old branches,
 stale by design, and they swamp every grep.
@@ -36,10 +58,12 @@ Audience each file should serve:
 - `README.md` → reviewers / cloners (what the project is + a quick start)
 - `data/`, `experiments/`, `model/`, `model/outputs/` READMEs → developers in
   that subfolder; the outputs one is the artifact codebook
-- `.claude/CLAUDE.md` → Claude: terminology drift, naming conventions,
-  gitignored Overleaf folders, anything not in the code or public docs
+- `.claude/CLAUDE.md` / `.agents/AGENTS.md` → the agent: terminology drift,
+  naming conventions, gitignored Overleaf folders, anything not in the code or
+  public docs. Keep the pair in sync.
+- `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` → cross-project preferences
+  (style, commit convention, citation rules). Keep the pair in sync.
 - `.claude/rules/*.md` → Claude working in a specific directory
-- `.claude/CLAUDE.md` / `.agents/AGENTS.md` → the agent; keep the pair in sync
 - `.claude/skills/*/SKILL.md`, `.agents/skills/*/SKILL.md` → a procedure, so
   correctness matters most, and a broken path is worse than a stale sentence
 - `.codex/hooks/*.sh` → runs automatically, so a stale assumption fires silently
