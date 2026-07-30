@@ -500,7 +500,7 @@ def load_padded_lm_tables_desire(
     keep the softmax differentiable).
 
     The returned arrays carry a leading run axis K (one elicitation run per
-    component of the simulated-observer mixture); K=1 on the legacy single-run
+    component of the elicitation-sample mixture); K=1 on the legacy single-run
     CSVs. Returns a dict {risk, effort, g, prior, n_runs} of jnp.arrays, or None
     if the tables are missing or not yet scored.
 

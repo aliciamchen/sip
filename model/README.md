@@ -5,7 +5,7 @@ Every script in this folder is named after either the experiment it serves (fit/
 ## Pipeline at a glance
 
 ```
-LM elicitation  (lm/)   — K = 20 independent runs per cell (the simulated-observer mixture)
+LM elicitation  (lm/)   — K = 20 independent samples per cell (the elicitation-sample mixture)
     generate_alternatives.py --study <slug>  →  outputs/lm/<slug>/lm_alternatives.jsonl
     score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_runs.jsonl
         ↓

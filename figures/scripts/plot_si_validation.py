@@ -21,15 +21,15 @@ built from whichever studies are present:
      low/low, low-risk share low-risk/effort-manipulated, high-risk share
      high-risk/low-effort.
   4. si_lm_run_spread — run-to-run spread of the model's predicted belief
-     updates (Study 1a, full model): each elicitation run is one simulated
-     observer, so the within-cell spread across the K runs is the spread of the
+     updates (Study 1a, full model): each elicitation run is one stochastic
+     sample, so the within-cell spread across the K runs is the spread of the
      mixture components, shown against the fitted response noise sigma. Unlike
      figures 1-3 this reads the model's out-of-sample CV predictions
      (cv_preds_summary.json, produced by model/cv/cv_food_inv_desire.py) and is
      skipped with a message if they are missing.
   5. si_lm_choice_set_sizes — distribution of the number of alternatives per
      scored choice set (cell x run), per study.
-  6. si_lm_mixture_check — predictive check of the simulated-observer mixture
+  6. si_lm_mixture_check — predictive check of the elicitation-sample mixture
      likelihood (Study 1a, full model): the K-component predictive density
      overlaid on participants' actual belief updates for six example cells.
      Reads cv_preds_summary.json and data/food_inv_desire/main_trials.csv;
@@ -600,9 +600,9 @@ def fig_observed_scatter(
 def fig_run_spread(figname="si_lm_run_spread"):
     """Run-to-run spread of the model's predicted belief updates (Study 1a,
     full model, out-of-sample leave-one-scenario-out CV predictions). Each
-    elicitation run is one simulated observer, so the per-run updates within a
-    cell are the components of the mixture likelihood; the fitted response noise
-    sigma gives the scale to read the spread against."""
+    elicitation run is one stochastic sample, so the per-run updates within a
+    cell are the components of the mixture likelihood; the fitted response
+    noise sigma gives the scale to read the spread against."""
     out_dir = get_project_root() / "model" / "outputs" / "food_inv_desire"
     preds_path = out_dir / "cv_preds_summary.json"
     if not preds_path.exists():
@@ -736,7 +736,7 @@ def fig_choice_set_sizes(runs_by_study, figname="si_lm_choice_set_sizes"):
 
 
 def fig_mixture_check(figname="si_lm_mixture_check"):
-    """Predictive check of the simulated-observer mixture (Study 1a, full
+    """Predictive check of the elicitation-sample mixture (Study 1a, full
     model, out-of-sample LOSO CV predictions): for six cells spanning the range
     of predicted updates, the K-component predictive density (1/K) sum_k N(u;
     delta_k, sigma^2) is overlaid on the distribution of participants' actual

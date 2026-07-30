@@ -10,7 +10,8 @@ The prompts come in four groups, matching the elicitation stages in the
 manuscript:
 
   1. **Counterfactual action generation** (the generator ``G_LM``): one system
-     prompt and one user-prompt template.
+     prompt and the distinct user-prompt templates used across the study and
+     base-model variants.
   2. **Utility-feature scoring** (the feature map ``phi_tau``): a system prompt
      each for goal-satisfaction ``g``, effort, and interpersonal risk,
      plus the shared user-prompt template and the one rating-instruction line
@@ -117,22 +118,80 @@ def build_content():
         )
     )
     # Inject a placeholder descriptor so the relationship line shows as a
-    # variable rather than one concrete level.
+    # variable rather than one concrete level. Render every distinct live
+    # branch: a single generic template would omit the latent-awareness blocks
+    # that make the generation prompt task-aware.
     prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"] = RELATIONSHIP
-    alt_user = prompts.alternatives_user_prompt(
-        VIGNETTE,
-        OBSERVED,
-        desire_text=STATE,
-        effort_text=EFFORT_PARA,
-        intimacy_level="__tmpl__",
-    )
-    del prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"]
-    out.append(
-        box(
-            "User prompt (template) --- counterfactual action generation",
-            alt_user,
+    try:
+        alt_user_variants = [
+            (
+                "Study 1a",
+                prompts.alternatives_user_prompt(
+                    VIGNETTE,
+                    OBSERVED,
+                    effort_text=EFFORT_PARA,
+                    intimacy_level="__tmpl__",
+                    unknown_desire_object=DESIRE_OBJECT,
+                ),
+            ),
+            (
+                "Studies 1b and 3a",
+                prompts.alternatives_user_prompt(
+                    VIGNETTE,
+                    OBSERVED,
+                    intimacy_level="__tmpl__",
+                    effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
+                    unknown_desire_object=DESIRE_OBJECT,
+                ),
+            ),
+            (
+                "Study 2a",
+                prompts.alternatives_user_prompt(
+                    VIGNETTE,
+                    OBSERVED,
+                    desire_text=STATE,
+                    effort_text=EFFORT_PARA,
+                    unknown_intimacy=True,
+                ),
+            ),
+            (
+                "Studies 2b and 3b",
+                prompts.alternatives_user_prompt(
+                    VIGNETTE,
+                    OBSERVED,
+                    desire_text=STATE,
+                    effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
+                    unknown_intimacy=True,
+                ),
+            ),
+            (
+                "Study 1a base",
+                prompts.alternatives_user_prompt(
+                    VIGNETTE,
+                    OBSERVED,
+                    effort_text=EFFORT_PARA,
+                    unknown_desire_object=DESIRE_OBJECT,
+                ),
+            ),
+            (
+                "Studies 1b and 3a base",
+                prompts.alternatives_user_prompt(
+                    VIGNETTE,
+                    OBSERVED,
+                    effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
+                    unknown_desire_object=DESIRE_OBJECT,
+                ),
+            ),
+        ]
+    finally:
+        del prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"]
+    for label, alt_user in alt_user_variants:
+        out.append(
+            box(
+                f"User prompt (template) --- counterfactual generation, {label}",
+                alt_user,
+            )
         )
-    )
 
     # ------------------------------------------------------------------ group 2
     out.append(subsection("Utility-feature scoring"))

@@ -17,9 +17,10 @@ The pipeline has two elicitation steps (see the manuscript Methods):
        - **risk**: bodily, spatial, or informational exposure an action creates
          between the two people — the relationship-independent
          interpersonal-vulnerability feature (discomfort = risk · (1−I)^γ).
-       - **effort**: the cost of executing an action — physical motor,
-         equipment, and time cost, plus (for disclosures) the production
-         cost of producing the utterance.
+       - **effort**: the total executional cost of completing an action across
+         the dyad — physical motor, equipment, and time cost borne by either
+         person, plus (for disclosures) the production cost of producing the
+         utterance.
        - **g**: desire-free goal-satisfaction — how fully the action delivers
          the outcome at stake. The reward term is `w_v · desire · g`, so desire
          scales this stable per-action value (g replaced the old signed-valence
@@ -67,11 +68,12 @@ _PREAMBLE_RATING = (
     "regular adult from the United States, just going off your intuition."
 )
 
-# The alternatives generator gets its own preamble: it reasons step by step
-# before answering, where every rating stage answers from intuition. Listing the
-# comparison set is a constructive task and the reasoning measurably improves the
-# set's coverage of high-risk sharing; a rating is a snap
-# judgment we want unreasoned, to mirror the participant.
+# The alternatives generator gets its own preamble: it asks for a step-by-step
+# explanation before the answer, while every rating stage answers from
+# intuition. Listing the comparison set is a constructive task, and this
+# explain-then-answer format measurably improves coverage of high-risk sharing;
+# a rating is a snap judgment for which we want the intuition-only instruction
+# that mirrors the participant.
 _PREAMBLE_ALTERNATIVES = (
     "You are a participant in a human study. Respond as if you were a "
     "regular adult from the United States. Think the question through step by "
@@ -167,17 +169,15 @@ Use this scale from 0 to 6 (continuous values allowed):
 6 = Strong, direct vulnerability (e.g. direct bodily-substance transfer such as mouth-to-mouth contact or sharing a utensil that's been in one person's mouth, sustained skin-to-skin contact, sharing a bed or other close confined space, or disclosing private details)"""
 
 
-# _EFFORT_BODY is grounded in the Naïve Utility Calculus (NUC) framework
-# and scoped to the executional cost of carrying the action out — motor
-# work, equipment / preparation, time, and (for disclosures) the
-# production cost of the utterance, the disclosure analogue of motor
-# work. The construct does not extend to coordination or other cognitive
-# cost types; this is a scope choice grounded in the physical-cost-only
-# character of the empirical NUC literature, not an active exclusion
-# called out in the prompt itself (the prompt simply doesn't list
-# coordination as a criterion — telling the LM to ignore it would prime
-# the concept). The prompt body stays jargon-free; the rating
-# dimension is anchored as follows.
+# _EFFORT_BODY is grounded in the Naïve Utility Calculus (NUC) framework and
+# scoped to the total executional cost of carrying the joint action out,
+# regardless of which member of the dyad performs the required work — motor
+# work, equipment / preparation, time, and (for disclosures) the production
+# cost of the utterance, the disclosure analogue of motor work. The construct
+# does not extend to coordination or other cognitive cost types; this is a
+# modeling scope choice, not a direct entailment of the cited physical-effort
+# studies. The prompt body stays jargon-free; the rating dimension is anchored
+# as follows.
 #
 #   - Conceptual anchor (cost as trade-off quantity) — Jara-Ettinger, J.,
 #     Gweon, H., Schulz, L. E., & Tenenbaum, J. B. (2016). "The naïve
@@ -186,17 +186,16 @@ Use this scale from 0 to 6 (continuous values allowed):
 #     cost formally as what an agent weighs against desire — the framework
 #     this project's inverse-planning model instantiates.
 #
-#   - Single-scalar cost (integrating across sub-types) — Liu, S., Ullman,
+#   - Abstract physical-cost representation — Liu, S., Ullman,
 #     T. D., Tenenbaum, J. B., & Spelke, E. S. (2017). "Ten-month-old
 #     infants infer the value of goals from the costs of actions." Science
-#     358(6366): 1038–1041. Showed that observers integrate distinct
-#     physical cost features (height, width, incline) into one abstract
-#     cost metric — directly grounds collapsing motor, equipment, and time
-#     onto one 0-6 scale. For disclosure actions the same 0-6 scale also
-#     absorbs the executional cost of producing the account (length,
-#     backstory, roundabout phrasing); the emotional vulnerability of
-#     disclosing is kept separate, in the risk dimension. See the
-#     disclosure-effort rationale in experiments/scenarios_nonfood.py.
+#     358(6366): 1038–1041. Provides evidence that observers represent
+#     physical action costs abstractly across different physical obstacles.
+#     Extending one scalar to equipment, elapsed time, dyadic contributions,
+#     and utterance production is this model's operationalization. The
+#     emotional vulnerability of disclosing is kept separate, in the risk
+#     dimension. See the disclosure-effort rationale in
+#     experiments/scenarios_nonfood.py.
 #
 #   - Effort as a perceptible quantity separable from desire —
 #     Jara-Ettinger, J., Gweon, H., Tenenbaum, J. B., & Schulz, L. E.
@@ -208,17 +207,17 @@ Use this scale from 0 to 6 (continuous values allowed):
 
 _EFFORT_BODY = """In this survey, you will read a vignette about two people in a situation where some resource — food, an object, a physical space, or a piece of information — could be shared between them. {INTRO}
 
-For each action, evaluate the cost the actor would weigh against the benefit of the action — the physical, executional, and temporal cost of carrying it out. The cost types below all count; integrate across them into a single rating:
+For each action, evaluate the total cost the two people would need to bear to carry it out — the physical, executional, and temporal cost of completing the action. Count required work regardless of which person performs it, including work divided between them. The cost types below all count; integrate across them into a single rating:
 
 - Physical motor cost: how much bodily work the action requires (preparing, serving, cutting, pouring, handing over, cleaning, wiping, drying, tidying, rearranging, applying).
-- Equipment and preparation cost: whether the action needs extra items or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces) that someone has to obtain, set up, or take care of.
+- Equipment and preparation cost: whether the action needs extra items or setup (utensils, plates, containers, sanitizing supplies, barriers, separate furniture, separate spaces) that either person has to obtain, set up, or take care of.
 - Executional and production cost: for actions that consist of speaking, telling, or disclosing, how much work goes into producing the utterance itself — how long the account takes to deliver and how much context, backstory, or roundabout indirect phrasing the speaker must use, for it to land.
 - Time cost: how long the action takes — waiting for something to dry, sequential rather than simultaneous use, an extended preparation or telling.
 
 Do NOT rate social awkwardness, relational discomfort, or how intimate, appropriate, or emotionally hard the action would feel — those are separate dimensions that we are not asking about here. Here we want only the effort of carrying the action out.
 
 Use this scale from 0 to 6 (continuous values allowed):
-0 = No effort (no bodily work, no extra items, no waiting, nothing to compose or explain)
+0 = No effort (neither person needs to do bodily work, obtain extra items, wait, compose, or explain)
 3 = Moderate effort (a few bodily steps, such as setting out a clean utensil, dividing a portion, or briefly waiting; a small handful of extra items to obtain; or a short account that takes a little effort to produce)
 6 = High effort (many bodily steps, substantial setup, or significant time — for example, leaving to obtain something from far away and returning, waiting a long time, cleaning and assembling many separate items, or producing a long account that needs extensive backstory or roundabout phrasing to convey)"""
 
@@ -232,10 +231,11 @@ _USER_INSTRUCTIONS = {
         "space, or private disclosure (0-6 scale):"
     ),
     "effort": (
-        "Rate the physical or executional cost of executing each action — "
-        "how much physical work, preparation, or equipment it takes, or, for "
-        "telling or disclosing, how much explaining and roundabout phrasing "
-        "producing the account takes (0-6 scale):"
+        "Rate the total physical or executional cost of carrying out each "
+        "action, counting work performed by either person — how much physical "
+        "work, preparation, or equipment it takes, or, for telling or "
+        "disclosing, how much explaining and roundabout phrasing producing "
+        "the account takes (0-6 scale):"
     ),
     "g": (
         "Rate how much each action results in the two people actually getting "
@@ -376,31 +376,30 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 # effects; it only keeps a sharing mode from being missed. This is acknowledged
 # in the SI elicitation-details section of the manuscript.
 #
-# Generation reasons before answering (the explain-then-JSON close, and
-# `_PREAMBLE_ALTERNATIVES`): it raised high-risk-share swing coverage from 66.5%
-# to 75.5% on Study 1b, so it was adopted for the stage. There is deliberately
-# only ONE alternatives prompt — a second, non-reasoning variant would leave
-# every artifact ambiguous about which produced it, since both would share a
-# `prompts_sha256`. The reasoning text is not thrown away: the tolerant parser
-# takes the trailing JSON array and the prose is kept per (cell, run) in a
-# `.reasoning.jsonl` sidecar next to the alternatives.
+# The generation prompt asks for an explanation before answering (the
+# explain-then-JSON close and `_PREAMBLE_ALTERNATIVES`): this format raised
+# high-risk-share swing coverage from 66.5% to 75.5% on Study 1b, so it was
+# adopted for the stage. There is deliberately only ONE alternatives prompt.
+# The generated explanation is retained as a rationale for auditing the
+# resulting comparison set; it is not treated as evidence about the model's
+# internal reasoning process.
 
 # VINTAGE MARKER (2026-07-30) --------------------------------------------------
-# This is the one canonical alternatives prompt, and it is currently AHEAD of
-# every elicited table. The "v5" wording below — the observer-question reframe,
-# the unconditional-phrasing clause in `alternatives_user_prompt`, and the
-# reason-then-answer close — was adopted after the 2026-07-27 tight-prompt
-# elicitation, so all six studies' `lm_runs.jsonl` came from the PREVIOUS
-# wording. `food_inv_joint_de` additionally has v5 tables in the diagnostic arm
-# (`lm_runs_diag.jsonl`), which is the only place v5 has been fit.
+# The current prompt source is intentionally AHEAD of the canonical LM tables,
+# which the user plans to regenerate. The alternatives wording below was
+# exercised in diagnostic generation runs for five studies, but it has not been
+# carried through feature scoring and fitting; the Study 1b diagnostic scored
+# tables predate this wording. The total-dyadic-cost effort rubric above is newer
+# still and has not produced any canonical or diagnostic scored tables.
 #
-# Consequences until the v5 re-elicitation of all six studies has run:
-#   - Do NOT regenerate `SIP_journal/si_prompts.tex` from this file (it would
-#     document a prompt no reported study used). See the generated-artifacts
-#     section of .claude/CLAUDE.md.
-#   - Do NOT mix: any refit must use tables generated by the same wording. The
-#     resume guard enforces this — the existing tables' manifests record the old
-#     `prompts_sha256`, so re-elicitation cannot append onto them.
+# New manifests record a stage-specific `prompt_sha256`; legacy manifests record
+# only a whole-file `prompts_sha256`. The resume guard understands both formats
+# and prevents a new run from silently appending to the old vintage.
+#
+# Until the full re-elicitation lands, do not mix old and new table vintages in
+# fits. Regenerating `SIP_journal/si_prompts.tex` will document the intended
+# rerun prompt rather than the prompt that produced the currently reported
+# tables, so that discrepancy must remain explicit.
 # After the re-elicitation lands, delete this marker and re-run
 # `model/lm/export_prompts_latex.py`.
 # ------------------------------------------------------------------------------
@@ -739,3 +738,136 @@ def prior_intimacy_user_prompt(vignette, condition_texts=()):
         'relationship? Respond with {"intimacy": <number>}.'
     )
     return "\n".join(parts)
+
+
+# ==============================================================================
+# Prompt provenance
+# ==============================================================================
+
+
+def prompt_fingerprint_payload(stage):
+    """Return the actual prompt surfaces used by one elicitation stage.
+
+    The provenance hash is derived from rendered system and user messages,
+    rather than the bytes of this entire source file. This makes it sensitive
+    to text sent by the requested stage while insulating it from comments and
+    prompts used only by other stages. The fixed sentinel content exercises
+    every live formatting branch; scenario-specific values are inputs to the
+    template, not part of its version.
+    """
+    vignette = "<VIGNETTE>"
+    action = "<OBSERVED_ACTION>"
+    actions = ["<ACTION_0>", "<ACTION_1>"]
+    condition = "<VISIBLE_CONDITION>"
+    effort_hypotheses = ("<LOW_EFFORT_STATE>", "<HIGH_EFFORT_STATE>")
+
+    if stage == "generate_alternatives":
+        # Generic SI-template path, followed by study-specific formatting paths
+        # across the six-study roster.
+        rendered_users = [alternatives_user_prompt(vignette, action)]
+        rendered_users.extend(
+            alternatives_user_prompt(
+                vignette,
+                action,
+                effort_text=condition,
+                intimacy_level=level,
+                unknown_desire_object="<DESIRE_OBJECT>",
+            )
+            for level in RELATIONSHIP_DESCRIPTORS
+        )
+        rendered_users.extend(
+            [
+                alternatives_user_prompt(
+                    vignette,
+                    action,
+                    intimacy_level="max_formal",
+                    effort_hypotheses=effort_hypotheses,
+                    unknown_desire_object="<DESIRE_OBJECT>",
+                ),
+                alternatives_user_prompt(
+                    vignette,
+                    action,
+                    effort_hypotheses=effort_hypotheses,
+                    unknown_desire_object="<DESIRE_OBJECT>",
+                ),
+                alternatives_user_prompt(
+                    vignette,
+                    action,
+                    desire_text=condition,
+                    effort_text=condition,
+                    unknown_intimacy=True,
+                ),
+                alternatives_user_prompt(
+                    vignette,
+                    action,
+                    desire_text=condition,
+                    effort_hypotheses=effort_hypotheses,
+                    unknown_intimacy=True,
+                ),
+            ]
+        )
+        return {
+            "system": ALTERNATIVES_SYSTEM_PROMPT,
+            "users": rendered_users,
+        }
+
+    if stage == "score_merged":
+        return {
+            # lm_runs.jsonl embeds the generated alternatives, so its prompt
+            # vintage includes the upstream generation surface as well as the
+            # prompts used directly during scoring.
+            "upstream_generation": prompt_fingerprint_payload(
+                "generate_alternatives"
+            ),
+            "feature_systems": {
+                rating_type: system_prompt(rating_type)
+                for rating_type in ("risk", "effort", "g")
+            },
+            "feature_users": {
+                "risk": [user_prompt("risk", vignette, actions)],
+                "effort": [user_prompt("effort", vignette, actions)],
+                "g": [
+                    user_prompt(
+                        "g", vignette, actions, desire_object="<DESIRE_OBJECT>"
+                    ),
+                    user_prompt(
+                        "g",
+                        vignette,
+                        actions,
+                        desire_object="to <INFINITIVE_OUTCOME>",
+                    ),
+                ],
+            },
+            "desire_system": DESIRE_SYSTEM_PROMPT,
+            "desire_user": desire_user_prompt(
+                vignette, condition, "<DESIRE_OBJECT>"
+            ),
+            "intimacy_system": INTIMACY_SYSTEM_PROMPT,
+            "intimacy_users": [
+                relationship_user_prompt(descriptor)
+                for descriptor in RELATIONSHIP_DESCRIPTORS.values()
+            ],
+        }
+
+    if stage == "priors":
+        return {
+            "systems": {
+                "desire": PRIOR_DESIRE_SYSTEM_PROMPT,
+                "effort": PRIOR_EFFORT_SYSTEM_PROMPT,
+                "intimacy": PRIOR_INTIMACY_SYSTEM_PROMPT,
+            },
+            "users": {
+                "desire": prior_desire_user_prompt(
+                    vignette, "<DESIRE_OBJECT>", (condition,)
+                ),
+                "effort": prior_effort_user_prompt(
+                    vignette,
+                    "<LOW_EFFORT_STATE>",
+                    "<HIGH_EFFORT_STATE>",
+                    (condition,),
+                ),
+                "intimacy": prior_intimacy_user_prompt(vignette, (condition,)),
+            },
+        }
+
+    raise ValueError(f"unknown prompt stage: {stage}")

@@ -890,7 +890,7 @@ def _fold_impl_desire(variant, fold, warm, patience):
                         "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                         "effort_condition": "low" if e == 0 else "high",
                         "delta_desire": float(deltas.mean()),
-                        # Per-run (K simulated-observer) held-out deltas for this
+                        # Per-elicitation-sample held-out deltas for this
                         # cell, kept for the SI run-spread + mixture-check figures.
                         # Out-of-sample: predicted from the fold that held this
                         # scenario out.

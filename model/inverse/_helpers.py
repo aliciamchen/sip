@@ -319,7 +319,7 @@ def restart_records_to_rows(
 
 
 # ==============================================================================
-# Likelihood: simulated-observer Gaussian mixture over belief updates
+# Likelihood: elicitation-sample Gaussian mixture over belief updates
 # ==============================================================================
 # We fit the human *belief update* u = (posterior rating − prior rating) against
 # the model's belief update. Each elicitation run k yields a model update

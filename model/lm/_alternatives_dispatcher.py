@@ -164,7 +164,8 @@ def elicit_alternatives(
             if parsed is not None:
                 deduped = _dedup_alternatives(parsed)
                 # with_raw returns the full response text alongside the parsed
-                # alternatives (the CoT arm stores it as the reasoning record).
+                # alternatives so the caller can retain it as a generated
+                # rationale for the comparison set.
                 return (deduped, choice.message.content) if with_raw else deduped
         except Exception as e:
             print(f"  Attempt {attempt + 1} error: {e}", flush=True)
