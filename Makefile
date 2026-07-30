@@ -595,7 +595,9 @@ deploy-explorer: explorer
 test:
 	uv run python model/test_model_compliance.py
 	uv run python model/test_run_config.py
+	uv run python model/test_fit_protocol.py
 	uv run python model/cv/test_checkpoint.py
+	uv run python model/cv/test_model_comparison.py
 	uv run python model/lm/test_elicitation_guards.py
 	uv run python analysis/test_json_to_csv.py
 	uv run python test_roster_sync.py
