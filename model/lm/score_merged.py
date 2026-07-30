@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Per-run scoring of the K-run simulated-observer elicitation for the 3-action
+Per-run scoring of the K-run stochastic elicitation for the 3-action
 inverse studies (1a food_inv_desire, 1b food_inv_joint_de, 2a food_inv_intimacy,
 2b food_inv_joint_ie, and the nonfood studies 3a nonfood_inv_joint_de,
 3b nonfood_inv_joint_ie). Pick the study with --study.
@@ -14,7 +14,7 @@ LM rate it ONCE on risk, effort, and goal-satisfaction g (slot 0 = the observed
 action, slots 1..k = the run's alternatives, all on one comparative
 scale). There is NO inner rating-averaging: each run is a single scoring pass, so
 the run-to-run spread of both alternatives AND feature scores becomes part of the
-model's predicted distribution (the simulated-observer mixture).
+model's predicted distribution (the elicitation-sample mixture).
 
 Design choices carried over from the single-run pipeline:
   1. Observed + alts scored together (one comparative reference frame).
@@ -30,7 +30,7 @@ Design choices carried over from the single-run pipeline:
 
 Given-magnitude scalars are scored PER RUN (folded into each lm_runs.jsonl
 record, alongside the action features) rather than once run-independently — so the
-run-to-run spread of the given magnitudes joins the same simulated-observer
+run-to-run spread of the given magnitudes joins the same elicitation-sample
 mixture as the alternatives and the feature scores:
   - given-desire studies (2a, 2b, 3b): a per-(scenario, desire_condition) desire
     scalar, scored inside each (scenario, run) unit → each record's `desire`.
@@ -89,12 +89,18 @@ from _features_dispatcher import (
 from client import (
     MODEL_ID,
     TEMPERATURE,
+    _manifest_prompt_hashes,
+    _prompt_sha,
     aggregate_action_ratings,
+    fingerprint_payload,
     get_ratings_concurrent,
+    guard_resume_fingerprint_mismatch,
     guard_resume_prompt_mismatch,
     load_api_key,
+    manifest_prompt_matches,
     numeric_action_schema,
     read_jsonl_checked,
+    read_run_manifest,
     write_jsonl_atomic,
     write_run_manifest,
 )
@@ -118,6 +124,95 @@ _LEVELS = {
     "effort_condition": EFFORT_CONDITIONS,
     "intimacy_condition": INTIMACY_LEVELS,
 }
+
+
+def _file_sha256(path):
+    """Full SHA-256 of an elicitation input file."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _alternatives_provenance(alts_path, study):
+    """Validate and fingerprint the exact alternatives artifact being scored."""
+    alts_path = Path(alts_path)
+    manifest = read_run_manifest(alts_path)
+    if manifest is None:
+        raise SystemExit(
+            f"No provenance manifest found for {alts_path.name}; cannot verify "
+            "which generation prompt produced the alternatives. Re-run "
+            "generate_alternatives.py before scoring."
+        )
+    if manifest.get("stage") != "generate_alternatives":
+        raise SystemExit(
+            f"The manifest for {alts_path.name} records stage "
+            f"{manifest.get('stage')!r}, not 'generate_alternatives'."
+        )
+    if manifest.get("study") != study:
+        raise SystemExit(
+            f"The manifest for {alts_path.name} records study "
+            f"{manifest.get('study')!r}, not {study!r}."
+        )
+    if manifest.get("status") not in (None, "complete"):
+        raise SystemExit(
+            f"The alternatives artifact {alts_path.name} is not complete "
+            f"(manifest status={manifest.get('status')!r}). Resume generation "
+            "before scoring."
+        )
+    recorded, current, field = _manifest_prompt_hashes(manifest)
+    if recorded is None or current is None:
+        raise SystemExit(
+            f"The manifest for {alts_path.name} lacks a verifiable alternatives "
+            "prompt fingerprint. Re-run generation before scoring."
+        )
+    if not manifest_prompt_matches(manifest):
+        raise SystemExit(
+            f"The alternatives prompt has changed since {alts_path.name} was "
+            f"generated (manifest {field}={recorded}, current={current}). "
+            "Re-run generation before scoring."
+        )
+    manifest_path = alts_path.with_name(alts_path.stem + ".manifest.json")
+    return {
+        "alternatives_sha256": _file_sha256(alts_path),
+        "alternatives_manifest_sha256": _file_sha256(manifest_path),
+        # Legacy manifests identify the matching whole prompts.py source. Once
+        # validated, the current rendered generation hash is the equivalent
+        # stage-specific identity recorded in the scoring manifest.
+        "alternatives_prompt_sha256": _prompt_sha("generate_alternatives"),
+    }
+
+
+def _guard_resume_alternatives_provenance(runs_path, current):
+    """Refuse to splice a partial score across alternatives artifact sets."""
+    manifest = read_run_manifest(runs_path)
+    if manifest is None:
+        raise SystemExit(
+            f"{Path(runs_path).name} exists without a scoring manifest that "
+            "binds it to its alternatives input. Delete the partial scoring "
+            "file and re-run scoring from scratch."
+        )
+    labels = {
+        "alternatives_sha256": "alternatives content",
+        "alternatives_manifest_sha256": "alternatives manifest",
+        "alternatives_prompt_sha256": "alternatives prompt",
+    }
+    for field, label in labels.items():
+        recorded = manifest.get(field)
+        if recorded is None:
+            raise SystemExit(
+                f"The manifest for {Path(runs_path).name} predates {label} "
+                "fingerprinting, so a safe partial resume is impossible. "
+                "Delete the scoring file and re-run it from scratch."
+            )
+        if recorded != current[field]:
+            raise SystemExit(
+                f"The {label} changed after {Path(runs_path).name} began "
+                f"(manifest {field}={recorded}, current={current[field]}). "
+                "Delete the scoring file and re-run it from scratch."
+            )
+
 
 SCENARIO_WORKERS = 8
 
@@ -311,6 +406,46 @@ def _perm_for(scenario, run_id, tag, n):
     return np.random.default_rng(_seed_for(scenario, run_id, tag)).permutation(n)
 
 
+def _feature_prompt_builders(scenario_row):
+    """Return the production feature-message routes for one scenario."""
+    vignette = scenario_row["vignette"]
+    return [
+        (
+            "risk",
+            "risk",
+            lambda acts: format_risk_prompt_variable(vignette, acts),
+            normalize_risk,
+        ),
+        *[
+            (
+                f"effort_{condition}",
+                "effort",
+                lambda acts, condition=condition: format_effort_prompt_variable(
+                    f"{vignette} {scenario_row[f'low_risk_share_effort_{condition}']}",
+                    acts,
+                ),
+                normalize_effort,
+            )
+            for condition in EFFORT_CONDITIONS
+        ],
+        (
+            "g",
+            "g",
+            lambda acts: format_g_prompt_variable(
+                vignette, acts, scenario_row["desire_object"]
+            ),
+            normalize_g,
+        ),
+    ]
+
+
+def _shuffled_prompt(build_user_prompt, merged, scenario, run_id, tag):
+    """Render the exact user message and action permutation for one call."""
+    perm = _perm_for(scenario, run_id, tag, len(merged))
+    presented = [merged[p] for p in perm]
+    return perm, build_user_prompt(presented)
+
+
 def _score_feature_shuffled(
     client,
     system_prompt,
@@ -330,12 +465,13 @@ def _score_feature_shuffled(
     returns the user prompt. Returns dict[norm] -> normalized [0,1] value (NaN if
     the call failed for that action)."""
     n = len(merged)
-    perm = _perm_for(scenario, run_id, tag, n)
-    presented = [merged[p] for p in perm]
+    perm, rendered_user_prompt = _shuffled_prompt(
+        build_user_prompt, merged, scenario, run_id, tag
+    )
     agg, _ = _score_one_call(
         client,
         system_prompt,
-        build_user_prompt(presented),
+        rendered_user_prompt,
         n,
         label=f"{scenario}/{tag}",
         seed=_lm_seed_for(scenario, run_id, tag),
@@ -359,7 +495,6 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_i
     where risk/g are dict[norm] -> normalized [0,1] value (single value per
     action) and effort is dict[(effort_cond, norm)] -> normalized [0,1]."""
     scenario = scenario_row["scenario_label"]
-    vignette = scenario_row["vignette"]
     merged, observed_norms, alt_norms = _build_merged_actions(
         scenario_row, alt_rows_for_run
     )
@@ -370,62 +505,31 @@ def _score_actions(client, scenario_row, alt_rows_for_run, system_prompts, run_i
     # _perm_for — so scoring them concurrently returns the same values as
     # scoring them one after another.
 
-    def _score_risk():
-        # risk: one prompt, vignette only (effort-marginal).
-        return _score_feature_shuffled(
-            client,
-            system_prompts["risk"],
-            lambda acts: format_risk_prompt_variable(vignette, acts),
-            merged,
-            all_norms,
-            normalize_risk,
-            scenario,
-            run_id,
-            "risk",
-        )
-
-    def _score_effort(ec):
-        # effort: one prompt per effort_condition (effort paragraph appended).
-        vignette_eff = f"{vignette} {scenario_row[f'low_risk_share_effort_{ec}']}"
-        return _score_feature_shuffled(
-            client,
-            system_prompts["effort"],
-            lambda acts: format_effort_prompt_variable(vignette_eff, acts),
-            merged,
-            all_norms,
-            normalize_effort,
-            scenario,
-            run_id,
-            f"effort_{ec}",
-        )
-
-    def _score_g():
-        # g: one prompt, desire-free goal-satisfaction.
-        return _score_feature_shuffled(
-            client,
-            system_prompts["g"],
-            lambda acts: format_g_prompt_variable(
-                vignette, acts, scenario_row["desire_object"]
-            ),
-            merged,
-            all_norms,
-            normalize_g,
-            scenario,
-            run_id,
-            "g",
-        )
-
+    routes = _feature_prompt_builders(scenario_row)
     with ThreadPoolExecutor(max_workers=2 + len(EFFORT_CONDITIONS)) as ex:
-        risk_fut = ex.submit(_score_risk)
-        effort_futs = {ec: ex.submit(_score_effort, ec) for ec in EFFORT_CONDITIONS}
-        g_fut = ex.submit(_score_g)
-        risk = risk_fut.result()
+        futures = {
+            tag: ex.submit(
+                _score_feature_shuffled,
+                client,
+                system_prompts[rating_type],
+                build_user_prompt,
+                merged,
+                all_norms,
+                normalize_fn,
+                scenario,
+                run_id,
+                tag,
+            )
+            for tag, rating_type, build_user_prompt, normalize_fn in routes
+        }
+        values = {tag: future.result() for tag, future in futures.items()}
+        risk = values["risk"]
         effort = {
             (ec, norm): val
             for ec in EFFORT_CONDITIONS
-            for norm, val in effort_futs[ec].result().items()
+            for norm, val in values[f"effort_{ec}"].items()
         }
-        g = g_fut.result()
+        g = values["g"]
 
     return {
         "merged_actions": merged,
@@ -546,6 +650,20 @@ def _unit_complete(records):
     return True
 
 
+def _scoring_grid_completed(records, scenario_labels, run_ids):
+    """Whether every intended (scenario, run) unit is present and valid."""
+    by_unit = {}
+    for record in records:
+        key = (record["scenario_label"], int(record["run_id"]))
+        by_unit.setdefault(key, []).append(record)
+    expected = {
+        (scenario, int(run_id)) for scenario in scenario_labels for run_id in run_ids
+    }
+    return set(by_unit) == expected and all(
+        _unit_complete(unit_records) for unit_records in by_unit.values()
+    )
+
+
 def _rate_desire_for_scenario(client, scenario_row, run_id):
     """Per-desire_condition desire scalar in [0, 1] for one scenario, scored in
     one run's pass (folded into that (scenario, run)'s records). The K runs are
@@ -604,6 +722,68 @@ def _rate_relationship_values(client, run_id):
         return dict(zip(INTIMACY_LEVELS, ex.map(_rate_one, INTIMACY_LEVELS)))
 
 
+def _scoring_prompt_sha(scenarios_df, alts_df, cfg):
+    """Fingerprint every exact system/user message this scoring run can send."""
+    system_prompts = {
+        rating_type: build_system_prompt(rating_type)
+        for rating_type in ("risk", "effort", "g")
+    }
+    run_ids = sorted(alts_df["run_id"].dropna().unique().astype(int))
+    messages = []
+    for scenario in scenarios_df.index:
+        scenario_row = scenarios_df.loc[scenario]
+        for run_id in run_ids:
+            run_alt_rows = alts_df[
+                (alts_df["scenario_label"] == scenario) & (alts_df["run_id"] == run_id)
+            ]
+            merged, _, _ = _build_merged_actions(scenario_row, run_alt_rows)
+            for tag, rating_type, build_user_prompt, _ in _feature_prompt_builders(
+                scenario_row
+            ):
+                _, user_prompt = _shuffled_prompt(
+                    build_user_prompt, merged, scenario, run_id, tag
+                )
+                messages.append(
+                    {
+                        "scenario": scenario,
+                        "run_id": int(run_id),
+                        "tag": tag,
+                        "system": system_prompts[rating_type],
+                        "user": user_prompt,
+                    }
+                )
+            if cfg["desire_given"]:
+                for condition in DESIRES:
+                    messages.append(
+                        {
+                            "scenario": scenario,
+                            "run_id": int(run_id),
+                            "tag": f"desire_{condition}",
+                            "system": DESIRE_SYSTEM_PROMPT,
+                            "user": desire_user_prompt(
+                                scenario_row["vignette"],
+                                scenario_row[f"desire_{condition}"],
+                                scenario_row["desire_object"],
+                            ),
+                        }
+                    )
+    if cfg["relationship_given"]:
+        for run_id in run_ids:
+            for level in INTIMACY_LEVELS:
+                messages.append(
+                    {
+                        "scenario": "__relationship__",
+                        "run_id": int(run_id),
+                        "tag": f"intimacy_{level}",
+                        "system": INTIMACY_SYSTEM_PROMPT,
+                        "user": relationship_user_prompt(
+                            RELATIONSHIP_DESCRIPTORS[level]
+                        ),
+                    }
+                )
+    return fingerprint_payload(messages)
+
+
 def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
     if study not in _STUDY_CONFIG:
         raise SystemExit(
@@ -625,8 +805,6 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
             raise SystemExit("--arm and --base are mutually exclusive.")
         cfg["alternatives"] = "lm_alternatives_diag.jsonl"
         cfg["runs"] = "lm_runs_diag.jsonl"
-    api_key = load_api_key()
-
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     study_dir.mkdir(parents=True, exist_ok=True)
@@ -640,6 +818,12 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
             " first."
         )
 
+    prior_runs_manifest = read_run_manifest(runs_path)
+    alternatives_provenance = _alternatives_provenance(alts_path, study)
+    if runs_path.exists():
+        guard_resume_prompt_mismatch(runs_path)
+        _guard_resume_alternatives_provenance(runs_path, alternatives_provenance)
+
     scenarios_df = pd.read_csv(scenarios_path).set_index("scenario_label", drop=False)
     alts_df = pd.DataFrame(read_jsonl_checked(alts_path))
     if "run_id" not in alts_df.columns:
@@ -647,9 +831,14 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
             f"{alts_path} has no run_id field — re-run generate_alternatives.py "
             "with the K-run pipeline first."
         )
-
-    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
-    client = Together(api_key=api_key)
+    rendered_prompt_sha = _scoring_prompt_sha(scenarios_df, alts_df, cfg)
+    if runs_path.exists():
+        guard_resume_fingerprint_mismatch(
+            runs_path,
+            "rendered_prompt_sha256",
+            rendered_prompt_sha,
+            "rendered scoring prompts",
+        )
 
     system_prompts = {
         "risk": build_system_prompt("risk"),
@@ -661,11 +850,11 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
     # except units whose records contain null features/scalars (failed calls),
     # which are re-queued so re-running heals them (their stale records are
     # dropped and rewritten at the first checkpoint). Refuses to resume across
-    # a prompts.py edit (see guard_resume_prompt_mismatch).
+    # a prompt edit, a change to the caller-rendered messages, or a replaced
+    # alternatives artifact.
     done_units = set()
     existing_records = []
     if runs_path.exists():
-        guard_resume_prompt_mismatch(runs_path)
         by_unit = {}
         for rec in read_jsonl_checked(runs_path):
             key = (rec["scenario_label"], int(rec["run_id"]))
@@ -689,6 +878,35 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
             )
 
     run_ids = sorted(alts_df["run_id"].dropna().unique().astype(int))
+    units = [
+        (s, r)
+        for s in scenarios_df.index
+        for r in run_ids
+        if (s, int(r)) not in done_units
+    ]
+
+    # Write input provenance before the first paid call. If the process is
+    # interrupted, any checkpointed JSONL is already bound to the exact
+    # alternatives artifact it used, so a later resume can validate it.
+    if units:
+        write_run_manifest(
+            runs_path,
+            stage="score_merged",
+            study=study,
+            extra={
+                **alternatives_provenance,
+                "rendered_prompt_sha256": rendered_prompt_sha,
+                "status": "in_progress",
+                "k_runs": len(run_ids),
+                "score_temperature": TEMPERATURE,
+                "n_scenarios": len(scenarios_df),
+                "n_records": len(existing_records),
+            },
+        )
+        print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
+        client = Together(api_key=load_api_key())
+    else:
+        client = None
 
     # Per-run given magnitudes (folded into each record). Relationship intimacy
     # (1a/1b) is scenario-independent, so it's scored ONCE per run and reused
@@ -727,12 +945,6 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
                 for rid, values in zip(missing_rids, rated):
                     relationship_by_run[int(rid)] = values
 
-    units = [
-        (s, r)
-        for s in scenarios_df.index
-        for r in run_ids
-        if (s, int(r)) not in done_units
-    ]
     print(
         f"\n{len(units)} (scenario, run) units to score "
         f"(scenarios={len(scenarios_df)}, runs={len(run_ids)}; "
@@ -812,15 +1024,24 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
 
     print("\n=== Done ===")
     print(f"  {runs_path.name}  ({len(all_records)} records)")
-    # The manifest describes how the data were produced, so only (re)write it
-    # when this invocation actually scored something — a no-op resume must not
-    # stamp the current prompts/git hashes over data produced earlier.
-    if units:
+    scoring_complete = _scoring_grid_completed(all_records, scenarios_df.index, run_ids)
+    finalize_interrupted = (
+        prior_runs_manifest is not None
+        and prior_runs_manifest.get("status") == "in_progress"
+        and scoring_complete
+    )
+    # A no-op resume only rewrites an interrupted manifest after confirming
+    # that the full grid is valid. An ordinary no-op against a completed
+    # manifest remains untouched.
+    if units or finalize_interrupted:
         manifest_path = write_run_manifest(
             runs_path,
             stage="score_merged",
             study=study,
             extra={
+                **alternatives_provenance,
+                "rendered_prompt_sha256": rendered_prompt_sha,
+                "status": "complete" if scoring_complete else "in_progress",
                 "k_runs": len(run_ids),
                 "score_temperature": TEMPERATURE,
                 "n_scenarios": len(scenarios_df),

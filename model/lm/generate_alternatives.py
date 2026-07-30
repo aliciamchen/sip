@@ -55,16 +55,19 @@ from _alternatives_dispatcher import (
 )
 from client import (
     MODEL_ID,
+    fingerprint_payload,
+    guard_resume_fingerprint_mismatch,
     guard_resume_prompt_mismatch,
     load_api_key,
     read_jsonl_checked,
+    read_run_manifest,
     write_jsonl_atomic,
     write_run_manifest,
 )
-from prompts import alternatives_user_prompt
+from prompts import ALTERNATIVES_SYSTEM_PROMPT, alternatives_user_prompt
 
 
-# The K-run simulated-observer pipeline: for each (scenario × condition) cell we
+# The K-run elicitation-sample pipeline: for each (scenario × condition) cell we
 # repeat the full elicitation K_RUNS times (each run = its own alternatives set +
 # feature scores), and the run-to-run spread becomes part of the model's
 # predicted distribution of human responses. Cross-run *diversity* is the point,
@@ -224,6 +227,72 @@ def _empty_units_path(output_path):
     return output_path.with_name(output_path.stem + ".empty_units.jsonl")
 
 
+def _rationale_path(output_path):
+    """Sidecar path for the raw response containing rationale plus JSON."""
+    output_path = Path(output_path)
+    return output_path.with_name(output_path.stem + ".rationale.jsonl")
+
+
+def _legacy_reasoning_path(output_path):
+    """Pre-rename sidecar path, accepted only for resume migration."""
+    output_path = Path(output_path)
+    return output_path.with_name(output_path.stem + ".reasoning.jsonl")
+
+
+def _load_rationale_rows(output_path):
+    """Load the current rationale sidecar or migrate its legacy field name."""
+    rationale_path = _rationale_path(output_path)
+    if rationale_path.exists():
+        return read_jsonl_checked(rationale_path)
+    legacy_path = _legacy_reasoning_path(output_path)
+    if not legacy_path.exists():
+        return []
+    rows = read_jsonl_checked(legacy_path)
+    return [
+        {
+            **{key: value for key, value in row.items() if key != "reasoning"},
+            "rationale": row["reasoning"],
+        }
+        for row in rows
+    ]
+
+
+def _rationale_record(cell, cell_cols, run, raw_text):
+    """Build one generated-rationale record without treating it as hidden
+    model reasoning."""
+    return {
+        "scenario_label": cell["scenario_label"],
+        "observed_action": cell["observed_action"],
+        **{col: cell[col] for col in cell_cols},
+        "run_id": run,
+        "rationale": raw_text,
+    }
+
+
+def _requeue_units_missing_rationales(results, rationale_rows, cell_cols):
+    """Drop completed alternative rows whose audit response is absent.
+
+    The main alternatives file is the completion ledger. If a process was
+    interrupted after writing it but before the rationale sidecar, retaining
+    those rows would make resume skip the unit permanently. Dropping the whole
+    unit requeues it; deterministic seeds make the retry reproducible
+    best-effort.
+    """
+    result_units = {_cell_key(row, cell_cols, row["run_id"]) for row in results}
+    rationale_units = {
+        _cell_key(row, cell_cols, row["run_id"]) for row in rationale_rows
+    }
+    missing = result_units - rationale_units
+    if not missing:
+        return results, set()
+    kept = [
+        row
+        for row in results
+        if _cell_key(row, cell_cols, row["run_id"]) not in missing
+    ]
+    return kept, missing
+
+
 def _sorted_rows(rows, cell_cols):
     """Stable row order (cell key, run, alt index) so writes are
     byte-reproducible regardless of thread-completion order — score_merged.py
@@ -319,10 +388,21 @@ def _build_cells(scenarios_df, cfg, study):
 _DIAG_STUDIES = tuple(_STUDY_CONFIG)
 
 
-# The alternatives prompt reasons before answering, so a completion carries the
-# prose as well as the array and needs the larger budget (the rating stages'
-# default is 800). One value, not a mode: there is only one prompt.
+# The alternatives prompt asks for an explanation before the array, so a
+# completion carries prose as well as JSON and needs the larger budget (the
+# rating stages' default is 800). One value, not a mode: there is only one
+# prompt.
 ALT_MAX_TOKENS = 1400
+
+
+def _generation_prompt_sha(cells):
+    """Fingerprint the exact system/user messages assembled for this run."""
+    return fingerprint_payload(
+        {
+            "system": ALTERNATIVES_SYSTEM_PROMPT,
+            "users": [cell["user_prompt"] for cell in cells],
+        }
+    )
 
 
 def main(study, base=False, arm_output_only=False):
@@ -356,28 +436,46 @@ def main(study, base=False, arm_output_only=False):
     scenarios_df = load_scenarios(study)
     print(f"Loaded {len(scenarios_df)} scenarios", flush=True)
 
-    print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
-    client = Together(api_key=api_key)
-
     output_path = _output_path_for(study, base)
     if arm_output_only:
         output_path = output_path.with_name(cfg["output"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     cell_cols = cfg["cell_cols"]
+    all_cells = _build_cells(scenarios_df, cfg, study)
+    rendered_prompt_sha = _generation_prompt_sha(all_cells)
 
     # Resume: skip (cell, run) units already elicited. Done units are the union
     # of units with rows in the output JSONL and units in the empty-units
     # sidecar (see _empty_units_path — a valid zero-alternative elicitation
     # writes no rows, so it is tracked there instead). Refuses to resume across
-    # a prompts.py edit (see guard_resume_prompt_mismatch).
+    # a centralized prompt edit or a change to the exact messages assembled by
+    # the caller.
     empty_units_path = _empty_units_path(output_path)
+    rationale_path = _rationale_path(output_path)
     done_units = set()
     results = []
     empty_units = []
+    rationale_rows = _load_rationale_rows(output_path)
+    prior_manifest = read_run_manifest(output_path)
     if output_path.exists():
         guard_resume_prompt_mismatch(output_path)
+        guard_resume_fingerprint_mismatch(
+            output_path,
+            "rendered_prompt_sha256",
+            rendered_prompt_sha,
+            "rendered generation prompts",
+        )
         results = read_jsonl_checked(output_path)
+        results, requeued_missing_rationale = _requeue_units_missing_rationales(
+            results, rationale_rows, cell_cols
+        )
+        if requeued_missing_rationale:
+            print(
+                f"Re-queued {len(requeued_missing_rationale)} (cell, run) units "
+                "whose alternatives were checkpointed without a rationale.",
+                flush=True,
+            )
         if results and "run_id" in results[0]:
             done_units = set(_cell_key(r, cell_cols, r["run_id"]) for r in results)
     if empty_units_path.exists():
@@ -392,7 +490,6 @@ def main(study, base=False, arm_output_only=False):
         )
 
     # Build work list as (cell, run) units, dropping done ones.
-    all_cells = _build_cells(scenarios_df, cfg, study)
     pending = [
         (c, run)
         for c in all_cells
@@ -406,23 +503,46 @@ def main(study, base=False, arm_output_only=False):
         f"{len(done_units)} already done).",
         flush=True,
     )
+    if pending:
+        write_run_manifest(
+            output_path,
+            stage="generate_alternatives",
+            study=study,
+            extra={
+                "rendered_prompt_sha256": rendered_prompt_sha,
+                "status": "in_progress",
+                "k_runs": N_RUNS_ALT,
+                "gen_temperature": ALT_GEN_TEMPERATURE,
+                "max_tokens": ALT_MAX_TOKENS,
+                "n_cells": len(all_cells),
+                "n_alternatives": len(results),
+                "n_empty_units": len(empty_units),
+            },
+        )
+        print(f"\nInitializing Together AI client for {MODEL_ID}...", flush=True)
+        client = Together(api_key=api_key)
+    else:
+        client = None
 
-    # The prompt reasons before answering, so every completion carries prose the
-    # parser discards. Keep it: it is the record of how each comparison set was
-    # arrived at, and it is what a coverage audit reads.
-    reasoning_path = output_path.with_name(
-        output_path.name.replace(".jsonl", ".reasoning.jsonl")
-    )
-    # Merge existing reasoning records on resume, so a K-extension run doesn't
-    # clobber the reasoning of already-elicited (cell, run) units.
-    reasoning_rows = (
-        read_jsonl_checked(reasoning_path) if reasoning_path.exists() else []
-    )
+    # The prompt asks for an explanation before the array. Keep the raw
+    # response as an auditable rationale for the comparison set, not as
+    # evidence about the model's hidden reasoning process. Keying by unit
+    # deduplicates a retry after an interruption that wrote the sidecar before
+    # the main completion ledger.
+    rationale_by_unit = {
+        _cell_key(row, cell_cols, row["run_id"]): row for row in rationale_rows
+    }
 
     def _checkpoint():
-        write_jsonl_atomic(output_path, _sorted_rows(results, cell_cols))
+        # Write audit metadata first and the main alternatives completion
+        # ledger last. A crash between files then requeues rather than silently
+        # treating a rationale-less unit as complete.
+        write_jsonl_atomic(
+            rationale_path,
+            _sorted_rows(list(rationale_by_unit.values()), cell_cols),
+        )
         write_jsonl_atomic(empty_units_path, _sorted_rows(empty_units, cell_cols))
-        write_jsonl_atomic(reasoning_path, reasoning_rows)
+        write_jsonl_atomic(output_path, _sorted_rows(results, cell_cols))
 
     completed = 0
     n_new_units = 0
@@ -444,14 +564,8 @@ def main(study, base=False, arm_output_only=False):
             cell, run = future_to_unit[fut]
             alts, raw_text = fut.result()
             if alts is not None:
-                reasoning_rows.append(
-                    {
-                        "scenario_label": cell["scenario_label"],
-                        "observed_action": cell["observed_action"],
-                        **{col: cell[col] for col in cell_cols},
-                        "run_id": run,
-                        "reasoning": raw_text,
-                    }
+                rationale_by_unit[_cell_key(cell, cell_cols, run)] = _rationale_record(
+                    cell, cell_cols, run, raw_text
                 )
             completed += 1
             cond_str = " | ".join(f"{c}={cell[c]}" for c in cell_cols)
@@ -515,15 +629,24 @@ def main(study, base=False, arm_output_only=False):
             flush=True,
         )
 
-    # The manifest describes how the data were produced, so only (re)write it
-    # when this invocation actually elicited something — a no-op resume must
-    # not stamp the current prompts/git hashes over data produced earlier.
-    if n_new_units:
+    # A crash can occur after the final JSONL checkpoint but before the
+    # manifest is marked complete. A no-op resume finalizes that in-progress
+    # manifest once the full grid is accounted for; an ordinary no-op against
+    # an already-complete manifest remains untouched.
+    completed_grid = n_failed_units == 0 and len(done_units) + n_new_units == total
+    finalize_interrupted = (
+        prior_manifest is not None
+        and prior_manifest.get("status") == "in_progress"
+        and completed_grid
+    )
+    if n_new_units or finalize_interrupted:
         manifest_path = write_run_manifest(
             output_path,
             stage="generate_alternatives",
             study=study,
             extra={
+                "rendered_prompt_sha256": rendered_prompt_sha,
+                "status": "complete" if completed_grid else "in_progress",
                 "k_runs": N_RUNS_ALT,
                 "gen_temperature": ALT_GEN_TEMPERATURE,
                 "max_tokens": ALT_MAX_TOKENS,

@@ -10,16 +10,17 @@ for data elicited before the sidecar existed.
 
 VALIDITY ASSUMPTION — read before running: marking grid-missing units as empty
 is only valid because a *completed* elicitation pass attempted every (cell,
-run) unit in the study's grid (the run manifest is written only at the end of
-a pass), so any unit absent from the JSONL was attempted and yielded zero
+run) unit in the study's grid. New manifests state this explicitly with
+``status: "complete"``; legacy manifests were written only at the end of a
+pass. Therefore, any unit absent from the JSONL was attempted and yielded zero
 alternatives rather than never being attempted. That "zero" covers both a
 valid empty response and a unit that exhausted its parse retries — the two
 were indistinguishable in the old pipeline, and score_merged.py already scored
 both as observed-action-only cells, so marking them empty preserves the
-historical semantics. The script therefore refuses to run unless the run
-manifest exists AND its prompts_sha256 matches the current prompts.py (a
-prompt edit would make "attempted" no longer mean "attempted with these
-prompts").
+historical semantics. The script therefore refuses to run unless the manifest
+identifies a completed pass AND its recorded generation-prompt fingerprint
+matches the current prompt (a prompt edit would make "attempted" no longer mean
+"attempted with these prompts").
 
 Usage (never runs any LM call; purely local):
     uv run python model/lm/backfill_empty_units.py --study food_inv_desire
@@ -32,7 +33,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from client import (
-    _prompts_sha,
+    _manifest_prompt_hashes,
+    manifest_prompt_matches,
     read_jsonl_checked,
     read_run_manifest,
     write_jsonl_atomic,
@@ -50,6 +52,11 @@ from generate_alternatives import (
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root
+
+
+def _manifest_is_completed(manifest):
+    """Legacy manifests were end-only; new checkpoint manifests are explicit."""
+    return manifest.get("status") in (None, "complete")
 
 
 def main(study, base=False):
@@ -73,8 +80,8 @@ def main(study, base=False):
     if not output_path.exists():
         raise SystemExit(f"{output_path} not found — nothing to backfill.")
 
-    # The validity gate: only a completed pass (manifest written at the end)
-    # under the CURRENT prompts justifies reading absence-from-grid as empty.
+    # The validity gate: only a completed pass under the current prompts
+    # justifies reading absence-from-grid as empty.
     manifest = read_run_manifest(output_path)
     if manifest is None:
         raise SystemExit(
@@ -83,13 +90,19 @@ def main(study, base=False):
             "assumed empty. Re-run generate_alternatives.py to completion "
             "instead."
         )
-    if manifest.get("prompts_sha256") != _prompts_sha():
+    if not _manifest_is_completed(manifest):
         raise SystemExit(
-            f"prompts.py has changed since {output_path.name} was elicited "
-            f"(manifest prompts_sha256={manifest.get('prompts_sha256')}, "
-            f"current={_prompts_sha()}) — grid-missing units may simply never "
-            "have been attempted under the current prompts. Refusing to "
-            "backfill."
+            f"The run manifest for {output_path.name} has "
+            f"status={manifest.get('status')!r}, so the elicitation grid may be "
+            "incomplete. Resume generation instead of backfilling."
+        )
+    if not manifest_prompt_matches(manifest):
+        recorded, current, field = _manifest_prompt_hashes(manifest)
+        raise SystemExit(
+            f"The generation prompt has changed since {output_path.name} was "
+            f"elicited (manifest {field}={recorded}, current={current}) — "
+            "grid-missing units may simply never have been attempted under "
+            "the current prompt. Refusing to backfill."
         )
     k_runs = manifest.get("k_runs")
     if not k_runs:

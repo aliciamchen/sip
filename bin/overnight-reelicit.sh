@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 #
 # overnight-reelicit.sh — one-command overnight re-elicitation + refit of all six
-# inverse-planning studies on the CURRENT (tight) prompt, then fit + LOSO CV.
+# inverse-planning studies on the current prompt source, then fit + LOSO CV.
 #
-# Why: the committed lm_runs.jsonl tables predate the tight prompt merged in
-# b5eace2, so every study's LM tables are stale relative to model/lm/prompts.py.
-# This regenerates them at K=20 (main + base ablations), refits, and re-runs CV.
+# Why: the committed lm_runs.jsonl tables predate the task-aware alternatives
+# prompt and the total-dyadic-cost effort rubric, so every study's LM tables are
+# stale relative to model/lm/prompts.py. This regenerates them at K=20 (main +
+# base ablations), refits, and re-runs CV.
 #
 # What it does, in order:
 #   0. preflight  — TOGETHER_API_KEY present, nothing else already running
-#   1. backup     — copy every model/outputs/lm/<slug>/*.jsonl to the run dir
-#   2. delete     — remove the stale generate/score JSONL (a prompt edit makes the
-#                   generator REFUSE to resume, so stale files must go first)
+#   1. backup     — copy every LM JSONL and provenance manifest to the run dir
+#   2. delete     — remove the stale generate/score artifact sets (a prompt edit
+#                   makes the generator REFUSE to resume, so they must go first)
 #   3. smoke      — K=1 elicitation of all 9 units, then validate. HARD GATE:
 #                   on failure it restores the backup and aborts before any $ spend
 #   4. delete     — remove the K=1 files
@@ -90,9 +91,11 @@ log()  { printf '%s  %s\n' "$(date '+%H:%M:%S')" "$*" | tee -a "$RUN_DIR/main.lo
 backup() {
   log "Backup lm/ tables -> $RUN_DIR/backup-lm/"
   for s in $MAIN_STUDIES; do
-    if $DRY_RUN; then printf 'DRY  cp model/outputs/lm/%s/*.jsonl -> backup\n' "$s"; continue; fi
+    if $DRY_RUN; then printf 'DRY  cp model/outputs/lm/%s/*.{jsonl,manifest.json} -> backup\n' "$s"; continue; fi
     mkdir -p "$RUN_DIR/backup-lm/$s"
-    cp -p model/outputs/lm/"$s"/*.jsonl "$RUN_DIR/backup-lm/$s/" 2>/dev/null || true
+    cp -p model/outputs/lm/"$s"/*.jsonl \
+      model/outputs/lm/"$s"/*.manifest.json \
+      "$RUN_DIR/backup-lm/$s/" 2>/dev/null || true
   done
 }
 
@@ -100,19 +103,34 @@ restore_backup() {
   log "Restoring original tables from backup"
   for s in $MAIN_STUDIES; do
     $DRY_RUN && continue
-    cp -p "$RUN_DIR/backup-lm/$s/"*.jsonl model/outputs/lm/"$s"/ 2>/dev/null || true
+    delete_stale_files "$s"
+    cp -p "$RUN_DIR/backup-lm/$s/"*.jsonl \
+      "$RUN_DIR/backup-lm/$s/"*.manifest.json \
+      model/outputs/lm/"$s"/ 2>/dev/null || true
   done
 }
 
 # Remove ONLY the generate/score outputs — never the embedding artifacts
 # (lm_alternatives_projection/semantic.jsonl) or the priors files.
+delete_stale_files() {
+  s="$1"
+  for f in lm_alternatives.jsonl lm_alternatives.empty_units.jsonl \
+             lm_alternatives.rationale.jsonl lm_alternatives.reasoning.jsonl \
+             lm_alternatives.manifest.json lm_runs.jsonl \
+             lm_runs.manifest.json lm_alternatives_base.jsonl \
+             lm_alternatives_base.empty_units.jsonl \
+             lm_alternatives_base.rationale.jsonl \
+             lm_alternatives_base.reasoning.jsonl \
+             lm_alternatives_base.manifest.json lm_runs_base.jsonl \
+             lm_runs_base.manifest.json; do
+    run rm -f "model/outputs/lm/$s/$f"
+  done
+}
+
 delete_stale() {
-  log "Delete stale generate/score JSONL (backup already taken)"
+  log "Delete stale generate/score artifact sets (backup already taken)"
   for s in $MAIN_STUDIES; do
-    for f in lm_alternatives.jsonl lm_alternatives.empty_units.jsonl lm_runs.jsonl \
-             lm_alternatives_base.jsonl lm_alternatives_base.empty_units.jsonl lm_runs_base.jsonl; do
-      run rm -f "model/outputs/lm/$s/$f"
-    done
+    delete_stale_files "$s"
   done
 }
 

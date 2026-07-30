@@ -40,6 +40,7 @@ from _features_dispatcher import (
     parse_intimacy_response,
 )
 from client import (
+    fingerprint_payload,
     get_ratings_concurrent,
     load_api_key,
     write_jsonl_atomic,
@@ -201,6 +202,22 @@ def _user_prompt_for(quantity, cell):
     return prior_intimacy_user_prompt(cell["vignette"], cell["condition_texts"])
 
 
+def _prior_prompt_sha(cells):
+    """Fingerprint the exact prior-stage messages assembled by the caller."""
+    return fingerprint_payload(
+        [
+            {
+                "scenario": cell["scenario_label"],
+                "quantity": quantity,
+                "system": _QUANTITY_CALL[quantity][0],
+                "user": _user_prompt_for(quantity, cell),
+            }
+            for cell in cells
+            for quantity in cell["quantities"]
+        ]
+    )
+
+
 def _elicit_one(client, cell, quantity, run_id):
     system_prompt, schema_fn, parse_fn = _QUANTITY_CALL[quantity]
     ratings, _ = get_ratings_concurrent(
@@ -267,7 +284,14 @@ def main(study, base=False, dry_run=False):
             rows.append(rec)
     write_jsonl_atomic(out_path, rows)
     write_run_manifest(
-        out_path, stage="priors", study=study, extra={"base": base, "k_runs": K_RUNS}
+        out_path,
+        stage="priors",
+        study=study,
+        extra={
+            "base": base,
+            "k_runs": K_RUNS,
+            "rendered_prompt_sha256": _prior_prompt_sha(cells),
+        },
     )
     print(f"wrote {len(rows)} records to {out_path}")
 

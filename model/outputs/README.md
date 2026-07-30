@@ -13,6 +13,7 @@ outputs/
 │       ├── lm_alternatives.jsonl             # stage-1 generated alternative texts (one record per alt)
 │       ├── lm_runs_base.jsonl                # base ablation's relationship-free analog of lm_runs.jsonl (given-relationship studies)
 │       ├── lm_alternatives_base.jsonl        # base ablation's relationship-free analog of lm_alternatives.jsonl
+│       ├── lm_alternatives*.rationale.jsonl  # raw response containing the rationale and alternatives array
 │       ├── *.manifest.json                   # provenance sidecar per elicited JSONL (model, prompt hash, git SHA, timestamp)
 │       ├── lm_embeddings.npz                 # embeddings of the alternatives (semantic diagnostics; where elicited)
 │       ├── lm_alternatives_semantic.jsonl    # per-alternative cluster + nearest-observed-action labels
@@ -66,7 +67,7 @@ comparative frame of that study's own alternative set, so each study's scores ca
 keeping them per-folder means no study's elicitation overwrites another's. All `risk`,
 `effort`, and `g` values are LM ratings on a 0–6 scale normalized to `[0, 1]`. The pipeline
 runs `K` independent elicitation runs per cell (`K_RUNS`, default 20); the runs are the
-simulated-observer mixture's components, so the alternatives, their feature scores, **and** the
+elicitation-sample mixture's components, so the alternatives, their feature scores, **and** the
 given-magnitude scalars all vary run to run.
 
 ### `lm_runs.jsonl` — scored actions per run (primary)
@@ -127,16 +128,31 @@ relationship-free set across the relationship conditions.
 ### `*.manifest.json` — provenance sidecars
 
 Every elicited JSONL gets a small plain-JSON sidecar next to it (`lm_runs.jsonl` →
-`lm_runs.manifest.json`), written by `client.write_run_manifest` at the end of each
-elicitation stage. Because the values in these files are LM-generated, two regenerations must
-be distinguishable, so each manifest records how its file was produced: `stage`
-(`generate_alternatives` or `score_merged`), `study`, `model`, `prompts_sha256` (a short hash
-of `prompts.py`, so a tweaked prompt yields a different manifest), `git_sha`, `created_utc`,
-and stage-specific config (`k_runs`, the generation or scoring temperature, and record
-counts). The manifests also guard resumes: `guard_resume_prompt_mismatch` refuses to resume an
-elicitation onto data produced under a different `prompts.py` (override with
-`LM_RESUME_PROMPT_MISMATCH=allow`, which then preserves the superseded hash in
-`prompt_sha_history`).
+`lm_runs.manifest.json`), written by `client.write_run_manifest`. The generation and scoring
+stages write `status: "in_progress"` before their first paid call and replace it with
+`status: "complete"` only after the full intended grid is valid. This makes an interrupted
+JSONL checkpoint distinguishable from a completed elicitation. Because the values in these
+files are LM-generated, two regenerations must be distinguishable, so each new manifest
+records how its file was produced: `stage`
+(`generate_alternatives`, `score_merged`, or `priors`), `study`, `model`,
+`prompt_sha256` (a short hash of the rendered prompt surfaces that determine that stage's
+output, including generation prompts upstream of `score_merged`), `prompts_sha256` (the
+legacy whole-file source hash retained for traceability), `rendered_prompt_sha256` (the exact
+messages assembled by the production caller for that study and input data), `git_sha`,
+`created_utc`, and stage-specific config (`k_runs`, the generation or scoring temperature,
+and record counts). A scoring manifest also records hashes of the exact alternatives JSONL,
+its generation manifest, and its generation-prompt fingerprint. These fields prevent a
+partial scoring resume from using replaced or stale alternatives.
+
+Legacy manifests contain only `prompts_sha256`. The prompt resume guard uses the
+stage-specific hash when present and falls back to the legacy whole-file hash, so a generation
+run is invalidated by a generation-prompt edit but not by an unrelated rating-prompt or
+comment edit. New manifests also guard the exact rendered-message fingerprint. A legacy
+generation manifest may resume through the fallback when its whole-source hash matches, but
+a partial scoring file whose manifest predates alternatives-input fingerprinting must be
+restarted because its upstream input cannot be verified. Set
+`LM_RESUME_PROMPT_MISMATCH=allow` only for a deliberate mixed-prompt resume; superseded hashes
+are then preserved in the manifest's history fields.
 
 ### Semantic diagnostics — `lm_embeddings.npz`, `lm_alternatives_semantic.jsonl`, `lm_clusters.json`, `lm_alternatives_projection.jsonl`, `figures/`
 
@@ -221,7 +237,7 @@ A list with one object per held-out cell, giving the held-out `delta_<latent>` (
 load for the condition-averaged model-vs-human correlation (secondary/descriptive), and the
 model's per-cell predictions generally. The desire study (`food_inv_desire`) additionally stores
 `delta_desire_runs` — the K per-run held-out `δ_k` for each cell — which the SI run-spread and
-mixture-check figures (`figures/scripts/plot_si_validation.py`) read to show the simulated-observer
+mixture-check figures (`figures/scripts/plot_si_validation.py`) read to show the elicitation-sample
 mixture spread against the fitted `σ`, all out-of-sample.
 
 ### `cv_folds.jsonl`

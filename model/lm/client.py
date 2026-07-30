@@ -366,13 +366,40 @@ def _git_sha():
 
 
 def _prompts_sha():
-    """Short SHA-256 of prompts.py, so a tweaked prompt yields a different
-    manifest even when the model and config are unchanged."""
+    """Legacy short SHA-256 of the complete prompts.py source.
+
+    Old manifests use this as their only prompt fingerprint. New manifests
+    retain it for source-level traceability but use ``_prompt_sha(stage)`` for
+    resume safety, so comments and unrelated stages no longer cause false
+    mismatches.
+    """
     try:
         prompts_path = Path(__file__).resolve().parent / "prompts.py"
         return hashlib.sha256(prompts_path.read_bytes()).hexdigest()[:12]
     except Exception:
         return None
+
+
+def _prompt_sha(stage):
+    """Short SHA-256 of prompt surfaces that determine ``stage``'s output."""
+    try:
+        try:
+            from .prompts import prompt_fingerprint_payload
+        except ImportError:
+            from prompts import prompt_fingerprint_payload
+
+        payload = prompt_fingerprint_payload(stage)
+        return fingerprint_payload(payload)
+    except (ImportError, OSError):
+        return None
+
+
+def fingerprint_payload(payload):
+    """Short SHA-256 of a JSON-serializable, canonically encoded payload."""
+    canonical = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    )
+    return hashlib.sha256(canonical.encode()).hexdigest()[:12]
 
 
 def read_run_manifest(output_path):
@@ -390,40 +417,85 @@ def read_run_manifest(output_path):
 RESUME_PROMPT_MISMATCH_ENV = "LM_RESUME_PROMPT_MISMATCH"
 
 
-def guard_resume_prompt_mismatch(output_path):
-    """Refuse to resume onto data elicited under a different prompts.py.
+def _manifest_prompt_hashes(manifest):
+    """Return ``(recorded, current, field)`` for a manifest's prompt format."""
+    if manifest.get("prompt_sha256") is not None:
+        return (
+            manifest["prompt_sha256"],
+            _prompt_sha(manifest.get("stage")),
+            "prompt_sha256",
+        )
+    return manifest.get("prompts_sha256"), _prompts_sha(), "prompts_sha256"
 
-    Resume skips already-done units, so silently resuming after a prompt edit
-    would mix records from two prompt versions in one output file. On a
-    prompts_sha256 mismatch between the existing manifest and the current
-    prompts.py this hard-errors, unless ``LM_RESUME_PROMPT_MISMATCH=allow`` is
-    set — in which case the mixed provenance is recorded honestly by
-    ``write_run_manifest`` (the superseded hash lands in
-    ``prompt_sha_history``).
 
-    The file hash is sufficient because each stage has exactly ONE prompt: any
-    change to what gets sent is a change to prompts.py. Adding a second variant
-    of a stage's prompt, selectable at run time, would break that — two runs
-    would share a hash while sending different text — so don't.
+def manifest_prompt_matches(manifest):
+    """Whether a manifest's recorded prompt fingerprint matches current code."""
+    old, cur, _ = _manifest_prompt_hashes(manifest)
+    return old is None or cur is None or old == cur
+
+
+def guard_resume_fingerprint_mismatch(
+    output_path, field, current, description, *, allow_legacy_missing=True
+):
+    """Refuse a resume when a recorded dynamic-input fingerprint changed.
+
+    Stage hashes cover centralized prompt templates. Callers use this companion
+    guard for exact rendered messages or artifact inputs assembled outside
+    prompts.py. A missing field is allowed only for legacy manifests whose
+    stage/whole-source prompt guard has already passed.
     """
     manifest = read_run_manifest(output_path)
     if manifest is None:
         return
-    old, cur = manifest.get("prompts_sha256"), _prompts_sha()
+    recorded = manifest.get(field)
+    if recorded is None:
+        if allow_legacy_missing:
+            return
+        raise SystemExit(
+            f"The manifest for {Path(output_path).name} predates {description} "
+            "fingerprinting, so a safe resume is impossible. Delete the output "
+            "and re-run the stage from scratch."
+        )
+    if current is None or recorded == current:
+        return
+    raise SystemExit(
+        f"The {description} changed after {Path(output_path).name} began "
+        f"(manifest {field}={recorded}, current={current}). Resuming would "
+        "silently mix incompatible records. Delete the output and re-run the "
+        "stage from scratch."
+    )
+
+
+def guard_resume_prompt_mismatch(output_path):
+    """Refuse to resume onto data elicited under a different stage prompt.
+
+    Resume skips already-done units, so silently resuming after a prompt edit
+    would mix records from two prompt versions in one output file. New
+    manifests compare a stage-specific ``prompt_sha256`` built from rendered
+    prompt surfaces; legacy manifests fall back to their whole-file
+    ``prompts_sha256``. A mismatch hard-errors unless
+    ``LM_RESUME_PROMPT_MISMATCH=allow`` is set, in which case the superseded
+    hash is retained in the next manifest.
+    """
+    manifest = read_run_manifest(output_path)
+    if manifest is None:
+        return
+    old, cur, field = _manifest_prompt_hashes(manifest)
     if old is None or cur is None or old == cur:
         return
     if os.environ.get(RESUME_PROMPT_MISMATCH_ENV, "").lower() == "allow":
         print(
             f"WARNING: resuming {Path(output_path).name} elicited under "
-            f"prompts_sha256={old} with current prompts.py ({cur}); the mixed "
+            f"{field}={old} with current stage prompt ({cur}); the mixed "
             f"provenance will be recorded in the manifest "
             f"({RESUME_PROMPT_MISMATCH_ENV}=allow).",
             flush=True,
         )
         return
     raise SystemExit(
-        f"prompts.py has changed since {Path(output_path).name} was elicited "
-        f"(manifest prompts_sha256={old}, current={cur}). Resuming would "
+        f"The prompt for stage {manifest.get('stage')!r} has changed since "
+        f"{Path(output_path).name} was elicited (manifest {field}={old}, "
+        f"current={cur}). Resuming would "
         "silently mix data from two prompt versions. Either delete the output "
         "file (and its manifest) to re-elicit from scratch, or set "
         f"{RESUME_PROMPT_MISMATCH_ENV}=allow to resume anyway (the mismatch "
@@ -442,31 +514,50 @@ def write_run_manifest(output_path, stage, study, extra=None):
     stage-specific config (K runs, temperature, record counts). Mirrors the
     plain-JSON style of embed_alternatives.py's lm_clusters.json.
 
-    If an existing manifest is being replaced and its prompts_sha256 differs
-    from the current one (a resume across a prompt edit, explicitly allowed via
-    ``LM_RESUME_PROMPT_MISMATCH=allow``), the superseded hash is preserved in a
-    ``prompt_sha_history`` list so the mixed provenance stays visible. The key
-    is additive — existing manifest readers are unaffected."""
+    ``prompt_sha256`` identifies only the rendered prompts used by this stage.
+    The legacy whole-source ``prompts_sha256`` remains for traceability. If an
+    existing manifest is replaced after an explicitly allowed prompt mismatch,
+    superseded hashes are preserved in history lists."""
     manifest = {
         "stage": stage,
         "study": study,
         "model": MODEL_ID,
+        "prompt_sha256": _prompt_sha(stage),
         "prompts_sha256": _prompts_sha(),
         "git_sha": _git_sha(),
         "created_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     prior = read_run_manifest(output_path)
     if prior is not None:
-        history = list(prior.get("prompt_sha_history", []))
-        prior_sha = prior.get("prompts_sha256")
+        prior_sha = prior.get("prompt_sha256")
+        # Before stage-specific hashes existed, ``prompt_sha_history`` held
+        # whole-source prompts.py hashes. Only carry that field forward as
+        # stage history when the prior manifest actually has a stage hash.
+        history = (
+            list(prior.get("prompt_sha_history", [])) if prior_sha is not None else []
+        )
         if (
             prior_sha
-            and prior_sha != manifest["prompts_sha256"]
+            and prior_sha != manifest["prompt_sha256"]
             and prior_sha not in history
         ):
             history.append(prior_sha)
         if history:
             manifest["prompt_sha_history"] = history
+        source_history = list(prior.get("prompts_sha_history", []))
+        if prior_sha is None:
+            for legacy_sha in prior.get("prompt_sha_history", []):
+                if legacy_sha not in source_history:
+                    source_history.append(legacy_sha)
+        prior_source_sha = prior.get("prompts_sha256")
+        if (
+            prior_source_sha
+            and prior_source_sha != manifest["prompts_sha256"]
+            and prior_source_sha not in source_history
+        ):
+            source_history.append(prior_source_sha)
+        if source_history:
+            manifest["prompts_sha_history"] = source_history
     if extra:
         manifest.update(extra)
     output_path = Path(output_path)

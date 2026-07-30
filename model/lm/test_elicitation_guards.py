@@ -10,12 +10,12 @@ guard is tested here rather than trusted.
 What's covered:
 
   - There is exactly ONE alternatives system prompt. Provenance rests on
-    `prompts_sha256` — a hash of prompts.py — which can only stand in for "what
-    text was sent" while each stage has a single prompt. A second, run-time-
-    selectable variant would silently break that, so its absence is asserted.
-  - That prompt reasons before answering (adopted 2026-07-28 for coverage), and
-    the rating stages deliberately do not.
-  - Every generation captures its reasoning prose, at the larger token budget.
+    a stage-specific prompt hash, so an unrelated rating-prompt edit does not
+    make an alternatives artifact look stale.
+  - That prompt requests an explanation before answering (adopted 2026-07-28
+    for coverage), while the rating stages retain intuition-only instructions.
+  - Every generation captures its generated rationale, at the larger token
+    budget.
   - `guard_resume_prompt_mismatch` refuses a resume across a prompts.py edit.
   - The elicitation is reachable for all six studies, and the diagnostic
     `--arm-output-only` path still routes to its own vintage.
@@ -25,6 +25,7 @@ Run: uv run python model/lm/test_elicitation_guards.py
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -33,10 +34,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import prompts  # noqa: E402
+import client as client_module  # noqa: E402
 from client import (  # noqa: E402
     RESUME_PROMPT_MISMATCH_ENV,
+    _prompt_sha,
     _prompts_sha,
     guard_resume_prompt_mismatch,
+    write_run_manifest,
 )
 
 
@@ -107,19 +111,20 @@ def _env(key, value):
 
 
 def test_there_is_exactly_one_alternatives_system_prompt():
-    """Provenance for every elicited table is `prompts_sha256`, a hash of this
-    file. That only identifies what text was sent while the stage has ONE
-    prompt: two run-time-selectable variants would share a hash while producing
-    different tables, leaving the artifacts ambiguous and the resume guard
-    blind. If a variant is ever genuinely needed, it needs its own recorded
-    provenance field — not just a second constant.
+    """A run-time-selectable variant would need its own manifest field.
+
+    The stage hash covers the stage's prompt surfaces, but it cannot identify
+    which one was selected at run time. Keeping one live prompt avoids that
+    ambiguity.
     """
     variants = [
         n
         for n in dir(prompts)
-        if n.startswith("ALTERNATIVES") and n.endswith("SYSTEM_PROMPT") is False
+        if n.startswith("ALTERNATIVES") and n.endswith("SYSTEM_PROMPT")
     ]
-    assert variants == [], f"unexpected alternatives prompt variants: {variants}"
+    assert variants == ["ALTERNATIVES_SYSTEM_PROMPT"], (
+        f"unexpected alternatives prompt variants: {variants}"
+    )
     assert isinstance(prompts.ALTERNATIVES_SYSTEM_PROMPT, str)
 
 
@@ -133,23 +138,23 @@ def test_generate_alternatives_has_no_prompt_mode_flag():
         assert gone not in src, f"{gone!r} still present in generate_alternatives.py"
 
 
-# ------------------------------------------------ the prompt reasons first
+# --------------------------------------- the prompt requests an explanation first
 
 
-def test_alternatives_prompt_reasons_before_answering():
+def test_alternatives_prompt_requests_explanation_before_answering():
     p = prompts.ALTERNATIVES_SYSTEM_PROMPT
     assert "step by step before answering" in p
     assert "First, briefly explain step by step" in p
     assert "with no other text after the array:" in p
     # The old respond-only-with-JSON close must be gone, or the model returns a
-    # bare array and the reasoning sidecar is empty.
+    # bare array and the generated-rationale sidecar is empty.
     assert "no explanation:" not in p
 
 
-def test_rating_prompts_stay_unreasoned():
-    """Only generation reasons. A rating is a snap judgment, mirroring the
-    participant, so the rating preamble keeps its intuition wording and none of
-    the rating prompts ask for step-by-step thought."""
+def test_rating_prompts_stay_intuition_only():
+    """A rating is a snap judgment, mirroring the participant, so its preamble
+    keeps the intuition wording and does not request a step-by-step
+    explanation."""
     assert "just going off your intuition" in prompts._PREAMBLE_RATING
     assert "step by step" not in prompts._PREAMBLE_RATING
     rating_prompts = [
@@ -164,9 +169,17 @@ def test_rating_prompts_stay_unreasoned():
         assert "just going off your intuition" in p, p[:80]
 
 
+def test_effort_is_total_executional_cost_for_the_dyad():
+    """The scorer must count required work regardless of which person does it."""
+    p = prompts.system_prompt("effort")
+    assert "total" in p.lower()
+    assert "either person" in p.lower()
+    assert "social awkwardness" in p
+
+
 def test_alternatives_prompt_keeps_the_methodological_framing():
-    """The substance the paper's argument rests on, which the reasoning close
-    must not have displaced."""
+    """The substance the paper's argument rests on, which the explain-then-JSON
+    close must not have displaced."""
     p = prompts.ALTERNATIVES_SYSTEM_PROMPT
     for required in (
         "some resource",
@@ -178,22 +191,315 @@ def test_alternatives_prompt_keeps_the_methodological_framing():
         assert required in p, required
 
 
-# --------------------------------------------- reasoning is always captured
+def test_prompt_appendix_renders_the_live_generation_variants():
+    """The SI must show each distinct user-prompt branch used by a live study."""
+    import export_prompts_latex as exporter
+
+    rendered = exporter.build_content()
+    for label in (
+        "Study 1a",
+        "Studies 1b and 3a",
+        "Study 2a",
+        "Studies 2b and 3b",
+        "Study 1a base",
+        "Studies 1b and 3a base",
+    ):
+        assert label in rendered, label
+    for live_clause in (
+        "do not know how much the two people would like",
+        "do not know how formal or intimate",
+        "One of the following is true of the situation",
+        "comparison set you would use to interpret their choice",
+    ):
+        assert live_clause in rendered, live_clause
 
 
-def test_every_generation_captures_reasoning_at_the_larger_budget():
-    """Since the prompt always reasons, the elicitation must always request the
-    raw text and always write the sidecar — the reasoning is the record of how
-    each comparison set was arrived at, and a coverage audit reads it. A budget
-    left at the rating stages' default would truncate the array away."""
+# --------------------------------------------- prompt-stage provenance
+
+
+def test_generation_hash_ignores_an_unrelated_rating_prompt_edit():
+    """Changing a scoring prompt must not invalidate generation artifacts."""
+    before = _prompt_sha("generate_alternatives")
+    with _stub(prompts, "DESIRE_SYSTEM_PROMPT", prompts.DESIRE_SYSTEM_PROMPT + " edit"):
+        assert _prompt_sha("generate_alternatives") == before
+
+
+def test_generation_hash_changes_with_the_generation_prompt():
+    """Changing text sent during generation must invalidate its artifacts."""
+    before = _prompt_sha("generate_alternatives")
+    with _stub(
+        prompts,
+        "ALTERNATIVES_SYSTEM_PROMPT",
+        prompts.ALTERNATIVES_SYSTEM_PROMPT + " edit",
+    ):
+        assert _prompt_sha("generate_alternatives") != before
+
+
+def test_generation_resume_refuses_a_caller_routing_change():
+    """The exact rendered user messages must guard resume even when
+    prompts.py itself is unchanged."""
+    import pandas as pd
+    import generate_alternatives as ga
+
+    base_cell = {
+        "scenario_label": "hot-dog",
+        "observed_action": "no_share",
+        "effort_condition": "low",
+        "intimacy_condition": "max_formal",
+    }
+    with tempfile.TemporaryDirectory() as d:
+        output = Path(d) / "lm_alternatives.jsonl"
+        cells = [{**base_cell, "user_prompt": "Rendered prompt A"}]
+
+        def _run():
+            with _stub(ga, "_output_path_for", lambda study, base: output):
+                with _stub(
+                    ga,
+                    "load_scenarios",
+                    lambda study: pd.DataFrame([{"scenario_label": "hot-dog"}]),
+                ):
+                    with _stub(ga, "_build_cells", lambda df, cfg, study: cells):
+                        with _stub(ga, "load_api_key", lambda: "sk-test"):
+                            with _stub(ga, "Together", lambda **kwargs: object()):
+                                with _stub(ga, "N_RUNS_ALT", 1):
+                                    with _stub(
+                                        ga,
+                                        "elicit_alternatives",
+                                        lambda *args, **kwargs: (
+                                            [{"action": "Use separate forks."}],
+                                            "Generated rationale followed by JSON.",
+                                        ),
+                                    ):
+                                        ga.main("food_inv_desire")
+
+        _run()
+        manifest_path = output.with_name("lm_alternatives.manifest.json")
+        interrupted = json.loads(manifest_path.read_text())
+        interrupted["status"] = "in_progress"
+        manifest_path.write_text(json.dumps(interrupted))
+        _run()
+        assert json.loads(manifest_path.read_text())["status"] == "complete"
+
+        cells[0] = {**base_cell, "user_prompt": "Rendered prompt B"}
+        with _expect(SystemExit, "rendered generation prompts"):
+            _run()
+
+
+def test_score_hash_changes_with_the_effort_prompt():
+    """An effort-rubric edit must invalidate feature-scoring artifacts."""
+    before = _prompt_sha("score_merged")
+    edited_bodies = {**prompts._BODIES, "effort": prompts._BODIES["effort"] + " edit"}
+    with _stub(prompts, "_BODIES", edited_bodies):
+        assert _prompt_sha("score_merged") != before
+
+
+def test_score_hash_changes_with_the_upstream_generation_prompt():
+    """Scored tables must be invalidated when their alternative sets are stale."""
+    before = _prompt_sha("score_merged")
+    with _stub(
+        prompts,
+        "ALTERNATIVES_SYSTEM_PROMPT",
+        prompts.ALTERNATIVES_SYSTEM_PROMPT + " edit",
+    ):
+        assert _prompt_sha("score_merged") != before
+
+
+def test_score_rendered_fingerprint_uses_the_production_message_builder():
+    """Changing a caller-owned formatter must change the exact scoring-message
+    fingerprint, even when prompts.py is untouched."""
+    import pandas as pd
+    import score_merged as sm
+
+    scenarios = pd.DataFrame(
+        [
+            {
+                "scenario_label": "hot-dog",
+                "vignette": "Two people have one hot dog.",
+                "no_share": "They do not share it.",
+                "low_risk_share": "They cut it with a clean knife.",
+                "high_risk_share": "They bite from opposite ends.",
+                "low_risk_share_effort_low": "A clean knife is nearby.",
+                "low_risk_share_effort_high": "A clean knife is far away.",
+                "desire_object": "the hot dog",
+                "desire_low": "They just ate.",
+                "desire_high": "They are hungry.",
+            }
+        ]
+    ).set_index("scenario_label", drop=False)
+    alternatives = pd.DataFrame(
+        [
+            {
+                "scenario_label": "hot-dog",
+                "observed_action": "no_share",
+                "effort_condition": "low",
+                "intimacy_condition": "max_formal",
+                "run_id": 0,
+                "alt_idx": 0,
+                "action_text": "Use separate forks.",
+            }
+        ]
+    )
+    cfg = sm._STUDY_CONFIG["food_inv_desire"]
+    before = sm._scoring_prompt_sha(scenarios, alternatives, cfg)
+    real = sm.format_risk_prompt_variable
+    with _stub(
+        sm,
+        "format_risk_prompt_variable",
+        lambda vignette, actions: real(vignette, actions) + "\nCaller edit",
+    ):
+        after = sm._scoring_prompt_sha(scenarios, alternatives, cfg)
+    assert after != before
+
+
+def test_scoring_completion_requires_every_unit_and_nonnull_feature():
+    """A checkpoint manifest is complete only when the full scenario/run grid
+    has valid records."""
+    import score_merged as sm
+
+    valid = {
+        "scenario_label": "hot-dog",
+        "run_id": 0,
+        "actions": [{"risk": 0.1, "effort": 0.2, "g": 0.3}],
+    }
+    assert sm._scoring_grid_completed([valid], ["hot-dog"], [0])
+    assert not sm._scoring_grid_completed([], ["hot-dog"], [0])
+    assert not sm._scoring_grid_completed(
+        [{**valid, "actions": [{"risk": 0.1, "effort": None, "g": 0.3}]}],
+        ["hot-dog"],
+        [0],
+    )
+
+
+def test_prior_rendered_fingerprint_tracks_condition_assembly():
+    """Prior provenance must cover the caller-owned visible-condition text."""
+    import elicit_priors as ep
+
+    cell = {
+        "scenario_label": "hot-dog",
+        "vignette": "Two people have one hot dog.",
+        "desire_object": "the hot dog",
+        "effort_low_text": "A clean knife is nearby.",
+        "effort_high_text": "A clean knife is far away.",
+        "condition_texts": ("They are colleagues.",),
+        "quantities": ("prior_desire",),
+    }
+    before = ep._prior_prompt_sha([cell])
+    after = ep._prior_prompt_sha(
+        [{**cell, "condition_texts": ("They are close friends.",)}]
+    )
+    assert after != before
+
+
+def test_resume_uses_the_stage_hash_when_available():
+    """A new-style manifest stays resumable across unrelated prompt edits."""
+    with _manifest(prompt_sha256=_prompt_sha("generate_alternatives")) as out:
+        with _stub(
+            prompts, "DESIRE_SYSTEM_PROMPT", prompts.DESIRE_SYSTEM_PROMPT + " edit"
+        ):
+            guard_resume_prompt_mismatch(out)
+
+
+# --------------------------------------------- rationale is always captured
+
+
+def test_every_generation_captures_a_rationale_at_the_larger_budget():
+    """Since the prompt requests an explanation, the elicitation must request
+    the raw text and write the generated-rationale sidecar. A budget left at the
+    rating stages' default would truncate the array away."""
     import generate_alternatives as ga
 
     assert ga.ALT_MAX_TOKENS > 800
-    src = (Path(__file__).resolve().parent / "generate_alternatives.py").read_text()
-    assert "with_raw=True" in src
-    assert "max_tokens=ALT_MAX_TOKENS" in src
-    # The sidecar write is unconditional (inside the checkpoint, not behind a flag).
-    assert "write_jsonl_atomic(reasoning_path, reasoning_rows)" in src
+    assert ga._rationale_path(Path("lm_alternatives.jsonl")).name == (
+        "lm_alternatives.rationale.jsonl"
+    )
+    record = ga._rationale_record(
+        {
+            "scenario_label": "hot-dog",
+            "observed_action": "low_risk_share",
+            "intimacy_condition": "formal",
+        },
+        ["intimacy_condition"],
+        run=3,
+        raw_text="Generated explanation followed by JSON.",
+    )
+    assert record["rationale"] == "Generated explanation followed by JSON."
+    assert "reasoning" not in record
+
+
+def test_legacy_reasoning_sidecar_is_loaded_as_rationale():
+    """A same-vintage resume must not discard audit records written before the
+    sidecar was relabeled."""
+    import generate_alternatives as ga
+
+    with tempfile.TemporaryDirectory() as d:
+        output = Path(d) / "lm_alternatives.jsonl"
+        legacy = output.with_name("lm_alternatives.reasoning.jsonl")
+        legacy.write_text(
+            json.dumps(
+                {
+                    "scenario_label": "hot-dog",
+                    "observed_action": "low_risk_share",
+                    "intimacy_condition": "formal",
+                    "run_id": 3,
+                    "reasoning": "Generated explanation followed by JSON.",
+                }
+            )
+            + "\n"
+        )
+        rows = ga._load_rationale_rows(output)
+
+    assert rows == [
+        {
+            "scenario_label": "hot-dog",
+            "observed_action": "low_risk_share",
+            "intimacy_condition": "formal",
+            "run_id": 3,
+            "rationale": "Generated explanation followed by JSON.",
+        }
+    ]
+
+
+def test_missing_rationale_requeues_the_checkpointed_generation_unit():
+    """If the main JSONL landed but the rationale sidecar did not, the next
+    resume must not permanently skip that unit."""
+    import generate_alternatives as ga
+
+    rows = [
+        {
+            "scenario_label": "hot-dog",
+            "observed_action": "low_risk_share",
+            "intimacy_condition": "formal",
+            "run_id": 3,
+            "alt_idx": 0,
+            "action_text": "Use separate forks.",
+        },
+        {
+            "scenario_label": "soup",
+            "observed_action": "no_share",
+            "intimacy_condition": "intimate",
+            "run_id": 1,
+            "alt_idx": 0,
+            "action_text": "Share a clean spoon.",
+        },
+    ]
+    rationales = [
+        {
+            "scenario_label": "soup",
+            "observed_action": "no_share",
+            "intimacy_condition": "intimate",
+            "run_id": 1,
+            "rationale": "Generated explanation followed by JSON.",
+        }
+    ]
+
+    kept, requeued = ga._requeue_units_missing_rationales(
+        rows, rationales, ["intimacy_condition"]
+    )
+
+    assert kept == [rows[1]]
+    assert requeued == {
+        ("hot-dog", "low_risk_share", "formal", 3),
+    }
 
 
 # ------------------------------------------------------------ resume guard
@@ -208,6 +514,12 @@ def test_resume_refused_after_a_prompt_edit():
 
 
 def test_resume_allowed_when_the_prompt_is_unchanged():
+    with _manifest(prompt_sha256=_prompt_sha("generate_alternatives")) as out:
+        guard_resume_prompt_mismatch(out)  # must not raise
+
+
+def test_legacy_resume_allowed_when_the_whole_source_hash_is_unchanged():
+    """Legacy manifests use the whole prompts.py hash as their positive path."""
     with _manifest(prompts_sha256=_prompts_sha()) as out:
         guard_resume_prompt_mismatch(out)  # must not raise
 
@@ -225,6 +537,244 @@ def test_missing_manifest_is_not_an_error():
     """No manifest means nothing to contradict — the pre-manifest behavior."""
     with tempfile.TemporaryDirectory() as d:
         guard_resume_prompt_mismatch(Path(d) / "lm_alternatives.jsonl")
+
+
+def test_legacy_manifest_history_migrates_to_the_source_hash_history():
+    """Old ``prompt_sha_history`` entries were whole-file hashes; a new
+    manifest must not relabel them as stage-prompt hashes."""
+    with tempfile.TemporaryDirectory() as d:
+        output = Path(d) / "lm_alternatives.jsonl"
+        manifest_path = output.with_name("lm_alternatives.manifest.json")
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "stage": "generate_alternatives",
+                    "study": "food_inv_desire",
+                    "prompts_sha256": "legacy-current",
+                    "prompt_sha_history": ["legacy-older"],
+                }
+            )
+        )
+        with _stub(client_module, "_prompt_sha", lambda stage: "stage-current"):
+            with _stub(client_module, "_prompts_sha", lambda: "source-current"):
+                write_run_manifest(output, "generate_alternatives", "food_inv_desire")
+        migrated = json.loads(manifest_path.read_text())
+
+    assert migrated.get("prompt_sha_history") is None
+    assert migrated["prompts_sha_history"] == [
+        "legacy-older",
+        "legacy-current",
+    ]
+
+
+def test_score_refuses_alternatives_from_a_stale_generation_prompt():
+    """Scoring must stop before client initialization when the alternatives
+    manifest identifies a different generation prompt."""
+    import score_merged as sm
+
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        (root / "experiments").mkdir()
+        (root / "model" / "outputs" / "lm" / "food_inv_desire").mkdir(parents=True)
+        (root / "experiments" / "scenarios.csv").write_text("scenario_label\nhot-dog\n")
+        alts = (
+            root
+            / "model"
+            / "outputs"
+            / "lm"
+            / "food_inv_desire"
+            / "lm_alternatives.jsonl"
+        )
+        alts.write_text(
+            json.dumps(
+                {
+                    "scenario_label": "hot-dog",
+                    "observed_action": "no_share",
+                    "run_id": 0,
+                    "alt_idx": 0,
+                    "action_text": "Use separate forks.",
+                }
+            )
+            + "\n"
+        )
+        alts.with_name("lm_alternatives.manifest.json").write_text(
+            json.dumps(
+                {
+                    "stage": "generate_alternatives",
+                    "study": "food_inv_desire",
+                    "prompt_sha256": "stale-stage",
+                    "prompts_sha256": _prompts_sha(),
+                }
+            )
+        )
+        with _stub(sm, "get_project_root", lambda: root):
+            with _stub(sm, "load_api_key", lambda: "sk-test"):
+                with _stub(
+                    sm,
+                    "Together",
+                    lambda **kwargs: (_ for _ in ()).throw(
+                        AssertionError("client initialized before validation")
+                    ),
+                ):
+                    with _expect(SystemExit, "alternatives prompt"):
+                        sm.main("food_inv_desire")
+
+
+def test_score_refuses_an_in_progress_alternatives_artifact():
+    """A checkpoint manifest must not authorize scoring before generation has
+    accounted for the complete cell-by-run grid."""
+    import score_merged as sm
+
+    with tempfile.TemporaryDirectory() as d:
+        alts = Path(d) / "lm_alternatives.jsonl"
+        alts.write_text('{"run_id":0}\n')
+        alts.with_name("lm_alternatives.manifest.json").write_text(
+            json.dumps(
+                {
+                    "stage": "generate_alternatives",
+                    "study": "food_inv_desire",
+                    "status": "in_progress",
+                    "prompt_sha256": _prompt_sha("generate_alternatives"),
+                    "prompts_sha256": _prompts_sha(),
+                }
+            )
+        )
+        with _expect(SystemExit, "not complete"):
+            sm._alternatives_provenance(alts, "food_inv_desire")
+
+
+def test_backfill_distinguishes_checkpoint_and_completed_manifests():
+    """Only a completed generation pass makes grid absence mean a valid empty
+    response; legacy manifests predate statuses but were written only at end."""
+    import backfill_empty_units as backfill
+
+    assert backfill._manifest_is_completed({"status": "complete"})
+    assert backfill._manifest_is_completed({})
+    assert not backfill._manifest_is_completed({"status": "in_progress"})
+
+
+def test_score_resume_refuses_a_replaced_alternatives_file():
+    """A partial scoring file must remain bound to the exact alternatives
+    content it began with."""
+    import score_merged as sm
+
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        (root / "experiments").mkdir()
+        study_dir = root / "model" / "outputs" / "lm" / "food_inv_desire"
+        study_dir.mkdir(parents=True)
+        (root / "experiments" / "scenarios.csv").write_text("scenario_label\nhot-dog\n")
+        alts = study_dir / "lm_alternatives.jsonl"
+        alts.write_text(
+            json.dumps(
+                {
+                    "scenario_label": "hot-dog",
+                    "observed_action": "no_share",
+                    "run_id": 0,
+                    "alt_idx": 0,
+                    "action_text": "Use separate forks.",
+                }
+            )
+            + "\n"
+        )
+        alts.with_name("lm_alternatives.manifest.json").write_text(
+            json.dumps(
+                {
+                    "stage": "generate_alternatives",
+                    "study": "food_inv_desire",
+                    "prompt_sha256": _prompt_sha("generate_alternatives"),
+                    "prompts_sha256": _prompts_sha(),
+                }
+            )
+        )
+        old_provenance = sm._alternatives_provenance(alts, "food_inv_desire")
+        runs = study_dir / "lm_runs.jsonl"
+        runs.write_text("{}\n")
+        runs.with_name("lm_runs.manifest.json").write_text(
+            json.dumps(
+                {
+                    "stage": "score_merged",
+                    "study": "food_inv_desire",
+                    "prompt_sha256": _prompt_sha("score_merged"),
+                    "prompts_sha256": _prompts_sha(),
+                    **old_provenance,
+                }
+            )
+        )
+        alts.write_text(
+            json.dumps(
+                {
+                    "scenario_label": "hot-dog",
+                    "observed_action": "no_share",
+                    "run_id": 0,
+                    "alt_idx": 0,
+                    "action_text": "Use two plates instead.",
+                }
+            )
+            + "\n"
+        )
+        with _stub(sm, "get_project_root", lambda: root):
+            with _stub(sm, "load_api_key", lambda: "sk-test"):
+                with _stub(
+                    sm,
+                    "Together",
+                    lambda **kwargs: (_ for _ in ()).throw(
+                        AssertionError("client initialized before validation")
+                    ),
+                ):
+                    with _expect(SystemExit, "alternatives content"):
+                        sm.main("food_inv_desire")
+
+
+def test_failed_smoke_restores_the_matching_manifest():
+    """Smoke-only restoration must put the original data and manifest back as
+    one artifact set even if the smoke overwrote the manifest."""
+    root = Path(__file__).resolve().parents[2]
+    script = root / "bin" / "overnight-reelicit.sh"
+    with tempfile.TemporaryDirectory() as d:
+        sandbox = Path(d)
+        (sandbox / "bin").mkdir()
+        copied_script = sandbox / "bin" / script.name
+        copied_script.write_bytes(script.read_bytes())
+        copied_script.chmod(0o755)
+        study_dir = sandbox / "model" / "outputs" / "lm" / "food_inv_desire"
+        study_dir.mkdir(parents=True)
+        data = study_dir / "lm_alternatives.jsonl"
+        manifest = study_dir / "lm_alternatives.manifest.json"
+        data.write_text('{"vintage":"original"}\n')
+        manifest.write_text('{"vintage":"original"}\n')
+        (sandbox / ".env").write_text("TOGETHER_API_KEY=sk-test\n")
+
+        fake_bin = sandbox / "fake-bin"
+        fake_bin.mkdir()
+        fake_make = fake_bin / "make"
+        fake_make.write_text(
+            "#!/bin/sh\n"
+            "printf '%s\\n' '{\"vintage\":\"smoke\"}' > "
+            "model/outputs/lm/food_inv_desire/lm_alternatives.manifest.json\n"
+        )
+        fake_make.chmod(0o755)
+        fake_uv = fake_bin / "uv"
+        fake_uv.write_text("#!/bin/sh\nexit 0\n")
+        fake_uv.chmod(0o755)
+        env = {
+            **os.environ,
+            "_CAFFEINATED": "1",
+            "OVERNIGHT_DIR": str(sandbox / "runs"),
+            "PATH": f"{fake_bin}:{os.environ['PATH']}",
+        }
+        completed = subprocess.run(
+            [str(copied_script), "--smoke-only", "--yes"],
+            cwd=sandbox,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+        assert data.read_text() == '{"vintage":"original"}\n'
+        assert manifest.read_text() == '{"vintage":"original"}\n'
 
 
 def test_the_live_tables_would_be_refused_today():
