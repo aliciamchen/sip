@@ -46,18 +46,20 @@ OUT_DIR = get_project_root() / "figures" / "paper_panels"
 # Square panels at the poster's scale (the aspect that reads best), with heavier
 # axis furniture for Illustrator. Fonts are poster-scale: the artboard is ~10 in
 # wide, so text lands at print size once the row is scaled to column width.
-# Markers are smaller than the poster's: at markersize 10 a cell's bootstrap CI
-# is shorter than the marker radius, so the whiskers vanished inside the point.
+# Markers are smaller than the poster's so the human CIs stay visible: the
+# whiskers are drawn behind the marker in its own colour with no caps, so a
+# marker wider than its CI would swallow them (at markersize 10 it did).
 STYLE = replace(
     points.POSTER,
     panel_h=2.5,
-    markersize=7.5,
+    markersize=6.5,
     tick_len=4.5,
     tick_w=1.4,
     ytick_len=4.5,
     ytick_w=1.4,
     zero_lw=1.3,
-    errbar=dict(ecolor="0.15", elinewidth=1.0, capsize=2.0, capthick=1.0, zorder=5),
+    errbar=dict(elinewidth=2.2, capsize=0, zorder=2),
+    errbar_from_point=True,
 )
 
 PANEL_RC = {

@@ -78,14 +78,17 @@ class PointsStyle:
     ytick_len: float | None = None
     ytick_w: float | None = None
     zero_lw: float | None = None  # None -> panels.ZERO_LINE's own width
-    # Human CI whiskers. Drawn ABOVE the markers (high zorder) so they stay
-    # legible where a CI is shorter than the marker radius -- at paper scale
-    # most of them are.
+    # Human CI whiskers, as errorbar() kwargs.
     errbar: dict = field(
         default_factory=lambda: dict(
             ecolor="0.15", elinewidth=0.8, capsize=1.4, capthick=0.8, zorder=5
         )
     )
+    # Draw each whisker in its own point's condition colour instead of `errbar`'s
+    # ecolor, so the CI reads as that point's stem. Combined with a zorder below
+    # the marker this hides the bar inside the marker and shows only the extent,
+    # which also keeps the open (high-effort) markers' white fill clean.
+    errbar_from_point: bool = False
     dodge_width: float = 0.72  # fraction of an action slot the points span
 
 
@@ -99,12 +102,14 @@ LEGEND_ENTRY_ROWS = 2
 BOOTSTRAP_SEED_TAG = "figures"
 
 PAPER = PointsStyle(
-    markersize=5.5,
+    markersize=4.5,
     panel_w=1.55,
     panel_h=1.95,
     xtick_fs=7.5,
     ytick_len=3.5,
     ytick_w=0.8,
+    errbar=dict(elinewidth=1.5, capsize=0, zorder=2),
+    errbar_from_point=True,
 )
 
 POSTER = PointsStyle(
@@ -296,12 +301,15 @@ def draw_points(
                     )
                     if ci:
                         lo, hi = row[f"{vcol}_ci_lower"], row[f"{vcol}_ci_upper"]
+                        errbar = dict(style.errbar)
+                        if style.errbar_from_point:
+                            errbar["ecolor"] = colors[cond]
                         ax.errorbar(
                             x,
                             y,
                             yerr=[[y - lo], [hi - y]],
                             fmt="none",
-                            **style.errbar,
+                            **errbar,
                         )
     if xticklabels:
         ax.set_xticks(range(3), panels.ACTION_AXIS_LABELS)
