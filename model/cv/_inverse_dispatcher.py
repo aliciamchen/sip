@@ -97,6 +97,7 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
+import _reweighting  # noqa: E402
 from _priors import (  # noqa: E402
     beta_prior_on_grid,
     build_priors_kwarg,
@@ -160,7 +161,7 @@ def _domain_for(slug):
 def _grid_prior_active(slug, config):
     """Whether this run puts an informative Beta prior on a grid latent
     (desire/intimacy) for `slug`, so the fit vector gains the fitted `prior_nu`
-    at index `n_core`. False for the canonical uniform-prior run and for
+    at index `n_core`. False for the preregistered uniform-prior run and for
     effort-only priors (the 2-state effort prior adds no shape parameter)."""
     return any(lat in ("desire", "intimacy") for lat in config.active_latents(slug))
 
@@ -238,7 +239,7 @@ def _read_fit_results(fit_dir):
     per-variant params dicts the warm start needs.
 
     Mirrors `_helpers.load_fit_results` but reads the RunConfig's own fit dir
-    (informative/suffixed runs write outside the canonical outputs/<slug>/) and
+    (informative/suffixed runs write outside the preregistered outputs/<slug>/) and
     additionally carries `param_prior_nu` when present, so the extended
     informative-prior warm-start vector round-trips through
     `params_dict_to_array(..., extra_param_names=("prior_nu",))`."""
@@ -383,9 +384,20 @@ def _tk_cached(family, slug, variant):
 
 
 # Per-process cache of a variant's informative-prior tables (K-broadcast to the
-# feature tables' run count). None in uniform mode — the canonical path never
+# feature tables' run count). None in uniform mode — the preregistered path never
 # reweights.
 _PRIORS_CACHE = {}
+
+
+def _rw_cached(slug, variant):
+    """The reweighting config for one (study, variant), or None when the scope
+    rule grants none (in which case the fold fit is the preregistered one and carries
+    no eta). Cheap enough not to cache, but kept symmetrical with
+    `_priors_cached` so the fold bodies read the same way. Utility names come
+    from the family registry (as in `_tk_cached`), not the worker state, which
+    carries only family/slug/arrays/config."""
+    _, utility_names = _FAMILIES[_CV_W["family"]]["variants"][variant]
+    return _reweighting.config_for(slug, variant, list(utility_names))
 
 
 def _priors_cached(slug, variant):
@@ -474,10 +486,10 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
     `patience` (env `CV_PATIENCE`, default 100) trims the Adam no-improvement
     tail of each warm-started refit.
 
-    `config` (a RunConfig; default the canonical uniform-prior config) selects
+    `config` (a RunConfig; default the preregistered uniform-prior config) selects
     the alternatives vintage, whether the observer posterior is reweighted by an
     informative prior, which fit dir warm-starts the folds, and where the
-    outputs land. The default keeps the canonical path byte-identical.
+    outputs land. The default keeps the preregistered path byte-identical.
 
     Every completed fold is appended to `<outputs_dir>/cv_checkpoint.jsonl`
     (fingerprint-guarded; see _checkpoint.py), and completed folds found there
@@ -514,12 +526,25 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
     # (index `n_core`), so the warm start must carry it too — otherwise a length
     # mismatch is silently mis-sliced. Uniform runs keep the bare vector.
     extra = ("prior_nu",) if _grid_prior_active(slug, config) else ()
+
+    # The reweighted fit appends `eta` LAST (after any prior_nu), and whether a
+    # variant has one is decided per variant by the scope rule — so the warm
+    # start's extras are per variant, not shared.
+    def _extras(variant, util):
+        return extra + (
+            ("eta",) if _reweighting.uses_reweighting(slug, list(util)) else ()
+        )
+
     # Warm-start source: the full-data fit under THIS config (refits perturb it
     # only slightly), provenance-verified against fit_manifest.json and the data.
     full_fit = _load_verified_warm_start(slug, fit_dir=config.outputs_dir(slug))
     warms = {
         v: (
-            np.asarray(params_dict_to_array(full_fit[v], util, extra_param_names=extra))
+            np.asarray(
+                params_dict_to_array(
+                    full_fit[v], util, extra_param_names=_extras(v, util)
+                )
+            )
             if v in full_fit
             else None
         )
@@ -547,7 +572,7 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
         patience,
         N_RESTARTS_CV,
         config_fields={
-            "tag": config.tag() if not config.is_canonical else "canonical",
+            "tag": config.tag() if not config.is_preregistered else "preregistered",
             "runs": "lm_runs.jsonl",
             "priors": (
                 config.priors_filename(False)
@@ -647,6 +672,7 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
     priors = _priors_cached(slug, variant)  # None in uniform mode
+    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
     use_grid = priors is not None and priors.get("m_latent") is not None
     n_core = len(utility_names) + 2
     arr = _CV_W["arrays"]
@@ -668,6 +694,7 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
         response=jnp.asarray(resp[train_mask]),
         table_kwargs=tk,
         priors=priors,
+        reweighting=rw,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
@@ -678,7 +705,12 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
     nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, desire, effort, intimacy_101)
     tables = np.asarray(
-        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+        _build_observer_tables_runs(
+            obs_fn,
+            params[:n_core],
+            utility_names,
+            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
+        )
     )
 
     # Predicted belief update δ per held-out cell (mean over runs). In
@@ -750,7 +782,8 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
-        extra_param_names=("prior_nu",) if use_grid else (),
+        extra_param_names=(("prior_nu",) if use_grid else ())
+        + (("eta",) if rw else ()),
     )
     return pred_rows, fold_row, trial_ll_rows
 
@@ -796,6 +829,7 @@ def _fold_impl_desire(variant, fold, warm, patience):
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
     priors = _priors_cached(slug, variant)  # None in uniform mode
+    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
     use_grid = priors is not None and priors.get("m_latent") is not None
     n_core = len(utility_names) + 2
     arr = _CV_W["arrays"]
@@ -817,6 +851,7 @@ def _fold_impl_desire(variant, fold, warm, patience):
         response=jnp.asarray(resp[train_mask]),
         table_kwargs=tk,
         priors=priors,
+        reweighting=rw,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
@@ -827,7 +862,12 @@ def _fold_impl_desire(variant, fold, warm, patience):
     nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
     tables = np.asarray(
-        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+        _build_observer_tables_runs(
+            obs_fn,
+            params[:n_core],
+            utility_names,
+            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
+        )
     )
 
     pred_rows = []
@@ -898,7 +938,8 @@ def _fold_impl_desire(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
-        extra_param_names=("prior_nu",) if use_grid else (),
+        extra_param_names=(("prior_nu",) if use_grid else ())
+        + (("eta",) if rw else ()),
     )
     return pred_rows, fold_row, trial_ll_rows
 
@@ -951,6 +992,7 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
     priors = _priors_cached(slug, variant)  # None in uniform mode
+    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
     use_grid = priors is not None and priors.get("m_latent") is not None
     use_eff = priors is not None and priors.get("p_effort") is not None
     n_core = len(utility_names) + 2
@@ -974,6 +1016,7 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
         response_effort=jnp.asarray(re[train_mask]),
         table_kwargs=tk,
         priors=priors,
+        reweighting=rw,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
@@ -984,12 +1027,17 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
     nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)
     tables = np.asarray(
-        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+        _build_observer_tables_runs(
+            obs_fn,
+            params[:n_core],
+            utility_names,
+            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
+        )
     )
 
     # In informative mode the (desire, effort) joint is reweighted by the
     # per-cell desire Beta prior and/or the elicited P(effort=high) before the
-    # marginal means, matching the fit's likelihood layer; the canonical path
+    # marginal means, matching the fit's likelihood layer; the uniform-prior path
     # passes None/None (reweight_joint returns the joint unchanged).
     pred_rows = []
     for a_idx in range(N_ACTIONS):
@@ -1064,7 +1112,8 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
-        extra_param_names=("prior_nu",) if use_grid else (),
+        extra_param_names=(("prior_nu",) if use_grid else ())
+        + (("eta",) if rw else ()),
     )
     return pred_rows, fold_row, trial_ll_rows
 
@@ -1114,6 +1163,7 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
     slug = _CV_W["slug"]
     tk = _tk_cached(_CV_W["family"], slug, variant)
     priors = _priors_cached(slug, variant)  # None in uniform mode
+    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
     use_grid = priors is not None and priors.get("m_latent") is not None
     use_eff = priors is not None and priors.get("p_effort") is not None
     n_core = len(utility_names) + 2
@@ -1137,6 +1187,7 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
         response_effort=jnp.asarray(re[train_mask]),
         table_kwargs=tk,
         priors=priors,
+        reweighting=rw,
         verbose=False,
         n_restarts=N_RESTARTS_CV,
         init_params=warm,
@@ -1147,12 +1198,17 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
     nu = float(params[n_core]) if use_grid else None
     # (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)
     tables = np.asarray(
-        _build_observer_tables_runs(obs_fn, params[:n_core], utility_names, tk)
+        _build_observer_tables_runs(
+            obs_fn,
+            params[:n_core],
+            utility_names,
+            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
+        )
     )
 
     # In informative mode the (intimacy, effort) joint is reweighted by the
     # per-cell intimacy Beta prior and/or the elicited P(effort=high) before the
-    # marginal means; the canonical path passes None/None (joint unchanged).
+    # marginal means; the uniform-prior path passes None/None (joint unchanged).
     pred_rows = []
     for a_idx in range(N_ACTIONS):
         for r in (0, 1):
@@ -1226,7 +1282,8 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
         test_nll,
         n_train,
         n_test,
-        extra_param_names=("prior_nu",) if use_grid else (),
+        extra_param_names=(("prior_nu",) if use_grid else ())
+        + (("eta",) if rw else ()),
     )
     return pred_rows, fold_row, trial_ll_rows
 

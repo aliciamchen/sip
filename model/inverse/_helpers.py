@@ -29,6 +29,7 @@ import optax
 import pandas as pd
 from jax.scipy.special import logsumexp
 
+import _reweighting
 from _priors import beta_prior_on_grid, reweight_grid, reweight_joint
 from tables import (
     ACTION_LABEL_TO_IDX,
@@ -43,7 +44,7 @@ from utils import get_project_root
 def parse_run_config_args(argv=None, description=None):
     """Shared CLI for the fit wrappers and CV scripts: the run configuration
     (spec: notes/2026-07-18-informative-priors-refusal-alts-design.md). The
-    default (no flags) is the canonical preregistered config — uniform priors,
+    default (no flags) is the preregistered config — uniform priors,
     the unsuffixed lm_runs.jsonl vintage, outputs to outputs/<slug>/ — so a plain
     invocation stays byte-identical to the pre-config pipeline."""
     import argparse
@@ -65,6 +66,47 @@ def parse_run_config_args(argv=None, description=None):
     return RunConfig.parse(a.priors, a.priors_file)
 
 
+# Optional upper bound on the observer inverse temperature. DEFAULT: OFF.
+#
+# History (2026-07-29/30): until the log-space sharpening landed, float32 could
+# not represent the likelihood for alpha_observer above roughly 15-20 (a diffuse
+# latent row's entries, raised to that power, underflow), so every fit in this
+# project — including every preregistered analysis — was silently confined below
+# it. Removing that numerical fence revealed a second, genuine local optimum for
+# Study 1b's preregistered model at alpha_observer ~ 30, and a held-out check
+# showed it GENERALIZES BETTER (+0.0047 [+0.0020, +0.0074] per trial). A bound
+# was briefly imposed and then dropped: the preregistration specified a model and
+# maximum likelihood, not a ceiling on alpha_observer, so reporting the actual
+# MLE is fidelity to it — retaining the ceiling would have preserved an
+# arithmetic artifact and, worse, handicapped the comparison baselines that
+# `full - ablation` is measured against.
+#
+# The reproducibility concern that motivated the bound (two well-separated
+# optima, so the reported fit depends on where the optimizer starts) is handled
+# instead by ALPHA_OBS_SEEDS below: every fit deliberately starts from both
+# basins and keeps the better one, and `fit_restarts.jsonl` records what each
+# restart found. The bound machinery is kept for diagnostic use — set
+# ALPHA_OBS_MAX to a float to re-enable it.
+ALPHA_OBS_MAX = None
+
+# Explicit alpha_observer starting points, so a fit covers both known basins
+# rather than depending on luck. Low ~ the preregistered-regime optimum; high ~
+# the sharper optimum reachable since the log-space rewrite.
+ALPHA_OBS_SEEDS = (3.0, 30.0)
+
+
+def param_upper_bounds(n_params, alpha_obs_index, alpha_max=None):
+    """Elementwise upper bounds for the fit's parameter vector, or None when no
+    bound is active (the default — see ALPHA_OBS_MAX). `alpha_obs_index` is
+    len(utility_param_names), the slot the fit helpers place it in."""
+    alpha_max = ALPHA_OBS_MAX if alpha_max is None else alpha_max
+    if alpha_max is None:
+        return None
+    upper = np.full(n_params, np.inf)
+    upper[alpha_obs_index] = float(alpha_max)
+    return jnp.asarray(upper)
+
+
 def _fit_with_adam(
     loss_fn,
     init_params,
@@ -75,9 +117,15 @@ def _fit_with_adam(
     patience=100,
     tol=1e-6,
     grad_fn=None,
+    upper=None,
 ):
     """Adam fit loop with non-negativity clipping, best-so-far tracking, and a
     patience stop.
+
+    `upper` (optional, elementwise) caps parameters from above after each step —
+    used to bound alpha_observer (see ALPHA_OBS_MAX). The init is clipped to the
+    box too, so a cold restart drawn above the bound starts inside it rather
+    than walking down from outside.
 
     Adam is not monotone even on full-batch problems, so the loop keeps the
     best (params, NLL) seen so far and stops once the best NLL hasn't improved
@@ -87,6 +135,8 @@ def _fit_with_adam(
     `_fit_multistart` counts it as failed rather than keeping the init).
     """
     params = jnp.array(init_params)
+    if upper is not None:
+        params = jnp.minimum(params, upper)
     # jit the value+grad so the whole per-step graph (K-run observer build →
     # mixture NLL → backward) compiles once and reruns fast, instead of being
     # re-dispatched eagerly every Adam step. Compile cost amortizes over the
@@ -127,7 +177,9 @@ def _fit_with_adam(
 
         updates, opt_state = opt.update(grad, opt_state)
         params = optax.apply_updates(params, updates)
-        params = jnp.clip(params, 1e-6, jnp.inf)
+        params = jnp.clip(
+            params, 1e-6, jnp.inf if upper is None else upper
+        )
 
     best_nll = float(best_nll)
     if verbose:
@@ -155,8 +207,18 @@ def _fit_multistart(
     init_params=None,
     patience=100,
     seed_key=None,
+    upper=None,
+    alpha_obs_index=None,
 ):
     """Run `_fit_with_adam` from several inits and keep the best final NLL.
+
+    `upper` is passed through to every restart (see ALPHA_OBS_MAX); cold draws
+    above the bound are clipped into the box by `_fit_with_adam`.
+
+    `alpha_obs_index` (the alpha_observer slot) adds one deliberate restart per
+    ALPHA_OBS_SEEDS value, each a copy of the primary init with alpha_observer set
+    to that seed. This makes a fit cover both known alpha basins reproducibly
+    instead of depending on which one a random draw happens to fall into.
 
     Without `init_params`, inits are the canonical all-ones vector plus
     `n_restarts - 1` seeded lognormal(0, 0.5) draws (positive, centered at 1,
@@ -178,6 +240,16 @@ def _fit_multistart(
     ]
     while len(inits) < n_restarts:
         inits.append(jnp.array(rng.lognormal(mean=0.0, sigma=0.5, size=n_params)))
+    # Basin seeds are EXTRA restarts, appended after the cold draws so they never
+    # displace them — a CV fold's cold restart is the one init that never saw the
+    # held-out scenario, and that guarantee must survive. They are added only for
+    # full-data fits (`init_params is None`): a fold refit warm-starts from the
+    # full-data fit, which already explored both basins, so it inherits the
+    # winning one and keeps its independent cold draw rather than paying for two
+    # more fits per fold.
+    if alpha_obs_index is not None and init_params is None:
+        for seed in ALPHA_OBS_SEEDS:
+            inits.append(jnp.asarray(inits[0]).at[alpha_obs_index].set(float(seed)))
 
     # Compile the value+grad once here and share it across restarts (the loss
     # is identical per restart; only the init differs).
@@ -195,6 +267,7 @@ def _fit_multistart(
             label=f"{label}[restart {ri}]",
             patience=patience,
             grad_fn=grad_fn,
+            upper=upper,
         )
         records.append(
             {
@@ -224,7 +297,7 @@ def restart_records_to_rows(
     One row per restart with init_<name> / param_<name> columns (the params
     layout is [*utility_param_names, alpha_observer, sigma, *extra_param_names]).
     `extra_param_names` carries the informative-prior fit's fitted `prior_nu`
-    (empty in the canonical uniform-prior fits). Variants with different
+    (empty in the preregistered uniform-prior fits). Variants with different
     parameter sets just leave the other variants' columns empty.
     """
     rows = []
@@ -1024,6 +1097,7 @@ def fit_intimacy_observer_joint(
     response,
     table_kwargs,
     priors=None,
+    reweighting=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1042,7 +1116,7 @@ def fit_intimacy_observer_joint(
     mean gives that run's model update δ_k. `response` is the intimacy belief
     update u, scored under (1/K)Σ N(u | δ_k, σ²).
 
-    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    `priors=None` keeps the uniform-prior path byte-identical to the
     preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 2)) is active,
     the intimacy latent gets a per-cell discretized-Beta prior with a single
     fitted concentration `prior_nu` appended to the param vector at index
@@ -1052,7 +1126,9 @@ def fit_intimacy_observer_joint(
         priors = None
     n_core = len(utility_param_names) + 2
     use_grid = priors is not None and priors.get("m_latent") is not None
-    n_params = n_core + (1 if use_grid else 0)
+    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    i_eta = n_params - 1 if reweighting else None
     if init_params is not None and len(init_params) != n_params:
         raise ValueError(
             f"init_params has length {len(init_params)} but this fit expects "
@@ -1065,8 +1141,14 @@ def fit_intimacy_observer_joint(
         )
 
     def loss_fn(params):
+        tk = _reweighting.apply(
+            reweighting,
+            table_kwargs,
+            params[:n_core],
+            params[i_eta] if reweighting else 0.0,
+        )
         tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
         nu = params[n_core] if use_grid else None
@@ -1099,6 +1181,8 @@ def fit_intimacy_observer_joint(
         label="intimacy_joint",
         patience=patience,
         seed_key=seed_key,
+        upper=param_upper_bounds(n_params, len(utility_param_names)),
+        alpha_obs_index=len(utility_param_names),
     )
     return params, float(nll), restarts
 
@@ -1113,6 +1197,7 @@ def fit_desire_observer_joint(
     response,
     table_kwargs,
     priors=None,
+    reweighting=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1131,7 +1216,7 @@ def fit_desire_observer_joint(
     prior mean gives that run's δ_k. `response` is the desire belief update u,
     scored under (1/K)Σ N(u | δ_k, σ²).
 
-    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    `priors=None` keeps the uniform-prior path byte-identical to the
     preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 4)) is active,
     the desire latent gets a per-cell discretized-Beta prior with a single fitted
     concentration `prior_nu` appended to the param vector at index `n_core`; the
@@ -1141,7 +1226,9 @@ def fit_desire_observer_joint(
         priors = None
     n_core = len(utility_param_names) + 2
     use_grid = priors is not None and priors.get("m_latent") is not None
-    n_params = n_core + (1 if use_grid else 0)
+    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    i_eta = n_params - 1 if reweighting else None
     if init_params is not None and len(init_params) != n_params:
         raise ValueError(
             f"init_params has length {len(init_params)} but this fit expects "
@@ -1154,8 +1241,14 @@ def fit_desire_observer_joint(
         )
 
     def loss_fn(params):
+        tk = _reweighting.apply(
+            reweighting,
+            table_kwargs,
+            params[:n_core],
+            params[i_eta] if reweighting else 0.0,
+        )
         tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
         nu = params[n_core] if use_grid else None
@@ -1188,6 +1281,8 @@ def fit_desire_observer_joint(
         label="desire_joint",
         patience=patience,
         seed_key=seed_key,
+        upper=param_upper_bounds(n_params, len(utility_param_names)),
+        alpha_obs_index=len(utility_param_names),
     )
     return params, float(nll), restarts
 
@@ -1202,6 +1297,7 @@ def fit_joint_de_observer_joint(
     response_effort,
     table_kwargs,
     priors=None,
+    reweighting=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1222,7 +1318,7 @@ def fit_joint_de_observer_joint(
     run's 2-D model update δ_k. `response_desire`/`response_effort` are the two
     belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
 
-    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    `priors=None` keeps the uniform-prior path byte-identical to the
     preregistered fit. `priors` may carry `m_latent` (desire, shape (K, 16, 4);
     adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
     P(effort=high), shape (K, 16, 4)); each None leaves that latent uniform. The
@@ -1233,7 +1329,9 @@ def fit_joint_de_observer_joint(
     n_core = len(utility_param_names) + 2
     use_grid = priors is not None and priors.get("m_latent") is not None
     use_eff = priors is not None and priors.get("p_effort") is not None
-    n_params = n_core + (1 if use_grid else 0)
+    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    i_eta = n_params - 1 if reweighting else None
     if init_params is not None and len(init_params) != n_params:
         raise ValueError(
             f"init_params has length {len(init_params)} but this fit expects "
@@ -1246,8 +1344,14 @@ def fit_joint_de_observer_joint(
         )
 
     def loss_fn(params):
+        tk = _reweighting.apply(
+            reweighting,
+            table_kwargs,
+            params[:n_core],
+            params[i_eta] if reweighting else 0.0,
+        )
         tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
         nu = params[n_core] if use_grid else None
@@ -1294,6 +1398,8 @@ def fit_joint_de_observer_joint(
         label="joint_de_joint",
         patience=patience,
         seed_key=seed_key,
+        upper=param_upper_bounds(n_params, len(utility_param_names)),
+        alpha_obs_index=len(utility_param_names),
     )
     return params, float(nll), restarts
 
@@ -1308,6 +1414,7 @@ def fit_joint_ie_observer_joint(
     response_effort,
     table_kwargs,
     priors=None,
+    reweighting=None,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -1328,7 +1435,7 @@ def fit_joint_ie_observer_joint(
     that run's 2-D model update δ_k. `response_intimacy`/`response_effort` are the
     two belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
 
-    `priors=None` (canonical) keeps the uniform-prior path byte-identical to the
+    `priors=None` keeps the uniform-prior path byte-identical to the
     preregistered fit. `priors` may carry `m_latent` (intimacy, shape (K, 16, 2);
     adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
     P(effort=high), shape (K, 16, 2)); each None leaves that latent uniform. The
@@ -1339,7 +1446,9 @@ def fit_joint_ie_observer_joint(
     n_core = len(utility_param_names) + 2
     use_grid = priors is not None and priors.get("m_latent") is not None
     use_eff = priors is not None and priors.get("p_effort") is not None
-    n_params = n_core + (1 if use_grid else 0)
+    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    i_eta = n_params - 1 if reweighting else None
     if init_params is not None and len(init_params) != n_params:
         raise ValueError(
             f"init_params has length {len(init_params)} but this fit expects "
@@ -1352,8 +1461,14 @@ def fit_joint_ie_observer_joint(
         )
 
     def loss_fn(params):
+        tk = _reweighting.apply(
+            reweighting,
+            table_kwargs,
+            params[:n_core],
+            params[i_eta] if reweighting else 0.0,
+        )
         tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, table_kwargs
+            observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
         nu = params[n_core] if use_grid else None
@@ -1400,5 +1515,7 @@ def fit_joint_ie_observer_joint(
         label="joint_ie_joint",
         patience=patience,
         seed_key=seed_key,
+        upper=param_upper_bounds(n_params, len(utility_param_names)),
+        alpha_obs_index=len(utility_param_names),
     )
     return params, float(nll), restarts

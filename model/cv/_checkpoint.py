@@ -44,14 +44,21 @@ CHECKPOINT_NAME = "cv_checkpoint.jsonl"
 
 # The LM table files whose contents feed the observer tables (the base file
 # exists only for the given-relationship studies; hash whichever are present).
-# These are the canonical (unsuffixed) names; a non-canonical run config swaps
-# in its own vintage via `config_fields["runs"]` (see `run_fingerprint`).
+# These are the default (unsuffixed) names; a non-default run config swaps in
+# its own vintage via `config_fields["runs"]` (see `run_fingerprint`).
 _LM_TABLE_NAMES = ("lm_runs.jsonl", "lm_runs_base.jsonl")
 
-# The default config descriptor a plain (canonical) CV run fingerprints under.
-# Kept as a module constant so the no-config default and the checkpoint header
-# agree on the exact dict.
-_CANONICAL_CONFIG = {"tag": "canonical", "runs": "lm_runs.jsonl", "priors": None}
+# The config descriptor a plain (preregistered, uniform-prior) CV run
+# fingerprints under. Kept as a module constant so the no-config default and the
+# checkpoint header agree on the exact dict. The tag was "canonical" until
+# 2026-07-30; renaming it changes the fingerprint, so any checkpoint written
+# before that is discarded on the next run rather than misread — which is the
+# designed behavior for an input change, and there were none in flight.
+_PREREGISTERED_CONFIG = {
+    "tag": "preregistered",
+    "runs": "lm_runs.jsonl",
+    "priors": None,
+}
 
 
 def _base_sibling(name):
@@ -74,12 +81,20 @@ def _base_sibling(name):
 # tweaks don't cost a resume.
 _CODE_FILES = (
     "model/inverse/_helpers.py",
+    "model/inverse/_priors.py",
+    "model/inverse/_reweighting.py",
     "model/observers.py",
     "model/actors.py",
     "model/utility.py",
     "model/tables.py",
     "model/cv/_inverse_dispatcher.py",
 )
+# Every file whose contents change a fold's numbers must be listed above.
+# `_reweighting.py` (the comparison-set reweighting) and `_priors.py` (the
+# informative-prior layer) both sit at the likelihood layer and were missing
+# until 2026-07-30 — a mid-run edit to either would have silently spliced two
+# model vintages into one CV output set. Add any future likelihood-layer module
+# here at the same time it is written.
 
 
 def checkpoint_path(outputs_dir):
@@ -111,13 +126,13 @@ def run_fingerprint(
     threads partway through a long run.
 
     `config_fields` (the RunConfig descriptor: `{"tag", "runs", "priors",
-    "fit_dir"}`) ties the checkpoint to the run configuration, so a canonical
+    "fit_dir"}`) ties the checkpoint to the run configuration, so a preregistered
     run and an informative-priors / suffixed-alternatives run over the same
     study never resume from each other's folds. It selects which LM run tables
     (the config's `runs` vintage + its `_base` sibling), which prior tables
     (when informative), and which fit directory (`fit_dir`) feed the hash. The
-    default is the canonical descriptor, so a plain CV run's fingerprint is the
-    pre-config one plus the constant `"config"` key (a one-time checkpoint
+    default is the preregistered descriptor, so a plain CV run's fingerprint is
+    the pre-config one plus the constant `"config"` key (a one-time checkpoint
     invalidation on upgrade).
     """
     if project_root is None:
@@ -126,11 +141,11 @@ def run_fingerprint(
         project_root = get_project_root()
     root = Path(project_root)
     lm_dir = root / "model" / "outputs" / "lm" / slug
-    config = config_fields or _CANONICAL_CONFIG
+    config = config_fields or _PREREGISTERED_CONFIG
 
     # LM run tables: the config's alternatives vintage plus its `_base` sibling
     # (the relationship-free set for the base ablation), keyed by file name.
-    runs_name = config.get("runs", _CANONICAL_CONFIG["runs"])
+    runs_name = config.get("runs", _PREREGISTERED_CONFIG["runs"])
     lm_names = [runs_name]
     if (sib := _base_sibling(runs_name)) is not None:
         lm_names.append(sib)
@@ -144,7 +159,7 @@ def run_fingerprint(
     lm_sha = {name: _sha256(lm_dir / name) for name in lm_names}
 
     # Warm-start fit from the config's own fit directory (informative/suffixed
-    # runs write outside the canonical outputs/<slug>/); default is canonical.
+    # runs write outside the default outputs/<slug>/); default is preregistered.
     fit_dir = config.get("fit_dir")
     warm_path = (
         Path(fit_dir) if fit_dir else root / "model" / "outputs" / slug

@@ -18,6 +18,7 @@ import jax.numpy as jnp  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from _helpers import (  # noqa: E402
+    ALPHA_OBS_MAX,
     fit_joint_de_observer_joint,
     joint_de_table_kwargs,
     load_joint_de_data,
@@ -28,6 +29,7 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
+import _reweighting  # noqa: E402
 from _priors import build_priors_kwarg, priors_base_variant  # noqa: E402
 from observers import VARIANTS_JOINT_DE as VARIANTS  # noqa: E402
 
@@ -54,7 +56,7 @@ def main(config=None):
             utility_names, base=(name == "base")
         ),
     )
-    # Informative-prior kwargs per variant (None in the canonical uniform config,
+    # Informative-prior kwargs per variant (None in the preregistered uniform config,
     # which keeps the fit byte-identical). priors_base_variant (the single source
     # of truth, shared with the CV dispatcher) routes only the base variant to its
     # relationship-free priors vintage, and only when no explicit --priors-file is
@@ -102,23 +104,42 @@ def main(config=None):
             response_effort=resp_effort,
             table_kwargs=table_kwargs_by_variant[variant_name],
             priors=priors_by_variant[variant_name],
+            reweighting=_reweighting.config_for(
+                EXPERIMENT_SLUG, variant_name, list(utility_names)
+            ),
             seed_key=f"{EXPERIMENT_SLUG}|{variant_name}",
         )
         use_grid = (
             priors_by_variant[variant_name] is not None
             and priors_by_variant[variant_name]["m_latent"] is not None
         )
+        rw = _reweighting.config_for(
+            EXPERIMENT_SLUG, variant_name, list(utility_names)
+        )
+        alpha_obs = float(params[len(utility_names)])
         row = {
             "model": variant_name,
             "experiment": EXPERIMENT_SLUG,
             "nll": nll,
-            "n_params": len(utility_names) + 2 + (1 if use_grid else 0),
+            "n_params": len(utility_names)
+            + 2
+            + (1 if use_grid else 0)
+            + (1 if rw else 0),
             "param_alpha": 1.0,
-            "alpha_observer": float(params[len(utility_names)]),
+            "alpha_observer": alpha_obs,
+            # True only when the optional alpha_observer bound is enabled AND
+            # this fit sits on it (a CONSTRAINED optimum). Off by default, so
+            # normally False — see _helpers.ALPHA_OBS_MAX.
+            "alpha_observer_at_bound": bool(
+                ALPHA_OBS_MAX is not None and alpha_obs >= ALPHA_OBS_MAX - 1e-4
+            ),
             "param_sigma": float(params[len(utility_names) + 1]),
         }
         if use_grid:
             row["param_prior_nu"] = float(params[len(utility_names) + 2])
+        if rw:
+            row["param_eta"] = float(params[-1])
+            row["reweighting_targets"] = list(rw["targets"])
         for i, name in enumerate(utility_names):
             row[f"param_{name}"] = float(params[i])
         results.append(row)
@@ -128,14 +149,15 @@ def main(config=None):
                 variant_name,
                 utility_names,
                 restarts,
-                extra_param_names=("prior_nu",) if use_grid else (),
+                extra_param_names=(("prior_nu",) if use_grid else ())
+                + (("eta",) if rw else ()),
             )
         )
 
     output_dir = config.outputs_dir(EXPERIMENT_SLUG)
     output_dir.mkdir(parents=True, exist_ok=True)
     print(
-        f"config: {config.tag() if not config.is_canonical else 'canonical'} "
+        f"config: {config.tag() if not config.is_preregistered else 'preregistered'} "
         f"-> {output_dir}"
     )
     print("\n" + "=" * 60 + "\nRESULTS SUMMARY\n" + "=" * 60)
