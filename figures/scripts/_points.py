@@ -71,8 +71,12 @@ class PointsStyle:
     open_edgewidth: float = 1.1
     filled_edgewidth: float = 0.5
     # Axis furniture. Illustrator-bound panels want these heavier than print.
+    # The y pair is opt-in (None -> leave the rcParams alone), because the
+    # poster figures predate this module and set only the x geometry.
     tick_len: float = 3.5
     tick_w: float = 0.8
+    ytick_len: float | None = None
+    ytick_w: float | None = None
     zero_lw: float | None = None  # None -> panels.ZERO_LINE's own width
     # Human CI whiskers. Drawn ABOVE the markers (high zorder) so they stay
     # legible where a CI is shorter than the marker radius -- at paper scale
@@ -94,7 +98,14 @@ LEGEND_ENTRY_ROWS = 2
 # report the same intervals for the same data instead of two resample vintages.
 BOOTSTRAP_SEED_TAG = "figures"
 
-PAPER = PointsStyle(markersize=5.5, panel_w=1.55, panel_h=1.95, xtick_fs=7.5)
+PAPER = PointsStyle(
+    markersize=5.5,
+    panel_w=1.55,
+    panel_h=1.95,
+    xtick_fs=7.5,
+    ytick_len=3.5,
+    ytick_w=0.8,
+)
 
 POSTER = PointsStyle(
     markersize=10,
@@ -324,7 +335,11 @@ def draw_row(axes, slug, human, model, *, style, keys, lim, titles, xticklabels=
         if titles:
             ax.set_title(data.PANEL_LABELS[key], fontsize=style.title_fs)
         ytick_kw = {"labelsize": style.tick_fs} if style.tick_fs else {}
-        ax.tick_params(axis="y", length=style.tick_len, width=style.tick_w, **ytick_kw)
+        if style.ytick_len is not None:
+            ytick_kw["length"] = style.ytick_len
+        if style.ytick_w is not None:
+            ytick_kw["width"] = style.ytick_w
+        ax.tick_params(axis="y", **ytick_kw)
 
 
 def render_paper_figure(slugs, stem, *, style=PAPER, letters=True):

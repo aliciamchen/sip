@@ -78,33 +78,19 @@ from plot_style import (  # noqa: E402
     apply_style,
     savefig,
 )
+from study_registry import SLUGS, slugs_given  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 # The six active studies, in roster order (1a, 1b, 2a, 2b, 3a, 3b). The SI
 # alternatives figures show all six in one consolidated figure each.
-STUDIES = [
-    "food_inv_desire",
-    "food_inv_joint_de",
-    "food_inv_intimacy",
-    "food_inv_joint_ie",
-    "nonfood_inv_joint_de",
-    "nonfood_inv_joint_ie",
-]
+STUDIES = list(SLUGS)  # the six active studies, in paper order
 # The given-relationship studies (relationship is the manipulated axis) -- also
 # the only ones with a relationship-free base set (lm_runs_base.jsonl), so the
 # base-vs-full figure spans these; and the given-desire studies (desire is the
 # manipulated axis). The composition figures are split along this axis so each
 # has a single, consistent manipulated condition.
-GIVEN_RELATIONSHIP_STUDIES = [
-    "food_inv_desire",
-    "food_inv_joint_de",
-    "nonfood_inv_joint_de",
-]
-GIVEN_DESIRE_STUDIES = [
-    "food_inv_intimacy",
-    "food_inv_joint_ie",
-    "nonfood_inv_joint_ie",
-]
+GIVEN_RELATIONSHIP_STUDIES = slugs_given("intimacy_condition")
+GIVEN_DESIRE_STUDIES = slugs_given("desire_condition")
 
 
 def _load(study):

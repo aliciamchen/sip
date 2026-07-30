@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import apply_style, savefig  # noqa: E402
+from study_registry import studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 import _points as points  # noqa: E402
@@ -53,6 +54,8 @@ STYLE = replace(
     markersize=7.5,
     tick_len=4.5,
     tick_w=1.4,
+    ytick_len=4.5,
+    ytick_w=1.4,
     zero_lw=1.3,
     errbar=dict(ecolor="0.15", elinewidth=1.0, capsize=2.0, capthick=1.0, zorder=5),
 )
@@ -63,14 +66,8 @@ PANEL_RC = {
     "ytick.major.width": 1.4,
 }
 
-STUDIES = [
-    ("food_inv_desire", "study1a"),
-    ("food_inv_joint_de", "study1b"),
-    ("food_inv_intimacy", "study2a"),
-    ("food_inv_joint_ie", "study2b"),
-    ("nonfood_inv_joint_de", "study3a"),
-    ("nonfood_inv_joint_ie", "study3b"),
-]
+# (slug, output stem), in paper order, from the study registry.
+STUDIES = [(s.slug, f"study{s.short_label}") for s in studies()]
 
 
 def _save(fig, stem):

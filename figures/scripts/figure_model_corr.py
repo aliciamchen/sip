@@ -34,6 +34,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import DV_MARKERS, apply_style, savefig  # noqa: E402
+from study_registry import study_groups  # noqa: E402
 
 import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
@@ -48,14 +49,14 @@ DV_LEGEND_ORDER = ["desire", "intimacy", "effort"]
 AGG_POINT_COLOR = "#333333"
 
 # (figure stem, study title, [(slug, paper label)]); columns are the ablations.
+# Derived from the study registry rather than restating the roster.
 STUDY_GROUPS = [
-    ("study1", "Study 1", [("food_inv_desire", "1a"), ("food_inv_joint_de", "1b")]),
-    ("study2", "Study 2", [("food_inv_intimacy", "2a"), ("food_inv_joint_ie", "2b")]),
     (
-        "study3",
-        "Study 3",
-        [("nonfood_inv_joint_de", "3a"), ("nonfood_inv_joint_ie", "3b")],
-    ),
+        f"study{number}",
+        f"Study {number}",
+        [(s.slug, s.short_label) for s in group],
+    )
+    for number, group in study_groups()
 ]
 
 

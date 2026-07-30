@@ -439,8 +439,7 @@ figures-lm-si:
 FIG_SCRIPTS := figures/scripts
 FIG_OUT := figures/outputs
 # Shared code every results figure depends on (a change here rebuilds them all).
-FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_joint.py \
-              $(FIG_SCRIPTS)/_points.py \
+FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_points.py \
               plot_style.py study_registry.py model/cv/model_comparison.py
 
 # The data + model outputs a study contributes to a figure. Deliberately only

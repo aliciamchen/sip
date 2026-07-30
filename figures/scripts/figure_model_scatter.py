@@ -24,6 +24,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+from study_registry import study_groups  # noqa: E402
 from plot_style import apply_style, savefig  # noqa: E402
 
 import _data as data  # noqa: E402
@@ -43,20 +44,14 @@ def _lighten(color, f):
     return mcolors.to_hex(rgb + (1 - rgb) * f)
 
 
-# (figure name, [(slug, sub-study letter, paper label)])
+# (figure name, [(slug, sub-study letter, paper label)]), derived from the study
+# registry so the pairing of each study's halves is declared in one place.
 STUDY_GROUPS = [
     (
-        "model_scatter_study1",
-        [("food_inv_desire", "a", "1a"), ("food_inv_joint_de", "b", "1b")],
-    ),
-    (
-        "model_scatter_study2",
-        [("food_inv_intimacy", "a", "2a"), ("food_inv_joint_ie", "b", "2b")],
-    ),
-    (
-        "model_scatter_study3",
-        [("nonfood_inv_joint_de", "a", "3a"), ("nonfood_inv_joint_ie", "b", "3b")],
-    ),
+        f"model_scatter_study{number}",
+        [(s.slug, s.substudy, s.short_label) for s in group],
+    )
+    for number, group in study_groups()
 ]
 
 

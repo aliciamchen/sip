@@ -59,6 +59,21 @@ class Study:
         """True for the two-latent joint studies (1b/2b/3a/3b)."""
         return len(self.dvs) > 1
 
+    @property
+    def short_label(self) -> str:
+        """ "1a" -- the compact label the figures print, from `paper_label`."""
+        return self.paper_label.removeprefix("Study ")
+
+    @property
+    def number(self) -> str:
+        """ "1" -- the paper study number this sub-study belongs to."""
+        return self.short_label[:-1]
+
+    @property
+    def substudy(self) -> str:
+        """ "a" or "b" -- which half of its paper study this is."""
+        return self.short_label[-1]
+
 
 _DESIRE = DV("desire_rating_update", "delta_desire", "desire", "Desire")
 _INTIMACY = DV("intimacy_rating_update", "delta_intimacy", "intimacy", "Intimacy")
@@ -122,3 +137,36 @@ def study(slug: str) -> Study:
 # Slug -> paper label, for figures that only need the label (re-exported by
 # plot_style.py, which many figure scripts already import it from).
 STUDY_LABELS: dict[str, str] = {slug: s.paper_label for slug, s in STUDIES.items()}
+
+# The active roster in paper order (1a, 1b, 2a, 2b, 3a, 3b). Every consumer that
+# iterates the studies reads this rather than repeating the slug list, so adding
+# or reordering a study is a one-place edit.
+SLUGS: tuple[str, ...] = tuple(STUDIES)
+
+
+def studies() -> list[Study]:
+    """Every active study, in paper order."""
+    return list(STUDIES.values())
+
+
+def study_groups() -> list[tuple[str, list[Study]]]:
+    """The sub-studies grouped by paper study number, in order:
+    [("1", [1a, 1b]), ("2", [2a, 2b]), ("3", [3a, 3b])].
+
+    Figures that pair a study's halves in one file (the model-vs-human scatters
+    and correlation grids) iterate this instead of hardcoding the pairing.
+    """
+    groups: dict[str, list[Study]] = {}
+    for s in STUDIES.values():
+        groups.setdefault(s.number, []).append(s)
+    return list(groups.items())
+
+
+def slugs_given(condition: str) -> list[str]:
+    """Slugs whose given (fixed and shown) conditions include `condition`.
+
+    `slugs_given("intimacy_condition")` is the given-relationship set (1a/1b/3a,
+    also the only studies with a relationship-free base elicitation);
+    `slugs_given("desire_condition")` is the given-desire set (2a/2b/3b).
+    """
+    return [slug for slug, s in STUDIES.items() if condition in s.given_conditions]

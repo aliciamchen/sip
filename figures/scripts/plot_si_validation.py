@@ -65,16 +65,10 @@ from plot_style import (  # noqa: E402
     panel_label,
     savefig,
 )
+from study_registry import SLUGS  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
-STUDIES = [
-    "food_inv_desire",
-    "food_inv_joint_de",
-    "food_inv_intimacy",
-    "food_inv_joint_ie",
-    "nonfood_inv_joint_de",
-    "nonfood_inv_joint_ie",
-]
+STUDIES = list(SLUGS)  # the six active studies, in paper order
 # The manipulation-check panels overlay the studies whose elicitation carries
 # each given-magnitude scalar, split by domain so food and nonfood are never
 # mixed in one panel: a food row (intimacy 1a/1b; desire 2a/2b) over a nonfood

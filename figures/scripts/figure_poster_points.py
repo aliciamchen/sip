@@ -23,82 +23,39 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import (  # noqa: E402
-    DESIRE_COLORS,
-    DV_MARKERS,
-    INTIMACY_COLORS,
-    INTIMACY_LEVELS,
-    OBSERVED_ACTIONS,
-    apply_style,
-    savefig,
-)
-from study_registry import study  # noqa: E402
+from plot_style import DV_MARKERS, apply_style, savefig  # noqa: E402
+from study_registry import studies  # noqa: E402
 
-import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
+import _points as points  # noqa: E402
 
-# (slug, paper label, output stem)
-STUDIES = [
-    ("food_inv_desire", "1a", "study1a"),
-    ("food_inv_joint_de", "1b", "study1b"),
-    ("food_inv_intimacy", "2a", "study2a"),
-    ("food_inv_joint_ie", "2b", "study2b"),
-    ("nonfood_inv_joint_de", "3a", "study3a"),
-    ("nonfood_inv_joint_ie", "3b", "study3b"),
-]
+# Not referenced directly any more (the shared renderer reads it), but kept in
+# this module's namespace on purpose: figure_gated_points.py swaps the panel set
+# by patching `poster.data.load_cv_preds` and the MODEL_ORDER/PANEL_LABELS
+# tables on it. It is the same module object `_points` holds, so the patch still
+# reaches the renderer.
+import _data as data  # noqa: E402,F401
 
-TITLE_FS, LABEL_FS, TICK_FS, LEGEND_FS = 18, 16, 13, 16
-MARKERSIZE = 10
-# Thicker, capless human-CI whiskers and a taller zero-stub, for poster legibility.
-POSTER_ERRBAR = dict(ecolor="black", elinewidth=1.3, capsize=0, zorder=4)
-STUB_HALF_HEIGHT = 0.010
+# (slug, paper label, output stem), in paper order, from the study registry.
+STUDIES = [(s.slug, s.short_label, f"study{s.short_label}") for s in studies()]
 
-
-def _fill_spec(slug):
-    """(fill_col, fill_levels, fill_colors, legend_handles, legend_title) for
-    the study's given relationship/desire condition (the bar color axis)."""
-    given = data.condition_cols(slug)[1:]
-    if "intimacy_condition" in given:
-        return (
-            "intimacy_condition",
-            INTIMACY_LEVELS,
-            INTIMACY_COLORS,
-            panels.intimacy_handles(),
-            "Relationship",
-        )
-    return (
-        "desire_condition",
-        panels.DESIRE_LEVELS,
-        DESIRE_COLORS,
-        panels.desire_handles(),
-        "Desire",
-    )
+# Panel scale and marker/CI weights come from the shared poster style; only the
+# standalone legend files are drawn here, so those two sizes stay local.
+STYLE = points.POSTER
+LEGEND_FS = STYLE.legend_fs
+MARKERSIZE = STYLE.markersize
 
 
 def _build(slug):
-    """(human cells with CIs, model cells) aggregated to the condition grid for
-    every DV of the study; either side None when its inputs are missing."""
-    cell_cols = data.condition_cols(slug)
-    dvs = data.dvs_display(slug)
-    trials = data.load_trials(slug)
-    human = None
-    if trials is not None:
-        trials = trials.assign(action_label=data.action_label_col(trials))
-        human = data.bootstrap_cell_means(
-            trials,
-            [h for h, _d, _l in dvs],
-            cell_cols,
-            seed=data.seed_for(f"figures:poster:{slug}"),
-        )
-    preds = data.load_cv_preds(slug)
-    model = None
-    if preds is not None:
-        preds = preds.assign(action_label=data.action_label_col(preds))
-        model = preds.groupby(["model", *cell_cols], as_index=False)[
-            [d for _h, d, _l in dvs]
-        ].mean()
-        data.warn_if_stale(slug, trials, data.load_comparison(slug))
-    return human, model
+    """(human cells with CIs, model cells) on the condition grid, via the shared
+    builder.
+
+    Keeps the poster's own bootstrap seed rather than the shared one: the CI
+    extremes set each panel's y limit, so re-seeding would rescale every
+    already-produced poster panel for no visible gain (the whiskers sit behind
+    the poster's large markers).
+    """
+    return points.build_cells(slug, seed_tag="figures:poster")
 
 
 def build_study(slug, paper, stem):
@@ -109,144 +66,32 @@ def build_study(slug, paper, stem):
     _render_points(slug, stem, human, model)
 
 
-def _points_panel(
-    ax,
-    cells,
-    *,
-    value_cols,
-    color_col,
-    fill_levels,
-    colors,
-    lim,
-    ci,
-    style_col=None,
-    style_levels=("low", "high"),
-):
-    """Points panel: x = observed action, y = belief update. Inferred DVs are
-    distinguished by MARKER SHAPE (value_cols = [(value_col, marker), ...]); color
-    = given condition; a given `style_col` (effort in 1a/2a) is filled (first
-    level) vs open (last level); optional vertical CI bars (Humans). Points dodge
-    by DV, then condition, then style within each action slot."""
-    ax.axhline(0, **panels.ZERO_LINE)
-    styles = list(style_levels) if style_col else [None]
-    n_pts = len(value_cols) * len(fill_levels) * len(styles)
-    total_w = 0.72
-    step = total_w / n_pts
-    for ai, action in enumerate(OBSERVED_ACTIONS):
-        for di, (vcol, marker) in enumerate(value_cols):
-            for cj, cond in enumerate(fill_levels):
-                for si, style in enumerate(styles):
-                    mask = (cells["action_label"] == action) & (
-                        cells[color_col] == cond
-                    )
-                    if style_col:
-                        mask = mask & (cells[style_col] == style)
-                    row = cells[mask]
-                    if row.empty:
-                        continue
-                    row = row.iloc[0]
-                    gi = (di * len(fill_levels) + cj) * len(styles) + si
-                    x = ai - total_w / 2 + (gi + 0.5) * step
-                    y = row[vcol]
-                    open_pt = style_col is not None and style == styles[-1]
-                    mfc = "white" if open_pt else colors[cond]
-                    mec = colors[cond] if open_pt else "white"
-                    if ci:
-                        lo, hi_ = row[f"{vcol}_ci_lower"], row[f"{vcol}_ci_upper"]
-                        ax.errorbar(
-                            x,
-                            y,
-                            yerr=[[y - lo], [hi_ - y]],
-                            fmt="none",
-                            ecolor="black",
-                            elinewidth=1.0,
-                            capsize=0,
-                            zorder=2,
-                        )
-                    ax.plot(
-                        x,
-                        y,
-                        marker,
-                        markerfacecolor=mfc,
-                        markeredgecolor=mec,
-                        markeredgewidth=1.3 if open_pt else 0.5,
-                        markersize=MARKERSIZE,
-                        zorder=3,
-                    )
-    ax.set_xticks(range(3), panels.ACTION_AXIS_LABELS)
-    ax.tick_params(axis="x", length=3.5, width=0.8)
-    ax.set_xlim(-0.6, 2.6)
-    ax.set_ylim(-lim, lim)
-
-
 def _render_points(slug, stem, human, model):
     """Points-by-action panel row (Base | Discomfort-only | Full | Humans) for
-    any study. Marker shape = inferred target; color = given relationship/desire;
-    for the single-DV studies (1a/2a) the given effort condition is filled (low)
-    vs open (high)."""
-    dvs = data.dvs_display(slug)  # one entry (1a/2a) or two (joint)
-    fill_col, fill_levels, fill_colors, fill_handles, _ft = _fill_spec(slug)
-    style_col = (
-        "effort_condition"
-        if "effort_condition" in data.condition_cols(slug)[1:]
-        else None
-    )
-    panel_keys = (data.MODEL_ORDER if model is not None else []) + (
-        ["humans"] if human is not None else []
-    )
-    # Shape per inferred latent, keyed off the registry's DV names rather than
-    # parsed out of the display label (which a label edit would silently break).
-    markers = [DV_MARKERS[dv.name] for dv in study(slug).dvs]
-
-    vals = []
-    if model is not None:
-        vals += [model[d].abs().max() for _h, d, _l in dvs]
-    if human is not None:
-        for h, _d, _l in dvs:
-            vals += [
-                human[h].abs().max(),
-                human[f"{h}_ci_lower"].abs().max(),
-                human[f"{h}_ci_upper"].abs().max(),
-            ]
-    lim = float(max(vals)) * 1.12
-
+    any study, at poster scale. The drawing is the shared renderer in
+    `_points.py`; only the artboard size and the output name are poster-specific,
+    and the legends live in standalone files (see `_save_legends`) rather than
+    being repeated on every panel."""
+    keys = points.panel_keys(human, model)
     fig, axes = plt.subplots(
         1,
-        len(panel_keys),
-        figsize=(2.5 * len(panel_keys), 2.5),
+        len(keys),
+        figsize=(STYLE.panel_w * len(keys), STYLE.panel_h),
         sharey=True,
+        squeeze=False,
         constrained_layout=True,
     )
-    axes = list(axes)
-    for ax, key in zip(axes, panel_keys):
-        if key == "humans":
-            value_cols = [(h, m) for (h, _d, _l), m in zip(dvs, markers)]
-            cells, ci = human, True
-        else:
-            value_cols = [(d, m) for (_h, d, _l), m in zip(dvs, markers)]
-            cells, ci = model[model["model"] == key], False
-        _points_panel(
-            ax,
-            cells,
-            value_cols=value_cols,
-            color_col=fill_col,
-            fill_levels=fill_levels,
-            colors=fill_colors,
-            lim=lim,
-            ci=ci,
-            style_col=style_col,
-        )
-        ax.set_title(data.PANEL_LABELS[key], fontsize=TITLE_FS)
-        ax.tick_params(axis="y", labelsize=TICK_FS)
-    ylab = (
-        "Belief update"
-        if len(dvs) > 1
-        else f"Belief update ({dvs[0][2].split()[0].lower()})"
+    points.draw_row(
+        list(axes[0]),
+        slug,
+        human,
+        model,
+        style=STYLE,
+        keys=keys,
+        lim=points.symmetric_limit(slug, human, model),
+        titles=True,
     )
-    axes[0].set_ylabel(ylab, fontsize=LABEL_FS)
-
-    # Legends are rendered as standalone files (see _save_legends) so they can be
-    # placed once in the poster layout rather than repeated on every panel.
+    axes[0][0].set_ylabel(points.ylabel_for(slug), fontsize=STYLE.label_fs)
     out = savefig(fig, f"poster_points_{stem}")
     print(f"wrote {out}")
 
