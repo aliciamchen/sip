@@ -617,6 +617,7 @@ test:
 	uv run python model/cv/test_checkpoint.py
 	uv run python model/cv/test_model_comparison.py
 	uv run python model/lm/test_elicitation_guards.py
+	uv run python bin/test_overnight_reelicit.py
 	uv run python analysis/test_json_to_csv.py
 	uv run python test_roster_sync.py
 

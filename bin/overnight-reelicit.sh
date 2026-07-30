@@ -10,17 +10,18 @@
 #
 # What it does, in order:
 #   0. preflight  — TOGETHER_API_KEY present, nothing else already running
-#   1. backup     — copy every LM JSONL and provenance manifest to the run dir
-#   2. delete     — remove the stale generate/score artifact sets (a prompt edit
-#                   makes the generator REFUSE to resume, so they must go first)
-#   3. smoke      — K=1 elicitation of all 9 units, then validate. HARD GATE:
-#                   on failure it restores the backup and aborts before any $ spend
-#   4. delete     — remove the K=1 files
-#   5. full       — K=20, pipelined: POOL concurrent per-study chains, each doing
+#   1. smoke      — clear the gitignored diagnostic vintage, run K=1 elicitation
+#                   of all 9 units there, then validate. HARD GATE: canonical
+#                   tables remain untouched unless this passes
+#   2. backup     — copy every canonical LM JSONL and provenance manifest to the
+#                   run dir
+#   3. delete     — remove the stale canonical generate/score artifact sets (a
+#                   prompt edit makes the generator REFUSE to resume)
+#   4. full       — K=20, pipelined: POOL concurrent per-study chains, each doing
 #                   elicit(main[+base]) -> fit -> cv, so network-bound elicitation
 #                   overlaps CPU-bound fit/CV instead of running after it
-#   6. downstream — model_comparison.py + figures-results
-#   7. validate   — final structural check of the K=20 tables
+#   5. downstream — model_comparison.py + figures-results
+#   6. validate   — final structural check of the K=20 tables
 #
 # Cost ~$51-73 (smoke ~$3 + full ~$48-70). Wall-clock ~4-5 h (the smoke calibrates
 # it — multiply the smoke's elicitation time by ~15-20). Re-execs under
@@ -30,7 +31,7 @@
 #   bin/overnight-reelicit.sh            # full run (prompts once for the $ gate)
 #   bin/overnight-reelicit.sh --yes      # full run, no prompt (for nohup/background)
 #   bin/overnight-reelicit.sh --dry-run  # print every command, spend/delete nothing
-#   bin/overnight-reelicit.sh --smoke-only   # K=1 smoke + validate, then restore
+#   bin/overnight-reelicit.sh --smoke-only   # K=1 diagnostic smoke + validate
 #   bin/overnight-reelicit.sh --resume-full  # continue a partial K=20 run in place
 #
 # Tunables (env): POOL SMOKE_JOBS CELL_WORKERS SCENARIO_WORKERS CV_WORKERS
@@ -99,17 +100,6 @@ backup() {
   done
 }
 
-restore_backup() {
-  log "Restoring original tables from backup"
-  for s in $MAIN_STUDIES; do
-    $DRY_RUN && continue
-    delete_stale_files "$s"
-    cp -p "$RUN_DIR/backup-lm/$s/"*.jsonl \
-      "$RUN_DIR/backup-lm/$s/"*.manifest.json \
-      model/outputs/lm/"$s"/ 2>/dev/null || true
-  done
-}
-
 # Remove ONLY the generate/score outputs — never the embedding artifacts
 # (lm_alternatives_projection/semantic.jsonl) or the priors files.
 delete_stale_files() {
@@ -124,6 +114,29 @@ delete_stale_files() {
              lm_alternatives_base.manifest.json lm_runs_base.jsonl \
              lm_runs_base.manifest.json; do
     run rm -f "model/outputs/lm/$s/$f"
+  done
+}
+
+delete_diag_files() {
+  s="$1"
+  for f in lm_alternatives_diag.jsonl lm_alternatives_diag.empty_units.jsonl \
+             lm_alternatives_diag.rationale.jsonl \
+             lm_alternatives_diag.reasoning.jsonl \
+             lm_alternatives_diag.manifest.json lm_runs_diag.jsonl \
+             lm_runs_diag.manifest.json lm_alternatives_base_diag.jsonl \
+             lm_alternatives_base_diag.empty_units.jsonl \
+             lm_alternatives_base_diag.rationale.jsonl \
+             lm_alternatives_base_diag.reasoning.jsonl \
+             lm_alternatives_base_diag.manifest.json \
+             lm_runs_base_diag.jsonl lm_runs_base_diag.manifest.json; do
+    run rm -f "model/outputs/lm/$s/$f"
+  done
+}
+
+delete_diag() {
+  log "Clear stale diagnostic generate/score artifact sets"
+  for s in $MAIN_STUDIES; do
+    delete_diag_files "$s"
   done
 }
 
@@ -167,10 +180,10 @@ chain_one() {
 }
 
 phase_smoke() {
-  log "K=1 smoke: make -j$SMOKE_JOBS over all 9 elicitation units"
+  log "K=1 diagnostic smoke: make -j$SMOKE_JOBS over all 9 elicitation units"
   targets=""
-  for s in $MAIN_STUDIES; do targets="$targets lm-$s"; done
-  for s in $BASE_STUDIES; do targets="$targets lm-base-$s"; done
+  for s in $MAIN_STUDIES; do targets="$targets lm-diag-$s"; done
+  for s in $BASE_STUDIES; do targets="$targets lm-base-diag-$s"; done
   if $DRY_RUN; then
     printf 'DRY  make -j%s%s K_RUNS=1 ALT_T=%s CELL_WORKERS=%s SCENARIO_WORKERS=%s\n' \
       "$SMOKE_JOBS" "$targets" "$ALT_T" "$CELL_WORKERS" "$SCENARIO_WORKERS"
@@ -179,9 +192,19 @@ phase_smoke() {
   fi
   make -j"$SMOKE_JOBS" $targets K_RUNS=1 ALT_T="$ALT_T" CELL_WORKERS="$CELL_WORKERS" SCENARIO_WORKERS="$SCENARIO_WORKERS" \
     2>&1 | tee -a "$RUN_DIR/smoke.log"
-  log "Validating smoke output (K=1)"
-  uv run python bin/_overnight_validate.py --k 1 --studies $MAIN_STUDIES 2>&1 | tee -a "$RUN_DIR/smoke.log"
-  return "${PIPESTATUS[0]}"
+  make_status="${PIPESTATUS[0]}"
+  if [ "$make_status" -ne 0 ]; then
+    log "SMOKE ELICITATION FAILED"
+    return "$make_status"
+  fi
+  log "Validating diagnostic smoke output (K=1)"
+  uv run python bin/_overnight_validate.py --k 1 --diag --studies $MAIN_STUDIES 2>&1 | tee -a "$RUN_DIR/smoke.log"
+  validate_status="${PIPESTATUS[0]}"
+  if [ "$validate_status" -ne 0 ]; then
+    log "SMOKE VALIDATION FAILED"
+    return "$validate_status"
+  fi
+  return 0
 }
 
 phase_full() {
@@ -196,22 +219,42 @@ phase_full() {
     return 0
   fi
   export RUN_DIR K_RUNS_FULL ALT_T CELL_WORKERS SCENARIO_WORKERS CV_WORKERS BASE_STUDIES _CAFFEINATED
-  printf '%s\n' $CHAIN_ORDER | xargs -P "$POOL" -I{} bash -c \
-    '"$0" --chain "$1" >>"$RUN_DIR/study-$1.log" 2>&1 || echo "CHAIN FAILED: $1" >>"$RUN_DIR/main.log"' \
-    "$SCRIPT" {}
+  if ! printf '%s\n' $CHAIN_ORDER | xargs -P "$POOL" -I{} bash -c \
+    '"$0" --chain "$1" >>"$RUN_DIR/study-$1.log" 2>&1
+     status=$?
+     if [ "$status" -ne 0 ]; then
+       echo "CHAIN FAILED: $1" | tee -a "$RUN_DIR/main.log"
+     fi
+     exit "$status"' \
+    "$SCRIPT" {}; then
+    log "FULL RUN FAILED — partial outputs retained for --resume-full"
+    return 1
+  fi
   log "All study chains returned (per-study detail in study-*.log)"
 }
 
 phase_downstream() {
   log "Downstream: model_comparison + figures-results"
-  run uv run python model/cv/model_comparison.py || log "WARN model_comparison failed"
-  run make figures-results || log "WARN figures-results failed"
+  if ! run uv run python model/cv/model_comparison.py; then
+    log "DOWNSTREAM FAILED — model_comparison"
+    return 1
+  fi
+  if ! run make figures-results; then
+    log "DOWNSTREAM FAILED — figures-results"
+    return 1
+  fi
 }
 
 phase_finalcheck() {
   log "Final validation (K=$K_RUNS_FULL)"
   $DRY_RUN && return 0
   uv run python bin/_overnight_validate.py --k "$K_RUNS_FULL" --studies $MAIN_STUDIES 2>&1 | tee -a "$RUN_DIR/main.log"
+  validate_status="${PIPESTATUS[0]}"
+  if [ "$validate_status" -ne 0 ]; then
+    log "FINAL VALIDATION FAILED"
+    return "$validate_status"
+  fi
+  return 0
 }
 
 confirm() {
@@ -253,35 +296,54 @@ case "$MODE" in
   full)
     confirm
     preflight
-    backup
-    delete_stale
+    delete_diag
     if phase_smoke; then log "SMOKE PASSED"; else
-      log "SMOKE FAILED — restoring backup and aborting before the paid run"
-      restore_backup
+      log "SMOKE FAILED — canonical tables remain untouched"
       exit 1
     fi
+    backup
     delete_stale
-    phase_full
-    phase_downstream
-    phase_finalcheck
+    if ! phase_full; then
+      log "ABORTED after a study-chain failure; use --resume-full after diagnosis"
+      exit 1
+    fi
+    if ! phase_downstream; then
+      log "ABORTED after a downstream failure"
+      exit 1
+    fi
+    if ! phase_finalcheck; then
+      log "ABORTED after final validation"
+      exit 1
+    fi
     log "COMPLETE. Review $RUN_DIR and commit the LM tables + model outputs when satisfied."
     ;;
   smoke-only)
     confirm
     preflight
-    backup
-    delete_stale
-    if phase_smoke; then log "SMOKE PASSED"; else log "SMOKE FAILED"; fi
-    restore_backup
-    log "smoke-only complete; original tables restored."
+    delete_diag
+    if phase_smoke; then
+      log "SMOKE PASSED; diagnostic tables retained for inspection"
+    else
+      log "SMOKE FAILED; canonical tables remain untouched"
+      exit 1
+    fi
     ;;
   resume-full)
     preflight
     log "RESUME: skipping backup/smoke/delete — continuing the partial K=$K_RUNS_FULL run"
     log "(elicitation resumes via the scripts' own logic; CV resumes from its checkpoint)"
-    phase_full
-    phase_downstream
-    phase_finalcheck
+    if ! phase_full; then
+      log "RESUME FAILED during a study chain"
+      exit 1
+    fi
+    if ! phase_downstream; then
+      log "RESUME FAILED during downstream outputs"
+      exit 1
+    fi
+    if ! phase_finalcheck; then
+      log "RESUME FAILED final validation"
+      exit 1
+    fi
     log "RESUME COMPLETE. Review $RUN_DIR."
     ;;
   *) echo "bad mode: $MODE" >&2; exit 2 ;;
