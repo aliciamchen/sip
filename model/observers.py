@@ -8,15 +8,21 @@ per active study, each over the padded LM-alternatives action space:
 
 Three model variants per observer: `_full`, `_discomfort_only`, `_base`.
 
-The single-latent observers are memo models. The joint observers are plain-JAX
-Bayesian inversions of the actor memos: the memo formulation of the joint
-indicator expectation compiled to a ~202 outer × 202 inner latent cross-product
-per (cell × slot × run) — ~7.5 GB of XLA temps per gradient step at K=20 — to
-compute what is mathematically an elementwise power + normalize of the actor's
-policy table (see `_sharpened_joint_posterior`). The original memo joint
-observers are kept below as `_*_memo_reference` — the authoritative statement
-of the model semantics — and `test_model_compliance.py` verifies the fast path
-against them (values and gradients) on every variant.
+All twelve observers are plain-JAX Bayesian inversions of the actor memos,
+computed in log space (`_sharpened_posterior_logspace`): the observer posterior
+is a masked softmax of alpha_observer * log(actor policy) over the latent
+axes. The joint families were converted first for memory (the memo joint
+indicator expectation compiled to a ~202 x 202 latent cross-product per cell —
+~7.5 GB of XLA temps per gradient step at K=20); the single-latent families
+followed on 2026-07-29 when the sharpening moved to log space, because their
+memo `wpp = E[latent == z] ** alpha_observer` powering carries the same float32
+underflow (entire diffuse rows collapsed to zero above alpha_observer ~ 15-20,
+silently fencing the optimizer) and cannot be stabilized from outside the
+generated code. The original memo observers are kept as `_*_memo_reference` —
+the authoritative statement of the model semantics; CHANGE MODEL SEMANTICS IN
+BOTH — and `test_model_compliance.py` verifies the fast path against them on
+every variant, in the parameter regime where the references are numerically
+healthy.
 
 Dependency layer 3: imports from `tables.py` and `actors.py`.
 """
@@ -70,7 +76,7 @@ from tables import (
 
 
 @memo
-def observer_intimacy_full[
+def _observer_intimacy_full_memo_reference[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -133,7 +139,7 @@ def observer_intimacy_full[
 
 
 @memo
-def observer_intimacy_discomfort_only[
+def _observer_intimacy_discomfort_only_memo_reference[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -181,7 +187,7 @@ def observer_intimacy_discomfort_only[
 
 
 @memo
-def observer_intimacy_base[
+def _observer_intimacy_base_memo_reference[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -248,7 +254,7 @@ def observer_intimacy_base[
 
 
 @memo
-def observer_desire_full[
+def _observer_desire_full_memo_reference[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -311,7 +317,7 @@ def observer_desire_full[
 
 
 @memo
-def observer_desire_discomfort_only[
+def _observer_desire_discomfort_only_memo_reference[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -368,7 +374,7 @@ def observer_desire_discomfort_only[
 
 
 @memo
-def observer_desire_base[
+def _observer_desire_base_memo_reference[
     padded_slot: PaddedActionSlots,
     scenario_idx: Scenarios,
     observed_action: ObservedActions,
@@ -875,44 +881,64 @@ def _observer_joint_ie_base_memo_reference[
 # every variant — is enforced by test_model_compliance.py.
 
 
-def _sharpened_joint_posterior(policy, alpha_observer):
-    """Invert an actor slot-choice policy into the observer's sharpened joint
-    posterior over the two latent axes (the trailing two axes of `policy`).
+def _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes):
+    """Invert an actor slot-choice policy into the observer's sharpened
+    posterior over the trailing `n_latent_axes` latent axes, computed in log
+    space: a masked softmax of alpha_observer * log(policy).
 
-    The posterior is normalized BEFORE the power is applied, mirroring the memo
-    reference's op order (it exponentiates E[indicator], a normalized belief).
-    This is not just cosmetic: the constants cancel mathematically either way,
-    but at fitted alpha_observer ~10 a raw policy row of small values (~1e-3)
-    raised first would underflow float32 row-wide (1e-3^10.3 ~ 1e-31 summed
-    over a 202-bin row), where the normalized row's largest entry is O(1) and
-    survives at any realistic alpha.
+    Mathematically identical to the earlier normalize -> power -> renormalize
+    formulation (the normalization constant cancels inside the softmax), but
+    immune to its float32 failure: powering a normalized row raised diffuse
+    entries (~5e-3 over a 202-bin row) to ~1e-51 at alpha_observer ~ 22 —
+    below float32's ~1e-45 floor — so entire rows underflowed to zero and
+    renormalized to garbage, silently fencing the optimizer out of the
+    high-alpha region (the same parameter vector scored 1573 in float64 and
+    16900 in float32). In log space the row max is subtracted before
+    exponentiating, so the dominant entries survive at any alpha and the
+    computed object is the likelihood the equations define. Adopted 2026-07-29
+    (user decision, full refit of all studies planned): this deliberately
+    changes gradients relative to the pre-2026-07-29 fit vintage, and is why
+    every fit and CV output must be regenerated rather than mixed.
 
-    Zero-probability entries (padded null slots have prior 0, so their policy
-    is exactly 0 for every latent pair) are kept at 0 through the double-where
-    pattern — `0 ** alpha` has a non-finite gradient for alpha < 1, and a NaN
-    in any table entry would poison the fit's gradients even when the loss
-    only reads slot 0. A slot with no probability mass at all (a null slot)
-    normalizes to an all-zero posterior rather than NaN; the memo reference is
-    NaN there, and downstream code never consumes those slots either way.
+    Zero-probability entries stay exactly 0. Two sources of them: padded null
+    slots (whose prior is `tables.NULL_EPSILON` = 1e-8, so their policy is a
+    tiny constant rather than literally 0 — the all-null-row branch below is
+    therefore rarely reached in production) and, more importantly, float32
+    underflow of the actor's softmax at extreme per-latent utility, which can
+    zero a subset of latent hypotheses inside an otherwise valid slot. A slot
+    with no probability mass at all returns an all-zero posterior rather than
+    NaN (the memo reference is NaN there; downstream code never consumes those
+    slots).
 
-    Known shared fragility (present identically in the memo reference, so it
-    is deliberately NOT changed here): at large alpha_observer (~10, the
-    fitted scale) the gradient of the renormalization can go non-finite in
-    float32 when no latent hypothesis dominates a row. The Adam loop's
-    non-finite-loss abandon (see `_fit_with_adam`) contains it — a restart
-    that walks into the regime is dropped in favor of the best finite iterate
-    — and the compliance suite pins the fast path to the reference's exact
-    NaN pattern there. Hardening the numerics (e.g. a log-space softmax)
-    would change gradients relative to the reference vintage and is a
-    deliberate modeling decision, not a refactor."""
+    BOTH risky ops are guarded by the double-where pattern — the argument is
+    sanitized BEFORE the op, not only after it. This matters for `exp` as much
+    as for `log`: a masked entry's logit is 0, so `exp(0 - m)` with the row's
+    shared `m` very negative (a diffuse row at alpha ~ 22 gives m ~ -117)
+    overflows to +inf, and although the outer `where` zeroes the forward value,
+    the backward pass then evaluates 0 * inf = NaN and — because `m` is shared
+    across the row — poisons the gradient of every entry in it, valid ones
+    included. Guarding only the output was a real bug here (caught in review
+    2026-07-29): it reintroduced a high-alpha gradient cliff for mixed rows,
+    the very failure this rewrite exists to remove."""
+    axes = tuple(range(policy.ndim - n_latent_axes, policy.ndim))
     positive = policy > 0.0
-    polsum = policy.sum(axis=(-2, -1), keepdims=True)
-    posterior = policy / jnp.where(polsum > 0.0, polsum, 1.0)
-    powered = jnp.where(
-        positive, jnp.where(positive, posterior, 1.0) ** alpha_observer, 0.0
-    )
-    denom = powered.sum(axis=(-2, -1), keepdims=True)
-    return powered / jnp.where(denom > 0.0, denom, 1.0)
+    # Sanitize before log: masked entries evaluate on 1.0 -> logit 0.0.
+    log_pol = jnp.log(jnp.where(positive, policy, 1.0))
+    logits = alpha_observer * log_pol
+    masked = jnp.where(positive, logits, -jnp.inf)
+    m = jnp.max(masked, axis=axes, keepdims=True)
+    m = jnp.where(jnp.isfinite(m), m, 0.0)  # all-null rows: shift by 0
+    # Sanitize before exp too: masked entries exponentiate 0.0, not -m.
+    shifted = jnp.where(positive, logits - m, 0.0)
+    w = jnp.where(positive, jnp.exp(shifted), 0.0)
+    denom = w.sum(axis=axes, keepdims=True)
+    return w / jnp.where(denom > 0.0, denom, 1.0)
+
+
+def _sharpened_joint_posterior(policy, alpha_observer):
+    """Sharpened Bayes inversion over the trailing two (latent) axes — the
+    joint families' entry point; see `_sharpened_posterior_logspace`."""
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=2)
 
 
 def observer_joint_de_full(
@@ -1091,6 +1117,163 @@ def _build_variants(full_fn, discomfort_only_fn, base_fn):
     return {
         name: (fns[name], VARIANT_PARAM_NAMES[name]) for name in VARIANT_PARAM_NAMES
     }
+
+
+# ==============================================================================
+# Fast single-latent observers (plain-JAX inversions of the actor memos)
+# ==============================================================================
+# Same construction as the joint fast paths: the actor memo supplies the slot
+# policy over the latent grid, and the observer is its sharpened Bayes
+# inversion over the single trailing latent axis (log-space; see
+# `_sharpened_posterior_logspace`). The memo originals above are kept as
+# `_observer_*_memo_reference` — the authoritative statement of the semantics;
+# change model semantics in both — and test_model_compliance.py enforces
+# fast ≡ reference on every variant. Converted 2026-07-29 alongside the
+# log-space sharpening: the powering these memos apply inside `wpp`
+# (E[latent == z] ** alpha_observer) has the same float32 underflow as the old
+# joint path and cannot be stabilized from outside the generated code.
+
+
+def observer_desire_full(
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    alpha_observer,
+    risk_table,
+    effort_table,
+    g_padded_table,
+    prior_table,
+    relationship_values,
+):
+    """Study 1a full observer (fast path); equivalent to
+    `_observer_desire_full_memo_reference`. Output dims:
+    (padded_slot, scenario, observed_action, effort, relationship, desire)."""
+    policy = actor_discrete_full_padded_desire(
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        prior_table,
+        relationship_values,
+    )
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=1)
+
+
+def observer_desire_discomfort_only(
+    alpha,
+    w_d,
+    gamma,
+    alpha_observer,
+    risk_table,
+    effort_table,
+    prior_table,
+    relationship_values,
+):
+    """Study 1a discomfort-only observer (fast path); equivalent to
+    `_observer_desire_discomfort_only_memo_reference`."""
+    policy = actor_discrete_discomfort_only_padded_desire(
+        alpha, w_d, gamma, risk_table, effort_table, prior_table, relationship_values
+    )
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=1)
+
+
+def observer_desire_base(
+    alpha,
+    w_v,
+    w_e,
+    alpha_observer,
+    risk_table,
+    effort_table,
+    g_padded_table,
+    prior_table,
+):
+    """Study 1a base observer (fast path); equivalent to
+    `_observer_desire_base_memo_reference`."""
+    policy = actor_discrete_base_padded_desire(
+        alpha, w_v, w_e, risk_table, effort_table, g_padded_table, prior_table
+    )
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=1)
+
+
+def observer_intimacy_full(
+    alpha,
+    w_v,
+    w_d,
+    w_e,
+    gamma,
+    alpha_observer,
+    risk_table,
+    effort_table,
+    g_padded_table,
+    prior_table,
+    desire_table,
+):
+    """Study 2a full observer (fast path); equivalent to
+    `_observer_intimacy_full_memo_reference`. Output dims:
+    (padded_slot, scenario, observed_action, desire_condition, effort,
+    relationship)."""
+    policy = actor_continuous_full_padded_intimacy(
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        prior_table,
+        desire_table,
+    )
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=1)
+
+
+def observer_intimacy_discomfort_only(
+    alpha,
+    w_d,
+    gamma,
+    alpha_observer,
+    risk_table,
+    effort_table,
+    prior_table,
+):
+    """Study 2a discomfort-only observer (fast path); equivalent to
+    `_observer_intimacy_discomfort_only_memo_reference`."""
+    policy = actor_continuous_discomfort_only_padded_intimacy(
+        alpha, w_d, gamma, risk_table, effort_table, prior_table
+    )
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=1)
+
+
+def observer_intimacy_base(
+    alpha,
+    w_v,
+    w_e,
+    alpha_observer,
+    risk_table,
+    effort_table,
+    g_padded_table,
+    prior_table,
+    desire_table,
+):
+    """Study 2a base observer (fast path); equivalent to
+    `_observer_intimacy_base_memo_reference`."""
+    policy = actor_continuous_base_padded_intimacy(
+        alpha,
+        w_v,
+        w_e,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        prior_table,
+        desire_table,
+    )
+    return _sharpened_posterior_logspace(policy, alpha_observer, n_latent_axes=1)
 
 
 VARIANTS_DESIRE = _build_variants(
