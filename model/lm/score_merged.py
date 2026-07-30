@@ -315,6 +315,12 @@ def _norm(text):
     return text.lower().strip()
 
 
+def _diagnostic_filename(filename):
+    """Insert ``_diag`` before a JSONL suffix for an isolated smoke vintage."""
+    path = Path(filename)
+    return f"{path.stem}_diag{path.suffix}"
+
+
 def _build_merged_actions(scenario_row, alt_rows_for_run):
     """Unified action list for one (scenario, run): the 3 observed actions
     followed by the run's unique alternative texts (deduped case-insensitively
@@ -798,13 +804,12 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
             )
         cfg.update(_BASE_OVERRIDE[study])
     if arm:
-        # Arm-vintage mode: score a prompt-arm alternatives file
-        # (written by generate_alternatives.py --arm-output-only) into its own
-        # runs vintage, leaving the canonical lm_runs.jsonl untouched.
-        if base:
-            raise SystemExit("--arm and --base are mutually exclusive.")
-        cfg["alternatives"] = "lm_alternatives_diag.jsonl"
-        cfg["runs"] = "lm_runs_diag.jsonl"
+        # Diagnostic-vintage mode: score the matching main or base alternatives
+        # file into its own runs vintage, leaving canonical tables untouched.
+        cfg["alternatives"] = _diagnostic_filename(
+            cfg.get("alternatives", "lm_alternatives.jsonl")
+        )
+        cfg["runs"] = _diagnostic_filename(cfg.get("runs", "lm_runs.jsonl"))
     scenarios_path = get_project_root() / "experiments" / cfg["scenarios"]
     study_dir = get_project_root() / "model" / "outputs" / "lm" / study
     study_dir.mkdir(parents=True, exist_ok=True)
@@ -1076,8 +1081,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--arm",
         action="store_true",
-        help="Score the prompt-arm alternatives vintage "
-        "(lm_alternatives_diag.jsonl) into lm_runs_diag.jsonl.",
+        help="Score the matching diagnostic alternatives vintage into "
+        "lm_runs[_base]_diag.jsonl.",
     )
     args = parser.parse_args()
     main(

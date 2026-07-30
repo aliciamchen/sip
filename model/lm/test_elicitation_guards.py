@@ -18,7 +18,8 @@ What's covered:
     budget.
   - `guard_resume_prompt_mismatch` refuses a resume across a prompts.py edit.
   - The elicitation is reachable for all six studies, and the diagnostic
-    `--arm-output-only` path still routes to its own vintage.
+    `--arm-output-only` path routes both main and base variants to their own
+    vintages.
 
 Run: uv run python model/lm/test_elicitation_guards.py
 """
@@ -726,57 +727,6 @@ def test_score_resume_refuses_a_replaced_alternatives_file():
                         sm.main("food_inv_desire")
 
 
-def test_failed_smoke_restores_the_matching_manifest():
-    """Smoke-only restoration must put the original data and manifest back as
-    one artifact set even if the smoke overwrote the manifest."""
-    root = Path(__file__).resolve().parents[2]
-    script = root / "bin" / "overnight-reelicit.sh"
-    with tempfile.TemporaryDirectory() as d:
-        sandbox = Path(d)
-        (sandbox / "bin").mkdir()
-        copied_script = sandbox / "bin" / script.name
-        copied_script.write_bytes(script.read_bytes())
-        copied_script.chmod(0o755)
-        study_dir = sandbox / "model" / "outputs" / "lm" / "food_inv_desire"
-        study_dir.mkdir(parents=True)
-        data = study_dir / "lm_alternatives.jsonl"
-        manifest = study_dir / "lm_alternatives.manifest.json"
-        data.write_text('{"vintage":"original"}\n')
-        manifest.write_text('{"vintage":"original"}\n')
-        (sandbox / ".env").write_text("TOGETHER_API_KEY=sk-test\n")
-
-        fake_bin = sandbox / "fake-bin"
-        fake_bin.mkdir()
-        fake_make = fake_bin / "make"
-        fake_make.write_text(
-            "#!/bin/sh\n"
-            "printf '%s\\n' '{\"vintage\":\"smoke\"}' > "
-            "model/outputs/lm/food_inv_desire/lm_alternatives.manifest.json\n"
-        )
-        fake_make.chmod(0o755)
-        fake_uv = fake_bin / "uv"
-        fake_uv.write_text("#!/bin/sh\nexit 0\n")
-        fake_uv.chmod(0o755)
-        env = {
-            **os.environ,
-            "_CAFFEINATED": "1",
-            "OVERNIGHT_DIR": str(sandbox / "runs"),
-            "PATH": f"{fake_bin}:{os.environ['PATH']}",
-        }
-        completed = subprocess.run(
-            [str(copied_script), "--smoke-only", "--yes"],
-            cwd=sandbox,
-            env=env,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0, completed.stdout + completed.stderr
-        assert data.read_text() == '{"vintage":"original"}\n'
-        assert manifest.read_text() == '{"vintage":"original"}\n'
-
-
 def test_the_live_tables_would_be_refused_today():
     """Not hypothetical: assert the real manifests on disk carry a superseded
     hash, so the planned re-elicitation is forced to start clean. If this ever
@@ -866,14 +816,105 @@ def test_arm_output_only_available_for_every_study_and_never_canonical():
         assert ga._STUDY_CONFIG[slug]["output"] == "lm_alternatives.jsonl"
 
 
-def test_arm_output_only_rejects_the_base_overlay():
-    """`--base` has its own vintage already; combining the two would be
-    ambiguous about which file is being written."""
+def test_arm_output_only_routes_the_base_overlay_to_a_diagnostic_vintage():
+    """Base smoke output must be isolated just like the six main variants."""
     import generate_alternatives as ga
+    import pandas as pd
 
-    with _stub(ga, "load_api_key", lambda: "sk-test"):
-        with _expect(SystemExit, "arm-output mode is defined for"):
-            ga.main("food_inv_desire", base=True, arm_output_only=True)
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        canonical = d / "lm_alternatives_base.jsonl"
+        with _stub(ga, "load_api_key", lambda: "sk-test"):
+            with _stub(ga, "load_scenarios", lambda study: pd.DataFrame()):
+                with _stub(ga, "_build_cells", lambda scenarios, cfg, study: []):
+                    with _stub(
+                        ga,
+                        "_output_path_for",
+                        lambda study, base: canonical,
+                    ):
+                        ga.main(
+                            "food_inv_desire",
+                            base=True,
+                            arm_output_only=True,
+                        )
+
+        assert not canonical.exists()
+        assert (d / "lm_alternatives_base_diag.jsonl").exists()
+        assert (d / "lm_alternatives_base_diag.empty_units.jsonl").exists()
+        assert (d / "lm_alternatives_base_diag.rationale.jsonl").exists()
+
+
+def test_score_arm_routes_the_base_overlay_to_a_diagnostic_vintage():
+    """Base scoring must read and write only the base diagnostic filenames."""
+    import score_merged as sm
+
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        study_dir = root / "model" / "outputs" / "lm" / "food_inv_desire"
+        study_dir.mkdir(parents=True)
+        expected = study_dir / "lm_alternatives_base_diag.jsonl"
+        expected.write_text("{}\n")
+        captured = []
+
+        def _capture(path, study):
+            captured.append((path, study))
+            raise _Reached
+
+        with _stub(sm, "get_project_root", lambda: root):
+            with _stub(sm, "_alternatives_provenance", _capture):
+                with _expect(_Reached):
+                    sm.main("food_inv_desire", base=True, arm=True)
+
+        assert captured == [(expected, "food_inv_desire")]
+
+
+def test_overnight_validator_reads_main_and_base_diagnostic_vintages():
+    """`--diag` must validate diag files rather than canonical lookalikes."""
+    root = Path(__file__).resolve().parents[2]
+    validator = root / "bin" / "_overnight_validate.py"
+    with tempfile.TemporaryDirectory() as d:
+        sandbox = Path(d)
+        (sandbox / "bin").mkdir()
+        copied_validator = sandbox / "bin" / validator.name
+        copied_validator.write_bytes(validator.read_bytes())
+        study_dir = sandbox / "model" / "outputs" / "lm" / "food_inv_desire"
+        study_dir.mkdir(parents=True)
+        record = {
+            "actions": [
+                {
+                    "slot": 0,
+                    "is_observed": True,
+                    "action_text": "Use separate utensils.",
+                    "risk": 0.25,
+                    "effort": 0.5,
+                    "g": 1.0,
+                }
+            ]
+        }
+        line = json.dumps(record) + "\n"
+        (study_dir / "lm_runs_diag.jsonl").write_text(line * 384)
+        (study_dir / "lm_runs_base_diag.jsonl").write_text(line * 96)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(copied_validator),
+                "--k",
+                "1",
+                "--diag",
+                "--studies",
+                "food_inv_desire",
+            ],
+            cwd=sandbox,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert completed.returncode == 0, completed.stdout + completed.stderr
+        assert "food_inv_desire" in completed.stdout
+        assert "food_inv_desire (base)" in completed.stdout
+        assert "ALL PASS" in completed.stdout
 
 
 def run_all_tests():

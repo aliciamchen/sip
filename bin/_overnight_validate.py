@@ -17,7 +17,7 @@ failures a prompt/schema mismatch or a bad cell config would produce:
 Exit 0 = all requested studies pass; exit 1 = at least one failed.
 
 Usage:
-    _overnight_validate.py --k 1  --studies food_inv_desire ...   # smoke (K=1)
+    _overnight_validate.py --k 1 --diag --studies food_inv_desire ... # smoke
     _overnight_validate.py --k 20 --studies food_inv_desire ...   # post full run
     _overnight_validate.py --k 20                                 # all six + bases
 """
@@ -127,6 +127,13 @@ def _check_file(path, expected, k, label):
     return ok, [head] + [f"       - {m}" for m in msgs]
 
 
+def _runs_filename(base, diagnostic):
+    """Return the canonical or diagnostic scoring-table filename."""
+    base_part = "_base" if base else ""
+    diagnostic_part = "_diag" if diagnostic else ""
+    return f"lm_runs{base_part}{diagnostic_part}.jsonl"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument(
@@ -138,6 +145,11 @@ def main():
         default=ALL_STUDIES,
         help="Studies to validate (default: all six).",
     )
+    ap.add_argument(
+        "--diag",
+        action="store_true",
+        help="Validate lm_runs[_base]_diag.jsonl instead of canonical tables.",
+    )
     args = ap.parse_args()
 
     all_ok = True
@@ -148,14 +160,17 @@ def main():
             continue
         exp_main = BASELINE_K20_MAIN[study] * args.k // 20
         ok, lines = _check_file(
-            LM_DIR / study / "lm_runs.jsonl", exp_main, args.k, study
+            LM_DIR / study / _runs_filename(base=False, diagnostic=args.diag),
+            exp_main,
+            args.k,
+            study,
         )
         all_ok &= ok
         print("\n".join(lines))
         if study in BASELINE_K20_BASE:
             exp_base = BASELINE_K20_BASE[study] * args.k // 20
             ok_b, lines_b = _check_file(
-                LM_DIR / study / "lm_runs_base.jsonl",
+                LM_DIR / study / _runs_filename(base=True, diagnostic=args.diag),
                 exp_base,
                 args.k,
                 study + " (base)",

@@ -170,6 +170,12 @@ def _output_path_for(study, base):
     return output_dir / cfg["output"]
 
 
+def _diagnostic_filename(filename):
+    """Insert ``_diag`` before a JSONL suffix for an isolated smoke vintage."""
+    path = Path(filename)
+    return f"{path.stem}_diag{path.suffix}"
+
+
 def _latent_awareness_kwargs(study, row):
     """Per-study epistemic kwargs threaded into every cell's user prompt: make the
     LM aware of exactly the latent(s) the study infers, so the generated set spans
@@ -420,16 +426,13 @@ def main(study, base=False, arm_output_only=False):
             )
         cfg.update(_BASE_OVERRIDE[study])
     if arm_output_only:
-        # Prompt-arm smokes: route output to a separate vintage,
-        # leaving the canonical lm_alternatives.jsonl untouched, so prompt
-        # edits can be evaluated against the committed-vintage baseline
-        # (model/diagnostics/coverage_smoke.py). Effort-inferring studies only.
-        if study not in _DIAG_STUDIES or base:
+        # Prompt-edit smokes: route either the main or base output to a
+        # diagnostic vintage, leaving the canonical tables untouched.
+        if study not in _DIAG_STUDIES:
             raise SystemExit(
-                "the arm-output mode is defined for the standard (non-base) "
-                f"elicitation of {_DIAG_STUDIES}; got {study!r} base={base}."
+                f"the arm-output mode is defined for {_DIAG_STUDIES}; got {study!r}."
             )
-        cfg["output"] = "lm_alternatives_diag.jsonl"
+        cfg["output"] = _diagnostic_filename(cfg["output"])
     api_key = load_api_key()
 
     print(f"Loading scenarios (study={study})...", flush=True)
@@ -698,9 +701,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--arm-output-only",
         action="store_true",
-        help="Route output to lm_alternatives_diag.jsonl WITHOUT appending "
-        "the clause — for smoking prompt edits made directly in prompts.py "
-        "against the committed-vintage baseline.",
+        help="Route output to lm_alternatives[_base]_diag.jsonl for a smoke "
+        "that cannot displace the canonical tables.",
     )
     args = parser.parse_args()
     main(

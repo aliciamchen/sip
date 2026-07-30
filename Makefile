@@ -48,13 +48,15 @@ ANALYSIS_QMDS := \
   nonfood-inv-joint-ie-analysis
 
 .PHONY: all help test clean \
-        data lm lm-alternatives lm-base lm-priors \
+        data lm lm-alternatives lm-base lm-diag lm-base-diag lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-results figures-panels \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
+        $(addprefix lm-diag-,$(EXPERIMENTS_ALL)) \
+        $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE)) \
         $(addprefix lm-priors-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
@@ -118,6 +120,7 @@ help:
 	@echo "                         'make -j3 lm-alternatives SCENARIO_WORKERS=3 CELL_WORKERS=12' runs them in parallel)"
 	@echo "  lm-base               (relationship-free alternatives for the base model;"
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
+	@echo "  lm-diag, lm-base-diag (K-run-safe diagnostic vintages; never overwrite canonical tables)"
 	@echo "  lm-priors             (prior-scalar elicitation for the informative-prior configs;"
 	@echo "                         4 food studies + the given-relationship base pair; smoke with K_RUNS=1)"
 	@echo ""
@@ -260,6 +263,21 @@ lm-base: $(addprefix lm-base-,$(EXPERIMENTS_BASE))
 $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base
 	uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
+
+# Diagnostic main/base vintages for K=1 prompt and pipeline smokes. These are
+# gitignored and never feed fits, so they can be cleared and replaced without
+# disturbing the canonical K=20 tables.
+lm-diag: $(addprefix lm-diag-,$(EXPERIMENTS_INVERSE))
+
+$(addprefix lm-diag-,$(EXPERIMENTS_ALL)): lm-diag-%:
+	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --arm-output-only
+	uv run python model/lm/score_merged.py --study $* --arm --scenario-workers $(SCENARIO_WORKERS)
+
+lm-base-diag: $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE))
+
+$(addprefix lm-base-diag-,$(EXPERIMENTS_BASE)): lm-base-diag-%:
+	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base --arm-output-only
+	uv run python model/lm/score_merged.py --study $* --base --arm --scenario-workers $(SCENARIO_WORKERS)
 
 # Prior-scalar elicitation (informative-prior configs; cheap, ~$5 for the food
 # four at K=20). This is a standalone stage, decoupled from the alternatives
