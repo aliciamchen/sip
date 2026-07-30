@@ -143,10 +143,14 @@ def test_generate_alternatives_has_no_prompt_mode_flag():
 
 
 def test_alternatives_prompt_requests_explanation_before_answering():
+    """The request lives in the closing instruction only. It used to be repeated
+    in the preamble, an artifact of the chain-of-thought arm having been built by
+    two separate string substitutions; the preamble copy was dropped as
+    redundant, so assert the close carries it on its own."""
     p = prompts.ALTERNATIVES_SYSTEM_PROMPT
-    assert "step by step before answering" in p
     assert "First, briefly explain step by step" in p
     assert "with no other text after the array:" in p
+    assert "step by step" not in prompts._PREAMBLE_ALTERNATIVES
     # The old respond-only-with-JSON close must be gone, or the model returns a
     # bare array and the generated-rationale sidecar is empty.
     assert "no explanation:" not in p
@@ -176,6 +180,105 @@ def test_effort_is_total_executional_cost_for_the_dyad():
     assert "total" in p.lower()
     assert "either person" in p.lower()
     assert "social awkwardness" in p
+
+
+def _condition_order(rendered):
+    """The sequence of given-condition blocks in a rendered user prompt."""
+    order = []
+    for line in rendered.split("\n"):
+        if line.startswith(prompts._RELATIONSHIP_PREFIX):
+            order.append("intimacy")
+        elif line.startswith("Scenario:"):
+            order.append("vignette")
+        elif line == "<DESIRE PARA>":
+            order.append("desire")
+        elif line == "<EFFORT PARA>":
+            order.append("effort")
+    return order
+
+
+def test_condition_paragraph_order_matches_the_experiment_screens():
+    """The LM must read the given conditions in the order participants see them.
+
+    The human screens put the relationship sentence BEFORE the vignette (in
+    1a/1b/3a it is also shown on its own page first) and the desire / effort
+    paragraphs after it. The prompt used to append the relationship last, so the
+    LM saw the trial in a different order than any participant did. Expected
+    orders are transcribed from `experiments/*/trials.js`; the companion test
+    below checks those files still say so.
+    """
+    cases = {
+        "1a": (
+            dict(
+                effort_text="<EFFORT PARA>",
+                intimacy_level="max_intimate",
+                unknown_desire_object="the cake",
+            ),
+            ["intimacy", "vignette", "effort"],
+        ),
+        "1b/3a": (
+            dict(
+                intimacy_level="max_formal",
+                effort_hypotheses=("<LOW>", "<HIGH>"),
+                unknown_desire_object="the cake",
+            ),
+            ["intimacy", "vignette"],
+        ),
+        "2a": (
+            dict(
+                desire_text="<DESIRE PARA>",
+                effort_text="<EFFORT PARA>",
+                unknown_intimacy=True,
+            ),
+            ["vignette", "desire", "effort"],
+        ),
+        "2b/3b": (
+            dict(
+                desire_text="<DESIRE PARA>",
+                effort_hypotheses=("<LOW>", "<HIGH>"),
+                unknown_intimacy=True,
+            ),
+            ["vignette", "desire"],
+        ),
+    }
+    for study, (kwargs, expected) in cases.items():
+        got = _condition_order(
+            prompts.alternatives_user_prompt("<VIGNETTE>", "<OBSERVED>", **kwargs)
+        )
+        assert got == expected, f"{study}: prompt order {got} != experiment {expected}"
+
+
+def test_experiment_screens_still_show_the_order_the_prompts_assume():
+    """Read the order back out of the jsPsych trial builders.
+
+    The test above hardcodes the expected orders; this one keeps that transcription
+    honest, so a change to a trial screen surfaces here instead of silently making
+    the prompts wrong. Each study passes a `paragraphs` list to
+    `scenarioStimulus`; the relationship descriptor must precede the vignette
+    wherever it appears.
+    """
+    root = Path(__file__).resolve().parents[2]
+    expect_intimacy_first = {
+        "food_inv_desire",
+        "food_inv_joint_de",
+        "nonfood_inv_joint_de",
+    }
+    for slug in expect_intimacy_first:
+        src = (root / "experiments" / slug / "trials.js").read_text()
+        block = src[src.index("paragraphs:") :][:400]
+        i_int, i_vig = block.find("intimacyDescriptor"), block.find("stimulus.vignette")
+        assert i_int != -1, f"{slug}: no intimacyDescriptor in the paragraphs block"
+        assert i_vig != -1, f"{slug}: no vignette in the paragraphs block"
+        assert i_int < i_vig, (
+            f"{slug}: the experiment now shows the vignette before the "
+            "relationship — the prompts assume the opposite"
+        )
+    for slug in ("food_inv_intimacy", "food_inv_joint_ie", "nonfood_inv_joint_ie"):
+        src = (root / "experiments" / slug / "trials.js").read_text()
+        block = src[src.index("paragraphs:") :][:400]
+        assert "intimacyDescriptor" not in block, (
+            f"{slug} infers intimacy, so its screens must not reveal it"
+        )
 
 
 def test_alternatives_prompt_keeps_the_methodological_framing():

@@ -51,6 +51,7 @@ from prompts import (
     PRIOR_EFFORT_SYSTEM_PROMPT,
     PRIOR_INTIMACY_SYSTEM_PROMPT,
     RELATIONSHIP_DESCRIPTORS,
+    _relationship_sentence,
     prior_desire_user_prompt,
     prior_effort_user_prompt,
     prior_intimacy_user_prompt,
@@ -131,10 +132,12 @@ def _condition_texts(row, cell, conds):
     shown context)."""
     texts = []
     if "intimacy_condition" in conds:
-        texts.append(
-            "The two people are in a relationship they would describe as "
-            f"{RELATIONSHIP_DESCRIPTORS[cell['intimacy_condition']]}."
-        )
+        # Built through prompts._relationship_sentence so this wording stays
+        # byte-identical to what _prior_context_parts recognizes when it hoists
+        # the sentence above the vignette. Writing it out here again would let
+        # the two drift and silently drop the relationship back below the
+        # scenario.
+        texts.append(_relationship_sentence(cell["intimacy_condition"]))
     if "desire_condition" in conds:
         texts.append(
             row["desire_low" if cell["desire_condition"] == "low" else "desire_high"]

@@ -42,9 +42,7 @@ salary, gossip, home, navigation). The risk rubric covers three channel types
 informational / private-resource); the effort rubric covers physical motor
 work, equipment / setup, time cost, and — for disclosures — the executional
 cost of producing the utterance (never relational discomfort, which is the
-risk dimension). The original food-only prompts were retired in
-favor of this single set after a side-by-side comparison showed the
-unified prompts produced equal or slightly better fits on the food data.
+risk dimension).
 
 For disclosure actions (the privacy-type scenarios), effort is
 operationalized as the executional cost of producing the account — how
@@ -68,17 +66,61 @@ _PREAMBLE_RATING = (
     "regular adult from the United States, just going off your intuition."
 )
 
-# The alternatives generator gets its own preamble: it asks for a step-by-step
-# explanation before the answer, while every rating stage answers from
-# intuition. Listing the comparison set is a constructive task, and this
-# explain-then-answer format measurably improves coverage of high-risk sharing;
-# a rating is a snap judgment for which we want the intuition-only instruction
-# that mirrors the participant.
+# The alternatives generator gets its own preamble, identical to the rating one
+# except that it drops "just going off your intuition". Listing the comparison
+# set is a constructive task, so an intuition-only instruction would work against
+# it; a rating is a snap judgment, where mirroring the participant is the point.
+# The request for a step-by-step explanation lives only in the prompt's closing
+# instruction, not here — it appeared in both while the chain-of-thought arm was
+# assembled by string substitution, which duplicated it for no reason.
 _PREAMBLE_ALTERNATIVES = (
     "You are a participant in a human study. Respond as if you were a "
-    "regular adult from the United States. Think the question through step by "
-    "step before answering."
+    "regular adult from the United States."
 )
+
+
+def _given_context_parts(
+    vignette, *, relationship_text=None, desire_text=None, effort_text=None
+):
+    """The given-condition block, in the order the experiment presents it.
+
+    The human trial screens put the relationship sentence BEFORE the vignette and
+    the desire / effort paragraphs after it (`experiments/*/trials.js`, which
+    passes `paragraphs` to `scenarioStimulus`):
+
+      1a  intimacy -> vignette -> effort
+      1b  intimacy -> vignette
+      2a  vignette -> desire -> effort
+      2b  vignette -> desire
+      3a / 3b  as 1b / 2b
+
+    In 1a/1b/3a the relationship is shown on its own page first and then repeated
+    above the vignette, so it is framed as context the participant holds while
+    reading the scenario rather than an extra detail appended to it. Any prompt
+    that shows condition paragraphs composes them through this helper, so the
+    ordering lives in one place instead of being restated per prompt.
+    """
+    parts = []
+    if relationship_text is not None:
+        parts.append(relationship_text)
+    parts.append(f"Scenario: {vignette}")
+    if desire_text is not None:
+        parts.append(desire_text)
+    if effort_text is not None:
+        parts.append(effort_text)
+    return parts
+
+
+# Opening of the relationship sentence. Shared so `_prior_context_parts` can
+# recognize the sentence among opaque condition texts without a separate flag,
+# and so the two builders below cannot word it differently.
+_RELATIONSHIP_PREFIX = "The two people are in a relationship they would describe as"
+
+
+def _relationship_sentence(intimacy_level):
+    """The relationship sentence, worded as in `relationship_user_prompt` so the
+    LM reads the same descriptor participants see."""
+    return f"{_RELATIONSHIP_PREFIX} {RELATIONSHIP_DESCRIPTORS[intimacy_level]}."
 
 
 def _intro_line():
@@ -376,10 +418,11 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 # effects; it only keeps a sharing mode from being missed. This is acknowledged
 # in the SI elicitation-details section of the manuscript.
 #
-# The generation prompt asks for an explanation before answering (the
-# explain-then-JSON close and `_PREAMBLE_ALTERNATIVES`): this format raised
-# high-risk-share swing coverage from 66.5% to 75.5% on Study 1b, so it was
-# adopted for the stage. There is deliberately only ONE alternatives prompt.
+# The generation prompt asks for an explanation before answering, in its closing
+# instruction. That format raised high-risk-share swing coverage from 66.5% to
+# 75.5% on Study 1b, so it was adopted for the stage; the measured arm also
+# repeated the request in the preamble, which has since been dropped as
+# redundant. There is deliberately only ONE alternatives prompt.
 # The generated explanation is retained as a rationale for auditing the
 # resulting comparison set; it is not treated as evidence about the model's
 # internal reasoning process.
@@ -467,8 +510,10 @@ def alternatives_user_prompt(
     The nonfood pair differs from its food counterpart only in the stimulus set,
     so it routes through the same paragraph combination.
 
-    Mirrors how the human participant sees the trial (vignette + revealed
-    condition paragraphs + observed action), per `feedback_llm_as_participant`.
+    Mirrors how the human participant sees the trial — given conditions in the
+    experiment's own order via `_given_context_parts` (relationship BEFORE the
+    vignette, desire/effort after), then the observed action, per
+    `feedback_llm_as_participant`.
     `intimacy_level` is one of the intimacy-condition slugs (max_formal /
     somewhat_formal / somewhat_intimate / max_intimate) when provided; it's rendered
     via the shared `RELATIONSHIP_DESCRIPTORS` dict so the LM sees the same
@@ -502,16 +547,14 @@ def alternatives_user_prompt(
     interpretation framing when no latent kwargs are passed (the SI template
     render).
     """
-    parts = [f"Scenario: {vignette}"]
-    if desire_text is not None:
-        parts.append(desire_text)
-    if effort_text is not None:
-        parts.append(effort_text)
-    if intimacy_level is not None:
-        parts.append(
-            f"The two people are in a relationship they would describe as "
-            f"{RELATIONSHIP_DESCRIPTORS[intimacy_level]}."
-        )
+    parts = _given_context_parts(
+        vignette,
+        relationship_text=(
+            None if intimacy_level is None else _relationship_sentence(intimacy_level)
+        ),
+        desire_text=desire_text,
+        effort_text=effort_text,
+    )
     if effort_hypotheses is not None:
         low_text, high_text = effort_hypotheses
         parts.append(
@@ -647,8 +690,7 @@ def relationship_user_prompt(descriptor):
     (RELATIONSHIP_DESCRIPTORS[level]); returns one 0-100 intimacy
     magnitude for that level."""
     return (
-        f"The two people are in a relationship they would describe as "
-        f"{descriptor}.\n\n"
+        f"{_RELATIONSHIP_PREFIX} {descriptor}.\n\n"
         "On a scale from 0 to 100, how intimate is this relationship? Respond "
         'with {"intimacy": <number>}.'
     )
@@ -663,6 +705,25 @@ def relationship_user_prompt(descriptor):
 # the action is revealed, and answers the same question the participant's
 # slider asks, with the same endpoints. One rating per (run, scenario,
 # prior-visible conditions); no action text appears anywhere.
+
+
+def _prior_context_parts(vignette, condition_texts):
+    """Prior-stage given context, in the experiment's order.
+
+    `condition_texts` arrives from `elicit_priors._condition_texts` already in
+    experiment order (relationship, then desire, then effort). Only its position
+    relative to the vignette needs fixing: the relationship sentence is shown
+    BEFORE the scenario on the human screens, the rest after. Detected by the
+    sentence's own wording rather than by index, so a caller that omits the
+    relationship is handled without a separate flag.
+    """
+    leading = [t for t in condition_texts if t.startswith(_RELATIONSHIP_PREFIX)]
+    trailing = [t for t in condition_texts if not t.startswith(_RELATIONSHIP_PREFIX)]
+    parts = list(leading)
+    parts.append(f"Scenario: {vignette}")
+    parts.extend(trailing)
+    return parts
+
 
 PRIOR_DESIRE_SYSTEM_PROMPT = (
     _PREAMBLE_RATING
@@ -679,7 +740,7 @@ def prior_desire_user_prompt(vignette, desire_object, condition_texts=()):
     the action. `condition_texts` are the given-condition paragraphs the study
     shows before the prior rating (1a: relationship sentence + effort
     paragraph; 1b: relationship sentence; base variants: no relationship)."""
-    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts = _prior_context_parts(vignette, condition_texts)
     parts.append(
         f"\nBefore observing what the two people decide to do: on a scale "
         f"from 0 to 100, how much do you think they would like "
@@ -707,7 +768,7 @@ def prior_effort_user_prompt(
     high-effort paragraph the 100 endpoint (second), matching the human
     slider's left-to-right order; the response maps to P(high effort) =
     value / 100."""
-    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts = _prior_context_parts(vignette, condition_texts)
     parts.append(f"\nFirst situation: {effort_low_text}")
     parts.append(f"Second situation: {effort_high_text}")
     parts.append(
@@ -731,7 +792,7 @@ Respond with a JSON object in this exact format, no explanation:
 def prior_intimacy_user_prompt(vignette, condition_texts=()):
     """Prior-intimacy rating (2a/2b): the participant's prior-stage screen
     minus the action (2a: desire + effort paragraphs; 2b: desire paragraph)."""
-    parts = [f"Scenario: {vignette}", *condition_texts]
+    parts = _prior_context_parts(vignette, condition_texts)
     parts.append(
         "\nBefore observing what the two people decide to do: on a scale "
         "from 0 to 100, how do you think they would describe their "
@@ -816,9 +877,7 @@ def prompt_fingerprint_payload(stage):
             # lm_runs.jsonl embeds the generated alternatives, so its prompt
             # vintage includes the upstream generation surface as well as the
             # prompts used directly during scoring.
-            "upstream_generation": prompt_fingerprint_payload(
-                "generate_alternatives"
-            ),
+            "upstream_generation": prompt_fingerprint_payload("generate_alternatives"),
             "feature_systems": {
                 rating_type: system_prompt(rating_type)
                 for rating_type in ("risk", "effort", "g")
@@ -839,9 +898,7 @@ def prompt_fingerprint_payload(stage):
                 ],
             },
             "desire_system": DESIRE_SYSTEM_PROMPT,
-            "desire_user": desire_user_prompt(
-                vignette, condition, "<DESIRE_OBJECT>"
-            ),
+            "desire_user": desire_user_prompt(vignette, condition, "<DESIRE_OBJECT>"),
             "intimacy_system": INTIMACY_SYSTEM_PROMPT,
             "intimacy_users": [
                 relationship_user_prompt(descriptor)
