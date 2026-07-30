@@ -25,12 +25,14 @@ from matplotlib.lines import Line2D
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import (  # noqa: E402
     DESIRE_COLORS,
+    DV_MARKERS,
     INTIMACY_COLORS,
     INTIMACY_LEVELS,
     OBSERVED_ACTIONS,
     apply_style,
     savefig,
 )
+from study_registry import study  # noqa: E402
 
 import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
@@ -50,8 +52,6 @@ MARKERSIZE = 10
 # Thicker, capless human-CI whiskers and a taller zero-stub, for poster legibility.
 POSTER_ERRBAR = dict(ecolor="black", elinewidth=1.3, capsize=0, zorder=4)
 STUB_HALF_HEIGHT = 0.010
-# DV -> marker shape for the joint-study point panels (matches figure_model_corr).
-DV_MARKERS = {"desire": "o", "intimacy": "s", "effort": "^"}
 
 
 def _fill_spec(slug):
@@ -194,7 +194,9 @@ def _render_points(slug, stem, human, model):
     panel_keys = (data.MODEL_ORDER if model is not None else []) + (
         ["humans"] if human is not None else []
     )
-    markers = [DV_MARKERS[l.split()[0].lower()] for _h, _d, l in dvs]
+    # Shape per inferred latent, keyed off the registry's DV names rather than
+    # parsed out of the display label (which a label edit would silently break).
+    markers = [DV_MARKERS[dv.name] for dv in study(slug).dvs]
 
     vals = []
     if model is not None:

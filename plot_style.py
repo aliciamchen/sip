@@ -153,14 +153,22 @@ def apply_style(context="si"):
     plt.rcParams.update({**_COMMON, **_CONTEXTS[context], **math})
 
 
-def savefig(fig, name, png=True):
-    """Write figures/outputs/<name>.pdf, optionally with a PNG preview."""
-    FIG_DIR.mkdir(exist_ok=True)
-    fig.savefig(FIG_DIR / f"{name}.pdf", bbox_inches="tight")
+def savefig(fig, name, png=True, *, out_dir=None, formats=("pdf",)):
+    """Write <out_dir>/<name>.<ext> for each requested vector format, optionally
+    with a PNG preview beside them, and close the figure.
+
+    Defaults to a single PDF in figures/outputs/. Illustrator-bound panels pass
+    their own directory and ask for SVG as well, so the text stays editable
+    there (`svg.fonttype: none`); the returned path is the first format's.
+    """
+    out_dir = Path(out_dir) if out_dir else FIG_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for ext in formats:
+        fig.savefig(out_dir / f"{name}.{ext}", bbox_inches="tight")
     if png:
-        fig.savefig(FIG_DIR / f"{name}.png", dpi=200, bbox_inches="tight")
+        fig.savefig(out_dir / f"{name}.png", dpi=200, bbox_inches="tight")
     plt.close(fig)
-    return FIG_DIR / f"{name}.pdf"
+    return out_dir / f"{name}.{formats[0]}"
 
 
 def panel_label(ax, letter, dx=-0.02, dy=1.04):
@@ -196,6 +204,12 @@ ACTION_LABELS = {
     "low_risk_share": "Low-risk share",
     "high_risk_share": "High-risk share",
 }
+
+# Inferred latent -> marker shape, keyed by study_registry's DV names. Every
+# figure that distinguishes latents by shape reads this, so a shape means the
+# same thing across the paper (the points panels, the poster set, and the
+# aggregate correlation scatter).
+DV_MARKERS = {"desire": "o", "intimacy": "s", "effort": "^"}
 
 # Condition palettes — hex values match analysis/utils.R so Python and R
 # figures share one visual language.

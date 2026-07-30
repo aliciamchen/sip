@@ -51,7 +51,7 @@ ANALYSIS_QMDS := \
         data lm lm-alternatives lm-base lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
-        analysis figures-lm-si figures-results \
+        analysis figures-lm-si figures-results figures-panels \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -93,6 +93,7 @@ help:
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/outputs/"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/outputs/"
+	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/paper_panels/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
@@ -439,6 +440,7 @@ FIG_SCRIPTS := figures/scripts
 FIG_OUT := figures/outputs
 # Shared code every results figure depends on (a change here rebuilds them all).
 FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_joint.py \
+              $(FIG_SCRIPTS)/_points.py \
               plot_style.py study_registry.py model/cv/model_comparison.py
 
 # The data + model outputs a study contributes to a figure. Deliberately only
@@ -489,6 +491,22 @@ RESULTS_FIGURE_PDFS := $(FIG_OUT)/study1a_results.pdf $(FIG_OUT)/study1b_results
                        $(FIG_OUT)/model_scatter_study3.pdf $(FIG_OUT)/model_ll_comparison.pdf
 
 figures-results: $(RESULTS_FIGURE_PDFS)
+
+# =============================================================================
+# Illustrator panels (figures/paper_panels/): the manuscript's results figures
+# are assembled by hand, so this writes the pieces — one four-column row per
+# sub-study plus the four shared legends, as an editable-text SVG + PDF pair.
+# Witness on the first panel, since the script writes all ten files in one pass.
+# =============================================================================
+
+PANEL_DIR := figures/paper_panels
+PANEL_WITNESS := $(PANEL_DIR)/panel_study1a.pdf
+
+$(PANEL_WITNESS): $(FIG_SCRIPTS)/figure_paper_panels.py $(FIG_SHARED) \
+    $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
+	uv run python $(FIG_SCRIPTS)/figure_paper_panels.py
+
+figures-panels: $(PANEL_WITNESS)
 
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/outputs/

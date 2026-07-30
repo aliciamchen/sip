@@ -33,7 +33,7 @@ import numpy as np
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import apply_style, savefig  # noqa: E402
+from plot_style import DV_MARKERS, apply_style, savefig  # noqa: E402
 
 import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
@@ -43,8 +43,8 @@ import _panels as panels  # noqa: E402
 DV_COLORS = {"desire": "#7A4A5A", "effort": "#4A7A4A", "intimacy": "#274D77"}
 DV_LABELS = {"desire": "Desire", "effort": "Effort", "intimacy": "Intimacy"}
 DV_LEGEND_ORDER = ["desire", "intimacy", "effort"]
-# Aggregate poster figure: DV -> marker shape, one point color for all.
-DV_MARKERS = {"desire": "o", "intimacy": "s", "effort": "^"}
+# Aggregate poster figure: DV -> marker shape (from plot_style, shared with the
+# points panels), one point color for all.
 AGG_POINT_COLOR = "#333333"
 
 # (figure stem, study title, [(slug, paper label)]); columns are the ablations.
