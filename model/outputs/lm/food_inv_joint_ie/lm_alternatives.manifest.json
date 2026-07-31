@@ -2,15 +2,16 @@
   "stage": "generate_alternatives",
   "study": "food_inv_joint_ie",
   "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-  "prompts_sha256": "d936cadd2f21",
-  "git_sha": "4775006",
-  "created_utc": "2026-07-19T08:24:09+00:00",
-  "prompt_sha_history": [
-    "b1dc252d29c9"
-  ],
+  "prompt_sha256": "e561ba0bff2a",
+  "prompts_sha256": "fca986fa0346",
+  "git_sha": "4138946",
+  "created_utc": "2026-07-30T23:18:45+00:00",
+  "rendered_prompt_sha256": "b6d30261375d",
+  "status": "complete",
   "k_runs": 20,
   "gen_temperature": 0.7,
+  "max_tokens": 1400,
   "n_cells": 96,
-  "n_alternatives": 5399,
+  "n_alternatives": 5839,
   "n_empty_units": 0
 }
