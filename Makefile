@@ -51,7 +51,7 @@ ANALYSIS_QMDS := \
         data lm lm-alternatives lm-base lm-diag lm-base-diag lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
-        analysis figures-lm-si figures-results figures-panels \
+        analysis figures-lm-si figures-results figures-panels figures-si-scenarios \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -96,6 +96,7 @@ help:
 	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/outputs/"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/outputs/"
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/paper_panels/"
+	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/outputs/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
@@ -524,6 +525,20 @@ $(PANEL_WITNESS): $(FIG_SCRIPTS)/figure_paper_panels.py $(FIG_SHARED) \
 	uv run python $(FIG_SCRIPTS)/figure_paper_panels.py
 
 figures-panels: $(PANEL_WITNESS)
+
+# =============================================================================
+# SI per-scenario figures: one 4x4 scenario facet grid per study, showing the
+# cell means the main figures average over. Witness on the first study's file,
+# since the script writes all six in one pass.
+# =============================================================================
+
+SI_SCENARIO_WITNESS := $(FIG_OUT)/si_scenarios_study1a.pdf
+
+$(SI_SCENARIO_WITNESS): $(FIG_SCRIPTS)/figure_si_scenarios.py $(FIG_SHARED) \
+    $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
+	uv run python $(FIG_SCRIPTS)/figure_si_scenarios.py
+
+figures-si-scenarios: $(SI_SCENARIO_WITNESS)
 
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/outputs/

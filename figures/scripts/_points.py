@@ -245,6 +245,43 @@ def value_cols_for(slug, key, human, model):
 # ------------------------------------------------------------------- drawing
 
 
+def iter_cells(
+    cells,
+    *,
+    value_cols,
+    color_col,
+    fill_levels,
+    style,
+    style_col=None,
+    style_levels=("low", "high"),
+):
+    """Yield (x, row, vcol, marker, cond, open_pt) for every cell a panel draws.
+
+    The dodge is: DV, then given condition, then the filled/open style level,
+    within each action slot -- so a cell's x is a stable function of its
+    condition across panels, and anything overlaid on a panel (the per-scenario
+    model dashes, say) lands on exactly the same positions as the points.
+    """
+    styles = list(style_levels) if style_col else [None]
+    n_pts = len(value_cols) * len(fill_levels) * len(styles)
+    step = style.dodge_width / n_pts
+    for ai, action in enumerate(OBSERVED_ACTIONS):
+        for di, (vcol, marker) in enumerate(value_cols):
+            for cj, cond in enumerate(fill_levels):
+                for si, lvl in enumerate(styles):
+                    mask = (cells["action_label"] == action) & (cells[color_col] == cond)
+                    if style_col:
+                        mask = mask & (cells[style_col] == lvl)
+                    row = cells[mask]
+                    if row.empty:
+                        continue
+                    gi = (di * len(fill_levels) + cj) * len(styles) + si
+                    x = ai - style.dodge_width / 2 + (gi + 0.5) * step
+                    yield x, row.iloc[0], vcol, marker, cond, (
+                        style_col is not None and lvl == styles[-1]
+                    )
+
+
 def draw_points(
     ax,
     cells,
@@ -260,57 +297,39 @@ def draw_points(
     style_levels=("low", "high"),
     xticklabels=True,
 ):
-    """One points panel. Points dodge within each action slot by DV, then by
-    given condition, then by the filled/open style level, so a cell's position
-    is a stable function of its condition across panels."""
+    """One points panel: marker per cell, optional human CI stems."""
     zero_kw = dict(panels.ZERO_LINE)
     if style.zero_lw:
         zero_kw["linewidth"] = style.zero_lw
     ax.axhline(0, **zero_kw)
-    styles = list(style_levels) if style_col else [None]
-    n_pts = len(value_cols) * len(fill_levels) * len(styles)
-    step = style.dodge_width / n_pts
-    for ai, action in enumerate(OBSERVED_ACTIONS):
-        for di, (vcol, marker) in enumerate(value_cols):
-            for cj, cond in enumerate(fill_levels):
-                for si, lvl in enumerate(styles):
-                    mask = (cells["action_label"] == action) & (
-                        cells[color_col] == cond
-                    )
-                    if style_col:
-                        mask = mask & (cells[style_col] == lvl)
-                    row = cells[mask]
-                    if row.empty:
-                        continue
-                    row = row.iloc[0]
-                    gi = (di * len(fill_levels) + cj) * len(styles) + si
-                    x = ai - style.dodge_width / 2 + (gi + 0.5) * step
-                    y = row[vcol]
-                    open_pt = style_col is not None and lvl == styles[-1]
-                    ax.plot(
-                        x,
-                        y,
-                        marker,
-                        markerfacecolor="white" if open_pt else colors[cond],
-                        markeredgecolor=colors[cond] if open_pt else "white",
-                        markeredgewidth=(
-                            style.open_edgewidth if open_pt else style.filled_edgewidth
-                        ),
-                        markersize=style.markersize,
-                        zorder=3,
-                    )
-                    if ci:
-                        lo, hi = row[f"{vcol}_ci_lower"], row[f"{vcol}_ci_upper"]
-                        errbar = dict(style.errbar)
-                        if style.errbar_from_point:
-                            errbar["ecolor"] = colors[cond]
-                        ax.errorbar(
-                            x,
-                            y,
-                            yerr=[[y - lo], [hi - y]],
-                            fmt="none",
-                            **errbar,
-                        )
+    for x, row, vcol, marker, cond, open_pt in iter_cells(
+        cells,
+        value_cols=value_cols,
+        color_col=color_col,
+        fill_levels=fill_levels,
+        style=style,
+        style_col=style_col,
+        style_levels=style_levels,
+    ):
+        y = row[vcol]
+        ax.plot(
+            x,
+            y,
+            marker,
+            markerfacecolor="white" if open_pt else colors[cond],
+            markeredgecolor=colors[cond] if open_pt else "white",
+            markeredgewidth=(
+                style.open_edgewidth if open_pt else style.filled_edgewidth
+            ),
+            markersize=style.markersize,
+            zorder=3,
+        )
+        if ci:
+            lo, hi = row[f"{vcol}_ci_lower"], row[f"{vcol}_ci_upper"]
+            errbar = dict(style.errbar)
+            if style.errbar_from_point:
+                errbar["ecolor"] = colors[cond]
+            ax.errorbar(x, y, yerr=[[y - lo], [hi - y]], fmt="none", **errbar)
     if xticklabels:
         ax.set_xticks(range(3), panels.ACTION_AXIS_LABELS)
     else:
@@ -376,13 +395,13 @@ def render_paper_figure(slugs, stem, *, style=PAPER, letters=True):
     keys = [k for k in data.PANEL_ORDER if k in present]
 
     n_rows, n_cols = len(rows), len(keys)
-    legends = _legend_groups(rows, style)
+    legends = legend_groups(rows, style)
     fig, axes = plt.subplots(
         n_rows,
         n_cols,
         figsize=(
             style.panel_w * n_cols + 0.55,
-            style.panel_h * n_rows + 0.55 + LEGEND_ROW_H * _legend_rows(legends),
+            style.panel_h * n_rows + 0.55 + LEGEND_ROW_H * legend_rows(legends),
         ),
         sharey="row",
         squeeze=False,
@@ -419,13 +438,13 @@ def render_paper_figure(slugs, stem, *, style=PAPER, letters=True):
             axes[ri][-1].yaxis.set_label_position("right")
             if letters:
                 panel_label(axes[ri][0], ascii_lowercase[ri])
-    _place_legends(fig, legends, style)
+    place_legends(fig, legends, style)
     out = savefig(fig, stem)
     print(f"wrote {out}")
     return out
 
 
-def _legend_groups(rows, style):
+def legend_groups(rows, style):
     """The (handles, title, ncol) legend groups a figure's rows require: the
     given-condition color scale(s), the inferred-target shapes when more than
     one shape is drawn, and the filled/open effort encoding when any row has
@@ -461,7 +480,7 @@ def _group(handles, title):
     return (handles, title, math.ceil(len(handles) / LEGEND_ENTRY_ROWS))
 
 
-def _legend_rows(legends):
+def legend_rows(legends):
     """Height of the bottom legend strip, in entry-rows: the tallest group's
     entry rows plus its title line."""
     if not legends:
@@ -469,7 +488,7 @@ def _legend_rows(legends):
     return 1 + max(math.ceil(len(hs) / ncol) for hs, _t, ncol in legends)
 
 
-def _place_legends(fig, legends, style):
+def place_legends(fig, legends, style):
     """Lay the groups out along the bottom strip, left to right, titles above
     their entries and aligned across groups."""
     locs = {
