@@ -75,8 +75,8 @@ writing/
 
 # PNG previews of the manuscript figures (the committed artifacts are the PDFs;
 # plot_style.savefig writes a PNG beside each PDF for review). The Illustrator
-# panels in figures/paper_panels/ keep their committed SVG + PDF pair the same
-# way figures/schematic_panels/ does, and drop only the preview PNG.
+# panels in figures/paper_panels/ are PDF-only -- Illustrator places PDFs, and a
+# parallel SVG of every panel would double the repo's figure weight for no use.
 figures/outputs/*.png
 figures/paper_panels/*.png
 .agents/skills

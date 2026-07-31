@@ -47,6 +47,9 @@ DV_LEGEND_ORDER = ["desire", "intimacy", "effort"]
 # Aggregate poster figure: DV -> marker shape (from plot_style, shared with the
 # points panels), one point color for all.
 AGG_POINT_COLOR = "#333333"
+# Size of the r / CI annotation on the aggregate panels. Both lines share it;
+# larger and the bracketed interval runs over the x = 0 column of points.
+R_LABEL_FS = 13
 
 # (figure stem, study title, [(slug, paper label)]); columns are the ablations.
 # Derived from the study registry rather than restating the roster.
@@ -228,13 +231,25 @@ def build_study_figure(stem, study_name, members, level):
     print(f"wrote {out}")
 
 
+N_BOOT_AGG = 1000
+
+
 def agg_points():
-    """{model: [(dv, x, y, y_lo, y_hi), ...]} pooling all six experiments at
-    condition level (averaged over the 16 scenarios). y_lo/y_hi are the human
-    condition mean's 95% subject-cluster bootstrap CI (resampling that study's
-    participants); the model x is the out-of-sample CV delta averaged over
-    scenarios (a point estimate, no error bar)."""
+    """({model: [(dv, x, y, y_lo, y_hi), ...]}, {model: (r, lo, hi)}) pooling all
+    six experiments at condition level (averaged over the 16 scenarios).
+
+    y is the human condition mean with its 95% subject-cluster bootstrap CI; the
+    model x is the out-of-sample CV delta averaged over scenarios (a point
+    estimate, no error bar). The pooled Pearson r carries a CI from the same
+    resamples: participants are resampled within each study independently (they
+    are different participant pools), every DV of a study reuses that study's
+    draw, and r is recomputed over all pooled points per resample. This mirrors
+    model_comparison._secondary_correlation's per-study convention.
+    """
     out = {m: [] for m in data.MODEL_ORDER}
+    boot_y = {m: [] for m in data.MODEL_ORDER}  # per-model list of (n_boot, k)
+    boot_x = {m: [] for m in data.MODEL_ORDER}  # matching model deltas
+    obs_y = {m: [] for m in data.MODEL_ORDER}  # observed human means
     for _stem, _name, members in STUDY_GROUPS:
         for slug, _paper in members:
             trials = data.load_trials(slug)
@@ -248,16 +263,23 @@ def agg_points():
             trials["action_label"] = data.action_label_col(trials)
             preds = preds.copy()
             preds["action_label"] = data.action_label_col(preds)
-            rng = np.random.default_rng(data.seed_for(f"figures:agg:{slug}"))
+            # One draw per study, shared by its DVs.
+            cells, boots = data.bootstrap_cell_means(
+                trials,
+                [u for u, _d, _dv in spec["dvs"]],
+                keys,
+                n_boot=N_BOOT_AGG,
+                seed=data.seed_for(f"figures:agg:{slug}"),
+                return_boots=True,
+            )
             for update_col, delta_col, dv in spec["dvs"]:
-                boot = data.bootstrap_cell_means(trials, [update_col], keys, rng=rng)
                 for model in data.MODEL_ORDER:
                     pm = (
                         preds[preds["model"] == model]
                         .groupby(keys, as_index=False)[delta_col]
                         .mean()
                     )
-                    merged = pm.merge(boot, on=keys, how="inner")
+                    merged = pm.merge(cells, on=keys, how="inner")
                     out[model].append(
                         (
                             dv,
@@ -267,10 +289,61 @@ def agg_points():
                             merged[f"{update_col}_ci_upper"].to_numpy(),
                         )
                     )
-    return out
+                    # Align the resampled human means to `merged`'s row order.
+                    # `merged` is pm.merge(cells), so the merge must run in that
+                    # same direction -- merging cells into pm the other way round
+                    # returns rows in `cells` order and silently mispairs x and y.
+                    order = pm.merge(cells.reset_index(), on=keys, how="inner")[
+                        "index"
+                    ].to_numpy()
+                    boot_y[model].append(boots[update_col][:, order])
+                    boot_x[model].append(merged[delta_col].to_numpy())
+                    obs_y[model].append(merged[update_col].to_numpy())
+    return out, _agg_correlations(boot_x, boot_y, obs_y)
 
 
-def draw_agg_panel(ax, groups, lim):
+def _agg_correlations(boot_x, boot_y, obs_y):
+    """{model: (r, lo, hi)} -- the pooled observed correlation, with a percentile
+    CI over the per-resample pooled correlations. An ablation whose predictions
+    have no spread (base/discomfort-only on a latent they cannot infer) yields
+    NaN rather than a spurious r."""
+    cis = {}
+    for model in data.MODEL_ORDER:
+        if not boot_y[model]:
+            continue
+        x = np.concatenate(boot_x[model])
+        y = np.concatenate(obs_y[model])
+        ys = np.concatenate(boot_y[model], axis=1)  # (n_boot, n_points)
+        if np.std(x) < 1e-12:
+            cis[model] = (np.nan, np.nan, np.nan)
+            continue
+        r = float(np.corrcoef(x, y)[0, 1])
+        rs = []
+        for b in range(ys.shape[0]):
+            ok = ~np.isnan(ys[b])
+            if ok.sum() > 2 and np.std(x[ok]) > 1e-12:
+                rs.append(np.corrcoef(x[ok], ys[b][ok])[0, 1])
+        rs = np.asarray(rs)
+        rs = rs[np.isfinite(rs)]
+        lo, hi = (
+            np.percentile(rs, [2.5, 97.5]) if rs.size else (np.nan, np.nan)
+        )
+        cis[model] = (r, float(lo), float(hi))
+    return cis
+
+
+def _r_label(ci, x, y):
+    """The panel annotation: "r = 0.96" over its bootstrap CI, or the bare
+    observed r when no CI was supplied."""
+    if ci is None or not np.isfinite(ci[0]):
+        return f"$r = {np.corrcoef(x, y)[0, 1]:.2f}$"
+    r, lo, hi = ci
+    if not (np.isfinite(lo) and np.isfinite(hi)):
+        return f"$r = {r:.2f}$"
+    return f"$r = {r:.2f}$\n[{lo:.2f}, {hi:.2f}]"
+
+
+def draw_agg_panel(ax, groups, lim, ci=None):
     """groups: list of (dv, x, y, y_lo, y_hi). DV is encoded by MARKER SHAPE (one
     point color for all); vertical human-CI error bars sit behind the points; the
     panel shows a single pooled Pearson r over all points. Sized for a poster."""
@@ -293,7 +366,7 @@ def draw_agg_panel(ax, groups, lim):
             yerr=yerr,
             fmt="none",
             ecolor="0.55",
-            elinewidth=1.6,
+            elinewidth=2.6,
             alpha=0.7,
             zorder=1,
         )
@@ -308,7 +381,6 @@ def draw_agg_panel(ax, groups, lim):
             zorder=3,
         )
     all_x, all_y = np.concatenate(all_x), np.concatenate(all_y)
-    r = np.corrcoef(all_x, all_y)[0, 1]
 
     ax.plot(lim, lim, **panels.IDENTITY_LINE)
     ax.axhline(0, color="0.85", lw=0.7, zorder=0)
@@ -318,14 +390,19 @@ def draw_agg_panel(ax, groups, lim):
     ax.set_aspect("equal")
     ax.tick_params(labelsize=13)
     ax.text(
-        0.05,
-        0.95,
-        f"$r = {r:.2f}$",
+        0.04,
+        0.96,
+        _r_label(ci, all_x, all_y),
         transform=ax.transAxes,
         va="top",
         ha="left",
-        fontsize=19,
+        fontsize=R_LABEL_FS,
         color="0.1",
+        linespacing=1.25,
+        # Translucent plate: the CI line reaches the x = 0 column of points in
+        # the ablation panels, and this keeps both readable over them.
+        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none", pad=1.8),
+        zorder=6,
     )
 
 
@@ -334,7 +411,7 @@ def build_aggregate_figure():
     experiments — one point per (experiment x condition x DV) — with human
     bootstrap-CI error bars."""
     figname = "model_corr_all_conditions"
-    agg = agg_points()
+    agg, agg_cis = agg_points()
     vals = np.concatenate(
         [
             arr
@@ -350,12 +427,12 @@ def build_aggregate_figure():
         1, 3, figsize=(10, 4.2), sharex=True, sharey=True, constrained_layout=True
     )
     for ax, model in zip(axes, data.MODEL_ORDER):
-        draw_agg_panel(ax, agg[model], lim)
+        draw_agg_panel(ax, agg[model], lim, agg_cis.get(model))
         ax.set_title(data.MODEL_LABELS[model], fontsize=19)
         ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))
     axes[0].set_ylabel("Human belief update", fontsize=16)
-    axes[1].set_xlabel("Model predicted belief update (out-of-sample)", fontsize=16)
+    axes[1].set_xlabel("Model predicted belief update", fontsize=16)
 
     present = {dv for m in data.MODEL_ORDER for dv, *_ in agg[m]}
     # "Target of inference" rides along as a marker-less first entry so the

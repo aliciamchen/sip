@@ -161,7 +161,7 @@ def action_label_col(df, action_col="action"):
 
 
 def bootstrap_cell_means(
-    df, value_cols, group_cols, *, n_boot=1000, rng=None, seed=None
+    df, value_cols, group_cols, *, n_boot=1000, rng=None, seed=None, return_boots=False
 ):
     """Observed per-cell means of `value_cols` grouped by `group_cols`, with
     95% subject-cluster bootstrap CIs (resampling subjects with replacement).
@@ -169,6 +169,11 @@ def bootstrap_cell_means(
     Returns one row per observed cell with columns `<col>`, `<col>_ci_lower`,
     `<col>_ci_upper`. Cells that lose all trials in a resample are dropped
     pairwise from that resample (matching utils.R::boot_cluster_means).
+
+    With `return_boots`, also returns {col: (n_boot, n_cells) resampled means}.
+    Every `value_cols` entry is resampled under the SAME subject draws, so a
+    statistic computed across DVs (the pooled model-vs-human correlation) can be
+    recomputed per resample without the DVs drifting out of alignment.
     """
     if rng is None:
         rng = np.random.default_rng(seed)
@@ -184,6 +189,7 @@ def bootstrap_cell_means(
     weights = rng.multinomial(n_subj, np.full(n_subj, 1.0 / n_subj), size=n_boot)
 
     out = pd.DataFrame(cells.to_frame(index=False))
+    boots = {}
     for col in value_cols:
         v = df[col].to_numpy(dtype=float)
         ok = ~np.isnan(v)
@@ -200,4 +206,6 @@ def bootstrap_cell_means(
         out[col] = obs
         out[f"{col}_ci_lower"] = np.nanpercentile(boot_means, 2.5, axis=0)
         out[f"{col}_ci_upper"] = np.nanpercentile(boot_means, 97.5, axis=0)
-    return out
+        if return_boots:
+            boots[col] = boot_means
+    return (out, boots) if return_boots else out

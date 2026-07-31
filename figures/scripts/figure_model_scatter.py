@@ -161,7 +161,7 @@ def draw_group(figname, components):
         ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))
     axes[0].set_ylabel("Human belief update")
-    axes[1].set_xlabel("Model predicted belief update (out-of-sample)")
+    axes[1].set_xlabel("Model predicted belief update")
 
     handles = [
         Line2D(

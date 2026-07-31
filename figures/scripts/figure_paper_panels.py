@@ -7,17 +7,18 @@ gets its own four-column row (Base | Discomfort-only | Full | Humans) at a
 square panel aspect, and the legends every row shares are written once as
 standalone files for one-time placement:
 
-    figures/paper_panels/panel_study1a.{svg,pdf}   ... panel_study3b
-    figures/paper_panels/legend_relationship.{svg,pdf}
-    figures/paper_panels/legend_desire.{svg,pdf}
-    figures/paper_panels/legend_target.{svg,pdf}
-    figures/paper_panels/legend_effort.{svg,pdf}
+    figures/paper_panels/panel_study1a.pdf   ... panel_study3b.pdf
+    figures/paper_panels/panel_model_vs_humans.pdf
+    figures/paper_panels/legend_relationship.pdf
+    figures/paper_panels/legend_desire.pdf
+    figures/paper_panels/legend_target.pdf
+    figures/paper_panels/legend_effort.pdf
 
 Panels keep their column titles, action tick labels and y-axis label, so each
 one reads standalone; delete in Illustrator whatever the assembled layout
-doesn't need. Text stays editable in both formats (`svg.fonttype: none` and
-`pdf.fonttype: 42`, set in plot_style), and the axis/tick lines are heavier than
-print weight so they survive placement and rescaling.
+doesn't need. Text stays editable in Illustrator (`pdf.fonttype: 42`, set in plot_style), and
+the axis/tick lines are heavier than print weight so they survive placement and
+rescaling.
 
 The points design itself is `_points.py`, shared with the assembled per-study
 figures (`figure_study1a.py` and friends), so panels and preview figures cannot
@@ -77,9 +78,14 @@ STUDIES = [(s.slug, f"study{s.short_label}") for s in studies()]
 
 
 def _save(fig, stem):
-    """Write the vector pair Illustrator links against, plus a PNG preview."""
-    savefig(fig, stem, out_dir=OUT_DIR, formats=("svg", "pdf"))
-    print(f"wrote {OUT_DIR.name}/{stem}.svg + .pdf")
+    """Write the PDF Illustrator links against, plus a PNG preview.
+
+    PDF only: Illustrator places these as PDFs, and committing a parallel SVG of
+    every panel just doubles the repo's figure weight for no use. Text stays
+    editable there via `pdf.fonttype: 42`.
+    """
+    savefig(fig, stem, out_dir=OUT_DIR)
+    print(f"wrote {OUT_DIR.name}/{stem}.pdf")
 
 
 def draw_panel(slug, stem):
@@ -124,7 +130,7 @@ def draw_scatter_panel():
     Reuses figure_model_corr's aggregation and panel renderer, so this and
     `model_corr_all_conditions.pdf` cannot disagree about the numbers.
     """
-    agg = corr.agg_points()
+    agg, agg_cis = corr.agg_points()
     if not any(agg.values()):
         print("[scatter] no CV predictions yet — skipped")
         return
@@ -149,14 +155,14 @@ def draw_scatter_panel():
         constrained_layout=True,
     )
     for ax, model in zip(axes, keys):
-        corr.draw_agg_panel(ax, agg[model], lim)
+        corr.draw_agg_panel(ax, agg[model], lim, agg_cis.get(model))
         ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
         ax.tick_params(labelsize=STYLE.tick_fs)
         ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))
     axes[0].set_ylabel("Human belief update", fontsize=STYLE.label_fs)
     axes[len(keys) // 2].set_xlabel(
-        "Model predicted belief update (out-of-sample)", fontsize=STYLE.label_fs
+        "Model predicted belief update", fontsize=STYLE.label_fs
     )
     _save(fig, "panel_model_vs_humans")
 
