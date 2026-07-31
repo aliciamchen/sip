@@ -10,8 +10,9 @@ The prompts come in four groups, matching the elicitation stages in the
 manuscript:
 
   1. **Counterfactual action generation** (the generator ``G_LM``): one system
-     prompt and the distinct user-prompt templates used across the study and
-     base-model variants.
+     prompt and one worked example of the user prompt. Which condition
+     paragraphs each experiment reveals is the experiment design, described in
+     the main text, so it is not restated here.
   2. **Utility-feature scoring** (the feature map ``phi_tau``): a system prompt
      each for goal-satisfaction ``g``, effort, and interpersonal risk,
      plus the shared user-prompt template and the one rating-instruction line
@@ -81,6 +82,24 @@ PREAMBLE = r"""\usepackage{fvextra}  % extends fancyvrb; provides Verbatim line-
 }"""
 
 
+# The generation user prompt has one shape across all six experiments, so the
+# appendix reproduces it once. Which paragraphs each experiment reveals is the
+# experiment design, already stated in the main text, so it is referenced rather
+# than tabulated here.
+GENERATION_STRUCTURE_NOTE = (
+    "The user prompt has the same structure in every experiment: the "
+    "given-condition paragraphs that experiment reveals, in the order its trial "
+    "screens present them, then the quantities the trial leaves open, then the "
+    "observed action and the request for a comparison set. Which paragraphs are "
+    "revealed and which quantities are left open follows each experiment's "
+    "design, so it varies across experiments exactly as the design does. One "
+    "example is reproduced below; where a paragraph is not revealed it is simply "
+    "absent, and the quantity it would have specified is named as unknown "
+    "instead. The base-model ablation additionally drops the relationship "
+    "sentence, since that variant carries no intimacy term.\n\n"
+)
+
+
 def vsub(text):
     """Replace the handful of non-ASCII characters in the prompts with
     pdfLaTeX-safe ASCII so the boxes compile under any engine/font."""
@@ -117,81 +136,31 @@ def build_content():
             prompts.ALTERNATIVES_SYSTEM_PROMPT,
         )
     )
-    # Inject a placeholder descriptor so the relationship line shows as a
-    # variable rather than one concrete level. Render every distinct live
-    # branch: a single generic template would omit the latent-awareness blocks
-    # that make the generation prompt task-aware.
+    # ONE worked example rather than one box per experiment. The six live
+    # branches differ only in which given-condition paragraphs are revealed and
+    # which latents are flagged unknown -- which is the experiment design, stated
+    # in the main text, so restating it here was pure repetition. The example is
+    # the 1b / 3a branch because it exercises every block: a revealed
+    # relationship sentence, the two-situation effort hypotheses carrying the
+    # unconditional-phrasing rule, and an unknown-magnitude line.
     prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"] = RELATIONSHIP
     try:
-        alt_user_variants = [
-            (
-                "Study 1a",
-                prompts.alternatives_user_prompt(
-                    VIGNETTE,
-                    OBSERVED,
-                    effort_text=EFFORT_PARA,
-                    intimacy_level="__tmpl__",
-                    unknown_desire_object=DESIRE_OBJECT,
-                ),
-            ),
-            (
-                "Studies 1b and 3a",
-                prompts.alternatives_user_prompt(
-                    VIGNETTE,
-                    OBSERVED,
-                    intimacy_level="__tmpl__",
-                    effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
-                    unknown_desire_object=DESIRE_OBJECT,
-                ),
-            ),
-            (
-                "Study 2a",
-                prompts.alternatives_user_prompt(
-                    VIGNETTE,
-                    OBSERVED,
-                    desire_text=STATE,
-                    effort_text=EFFORT_PARA,
-                    unknown_intimacy=True,
-                ),
-            ),
-            (
-                "Studies 2b and 3b",
-                prompts.alternatives_user_prompt(
-                    VIGNETTE,
-                    OBSERVED,
-                    desire_text=STATE,
-                    effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
-                    unknown_intimacy=True,
-                ),
-            ),
-            (
-                "Study 1a base",
-                prompts.alternatives_user_prompt(
-                    VIGNETTE,
-                    OBSERVED,
-                    effort_text=EFFORT_PARA,
-                    unknown_desire_object=DESIRE_OBJECT,
-                ),
-            ),
-            (
-                "Studies 1b and 3a base",
-                prompts.alternatives_user_prompt(
-                    VIGNETTE,
-                    OBSERVED,
-                    effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
-                    unknown_desire_object=DESIRE_OBJECT,
-                ),
-            ),
-        ]
+        alt_user_example = prompts.alternatives_user_prompt(
+            VIGNETTE,
+            OBSERVED,
+            intimacy_level="__tmpl__",
+            effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
+            unknown_desire_object=DESIRE_OBJECT,
+        )
     finally:
         del prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"]
-    for label, alt_user in alt_user_variants:
-        out.append(
-            box(
-                f"User prompt (template) --- counterfactual generation, {label}",
-                alt_user,
-            )
+    out.append(GENERATION_STRUCTURE_NOTE)
+    out.append(
+        box(
+            "User prompt (Example) --- counterfactual action generation",
+            alt_user_example,
         )
+    )
 
     # ------------------------------------------------------------------ group 2
     out.append(subsection("Utility-feature scoring"))

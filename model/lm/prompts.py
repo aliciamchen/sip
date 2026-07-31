@@ -413,26 +413,6 @@ def user_prompt(rating_type, vignette, action_texts, desire_object=None):
 # effects; it only keeps a sharing mode from being missed. This is acknowledged
 # in the SI elicitation-details section of the manuscript.
 
-# VINTAGE MARKER (2026-07-30) --------------------------------------------------
-# The current prompt source is intentionally AHEAD of the canonical LM tables,
-# which the user plans to regenerate. The alternatives wording below was
-# exercised in diagnostic generation runs for five studies, but it has not been
-# carried through feature scoring and fitting; the Study 1b diagnostic scored
-# tables predate this wording. The total-dyadic-cost effort rubric above is newer
-# still and has not produced any canonical or diagnostic scored tables.
-#
-# New manifests record a stage-specific `prompt_sha256`; legacy manifests record
-# only a whole-file `prompts_sha256`. The resume guard understands both formats
-# and prevents a new run from silently appending to the old vintage.
-#
-# Until the full re-elicitation lands, do not mix old and new table vintages in
-# fits. Regenerating `SIP_journal/si_prompts.tex` will document the intended
-# rerun prompt rather than the prompt that produced the currently reported
-# tables, so that discrepancy must remain explicit.
-# After the re-elicitation lands, delete this marker and re-run
-# `model/lm/export_prompts_latex.py`.
-# ------------------------------------------------------------------------------
-
 ALTERNATIVES_SYSTEM_PROMPT = (
     _PREAMBLE_ALTERNATIVES
     + "\n\n"

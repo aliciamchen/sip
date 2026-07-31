@@ -41,6 +41,7 @@ from client import (  # noqa: E402
     _prompt_sha,
     _prompts_sha,
     guard_resume_prompt_mismatch,
+    manifest_prompt_matches,
     write_run_manifest,
 )
 
@@ -295,27 +296,40 @@ def test_alternatives_prompt_keeps_the_methodological_framing():
         assert required in p, required
 
 
-def test_prompt_appendix_renders_the_live_generation_variants():
-    """The SI must show each distinct user-prompt branch used by a live study."""
+def test_prompt_appendix_documents_generation_without_repeating_it():
+    """The appendix reproduces the generation user prompt ONCE, as an example,
+    and tabulates what differs per experiment.
+
+    Six near-identical boxes (one per live branch) were repetitive without adding
+    information. What must survive the collapse is the information itself: every
+    live clause has to appear in the rendered example, and every experiment has
+    to be accounted for in the table -- otherwise a reader cannot tell what any
+    given study's observer actually saw.
+    """
     import export_prompts_latex as exporter
 
     rendered = exporter.build_content()
-    for label in (
-        "Study 1a",
-        "Studies 1b and 3a",
-        "Study 2a",
-        "Studies 2b and 3b",
-        "Study 1a base",
-        "Studies 1b and 3a base",
-    ):
-        assert label in rendered, label
+    assert "User prompt (Example)" in rendered
+    # Exactly one generation user-prompt box, not one per study.
+    assert rendered.count("--- counterfactual action generation") == 2, (
+        "expected one system-prompt box and one example user-prompt box"
+    )
+    # Which paragraphs each experiment reveals is the experiment design, stated
+    # in the main text, so the appendix must POINT at it rather than restate it.
+    assert "follows each experiment's design" in rendered
+    assert "1b, 3a &" not in rendered, "the per-experiment table should be gone"
+    assert "base-model" in rendered, "the base variant must still be described"
+    # Every live clause still visible in the example.
     for live_clause in (
         "do not know how much the two people would like",
-        "do not know how formal or intimate",
         "One of the following is true of the situation",
+        "not whether it is available",
         "comparison set you would use to interpret their choice",
     ):
         assert live_clause in rendered, live_clause
+    # The intimacy-inferred branch has no revealed relationship, so its clause
+    # is named in the table rather than shown; make sure it is not simply lost.
+    assert "relationship" in rendered
 
 
 # --------------------------------------------- prompt-stage provenance
@@ -830,26 +844,61 @@ def test_score_resume_refuses_a_replaced_alternatives_file():
                         sm.main("food_inv_desire")
 
 
-def test_the_live_tables_would_be_refused_today():
-    """Not hypothetical: assert the real manifests on disk carry a superseded
-    hash, so the planned re-elicitation is forced to start clean. If this ever
-    fails because the hashes match, the tables are current and the vintage
-    marker in prompts.py should come out."""
+def test_the_reported_tables_match_the_current_prompt():
+    """The tables the fits read must have been produced by the prompt in the tree.
+
+    This replaces an earlier check that asserted the opposite — that every
+    manifest was stale, so a planned re-elicitation would be forced to start
+    clean. Once that re-elicitation ran (2026-07-31, K=20 across all six studies
+    plus the three base overlays), the useful invariant inverted: a mismatch here
+    now means the reported tables and the prompt source have drifted apart, which
+    is exactly what must never ship.
+
+    Scope is the reported path only — `lm_alternatives*` and `lm_runs*`. The
+    `lm_priors*` tables are deliberately excluded: informative priors were
+    evaluated and not adopted (see model/inverse/_priors.py), so those tables
+    were not regenerated and legitimately carry an older whole-file hash.
+    """
     root = Path(__file__).resolve().parents[2]
-    live = list(
-        (root / "model" / "outputs" / "lm").glob("*/lm_alternatives.manifest.json")
-    )
+    lm = root / "model" / "outputs" / "lm"
+    live = [
+        m
+        for pat in ("*/lm_alternatives*.manifest.json", "*/lm_runs*.manifest.json")
+        for m in lm.glob(pat)
+        if not any(x in m.name for x in ("diag", "k20v5", "preclause"))
+    ]
     if not live:
         return  # nothing elicited yet
-    cur = _prompts_sha()
     stale = [
-        p.parent.name
-        for p in live
-        if json.loads(p.read_text()).get("prompts_sha256") != cur
+        f"{m.parent.name}/{m.name}"
+        for m in live
+        if not manifest_prompt_matches(json.loads(m.read_text()))
     ]
-    assert len(stale) == len(live), (
-        "some studies' tables match the current prompt and some don't, which is "
-        f"a mixed roster: stale={sorted(stale)} of {len(live)}"
+    assert not stale, (
+        f"{len(stale)} of {len(live)} reported tables were produced by a "
+        f"different prompt than the one in the tree: {sorted(stale)}. Either "
+        "re-elicit the affected studies or restore the prompt they were made "
+        "with — do not fit across the two."
+    )
+
+
+def test_reported_tables_carry_the_stage_specific_hash():
+    """New elicitations must record `prompt_sha256`, not just the whole-file
+    `prompts_sha256`. The stage hash is what lets an unrelated rating-prompt edit
+    stop invalidating an alternatives artifact; a table that only has the legacy
+    field predates that and cannot be checked precisely."""
+    root = Path(__file__).resolve().parents[2]
+    lm = root / "model" / "outputs" / "lm"
+    legacy = []
+    for pat in ("*/lm_alternatives*.manifest.json", "*/lm_runs*.manifest.json"):
+        for m in lm.glob(pat):
+            if any(x in m.name for x in ("diag", "k20v5", "preclause")):
+                continue
+            if json.loads(m.read_text()).get("prompt_sha256") is None:
+                legacy.append(f"{m.parent.name}/{m.name}")
+    assert not legacy, (
+        f"{len(legacy)} reported tables carry only the legacy whole-file hash: "
+        f"{sorted(legacy)}"
     )
 
 
