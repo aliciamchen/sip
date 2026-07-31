@@ -114,6 +114,7 @@ def draw_panel(slug, stem):
         titles=True,
     )
     axes[0][0].set_ylabel(points.ylabel_for(slug), fontsize=STYLE.label_fs)
+    fig.supxlabel(points.X_AXIS_LABEL, fontsize=STYLE.label_fs)
     _save(fig, f"panel_{stem}")
     return True
 

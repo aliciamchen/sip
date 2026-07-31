@@ -121,6 +121,7 @@ def build_study(slug, stem):
         axes[j // NCOLS][j % NCOLS].set_axis_off()
 
     fig.supylabel(points.ylabel_for(slug), fontsize=9)
+    fig.supxlabel(points.X_AXIS_LABEL, fontsize=9)
     out = savefig(fig, f"si_scenarios_{stem}")
     print(f"wrote {out}")
     return True

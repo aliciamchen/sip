@@ -100,12 +100,14 @@ LEGEND_ENTRY_ROWS = 2
 # these panels shares it, so the assembled previews and the Illustrator panels
 # report the same intervals for the same data instead of two resample vintages.
 BOOTSTRAP_SEED_TAG = "figures"
+# x axis label for every points figure (the tick labels are the three actions).
+X_AXIS_LABEL = "Observed action"
 
 PAPER = PointsStyle(
     markersize=5.5,
     panel_w=1.55,
     panel_h=1.95,
-    xtick_fs=8.5,
+    xtick_fs=7.5,
     ytick_len=3.5,
     ytick_w=0.8,
     errbar=dict(elinewidth=1.5, capsize=0, zorder=2),
@@ -438,10 +440,28 @@ def render_paper_figure(slugs, stem, *, style=PAPER, letters=True):
             axes[ri][-1].yaxis.set_label_position("right")
             if letters:
                 panel_label(axes[ri][0], ascii_lowercase[ri])
+    _center_xlabel(axes[-1], style)
     place_legends(fig, legends, style)
     out = savefig(fig, stem)
     print(f"wrote {out}")
     return out
+
+
+def _center_xlabel(bottom_axes, style):
+    """Put the x axis label under the centre of the bottom row.
+
+    fig.supxlabel would be laid out in the same band as the outside-lower
+    legends and collide with them, so the label rides on a bottom-row Axes:
+    on the right edge of the left-of-centre panel when the row has an even
+    number of columns, and mid-panel when it is odd.
+    """
+    n = len(bottom_axes)
+    if n % 2:
+        bottom_axes[n // 2].set_xlabel(X_AXIS_LABEL, fontsize=style.label_fs)
+    else:
+        bottom_axes[n // 2 - 1].set_xlabel(
+            X_AXIS_LABEL, x=1.0, ha="center", fontsize=style.label_fs
+        )
 
 
 def legend_groups(rows, style):
