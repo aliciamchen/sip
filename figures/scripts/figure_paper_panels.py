@@ -33,12 +33,14 @@ from dataclasses import replace
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import apply_style, savefig  # noqa: E402
 from study_registry import studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
+import figure_model_corr as corr  # noqa: E402
 import _points as points  # noqa: E402
 
 OUT_DIR = get_project_root() / "figures" / "paper_panels"
@@ -51,10 +53,12 @@ OUT_DIR = get_project_root() / "figures" / "paper_panels"
 # marker wider than its CI would swallow them (at markersize 10 it did).
 STYLE = replace(
     points.POSTER,
-    panel_h=2.5,
-    markersize=6.5,
+    panel_w=2.9,
+    panel_h=2.9,
+    markersize=8,
     tick_len=4.5,
     tick_w=1.4,
+    xtick_fs=12,
     ytick_len=4.5,
     ytick_w=1.4,
     zero_lw=1.3,
@@ -108,6 +112,55 @@ def draw_panel(slug, stem):
     return True
 
 
+def draw_scatter_panel():
+    """Model-vs-humans scatter pooling all six studies, on its own artboard.
+
+    One point per (study x condition x latent): the model's out-of-sample LOSO-CV
+    prediction on x against the human condition mean on y, with the human 95%
+    bootstrap CI, one column per ablation and a pooled Pearson r per column.
+    Marker shape is the inferred latent, so `legend_target` covers it -- the
+    legend is left off the artboard like every other panel here.
+
+    Reuses figure_model_corr's aggregation and panel renderer, so this and
+    `model_corr_all_conditions.pdf` cannot disagree about the numbers.
+    """
+    agg = corr.agg_points()
+    if not any(agg.values()):
+        print("[scatter] no CV predictions yet — skipped")
+        return
+    vals = np.concatenate(
+        [
+            arr
+            for m in points.data.MODEL_ORDER
+            for _dv, x, y, ylo, yhi in agg[m]
+            for arr in (x, y, ylo, yhi)
+        ]
+    )
+    lim_hi = float(np.nanmax(np.abs(vals))) * 1.05
+    lim = (-lim_hi, lim_hi)
+
+    keys = points.data.MODEL_ORDER
+    fig, axes = plt.subplots(
+        1,
+        len(keys),
+        figsize=(STYLE.panel_w * len(keys), STYLE.panel_h),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True,
+    )
+    for ax, model in zip(axes, keys):
+        corr.draw_agg_panel(ax, agg[model], lim)
+        ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
+        ax.tick_params(labelsize=STYLE.tick_fs)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+        ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+    axes[0].set_ylabel("Human belief update", fontsize=STYLE.label_fs)
+    axes[len(keys) // 2].set_xlabel(
+        "Model predicted belief update (out-of-sample)", fontsize=STYLE.label_fs
+    )
+    _save(fig, "panel_model_vs_humans")
+
+
 def draw_legend(handles, stem, title, ncol=None):
     """One legend on its own tight-cropped artboard."""
     fig = plt.figure(figsize=(0.1, 0.1))
@@ -155,6 +208,7 @@ def main():
                 continue
             if draw_panel(slug, stem):
                 drawn.append(stem)
+        draw_scatter_panel()
         draw_legends()
     print(f"\n{len(drawn)} panel(s) + 4 legends in {OUT_DIR}")
 

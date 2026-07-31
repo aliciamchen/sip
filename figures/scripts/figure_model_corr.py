@@ -228,7 +228,7 @@ def build_study_figure(stem, study_name, members, level):
     print(f"wrote {out}")
 
 
-def _agg_points():
+def agg_points():
     """{model: [(dv, x, y, y_lo, y_hi), ...]} pooling all six experiments at
     condition level (averaged over the 16 scenarios). y_lo/y_hi are the human
     condition mean's 95% subject-cluster bootstrap CI (resampling that study's
@@ -270,7 +270,7 @@ def _agg_points():
     return out
 
 
-def _draw_agg_panel(ax, groups, lim):
+def draw_agg_panel(ax, groups, lim):
     """groups: list of (dv, x, y, y_lo, y_hi). DV is encoded by MARKER SHAPE (one
     point color for all); vertical human-CI error bars sit behind the points; the
     panel shows a single pooled Pearson r over all points. Sized for a poster."""
@@ -334,7 +334,7 @@ def build_aggregate_figure():
     experiments — one point per (experiment x condition x DV) — with human
     bootstrap-CI error bars."""
     figname = "model_corr_all_conditions"
-    agg = _agg_points()
+    agg = agg_points()
     vals = np.concatenate(
         [
             arr
@@ -350,7 +350,7 @@ def build_aggregate_figure():
         1, 3, figsize=(10, 4.2), sharex=True, sharey=True, constrained_layout=True
     )
     for ax, model in zip(axes, data.MODEL_ORDER):
-        _draw_agg_panel(ax, agg[model], lim)
+        draw_agg_panel(ax, agg[model], lim)
         ax.set_title(data.MODEL_LABELS[model], fontsize=19)
         ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))

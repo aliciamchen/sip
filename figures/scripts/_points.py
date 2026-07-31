@@ -102,10 +102,10 @@ LEGEND_ENTRY_ROWS = 2
 BOOTSTRAP_SEED_TAG = "figures"
 
 PAPER = PointsStyle(
-    markersize=4.5,
+    markersize=5.5,
     panel_w=1.55,
     panel_h=1.95,
-    xtick_fs=7.5,
+    xtick_fs=8.5,
     ytick_len=3.5,
     ytick_w=0.8,
     errbar=dict(elinewidth=1.5, capsize=0, zorder=2),
