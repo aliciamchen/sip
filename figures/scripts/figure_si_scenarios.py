@@ -15,7 +15,7 @@ condition where effort is given rather than inferred (1a and 2a). Error bars are
 observation per participant), so they are wide by design.
 
 No legend is drawn: these are assembled in Illustrator, where the legend is
-placed by hand. `figures/paper_panels/legend_*.pdf` carry the same encoding.
+placed by hand. `figures/panels/legends/legend_*.pdf` carry the same encoding.
 
 Usage:
     uv run python figures/scripts/figure_si_scenarios.py [--study <slug>]

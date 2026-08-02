@@ -7,12 +7,9 @@ gets its own four-column row (Base | Discomfort-only | Full | Humans) at a
 square panel aspect, and the legends every row shares are written once as
 standalone files for one-time placement:
 
-    figures/paper_panels/panel_study1a.pdf   ... panel_study3b.pdf
-    figures/paper_panels/panel_model_vs_humans.pdf
-    figures/paper_panels/legend_relationship.pdf
-    figures/paper_panels/legend_desire.pdf
-    figures/paper_panels/legend_target.pdf
-    figures/paper_panels/legend_effort.pdf
+    figures/panels/results/panel_study1a.pdf ... panel_study3b.pdf
+    figures/panels/results/panel_model_vs_humans.pdf
+    figures/panels/legends/legend_{relationship,desire,target,effort}.pdf
 
 Panels keep their column titles, action tick labels and y-axis label, so each
 one reads standalone; delete in Illustrator whatever the assembled layout
@@ -20,9 +17,9 @@ doesn't need. Text stays editable in Illustrator (`pdf.fonttype: 42`, set in plo
 the axis/tick lines are heavier than print weight so they survive placement and
 rescaling.
 
-The points design itself is `_points.py`, shared with the assembled per-study
-figures (`figure_study1a.py` and friends), so panels and preview figures cannot
-disagree. A PNG is written beside each file purely as a preview.
+The points design itself is `_points.py`, shared with the SI per-scenario grids,
+so the two cannot disagree. A gitignored PNG is written beside each PDF purely
+as a preview.
 
 Usage:
     uv run python figures/scripts/figure_paper_panels.py [--study <slug>]
@@ -37,14 +34,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import apply_style, savefig  # noqa: E402
+from plot_style import (  # noqa: E402
+    PANELS_LEGENDS,
+    PANELS_RESULTS,
+    apply_style,
+    savefig,
+)
 from study_registry import studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
-import figure_model_corr as corr  # noqa: E402
+import _agg as corr  # noqa: E402
 import _points as points  # noqa: E402
 
-OUT_DIR = get_project_root() / "figures" / "paper_panels"
+OUT_DIR = PANELS_RESULTS
+LEGEND_DIR = PANELS_LEGENDS
 
 # Square panels at the poster's scale (the aspect that reads best), with heavier
 # axis furniture for Illustrator. Fonts are poster-scale: the artboard is ~10 in
@@ -84,8 +87,11 @@ def _save(fig, stem):
     every panel just doubles the repo's figure weight for no use. Text stays
     editable there via `pdf.fonttype: 42`.
     """
-    savefig(fig, stem, out_dir=OUT_DIR)
-    print(f"wrote {OUT_DIR.name}/{stem}.pdf")
+    # Legends are shared components placed once, so they live beside the panels
+    # rather than among them -- one artboard per legend, not per study.
+    out = LEGEND_DIR if stem.startswith("legend_") else OUT_DIR
+    savefig(fig, stem, out_dir=out)
+    print(f"wrote {out.parent.name}/{out.name}/{stem}.pdf")
 
 
 def draw_panel(slug, stem):
@@ -128,8 +134,9 @@ def draw_scatter_panel():
     Marker shape is the inferred latent, so `legend_target` covers it -- the
     legend is left off the artboard like every other panel here.
 
-    Reuses figure_model_corr's aggregation and panel renderer, so this and
-    `model_corr_all_conditions.pdf` cannot disagree about the numbers.
+    Aggregation and rendering live in `_agg`, which is also where the pooled
+    bootstrap r is computed, so the panel and the reported correlation cannot
+    disagree.
     """
     agg, agg_cis = corr.agg_points()
     if not any(agg.values()):

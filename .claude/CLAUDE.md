@@ -55,12 +55,13 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                                                               ↓
                                   model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
-          paper figures: Python scripts in figures/scripts/ (styled by plot_style.py) → figures/outputs/
+     paper figures: Python scripts in figures/scripts/ (styled by plot_style.py)
+                    → figures/panels/ (Illustrator components) + figures/si/ (finished)
                                                               ↓
                      make sync-journal-figures → SIP_journal/figures/ (Overleaf)
 ```
 
-The R/Quarto qmds in `analysis/` report demographics and data checks only — every figure comes from the Python scripts in `figures/scripts/` (the main results figures, run with `make figures-results`; the SI LM figures, run with `make figures-lm-si`) and the model-comparison statistics from `model/cv/model_comparison.py` (see `.claude/rules/analysis.md`).
+The R/Quarto qmds in `analysis/` report demographics and data checks only — every figure comes from the Python scripts in `figures/scripts/` (the Illustrator results components, run with `make figures-panels`; the SI LM figures, run with `make figures-lm-si`) and the model-comparison statistics from `model/cv/model_comparison.py` (see `.claude/rules/analysis.md`).
 
 ## Common commands
 
@@ -86,5 +87,5 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 
 - `utils.py` — `get_project_root()` for constructing paths relative to project root.
 - `analysis/utils.R` — shared R helpers for the qmds and exploratory scripts: `report_demographics()`, `calculate_belief_update()`, the model JSON readers, and the condition factor orders. No plotting code — that all moved to Python.
-- `plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + PNG preview into `figures/outputs/`, plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-results` regenerates the main results set; `make figures-lm-si` the LM SI set.
-- `figures/scripts/` — all figure-generation scripts write their output to `figures/outputs/`. The main results scripts are one per paper figure (`figure_study1a/1b/2/3.py`, `figure_model_scatter.py`, `figure_ll_comparison.py`), with shared data prep in `_data.py` (reusing `model/cv/model_comparison.py`'s cell specs and loaders) and panel functions in `_panels.py` / `_joint.py`. Each renders the panels whose inputs exist, skips the rest with a printed note, and warns when CV outputs are stale relative to the data CSV. The schematic script writes its Illustrator-linked sub-panels to `figures/schematic_panels/` instead (SVG + PDF).
+- `plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + a gitignored PNG preview, into whichever output root the caller names (default `figures/si/`), plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-panels` regenerates the Illustrator components; `make figures-lm-si` the LM SI set.
+- `figures/scripts/` — output is split by consumer, with the roots named in `plot_style.py` (`PANELS_RESULTS`, `PANELS_LEGENDS`, `PANELS_SCHEMATIC`, `SI_DIR`): `figures/panels/` for Illustrator components and `figures/si/` for finished figures. The paper's results figures are assembled by hand, so `figure_paper_panels.py` writes components, not finished figures — the assembled per-study scripts were removed on 2026-08-02. Shared data prep is in `_data.py` (reusing `model/cv/model_comparison.py`'s cell specs and loaders), the points design in `_points.py`, and the pooled model-vs-humans panel in `_agg.py` (a helper module, not a script). Each renders the panels whose inputs exist, skips the rest with a printed note, and warns when CV outputs are stale relative to the data CSV.

@@ -81,7 +81,7 @@ For each file:
    Claims that drift fastest here: which module a wrapper imports from (the fit
    and CV wrappers now call `_fit_dispatcher` / `_inverse_dispatcher`, not the
    helpers directly), where the figure scripts live (all under
-   `figures/scripts/`, writing to `figures/outputs/` — they are NOT under
+   `figures/scripts/`, writing to `figures/panels/` and `figures/si/` — they are NOT under
    `model/lm/`), and run-config vocabulary (the uniform-prior config is
    **preregistered**; "canonical" was retired because it read as "the reported
    model", which it is not — the reported fits add the comparison-set

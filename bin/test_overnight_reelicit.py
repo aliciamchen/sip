@@ -132,7 +132,7 @@ def test_failed_downstream_phase_returns_nonzero_without_complete():
     """The promised end-to-end run must not hide model-comparison/figure failure."""
     make_body = r"""
 case " $* " in
-  *" figures-results "*) exit 8 ;;
+  *" figures-panels "*) exit 8 ;;
   *) exit 0 ;;
 esac
 """

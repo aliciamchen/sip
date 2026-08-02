@@ -51,7 +51,7 @@ ANALYSIS_QMDS := \
         data lm lm-alternatives lm-base lm-diag lm-base-diag lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
-        analysis figures-lm-si figures-results figures-panels figures-si-scenarios \
+        analysis figures-lm-si figures-panels figures-si-scenarios \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -77,7 +77,7 @@ all:
 	$(MAKE) fit
 	$(MAKE) cv
 	$(MAKE) model-comparison
-	$(MAKE) figures-results
+	$(MAKE) figures-panels
 	$(MAKE) analysis
 
 help:
@@ -93,10 +93,9 @@ help:
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance + elicitation-guard + data-converter + roster-sync tests"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
-	@echo "  figures-results      - render the main results figures (per study + scatters + LL) into figures/outputs/"
-	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/outputs/"
-	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/paper_panels/"
-	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/outputs/"
+	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/si/"
+	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
+	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
 	@echo ""
@@ -445,7 +444,7 @@ $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 
 # =============================================================================
 # SI LM-elicitation validation figures (no API calls — read the persisted
-# lm_runs.jsonl / embedding artifacts and write PDFs to figures/outputs/). Each
+# lm_runs.jsonl / embedding artifacts and write PDFs to figures/si/). Each
 # figure spans all six active studies in one consolidated figure (the
 # alternatives deep-dives require embed_alternatives.py + project_alternatives.py
 # for every study). run-spread / mixture-check stay at Study 1a (model-fit
@@ -457,82 +456,34 @@ figures-lm-si:
 	uv run python figures/scripts/plot_alternatives.py --figures si
 
 # =============================================================================
-# Main results figures (scripts in figures/scripts/, output to figures/outputs/):
-# per-study results figures, the model-vs-human scatter figures, and the
-# held-out-LL comparison. Each figure is a file target that depends on its
-# study's data CSV + CV outputs (via $(fig_inputs)) plus the shared figure
-# modules, so `make` rebuilds exactly the figures whose inputs changed — and
-# `make all` regenerates them from the current data. Data/CV prereqs are
-# wrapped in $(wildcard ...) so a study whose inputs don't exist yet simply
-# isn't a prerequisite (the scripts skip its panels gracefully and still write
-# the PDF); a newly-appeared input is picked up on the next make. PNG previews
-# are written beside each PDF.
+# Figure build inputs, shared by the panel and SI targets.
 # =============================================================================
 
 FIG_SCRIPTS := figures/scripts
-FIG_OUT := figures/outputs
-# Shared code every results figure depends on (a change here rebuilds them all).
+FIG_SI := figures/si
+# Shared code every figure depends on (a change here rebuilds them all).
 FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_points.py \
               plot_style.py study_registry.py model/cv/model_comparison.py
 
 # The data + model outputs a study contributes to a figure. Deliberately only
-# the CV *side-outputs* that are NOT make targets — the data CSV and
-# cv_preds_summary.json — never cv_trial_ll.jsonl or cv_model_comparison.json
-# (both targets). Depending on a target would make `make figures-results` try to
-# rebuild the whole fit→CV chain when it looks stale; depending on the plain
-# outputs means a figure rebuilds when the model outputs change without ever
-# triggering an (expensive) refit. cv_model_comparison.json (the r/LL
-# annotations) is refreshed by the model-comparison stage, which `make all` runs
-# before figures; standalone, the scripts warn if it is stale. Wildcard-guarded
-# so a study whose outputs don't exist yet drops out of the prereqs.
+# the CV *side-outputs* that are NOT make targets -- the data CSV and
+# cv_preds_summary.json -- never cv_trial_ll.jsonl or cv_model_comparison.json
+# (both targets), since depending on a target would try to rebuild the whole
+# fit->CV chain whenever it looks stale. Wildcard-guarded so a study whose
+# outputs don't exist yet simply drops out of the prereqs.
 fig_inputs = $(wildcard data/$(1)/main_trials_long.csv) \
              $(wildcard model/outputs/$(1)/cv_preds_summary.json)
 
-$(FIG_OUT)/study1a_results.pdf: $(FIG_SCRIPTS)/figure_study1a.py $(FIG_SHARED) \
-    $(call fig_inputs,food_inv_desire)
-	uv run python $(FIG_SCRIPTS)/figure_study1a.py
-
-$(FIG_OUT)/study1b_results.pdf: $(FIG_SCRIPTS)/figure_study1b.py $(FIG_SHARED) \
-    $(call fig_inputs,food_inv_joint_de)
-	uv run python $(FIG_SCRIPTS)/figure_study1b.py
-
-$(FIG_OUT)/study2_results.pdf: $(FIG_SCRIPTS)/figure_study2.py $(FIG_SHARED) \
-    $(call fig_inputs,food_inv_intimacy) $(call fig_inputs,food_inv_joint_ie)
-	uv run python $(FIG_SCRIPTS)/figure_study2.py
-
-$(FIG_OUT)/study3_results.pdf: $(FIG_SCRIPTS)/figure_study3.py $(FIG_SHARED) \
-    $(call fig_inputs,nonfood_inv_joint_de) $(call fig_inputs,nonfood_inv_joint_ie)
-	uv run python $(FIG_SCRIPTS)/figure_study3.py
-
-# figure_model_scatter.py writes three PDFs in one pass; witness on study1's
-# (the same grouped-output idiom as CMP_WITNESS, since make 3.81 has no `&:`).
-# Prereqs are every study's CV inputs; study2/3 are rebuilt with it.
-SCATTER_WITNESS := $(FIG_OUT)/model_scatter_study1.pdf
-$(SCATTER_WITNESS): $(FIG_SCRIPTS)/figure_model_scatter.py $(FIG_SHARED) \
-    $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
-	uv run python $(FIG_SCRIPTS)/figure_model_scatter.py
-$(FIG_OUT)/model_scatter_study2.pdf $(FIG_OUT)/model_scatter_study3.pdf: $(SCATTER_WITNESS)
-
-$(FIG_OUT)/model_ll_comparison.pdf: $(FIG_SCRIPTS)/figure_ll_comparison.py $(FIG_SHARED) \
-    $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
-	uv run python $(FIG_SCRIPTS)/figure_ll_comparison.py
-
-RESULTS_FIGURE_PDFS := $(FIG_OUT)/study1a_results.pdf $(FIG_OUT)/study1b_results.pdf \
-                       $(FIG_OUT)/study2_results.pdf $(FIG_OUT)/study3_results.pdf \
-                       $(SCATTER_WITNESS) $(FIG_OUT)/model_scatter_study2.pdf \
-                       $(FIG_OUT)/model_scatter_study3.pdf $(FIG_OUT)/model_ll_comparison.pdf
-
-figures-results: $(RESULTS_FIGURE_PDFS)
-
 # =============================================================================
-# Illustrator panels (figures/paper_panels/): the manuscript's results figures
-# are assembled by hand, so this writes the pieces — one four-column row per
-# sub-study plus the four shared legends, as an editable-text SVG + PDF pair.
-# Witness on the first panel, since the script writes all ten files in one pass.
+# Illustrator panels (figures/panels/): the manuscript's results figures are
+# assembled by hand, so this writes the components — one four-column row per
+# sub-study into results/, and the four shared legends into legends/, as PDFs
+# whose text stays editable in Illustrator. Witness on the first panel, since
+# the script writes all ten files in one pass.
 # =============================================================================
 
-PANEL_DIR := figures/paper_panels
-PANEL_WITNESS := $(PANEL_DIR)/panel_study1a.pdf
+PANEL_DIR := figures/panels
+PANEL_WITNESS := $(PANEL_DIR)/results/panel_study1a.pdf
 
 $(PANEL_WITNESS): $(FIG_SCRIPTS)/figure_paper_panels.py $(FIG_SHARED) \
     $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
@@ -546,7 +497,7 @@ figures-panels: $(PANEL_WITNESS)
 # since the script writes all six in one pass.
 # =============================================================================
 
-SI_SCENARIO_WITNESS := $(FIG_OUT)/si_scenarios_study1a.pdf
+SI_SCENARIO_WITNESS := $(FIG_SI)/si_scenarios_study1a.pdf
 
 $(SI_SCENARIO_WITNESS): $(FIG_SCRIPTS)/figure_si_scenarios.py $(FIG_SHARED) \
     $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
@@ -555,7 +506,7 @@ $(SI_SCENARIO_WITNESS): $(FIG_SCRIPTS)/figure_si_scenarios.py $(FIG_SHARED) \
 figures-si-scenarios: $(SI_SCENARIO_WITNESS)
 
 # =============================================================================
-# Manuscript figures: copy a curated set of generated PDFs from figures/outputs/
+# Manuscript figures: copy a curated set of generated PDFs from figures/si/
 # into the journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs
 # real, committed files — symlinks don't sync — so this physically copies them.
 # After syncing, commit + push SIP_journal/ to Overleaf. Edit JOURNAL_FIGURES as
@@ -567,15 +518,11 @@ figures-si-scenarios: $(SI_SCENARIO_WITNESS)
 
 JOURNAL_DIR := SIP_journal
 JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
-# Main results figures whose fits/CV are still pending join this list once
-# their outputs are fresh and the rendered figure is approved:
-#   study1b_results.pdf:study1b-results.pdf
-#   study2_results.pdf:study2-results.pdf
-#   study3_results.pdf:study3-results.pdf
-#   model_scatter_study1.pdf:model-scatter-study1.pdf   (+ study2/study3)
-#   model_ll_comparison.pdf:model-ll-comparison.pdf
+# Only finished figures from figures/si/ are synced. The results figures are not
+# here on purpose: they are assembled by hand in Illustrator from the components
+# in figures/panels/, so the assembled artwork is placed into the manuscript
+# directly rather than generated and copied.
 JOURNAL_FIGURES := \
-  study1a_results.pdf:study1a-model-comparison.pdf \
   si_lm_feature_structure_all.pdf:si-lm-feature-structure.pdf \
   si_lm_manipulation_checks_all.pdf:si-lm-manipulation-checks.pdf \
   si_lm_observed_scatter_all.pdf:si-lm-observed-scatter.pdf \
@@ -594,7 +541,7 @@ sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }
 	@mkdir -p $(JOURNAL_FIG_DIR)
 	@for pair in $(JOURNAL_FIGURES); do \
-	  src=figures/outputs/$${pair%%:*}; dst=$(JOURNAL_FIG_DIR)/$${pair##*:}; \
+	  src=figures/si/$${pair%%:*}; dst=$(JOURNAL_FIG_DIR)/$${pair##*:}; \
 	  if [ -f "$$src" ]; then cp "$$src" "$$dst" && echo "  $$src -> $$dst"; \
 	  else echo "MISSING: $$src — render the analysis that generates it first" >&2; exit 1; fi; \
 	done

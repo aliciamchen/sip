@@ -36,7 +36,18 @@ _project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(_project_root))
 from utils import get_project_root  # noqa: E402
 
-FIG_DIR = get_project_root() / "figures" / "outputs"
+# Output roots, one per consumer, so a script never hardcodes a path and the
+# split stays enforceable: `panels/` holds Illustrator components and never an
+# assembled figure, and `si/` holds finished figures that go straight into
+# \includegraphics.
+_FIGURES = get_project_root() / "figures"
+SI_DIR = _FIGURES / "si"
+PANELS_RESULTS = _FIGURES / "panels" / "results"
+PANELS_LEGENDS = _FIGURES / "panels" / "legends"
+PANELS_SCHEMATIC = _FIGURES / "panels" / "schematic"
+
+# savefig's default: the finished-figure set. Panels and poster pass their own.
+FIG_DIR = SI_DIR
 
 # ----------------------------------------------------------------------- font
 
@@ -157,9 +168,9 @@ def savefig(fig, name, png=True, *, out_dir=None, formats=("pdf",)):
     """Write <out_dir>/<name>.<ext> for each requested vector format, optionally
     with a PNG preview beside them, and close the figure.
 
-    Defaults to a single PDF in figures/outputs/. Illustrator-bound panels pass
-    their own directory and ask for SVG as well, so the text stays editable
-    there (`svg.fonttype: none`); the returned path is the first format's.
+    Defaults to a single PDF in figures/si/. Illustrator-bound panels pass
+    their own directory (see the *_DIR constants above); the returned path is
+    the first format's.
     """
     out_dir = Path(out_dir) if out_dir else FIG_DIR
     out_dir.mkdir(parents=True, exist_ok=True)

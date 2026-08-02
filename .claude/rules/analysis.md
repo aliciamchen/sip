@@ -8,7 +8,7 @@ paths:
 The qmds are demographics/data-check documents only. All figures — the main
 results figures and the SI figures — are made by the Python scripts in
 `figures/scripts/` (styled by the repo-root `plot_style.py`, which is now the
-visual source of truth for palettes, and written to `figures/outputs/`), and
+visual source of truth for palettes, and written to `figures/panels/` and `figures/si/`), and
 the paper's model-comparison statistics come from `model/cv/model_comparison.py`
 (`make model-comparison`), not from the qmds. The R plotting layer (ggplot
 scales, themes, palettes, `save_figure`, the bootstrap helpers) was removed
@@ -66,4 +66,4 @@ quarto render analysis/nonfood-inv-joint-de-analysis.qmd
 quarto render analysis/nonfood-inv-joint-ie-analysis.qmd
 ```
 
-Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd. The results figures are `make figures-results` (see the Makefile's figure section and `figures/scripts/`).
+Or via the Makefile: `make analysis` renders the active set; `make analysis-<name>` runs a single qmd. The results components are `make figures-panels` (see the Makefile's figure section and `figures/scripts/`).

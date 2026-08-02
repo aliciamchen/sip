@@ -20,7 +20,7 @@
 #   4. full       — K=20, pipelined: POOL concurrent per-study chains, each doing
 #                   elicit(main[+base]) -> fit -> cv, so network-bound elicitation
 #                   overlaps CPU-bound fit/CV instead of running after it
-#   5. downstream — model_comparison.py + figures-results
+#   5. downstream — model_comparison.py + figures-panels
 #   6. validate   — final structural check of the K=20 tables
 #
 # Cost ~$51-73 (smoke ~$3 + full ~$48-70). Wall-clock ~4-5 h (the smoke calibrates
@@ -234,13 +234,13 @@ phase_full() {
 }
 
 phase_downstream() {
-  log "Downstream: model_comparison + figures-results"
+  log "Downstream: model_comparison + figures-panels"
   if ! run uv run python model/cv/model_comparison.py; then
     log "DOWNSTREAM FAILED — model_comparison"
     return 1
   fi
-  if ! run make figures-results; then
-    log "DOWNSTREAM FAILED — figures-results"
+  if ! run make figures-panels; then
+    log "DOWNSTREAM FAILED — figures-panels"
     return 1
   fi
 }

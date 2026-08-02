@@ -70,13 +70,16 @@ ACTION_LABELS = {
 # only the weights are stylized. Set ILLUSTRATIVE_WEIGHTS = None to use the fit.
 ILLUSTRATIVE_WEIGHTS = {"w_v": 12.0, "w_e": 3.0, "w_d": 6.5, "gamma": 1.0}
 
-OUT_DIR = get_project_root() / "figures" / "schematic_panels"
+from plot_style import PANELS_SCHEMATIC  # noqa: E402
+
+OUT_DIR = PANELS_SCHEMATIC
 
 
 def _savefig(fig, stem):
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for ext in ("svg", "pdf"):
-        fig.savefig(OUT_DIR / f"{stem}.{ext}", bbox_inches="tight")
+    # PDF only: Illustrator-bound figures keep editable text via pdf.fonttype 42,
+    # so a parallel SVG was duplicate weight in the repo.
+    fig.savefig(OUT_DIR / f"{stem}.pdf", bbox_inches="tight")
     plt.close(fig)
 
 

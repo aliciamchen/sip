@@ -13,13 +13,12 @@ panels per study, columns Base | Discomfort-only | Full | Humans, with
 - FILL = the given effort condition where effort is given rather than inferred
   (filled = low effort, open = high effort, in 1a and 2a only).
 
-The paper scripts (`figure_study1a.py` and friends) render at `si` scale with
-the legends inline, since a manuscript figure has to be self-contained. The
-`POSTER` style here reproduces the poster scale (larger fonts and markers,
-legends omitted because the poster places `poster_legend_*` files separately),
-but note that `figure_poster_points.py` predates this module and still carries
-its own copy of the panel code -- so the two can drift until it is moved over.
-Palettes stay in `plot_style.py`.
+Two styles remain. `PAPER` renders at `si` scale with the legends inline, for a
+figure that has to be self-contained (`figure_si_scenarios.py`). `POSTER` is the
+larger-marker scale with legends omitted, which `figure_paper_panels.py` uses
+for the Illustrator components, since those place the legends as separate
+artboards. The name is historical -- it came from the 2026-07 poster, whose
+scripts were removed on 2026-08-02. Palettes stay in `plot_style.py`.
 """
 
 import math
@@ -271,7 +270,9 @@ def iter_cells(
         for di, (vcol, marker) in enumerate(value_cols):
             for cj, cond in enumerate(fill_levels):
                 for si, lvl in enumerate(styles):
-                    mask = (cells["action_label"] == action) & (cells[color_col] == cond)
+                    mask = (cells["action_label"] == action) & (
+                        cells[color_col] == cond
+                    )
                     if style_col:
                         mask = mask & (cells[style_col] == lvl)
                     row = cells[mask]
@@ -279,8 +280,13 @@ def iter_cells(
                         continue
                     gi = (di * len(fill_levels) + cj) * len(styles) + si
                     x = ai - style.dodge_width / 2 + (gi + 0.5) * step
-                    yield x, row.iloc[0], vcol, marker, cond, (
-                        style_col is not None and lvl == styles[-1]
+                    yield (
+                        x,
+                        row.iloc[0],
+                        vcol,
+                        marker,
+                        cond,
+                        (style_col is not None and lvl == styles[-1]),
                     )
 
 
@@ -371,82 +377,6 @@ def draw_row(axes, slug, human, model, *, style, keys, lim, titles, xticklabels=
         ax.tick_params(axis="y", **ytick_kw)
 
 
-def render_paper_figure(slugs, stem, *, style=PAPER, letters=True):
-    """Assemble a manuscript results figure: one points-panel row per slug
-    (Study 2 and 3 pair their a/b sub-studies), with the legends the rows
-    actually need placed below.
-
-    Rows keep independent y scales, since the joint studies put two latents on
-    one axis while the single-DV studies put one. Column titles appear on the
-    top row and action labels on the bottom row only. Returns the written path,
-    or None when no row had any inputs.
-    """
-    rows = []
-    for slug in slugs:
-        human, model = build_cells(slug)
-        if human is None and model is None:
-            print(f"[{slug}] no inputs — row skipped")
-            continue
-        rows.append((slug, human, model))
-    if not rows:
-        print(f"[{stem}] nothing to draw yet")
-        return None
-
-    # Columns = every panel any row can fill, in the canonical order.
-    present = set().union(*(set(panel_keys(h, m)) for _s, h, m in rows))
-    keys = [k for k in data.PANEL_ORDER if k in present]
-
-    n_rows, n_cols = len(rows), len(keys)
-    legends = legend_groups(rows, style)
-    fig, axes = plt.subplots(
-        n_rows,
-        n_cols,
-        figsize=(
-            style.panel_w * n_cols + 0.55,
-            style.panel_h * n_rows + 0.55 + LEGEND_ROW_H * legend_rows(legends),
-        ),
-        sharey="row",
-        squeeze=False,
-        constrained_layout=True,
-    )
-    for ri, (slug, human, model) in enumerate(rows):
-        row_keys = panel_keys(human, model)
-        draw = [k for k in keys if k in row_keys]
-        row_axes = [axes[ri][keys.index(k)] for k in draw]
-        for k in keys:
-            if k not in row_keys:
-                axes[ri][keys.index(k)].set_axis_off()
-        draw_row(
-            row_axes,
-            slug,
-            human,
-            model,
-            style=style,
-            keys=draw,
-            lim=symmetric_limit(slug, human, model),
-            titles=(ri == 0),
-            xticklabels=(ri == n_rows - 1),
-        )
-        axes[ri][0].set_ylabel(ylabel_for(slug), fontsize=style.label_fs)
-        if n_rows > 1:
-            # Right-side row label, so each row says which sub-study it is
-            # without a caption lookup.
-            axes[ri][-1].set_ylabel(
-                study(slug).paper_label,
-                rotation=270,
-                labelpad=11,
-                fontsize=style.label_fs,
-            )
-            axes[ri][-1].yaxis.set_label_position("right")
-            if letters:
-                panel_label(axes[ri][0], ascii_lowercase[ri])
-    _center_xlabel(axes[-1], style)
-    place_legends(fig, legends, style)
-    out = savefig(fig, stem)
-    print(f"wrote {out}")
-    return out
-
-
 def _center_xlabel(bottom_axes, style):
     """Put the x axis label under the centre of the bottom row.
 
@@ -462,37 +392,6 @@ def _center_xlabel(bottom_axes, style):
         bottom_axes[n // 2 - 1].set_xlabel(
             X_AXIS_LABEL, x=1.0, ha="center", fontsize=style.label_fs
         )
-
-
-def legend_groups(rows, style):
-    """The (handles, title, ncol) legend groups a figure's rows require: the
-    given-condition color scale(s), the inferred-target shapes when more than
-    one shape is drawn, and the filled/open effort encoding when any row has
-    effort as a given condition.
-
-    Every group is laid out over LEGEND_ENTRY_ROWS rows (its column count
-    follows from its entry count), so the bottom-anchored boxes come out the
-    same height and their titles line up across the strip.
-    """
-    groups = []
-    seen = set()
-    for slug, _h, _m in rows:
-        condition = color_axis(slug)
-        if condition not in seen:
-            seen.add(condition)
-            groups.append(_group(*condition_point_handles(condition, style)))
-
-    dv_names = []
-    for slug, _h, _m in rows:
-        for dv in study(slug).dvs:
-            if dv.name not in dv_names:
-                dv_names.append(dv.name)
-    if len(dv_names) > 1:
-        groups.append(_group(target_handles(dv_names, style), "Target of inference"))
-
-    if any(style_col(slug) for slug, _h, _m in rows):
-        groups.append(_group(effort_fill_handles(style), "Effort of low-risk share"))
-    return groups
 
 
 def _group(handles, title):
