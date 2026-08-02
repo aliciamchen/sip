@@ -344,5 +344,40 @@ def test_base_shared_uses_fulls_priors_vintage():
         assert priors_base_variant(slug, "full") is False, slug
 
 
+def test_results_latex_macro_names_are_valid_and_unique():
+    """The generated macro names must be letters-only and collision-free.
+
+    LaTeX command names cannot contain digits or underscores, so every study
+    label and parameter name has to be mapped to letters ("1a" -> "OneA"). A
+    violation would surface as a LaTeX syntax error in the manuscript rather
+    than here, so this pins it at the source: build the whole macro set and let
+    Macros.add's own guards fire.
+
+    Skipped when the comparison JSONs are absent (a clean tree), since the
+    exporter reads them; the guards are exercised as soon as CV has run.
+    """
+    import export_results_latex as X
+
+    have = [
+        s
+        for s in X.studies()
+        if (_root / "model" / "outputs" / s.slug / "cv_model_comparison.json").exists()
+    ]
+    if not have:
+        print("~ results-latex macros: no cv_model_comparison.json yet, skipped")
+        return
+    macros, _loaded = X.build(have)
+    names = [name for name, _b, _c in macros._items]
+    bad = [n for n in names if not n.isalpha()]
+    assert not bad, f"macro names not letters-only: {bad}"
+    assert len(names) == len(set(names)), "duplicate macro names"
+    # Every study must contribute the contrasts the tables reference.
+    for st in have:
+        tok = X.token(st)
+        for required in (f"llFull{tok}", f"statBase{tok}", f"statDisc{tok}"):
+            assert required in names, f"missing {required}"
+    print(f"✓ {len(names)} results-latex macros, all letters-only and unique")
+
+
 if __name__ == "__main__":
     run_all_tests()

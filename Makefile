@@ -98,6 +98,7 @@ help:
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/paper_panels/"
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/outputs/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
+	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
 	@echo "  experiments       - regenerate stimuli + counterbalancing + entry files"
@@ -419,6 +420,19 @@ $(CMP_WITNESS): $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_l
 	uv run python model/cv/model_comparison.py
 
 model-comparison: $(CMP_WITNESS)
+
+# =============================================================================
+# Results LaTeX (SIP_journal/): every number the results section states, as
+# generated macros plus the two table bodies. Depends on the comparison JSONs,
+# so it rebuilds fit -> cv -> model-comparison first when any is stale, and the
+# exporter itself verifies both manifests before emitting anything. Not a file
+# target: SIP_journal/ is a separate gitignored repo that may not be present.
+# =============================================================================
+
+.PHONY: results-latex
+results-latex: $(CMP_WITNESS)
+	uv run python model/export_results_latex.py
+
 
 # =============================================================================
 # Analysis: quarto render
