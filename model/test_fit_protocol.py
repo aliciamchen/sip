@@ -258,6 +258,59 @@ def test_default_config_writes_the_study_root():
     print("✓ preregistered config writes the study root")
 
 
+def test_warm_start_round_trips_for_every_fitted_variant():
+    """A CV fold rebuilds its warm start from fit_results.json, so every member
+    of the optimizer vector must survive that round trip.
+
+    `_read_fit_results` strips the `param_` prefix for an explicit list of names.
+    When the reweighting added `eta` to the vector, that list was not updated, so
+    CV raised KeyError on all 12 reweighted (study, variant) pairs -- loudly, but
+    only once a CV run had already started. This closes the loop by asserting the
+    round trip for every variant whose fit exists on disk.
+    """
+    import sys as _sys
+
+    _sys.path.insert(0, str(_root / "model" / "cv"))
+    import _inverse_dispatcher as D
+
+    from _helpers import params_dict_to_array
+
+    checked, skipped = 0, []
+    for slug in ROSTER:
+        fit_dir = _root / "model" / "outputs" / slug
+        if not (fit_dir / "fit_results.json").exists():
+            continue
+        fits = D._read_fit_results(str(fit_dir))
+        family = fd.FAMILY_BY_SLUG[slug]
+        for variant, (_fn, util) in fd._FAMILIES[family]["variants"].items():
+            if variant not in fits:
+                continue
+            extras = (
+                ("eta",)
+                if _reweighting.uses_reweighting(slug, list(util))
+                else ()
+            )
+            # A fit written before the reweighting existed has no param_eta, so
+            # it cannot round-trip. That is a stale artifact, not a code defect
+            # (it resolves when the study is refit), so skip it and report --
+            # while still requiring that SOMETHING was checked, so this can
+            # never pass vacuously on an all-stale tree.
+            if extras and "eta" not in fits[variant]:
+                skipped.append(f"{slug}/{variant}")
+                continue
+            vec = params_dict_to_array(
+                fits[variant], list(util), extra_param_names=extras
+            )
+            assert len(vec) == len(util) + 2 + len(extras), (
+                f"{slug}/{variant}: warm vector is {len(vec)} long, expected "
+                f"{len(util) + 2 + len(extras)}"
+            )
+            checked += 1
+    assert checked, "no fits on disk to check the warm-start round trip against"
+    note = f" ({len(skipped)} pre-reweighting fits skipped: {skipped})" if skipped else ""
+    print(f"✓ warm start round-trips for {checked} fitted (study, variant) pairs{note}")
+
+
 def run_all_tests():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failures = []
@@ -273,6 +326,22 @@ def run_all_tests():
         sys.exit(1)
     print(f"All {len(tests)} fit-protocol tests passed!")
     print("=" * 60)
+
+
+def test_base_shared_uses_fulls_priors_vintage():
+    """`base_shared` must NOT route to the relationship-free base priors.
+
+    It is base's utility on full's relationship-conditioned comparison set, so
+    its cells carry a relationship axis; the collapsed base priors vintage would
+    misalign with that grid. Pins the exact-match in priors_base_variant against
+    a well-meaning widening to startswith("base").
+    """
+    from _priors import priors_base_variant
+
+    for slug in ("food_inv_desire", "food_inv_joint_de", "nonfood_inv_joint_de"):
+        assert priors_base_variant(slug, "base") is True, slug
+        assert priors_base_variant(slug, "base_shared") is False, slug
+        assert priors_base_variant(slug, "full") is False, slug
 
 
 if __name__ == "__main__":

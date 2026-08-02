@@ -254,7 +254,13 @@ def _read_fit_results(fit_dir):
         }
         if row.get("param_sigma") is not None:
             params["sigma"] = float(row["param_sigma"])
-        for pn in ("w_v", "w_d", "w_e", "gamma", "prior_nu"):
+        # Every optimizer-vector member that fit_results.json stores under a
+        # `param_` prefix must be listed, or the fold's warm start cannot be
+        # rebuilt. `eta` was missing until 2026-07-31, which made CV raise
+        # KeyError on all 12 reweighted (study, variant) pairs; the round-trip is
+        # now pinned by test_fit_protocol.py so a future extra fails in the suite
+        # rather than an hour into a CV run.
+        for pn in ("w_v", "w_d", "w_e", "gamma", "prior_nu", "eta"):
             if row.get(f"param_{pn}") is not None:
                 params[pn] = float(row[f"param_{pn}"])
         out[variant] = params

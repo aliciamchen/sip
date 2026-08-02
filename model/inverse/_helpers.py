@@ -12,6 +12,7 @@ separate predict step). Shared concerns:
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -93,6 +94,16 @@ ALPHA_OBS_MAX = None
 # rather than depending on luck. Low ~ the preregistered-regime optimum; high ~
 # the sharper optimum reachable since the log-space rewrite.
 ALPHA_OBS_SEEDS = (3.0, 30.0)
+
+# Restarts per full-data fit, before the ALPHA_OBS_SEEDS basin seeds are added.
+# 3 gives 1 all-ones init + 2 cold lognormal draws, and the two basin seeds bring
+# the total to 5 -- the same cost as fits before the basin seeds existed, while
+# still covering both alpha_observer optima deterministically rather than relying
+# on a random draw landing in the better one. Raise for a more thorough sweep of
+# the gamma power law's local minima; the basin coverage is independent of it.
+# CV fold refits are unaffected: they pass n_restarts=CV_RESTARTS explicitly and
+# warm-start from the full-data fit, which has already explored both basins.
+N_RESTARTS_FIT = int(os.environ.get("FIT_RESTARTS", "3"))
 
 
 def param_upper_bounds(n_params, alpha_obs_index, alpha_max=None):
@@ -197,7 +208,7 @@ def _restart_seed(seed_key):
 def _fit_multistart(
     loss_fn,
     n_params,
-    n_restarts=5,
+    n_restarts=N_RESTARTS_FIT,
     lr=0.1,
     max_steps=1000,
     verbose=True,
@@ -567,7 +578,13 @@ def load_fit_results(slug: str) -> dict:
         }
         if row.get("param_sigma") is not None:
             params["sigma"] = float(row["param_sigma"])
-        for pn in ("w_v", "w_d", "w_e", "gamma"):
+        # Must list every optimizer-vector member that fit_results.json stores
+        # under a `param_` prefix, including the extras (`prior_nu` for
+        # informative-prior runs, `eta` for reweighted variants) -- otherwise a
+        # caller round-tripping through params_dict_to_array gets a KeyError, or
+        # worse a short vector. The CV dispatcher's own reader had the same
+        # omission; see test_fit_protocol.py.
+        for pn in ("w_v", "w_d", "w_e", "gamma", "prior_nu", "eta"):
             if row.get(f"param_{pn}") is not None:
                 params[pn] = float(row[f"param_{pn}"])
         out[variant] = params
@@ -1099,7 +1116,7 @@ def fit_intimacy_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
-    n_restarts=5,
+    n_restarts=N_RESTARTS_FIT,
     init_params=None,
     patience=100,
     seed_key=None,
@@ -1199,7 +1216,7 @@ def fit_desire_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
-    n_restarts=5,
+    n_restarts=N_RESTARTS_FIT,
     init_params=None,
     patience=100,
     seed_key=None,
@@ -1299,7 +1316,7 @@ def fit_joint_de_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
-    n_restarts=5,
+    n_restarts=N_RESTARTS_FIT,
     init_params=None,
     patience=100,
     seed_key=None,
@@ -1416,7 +1433,7 @@ def fit_joint_ie_observer_joint(
     lr=0.1,
     max_steps=1000,
     verbose=True,
-    n_restarts=5,
+    n_restarts=N_RESTARTS_FIT,
     init_params=None,
     patience=100,
     seed_key=None,
