@@ -2,36 +2,63 @@
   {
     "model": "full",
     "experiment": "food_inv_joint_de",
-    "nll": 1591.4541015625,
-    "n_params": 6,
+    "nll": 1334.4324951171875,
+    "n_params": 7,
     "param_alpha": 1.0,
-    "alpha_observer": 9.12278938293457,
-    "param_sigma": 0.27847734093666077,
-    "param_w_v": 0.6098198294639587,
-    "param_w_d": 0.9731584191322327,
-    "param_w_e": 0.738568902015686,
-    "param_gamma": 4.045765399932861
+    "alpha_observer": 2.353785276412964,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.2618806064128876,
+    "param_eta": 3.064457893371582,
+    "reweighting_targets": [
+      "world"
+    ],
+    "param_w_v": 2.925356388092041,
+    "param_w_d": 2.550326108932495,
+    "param_w_e": 3.293679714202881,
+    "param_gamma": 1.513765811920166
   },
   {
     "model": "discomfort_only",
     "experiment": "food_inv_joint_de",
-    "nll": 2744.326171875,
+    "nll": 2744.326416015625,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 1.9881222248077393,
-    "param_sigma": 0.347472220659256,
-    "param_w_d": 9.999999974752427e-07,
-    "param_gamma": 0.3992139399051666
+    "alpha_observer": 29.003969192504883,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.3475040793418884,
+    "param_w_d": 0.9773319363594055,
+    "param_gamma": 3.13118839263916
   },
   {
     "model": "base",
     "experiment": "food_inv_joint_de",
-    "nll": 1638.405029296875,
-    "n_params": 4,
+    "nll": 1259.013916015625,
+    "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 9.123080253601074,
-    "param_sigma": 0.2800271809101105,
-    "param_w_v": 0.6403548121452332,
-    "param_w_e": 0.8366929292678833
+    "alpha_observer": 5.673288345336914,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.25533390045166016,
+    "param_eta": 3.2327349185943604,
+    "reweighting_targets": [
+      "world"
+    ],
+    "param_w_v": 1.1070407629013062,
+    "param_w_e": 1.441849708557129
+  },
+  {
+    "model": "base_shared",
+    "experiment": "food_inv_joint_de",
+    "nll": 1395.48291015625,
+    "n_params": 5,
+    "param_alpha": 1.0,
+    "alpha_observer": 4.33090353012085,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.2655842900276184,
+    "param_eta": 2.6012439727783203,
+    "reweighting_targets": [
+      "world"
+    ],
+    "param_w_v": 1.3888472318649292,
+    "param_w_e": 1.7447049617767334
   }
 ]

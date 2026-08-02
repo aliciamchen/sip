@@ -2,36 +2,52 @@
   {
     "model": "full",
     "experiment": "nonfood_inv_joint_ie",
-    "nll": 1840.07763671875,
-    "n_params": 6,
+    "nll": 1772.5162353515625,
+    "n_params": 7,
     "param_alpha": 1.0,
-    "alpha_observer": 8.155409812927246,
-    "param_sigma": 0.28764477372169495,
-    "param_w_v": 3.7864742279052734,
-    "param_w_d": 0.5944075584411621,
-    "param_w_e": 0.7367924451828003,
-    "param_gamma": 1.464988112449646
+    "alpha_observer": 27.021785736083984,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.2821534276008606,
+    "param_eta": 0.5774095058441162,
+    "reweighting_targets": [
+      "intimacy",
+      "world"
+    ],
+    "param_w_v": 3.0905728340148926,
+    "param_w_d": 0.1423128843307495,
+    "param_w_e": 0.2066761702299118,
+    "param_gamma": 1.2333409786224365
   },
   {
     "model": "discomfort_only",
     "experiment": "nonfood_inv_joint_ie",
-    "nll": 2284.10205078125,
-    "n_params": 4,
+    "nll": 2269.98193359375,
+    "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 9.153473854064941,
-    "param_sigma": 0.3258454501628876,
-    "param_w_d": 0.6714513897895813,
-    "param_gamma": 3.5999393463134766
+    "alpha_observer": 29.36996078491211,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.32519084215164185,
+    "param_eta": 1.4735521078109741,
+    "reweighting_targets": [
+      "intimacy"
+    ],
+    "param_w_d": 0.10743646323680878,
+    "param_gamma": 2.2186577320098877
   },
   {
     "model": "base",
     "experiment": "nonfood_inv_joint_ie",
-    "nll": 2361.22998046875,
-    "n_params": 4,
+    "nll": 2312.22314453125,
+    "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 9.040731430053711,
-    "param_sigma": 0.3163193166255951,
-    "param_w_v": 4.670658111572266,
-    "param_w_e": 0.5627379417419434
+    "alpha_observer": 27.690155029296875,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.31340232491493225,
+    "param_eta": 0.01700115017592907,
+    "reweighting_targets": [
+      "world"
+    ],
+    "param_w_v": 4.023565769195557,
+    "param_w_e": 0.18653622269630432
   }
 ]

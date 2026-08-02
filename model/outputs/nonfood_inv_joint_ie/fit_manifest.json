@@ -1,10 +1,10 @@
 {
   "experiment": "nonfood_inv_joint_ie",
-  "timestamp": "2026-07-19T10:02:47.558046+00:00",
-  "git_sha": "477500652e95e4c01c8791c2a09876c1cf909bde",
+  "timestamp": "2026-07-31T05:07:47.773590+00:00",
+  "git_sha": "57357682264ad5e6b0059bc9d3eed7453d6baf94",
   "outputs": {
-    "fit_results.json": "5dfd031c01b585491d5ec0e01a1f1275d23e4fc003a89bf08d99f0cd7f77d6c8",
-    "fit_restarts.jsonl": "14876e454b125eddeea7363e4baa17ac27d6119a88d21a4aa1314402dd5d1464"
+    "fit_results.json": "bd4ab5be36d6508a849de0582266254f12460a2db71d91940e9a3acb93d343a4",
+    "fit_restarts.jsonl": "d9f8320cb1227d6369b293ab1cbd80693fc1090ff7bfcea9190e681f3521c778"
   },
   "input_data": {
     "path": "data/nonfood_inv_joint_ie/main_trials_long.csv",

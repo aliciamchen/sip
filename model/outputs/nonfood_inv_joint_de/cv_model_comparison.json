@@ -2,28 +2,38 @@
   "experiment": "nonfood_inv_joint_de",
   "n_boot": 1000,
   "seed": 0,
+  "reported_base": "base_shared",
   "n_subjects": 239,
   "n_trials_per_model": 3824,
   "mean_held_out_ll_per_trial": {
-    "base": -0.7285124486834434,
-    "discomfort_only": -0.932894949727228,
-    "full": -0.6821817847038911
+    "base": -0.664167712672485,
+    "base_shared": -0.6735197971243738,
+    "discomfort_only": -0.9328771353266728,
+    "full": -0.6638626389236629
   },
   "primary": [
     {
       "comparison": "full_minus_base",
-      "mean_per_trial_ll_diff": 0.04633066397955228,
+      "mean_per_trial_ll_diff": 0.00030507374882199275,
       "ci_95": [
-        0.03844709255222122,
-        0.053545580293874115
+        -0.007621435108730983,
+        0.008433489669815764
+      ]
+    },
+    {
+      "comparison": "full_minus_base_shared",
+      "mean_per_trial_ll_diff": 0.009657158200710888,
+      "ci_95": [
+        0.004755886837403645,
+        0.01399775214150361
       ]
     },
     {
       "comparison": "full_minus_discomfort_only",
-      "mean_per_trial_ll_diff": 0.25071316502333685,
+      "mean_per_trial_ll_diff": 0.26901449640300984,
       "ci_95": [
-        0.22375339007231107,
-        0.2775633935781515
+        0.24023594223430467,
+        0.29798108675053425
       ]
     }
   ],
@@ -31,62 +41,93 @@
     {
       "model": "base",
       "dv": "desire",
-      "r": 0.8502729349097919,
+      "r": 0.8616182865889171,
       "ci_95": [
-        0.8032572523336917,
-        0.8444411878076282
+        0.8138117457020382,
+        0.8560933574451147
       ],
       "n_cells": 192
     },
     {
       "model": "base",
       "dv": "effort",
-      "r": 0.5427580420689668,
+      "r": 0.6487998646049441,
       "ci_95": [
-        0.4680642011026585,
-        0.5525050962717166
+        0.5737018228282752,
+        0.6481570230191971
+      ],
+      "n_cells": 192
+    },
+    {
+      "model": "base_shared",
+      "dv": "desire",
+      "r": 0.8642538466599387,
+      "ci_95": [
+        0.8168120409781015,
+        0.8588095635629985
+      ],
+      "n_cells": 192
+    },
+    {
+      "model": "base_shared",
+      "dv": "effort",
+      "r": 0.6316513204310653,
+      "ci_95": [
+        0.5560940465777535,
+        0.6337240894152804
       ],
       "n_cells": 192
     },
     {
       "model": "discomfort_only",
       "dv": "desire",
-      "r": 0.1471089036442523,
+      "r": NaN,
       "ci_95": [
-        0.10884697398674877,
-        0.17773055682957606
+        NaN,
+        NaN
       ],
       "n_cells": 192
     },
     {
       "model": "discomfort_only",
       "dv": "effort",
-      "r": -0.10429897491875077,
+      "r": NaN,
       "ci_95": [
-        -0.14290503180119557,
-        -0.05232755434669265
+        NaN,
+        NaN
       ],
       "n_cells": 192
     },
     {
       "model": "full",
       "dv": "desire",
-      "r": 0.865800656658859,
+      "r": 0.8753491644058929,
       "ci_95": [
-        0.8207197827271788,
-        0.858270751735674
+        0.8290036725230946,
+        0.8674310805013888
       ],
       "n_cells": 192
     },
     {
       "model": "full",
       "dv": "effort",
-      "r": 0.6680153942868494,
+      "r": 0.6347312945150564,
       "ci_95": [
-        0.5911539321221223,
-        0.6655965680014052
+        0.5630658625144837,
+        0.6342947377629689
       ],
       "n_cells": 192
+    }
+  ],
+  "prereg_deviation": [
+    {
+      "comparison": "base_shared_minus_base",
+      "mean_per_trial_ll_diff": -0.009352084451888894,
+      "ci_95": [
+        -0.017066627575637903,
+        -0.002090981666575418
+      ],
+      "meaning": "the deviation itself: comparison set alone, utility and parameter count held fixed. Pairs with primary's full_minus_base (the preregistered contrast, which moves both) and full_minus_base_shared (the reported one, utility alone)"
     }
   ]
 }

@@ -1,11 +1,11 @@
 {
   "experiment": "nonfood_inv_joint_ie",
-  "timestamp": "2026-07-19T10:21:16.320085+00:00",
-  "git_sha": "477500652e95e4c01c8791c2a09876c1cf909bde",
+  "timestamp": "2026-07-31T09:23:36.952451+00:00",
+  "git_sha": "57357682264ad5e6b0059bc9d3eed7453d6baf94",
   "outputs": {
-    "cv_preds_summary.json": "31e206695fa99f223180bc8caee106c21afebb044c1d473f71f53e11f01352e1",
-    "cv_folds.jsonl": "da27c24bbf2b43707d4692c0dfbf7530401fb98f7b33b83514c48c0d14e54dce",
-    "cv_trial_ll.jsonl": "c61dd99a308315d985de8744276bb00b5e86df1d574eecfbd4f171f5d956a5f5"
+    "cv_preds_summary.json": "f6eef1fc565736cf2a0c2f71b92f68fa9887decf1e624cdaf03d8b52bf934415",
+    "cv_folds.jsonl": "8a55c1db9f32e271d2fe3e05a84f348d4a374114a2674c6d732dba3c6f736aa6",
+    "cv_trial_ll.jsonl": "21d2072bbf7a17d84431d45153738f7fafe204cfdf5b0c62ef9cf87f4bf3a913"
   },
   "input_data": {
     "path": "data/nonfood_inv_joint_ie/main_trials_long.csv",

@@ -4,8 +4,8 @@
     "scenario_label": "bed",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.15821263194084167,
-    "delta_effort": 0.03525761887431145,
+    "delta_intimacy": -0.17849674820899963,
+    "delta_effort": -0.05239288881421089,
     "model": "full"
   },
   {
@@ -13,8 +13,8 @@
     "scenario_label": "bed",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.27827566862106323,
-    "delta_effort": 0.01594466157257557,
+    "delta_intimacy": -0.2567515969276428,
+    "delta_effort": -0.07600231468677521,
     "model": "full"
   },
   {
@@ -22,8 +22,8 @@
     "scenario_label": "bed",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.019124172627925873,
-    "delta_effort": -0.1421363800764084,
+    "delta_intimacy": 0.046555571258068085,
+    "delta_effort": -0.11991290003061295,
     "model": "full"
   },
   {
@@ -31,8 +31,8 @@
     "scenario_label": "bed",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.059201788157224655,
-    "delta_effort": -0.1356029361486435,
+    "delta_intimacy": -0.044956158846616745,
+    "delta_effort": -0.1294087916612625,
     "model": "full"
   },
   {
@@ -40,8 +40,8 @@
     "scenario_label": "bed",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.15675243735313416,
-    "delta_effort": 0.18748286366462708,
+    "delta_intimacy": 0.1739785075187683,
+    "delta_effort": 0.15060366690158844,
     "model": "full"
   },
   {
@@ -49,8 +49,8 @@
     "scenario_label": "bed",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.11218247562646866,
-    "delta_effort": 0.15695741772651672,
+    "delta_intimacy": 0.09680657833814621,
+    "delta_effort": 0.08841314166784286,
     "model": "full"
   },
   {
@@ -58,8 +58,8 @@
     "scenario_label": "blanket",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.16407862305641174,
-    "delta_effort": 0.10334803909063339,
+    "delta_intimacy": -0.1470547318458557,
+    "delta_effort": 0.08869336545467377,
     "model": "full"
   },
   {
@@ -67,8 +67,8 @@
     "scenario_label": "blanket",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.13797923922538757,
-    "delta_effort": 0.15984927117824554,
+    "delta_intimacy": -0.1844698190689087,
+    "delta_effort": 0.09227494895458221,
     "model": "full"
   },
   {
@@ -76,8 +76,8 @@
     "scenario_label": "blanket",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.11782834678888321,
-    "delta_effort": -0.33764320611953735,
+    "delta_intimacy": -0.12331098318099976,
+    "delta_effort": -0.26222488284111023,
     "model": "full"
   },
   {
@@ -85,8 +85,8 @@
     "scenario_label": "blanket",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.1609514057636261,
-    "delta_effort": -0.28261691331863403,
+    "delta_intimacy": -0.13597002625465393,
+    "delta_effort": -0.2489331215620041,
     "model": "full"
   },
   {
@@ -94,8 +94,8 @@
     "scenario_label": "blanket",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.20034997165203094,
-    "delta_effort": 0.13205701112747192,
+    "delta_intimacy": 0.21758408844470978,
+    "delta_effort": 0.15112602710723877,
     "model": "full"
   },
   {
@@ -103,8 +103,8 @@
     "scenario_label": "blanket",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.1606431007385254,
-    "delta_effort": 0.19061827659606934,
+    "delta_intimacy": 0.18894098699092865,
+    "delta_effort": 0.23218926787376404,
     "model": "full"
   },
   {
@@ -112,8 +112,8 @@
     "scenario_label": "breakup",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.17899250984191895,
-    "delta_effort": 0.13336923718452454,
+    "delta_intimacy": -0.19760990142822266,
+    "delta_effort": 0.1126759871840477,
     "model": "full"
   },
   {
@@ -121,8 +121,8 @@
     "scenario_label": "breakup",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.28614550828933716,
-    "delta_effort": 0.2002009153366089,
+    "delta_intimacy": -0.2597144842147827,
+    "delta_effort": 0.12809738516807556,
     "model": "full"
   },
   {
@@ -130,8 +130,8 @@
     "scenario_label": "breakup",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.019854363054037094,
-    "delta_effort": -0.09592393785715103,
+    "delta_intimacy": -0.014778492972254753,
+    "delta_effort": -0.05273234844207764,
     "model": "full"
   },
   {
@@ -139,8 +139,8 @@
     "scenario_label": "breakup",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.10517127811908722,
-    "delta_effort": -0.013152468018233776,
+    "delta_intimacy": -0.09516871720552444,
+    "delta_effort": -0.004543992690742016,
     "model": "full"
   },
   {
@@ -148,8 +148,8 @@
     "scenario_label": "breakup",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.17473286390304565,
-    "delta_effort": -0.12956656515598297,
+    "delta_intimacy": 0.15499702095985413,
+    "delta_effort": -0.053576767444610596,
     "model": "full"
   },
   {
@@ -157,8 +157,8 @@
     "scenario_label": "breakup",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.09549126029014587,
-    "delta_effort": -0.07270099222660065,
+    "delta_intimacy": 0.0974338948726654,
+    "delta_effort": -0.02159550040960312,
     "model": "full"
   },
   {
@@ -166,8 +166,8 @@
     "scenario_label": "chapstick",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.22306880354881287,
-    "delta_effort": 0.06683769822120667,
+    "delta_intimacy": -0.18063369393348694,
+    "delta_effort": 0.016244277358055115,
     "model": "full"
   },
   {
@@ -175,8 +175,8 @@
     "scenario_label": "chapstick",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.2397480458021164,
-    "delta_effort": 0.10074622929096222,
+    "delta_intimacy": -0.23457494378089905,
+    "delta_effort": 0.0615832582116127,
     "model": "full"
   },
   {
@@ -184,8 +184,8 @@
     "scenario_label": "chapstick",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.06701671332120895,
-    "delta_effort": -0.16739270091056824,
+    "delta_intimacy": -0.14550939202308655,
+    "delta_effort": -0.019232284277677536,
     "model": "full"
   },
   {
@@ -193,8 +193,8 @@
     "scenario_label": "chapstick",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.09349539130926132,
-    "delta_effort": -0.16884112358093262,
+    "delta_intimacy": -0.16739220917224884,
+    "delta_effort": -0.03512033075094223,
     "model": "full"
   },
   {
@@ -202,8 +202,8 @@
     "scenario_label": "chapstick",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.14542265236377716,
-    "delta_effort": 0.1324959695339203,
+    "delta_intimacy": 0.1510266214609146,
+    "delta_effort": 0.10852030664682388,
     "model": "full"
   },
   {
@@ -211,8 +211,8 @@
     "scenario_label": "chapstick",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.09040863066911697,
-    "delta_effort": 0.12113720178604126,
+    "delta_intimacy": 0.11026426404714584,
+    "delta_effort": 0.0842999741435051,
     "model": "full"
   },
   {
@@ -220,8 +220,8 @@
     "scenario_label": "earbuds",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.1373889148235321,
-    "delta_effort": 0.008244745433330536,
+    "delta_intimacy": -0.14452186226844788,
+    "delta_effort": -0.004147092811763287,
     "model": "full"
   },
   {
@@ -229,8 +229,8 @@
     "scenario_label": "earbuds",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.18502897024154663,
-    "delta_effort": -0.037700753659009933,
+    "delta_intimacy": -0.1684683859348297,
+    "delta_effort": 0.0006492763641290367,
     "model": "full"
   },
   {
@@ -238,8 +238,8 @@
     "scenario_label": "earbuds",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.09917938709259033,
-    "delta_effort": -0.16198378801345825,
+    "delta_intimacy": 0.09637744724750519,
+    "delta_effort": -0.22934862971305847,
     "model": "full"
   },
   {
@@ -247,8 +247,8 @@
     "scenario_label": "earbuds",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.05965084955096245,
-    "delta_effort": -0.1756238341331482,
+    "delta_intimacy": 0.06511056423187256,
+    "delta_effort": -0.20977100729942322,
     "model": "full"
   },
   {
@@ -256,8 +256,8 @@
     "scenario_label": "earbuds",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.18949787318706512,
-    "delta_effort": 0.01541970670223236,
+    "delta_intimacy": 0.1983170062303543,
+    "delta_effort": 0.020036304369568825,
     "model": "full"
   },
   {
@@ -265,8 +265,8 @@
     "scenario_label": "earbuds",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.15263482928276062,
-    "delta_effort": 0.033484529703855515,
+    "delta_intimacy": 0.17388710379600525,
+    "delta_effort": 0.014967607334256172,
     "model": "full"
   },
   {
@@ -274,8 +274,8 @@
     "scenario_label": "gossip",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.16183841228485107,
-    "delta_effort": 0.1238788589835167,
+    "delta_intimacy": -0.17061665654182434,
+    "delta_effort": 0.08296246826648712,
     "model": "full"
   },
   {
@@ -283,8 +283,8 @@
     "scenario_label": "gossip",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.24564984440803528,
-    "delta_effort": 0.20657554268836975,
+    "delta_intimacy": -0.20502349734306335,
+    "delta_effort": 0.14743125438690186,
     "model": "full"
   },
   {
@@ -292,8 +292,8 @@
     "scenario_label": "gossip",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.018463747575879097,
-    "delta_effort": -0.21073627471923828,
+    "delta_intimacy": -0.008676482364535332,
+    "delta_effort": -0.16964171826839447,
     "model": "full"
   },
   {
@@ -301,8 +301,8 @@
     "scenario_label": "gossip",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.07387243211269379,
-    "delta_effort": -0.10536018759012222,
+    "delta_intimacy": -0.049133360385894775,
+    "delta_effort": -0.11704349517822266,
     "model": "full"
   },
   {
@@ -310,8 +310,8 @@
     "scenario_label": "gossip",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.19823095202445984,
-    "delta_effort": -0.08735358715057373,
+    "delta_intimacy": 0.18000943958759308,
+    "delta_effort": -0.08317742496728897,
     "model": "full"
   },
   {
@@ -319,8 +319,8 @@
     "scenario_label": "gossip",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.10087226331233978,
-    "delta_effort": -0.049715932458639145,
+    "delta_intimacy": 0.0993276983499527,
+    "delta_effort": -0.04646258428692818,
     "model": "full"
   },
   {
@@ -328,8 +328,8 @@
     "scenario_label": "hairbrush",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.16119804978370667,
-    "delta_effort": 0.190789133310318,
+    "delta_intimacy": -0.18424934148788452,
+    "delta_effort": 0.22904546558856964,
     "model": "full"
   },
   {
@@ -337,8 +337,8 @@
     "scenario_label": "hairbrush",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.28163668513298035,
-    "delta_effort": 0.16080395877361298,
+    "delta_intimacy": -0.23059239983558655,
+    "delta_effort": 0.23609599471092224,
     "model": "full"
   },
   {
@@ -346,8 +346,8 @@
     "scenario_label": "hairbrush",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.025223776698112488,
-    "delta_effort": -0.45522981882095337,
+    "delta_intimacy": -0.020632224157452583,
+    "delta_effort": -0.4612412452697754,
     "model": "full"
   },
   {
@@ -355,8 +355,8 @@
     "scenario_label": "hairbrush",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.022289631888270378,
-    "delta_effort": -0.4148821234703064,
+    "delta_intimacy": -0.0942377820611,
+    "delta_effort": -0.42962923645973206,
     "model": "full"
   },
   {
@@ -364,8 +364,8 @@
     "scenario_label": "hairbrush",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.17961837351322174,
-    "delta_effort": 0.15489470958709717,
+    "delta_intimacy": 0.20742198824882507,
+    "delta_effort": 0.18324777483940125,
     "model": "full"
   },
   {
@@ -373,8 +373,8 @@
     "scenario_label": "hairbrush",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.13454799354076385,
-    "delta_effort": 0.21438488364219666,
+    "delta_intimacy": 0.17305676639080048,
+    "delta_effort": 0.21302655339241028,
     "model": "full"
   },
   {
@@ -382,8 +382,8 @@
     "scenario_label": "harmonica",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.16376665234565735,
-    "delta_effort": -0.025597307831048965,
+    "delta_intimacy": -0.1318635642528534,
+    "delta_effort": 0.06704046577215195,
     "model": "full"
   },
   {
@@ -391,8 +391,8 @@
     "scenario_label": "harmonica",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.23656627535820007,
-    "delta_effort": -0.010351842269301414,
+    "delta_intimacy": -0.1939847618341446,
+    "delta_effort": 0.11640436947345734,
     "model": "full"
   },
   {
@@ -400,8 +400,8 @@
     "scenario_label": "harmonica",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.07831771671772003,
-    "delta_effort": -0.24087002873420715,
+    "delta_intimacy": -0.100039042532444,
+    "delta_effort": -0.23724989593029022,
     "model": "full"
   },
   {
@@ -409,8 +409,8 @@
     "scenario_label": "harmonica",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.1163938045501709,
-    "delta_effort": -0.22417660057544708,
+    "delta_intimacy": -0.1338755041360855,
+    "delta_effort": -0.2275567501783371,
     "model": "full"
   },
   {
@@ -418,8 +418,8 @@
     "scenario_label": "harmonica",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.19862225651741028,
-    "delta_effort": 0.15463142096996307,
+    "delta_intimacy": 0.2056082934141159,
+    "delta_effort": 0.20447298884391785,
     "model": "full"
   },
   {
@@ -427,8 +427,8 @@
     "scenario_label": "harmonica",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.16869522631168365,
-    "delta_effort": 0.1616765856742859,
+    "delta_intimacy": 0.1794273406267166,
+    "delta_effort": 0.21883153915405273,
     "model": "full"
   },
   {
@@ -436,8 +436,8 @@
     "scenario_label": "home",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.16486111283302307,
-    "delta_effort": -0.010641077533364296,
+    "delta_intimacy": -0.16216005384922028,
+    "delta_effort": 0.13066039979457855,
     "model": "full"
   },
   {
@@ -445,8 +445,8 @@
     "scenario_label": "home",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.2401820719242096,
-    "delta_effort": -0.03622637689113617,
+    "delta_intimacy": -0.20908670127391815,
+    "delta_effort": 0.15007495880126953,
     "model": "full"
   },
   {
@@ -454,8 +454,8 @@
     "scenario_label": "home",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.004017251543700695,
-    "delta_effort": -0.09033840149641037,
+    "delta_intimacy": -0.011292969807982445,
+    "delta_effort": -0.12917599081993103,
     "model": "full"
   },
   {
@@ -463,8 +463,8 @@
     "scenario_label": "home",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.04409503936767578,
-    "delta_effort": -0.0602351650595665,
+    "delta_intimacy": -0.06347491592168808,
+    "delta_effort": -0.10776637494564056,
     "model": "full"
   },
   {
@@ -472,8 +472,8 @@
     "scenario_label": "home",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.17849643528461456,
-    "delta_effort": 0.012433190830051899,
+    "delta_intimacy": 0.17720524966716766,
+    "delta_effort": 0.10460444539785385,
     "model": "full"
   },
   {
@@ -481,8 +481,8 @@
     "scenario_label": "home",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.13452167809009552,
-    "delta_effort": 0.055721841752529144,
+    "delta_intimacy": 0.13341307640075684,
+    "delta_effort": 0.09120471775531769,
     "model": "full"
   },
   {
@@ -490,8 +490,8 @@
     "scenario_label": "locker-room",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.12993519008159637,
-    "delta_effort": 0.14001545310020447,
+    "delta_intimacy": -0.17742344737052917,
+    "delta_effort": 0.05603594705462456,
     "model": "full"
   },
   {
@@ -499,8 +499,8 @@
     "scenario_label": "locker-room",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.17789331078529358,
-    "delta_effort": 0.20483872294425964,
+    "delta_intimacy": -0.21431271731853485,
+    "delta_effort": 0.02260269783437252,
     "model": "full"
   },
   {
@@ -508,8 +508,8 @@
     "scenario_label": "locker-room",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.06393420696258545,
-    "delta_effort": -0.15533149242401123,
+    "delta_intimacy": -0.05519142001867294,
+    "delta_effort": -0.14039966464042664,
     "model": "full"
   },
   {
@@ -517,8 +517,8 @@
     "scenario_label": "locker-room",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.12794774770736694,
-    "delta_effort": -0.11626769602298737,
+    "delta_intimacy": -0.08185066282749176,
+    "delta_effort": -0.122860386967659,
     "model": "full"
   },
   {
@@ -526,8 +526,8 @@
     "scenario_label": "locker-room",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.1714598834514618,
-    "delta_effort": 0.05928955599665642,
+    "delta_intimacy": 0.14896930754184723,
+    "delta_effort": 0.08175686746835709,
     "model": "full"
   },
   {
@@ -535,8 +535,8 @@
     "scenario_label": "locker-room",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.14946348965168,
-    "delta_effort": 0.07043508440256119,
+    "delta_intimacy": 0.14290839433670044,
+    "delta_effort": 0.09702597558498383,
     "model": "full"
   },
   {
@@ -544,8 +544,8 @@
     "scenario_label": "navigation",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.08421475440263748,
-    "delta_effort": -0.07838191837072372,
+    "delta_intimacy": -0.09275026619434357,
+    "delta_effort": 0.02657514251768589,
     "model": "full"
   },
   {
@@ -553,8 +553,8 @@
     "scenario_label": "navigation",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.16974028944969177,
-    "delta_effort": -0.03311827778816223,
+    "delta_intimacy": -0.14141309261322021,
+    "delta_effort": 0.06399665772914886,
     "model": "full"
   },
   {
@@ -562,8 +562,8 @@
     "scenario_label": "navigation",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.1385284811258316,
-    "delta_effort": -0.18925520777702332,
+    "delta_intimacy": 0.13415297865867615,
+    "delta_effort": -0.19284501671791077,
     "model": "full"
   },
   {
@@ -571,8 +571,8 @@
     "scenario_label": "navigation",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.1357228010892868,
-    "delta_effort": -0.20551590621471405,
+    "delta_intimacy": 0.10861897468566895,
+    "delta_effort": -0.18804793059825897,
     "model": "full"
   },
   {
@@ -580,8 +580,8 @@
     "scenario_label": "navigation",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.1868360936641693,
-    "delta_effort": 0.09491662681102753,
+    "delta_intimacy": 0.22035951912403107,
+    "delta_effort": 0.044501952826976776,
     "model": "full"
   },
   {
@@ -589,8 +589,8 @@
     "scenario_label": "navigation",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.17885786294937134,
-    "delta_effort": 0.028547918424010277,
+    "delta_intimacy": 0.16359823942184448,
+    "delta_effort": 0.019915319979190826,
     "model": "full"
   },
   {
@@ -598,8 +598,8 @@
     "scenario_label": "salary",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.26150158047676086,
-    "delta_effort": 0.22660426795482635,
+    "delta_intimacy": -0.24990276992321014,
+    "delta_effort": 0.23136289417743683,
     "model": "full"
   },
   {
@@ -607,8 +607,8 @@
     "scenario_label": "salary",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.31114277243614197,
-    "delta_effort": 0.25557568669319153,
+    "delta_intimacy": -0.27870580554008484,
+    "delta_effort": 0.20397481322288513,
     "model": "full"
   },
   {
@@ -616,8 +616,8 @@
     "scenario_label": "salary",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.03430519253015518,
-    "delta_effort": -0.20866961777210236,
+    "delta_intimacy": 0.03642895817756653,
+    "delta_effort": -0.253284752368927,
     "model": "full"
   },
   {
@@ -625,8 +625,8 @@
     "scenario_label": "salary",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.03475137799978256,
-    "delta_effort": -0.11640973389148712,
+    "delta_intimacy": -0.026486223563551903,
+    "delta_effort": -0.24087412655353546,
     "model": "full"
   },
   {
@@ -634,8 +634,8 @@
     "scenario_label": "salary",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.16747385263442993,
-    "delta_effort": -0.15094903111457825,
+    "delta_intimacy": 0.152244433760643,
+    "delta_effort": 0.06796891987323761,
     "model": "full"
   },
   {
@@ -643,8 +643,8 @@
     "scenario_label": "salary",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.12031092494726181,
-    "delta_effort": -0.0847581997513771,
+    "delta_intimacy": 0.10813866555690765,
+    "delta_effort": 0.08770371973514557,
     "model": "full"
   },
   {
@@ -652,8 +652,8 @@
     "scenario_label": "sauna",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.1865319460630417,
-    "delta_effort": 0.08732356876134872,
+    "delta_intimacy": -0.20479801297187805,
+    "delta_effort": 0.05593984201550484,
     "model": "full"
   },
   {
@@ -661,8 +661,8 @@
     "scenario_label": "sauna",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.22750219702720642,
-    "delta_effort": 0.11756213754415512,
+    "delta_intimacy": -0.258958637714386,
+    "delta_effort": 0.01878216862678528,
     "model": "full"
   },
   {
@@ -670,8 +670,8 @@
     "scenario_label": "sauna",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.08676417171955109,
-    "delta_effort": -0.2138681858778,
+    "delta_intimacy": -0.0974627286195755,
+    "delta_effort": -0.23211190104484558,
     "model": "full"
   },
   {
@@ -679,8 +679,8 @@
     "scenario_label": "sauna",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.15200789272785187,
-    "delta_effort": -0.19743146002292633,
+    "delta_intimacy": -0.15232262015342712,
+    "delta_effort": -0.2296184003353119,
     "model": "full"
   },
   {
@@ -688,8 +688,8 @@
     "scenario_label": "sauna",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.1897438019514084,
-    "delta_effort": 0.06836167722940445,
+    "delta_intimacy": 0.18117153644561768,
+    "delta_effort": 0.16942158341407776,
     "model": "full"
   },
   {
@@ -697,8 +697,8 @@
     "scenario_label": "sauna",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.15245553851127625,
-    "delta_effort": 0.04830260947346687,
+    "delta_intimacy": 0.1302635371685028,
+    "delta_effort": 0.11766153573989868,
     "model": "full"
   },
   {
@@ -706,8 +706,8 @@
     "scenario_label": "sleeping-bag",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.1704820692539215,
-    "delta_effort": 0.11786608397960663,
+    "delta_intimacy": -0.18914076685905457,
+    "delta_effort": 0.14639677107334137,
     "model": "full"
   },
   {
@@ -715,8 +715,8 @@
     "scenario_label": "sleeping-bag",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.19943054020404816,
-    "delta_effort": 0.12923750281333923,
+    "delta_intimacy": -0.19915270805358887,
+    "delta_effort": 0.17728576064109802,
     "model": "full"
   },
   {
@@ -724,8 +724,8 @@
     "scenario_label": "sleeping-bag",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.11317670345306396,
-    "delta_effort": -0.13523153960704803,
+    "delta_intimacy": -0.16678495705127716,
+    "delta_effort": -0.2714094817638397,
     "model": "full"
   },
   {
@@ -733,8 +733,8 @@
     "scenario_label": "sleeping-bag",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.13726934790611267,
-    "delta_effort": -0.13909229636192322,
+    "delta_intimacy": -0.1695372760295868,
+    "delta_effort": -0.25609636306762695,
     "model": "full"
   },
   {
@@ -742,8 +742,8 @@
     "scenario_label": "sleeping-bag",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.17692072689533234,
-    "delta_effort": 0.1179257184267044,
+    "delta_intimacy": 0.18153604865074158,
+    "delta_effort": 0.1741514652967453,
     "model": "full"
   },
   {
@@ -751,8 +751,8 @@
     "scenario_label": "sleeping-bag",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.15212106704711914,
-    "delta_effort": 0.11794173717498779,
+    "delta_intimacy": 0.16435456275939941,
+    "delta_effort": 0.178797647356987,
     "model": "full"
   },
   {
@@ -760,8 +760,8 @@
     "scenario_label": "sunscreen",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.1828884482383728,
-    "delta_effort": 0.2879266142845154,
+    "delta_intimacy": -0.19530948996543884,
+    "delta_effort": 0.18324841558933258,
     "model": "full"
   },
   {
@@ -769,8 +769,8 @@
     "scenario_label": "sunscreen",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.15002283453941345,
-    "delta_effort": 0.3662494421005249,
+    "delta_intimacy": -0.22397324442863464,
+    "delta_effort": 0.2660146653652191,
     "model": "full"
   },
   {
@@ -778,8 +778,8 @@
     "scenario_label": "sunscreen",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.10806552320718765,
-    "delta_effort": -0.4059939980506897,
+    "delta_intimacy": 0.08655471354722977,
+    "delta_effort": -0.4057484269142151,
     "model": "full"
   },
   {
@@ -787,8 +787,8 @@
     "scenario_label": "sunscreen",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.06302305310964584,
-    "delta_effort": -0.4024268090724945,
+    "delta_intimacy": 0.047680020332336426,
+    "delta_effort": -0.4006578028202057,
     "model": "full"
   },
   {
@@ -796,8 +796,8 @@
     "scenario_label": "sunscreen",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.19307395815849304,
-    "delta_effort": 0.27685338258743286,
+    "delta_intimacy": 0.18974176049232483,
+    "delta_effort": 0.30907517671585083,
     "model": "full"
   },
   {
@@ -805,8 +805,8 @@
     "scenario_label": "sunscreen",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.16535577178001404,
-    "delta_effort": 0.31971123814582825,
+    "delta_intimacy": 0.17416663467884064,
+    "delta_effort": 0.32367831468582153,
     "model": "full"
   },
   {
@@ -814,8 +814,8 @@
     "scenario_label": "towel",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.17285051941871643,
-    "delta_effort": -0.0024438530672341585,
+    "delta_intimacy": -0.16833826899528503,
+    "delta_effort": 0.036770325154066086,
     "model": "full"
   },
   {
@@ -823,8 +823,8 @@
     "scenario_label": "towel",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.20582063496112823,
-    "delta_effort": 0.029555896297097206,
+    "delta_intimacy": -0.2084933966398239,
+    "delta_effort": 0.032977908849716187,
     "model": "full"
   },
   {
@@ -832,8 +832,8 @@
     "scenario_label": "towel",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.04566963389515877,
-    "delta_effort": -0.13337036967277527,
+    "delta_intimacy": 0.0076948003843426704,
+    "delta_effort": -0.1935214400291443,
     "model": "full"
   },
   {
@@ -841,8 +841,8 @@
     "scenario_label": "towel",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.0005818352219648659,
-    "delta_effort": -0.11361376941204071,
+    "delta_intimacy": -0.019167032092809677,
+    "delta_effort": -0.15930473804473877,
     "model": "full"
   },
   {
@@ -850,8 +850,8 @@
     "scenario_label": "towel",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.1403084099292755,
-    "delta_effort": 6.009638127579819e-06,
+    "delta_intimacy": 0.13977764546871185,
+    "delta_effort": 0.003617946757003665,
     "model": "full"
   },
   {
@@ -859,8 +859,8 @@
     "scenario_label": "towel",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.1265389323234558,
-    "delta_effort": 0.03205865994095802,
+    "delta_intimacy": 0.08395102620124817,
+    "delta_effort": 0.050084520131349564,
     "model": "full"
   },
   {
@@ -868,8 +868,8 @@
     "scenario_label": "bed",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.15111958980560303,
-    "delta_effort": -1.4901161415892261e-09,
+    "delta_intimacy": -0.19528481364250183,
+    "delta_effort": 1.1920929132713809e-08,
     "model": "discomfort_only"
   },
   {
@@ -877,35 +877,35 @@
     "scenario_label": "bed",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.14532539248466492,
+    "delta_intimacy": -0.19283349812030792,
+    "delta_effort": 1.4901161193847656e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "bed",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.04837208241224289,
+    "delta_effort": 1.3411044719191523e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "bed",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 0.03976816684007645,
     "delta_effort": 0.0,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "bed",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.050835032016038895,
-    "delta_effort": 4.17232506322307e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "bed",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.039485782384872437,
-    "delta_effort": 4.3213368883243675e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "bed",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.14315220713615417,
-    "delta_effort": 7.450580596923828e-09,
+    "delta_intimacy": 0.1644519567489624,
+    "delta_effort": 2.9802322831784522e-09,
     "model": "discomfort_only"
   },
   {
@@ -913,8 +913,8 @@
     "scenario_label": "bed",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.15485206246376038,
-    "delta_effort": 2.533197474008375e-08,
+    "delta_intimacy": 0.1701318323612213,
+    "delta_effort": -5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
@@ -922,98 +922,98 @@
     "scenario_label": "blanket",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.18097339570522308,
-    "delta_effort": 4.470348535789981e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.12282554060220718,
-    "delta_effort": 3.1292437085994607e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -0.12128867954015732,
-    "delta_effort": -1.4901161193847656e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -0.11738109588623047,
-    "delta_effort": -4.619359827984226e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.16515429317951202,
+    "delta_intimacy": -0.1580120027065277,
     "delta_effort": -8.940697071579962e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "blanket",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.16129574179649353,
-    "delta_effort": 1.0430812658057675e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.2130468338727951,
-    "delta_effort": -2.9802322387695312e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.24149799346923828,
-    "delta_effort": -2.086162531611535e-08,
+    "delta_intimacy": -0.16121557354927063,
+    "delta_effort": 5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
+    "scenario_label": "blanket",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.029595237225294113,
-    "delta_effort": 1.0430812658057675e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.010316267609596252,
+    "delta_intimacy": -0.13260766863822937,
     "delta_effort": -4.470348535789981e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": -0.14081567525863647,
+    "delta_effort": -1.4901161193847656e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.17885944247245789,
+    "delta_effort": -1.3411044719191523e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.17641113698482513,
+    "delta_effort": -1.1920929132713809e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "breakup",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -0.18849802017211914,
+    "delta_effort": -1.7881394143159923e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "breakup",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.2002107799053192,
+    "delta_effort": 0.0,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "breakup",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.003823684062808752,
+    "delta_effort": 3.1292437085994607e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "breakup",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": -0.003166420850902796,
+    "delta_effort": 0.0,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "breakup",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.14698830246925354,
-    "delta_effort": 1.3411044719191523e-08,
+    "delta_intimacy": 0.15471914410591125,
+    "delta_effort": 5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
@@ -1021,35 +1021,35 @@
     "scenario_label": "breakup",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.14842525124549866,
+    "delta_intimacy": 0.1481972336769104,
+    "delta_effort": -4.470348535789981e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "chapstick",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -0.20498618483543396,
+    "delta_effort": -4.470348535789981e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "chapstick",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.22312688827514648,
     "delta_effort": -1.1920929132713809e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "chapstick",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.26263943314552307,
-    "delta_effort": 1.9371508841459217e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.23662357032299042,
-    "delta_effort": 1.0430812658057675e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.03613799810409546,
-    "delta_effort": 2.9802322831784522e-09,
+    "delta_intimacy": -0.14911408722400665,
+    "delta_effort": -5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
@@ -1057,16 +1057,7 @@
     "scenario_label": "chapstick",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.026303445920348167,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.1404745876789093,
+    "delta_intimacy": -0.16056977212429047,
     "delta_effort": -5.9604645663569045e-09,
     "model": "discomfort_only"
   },
@@ -1074,53 +1065,53 @@
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "chapstick",
     "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.14269672334194183,
-    "delta_effort": -2.9802322831784522e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.15685279667377472,
-    "delta_effort": -1.639127766850379e-08,
+    "delta_intimacy": 0.14723239839076996,
+    "delta_effort": 8.940697071579962e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.18296562135219574,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.09664203226566315,
-    "delta_effort": -4.470348535789981e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.07742160558700562,
-    "delta_effort": -1.0430812658057675e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
+    "scenario_label": "chapstick",
     "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.12896285951137543,
+    "delta_effort": 1.1920929132713809e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": 0.16303974390029907,
+    "delta_intimacy": -0.1495949923992157,
+    "delta_effort": -2.6822089438383045e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.15552973747253418,
+    "delta_effort": -2.831220591303918e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.08934637904167175,
+    "delta_effort": 8.940697071579962e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 0.081786148250103,
     "delta_effort": 1.4901161415892261e-09,
     "model": "discomfort_only"
   },
@@ -1128,9 +1119,18 @@
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "earbuds",
     "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.16835594177246094,
+    "delta_effort": 2.086162531611535e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.157575324177742,
-    "delta_effort": -8.940697071579962e-09,
+    "delta_intimacy": 0.16575339436531067,
+    "delta_effort": 5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
@@ -1138,35 +1138,35 @@
     "scenario_label": "gossip",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.18865878880023956,
-    "delta_effort": 4.470348535789981e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.1920866072177887,
-    "delta_effort": -3.4272670035306874e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.0011228814255446196,
+    "delta_intimacy": -0.16230233013629913,
     "delta_effort": -5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "gossip",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.15464119613170624,
+    "delta_effort": -2.9802322387695312e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.02135796658694744,
+    "delta_effort": 1.1920929132713809e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.02300473302602768,
-    "delta_effort": 0.0,
+    "delta_intimacy": 0.031949661672115326,
+    "delta_effort": 1.7881394143159923e-08,
     "model": "discomfort_only"
   },
   {
@@ -1174,8 +1174,8 @@
     "scenario_label": "gossip",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.17187219858169556,
-    "delta_effort": -2.9802322831784522e-09,
+    "delta_intimacy": 0.16460493206977844,
+    "delta_effort": 2.9802322387695312e-08,
     "model": "discomfort_only"
   },
   {
@@ -1183,8 +1183,8 @@
     "scenario_label": "gossip",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.16306810081005096,
-    "delta_effort": -6.705522537231445e-08,
+    "delta_intimacy": 0.15951070189476013,
+    "delta_effort": 2.086162531611535e-08,
     "model": "discomfort_only"
   },
   {
@@ -1192,107 +1192,107 @@
     "scenario_label": "hairbrush",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.1834564357995987,
+    "delta_intimacy": -0.21158766746520996,
+    "delta_effort": -1.0430812658057675e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.22345075011253357,
+    "delta_effort": -2.086162531611535e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": -0.034901056438684464,
+    "delta_effort": -1.7881394143159923e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": -0.06272760778665543,
     "delta_effort": -1.9371508841459217e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "hairbrush",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.3020191788673401,
-    "delta_effort": 1.639127766850379e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.04832315444946289,
-    "delta_effort": -2.6822089438383045e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.04774763435125351,
-    "delta_effort": -2.533197474008375e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.15830209851264954,
-    "delta_effort": 1.0430812658057675e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.16121283173561096,
-    "delta_effort": 1.4901161415892261e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.17706738412380219,
-    "delta_effort": 1.639127766850379e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.20009326934814453,
-    "delta_effort": 0.0,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -0.06243126839399338,
-    "delta_effort": 4.470348535789981e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -0.04953581094741821,
+    "delta_intimacy": 0.1718781441450119,
     "delta_effort": -1.3411044719191523e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
+    "scenario_label": "hairbrush",
     "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.1725904643535614,
+    "delta_effort": -1.4901161415892261e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": 0.1679326593875885,
+    "delta_intimacy": -0.1514233499765396,
+    "delta_effort": -5.9604645663569045e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.17577596008777618,
+    "delta_effort": -8.940697071579962e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": -0.12281686067581177,
     "delta_effort": -2.9802322831784522e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "harmonica",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": -0.12987342476844788,
+    "delta_effort": -5.9604645663569045e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.17130427062511444,
+    "delta_effort": 1.639127766850379e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.17090575397014618,
-    "delta_effort": -1.1920929132713809e-08,
+    "delta_intimacy": 0.17243646085262299,
+    "delta_effort": 1.9371508841459217e-08,
     "model": "discomfort_only"
   },
   {
@@ -1300,116 +1300,116 @@
     "scenario_label": "home",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.15191097557544708,
-    "delta_effort": -1.4901161415892261e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.16339747607707977,
-    "delta_effort": 1.4901161415892261e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.02526361308991909,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.047663379460573196,
-    "delta_effort": -1.4901161193847656e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.1624450981616974,
-    "delta_effort": 3.8743017682918435e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.16010044515132904,
-    "delta_effort": 3.4272670035306874e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.1364193856716156,
-    "delta_effort": -3.5762788286319847e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.14306549727916718,
-    "delta_effort": -2.086162531611535e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -0.02679123915731907,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -0.02679123915731907,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.1487460434436798,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.14957717061042786,
+    "delta_intimacy": -0.1471046656370163,
     "delta_effort": -1.0430812658057675e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.14950428903102875,
+    "delta_effort": -4.619359827984226e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.00960425566881895,
+    "delta_effort": 1.7881394143159923e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 0.014519806019961834,
+    "delta_effort": 2.9802322831784522e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.16330711543560028,
+    "delta_effort": -1.0430812658057675e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.16046229004859924,
+    "delta_effort": -1.4901161415892261e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -0.1684616059064865,
+    "delta_effort": 7.450580596923828e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.16452279686927795,
+    "delta_effort": -5.9604645663569045e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": -0.04409176483750343,
+    "delta_effort": 2.9802322831784522e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": -0.041672542691230774,
+    "delta_effort": -5.9604645663569045e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.14177128672599792,
+    "delta_effort": 4.470348535789981e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.1467316746711731,
+    "delta_effort": -1.4901161415892261e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "navigation",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.07080250233411789,
-    "delta_effort": -3.278255533700758e-08,
+    "delta_intimacy": -0.08222721517086029,
+    "delta_effort": -2.831220591303918e-08,
     "model": "discomfort_only"
   },
   {
@@ -1417,8 +1417,8 @@
     "scenario_label": "navigation",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.13812623918056488,
-    "delta_effort": 1.4901161415892261e-09,
+    "delta_intimacy": -0.09197677671909332,
+    "delta_effort": -3.4272670035306874e-08,
     "model": "discomfort_only"
   },
   {
@@ -1426,8 +1426,8 @@
     "scenario_label": "navigation",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.11707951128482819,
-    "delta_effort": -2.6822089438383045e-08,
+    "delta_intimacy": 0.09660410135984421,
+    "delta_effort": -1.1920929132713809e-08,
     "model": "discomfort_only"
   },
   {
@@ -1435,7 +1435,16 @@
     "scenario_label": "navigation",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.12133625894784927,
+    "delta_intimacy": 0.0928535908460617,
+    "delta_effort": -1.639127766850379e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.17650684714317322,
     "delta_effort": -2.831220591303918e-08,
     "model": "discomfort_only"
   },
@@ -1443,693 +1452,684 @@
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "navigation",
     "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.15515749156475067,
-    "delta_effort": 1.1920929132713809e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.15985886752605438,
-    "delta_effort": -7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.2831227779388428,
-    "delta_effort": -5.9604645663569045e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.2772595286369324,
-    "delta_effort": -5.9604645663569045e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.0942903682589531,
-    "delta_effort": -2.2351741790771484e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.09251829236745834,
-    "delta_effort": -3.278255533700758e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.1602945625782013,
+    "delta_intimacy": 0.16756786406040192,
     "delta_effort": -1.1920929132713809e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "salary",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.16273926198482513,
-    "delta_effort": 0.0,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -0.16101840138435364,
-    "delta_effort": -8.49366159627607e-08,
+    "delta_intimacy": -0.2260732203722,
+    "delta_effort": 5.9604645663569045e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
+    "scenario_label": "salary",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": -0.1492888480424881,
-    "delta_effort": -2.9802322387695312e-08,
+    "delta_intimacy": -0.21378536522388458,
+    "delta_effort": 1.7881394143159923e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
+    "scenario_label": "salary",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": -0.060263991355895996,
-    "delta_effort": -1.9371508841459217e-08,
+    "delta_intimacy": 0.0908079668879509,
+    "delta_effort": 1.4901161193847656e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
+    "scenario_label": "salary",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": -0.06481809914112091,
-    "delta_effort": -1.639127766850379e-08,
+    "delta_intimacy": 0.0848732590675354,
+    "delta_effort": -7.450580596923828e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
+    "scenario_label": "salary",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.16505570709705353,
-    "delta_effort": -1.9371508841459217e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.16139432787895203,
-    "delta_effort": -2.086162531611535e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.15622104704380035,
-    "delta_effort": 1.3411044719191523e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.1692887544631958,
-    "delta_effort": 3.5762788286319847e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -0.12300078570842743,
+    "delta_intimacy": 0.15334497392177582,
     "delta_effort": 1.4901161415892261e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -0.15934357047080994,
-    "delta_effort": -3.278255533700758e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.16958072781562805,
-    "delta_effort": -1.639127766850379e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
+    "scenario_label": "salary",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.16773590445518494,
-    "delta_effort": 4.470348535789981e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.21552076935768127,
-    "delta_effort": 7.450580596923828e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.18389107286930084,
-    "delta_effort": 2.9802322831784522e-09,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.11229697614908218,
-    "delta_effort": -2.6822089438383045e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 0.08987565338611603,
-    "delta_effort": -2.6822089438383045e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 0.16073504090309143,
-    "delta_effort": -1.3411044719191523e-08,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 0.16331568360328674,
-    "delta_effort": 0.0,
-    "model": "discomfort_only"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -0.20033013820648193,
+    "delta_intimacy": 0.15213659405708313,
     "delta_effort": -1.0430812658057675e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
+    "scenario_label": "sauna",
     "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -0.18609027564525604,
+    "desire_condition": "low",
+    "delta_intimacy": -0.19844505190849304,
     "delta_effort": 1.4901161415892261e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
+    "scenario_label": "sauna",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.20109215378761292,
+    "delta_effort": -2.9802322831784522e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sauna",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 0.05646337941288948,
-    "delta_effort": -2.533197474008375e-08,
+    "delta_intimacy": -0.09448729455471039,
+    "delta_effort": 0.0,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
+    "scenario_label": "sauna",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 0.05263097211718559,
-    "delta_effort": -1.3411044719191523e-08,
+    "delta_intimacy": -0.09956157207489014,
+    "delta_effort": -1.4901161415892261e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
+    "scenario_label": "sauna",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 0.13270165026187897,
-    "delta_effort": 8.940697071579962e-09,
+    "delta_intimacy": 0.1693585216999054,
+    "delta_effort": 1.1920929132713809e-08,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
+    "scenario_label": "sauna",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 0.1314326822757721,
+    "delta_intimacy": 0.15698380768299103,
+    "delta_effort": -7.450580596923828e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -0.21903058886528015,
+    "delta_effort": -2.9802322831784522e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.2199748307466507,
+    "delta_effort": 3.278255533700758e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": -0.21404612064361572,
+    "delta_effort": 1.4901161415892261e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": -0.2167476862668991,
+    "delta_effort": 4.470348535789981e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.17167364060878754,
+    "delta_effort": -3.5762788286319847e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.16886399686336517,
     "delta_effort": 2.9802322831784522e-09,
     "model": "discomfort_only"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -0.20744891464710236,
+    "delta_effort": -1.3411044719191523e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.20887982845306396,
+    "delta_effort": -5.9604645663569045e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.09720832854509354,
+    "delta_effort": -5.9604645663569045e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 0.07033450901508331,
+    "delta_effort": -1.0430812658057675e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.16298341751098633,
+    "delta_effort": 2.2351741790771484e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.16259577870368958,
+    "delta_effort": 3.278255533700758e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -0.16880899667739868,
+    "delta_effort": -2.9802322387695312e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -0.18147699534893036,
+    "delta_effort": -3.1292437085994607e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 0.021392468363046646,
+    "delta_effort": 1.1920929132713809e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 0.018664319068193436,
+    "delta_effort": -7.450580596923828e-09,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.1398358941078186,
+    "delta_effort": -1.4901161193847656e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.12913337349891663,
+    "delta_effort": 1.1920929132713809e-08,
+    "model": "discomfort_only"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "bed",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -3.278255533700758e-08,
-    "delta_effort": 0.03081517294049263,
+    "delta_intimacy": -4.470348535789981e-09,
+    "delta_effort": -0.051071666181087494,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "bed",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -7.450580596923828e-09,
-    "delta_effort": -2.9599666959256865e-05,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "bed",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -1.0430812658057675e-08,
-    "delta_effort": -0.12933357059955597,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "bed",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -4.619359827984226e-08,
-    "delta_effort": -0.11999386548995972,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "bed",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": -1.4901161193847656e-08,
-    "delta_effort": 0.17644189298152924,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "bed",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 3.5762788286319847e-08,
-    "delta_effort": 0.14107008278369904,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 5.811453007709133e-08,
-    "delta_effort": 0.0923454537987709,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 7.450580596923828e-09,
-    "delta_effort": 0.13750778138637543,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 3.278255533700758e-08,
-    "delta_effort": -0.3063710331916809,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 1.7881394143159923e-08,
-    "delta_effort": -0.26726722717285156,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 4.7683716530855236e-08,
-    "delta_effort": 0.11999621242284775,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "blanket",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 2.831220591303918e-08,
-    "delta_effort": 0.1720409244298935,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 2.2351741790771484e-08,
-    "delta_effort": 0.12549717724323273,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 1.0877847955725883e-07,
-    "delta_effort": 0.18255017697811127,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -2.6822089438383045e-08,
-    "delta_effort": -0.07354132831096649,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 7.003545476891304e-08,
-    "delta_effort": -0.007570506539195776,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 1.7881394143159923e-08,
-    "delta_effort": -0.10718991607427597,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "breakup",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": -2.2351741790771484e-08,
-    "delta_effort": -0.054372988641262054,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-08,
-    "delta_effort": 0.060163676738739014,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
     "action": 0,
     "desire_condition": "high",
     "delta_intimacy": 5.9604645663569045e-09,
-    "delta_effort": 0.09480558335781097,
+    "delta_effort": -0.05614417791366577,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
+    "scenario_label": "bed",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 7.152557657263969e-08,
-    "delta_effort": -0.15384413301944733,
+    "delta_intimacy": 3.5762788286319847e-08,
+    "delta_effort": -0.11036068201065063,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
+    "scenario_label": "bed",
     "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -1.7881394143159923e-08,
-    "delta_effort": -0.15539787709712982,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 2.2351741790771484e-08,
-    "delta_effort": 0.11668293178081512,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "chapstick",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 1.1920929132713809e-08,
-    "delta_effort": 0.1059017926454544,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 2.3841858265427618e-08,
-    "delta_effort": 0.008448717184364796,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 3.278255533700758e-08,
-    "delta_effort": -0.03163480758666992,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 2.533197474008375e-08,
-    "delta_effort": -0.1405358612537384,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -2.9802322831784522e-09,
-    "delta_effort": -0.15337486565113068,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 1.7881394143159923e-08,
-    "delta_effort": 0.0163249708712101,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "earbuds",
-    "action": 2,
     "desire_condition": "high",
     "delta_intimacy": 1.0430812658057675e-08,
-    "delta_effort": 0.029819408431649208,
+    "delta_effort": -0.1300593465566635,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
+    "scenario_label": "bed",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": -1.9371508841459217e-08,
+    "delta_effort": 0.09507729858160019,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "bed",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 2.6822089438383045e-08,
+    "delta_effort": 0.036620330065488815,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "delta_effort": 0.09371016174554825,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 3.8743017682918435e-08,
+    "delta_effort": 0.17921856045722961,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 3.4272670035306874e-08,
+    "delta_effort": -0.24054861068725586,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 1.4901161415892261e-09,
+    "delta_effort": -0.2166728526353836,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": -4.470348535789981e-09,
+    "delta_effort": 0.09533743560314178,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "blanket",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 8.940697071579962e-09,
+    "delta_effort": 0.15838511288166046,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "breakup",
     "action": 0,
     "desire_condition": "low",
     "delta_intimacy": 2.9802322831784522e-09,
-    "delta_effort": 0.12525667250156403,
+    "delta_effort": 0.09232962131500244,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
+    "scenario_label": "breakup",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": 2.9802322387695312e-08,
-    "delta_effort": 0.18130283057689667,
+    "delta_intimacy": 1.7881394143159923e-08,
+    "delta_effort": 0.11211077123880386,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
+    "scenario_label": "breakup",
     "action": 1,
     "desire_condition": "low",
     "delta_intimacy": 3.8743017682918435e-08,
-    "delta_effort": -0.16773971915245056,
+    "delta_effort": -0.047970883548259735,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -5.9604645663569045e-09,
-    "delta_effort": -0.07776044309139252,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 1.7881394143159923e-08,
-    "delta_effort": -0.0706767812371254,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "gossip",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 2.6822089438383045e-08,
-    "delta_effort": -0.03323182463645935,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 5.9604645663569045e-09,
-    "delta_effort": 0.18664343655109406,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 6.705522537231445e-08,
-    "delta_effort": 0.1475222110748291,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -8.940697071579962e-09,
-    "delta_effort": -0.426105797290802,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
+    "scenario_label": "breakup",
     "action": 1,
     "desire_condition": "high",
     "delta_intimacy": 3.4272670035306874e-08,
-    "delta_effort": -0.38094598054885864,
+    "delta_effort": -0.002526381518691778,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
+    "scenario_label": "breakup",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 1.4901161415892261e-09,
-    "delta_effort": 0.15417654812335968,
+    "delta_intimacy": 3.4272670035306874e-08,
+    "delta_effort": -0.04003479704260826,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "hairbrush",
+    "scenario_label": "breakup",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 8.940697071579962e-09,
-    "delta_effort": 0.19279934465885162,
+    "delta_intimacy": 1.1920929132713809e-08,
+    "delta_effort": -0.015488220378756523,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
+    "scenario_label": "chapstick",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": -3.725290298461914e-08,
-    "delta_effort": -0.024081995710730553,
+    "delta_intimacy": 4.3213368883243675e-08,
+    "delta_effort": 0.0017083227867260575,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
+    "scenario_label": "chapstick",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 4.7683716530855236e-08,
+    "delta_effort": 0.03659511357545853,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "chapstick",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "delta_effort": -0.025783320888876915,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "chapstick",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "delta_effort": -0.05353587865829468,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "chapstick",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "delta_effort": 0.06431113928556442,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "chapstick",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 2.831220591303918e-08,
+    "delta_effort": 0.04733472317457199,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -2.831220591303918e-08,
+    "delta_effort": -0.0036284402012825012,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": -1.4901161193847656e-08,
+    "delta_effort": -0.0017956107622012496,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 1.4901161415892261e-09,
+    "delta_effort": -0.2046346664428711,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 1.639127766850379e-08,
+    "delta_effort": -0.18861880898475647,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 4.7683716530855236e-08,
+    "delta_effort": 0.019371088594198227,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "earbuds",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 6.556511067401516e-08,
+    "delta_effort": 0.012436674907803535,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "delta_effort": 0.06659562885761261,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
     "action": 0,
     "desire_condition": "high",
     "delta_intimacy": -1.0430812658057675e-08,
-    "delta_effort": -0.011260272935032845,
+    "delta_effort": 0.1319454461336136,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "harmonica",
+    "scenario_label": "gossip",
     "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "delta_effort": -0.1518329679965973,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 8.940697071579962e-09,
+    "delta_effort": -0.10926947742700577,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 2.2351741790771484e-08,
+    "delta_effort": -0.06814591586589813,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "gossip",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 7.301569127093899e-08,
+    "delta_effort": -0.03634350746870041,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 5.662441182607836e-08,
+    "delta_effort": 0.20934312045574188,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-08,
+    "delta_effort": 0.19636371731758118,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 2.831220591303918e-08,
+    "delta_effort": -0.4347291886806488,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 3.5762788286319847e-08,
+    "delta_effort": -0.4000673294067383,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 2,
     "desire_condition": "low",
     "delta_intimacy": 1.1920929132713809e-08,
-    "delta_effort": -0.2114318311214447,
+    "delta_effort": 0.17889077961444855,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "hairbrush",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 7.450580596923828e-09,
+    "delta_effort": 0.19513751566410065,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 1.0430812658057675e-08,
+    "delta_effort": 0.07002241164445877,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 4.470348535789981e-09,
+    "delta_effort": 0.15658779442310333,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "harmonica",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 1.7881394143159923e-08,
+    "delta_effort": -0.20087842643260956,
     "model": "base"
   },
   {
@@ -2137,8 +2137,8 @@
     "scenario_label": "harmonica",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 5.5134297127779064e-08,
-    "delta_effort": -0.2004058063030243,
+    "delta_intimacy": 5.9604645663569045e-09,
+    "delta_effort": -0.1880481243133545,
     "model": "base"
   },
   {
@@ -2146,8 +2146,8 @@
     "scenario_label": "harmonica",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 1.9371508841459217e-08,
-    "delta_effort": 0.13854281604290009,
+    "delta_intimacy": 6.556511067401516e-08,
+    "delta_effort": 0.15965594351291656,
     "model": "base"
   },
   {
@@ -2155,251 +2155,251 @@
     "scenario_label": "harmonica",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 8.195638656616211e-08,
-    "delta_effort": 0.14223885536193848,
+    "delta_intimacy": 1.1920929132713809e-08,
+    "delta_effort": 0.1678830236196518,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "home",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 4.619359827984226e-08,
+    "delta_effort": 0.09666983038187027,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 4.023313593393141e-08,
+    "delta_effort": 0.11267174780368805,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 2.533197474008375e-08,
+    "delta_effort": -0.12773919105529785,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-08,
+    "delta_effort": -0.13070917129516602,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 4.17232506322307e-08,
+    "delta_effort": 0.05031305551528931,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "home",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 3.725290298461914e-08,
+    "delta_effort": 0.03320958465337753,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 1.3411044719191523e-08,
+    "delta_effort": 0.030281852930784225,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 2.086162531611535e-08,
+    "delta_effort": 0.04455379769206047,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": -1.4901161193847656e-08,
+    "delta_effort": -0.1564817577600479,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 2.9802322387695312e-08,
+    "delta_effort": -0.15665432810783386,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 1.1920929132713809e-08,
+    "delta_effort": 0.05525461584329605,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "locker-room",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": -4.470348535789981e-09,
+    "delta_effort": 0.06729181855916977,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": -1.3411044719191523e-08,
+    "delta_effort": 0.02389427460730076,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 4.619359827984226e-08,
+    "delta_effort": 0.055717431008815765,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 5.9604645663569045e-09,
+    "delta_effort": -0.15641239285469055,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 1.639127766850379e-08,
+    "delta_effort": -0.1641000360250473,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 4.7683716530855236e-08,
+    "delta_effort": 0.04615325480699539,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "navigation",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 1.4901161193847656e-08,
+    "delta_effort": 0.0249386765062809,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "salary",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 1.1920929132713809e-08,
+    "delta_effort": 0.19868934154510498,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "salary",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 2.3841858265427618e-08,
+    "delta_effort": 0.21804730594158173,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "salary",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 5.06639494801675e-08,
+    "delta_effort": -0.20340374112129211,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "salary",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 5.364417887676609e-08,
+    "delta_effort": -0.20050139725208282,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "salary",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 0.0,
+    "delta_effort": 0.08041593432426453,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "salary",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 0.0,
+    "delta_effort": 0.09292308241128922,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sauna",
     "action": 0,
     "desire_condition": "low",
     "delta_intimacy": 2.6822089438383045e-08,
-    "delta_effort": -0.012311962433159351,
+    "delta_effort": 0.07504197210073471,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
+    "scenario_label": "sauna",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": 2.9802322831784522e-09,
-    "delta_effort": -0.029524201527237892,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 6.705522537231445e-08,
-    "delta_effort": -0.07916389405727386,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 8.940697071579962e-09,
-    "delta_effort": -0.05485626310110092,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 7.450580596923828e-09,
-    "delta_effort": 0.015223504975438118,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "home",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 2.3841858265427618e-08,
-    "delta_effort": 0.04857935756444931,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 7.450580596923828e-09,
-    "delta_effort": 0.13431063294410706,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 8.046627186786282e-08,
-    "delta_effort": 0.19278791546821594,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 0.0,
-    "delta_effort": -0.13027051091194153,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -2.3841858265427618e-08,
-    "delta_effort": -0.10533151775598526,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 1.4901161193847656e-08,
-    "delta_effort": 0.05559641122817993,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "locker-room",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 4.619359827984226e-08,
-    "delta_effort": 0.06204456835985184,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 5.21540641784668e-08,
-    "delta_effort": -0.07794338464736938,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -1.4901161415892261e-09,
-    "delta_effort": -0.03474336117506027,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -1.7881394143159923e-08,
-    "delta_effort": -0.1584772914648056,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 2.831220591303918e-08,
-    "delta_effort": -0.17318320274353027,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 2,
-    "desire_condition": "low",
     "delta_intimacy": -2.9802322387695312e-08,
-    "delta_effort": 0.07647016644477844,
+    "delta_effort": 0.07068981230258942,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "navigation",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": -1.7881394143159923e-08,
-    "delta_effort": 0.0169670432806015,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": 8.940697071579962e-09,
-    "delta_effort": 0.2164575606584549,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 1.639127766850379e-08,
-    "delta_effort": 0.24878008663654327,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
+    "scenario_label": "sauna",
     "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 6.705522537231445e-08,
-    "delta_effort": -0.14739175140857697,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 4.023313593393141e-08,
-    "delta_effort": -0.08429937809705734,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 2,
     "desire_condition": "low",
     "delta_intimacy": 1.4901161193847656e-08,
-    "delta_effort": -0.11920787394046783,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "salary",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 3.278255533700758e-08,
-    "delta_effort": -0.05035548657178879,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -4.3213368883243675e-08,
-    "delta_effort": 0.06176232174038887,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 5.811453007709133e-08,
-    "delta_effort": 0.07924165576696396,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sauna",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 2.086162531611535e-08,
-    "delta_effort": -0.18842342495918274,
+    "delta_effort": -0.20090606808662415,
     "model": "base"
   },
   {
@@ -2407,8 +2407,8 @@
     "scenario_label": "sauna",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 1.1920929132713809e-08,
-    "delta_effort": -0.17900049686431885,
+    "delta_intimacy": 2.9802322387695312e-08,
+    "delta_effort": -0.19959625601768494,
     "model": "base"
   },
   {
@@ -2416,71 +2416,71 @@
     "scenario_label": "sauna",
     "action": 2,
     "desire_condition": "low",
-    "delta_intimacy": 4.023313593393141e-08,
-    "delta_effort": 0.05706380680203438,
+    "delta_intimacy": 2.3841858265427618e-08,
+    "delta_effort": 0.12324319034814835,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "sauna",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 1.1920929132713809e-08,
-    "delta_effort": 0.03352627903223038,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 0,
-    "desire_condition": "low",
-    "delta_intimacy": -8.940697071579962e-09,
-    "delta_effort": 0.10207496583461761,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": 2.9802322831784522e-09,
-    "delta_effort": 0.10888805240392685,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": -3.725290298461914e-08,
-    "delta_effort": -0.09073078632354736,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": 5.662441182607836e-08,
-    "delta_effort": -0.1171698346734047,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": 2.086162531611535e-08,
-    "delta_effort": 0.1003098264336586,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sleeping-bag",
     "action": 2,
     "desire_condition": "high",
     "delta_intimacy": 1.3411044719191523e-08,
-    "delta_effort": 0.09694395214319229,
+    "delta_effort": 0.07115940749645233,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 1.4901161193847656e-08,
+    "delta_effort": 0.10868170112371445,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 5.960464477539063e-08,
+    "delta_effort": 0.15536527335643768,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 1,
+    "desire_condition": "low",
+    "delta_intimacy": 3.1292437085994607e-08,
+    "delta_effort": -0.2781566381454468,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 3.725290298461914e-08,
+    "delta_effort": -0.272434800863266,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 2.831220591303918e-08,
+    "delta_effort": 0.10549096018075943,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sleeping-bag",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 2.086162531611535e-08,
+    "delta_effort": 0.10693866014480591,
     "model": "base"
   },
   {
@@ -2488,8 +2488,8 @@
     "scenario_label": "sunscreen",
     "action": 0,
     "desire_condition": "low",
-    "delta_intimacy": 5.364417887676609e-08,
-    "delta_effort": 0.2508082985877991,
+    "delta_intimacy": -7.450580596923828e-09,
+    "delta_effort": 0.13831856846809387,
     "model": "base"
   },
   {
@@ -2497,8 +2497,8 @@
     "scenario_label": "sunscreen",
     "action": 0,
     "desire_condition": "high",
-    "delta_intimacy": 4.3213368883243675e-08,
-    "delta_effort": 0.3286427855491638,
+    "delta_intimacy": 2.086162531611535e-08,
+    "delta_effort": 0.3505907654762268,
     "model": "base"
   },
   {
@@ -2506,8 +2506,8 @@
     "scenario_label": "sunscreen",
     "action": 1,
     "desire_condition": "low",
-    "delta_intimacy": 5.21540641784668e-08,
-    "delta_effort": -0.3670230507850647,
+    "delta_intimacy": 2.3841858265427618e-08,
+    "delta_effort": -0.3696441948413849,
     "model": "base"
   },
   {
@@ -2515,71 +2515,71 @@
     "scenario_label": "sunscreen",
     "action": 1,
     "desire_condition": "high",
-    "delta_intimacy": 3.278255533700758e-08,
-    "delta_effort": -0.3647243082523346,
+    "delta_intimacy": 1.9371508841459217e-08,
+    "delta_effort": -0.373484343290329,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "sunscreen",
     "action": 2,
+    "desire_condition": "low",
+    "delta_intimacy": 1.3411044719191523e-08,
+    "delta_effort": 0.30450382828712463,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "sunscreen",
+    "action": 2,
+    "desire_condition": "high",
+    "delta_intimacy": 1.9371508841459217e-08,
+    "delta_effort": 0.2961806356906891,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 0,
+    "desire_condition": "low",
+    "delta_intimacy": 3.5762788286319847e-08,
+    "delta_effort": 0.027973702177405357,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 0,
+    "desire_condition": "high",
+    "delta_intimacy": 4.023313593393141e-08,
+    "delta_effort": 0.017684195190668106,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 1,
     "desire_condition": "low",
     "delta_intimacy": 5.5134297127779064e-08,
-    "delta_effort": 0.24442347884178162,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "sunscreen",
-    "action": 2,
-    "desire_condition": "high",
-    "delta_intimacy": 8.34465012644614e-08,
-    "delta_effort": 0.28282225131988525,
+    "delta_effort": -0.16936802864074707,
     "model": "base"
   },
   {
     "experiment": "nonfood_inv_joint_ie",
     "scenario_label": "towel",
-    "action": 0,
+    "action": 1,
+    "desire_condition": "high",
+    "delta_intimacy": 4.470348535789981e-09,
+    "delta_effort": -0.1442902386188507,
+    "model": "base"
+  },
+  {
+    "experiment": "nonfood_inv_joint_ie",
+    "scenario_label": "towel",
+    "action": 2,
     "desire_condition": "low",
     "delta_intimacy": 8.940697071579962e-09,
-    "delta_effort": 0.00013769119686912745,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
-    "action": 0,
-    "desire_condition": "high",
-    "delta_intimacy": -2.3841858265427618e-08,
-    "delta_effort": 0.03313129395246506,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
-    "action": 1,
-    "desire_condition": "low",
-    "delta_intimacy": 7.152557657263969e-08,
-    "delta_effort": -0.11109647899866104,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
-    "action": 1,
-    "desire_condition": "high",
-    "delta_intimacy": -1.0430812658057675e-08,
-    "delta_effort": -0.09682751446962357,
-    "model": "base"
-  },
-  {
-    "experiment": "nonfood_inv_joint_ie",
-    "scenario_label": "towel",
-    "action": 2,
-    "desire_condition": "low",
-    "delta_intimacy": -2.9802322387695312e-08,
-    "delta_effort": 0.00432076770812273,
+    "delta_effort": 0.01328355260193348,
     "model": "base"
   },
   {
@@ -2587,8 +2587,8 @@
     "scenario_label": "towel",
     "action": 2,
     "desire_condition": "high",
-    "delta_intimacy": 5.9604645663569045e-09,
-    "delta_effort": 0.030917590484023094,
+    "delta_intimacy": -1.639127766850379e-08,
+    "delta_effort": 0.05128374695777893,
     "model": "base"
   }
 ]

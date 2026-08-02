@@ -2,28 +2,38 @@
   "experiment": "food_inv_desire",
   "n_boot": 1000,
   "seed": 0,
+  "reported_base": "base_shared",
   "n_subjects": 481,
   "n_trials_per_model": 7696,
   "mean_held_out_ll_per_trial": {
-    "base": -0.06129015230897063,
-    "discomfort_only": -0.25808229058857024,
-    "full": -0.052788459817857604
+    "base": -0.058413052292474836,
+    "base_shared": -0.05661539510357157,
+    "discomfort_only": -0.2580767009802271,
+    "full": -0.051820955117254396
   },
   "primary": [
     {
       "comparison": "full_minus_base",
-      "mean_per_trial_ll_diff": 0.008501692491113023,
+      "mean_per_trial_ll_diff": 0.006592097175220442,
       "ci_95": [
-        0.004893159678519515,
-        0.012003433641255395
+        0.0031188902656185654,
+        0.009875098172490042
+      ]
+    },
+    {
+      "comparison": "full_minus_base_shared",
+      "mean_per_trial_ll_diff": 0.004794439986317172,
+      "ci_95": [
+        0.0017972969165431982,
+        0.007980429198740051
       ]
     },
     {
       "comparison": "full_minus_discomfort_only",
-      "mean_per_trial_ll_diff": 0.20529383077071264,
+      "mean_per_trial_ll_diff": 0.2062557458629727,
       "ci_95": [
-        0.18364611797561392,
-        0.2259735101845557
+        0.18494627920837142,
+        0.2260961062745375
       ]
     }
   ],
@@ -31,32 +41,53 @@
     {
       "model": "base",
       "dv": "desire",
-      "r": 0.8932962454144125,
+      "r": 0.8990632789436536,
       "ci_95": [
-        0.8426677920373927,
-        0.8750700285510327
+        0.8496618245363688,
+        0.8805557006547511
+      ],
+      "n_cells": 384
+    },
+    {
+      "model": "base_shared",
+      "dv": "desire",
+      "r": 0.9025505296894734,
+      "ci_95": [
+        0.8509596537299392,
+        0.8839987659782402
       ],
       "n_cells": 384
     },
     {
       "model": "discomfort_only",
       "dv": "desire",
-      "r": 0.02830998520395768,
+      "r": NaN,
       "ci_95": [
-        0.003513848226333788,
-        0.050792799968234555
+        NaN,
+        NaN
       ],
       "n_cells": 384
     },
     {
       "model": "full",
       "dv": "desire",
-      "r": 0.9074529168965857,
+      "r": 0.9097644187058747,
       "ci_95": [
-        0.8560224924257706,
-        0.889404382396423
+        0.8568572679631167,
+        0.8916636514564856
       ],
       "n_cells": 384
+    }
+  ],
+  "prereg_deviation": [
+    {
+      "comparison": "base_shared_minus_base",
+      "mean_per_trial_ll_diff": 0.0017976571889032694,
+      "ci_95": [
+        0.0005085063509627588,
+        0.0031626739173260146
+      ],
+      "meaning": "the deviation itself: comparison set alone, utility and parameter count held fixed. Pairs with primary's full_minus_base (the preregistered contrast, which moves both) and full_minus_base_shared (the reported one, utility alone)"
     }
   ]
 }
