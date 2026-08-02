@@ -194,13 +194,21 @@ FAMILY_BY_SLUG = {
 }
 
 
+#: Variants that reuse another variant's actor. `base_shared` is `base`'s utility
+#: scored against a different comparison set, so it shares `base`'s actor exactly;
+#: the actor name is derived from the variant string, which would otherwise look
+#: for a function that does not exist.
+_ACTOR_ALIAS = {"base_shared": "base"}
+
+
 def _actor(family, variant):
     """The actor memo for one (family, variant), imported lazily so this module
     stays importable in contexts that never build an actor."""
     import actors
 
     prefix = "actor_discrete" if family in ("desire", "joint_de") else "actor_continuous"
-    return getattr(actors, f"{prefix}_{variant}_padded_{family}")
+    name = _ACTOR_ALIAS.get(variant, variant)
+    return getattr(actors, f"{prefix}_{name}_padded_{family}")
 
 
 def config_for(slug, variant, utility_param_names):

@@ -1111,17 +1111,50 @@ VARIANT_PARAM_NAMES = {
 }
 
 
-def _build_variants(full_fn, discomfort_only_fn, base_fn):
+def _build_variants(full_fn, discomfort_only_fn, base_fn, shared_base=False):
     """Map each ablation name to (observer_fn, utility_param_names) for one
-    observer family, drawing the param names from VARIANT_PARAM_NAMES."""
+    observer family, drawing the param names from VARIANT_PARAM_NAMES.
+
+    `shared_base` adds `base_shared`: the SAME utility and observer as `base`, but
+    scored against `full`'s comparison set rather than the relationship-free
+    vintage. It exists only for the families that have a separate base vintage
+    (desire, joint_de); in the intimacy-inferring families `base` already shares
+    full's set, so a copy would be redundant.
+
+    EXPLORATORY, NOT PREREGISTERED. The preregistrations specify that the base
+    model's alternatives are elicited without the relationship description,
+    because its utility has no relational term. That makes the preregistered
+    `full - base` bundle two differences at once — the utility term AND the
+    comparison set — and the choice-set half turns out to matter: the
+    relationship-conditioned set shifts the mean risk of the active slots by only
+    ~2%, while `base`'s broadcast set is flat across the relationship axis by
+    construction. `base_shared` isolates the utility term:
+
+        full - base           preregistered: utility term + comparison set
+        full - base_shared    utility term, over and above what a
+                              relationship-conditioned choice set already gives
+        base_shared - base    the comparison set alone
+
+    As of 2026-07-31 this variant is what the paper REPORTS as "Base" for the
+    three given-relationship studies, so that `full - base` isolates the
+    discomfort term; `study_registry.reported_base` is the single source of
+    truth and `figures/scripts/_data.py` applies the substitution when loading
+    predictions and comparison statistics. The preregistered broadcast variant
+    is reported alongside it in the preregistration-deviation section. The
+    promotion is reporting-layer only: both variants are still fit under their
+    own names here and in every output file.
+    """
     fns = {
         "full": full_fn,
         "discomfort_only": discomfort_only_fn,
         "base": base_fn,
     }
-    return {
+    out = {
         name: (fns[name], VARIANT_PARAM_NAMES[name]) for name in VARIANT_PARAM_NAMES
     }
+    if shared_base:
+        out["base_shared"] = (base_fn, VARIANT_PARAM_NAMES["base"])
+    return out
 
 
 # ==============================================================================
@@ -1282,10 +1315,16 @@ def observer_intimacy_base(
 
 
 VARIANTS_DESIRE = _build_variants(
-    observer_desire_full, observer_desire_discomfort_only, observer_desire_base
+    observer_desire_full,
+    observer_desire_discomfort_only,
+    observer_desire_base,
+    shared_base=True,
 )
 VARIANTS_JOINT_DE = _build_variants(
-    observer_joint_de_full, observer_joint_de_discomfort_only, observer_joint_de_base
+    observer_joint_de_full,
+    observer_joint_de_discomfort_only,
+    observer_joint_de_base,
+    shared_base=True,
 )
 VARIANTS_INTIMACY = _build_variants(
     observer_intimacy_full, observer_intimacy_discomfort_only, observer_intimacy_base

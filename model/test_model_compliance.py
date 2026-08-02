@@ -1781,8 +1781,12 @@ def test_reweighting_scope_rule_matches_the_reported_matrix():
             # Study 1a asks no contrastive-only question: never reweighted.
             if slug == "food_inv_desire":
                 assert not used, f"1a/{variant} should carry no eta"
-    assert n_pairs == 18, f"expected 18 (study, variant) pairs, got {n_pairs}"
-    assert n_reweighted == 12, f"expected 12 reweighted pairs, got {n_reweighted}"
+    # 21 pairs: 18 preregistered, plus the exploratory `base_shared` in the three
+    # studies whose `base` otherwise uses a relationship-free comparison set
+    # (1a, 1b, 3a). 14 reweighted: base_shared inherits base's targets, which is
+    # 'world' in the two joint_de studies and none in 1a.
+    assert n_pairs == 21, f"expected 21 (study, variant) pairs, got {n_pairs}"
+    assert n_reweighted == 14, f"expected 14 reweighted pairs, got {n_reweighted}"
     print(f"✓ reweighting scope rule gives {n_reweighted}/{n_pairs} reweighted pairs")
 
 

@@ -101,6 +101,13 @@ def priors_base_variant(slug, variant, priors_file=None):
         `lm_priors_human.jsonl`, which is full-shaped, one row per relationship
         level) used as-is for every variant, so the loader's base collapse —
         which drops `intimacy_condition` — must not run on it.
+
+    The `variant == "base"` test is an exact match, deliberately: the
+    exploratory `base_shared` variant is base's *utility* scored against full's
+    relationship-conditioned comparison set, so its cells carry a relationship
+    axis and it needs the full-shaped priors. Widening this to
+    `variant.startswith("base")` would hand it the collapsed vintage and
+    misalign the prior with the cell grid.
     """
     return (
         variant == "base" and slug in GIVEN_RELATIONSHIP_SLUGS and priors_file is None
