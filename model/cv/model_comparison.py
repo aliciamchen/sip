@@ -43,7 +43,7 @@ from _helpers import (  # noqa: E402
     verify_fit_manifest,
     write_json,
 )
-from study_registry import STUDIES  # noqa: E402
+from study_registry import STUDIES, reported_base  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 # The three CV output files written together by the dispatcher's _write_outputs
@@ -131,9 +131,9 @@ def _bootstrap_mean_by_subject(values, subject_ids, n_boot, rng):
     return sums[idx].sum(axis=1) / counts[idx].sum(axis=1)
 
 
-def _primary_comparisons(trial_df, n_boot, rng):
-    """Full-minus-ablation per-trial held-out LL differences with participant-
-    bootstrap CIs. Trials are matched across variants on (subject, scenario)."""
+def _wide_trials(trial_df):
+    """Per-trial held-out LL as (subject, scenario) x variant, with every
+    variant present for every trial — the matched form all contrasts need."""
     assert not trial_df.duplicated(["model", "subject_id", "scenario_label"]).any(), (
         "cv_trial_ll.jsonl has duplicate (model, subject, scenario) rows"
     )
@@ -141,22 +141,60 @@ def _primary_comparisons(trial_df, n_boot, rng):
         index=["subject_id", "scenario_label"], columns="model", values="held_out_ll"
     )
     assert not wide.isna().any().any(), "trials not matched across model variants"
-    subject_ids = wide.index.get_level_values("subject_id").to_numpy()
+    return wide
 
+
+def _contrast(wide, a, b, n_boot, rng, label=None):
+    """One per-trial held-out LL contrast (a - b) with a participant-bootstrap
+    95% CI. Positive favors `a`."""
+    subject_ids = wide.index.get_level_values("subject_id").to_numpy()
+    diff = (wide[a] - wide[b]).to_numpy()
+    boots = _bootstrap_mean_by_subject(diff, subject_ids, n_boot, rng)
+    return {
+        "comparison": label or f"{a}_minus_{b}",
+        "mean_per_trial_ll_diff": float(diff.mean()),
+        "ci_95": [
+            float(np.percentile(boots, 2.5)),
+            float(np.percentile(boots, 97.5)),
+        ],
+    }
+
+
+def _deviation_contrasts(wide, slug, n_boot, rng):
+    """Preregistration-deviation statistics for one study, or [].
+
+    The main text reports `base_shared` as Base (see study_registry.
+    reported_base). These are the two numbers the deviation section needs: the
+    preregistered contrast, and the comparison-set change on its own — which is
+    what the deviation consists of, since the promoted and preregistered bases
+    share an identical utility and parameter count and differ only in the
+    alternative set they are scored against.
+    """
+    promoted = reported_base(slug)
+    if promoted == "base" or promoted not in wide.columns:
+        return []
+    # Only the contrast that is NOT already in `primary`. The preregistered
+    # comparison is primary's own `full_minus_base` (raw keys throughout this
+    # file), so recomputing it here would put the same statistic in the file
+    # twice with two different bootstrap draws and two slightly different CIs.
+    return [
+        {
+            **_contrast(wide, promoted, "base", n_boot, rng),
+            "meaning": "the deviation itself: comparison set alone, utility and "
+            "parameter count held fixed. Pairs with primary's full_minus_base "
+            "(the preregistered contrast, which moves both) and "
+            f"full_minus_{promoted} (the reported one, utility alone)",
+        }
+    ]
+
+
+def _primary_comparisons(trial_df, n_boot, rng):
+    """Full-minus-ablation per-trial held-out LL differences with participant-
+    bootstrap CIs. Trials are matched across variants on (subject, scenario)."""
+    wide = _wide_trials(trial_df)
     out = []
     for ablation in [m for m in wide.columns if m != "full"]:
-        diff = (wide["full"] - wide[ablation]).to_numpy()
-        boots = _bootstrap_mean_by_subject(diff, subject_ids, n_boot, rng)
-        out.append(
-            {
-                "comparison": f"full_minus_{ablation}",
-                "mean_per_trial_ll_diff": float(diff.mean()),
-                "ci_95": [
-                    float(np.percentile(boots, 2.5)),
-                    float(np.percentile(boots, 97.5)),
-                ],
-            }
-        )
+        out.append(_contrast(wide, "full", ablation, n_boot, rng))
     return out
 
 
@@ -241,6 +279,15 @@ def run_study(slug, n_boot, seed):
         "experiment": slug,
         "n_boot": n_boot,
         "seed": seed,
+        # Which variant key the paper's "Base" column refers to. Every key in
+        # this file is a raw variant name, so in the desire-inferring studies
+        # `full_minus_base` is the PREREGISTERED broadcast-set contrast while
+        # the main text reports `full_minus_base_shared` as full - base (the
+        # preregistered one moves the comparison set as well as the utility;
+        # see study_registry.reported_base). Annotation only —
+        # nothing here is renamed, so both contrasts stay quotable and the
+        # deviation section can cite either.
+        "reported_base": reported_base(slug),
         "n_subjects": int(trial_df["subject_id"].nunique()),
         "n_trials_per_model": int(len(trial_df) / trial_df["model"].nunique()),
         "mean_held_out_ll_per_trial": {
@@ -261,6 +308,13 @@ def run_study(slug, n_boot, seed):
                 result["secondary_correlations"].append(
                     {"model": model, "dv": dv, **corr}
                 )
+
+    # Computed LAST, and off a dedicated stream, so adding it cannot perturb the
+    # primary/secondary bootstrap draws: those are already-published numbers, and
+    # inserting a draw ahead of them shifted their CIs in the 3rd decimal.
+    result["prereg_deviation"] = _deviation_contrasts(
+        _wide_trials(trial_df), slug, n_boot, np.random.default_rng(seed)
+    )
 
     out_path = outputs_dir / "cv_model_comparison.json"
     write_json(out_path, result)

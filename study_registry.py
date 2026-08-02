@@ -170,3 +170,40 @@ def slugs_given(condition: str) -> list[str]:
     `slugs_given("desire_condition")` is the given-desire set (2a/2b/3b).
     """
     return [slug for slug, s in STUDIES.items() if condition in s.given_conditions]
+
+
+# ---------------------------------------------------------------------------
+# Which base ablation the paper reports
+# ---------------------------------------------------------------------------
+# The preregistrations specify a `base` ablation whose LM alternative set is
+# elicited WITHOUT the relationship paragraph and then broadcast across the
+# relationship axis, so base's predictions are relationship-invariant. In the
+# given-relationship studies that makes base differ from full along TWO axes at
+# once -- the discomfort term AND the comparison set -- so `full - base` is not
+# a test of the discomfort term. Measured on the 2026-07-31 CV run the
+# comparison-set half is large enough to reverse the sign in Study 1b (utility
+# +0.0214, comparison set -0.0447, total -0.0232 per-trial held-out LL).
+#
+# The main text therefore reports the base utility scored against full's
+# relationship-conditioned comparison set -- the `base_shared` fit -- as
+# "Base", so `full - base` isolates the discomfort term. The preregistered
+# broadcast variant is reported in the preregistration-deviation section.
+#
+# This is a REPORTING-layer promotion only: the model still fits both variants
+# under their own names and every output file keeps its raw keys, so the two
+# are always separable and no refitting is needed.
+PROMOTED_BASE_VARIANT = "base_shared"
+PREREG_BASE_KEY = "base_prereg"
+PREREG_BASE_LABEL = "Base (preregistered)"
+
+
+def reported_base(slug: str) -> str:
+    """The variant key the paper's "Base" column refers to, for one study.
+
+    Derived from the registry rather than a slug list: a relationship-free base
+    vintage exists exactly when the relationship is a *given* condition, since
+    the given-desire studies (2a/2b/3b) never show a relationship paragraph and
+    so their `base` already shares full's comparison set.
+    """
+    given = STUDIES[slug].given_conditions
+    return PROMOTED_BASE_VARIANT if "intimacy_condition" in given else "base"

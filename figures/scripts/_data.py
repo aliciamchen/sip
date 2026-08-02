@@ -23,6 +23,7 @@ CSV are flagged as stale (rendered anyway, with a warning, so layout iteration
 can proceed before `make cv-<slug>` refreshes them).
 """
 
+import copy
 import hashlib
 import json
 import sys
@@ -37,7 +38,12 @@ sys.path.insert(0, str(_project_root / "model" / "cv"))
 
 import model_comparison as _mc  # noqa: E402  (also puts model/inverse on sys.path)
 from plot_style import OBSERVED_ACTIONS  # noqa: E402
-from study_registry import study  # noqa: E402
+from study_registry import (  # noqa: E402
+    PREREG_BASE_KEY,
+    PREREG_BASE_LABEL,
+    reported_base,
+    study,
+)
 from utils import get_project_root  # noqa: E402
 
 # model_comparison's per-study cell/DV spec is itself derived from the study
@@ -66,6 +72,49 @@ MODEL_LABELS = {
 }
 PANEL_ORDER = [*MODEL_ORDER, "humans"]
 PANEL_LABELS = {**MODEL_LABELS, "humans": "Humans"}
+
+# Which base ablation the paper reports. Defined in study_registry.py (the
+# single source of truth both this module and model_comparison.py read) —
+# `reported_base` promotes the `base_shared` fit to "Base" in the studies whose
+# preregistered base also swaps the comparison set. See that module for why.
+_announced_promotion = set()
+
+
+def _promotion_map(slug, present):
+    """Raw-variant -> reported-variant renaming for one study, or None.
+
+    Returns None when the study reports its preregistered base (2a/2b/3b), or
+    when the promoted fit is not present in this artifact (so a partially
+    computed study degrades to the preregistered base rather than losing its
+    base column entirely).
+    """
+    promoted = reported_base(slug)
+    if promoted == "base":
+        return None
+    if promoted not in present:
+        # Falling back to the preregistered base would label a DIFFERENT model
+        # "Base" than the other studies in the same figure — two definitions of
+        # Base in one panel row, with nothing on the figure to say so. Degrade
+        # rather than crash (so layouts can be iterated before a refit lands),
+        # but never quietly.
+        print(
+            f"[{slug}] WARNING: `{promoted}` is missing from these outputs, so "
+            f"Base falls back to the PREREGISTERED broadcast-set base — which is "
+            f"not what the other studies show. Re-run `make fit-{slug} cv-{slug}` "
+            f"and `make model-comparison` before using this figure."
+        )
+        return None
+    if slug not in _announced_promotion:
+        print(
+            f"[{slug}] reporting `{promoted}` as Base (base utility on full's "
+            f"comparison set); preregistered broadcast base kept as "
+            f"`{PREREG_BASE_KEY}`"
+        )
+        _announced_promotion.add(slug)
+    # Built as one simultaneous mapping and applied with .map, not chained
+    # .replace calls, so `base` cannot be renamed twice.
+    return {"base": PREREG_BASE_KEY, promoted: "base"}
+
 
 # The pre-2026-06-19 intimacy label still present in older CV outputs; the
 # human CSVs were normalized at parse time (json_to_csv.py), so model-side
@@ -112,6 +161,9 @@ def load_cv_preds(slug):
         preds["intimacy_condition"] = preds["intimacy_condition"].replace(
             _LEGACY_INTIMACY
         )
+    ren = _promotion_map(slug, set(preds["model"]))
+    if ren is not None:
+        preds["model"] = preds["model"].map(lambda v: ren.get(v, v))
     return preds
 
 
@@ -124,7 +176,33 @@ def load_comparison(slug):
         )
         return None
     with open(path) as f:
-        return json.load(f)
+        comparison = json.load(f)
+    return _apply_reported_base(slug, comparison)
+
+
+def _apply_reported_base(slug, comparison):
+    """Rewrite a cv_model_comparison.json payload so `base` names the variant
+    the paper reports (see study_registry.reported_base).
+
+    Touches both blocks the figures read: `primary` entries are keyed by a
+    "full_minus_<variant>" string and `secondary_correlations` rows by a
+    `model` field. Returns a copy — the on-disk artifact keeps the raw keys.
+    """
+    present = {row["model"] for row in comparison.get("secondary_correlations", [])}
+    present |= {
+        entry["comparison"].removeprefix("full_minus_")
+        for entry in comparison.get("primary", [])
+    }
+    ren = _promotion_map(slug, present)
+    if ren is None:
+        return comparison
+    comparison = copy.deepcopy(comparison)
+    for entry in comparison.get("primary", []):
+        variant = entry["comparison"].removeprefix("full_minus_")
+        entry["comparison"] = f"full_minus_{ren.get(variant, variant)}"
+    for row in comparison.get("secondary_correlations", []):
+        row["model"] = ren.get(row["model"], row["model"])
+    return comparison
 
 
 def correlation_for(comparison, model, dv):
