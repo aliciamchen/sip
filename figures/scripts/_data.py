@@ -133,8 +133,12 @@ def seed_for(name):
     return int.from_bytes(hashlib.sha256(name.encode()).digest()[:4], "little")
 
 
-def _outputs_dir(slug):
-    return get_project_root() / "model" / "outputs" / slug
+def _outputs_dir(slug, config_tag=None):
+    """A study's model outputs. `config_tag` selects a non-default run config's
+    directory (`RunConfig.tag()`, e.g. "uniform-noreweight"), mirroring
+    `RunConfig.outputs_dir`; None is the reported config at the study root."""
+    root = get_project_root() / "model" / "outputs" / slug
+    return root if config_tag is None else root / "alt" / config_tag
 
 
 def load_trials(slug):
@@ -149,15 +153,20 @@ def load_trials(slug):
     return _mc._prepare_data(slug)
 
 
-def load_cv_preds(slug):
+def load_cv_preds(slug, config_tag=None):
     """Out-of-sample per-cell model predictions (cv_preds_summary.json), or
     None when the study's CV hasn't run. Drops the per-run columns and
-    normalizes legacy intimacy labels."""
-    path = _outputs_dir(slug) / "cv_preds_summary.json"
+    normalizes legacy intimacy labels.
+
+    `config_tag` reads a non-default run config's CV instead of the reported one
+    (see `_outputs_dir`) — used by the preregistration-deviation figure to draw
+    the eta = 0 model's predictions beside the reported model's. Note that the
+    reported-base promotion below applies to whichever config is loaded, which is
+    what makes the two comparable: both sides label the same variant "base"."""
+    path = _outputs_dir(slug, config_tag) / "cv_preds_summary.json"
     if not path.exists():
-        print(
-            f"[{slug}] no CV predictions yet (make cv-{slug}) — skipping model panels"
-        )
+        where = "" if config_tag is None else f" for config {config_tag}"
+        print(f"[{slug}] no CV predictions{where} yet ({path}) — skipping")
         return None
     with open(path) as f:
         preds = pd.DataFrame(json.load(f))

@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """What the comparison-set reweighting bought, per study, out of sample.
 
-The reweighting is a deviation from the preregistered model specification, so the
-paper reports the preregistered model (eta = 0) beside the reported one. The
-numbers are in tab:prereg-deviation; this is the same six differences drawn with
-their confidence intervals, because the point of the comparison is which studies
-the deviation actually helps, and three of the six differences are small enough
-that a column of signed numbers reads as "all positive" when it is not.
+A diagnostic, NOT a paper figure -- **cut from the SI on 2026-08-03**, the day it
+was added. `tab:prereg-deviation` reports the same six differences with the same
+confidence intervals, so the figure was carrying no number the section lacked, and
+the deviations section did not need a second float to say it.
+
+Kept because the mixed result it shows is live rather than settled: the
+reweighting helps in Studies 1b, 2a and 3a, ties in 2b, and costs a little in 3b,
+and whether 3b's loss is a real property of the mechanism or an artefact of a flat
+optimum in eta is recorded as deferred (notes/decisions.md, 2026-08-03). A forest
+plot of the six differences is the natural view for revisiting that, and it is
+cheaper to keep the script than to rewrite it later.
+
+Output is gitignored and the journal sync does not copy it; regenerate with
+`make figures-si-prereg-deviation`.
 
 Each row is one study's paired difference in per-trial held-out log-likelihood,
 reported minus preregistered, with a 95% subject-cluster bootstrap CI over the

@@ -53,7 +53,7 @@ ANALYSIS_QMDS := \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-panels figures-si-scenarios \
         figures-si-model-scatter figures-si-prior-posterior \
-        figures-si-prereg-deviation \
+        figures-si-prereg-deviation figures-si-prereg-predictions \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -101,7 +101,8 @@ help:
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
 	@echo "  figures-si-model-scatter - per-study model-vs-human scatter grid (a diagnostic, not in the paper)"
 	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
-	@echo "  figures-si-prereg-deviation - reported vs preregistered (eta=0) held-out LL per study"
+	@echo "  figures-si-prereg-deviation - reported vs preregistered (eta=0) held-out LL per study (a diagnostic, not in the paper)"
+	@echo "  figures-si-prereg-predictions - both models' per-cell predictions beside humans, all six studies"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
 	@echo ""
@@ -593,6 +594,20 @@ $(SI_DEVIATION): $(FIG_SCRIPTS)/figure_si_prereg_deviation.py $(FIG_SHARED) \
 
 figures-si-prereg-deviation: $(SI_DEVIATION)
 
+# The SI figure of the same comparison in the space the models actually predict
+# in: both models' per-cell predictions beside the human means, all six studies.
+# Reads the two configs' cv_preds_summary.json directly (not the comparisons), so
+# it needs only the CV runs.
+SI_PREREG_PREDS := $(FIG_SI)/si_prereg_predictions.pdf
+
+$(SI_PREREG_PREDS): $(FIG_SCRIPTS)/figure_si_prereg_predictions.py $(FIG_SHARED) \
+    $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_preds_summary.json) \
+    $(foreach s,$(EXPERIMENTS_INVERSE),\
+      $(wildcard model/outputs/$(s)/alt/uniform-noreweight/cv_preds_summary.json))
+	uv run python $(FIG_SCRIPTS)/figure_si_prereg_predictions.py
+
+figures-si-prereg-predictions: $(SI_PREREG_PREDS)
+
 # =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/si/
 # into the journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs
@@ -631,7 +646,7 @@ JOURNAL_FIGURES := \
   si_scenarios_study3a.pdf:si-scenarios-study3a.pdf \
   si_scenarios_study3b.pdf:si-scenarios-study3b.pdf \
   si_prior_posterior_levels.pdf:si-prior-posterior-levels.pdf \
-  si_prereg_deviation.pdf:si-prereg-deviation.pdf
+  si_prereg_predictions.pdf:si-prereg-predictions.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }

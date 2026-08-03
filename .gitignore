@@ -79,11 +79,12 @@ writing/
 figures/**/*.png
 
 # Diagnostics that render into figures/si/ but are not paper figures: nothing in
-# the SI cites them and the journal sync does not copy them. Their scripts are
-# committed (the SI quotes numbers they print, so those have to stay
-# reproducible) but their output is regenerated on demand rather than tracked
-# alongside the figures that are actually in the paper.
+# the SI cites them and the journal sync does not copy them. Their scripts stay
+# committed — each is the only view of something the paper still depends on, or
+# still prints numbers the SI quotes — but their output is regenerated on demand
+# rather than tracked alongside the figures that are actually in the paper.
 figures/si/si_model_scatter_all.pdf
 figures/si/si_prior_posterior_distributions.pdf
+figures/si/si_prereg_deviation.pdf
 
 .agents/skills
