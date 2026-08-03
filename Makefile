@@ -52,6 +52,7 @@ ANALYSIS_QMDS := \
         fit fit-inverse \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-panels figures-si-scenarios \
+        figures-si-model-scatter \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -96,6 +97,7 @@ help:
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/si/"
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
+	@echo "  figures-si-model-scatter - per-study model-vs-human scatter grid (a diagnostic, not in the paper)"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
 	@echo ""
@@ -506,6 +508,22 @@ $(SI_SCENARIO_WITNESS): $(FIG_SCRIPTS)/figure_si_scenarios.py $(FIG_SHARED) \
 figures-si-scenarios: $(SI_SCENARIO_WITNESS)
 
 # =============================================================================
+# Model-vs-human scatter: one grid of study x ablation panels, at the scenario x
+# condition grain the model predicts on. A DIAGNOSTIC, not a paper figure — it
+# is not in the journal sync below and nothing in the SI cites it; it exists to
+# check per-study, per-latent agreement, which the pooled correlation panel in
+# the results figures cannot show.
+# =============================================================================
+
+SI_SCATTER := $(FIG_SI)/si_model_scatter_all.pdf
+
+$(SI_SCATTER): $(FIG_SCRIPTS)/figure_si_model_scatter.py $(FIG_SCRIPTS)/_agg.py \
+    $(FIG_SHARED) $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
+	uv run python $(FIG_SCRIPTS)/figure_si_model_scatter.py
+
+figures-si-model-scatter: $(SI_SCATTER)
+
+# =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/si/
 # into the journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs
 # real, committed files — symlinks don't sync — so this physically copies them.
@@ -533,9 +551,14 @@ JOURNAL_FIGURES := \
   si_lm_alternatives_composition_desire.pdf:si-lm-alternatives-composition-desire.pdf \
   si_lm_alternatives_set_similarity_all.pdf:si-lm-alternatives-set-similarity.pdf \
   si_lm_base_vs_full_1a_1b_3a.pdf:si-lm-base-vs-full.pdf \
-  si_lm_g_contrast_1a.pdf:si-lm-g-contrast.pdf \
   si_lm_run_spread_1a.pdf:si-lm-run-spread.pdf \
-  si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf
+  si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf \
+  si_scenarios_study1a.pdf:si-scenarios-study1a.pdf \
+  si_scenarios_study1b.pdf:si-scenarios-study1b.pdf \
+  si_scenarios_study2a.pdf:si-scenarios-study2a.pdf \
+  si_scenarios_study2b.pdf:si-scenarios-study2b.pdf \
+  si_scenarios_study3a.pdf:si-scenarios-study3a.pdf \
+  si_scenarios_study3b.pdf:si-scenarios-study3b.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }

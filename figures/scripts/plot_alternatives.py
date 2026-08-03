@@ -22,9 +22,15 @@ outputs/lm/<slug>/) in one consolidated figure, except where noted:
      the alternative sets of two elicitation cells, by what differs between the
      cells (runs only, condition, or observed action); one panel per study on a
      3x2 grid.
-  3. si_lm_g_contrast_1a — within-choice-set range of goal-satisfaction g by
-     observed action: where the design can identify desire. Kept at Study 1a (a
-     single-study identifiability diagnostic; not referenced in the paper).
+  3. si_lm_g_contrast_1a / si_lm_g_contrast_all — within-choice-set range of
+     goal-satisfaction g by observed action: where the design can identify
+     desire, over the whole comparison set and over the forgone alternatives
+     alone. DIAGNOSTICS, not paper figures (decided 2026-08-02): the fitted
+     eta = 0 for the desire question is the evidence, and these only illustrate
+     the mechanism behind it. They stay because the SI quotes their numbers as
+     ranges (0.0-0.2% of refusal sets and 2-22% of share sets flat over the whole
+     set; 40-61% of refusal sets flat among the alternatives), so `--figures si`
+     regenerates them on demand.
   4. si_lm_base_vs_full_1a_1b_3a — feature-distribution (energy) distance between
      the base ablation's relationship-free alternative sets and the
      relationship-conditioned sets, one panel per given-relationship study
@@ -76,6 +82,7 @@ from plot_style import (  # noqa: E402
     SI_LARGE_RC,
     STUDY_LABELS,
     apply_style,
+    panel_label,
     savefig,
 )
 from study_registry import SLUGS, slugs_given  # noqa: E402
@@ -728,6 +735,114 @@ def fig_si_g_contrast(runs, figname="si_lm_g_contrast"):
     return savefig(fig, figname, **SAVE_KW)
 
 
+def _g_contrast_rates(runs, flat=0.01):
+    """(observed action) -> (% of sets with no g contrast over the whole
+    comparison set, % with none among the forgone alternatives, n sets, n sets
+    dropped for having no alternatives at all).
+
+    The two quantities answer different questions. The whole-set range says
+    whether the observation itself can speak to desire: an action's own g
+    prices desire directly, so a set spanning g~0 to g~1 makes the choice
+    informative. The alternatives-only range says whether *reweighting* that
+    set can speak to desire: the reweighting moves mass among the forgone
+    actions, so when those are uniform in g no weighting of them shifts the
+    desire posterior, however surprising the observation is."""
+    rates = {}
+    for act in OBSERVED_ACTIONS:
+        full, alts, empty = [], [], 0
+        for actions, obs in zip(runs["actions"], runs["observed_action"]):
+            if obs != act:
+                continue
+            gs = [a["g"] for a in actions if a.get("g") is not None]
+            if not gs:
+                continue
+            full.append(max(gs) - min(gs))
+            ga = [
+                a["g"]
+                for a in actions
+                if a.get("g") is not None and not a.get("is_observed")
+            ]
+            # A set with no alternatives has nothing to reweight and no range to
+            # measure; counted separately rather than scored as "no contrast".
+            if ga:
+                alts.append(max(ga) - min(ga))
+            else:
+                empty += 1
+        if not full:
+            continue
+        rates[act] = (
+            100 * float(np.mean(np.asarray(full) <= flat)),
+            100 * float(np.mean(np.asarray(alts) <= flat)) if alts else float("nan"),
+            len(full),
+            empty,
+        )
+    return rates
+
+
+def fig_si_g_contrast_all(studies_data, figname="si_lm_g_contrast_all"):
+    """The g-contrast diagnostic across all six studies: the share of choice
+    sets carrying no goal-satisfaction contrast, by observed action, measured
+    over the whole comparison set (a) and over the forgone alternatives alone
+    (b). Panel (b) is the quantity the comparison-set reweighting depends on --
+    where it is high, no reweighting of the alternatives can inform desire."""
+    rates = {s: _g_contrast_rates(runs) for s, runs in studies_data}
+    labels = [STUDY_LABELS[s] for s, _r in studies_data]
+    x = np.arange(len(studies_data))
+    width = 0.26
+
+    fig, axes = plt.subplots(2, 1, figsize=(6.6, 4.4), sharex=True, sharey=True)
+    panels = [
+        (0, "a", "Whole comparison set"),
+        (1, "b", "Forgone alternatives only"),
+    ]
+    for ax, (which, letter, title) in zip(axes, panels):
+        for j, act in enumerate(OBSERVED_ACTIONS):
+            vals = [rates[s].get(act, (np.nan,) * 4)[which] for s, _r in studies_data]
+            pos = x + (j - 1) * width
+            ax.bar(
+                pos,
+                vals,
+                width,
+                color=ACTION_COLORS[act],
+                edgecolor="white",
+                lw=0.5,
+                label=ACTION_LABELS[act],
+            )
+            # A bar this short is a real value, not missing data -- print it, or
+            # panel (a)'s refusals look like an empty slot in the group.
+            for xi, v in zip(pos, vals):
+                if v < 2:
+                    ax.annotate(
+                        f"{v:.1f}",
+                        (xi, v),
+                        xytext=(0, 2),
+                        textcoords="offset points",
+                        ha="center",
+                        va="bottom",
+                        fontsize=6.5,
+                        color="#555555",
+                        rotation=90,
+                    )
+        ax.set_ylabel("% of sets with\nno $g$ contrast")
+        ax.set_title(title, fontsize=10, pad=3)
+        ax.set_ylim(0, 100)
+        ax.grid(axis="y", color="#EEEEEE", lw=0.6)
+        ax.set_axisbelow(True)
+        panel_label(ax, letter, dx=-0.09)
+    axes[0].legend(loc="upper left", ncol=3, fontsize=8.5, frameon=False)
+    axes[-1].set_xticks(x, labels)
+
+    for s, _r in studies_data:
+        for act, (pf, pa, n, empty) in rates[s].items():
+            print(
+                f"g-contrast {STUDY_LABELS[s]:>9s} observed={act:<11s} "
+                f"set {pf:5.1f}% flat, alternatives {pa:5.1f}% flat "
+                f"(n={n}, {empty} with no alternatives)"
+            )
+    fig.tight_layout()
+    return savefig(fig, figname, **SAVE_KW)
+
+
 # ----------------------------------------------------------------------------
 # SI figure 5 — the base ablation's relationship-free sets vs the conditioned sets
 # ----------------------------------------------------------------------------
@@ -1140,7 +1255,9 @@ def main(seed, example_scenario, figures):
                     figname="si_lm_base_vs_full_1a_1b_3a",
                 )
             )
-            # g-contrast: kept at Study 1a (a single-study identifiability diagnostic)
+            # g-contrast: diagnostics only — neither figure is in the paper, but
+            # the SI quotes the rates the all-six pass prints, so both stay
+            # runnable. See the module docstring.
             if "food_inv_desire" in loaded:
                 paths.append(
                     fig_si_g_contrast(
@@ -1148,6 +1265,12 @@ def main(seed, example_scenario, figures):
                         figname="si_lm_g_contrast_1a",
                     )
                 )
+            paths.append(
+                fig_si_g_contrast_all(
+                    [(s, loaded[s]["runs"]) for s in studies],
+                    figname="si_lm_g_contrast_all",
+                )
+            )
         # semantic-space (UMAP) examples: one food, one nonfood — separate figures,
         # kept at the base "si" sizes (their side text panel is laid out for those)
         for study, scen_default, figname in SEMANTIC_SPACE_EXAMPLES:
