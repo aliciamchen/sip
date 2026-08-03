@@ -164,7 +164,7 @@ def apply_style(context="si"):
     plt.rcParams.update({**_COMMON, **_CONTEXTS[context], **math})
 
 
-def savefig(fig, name, png=True, *, out_dir=None, formats=("pdf",)):
+def savefig(fig, name, png=True, *, out_dir=None, formats=("pdf",), tight=True):
     """Write <out_dir>/<name>.<ext> for each requested vector format, optionally
     with a PNG preview beside them, and close the figure.
 
@@ -174,10 +174,16 @@ def savefig(fig, name, png=True, *, out_dir=None, formats=("pdf",)):
     """
     out_dir = Path(out_dir) if out_dir else FIG_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
+    # `tight=False` keeps the full canvas, so a set of figures laid out with the
+    # same fixed margins comes out with its axes in the SAME place on every page
+    # -- which is what lets Illustrator stack them by page origin instead of by
+    # eye. Cropping to content would undo that, since panels carry different
+    # decorations (a top axis, a longer title) and would each crop differently.
+    bbox = "tight" if tight else None
     for ext in formats:
-        fig.savefig(out_dir / f"{name}.{ext}", bbox_inches="tight")
+        fig.savefig(out_dir / f"{name}.{ext}", bbox_inches=bbox)
     if png:
-        fig.savefig(out_dir / f"{name}.png", dpi=200, bbox_inches="tight")
+        fig.savefig(out_dir / f"{name}.png", dpi=200, bbox_inches=bbox)
     plt.close(fig)
     return out_dir / f"{name}.{formats[0]}"
 

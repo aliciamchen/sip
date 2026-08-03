@@ -54,12 +54,13 @@ LEGEND_DIR = PANELS_LEGENDS
 # wide, so text lands at print size once the row is scaled to column width.
 # Markers are smaller than the poster's so the human CIs stay visible: the
 # whiskers are drawn behind the marker in its own colour with no caps, so a
-# marker wider than its CI would swallow them (at markersize 10 it did).
+# marker wider than its CI would swallow them (at markersize 10 it did; 9.5
+# still clears them, checked against the Humans columns).
 STYLE = replace(
     points.POSTER,
     panel_w=2.9,
-    panel_h=2.9,
-    markersize=8,
+    panel_h=3.3,
+    markersize=9.5,
     tick_len=4.5,
     tick_w=1.4,
     xtick_fs=12,
@@ -69,6 +70,11 @@ STYLE = replace(
     errbar=dict(elinewidth=2.2, capsize=0, zorder=2),
     errbar_from_point=True,
 )
+
+# Axes rectangle shared by every panel, as figure fractions. Sized for the
+# busiest decoration set so panels with fewer decorations simply leave the space
+# empty rather than growing their plot area.
+PANEL_MARGINS = dict(left=0.075, right=0.995, top=0.824, bottom=0.236, wspace=0.08)
 
 PANEL_RC = {
     "axes.linewidth": 1.4,
@@ -89,8 +95,13 @@ def _save(fig, stem):
     """
     # Legends are shared components placed once, so they live beside the panels
     # rather than among them -- one artboard per legend, not per study.
-    out = LEGEND_DIR if stem.startswith("legend_") else OUT_DIR
-    savefig(fig, stem, out_dir=out)
+    is_legend = stem.startswith("legend_")
+    out = LEGEND_DIR if is_legend else OUT_DIR
+    # Panels save the full canvas so their axes boxes land identically across
+    # studies and can be stacked without nudging. Legends MUST crop to content:
+    # each is drawn on a 0.1x0.1 in figure and relies on the tight bbox to grow
+    # to its entries -- saving the canvas gives a 20x20 px stub.
+    savefig(fig, stem, out_dir=out, tight=is_legend)
     print(f"wrote {out.parent.name}/{out.name}/{stem}.pdf")
 
 
@@ -107,8 +118,12 @@ def draw_panel(slug, stem):
         figsize=(STYLE.panel_w * len(keys), STYLE.panel_h),
         sharey=True,
         squeeze=False,
-        constrained_layout=True,
     )
+    # Fixed margins, not constrained_layout: every study's axes box then lands on
+    # the same rectangle of the same canvas whether or not it carries a top axis,
+    # so the six panels stack without nudging. The reserve is sized for the
+    # busiest case (a title clearing a top axis, two-line action labels below).
+    fig.subplots_adjust(**PANEL_MARGINS)
     points.draw_row(
         list(axes[0]),
         slug,
@@ -120,7 +135,7 @@ def draw_panel(slug, stem):
         titles=True,
     )
     axes[0][0].set_ylabel(points.ylabel_for(slug), fontsize=STYLE.label_fs)
-    fig.supxlabel(points.X_AXIS_LABEL, fontsize=STYLE.label_fs)
+    fig.supxlabel(points.X_AXIS_LABEL, fontsize=STYLE.label_fs, y=0.015)
     _save(fig, f"panel_{stem}")
     return True
 
@@ -193,21 +208,30 @@ def draw_legend(handles, stem, title, ncol=None):
 
 
 def draw_legends():
-    """The four legends the six panels draw from between them: the two given
-    condition palettes, the inferred-target shapes, and the filled/open effort
-    encoding used where effort is given (1a and 2a)."""
+    """The three legends the six panels draw from between them: the two given
+    condition palettes and the inferred-target shapes.
+
+    There is deliberately no world-state legend. The panels that have a given
+    world state label both of its levels on their own top axis, so the only thing
+    left to say -- what the two states are states of -- goes in the figure
+    caption rather than a fourth artboard.
+    """
     for condition, stem in (
         ("intimacy_condition", "relationship"),
         ("desire_condition", "desire"),
     ):
         handles, title = points.condition_point_handles(condition, STYLE)
         draw_legend(handles, stem, title, ncol=2 if len(handles) > 2 else 1)
+    # One entry per line: the effort entry names a probability, so the three
+    # read as a list rather than a row of unequal-width chips.
     draw_legend(
         points.target_handles(["desire", "intimacy", "effort"], STYLE),
         "target",
         "Target of inference",
+        ncol=1,
     )
-    draw_legend(points.effort_fill_handles(STYLE), "effort", "Effort of low-risk share")
+    return 3
+
 
 
 def main():
@@ -223,8 +247,8 @@ def main():
             if draw_panel(slug, stem):
                 drawn.append(stem)
         draw_scatter_panel()
-        draw_legends()
-    print(f"\n{len(drawn)} panel(s) + 4 legends in {OUT_DIR}")
+        n_legends = draw_legends()
+    print(f"\n{len(drawn)} panel(s) + {n_legends} legend(s) in {OUT_DIR}")
 
 
 if __name__ == "__main__":

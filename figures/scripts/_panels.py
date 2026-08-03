@@ -32,7 +32,10 @@ ACTION_AXIS_LABELS = [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_A
 
 DESIRE_LEVELS = ["low", "high"]
 DESIRE_LABELS = {"low": "Low desire", "high": "High desire"}
-EFFORT_LABELS = {"low": "Low effort", "high": "High effort"}
+# "Easy"/"Hard", not "Low"/"High": the action axis already reads "Low-risk
+# share" / "High-risk share", so low/high there would name risk and effort
+# with the same word in one axis.
+EFFORT_LABELS = {"low": "Easy", "high": "Hard"}
 
 ZERO_LINE = dict(color="0.75", linestyle=(0, (4, 3)), linewidth=0.8, zorder=0)
 IDENTITY_LINE = dict(color="0.75", linestyle=(0, (4, 3)), linewidth=0.8, zorder=0)

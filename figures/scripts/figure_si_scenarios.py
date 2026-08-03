@@ -8,11 +8,12 @@ can see how much of the averaged pattern each individual scenario carries.
 Human data only -- the model's per-scenario predictions are deliberately not
 overlaid, so these read as the data behind the averages rather than as a fit
 check. Within a facet the encoding is the results figures' (see `_points.py`):
-x is the observed action, marker shape is the inferred latent, colour is the
-given relationship/desire condition, and filled vs open is the given effort
-condition where effort is given rather than inferred (1a and 2a). Error bars are
-95% subject-cluster bootstrap CIs; per-scenario cells are thin (often one
-observation per participant), so they are wide by design.
+x is the observed action, marker shape is the inferred latent, and colour is the
+given relationship/desire condition. Where the effort of the low-risk share is
+given rather than inferred (1a and 2a) each action splits into its two world
+states, joined by a line, with the states named in the caption rather than on
+every facet. Error bars are 95% subject-cluster bootstrap CIs; per-scenario cells
+are thin (often one observation per participant), so they are wide by design.
 
 No legend is drawn: these are assembled in Illustrator, where the legend is
 placed by hand. `figures/panels/legends/legend_*.pdf` carry the same encoding.
@@ -40,7 +41,7 @@ NCOLS = 4
 # markers and CI stems come down to keep a facet legible.
 STYLE = replace(
     points.PAPER,
-    markersize=3.6,
+    markersize=4.3,
     panel_w=1.5,
     panel_h=1.15,
     xtick_fs=6.5,
@@ -79,6 +80,9 @@ def draw_facet(ax, slug, cells, lim, *, xticklabels):
         style=STYLE,
         style_col=points.style_col(slug),
         xticklabels=xticklabels,
+        # 48 repetitions of "Easy Hard" across a 16-facet grid, at 5pt,
+        # would be noise; the caption names the two states instead.
+        state_labels=False,
     )
 
 

@@ -10,8 +10,14 @@ panels per study, columns Base | Discomfort-only | Full | Humans, with
   square = intimacy, triangle = effort), so the joint studies show both of
   their targets in one panel,
 - COLOR = the given condition (relationship for 1a/1b/3a, desire for 2a/2b/3b),
-- FILL = the given effort condition where effort is given rather than inferred
-  (filled = low effort, open = high effort, in 1a and 2a only).
+- the GIVEN EFFORT CONDITION, where effort is given rather than inferred (1a and
+  2a), splits each action into two labelled sub-groups on the axis, low then
+  high, with each condition's pair joined by a line. It is deliberately NOT a
+  marker style: a study that infers effort still has to draw its markers
+  somehow, and any style they take then also reads as one of the levels -- which
+  is exactly what made 1b look like it was all low-effort when it shared a
+  figure with 1a. Fill, size and marker shape all collide this way; the axis and
+  the connector do not. The slope of each line is the effort effect.
 
 Two styles remain. `PAPER` renders at `si` scale with the legends inline, for a
 figure that has to be self-contained (`figure_si_scenarios.py`). `POSTER` is the
@@ -49,7 +55,14 @@ import _panels as panels  # noqa: E402
 # Shape per inferred latent comes from plot_style (the visual source of truth).
 # Note figure_model_scatter.py reads against this convention -- there the shape is
 # the sub-study and the colour is the latent.
-DV_LEGEND_LABELS = {"desire": "Desire", "intimacy": "Intimacy", "effort": "Effort"}
+# The effort entry names the quantity, not the construct: what 1b/2b/3a/3b
+# infer is the probability that the world is the harder of the two states,
+# which is the same variable 1a/2a put on the axis as Easy | Hard.
+DV_LEGEND_LABELS = {
+    "desire": "Desire",
+    "intimacy": "Intimacy",
+    "effort": "P(low-risk share is hard)",
+}
 
 
 @dataclass(frozen=True)
@@ -89,6 +102,19 @@ class PointsStyle:
     # which also keeps the open (high-effort) markers' white fill clean.
     errbar_from_point: bool = False
     dodge_width: float = 0.72  # fraction of an action slot the points span
+    # Where a study's effort condition is GIVEN, each action splits into two
+    # labelled sub-groups (low | high) and the pair is joined by a line. These
+    # set that geometry, as fractions of dodge_width: the sub-group centres'
+    # separation, and the span the conditions occupy inside one sub-group.
+    split_sep_frac: float = 0.60
+    split_within_frac: float = 0.34
+    split_linewidth: float = 1.5
+    split_sublabel_frac: float = 0.85  # state names vs the action labels
+    split_sublabel_pad: float = -3.0  # state names' gap above the plot
+    # Title height in axes coords, applied to EVERY panel whether or not it has
+    # a top axis. Uniform so a stack of panels aligns on the title as well as on
+    # the axes box; a study without a top axis just leaves that strip empty.
+    title_y: float = 1.06
 
 
 # Height one legend entry-row adds to the figure, inches (at `si` font sizes).
@@ -163,7 +189,9 @@ def fill_spec(slug):
 
 def style_col(slug):
     """The given effort column when effort is given rather than inferred (1a,
-    2a), else None. Encoded as filled vs open markers."""
+    2a), else None. Where set, the action splits into two labelled sub-groups
+    joined by a line (see `iter_cells`); where None the study just has three
+    action groups."""
     return (
         "effort_condition"
         if "effort_condition" in data.condition_cols(slug)[1:]
@@ -256,16 +284,30 @@ def iter_cells(
     style_col=None,
     style_levels=("low", "high"),
 ):
-    """Yield (x, row, vcol, marker, cond, open_pt) for every cell a panel draws.
+    """Yield (x, row, vcol, marker, cond, level) for every cell a panel draws.
 
-    The dodge is: DV, then given condition, then the filled/open style level,
-    within each action slot -- so a cell's x is a stable function of its
-    condition across panels, and anything overlaid on a panel (the per-scenario
-    model dashes, say) lands on exactly the same positions as the points.
+    `level` is the given style level ("low"/"high") or None where the study has
+    no such condition.
+
+    Two layouts. Without a style column the dodge is DV, then given condition,
+    across the action slot. WITH one -- the given effort condition of 1a and 2a
+    -- the action splits into two sub-groups, low then high, each holding the
+    full set of conditions, and `draw_points` joins each condition's pair with a
+    line. The pair needs that separation to be joinable at all: interleaving the
+    two levels puts them one step apart, and a connector then hides behind its
+    own markers.
+
+    Either way a cell's x is a stable function of its condition across panels, so
+    anything overlaid on a panel lands on exactly the same positions.
     """
     styles = list(style_levels) if style_col else [None]
-    n_pts = len(value_cols) * len(fill_levels) * len(styles)
-    step = style.dodge_width / n_pts
+    n_inner = len(value_cols) * len(fill_levels)
+    if style_col:
+        sep = style.dodge_width * style.split_sep_frac
+        within = style.dodge_width * style.split_within_frac
+        step = within / n_inner
+    else:
+        step = style.dodge_width / n_inner
     for ai, action in enumerate(OBSERVED_ACTIONS):
         for di, (vcol, marker) in enumerate(value_cols):
             for cj, cond in enumerate(fill_levels):
@@ -278,16 +320,14 @@ def iter_cells(
                     row = cells[mask]
                     if row.empty:
                         continue
-                    gi = (di * len(fill_levels) + cj) * len(styles) + si
-                    x = ai - style.dodge_width / 2 + (gi + 0.5) * step
-                    yield (
-                        x,
-                        row.iloc[0],
-                        vcol,
-                        marker,
-                        cond,
-                        (style_col is not None and lvl == styles[-1]),
-                    )
+                    gi = di * len(fill_levels) + cj
+                    inner = -(within if style_col else style.dodge_width) / 2 + (
+                        gi + 0.5
+                    ) * step
+                    x = ai + inner
+                    if style_col:
+                        x += (si - (len(styles) - 1) / 2) * sep
+                    yield (x, row.iloc[0], vcol, marker, cond, lvl)
 
 
 def draw_points(
@@ -304,13 +344,24 @@ def draw_points(
     style_col=None,
     style_levels=("low", "high"),
     xticklabels=True,
+    state_labels=True,
 ):
-    """One points panel: marker per cell, optional human CI stems."""
+    """One points panel: marker per cell, optional human CI stems.
+
+    `state_labels=False` keeps the split layout and its connectors but omits the
+    secondary top axis naming the two states. Needed by the per-scenario SI
+    grids: 16 facets x 3 actions would repeat "Easy Hard" 48 times per figure,
+    at a size where it is unreadable anyway, so those name the states in the
+    caption instead.
+    """
     zero_kw = dict(panels.ZERO_LINE)
     if style.zero_lw:
         zero_kw["linewidth"] = style.zero_lw
     ax.axhline(0, **zero_kw)
-    for x, row, vcol, marker, cond, open_pt in iter_cells(
+    # Collected so each given-condition pair can be joined after the fact; the
+    # line is what marks the pairing now that fill no longer does.
+    pairs = {}
+    for x, row, vcol, marker, cond, level in iter_cells(
         cells,
         value_cols=value_cols,
         color_col=color_col,
@@ -320,17 +371,20 @@ def draw_points(
         style_levels=style_levels,
     ):
         y = row[vcol]
+        if level is not None:
+            # Keyed by action too: a (vcol, cond) bucket spans all three action
+            # slots, and joining across them would draw one line through the
+            # whole panel instead of one per action.
+            pairs.setdefault((row["action_label"], vcol, cond), []).append(
+                (x, y, level)
+            )
         ax.plot(
             x,
             y,
             marker,
-            markerfacecolor="white" if open_pt else colors[cond],
-            markeredgecolor=colors[cond] if open_pt else "white",
-            markeredgewidth=(
-                style.open_edgewidth if open_pt else style.filled_edgewidth
-            ),
             markersize=style.markersize,
             zorder=3,
+            **marker_fill(colors[cond], style),
         )
         if ci:
             lo, hi = row[f"{vcol}_ci_lower"], row[f"{vcol}_ci_upper"]
@@ -338,12 +392,57 @@ def draw_points(
             if style.errbar_from_point:
                 errbar["ecolor"] = colors[cond]
             ax.errorbar(x, y, yerr=[[y - lo], [hi - y]], fmt="none", **errbar)
+    for (_action, _vcol, cond), pts in pairs.items():
+        if len(pts) != len(style_levels):
+            continue  # a level with no data -- nothing to join
+        pts.sort(key=lambda t: list(style_levels).index(t[2]))
+        ax.plot(
+            [q[0] for q in pts],
+            [q[1] for q in pts],
+            "-",
+            color=colors[cond],
+            linewidth=style.split_linewidth,
+            solid_capstyle="round",
+            zorder=2,
+        )
+
     if xticklabels:
         ax.set_xticks(range(3), panels.ACTION_AXIS_LABELS)
     else:
         ax.set_xticks(range(3), [""] * 3)
     xtick_kw = {"labelsize": style.xtick_fs} if style.xtick_fs else {}
     ax.tick_params(axis="x", length=style.tick_len, width=style.tick_w, **xtick_kw)
+
+    if state_labels and xticklabels and style_col is not None:
+        # The given world state goes on a secondary TOP axis, so the bottom axis
+        # is identical to a study that has no such condition -- these panels get
+        # stacked on one, and two categorical labels sharing the space under a
+        # plot compete for which one names the action. No tick marks: the labels
+        # sit over their sub-groups, and marks would read as data positions.
+        sep = style.dodge_width * style.split_sep_frac
+        offsets = [
+            (si - (len(style_levels) - 1) / 2) * sep
+            for si in range(len(style_levels))
+        ]
+        top = ax.secondary_xaxis("top")
+        top.set_xticks(
+            [a + off for a in range(3) for off in offsets],
+            # style_levels are raw data values ("low"/"high"), not display words.
+            [
+                panels.EFFORT_LABELS.get(lvl, lvl)
+                for _a in range(3)
+                for lvl in style_levels
+            ],
+        )
+        base_fs = style.xtick_fs or plt.rcParams["xtick.labelsize"]
+        top.tick_params(
+            axis="x",
+            length=0,
+            pad=style.split_sublabel_pad,
+            labelsize=base_fs * style.split_sublabel_frac,
+        )
+        top.spines["top"].set_visible(False)
+
     ax.set_xlim(-0.6, 2.6)
     ax.set_ylim(-lim, lim)
 
@@ -368,7 +467,17 @@ def draw_row(axes, slug, human, model, *, style, keys, lim, titles, xticklabels=
             xticklabels=xticklabels,
         )
         if titles:
-            ax.set_title(data.PANEL_LABELS[key], fontsize=style.title_fs)
+            # A split study carries a secondary top axis (state ticks + its own
+            # label), so the column title has to clear both.
+            # y is given explicitly to defeat matplotlib's automatic title
+            # placement: it lifts a title that is wide enough to collide with the
+            # top-axis labels and leaves narrow ones alone, so "Discomfort-only"
+            # floated above "Base"/"Full"/"Humans" in the same row.
+            ax.set_title(
+                data.PANEL_LABELS[key],
+                fontsize=style.title_fs,
+                y=style.title_y,
+            )
         ytick_kw = {"labelsize": style.tick_fs} if style.tick_fs else {}
         if style.ytick_len is not None:
             ytick_kw["length"] = style.ytick_len
@@ -441,17 +550,34 @@ def ylabel_for(slug):
 # ------------------------------------------------------------------- legends
 
 
-def _grey_marker(marker, label, style, *, open_pt=False):
+def marker_fill(colour, style):
+    """Face/edge kwargs for one marker.
+
+    Every marker is solid. Fill deliberately carries NO meaning: the given
+    effort condition is shown by the split axis and the joining line instead
+    (see `iter_cells`). Encoding it in the marker collides as soon as a
+    given-effort study shares a figure with an inferred-effort one, because the
+    latter's markers must still be drawn in some style and that style then reads
+    as one of the levels.
+    """
+    return dict(
+        markerfacecolor=colour,
+        markeredgecolor="white",
+        markeredgewidth=style.filled_edgewidth,
+    )
+
+
+def _grey_marker(marker, label, style):
+    """A neutral-grey swatch drawn exactly as the panels draw their markers, so
+    the legend cannot describe an encoding the panels do not use."""
     return Line2D(
         [],
         [],
         linestyle="none",
         marker=marker,
-        markerfacecolor="white" if open_pt else "0.35",
-        markeredgecolor="0.35" if open_pt else "white",
-        markeredgewidth=style.open_edgewidth if open_pt else style.filled_edgewidth,
         markersize=style.markersize,
         label=label,
+        **marker_fill("0.35", style),
     )
 
 
@@ -459,14 +585,6 @@ def target_handles(names, style):
     """Shape legend for the inferred latents, in neutral grey so the shapes
     read as shape rather than palette."""
     return [_grey_marker(DV_MARKERS[n], DV_LEGEND_LABELS[n], style) for n in names]
-
-
-def effort_fill_handles(style):
-    """Filled vs open legend for the given effort-of-low-risk-share condition."""
-    return [
-        _grey_marker("o", panels.EFFORT_LABELS["low"], style),
-        _grey_marker("o", panels.EFFORT_LABELS["high"], style, open_pt=True),
-    ]
 
 
 def condition_point_handles(condition, style):
