@@ -44,7 +44,6 @@ Usage:
     uv run python model/lm/plot_si_validation.py
 """
 
-import hashlib
 import json
 import sys
 from pathlib import Path
@@ -55,6 +54,13 @@ import pandas as pd
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "model" / "cv"))
+from run_delta_io import (  # noqa: E402
+    WORLD_STATE_DV,
+    RunDeltasUnavailable,
+    load_per_run_deltas,
+)
+
 from plot_style import (  # noqa: E402
     ACTION_COLORS,
     ACTION_LABELS,
@@ -697,75 +703,10 @@ def fig_run_spread(figname="si_lm_run_spread"):
 # ------------------------------------------------------- figure 4b (all six)
 
 
-def _sha256(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-
-def load_run_deltas(study):
-    """The full model's per-run held-out belief updates for one study, as
-    `({delta_col: (cells, K) array}, sigma)`, or None when they aren't available.
-
-    Two sources, in order of authority:
-
-      1. `cv_preds_summary.json`, when its rows carry `<delta>_runs`. Those are
-         the CV run's own per-run values, written by the fold bodies.
-      2. `cv_run_deltas.json`, the sidecar `model/cv/run_deltas.py` recomputes
-         for a CV vintage from before the fold bodies kept them (which is every
-         study but 1a in the reported outputs). The sidecar records the SHA-256
-         of the `cv_preds_summary.json` it was gated against; a mismatch means CV
-         has been re-run since, so the study is skipped rather than plotted with
-         one vintage's spread against another's sigma.
-    """
-    out_dir = get_project_root() / "model" / "outputs" / study
-    preds_path = out_dir / "cv_preds_summary.json"
-    fit_path = out_dir / "fit_results.json"
-    if not preds_path.exists() or not fit_path.exists():
-        print(f"{study}: no CV/fit outputs yet — skipped in the run-spread figure")
-        return None
-    with open(fit_path) as f:
-        fits = json.load(f)
-    sigma = float(next(v for v in fits if v["model"] == "full")["param_sigma"])
-
-    with open(preds_path) as f:
-        rows = [r for r in json.load(f) if r["model"] == "full"]
-    if not rows:
-        print(f"{study}: cv_preds_summary.json has no `full` rows — skipped")
-        return None
-    run_keys = [k for k in rows[0] if k.startswith("delta_") and k.endswith("_runs")]
-    if run_keys:
-        return {
-            k[: -len("_runs")]: np.array([r[k] for r in rows]) for k in run_keys
-        }, sigma
-
-    side_path = out_dir / "cv_run_deltas.json"
-    if not side_path.exists():
-        print(
-            f"{study}: cv_preds_summary.json has no per-run deltas and no "
-            f"cv_run_deltas.json sidecar — run `uv run python "
-            f"model/cv/run_deltas.py --study {study}` first"
-        )
-        return None
-    with open(side_path) as f:
-        side = json.load(f)
-    stored_sha = side.get("source", {}).get("cv_preds_summary.json")
-    if stored_sha != _sha256(preds_path):
-        print(
-            f"{study}: cv_run_deltas.json was gated against a DIFFERENT "
-            f"cv_preds_summary.json than the one on disk — CV has been re-run "
-            f"since. Skipping rather than mixing vintages; regenerate with "
-            f"`uv run python model/cv/run_deltas.py --study {study}`."
-        )
-        return None
-    cells = side["cells"]
-    return {
-        k: np.array([c[f"{k}_runs"] for c in cells]) for k in side["delta_keys"]
-    }, sigma
-
-
-#: The two-state world-state DV, whose per-run spread behaves differently from the
-#: continuous latents' (it is a probability difference on a 2-point support, not a
-#: posterior mean over a 101-bin grid), so the figure colours it apart.
-WORLD_STATE_DELTA = "delta_effort"
+#: The two-state world-state DV is coloured apart from the continuous latents:
+#: its per-run spread behaves differently (it is a probability difference on a
+#: 2-point support, not a posterior mean over a 101-bin grid). Which DV that is
+#: comes from run_delta_io, shared with the results-LaTeX exporter.
 RUN_SPREAD_COLORS = {False: MEAN_COLOR, True: EFFORT_COLORS["high"]}
 
 
@@ -784,12 +725,18 @@ def fig_run_spread_all(figname="si_lm_run_spread_all"):
     """
     from study_registry import studies as _studies
 
+    outputs = get_project_root() / "model" / "outputs"
     rows = []
     for st in _studies():
-        loaded = load_run_deltas(st.slug)
-        if loaded is None:
+        try:
+            per_run, sigma = load_per_run_deltas(outputs / st.slug)
+        except RunDeltasUnavailable as e:
+            # A skip here loses one row of a summary figure, so it is a message
+            # rather than an error (the results-LaTeX exporter, where a missing
+            # number would become an undefined macro, lets the same exception
+            # propagate instead).
+            print(f"{st.slug}: {e} — skipped in the run-spread figure")
             continue
-        per_run, sigma = loaded
         for dv in st.dvs:
             if dv.delta_col not in per_run:
                 continue
@@ -800,7 +747,7 @@ def fig_run_spread_all(figname="si_lm_run_spread_all"):
                     "dv": dv.label,
                     "ratios": sds / sigma,
                     "sigma": sigma,
-                    "is_world": dv.delta_col == WORLD_STATE_DELTA,
+                    "is_world": dv.name == WORLD_STATE_DV,
                 }
             )
     if not rows:

@@ -55,8 +55,11 @@ sys.path.insert(0, str(_project_root / "model" / "cv"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 sys.path.insert(0, str(_project_root / "model" / "lm"))
 
+import numpy as np  # noqa: E402
+
 from _helpers import git_sha, verify_fit_manifest  # noqa: E402
 from model_comparison import _verify_cv_manifest  # noqa: E402
+from run_delta_io import WORLD_STATE_DV, load_per_run_deltas  # noqa: E402
 from study_registry import reported_base, studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
@@ -108,6 +111,32 @@ def _fmt_int(value):
 def _fmt_ci(ci, dp=DP_LL):
     lo, hi = ci
     return rf"\ensuremath{{[{lo:+.{dp}f},\ {hi:+.{dp}f}]}}"
+
+
+def _round_half_up(value, dp=0):
+    """Round half away from zero, not to even.
+
+    Python's formatting rounds half to even, which turns a genuine 62.5 into
+    "62". For a range quoted in prose that reads as an error rather than a
+    convention, so the endpoints round the way a reader checking them by hand
+    would."""
+    scale = 10**dp
+    return math.floor(value * scale + 0.5) / scale
+
+
+def _fmt_range(lo, hi, dp=0):
+    """A min--max range as one macro body, e.g. `14--19`.
+
+    Emitted whole rather than as two macros because the prose only ever uses
+    these as ranges, and a single token cannot be mis-paired with another
+    quantity's endpoint.
+
+    Wrapped in `\\mbox` so the `--` is always typeset in text mode: an en-dash
+    dropped inside `$...$` would silently become two minus signs, and the
+    exporter cannot see whether a call site is in math mode. The side effect --
+    the range will not break across lines -- is what you want for one anyway."""
+    body = f"{_fmt(_round_half_up(lo, dp), dp)}--{_fmt(_round_half_up(hi, dp), dp)}"
+    return rf"\mbox{{{body}}}"
 
 
 class Macros:
@@ -166,6 +195,57 @@ def load_study(slug):
     }
     deviation = {e["comparison"]: e for e in comparison.get("prereg_deviation", [])}
     return comparison, preds, full_fit, primary, deviation
+
+
+def _run_spread_macros(m, all_studies):
+    """The SI likelihood-check ranges: how big the elicitation mixture's own
+    within-cell spread is relative to the fitted response noise.
+
+    Reported as ranges over the per-(study, DV) summaries rather than per study,
+    because the result groups by the KIND of inferred variable, not by study: the
+    continuous latents sit at a small fraction of sigma everywhere, while the
+    two-state world state is several times that. Study 1a, which the SI check
+    originally generalized from, is the one study where the world state is given
+    and so cannot exhibit the second group at all.
+
+    `run_delta_io` raising here is deliberately fatal: an absent macro would
+    surface as an undefined control sequence at LaTeX time, far from the cause.
+    """
+    per_group = {False: {"median": [], "tail": []}, True: {"median": [], "tail": []}}
+    for study in all_studies:
+        outputs = get_project_root() / "model" / "outputs" / study.slug
+        per_run, sigma = load_per_run_deltas(outputs)
+        for dv in study.dvs:
+            if dv.delta_col not in per_run:
+                raise KeyError(
+                    f"{study.slug}: per-run deltas carry no {dv.delta_col}, but the "
+                    f"registry lists it as an inferred DV. Re-run `make run-deltas`."
+                )
+            ratios = per_run[dv.delta_col].std(axis=1) / sigma
+            group = per_group[dv.name == WORLD_STATE_DV]
+            group["median"].append(float(np.median(ratios)))
+            group["tail"].append(float(np.percentile(ratios, 90)))
+    for is_world, name in ((False, "Latent"), (True, "World")):
+        stats = per_group[is_world]
+        if not stats["median"]:
+            raise ValueError(
+                f"no {'world-state' if is_world else 'continuous-latent'} DVs found "
+                "across the studies being exported; the SI states both ranges."
+            )
+        for kind, key in (("Median", "median"), ("Tail", "tail")):
+            vals = [100.0 * v for v in stats[key]]
+            m.add(
+                f"runSpread{name}{kind}",
+                _fmt_range(min(vals), max(vals)),
+                "as a percentage of the fitted sigma, min--max over (study, DV)"
+                if (is_world, kind) == (False, "Median")
+                else None,
+            )
+    # How much a component spread s widens the predictive density on top of the
+    # response noise: sqrt(sigma^2 + s^2) / sigma. Quoted for the world state,
+    # where the spread is large enough for the widening to be worth stating.
+    widen = [math.sqrt(1.0 + s**2) for s in per_group[True]["median"]]
+    m.add("runSpreadWorldWidening", _fmt_range(min(widen), max(widen), dp=1))
 
 
 #: Gender categories as recorded in exit_survey.csv, and the macro suffix each
@@ -359,6 +439,9 @@ def build(all_studies):
         # eta exists only for reweighted variants; it is nested at zero, so an
         # absent eta is a fitted zero rather than missing data.
         m.add(f"pEta{tok}", _fmt(full_fit.get("param_eta", 0.0), DP_PARAM))
+
+    # --- SI likelihood check: the elicitation mixture's own spread ---
+    _run_spread_macros(m, all_studies)
 
     # Cross-study totals, for the abstract's overall N.
     m.add("nRecruitedTotal", _fmt_int(totals["recruited"]), "all six experiments")

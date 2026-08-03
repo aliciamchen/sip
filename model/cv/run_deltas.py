@@ -60,7 +60,6 @@ from _helpers import (  # noqa: E402
     delta_joint,
     delta_latent,
     read_jsonl,
-    sha256_file,
     write_json,
 )
 from _inverse_dispatcher import (  # noqa: E402
@@ -77,6 +76,7 @@ from _inverse_dispatcher import (  # noqa: E402
 )
 from _reweighting import FAMILY_BY_SLUG  # noqa: E402
 from run_config import RunConfig  # noqa: E402
+from run_delta_io import OUTPUT_NAME, sha256_file  # noqa: E402
 from study_registry import studies  # noqa: E402
 from tables import STUDY_SCENARIO_LABELS  # noqa: E402
 from utils import get_project_root  # noqa: E402
@@ -87,8 +87,6 @@ from utils import get_project_root  # noqa: E402
 #: any real divergence in the prediction path fails it — the deltas themselves are
 #: O(0.1), so this is a relative slack of ~1e-4.
 TOL = 1e-5
-
-OUTPUT_NAME = "cv_run_deltas.json"
 
 
 def _fold_params(row, utility_names):
