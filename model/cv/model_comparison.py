@@ -373,7 +373,7 @@ def compare_configs(slug, tag_a, tag_b, n_boot, seed):
     (subject, scenario)-matched LL differences get the standard participant
     bootstrap."""
     rng = np.random.default_rng(seed)
-    frames = {}
+    frames, source = {}, {}
     for tag in (tag_a, tag_b):
         d = _config_dir(slug, tag)
         path = d / "cv_trial_ll.jsonl"
@@ -381,11 +381,17 @@ def compare_configs(slug, tag_a, tag_b, n_boot, seed):
             raise FileNotFoundError(f"{path} missing — run CV for config {tag} first")
         _verify_cv_manifest(slug, d)
         frames[tag] = pd.DataFrame(read_jsonl(path))
+        # Hash of each side's primary CV output, so a consumer of this file (the
+        # results-LaTeX exporter) can tell that one of the two configs has been
+        # re-run since — which a verified manifest inside each dir cannot reveal,
+        # each being self-consistent on its own.
+        source[tag] = sha256_file(path)
     result = {
         "experiment": slug,
         "comparison": f"{tag_b}_minus_{tag_a}",
         "n_boot": n_boot,
         "seed": seed,
+        "source": {f"{tag}/cv_trial_ll.jsonl": sha for tag, sha in source.items()},
         "per_variant": [],
     }
     common = sorted(set(frames[tag_a]["model"]) & set(frames[tag_b]["model"]))

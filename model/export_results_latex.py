@@ -59,7 +59,11 @@ import numpy as np  # noqa: E402
 
 from _helpers import git_sha, verify_fit_manifest  # noqa: E402
 from model_comparison import _verify_cv_manifest  # noqa: E402
-from run_delta_io import WORLD_STATE_DV, load_per_run_deltas  # noqa: E402
+from run_delta_io import (  # noqa: E402
+    WORLD_STATE_DV,
+    load_per_run_deltas,
+    sha256_file,
+)
 from study_registry import reported_base, studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
@@ -195,6 +199,70 @@ def load_study(slug):
     }
     deviation = {e["comparison"]: e for e in comparison.get("prereg_deviation", [])}
     return comparison, preds, full_fit, primary, deviation
+
+
+#: The run-config tag the preregistered (eta = 0) fit + CV writes under, and the
+#: name `compare_configs` gives its comparison against the reported model. Must
+#: match `RunConfig.tag()` for `no_reweighting=True`; a mismatch here surfaces as
+#: a missing file with this path in the message, not as a silent skip.
+PREREG_TAG = "uniform-noreweight"
+PREREG_COMPARE_NAME = f"compare_{PREREG_TAG}_vs_reported.json"
+
+
+def _prereg_deviation_macros(m, tok, slug, reported_ll):
+    """The preregistered (eta = 0) model's held-out likelihood beside the
+    reported model's, and the paired difference between them.
+
+    The reweighting is a deviation from the preregistered specification, so these
+    are the numbers that say what the deviation bought. Read from the matched-trial
+    comparison rather than from the two configs' own summaries, so the difference
+    is paired trial-by-trial and its bootstrap resamples the same participants.
+
+    Returns the comparison entry, for the generated table.
+    """
+    outputs = get_project_root() / "model" / "outputs" / slug
+    path = outputs / "alt" / PREREG_COMPARE_NAME
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} missing -- the paper reports the preregistered model beside "
+            f"the reported one. Run `bin/prereg-eta0.sh`, then "
+            f"`model_comparison.py --study {slug} --compare-configs "
+            f"{PREREG_TAG} reported`."
+        )
+    comparison = json.loads(path.read_text())
+    # Both sides' CV must still be the run this comparison was computed from.
+    # Each dir's own manifest is self-consistent, so only these hashes can catch
+    # one config having been re-run since the comparison.
+    for rel, recorded in comparison.get("source", {}).items():
+        tag, _, name = rel.partition("/")
+        actual = (outputs if tag == "reported" else outputs / "alt" / tag) / name
+        if sha256_file(actual) != recorded:
+            raise ValueError(
+                f"{actual} has changed since {path.name} was computed -- the "
+                f"deviation numbers would describe a CV run that no longer "
+                f"exists. Re-run `model_comparison.py --study {slug} "
+                f"--compare-configs {PREREG_TAG} reported`."
+            )
+    entry = next((e for e in comparison["per_variant"] if e["variant"] == "full"), None)
+    if entry is None:
+        raise KeyError(f"{path} has no `full` variant entry")
+    # The comparison's own reported-side mean must agree with the one the primary
+    # statistics produced; they are computed from the same trials by different
+    # code paths, so a disagreement means the two vintages differ.
+    if not math.isclose(entry["mean_ll_b"], reported_ll, abs_tol=10 ** (-DP_LL)):
+        raise ValueError(
+            f"{slug}: the reported model's mean held-out LL is {reported_ll:.6f} in "
+            f"cv_model_comparison.json but {entry['mean_ll_b']:.6f} in {path.name} "
+            "-- mixed CV vintages. Re-run `make model-comparison` and the "
+            "--compare-configs call."
+        )
+    m.add(
+        f"llPrereg{tok}",
+        _fmt(entry["mean_ll_a"], DP_LL, signed=True),
+        "eta = 0 (preregistered) full model, mean per-trial held-out LL",
+    )
+    _contrast_macros(m, tok, "Reweight", entry, "reported - preregistered")
+    return entry
 
 
 def _run_spread_macros(m, all_studies):
@@ -387,6 +455,10 @@ def build(all_studies):
             _fmt(comparison["mean_held_out_ll_per_trial"]["full"], DP_LL, signed=True),
             "held-out LL / trial",
         )
+        # The preregistered (eta = 0) model beside it, for the deviation section.
+        _prereg_deviation_macros(
+            m, tok, slug, comparison["mean_held_out_ll_per_trial"]["full"]
+        )
         _contrast_macros(m, tok, "Base", primary[base_key], f"full - {base_key}")
         _contrast_macros(
             m, tok, "Disc", primary["discomfort_only"], "full - discomfort_only"
@@ -550,10 +622,43 @@ def fitted_params_table(all_studies):
     return _tabular("lccccccc", header, _rows(all_studies, cells))
 
 
+def prereg_deviation_table(all_studies):
+    """tab:prereg-deviation: the preregistered (eta = 0) model's held-out
+    likelihood beside the reported model's, with the paired difference.
+
+    Carries the fitted eta as its first column, because that is what makes the
+    pattern in the difference readable: the reweighting generalizes where eta
+    fits large and does not where it fits near zero. Study 1a has no eta -- the
+    scope rule grants it no reweighting -- so its two models are the same fit and
+    its difference is exactly zero, which the table shows rather than omits."""
+
+    def cells(study):
+        tok = token(study)
+        return " & ".join(
+            (
+                rf"\pEta{tok}",
+                rf"\llPrereg{tok}",
+                rf"\llFull{tok}",
+                rf"\statReweight{tok}",
+            )
+        )
+
+    header = "\n".join(
+        [
+            r" & & \multicolumn{2}{c}{Held-out LL / trial} & \\",
+            r"\cmidrule(lr){3-4}",
+            r"Study & $\eta$ & Preregistered & Reported & "
+            r"Reported $-$ preregistered \\",
+        ]
+    )
+    return _tabular("lcccc", header, _rows(all_studies, cells, domain_heading=5))
+
+
 def provenance():
     return (
         f"% git {git_sha()}  generated {datetime.now(timezone.utc).isoformat()}\n"
         f"% Source: model/outputs/<slug>/{{cv_model_comparison,fit_results}}.json\n"
+        f"%   and  model/outputs/<slug>/alt/{PREREG_COMPARE_NAME}\n"
     )
 
 
@@ -589,6 +694,9 @@ def main():
         ),
         "results_table_fitted_params.tex": (
             HEADER + provenance() + fitted_params_table(all_studies) + "\n"
+        ),
+        "results_table_prereg_deviation.tex": (
+            HEADER + provenance() + prereg_deviation_table(all_studies) + "\n"
         ),
     }
 

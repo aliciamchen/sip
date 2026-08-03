@@ -53,6 +53,7 @@ ANALYSIS_QMDS := \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-panels figures-si-scenarios \
         figures-si-model-scatter figures-si-prior-posterior \
+        figures-si-prereg-deviation \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -100,6 +101,7 @@ help:
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
 	@echo "  figures-si-model-scatter - per-study model-vs-human scatter grid (a diagnostic, not in the paper)"
 	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
+	@echo "  figures-si-prereg-deviation - reported vs preregistered (eta=0) held-out LL per study"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
 	@echo ""
@@ -571,6 +573,27 @@ $(SI_PRIORPOST): $(FIG_SCRIPTS)/figure_si_prior_posterior.py $(FIG_SHARED) \
 figures-si-prior-posterior: $(SI_PRIORPOST)
 
 # =============================================================================
+# SI preregistration-deviation figure: what the comparison-set reweighting bought
+# per study, out of sample. Reads the matched-trial comparisons that
+# `model_comparison.py --compare-configs uniform-noreweight reported` writes into
+# outputs/<slug>/alt/, which in turn need the preregistered fit + CV from
+# bin/prereg-eta0.sh. Those live outside the file graph (a non-default run config
+# writes under alt/, which no file target tracks), so this depends on the
+# comparison JSONs themselves and the script skips any study whose comparison is
+# absent, naming the command that produces it.
+# =============================================================================
+
+SI_DEVIATION := $(FIG_SI)/si_prereg_deviation.pdf
+PREREG_COMPARE := $(foreach s,$(EXPERIMENTS_INVERSE),\
+    $(wildcard model/outputs/$(s)/alt/compare_uniform-noreweight_vs_reported.json))
+
+$(SI_DEVIATION): $(FIG_SCRIPTS)/figure_si_prereg_deviation.py $(FIG_SHARED) \
+    $(PREREG_COMPARE)
+	uv run python $(FIG_SCRIPTS)/figure_si_prereg_deviation.py
+
+figures-si-prereg-deviation: $(SI_DEVIATION)
+
+# =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/si/
 # into the journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs
 # real, committed files — symlinks don't sync — so this physically copies them.
@@ -607,7 +630,8 @@ JOURNAL_FIGURES := \
   si_scenarios_study2b.pdf:si-scenarios-study2b.pdf \
   si_scenarios_study3a.pdf:si-scenarios-study3a.pdf \
   si_scenarios_study3b.pdf:si-scenarios-study3b.pdf \
-  si_prior_posterior_levels.pdf:si-prior-posterior-levels.pdf
+  si_prior_posterior_levels.pdf:si-prior-posterior-levels.pdf \
+  si_prereg_deviation.pdf:si-prereg-deviation.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }
