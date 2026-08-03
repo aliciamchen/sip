@@ -1,0 +1,40 @@
+[
+  {
+    "model": "full",
+    "experiment": "food_inv_intimacy",
+    "nll": -257.1617126464844,
+    "n_params": 6,
+    "param_alpha": 1.0,
+    "alpha_observer": 29.292747497558594,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.21782496571540833,
+    "param_w_v": 2.6192431449890137,
+    "param_w_d": 0.2624049484729767,
+    "param_w_e": 1.2864320278167725,
+    "param_gamma": 0.5025198459625244
+  },
+  {
+    "model": "discomfort_only",
+    "experiment": "food_inv_intimacy",
+    "nll": -192.76126098632812,
+    "n_params": 4,
+    "param_alpha": 1.0,
+    "alpha_observer": 35.10615539550781,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.2226337194442749,
+    "param_w_d": 0.18627797067165375,
+    "param_gamma": 1.0488609075546265
+  },
+  {
+    "model": "base",
+    "experiment": "food_inv_intimacy",
+    "nll": 831.0013427734375,
+    "n_params": 4,
+    "param_alpha": 1.0,
+    "alpha_observer": 1.9610717296600342,
+    "alpha_observer_at_bound": false,
+    "param_sigma": 0.3006818890571594,
+    "param_w_v": 0.004812367260456085,
+    "param_w_e": 1.1446189880371094
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "experiment": "food_inv_intimacy",
+  "comparison": "reported_minus_uniform-noreweight",
+  "n_boot": 1000,
+  "seed": 0,
+  "source": {
+    "uniform-noreweight/cv_trial_ll.jsonl": "0bd8c6b51fc7a4c297ab9610d772f0c2731b564ecee4972b9b7c1789e36f6217",
+    "reported/cv_trial_ll.jsonl": "d915b6190cda05c5047f81e2cd45b134f37f35382bbc7728161290818ce7b406"
+  },
+  "per_variant": [
+    {
+      "variant": "base",
+      "mean_ll_a": -0.21908331581364118,
+      "mean_ll_b": -0.21908331581364118,
+      "mean_per_trial_ll_diff": 0.0,
+      "ci_95": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "variant": "discomfort_only",
+      "mean_ll_a": 0.046788090785427575,
+      "mean_ll_b": 0.05615054220584646,
+      "mean_per_trial_ll_diff": 0.009362451420418886,
+      "ci_95": [
+        0.0053471944828724265,
+        0.013608907385257746
+      ]
+    },
+    {
+      "variant": "full",
+      "mean_ll_a": 0.051471099195121224,
+      "mean_ll_b": 0.060834087899040476,
+      "mean_per_trial_ll_diff": 0.009362988703919255,
+      "ci_95": [
+        0.004104571127835428,
+        0.014643520656115835
+      ]
+    }
+  ]
+}

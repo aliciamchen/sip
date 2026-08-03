@@ -1,0 +1,42 @@
+{
+  "experiment": "nonfood_inv_joint_ie",
+  "comparison": "reported_minus_uniform-noreweight",
+  "n_boot": 1000,
+  "seed": 0,
+  "source": {
+    "uniform-noreweight/cv_trial_ll.jsonl": "6b871965b09d092bbcd6c5e3d63a62c4f10e524e4c2005906931d96e45ad8ea5",
+    "reported/cv_trial_ll.jsonl": "21d2072bbf7a17d84431d45153738f7fafe204cfdf5b0c62ef9cf87f4bf3a913"
+  },
+  "per_variant": [
+    {
+      "variant": "base",
+      "mean_ll_a": -0.6148950510165271,
+      "mean_ll_b": -0.6266572582183265,
+      "mean_per_trial_ll_diff": -0.011762207201799425,
+      "ci_95": [
+        -0.014792760078083066,
+        -0.008775666644092368
+      ]
+    },
+    {
+      "variant": "discomfort_only",
+      "mean_ll_a": -0.602397127061331,
+      "mean_ll_b": -0.5988508026514735,
+      "mean_per_trial_ll_diff": 0.0035463244098575177,
+      "ci_95": [
+        0.0020120759995482045,
+        0.005310962120650195
+      ]
+    },
+    {
+      "variant": "full",
+      "mean_ll_a": -0.4822762973857026,
+      "mean_ll_b": -0.4885254563341121,
+      "mean_per_trial_ll_diff": -0.006249158948409457,
+      "ci_95": [
+        -0.009192207394590398,
+        -0.0032655198972265263
+      ]
+    }
+  ]
+}
