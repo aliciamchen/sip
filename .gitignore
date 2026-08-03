@@ -77,4 +77,11 @@ writing/
 # (Illustrator places PDFs, and a PNG beside each would double the repo's figure
 # weight for a preview that regenerates in seconds).
 figures/**/*.png
+
+# The per-study model-vs-human scatter is a diagnostic rather than a paper
+# figure (see figures/scripts/figure_si_model_scatter.py): nothing in the SI
+# cites it and the journal sync does not copy it, so its output is regenerated
+# on demand rather than committed alongside the figures that are in the paper.
+figures/si/si_model_scatter_all.pdf
+
 .agents/skills

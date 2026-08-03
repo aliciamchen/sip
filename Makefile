@@ -52,7 +52,7 @@ ANALYSIS_QMDS := \
         fit fit-inverse \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-panels figures-si-scenarios \
-        figures-si-model-scatter \
+        figures-si-model-scatter figures-si-prior-posterior \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -98,6 +98,7 @@ help:
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
 	@echo "  figures-si-model-scatter - per-study model-vs-human scatter grid (a diagnostic, not in the paper)"
+	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
 	@echo ""
@@ -524,6 +525,22 @@ $(SI_SCATTER): $(FIG_SCRIPTS)/figure_si_model_scatter.py $(FIG_SCRIPTS)/_agg.py 
 figures-si-model-scatter: $(SI_SCATTER)
 
 # =============================================================================
+# SI prior/posterior figures: the rating LEVELS behind the belief-update DV,
+# from the human data only (no model outputs, no CV). Two figures rather than
+# one two-panel figure, so each lands at \textwidth without being shrunk. Reads
+# main_trials_long.csv, which is already long on `stage`, so these depend on the
+# data CSVs alone. Witness on the first file; the script writes both.
+# =============================================================================
+
+SI_PRIORPOST := $(FIG_SI)/si_prior_posterior_levels.pdf
+
+$(SI_PRIORPOST): $(FIG_SCRIPTS)/figure_si_prior_posterior.py $(FIG_SHARED) \
+    $(foreach s,$(EXPERIMENTS_ALL),$(wildcard data/$(s)/main_trials_long.csv))
+	uv run python $(FIG_SCRIPTS)/figure_si_prior_posterior.py
+
+figures-si-prior-posterior: $(SI_PRIORPOST)
+
+# =============================================================================
 # Manuscript figures: copy a curated set of generated PDFs from figures/si/
 # into the journal Overleaf repo (SIP_journal/, its own git repo). Overleaf needs
 # real, committed files — symlinks don't sync — so this physically copies them.
@@ -558,7 +575,9 @@ JOURNAL_FIGURES := \
   si_scenarios_study2a.pdf:si-scenarios-study2a.pdf \
   si_scenarios_study2b.pdf:si-scenarios-study2b.pdf \
   si_scenarios_study3a.pdf:si-scenarios-study3a.pdf \
-  si_scenarios_study3b.pdf:si-scenarios-study3b.pdf
+  si_scenarios_study3b.pdf:si-scenarios-study3b.pdf \
+  si_prior_posterior_levels.pdf:si-prior-posterior-levels.pdf \
+  si_prior_posterior_distributions.pdf:si-prior-posterior-distributions.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }
