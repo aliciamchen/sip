@@ -27,6 +27,11 @@ built from whichever studies are present:
      figures 1-3 this reads the model's out-of-sample CV predictions
      (cv_preds_summary.json, produced by model/cv/cv_food_inv_desire.py) and is
      skipped with a message if they are missing.
+  4b. si_lm_run_spread_all — the same comparison as a summary across every study
+     and inferred DV, since sigma is fitted per study. Reads each study's per-run
+     deltas from cv_preds_summary.json, or from the cv_run_deltas.json sidecar
+     (model/cv/run_deltas.py) for CV vintages that predate the fold bodies
+     keeping them.
   5. si_lm_choice_set_sizes — distribution of the number of alternatives per
      scored choice set (cell x run), per study.
   6. si_lm_mixture_check — predictive check of the elicitation-sample mixture
@@ -39,6 +44,7 @@ Usage:
     uv run python model/lm/plot_si_validation.py
 """
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -688,6 +694,189 @@ def fig_run_spread(figname="si_lm_run_spread"):
     return savefig(fig, figname, **SAVE_KW)
 
 
+# ------------------------------------------------------- figure 4b (all six)
+
+
+def _sha256(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def load_run_deltas(study):
+    """The full model's per-run held-out belief updates for one study, as
+    `({delta_col: (cells, K) array}, sigma)`, or None when they aren't available.
+
+    Two sources, in order of authority:
+
+      1. `cv_preds_summary.json`, when its rows carry `<delta>_runs`. Those are
+         the CV run's own per-run values, written by the fold bodies.
+      2. `cv_run_deltas.json`, the sidecar `model/cv/run_deltas.py` recomputes
+         for a CV vintage from before the fold bodies kept them (which is every
+         study but 1a in the reported outputs). The sidecar records the SHA-256
+         of the `cv_preds_summary.json` it was gated against; a mismatch means CV
+         has been re-run since, so the study is skipped rather than plotted with
+         one vintage's spread against another's sigma.
+    """
+    out_dir = get_project_root() / "model" / "outputs" / study
+    preds_path = out_dir / "cv_preds_summary.json"
+    fit_path = out_dir / "fit_results.json"
+    if not preds_path.exists() or not fit_path.exists():
+        print(f"{study}: no CV/fit outputs yet — skipped in the run-spread figure")
+        return None
+    with open(fit_path) as f:
+        fits = json.load(f)
+    sigma = float(next(v for v in fits if v["model"] == "full")["param_sigma"])
+
+    with open(preds_path) as f:
+        rows = [r for r in json.load(f) if r["model"] == "full"]
+    if not rows:
+        print(f"{study}: cv_preds_summary.json has no `full` rows — skipped")
+        return None
+    run_keys = [k for k in rows[0] if k.startswith("delta_") and k.endswith("_runs")]
+    if run_keys:
+        return {
+            k[: -len("_runs")]: np.array([r[k] for r in rows]) for k in run_keys
+        }, sigma
+
+    side_path = out_dir / "cv_run_deltas.json"
+    if not side_path.exists():
+        print(
+            f"{study}: cv_preds_summary.json has no per-run deltas and no "
+            f"cv_run_deltas.json sidecar — run `uv run python "
+            f"model/cv/run_deltas.py --study {study}` first"
+        )
+        return None
+    with open(side_path) as f:
+        side = json.load(f)
+    stored_sha = side.get("source", {}).get("cv_preds_summary.json")
+    if stored_sha != _sha256(preds_path):
+        print(
+            f"{study}: cv_run_deltas.json was gated against a DIFFERENT "
+            f"cv_preds_summary.json than the one on disk — CV has been re-run "
+            f"since. Skipping rather than mixing vintages; regenerate with "
+            f"`uv run python model/cv/run_deltas.py --study {study}`."
+        )
+        return None
+    cells = side["cells"]
+    return {
+        k: np.array([c[f"{k}_runs"] for c in cells]) for k in side["delta_keys"]
+    }, sigma
+
+
+#: The two-state world-state DV, whose per-run spread behaves differently from the
+#: continuous latents' (it is a probability difference on a 2-point support, not a
+#: posterior mean over a 101-bin grid), so the figure colours it apart.
+WORLD_STATE_DELTA = "delta_effort"
+RUN_SPREAD_COLORS = {False: MEAN_COLOR, True: EFFORT_COLORS["high"]}
+
+
+def fig_run_spread_all(figname="si_lm_run_spread_all"):
+    """Within-cell run spread against the fitted response noise, for every study
+    and every inferred DV.
+
+    The companion to `fig_run_spread`, which works one study's spread through in
+    detail. sigma is fitted per study, so whether the elicitation mixture's
+    components sit close together *relative to sigma* is a claim that has to be
+    checked per study rather than generalized from Study 1a — and Study 1a is the
+    one study with no inferred world state, so it cannot show what the
+    world-state DV does. Each row is one (study, DV): points are the individual
+    held-out cells, the tick is the median, the bar spans the 10th-90th
+    percentile, and the rule at 1 marks a run spread equal to the response noise.
+    """
+    from study_registry import studies as _studies
+
+    rows = []
+    for st in _studies():
+        loaded = load_run_deltas(st.slug)
+        if loaded is None:
+            continue
+        per_run, sigma = loaded
+        for dv in st.dvs:
+            if dv.delta_col not in per_run:
+                continue
+            sds = per_run[dv.delta_col].std(axis=1)
+            rows.append(
+                {
+                    "study": STUDY_LABELS[st.slug].replace("Study ", ""),
+                    "dv": dv.label,
+                    "ratios": sds / sigma,
+                    "sigma": sigma,
+                    "is_world": dv.delta_col == WORLD_STATE_DELTA,
+                }
+            )
+    if not rows:
+        print("skipping all-study run-spread figure: no per-run deltas available")
+        return None
+
+    rng = np.random.default_rng(0)  # jitter only — no inference depends on it
+    fig, ax = plt.subplots(figsize=(6.4, 0.42 * len(rows) + 1.15))
+    ax.axvline(1.0, color=ALT_GREY, ls="--", lw=1.0, zorder=1)
+    for i, r in enumerate(rows):
+        y = len(rows) - 1 - i  # paper order top-to-bottom
+        c = RUN_SPREAD_COLORS[r["is_world"]]
+        ax.scatter(
+            r["ratios"],
+            y + rng.uniform(-0.17, 0.17, r["ratios"].size),
+            s=3.5,
+            color=c,
+            alpha=0.35,
+            lw=0,
+            zorder=3,
+        )
+        lo, hi = np.percentile(r["ratios"], [10, 90])
+        ax.plot([lo, hi], [y, y], color=c, lw=1.2, alpha=0.9, zorder=4)
+        ax.plot(
+            [np.median(r["ratios"])] * 2,
+            [y - 0.26, y + 0.26],
+            color=c,
+            lw=2.0,
+            zorder=5,
+        )
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels(
+        [f"{r['study']}  {r['dv'].lower()}" for r in reversed(rows)], fontsize=9
+    )
+    ax.set_ylim(-0.7, len(rows) - 0.3)
+    ax.set_xlim(0, max(1.05, max(r["ratios"].max() for r in rows) * 1.04))
+    ax.set_xlabel(
+        "Within-cell SD of the per-run predictions $\\delta_k$, "
+        "relative to the fitted $\\sigma$"
+    )
+    ax.annotate(
+        "spread = $\\sigma$",
+        (1.0, len(rows) - 0.35),
+        xytext=(-4, 0),
+        textcoords="offset points",
+        ha="right",
+        va="top",
+        fontsize=9,
+        color=ALT_GREY,
+    )
+    ax.legend(
+        handles=[
+            Line2D(
+                [], [], color=RUN_SPREAD_COLORS[False], lw=2, label="continuous latent"
+            ),
+            Line2D(
+                [],
+                [],
+                color=RUN_SPREAD_COLORS[True],
+                lw=2,
+                label="two-state world state",
+            ),
+        ],
+        loc="lower right",
+        fontsize=9,
+    )
+    for r in rows:
+        print(
+            f"run spread {r['study']} {r['dv']}: median SD/sigma = "
+            f"{np.median(r['ratios']):.3f}, p90 = {np.percentile(r['ratios'], 90):.3f} "
+            f"(sigma = {r['sigma']:.3f}, {r['ratios'].size} cells)"
+        )
+    fig.tight_layout()
+    return savefig(fig, figname, **SAVE_KW)
+
+
 # ---------------------------------------------------------------- figure 5
 
 
@@ -844,6 +1033,7 @@ def main():
     figures = [
         fig_feature_structure(observed, studies, figname="si_lm_feature_structure_all"),
         fig_run_spread(figname="si_lm_run_spread_1a"),
+        fig_run_spread_all(figname="si_lm_run_spread_all"),
         fig_mixture_check(figname="si_lm_mixture_check_1a"),
     ]
     with plt.rc_context(SI_LARGE_RC):

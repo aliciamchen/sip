@@ -89,6 +89,7 @@ help:
 	@echo "  fit        - fit all active experiments"
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
+	@echo "  run-deltas       - per-run held-out deltas behind each cell mean (SI run-spread figure)"
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
@@ -130,9 +131,10 @@ help:
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
-	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = preregistered):"
-	@echo "    PRIORS=informative[:<latents>]  PRIORS_FILE=<name>"
-	@echo "    (informative priors route outputs to model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
+	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = the reported config):"
+	@echo "    PRIORS=informative[:<latents>]  PRIORS_FILE=<name>  NO_REWEIGHTING=1"
+	@echo "    (NO_REWEIGHTING=1 fits the preregistered model: no comparison-set reweighting.)"
+	@echo "    (any non-default config writes model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
 	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
 	@echo "  e.g. make fit-food_inv_desire"
@@ -331,15 +333,23 @@ $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
 # recipe writes the whole set atomically, and `clean` removes it as a set.
 # =============================================================================
 
-# Run-config passthrough for fit-/cv- targets (preregistered when unset), e.g.:
+# Run-config passthrough for fit-/cv- targets (the reported config when unset), e.g.:
 #   make fit-food_inv_joint_de PRIORS=informative
 #   make cv-food_inv_joint_de PRIORS=informative:desire PRIORS_FILE=lm_priors_human.jsonl
-# With every var empty CONFIG_FLAGS is empty, so the recipes stay the preregistered
-# preregistered invocation (uniform priors, outputs/<slug>/); informative priors
-# route the fit/CV to outputs/<slug>/alt/<tag>/ instead.
+#   make fit-food_inv_joint_de NO_REWEIGHTING=1     # the preregistered model
+# With every var empty CONFIG_FLAGS is empty, so the recipes stay the reported
+# invocation (uniform priors, the comparison-set reweighting, outputs/<slug>/).
+# Any non-default config routes the fit/CV to outputs/<slug>/alt/<tag>/ instead.
+#
+# Note that the file targets below are the study-root paths, so a non-default
+# config's outputs are invisible to make: `make fit-<slug> NO_REWEIGHTING=1`
+# re-runs every time and, worse, is a no-op when the ROOT output is already
+# current. Drive multi-study non-default runs from a script that calls the fit/CV
+# modules directly (see bin/) rather than through these targets.
 PRIORS ?=
 PRIORS_FILE ?=
-CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE))
+NO_REWEIGHTING ?=
+CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE)) $(if $(NO_REWEIGHTING),--no-reweighting)
 
 define MODEL_PIPELINE_RULES
 model/outputs/$(1)/fit_results.json: \
@@ -422,6 +432,26 @@ $(CMP_WITNESS): $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_l
 	uv run python model/cv/model_comparison.py
 
 model-comparison: $(CMP_WITNESS)
+
+# =============================================================================
+# Per-run held-out deltas → outputs/<slug>/cv_run_deltas.json: the K per-run
+# predictions behind each held-out cell's mean, which the SI run-spread figure
+# reads to compare the elicitation mixture's own spread against the fitted sigma.
+#
+# A recompute rather than a re-run: the fold parameters in cv_folds.jsonl are all
+# the forward pass needs, so this recovers the per-run values from the REPORTED CV
+# outputs without refitting and without re-vintaging them. It gates itself — the
+# recomputed means must reproduce the stored predictions — and Study 1a, whose CV
+# outputs already carry the per-run values, is the control the gate checks
+# element-wise (so it writes no sidecar of its own).
+#
+# Not a file target: the recompute takes seconds and depends on the whole CV
+# output set, which the file graph tracks through cv_trial_ll.jsonl.
+# =============================================================================
+
+.PHONY: run-deltas
+run-deltas: $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_ll.jsonl)
+	uv run python model/cv/run_deltas.py
 
 # =============================================================================
 # Results LaTeX (SIP_journal/): every number the results section states, as
@@ -569,6 +599,7 @@ JOURNAL_FIGURES := \
   si_lm_alternatives_set_similarity_all.pdf:si-lm-alternatives-set-similarity.pdf \
   si_lm_base_vs_full_1a_1b_3a.pdf:si-lm-base-vs-full.pdf \
   si_lm_run_spread_1a.pdf:si-lm-run-spread.pdf \
+  si_lm_run_spread_all.pdf:si-lm-run-spread-all.pdf \
   si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf \
   si_scenarios_study1a.pdf:si-scenarios-study1a.pdf \
   si_scenarios_study1b.pdf:si-scenarios-study1b.pdf \

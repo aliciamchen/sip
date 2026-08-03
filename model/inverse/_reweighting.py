@@ -63,18 +63,26 @@ STUDY_CONTRASTIVE = {
 TARGET_REQUIRES_WEIGHT = {"world": "w_e", "intimacy": "w_d"}
 
 
-def variant_targets(slug, utility_param_names):
+def variant_targets(slug, utility_param_names, enabled=True):
     """The reweighted targets for one (study, variant): the study's
     contrastive-only questions, minus those whose utility channel this variant
-    lacks. Empty tuple means no reweighting and no eta for this variant."""
+    lacks. Empty tuple means no reweighting and no eta for this variant.
+
+    `enabled=False` (the run config's `--no-reweighting`) empties the targets for
+    every (study, variant), which is how the PREREGISTERED model is reached: one
+    switch, applied at the single place the scope rule is evaluated, so the fit,
+    the CV fold refits, and the warm-start vector's extras cannot disagree about
+    whether eta exists."""
+    if not enabled:
+        return ()
     have = set(utility_param_names)
     return tuple(
         t for t in STUDY_CONTRASTIVE[slug] if TARGET_REQUIRES_WEIGHT[t] in have
     )
 
 
-def uses_reweighting(slug, utility_param_names):
-    return len(variant_targets(slug, utility_param_names)) > 0
+def uses_reweighting(slug, utility_param_names, enabled=True):
+    return len(variant_targets(slug, utility_param_names, enabled)) > 0
 
 
 def sensitivity(target, table_kwargs):
@@ -206,20 +214,28 @@ def _actor(family, variant):
     stays importable in contexts that never build an actor."""
     import actors
 
-    prefix = "actor_discrete" if family in ("desire", "joint_de") else "actor_continuous"
+    prefix = (
+        "actor_discrete" if family in ("desire", "joint_de") else "actor_continuous"
+    )
     name = _ACTOR_ALIAS.get(variant, variant)
     return getattr(actors, f"{prefix}_{name}_padded_{family}")
 
 
-def config_for(slug, variant, utility_param_names):
+def config_for(slug, variant, utility_param_names, enabled=True):
     """Reweighting config for one (study, variant), or None when the rule grants
     none (in which case the fit is the preregistered one and gains no parameter).
 
     Returned dict is what the `fit_*_observer_joint` helpers accept as
     `reweighting=`: the slug (for the scope rule), the variant's actor, and the
     resolved targets for logging/provenance.
+
+    `enabled=False` returns None for every (study, variant) — see
+    `variant_targets`. Note the None-means-preregistered invariant then does
+    double duty: it already covered the studies and ablations the scope rule
+    exempts, and now covers the whole-run switch too, so no caller needs a
+    second code path.
     """
-    targets = variant_targets(slug, utility_param_names)
+    targets = variant_targets(slug, utility_param_names, enabled)
     if not targets:
         return None
     return {

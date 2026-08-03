@@ -1204,16 +1204,56 @@ def test_load_lm_priors_base_broadcasts_relationship():
 
 
 def test_parse_run_config_args_defaults():
-    """No flags → the preregistered RunConfig (uniform priors, no alts suffix, no
-    priors-file override), which routes outputs to outputs/<slug>/."""
+    """No flags → the default RunConfig (uniform priors, no alts suffix, no
+    priors-file override, reweighting on), which routes outputs to
+    outputs/<slug>/. This is the reported config, so a plain invocation of any
+    fit or CV script must keep reproducing the paper's numbers in place."""
     from _helpers import parse_run_config_args
 
     from run_config import RunConfig
 
     cfg = parse_run_config_args([])
-    assert cfg == RunConfig(), f"defaults not the preregistered config: {cfg}"
-    assert cfg.is_preregistered
-    print("✓ parse_run_config_args defaults to the preregistered config")
+    assert cfg == RunConfig(), f"defaults not the reported config: {cfg}"
+    assert cfg.is_default
+    assert not cfg.no_reweighting
+    print("✓ parse_run_config_args defaults to the reported config")
+
+
+def test_parse_run_config_args_no_reweighting():
+    """--no-reweighting must reach the scope rule and empty it for every
+    (study, variant) — the switch is what makes the preregistered model
+    runnable, and a config that parsed the flag but left the reweighting on
+    would look right while fitting the reported model into the prereg's
+    directory."""
+    import _reweighting
+    from _helpers import parse_run_config_args
+
+    cfg = parse_run_config_args(["--no-reweighting"])
+    assert cfg.no_reweighting
+    assert not cfg.is_default
+    # Every reweighted (study, variant) pair in the roster must go quiet, and
+    # `None` is the fit helpers' preregistered path.
+    reweighted = [
+        (slug, "full")
+        for slug, targets in _reweighting.STUDY_CONTRASTIVE.items()
+        if targets
+    ]
+    assert reweighted, "no reweighted studies to check — STUDY_CONTRASTIVE is empty"
+    for slug, variant in reweighted:
+        names = ["w_v", "w_d", "w_e", "gamma"]
+        assert _reweighting.uses_reweighting(slug, names), (
+            f"{slug}/{variant} is not reweighted by default — fix the fixture"
+        )
+        assert not _reweighting.uses_reweighting(
+            slug, names, enabled=not cfg.no_reweighting
+        ), f"{slug}/{variant} still reweights under --no-reweighting"
+        assert (
+            _reweighting.config_for(
+                slug, variant, names, enabled=not cfg.no_reweighting
+            )
+            is None
+        ), f"{slug}/{variant} still built a reweighting config"
+    print("✓ --no-reweighting disables the reweighting for every study")
 
 
 def test_parse_run_config_args_informative():
@@ -1232,7 +1272,7 @@ def test_parse_run_config_args_informative():
     assert cfg.priors_mode == "informative"
     assert cfg.priors_latents == ("desire",)
     assert cfg.priors_file == "lm_priors_human.jsonl"
-    assert not cfg.is_preregistered
+    assert not cfg.is_default
     print("✓ parse_run_config_args parses informative priors + file")
 
 
@@ -1857,6 +1897,7 @@ def run_all_tests():
     test_load_lm_priors_out_of_range_raises()
     test_load_lm_priors_base_broadcasts_relationship()
     test_parse_run_config_args_defaults()
+    test_parse_run_config_args_no_reweighting()
     test_parse_run_config_args_informative()
     test_build_priors_kwarg_uniform_is_none()
     test_build_priors_kwarg_empty_active_raises()

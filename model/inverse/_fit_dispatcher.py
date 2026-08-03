@@ -249,7 +249,12 @@ def main(slug, config=None, description=None):
             f"({len(utility_names)} weights + alpha_observer + sigma)...\n"
             f"{'-' * 40}"
         )
-        rw = _reweighting.config_for(slug, variant_name, list(utility_names))
+        rw = _reweighting.config_for(
+            slug,
+            variant_name,
+            list(utility_names),
+            enabled=not config.no_reweighting,
+        )
         params, nll, restarts = fitter(
             observer_fn=obs_fn,
             utility_param_names=utility_names,
@@ -278,7 +283,7 @@ def main(slug, config=None, description=None):
     output_dir = config.outputs_dir(slug)
     output_dir.mkdir(parents=True, exist_ok=True)
     print(
-        f"config: {config.tag() if not config.is_preregistered else 'preregistered'} "
+        f"config: {config.tag() if not config.is_default else 'reported'} "
         f"-> {output_dir}"
     )
     print("\n" + "=" * 60 + "\nRESULTS SUMMARY\n" + "=" * 60)

@@ -14,9 +14,13 @@ Outputs per `outputs/<slug>/`:
     by participant).
   - `cv_preds_summary.json` — the secondary descriptive prediction: the model
     belief update `delta_<latent>` per held-out cell × variant (for the
-    condition-averaged model-vs-human correlation). The desire study additionally
-    carries `delta_desire_runs` (the K per-run held-out deltas per cell), used by
-    the SI run-spread and mixture-check figures.
+    condition-averaged model-vs-human correlation), plus `delta_<latent>_runs`,
+    the K per-run held-out deltas the mean was taken over. Those are the
+    mixture's own components, and the SI run-spread / mixture-check figures read
+    them to show the within-cell run spread against the fitted sigma.
+    `PER_RUN_DELTA_KEYS` names them per family. Only the desire study wrote them
+    until 2026-08-03; older CV outputs for the other five carry the means only,
+    and `cv/run_deltas.py` recomputes the runs for a vintage that predates this.
   - `cv_folds.jsonl` — per-fold refit diagnostics (params, train/test NLL).
 
 Each `main_*()` runs end-to-end for one experiment and is exposed through the
@@ -128,6 +132,18 @@ EFFORT_PRIOR_MEAN_F = float(EFFORT_PRIOR_MEAN)  # 2-state effort prior mean (= 0
 # stores intimacy_condition as a slug — never a numeric code).
 INTIMACY_IDX_TO_LEVEL = dict(enumerate(INTIMACY_CONDITIONS))
 N_ACTIONS = int(len(actions))
+# The belief-update prediction each family writes per held-out cell, in the order
+# its fold body computes them. `cv_preds_summary.json` carries `<key>` (the mean
+# over elicitation runs) and `<key>_runs` (the K per-run values). Single source of
+# truth for consumers that need to know which deltas a study has — the SI
+# run-spread figure and `run_deltas.py`, which must agree with the fold bodies
+# about both the names and the order.
+PER_RUN_DELTA_KEYS = {
+    "desire": ("delta_desire",),
+    "intimacy": ("delta_intimacy",),
+    "joint_de": ("delta_desire", "delta_effort"),
+    "joint_ie": ("delta_intimacy", "delta_effort"),
+}
 # Restarts per fold refit. Each refit warm-starts from the full-data fit (see
 # `full_fit` below) — a leave-one-scenario-out refit only perturbs it slightly —
 # but the full-data fit saw the held-out scenario, so a warm start alone would
@@ -401,9 +417,18 @@ def _rw_cached(slug, variant):
     no eta). Cheap enough not to cache, but kept symmetrical with
     `_priors_cached` so the fold bodies read the same way. Utility names come
     from the family registry (as in `_tk_cached`), not the worker state, which
-    carries only family/slug/arrays/config."""
+    carries only family/slug/arrays/config.
+
+    `--no-reweighting` (the preregistered model) disables it for every variant;
+    the flag is read from the worker's own config copy, so parallel workers and
+    the sequential path agree by construction."""
     _, utility_names = _FAMILIES[_CV_W["family"]]["variants"][variant]
-    return _reweighting.config_for(slug, variant, list(utility_names))
+    return _reweighting.config_for(
+        slug,
+        variant,
+        list(utility_names),
+        enabled=not _CV_W["config"].no_reweighting,
+    )
 
 
 def _priors_cached(slug, variant):
@@ -538,7 +563,11 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
     # start's extras are per variant, not shared.
     def _extras(variant, util):
         return extra + (
-            ("eta",) if _reweighting.uses_reweighting(slug, list(util)) else ()
+            ("eta",)
+            if _reweighting.uses_reweighting(
+                slug, list(util), enabled=not config.no_reweighting
+            )
+            else ()
         )
 
     # Warm-start source: the full-data fit under THIS config (refits perturb it
@@ -578,7 +607,7 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
         patience,
         N_RESTARTS_CV,
         config_fields={
-            "tag": config.tag() if not config.is_preregistered else "preregistered",
+            "tag": config.tag() if not config.is_default else "reported",
             "runs": "lm_runs.jsonl",
             "priors": (
                 config.priors_filename(False)
@@ -744,6 +773,9 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
                         "desire_condition": "low" if r == 0 else "high",
                         "effort_condition": "low" if e == 0 else "high",
                         "delta_intimacy": float(deltas.mean()),
+                        # The K per-run deltas behind that mean — the mixture's
+                        # components. See PER_RUN_DELTA_KEYS.
+                        "delta_intimacy_runs": [float(x) for x in deltas],
                         "model": variant,
                     }
                 )
@@ -896,10 +928,8 @@ def _fold_impl_desire(variant, fold, warm, patience):
                         "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                         "effort_condition": "low" if e == 0 else "high",
                         "delta_desire": float(deltas.mean()),
-                        # Per-elicitation-sample held-out deltas for this
-                        # cell, kept for the SI run-spread + mixture-check figures.
-                        # Out-of-sample: predicted from the fold that held this
-                        # scenario out.
+                        # The K per-run deltas behind that mean — the mixture's
+                        # components. See PER_RUN_DELTA_KEYS.
                         "delta_desire_runs": [float(x) for x in deltas],
                         "model": variant,
                     }
@@ -1069,6 +1099,10 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
                     "intimacy_condition": INTIMACY_IDX_TO_LEVEL[rel_idx],
                     "delta_desire": float(d_desire.mean()),
                     "delta_effort": float(d_effort.mean()),
+                    # The K per-run deltas behind those means — the mixture's
+                    # components. See PER_RUN_DELTA_KEYS.
+                    "delta_desire_runs": [float(x) for x in d_desire],
+                    "delta_effort_runs": [float(x) for x in d_effort],
                     "model": variant,
                 }
             )
@@ -1239,6 +1273,10 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
                     "desire_condition": "low" if r == 0 else "high",
                     "delta_intimacy": float(d_intimacy.mean()),
                     "delta_effort": float(d_effort.mean()),
+                    # The K per-run deltas behind those means — the mixture's
+                    # components. See PER_RUN_DELTA_KEYS.
+                    "delta_intimacy_runs": [float(x) for x in d_intimacy],
+                    "delta_effort_runs": [float(x) for x in d_effort],
                     "model": variant,
                 }
             )

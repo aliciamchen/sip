@@ -249,13 +249,15 @@ def test_wrappers_are_thin_and_route_to_their_own_slug():
 
 
 def test_default_config_writes_the_study_root():
-    """The preregistered config must keep writing outputs/<slug>/ -- the path
-    every committed fit, CV warm start, and figure already reads."""
+    """The default config must keep writing outputs/<slug>/ -- the path every
+    committed fit, CV warm start, and figure already reads. It is the REPORTED
+    config, not the preregistered one: `--no-reweighting` fits the preregistered
+    model and is routed under alt/ precisely so it cannot land here."""
     cfg = RunConfig()
     for slug in ROSTER:
         assert cfg.outputs_dir(slug).name == slug, slug
         assert "alt" not in cfg.outputs_dir(slug).parts
-    print("✓ preregistered config writes the study root")
+    print("✓ default (reported) config writes the study root")
 
 
 def test_warm_start_round_trips_for_every_fitted_variant():

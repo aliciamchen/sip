@@ -44,9 +44,10 @@ from utils import get_project_root
 
 def parse_run_config_args(argv=None, description=None):
     """Shared CLI for the fit wrappers and CV scripts: the run configuration.
-    The default (no flags) is the preregistered config — uniform priors,
-    the unsuffixed lm_runs.jsonl vintage, outputs to outputs/<slug>/ — so a plain
-    invocation stays byte-identical to the pre-config pipeline."""
+    The default (no flags) is the reported config — uniform priors, the
+    unsuffixed lm_runs.jsonl vintage, the comparison-set reweighting where its
+    scope rule applies, outputs to outputs/<slug>/ — so a plain invocation stays
+    byte-identical to the pre-config pipeline."""
     import argparse
 
     from run_config import RunConfig
@@ -62,8 +63,15 @@ def parse_run_config_args(argv=None, description=None):
         default=None,
         help="override the priors JSONL name (e.g. lm_priors_human.jsonl)",
     )
+    p.add_argument(
+        "--no-reweighting",
+        action="store_true",
+        help="fit the PREREGISTERED model: no comparison-set reweighting, no eta "
+        "parameter. Outputs go to outputs/<slug>/alt/<tag>/, never over the "
+        "reported ones.",
+    )
     a = p.parse_args(argv)
-    return RunConfig.parse(a.priors, a.priors_file)
+    return RunConfig.parse(a.priors, a.priors_file, a.no_reweighting)
 
 
 # Optional upper bound on the observer inverse temperature. DEFAULT: OFF.

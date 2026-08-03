@@ -336,24 +336,34 @@ def run_study(slug, n_boot, seed):
     return result
 
 
-def _config_dir(slug, tag):
-    """Outputs directory for one run-config tag. `preregistered` is the
-    uniform-prior config that writes the study root; anything else is an alt/
-    tag. Mirrors `RunConfig.outputs_dir`.
+#: Retired spellings of the root tag, each with what to pass instead. Rejected
+#: loudly rather than aliased: every one of them names a *different* model than a
+#: reader would now assume, so silently resolving them would mislabel a
+#: comparison rather than merely inconvenience the caller.
+_RETIRED_CONFIG_TAGS = {
+    "canonical": (
+        "'canonical' (retired 2026-07-30) read as 'the authoritative model', "
+        "which the study root is not by itself — the reported fits add the "
+        "comparison-set reweighting on top. Pass 'reported'."
+    ),
+    "preregistered": (
+        "'preregistered' (retired 2026-08-03) named the study root, but the "
+        "root holds the REPORTED model, which deviates from the "
+        "preregistration by reweighting the comparison set. Pass 'reported' for "
+        "the root; the preregistered model is the --no-reweighting run, tag "
+        "'uniform-noreweight'."
+    ),
+}
 
-    The root tag was spelled `canonical` until 2026-07-30. That name read as
-    "the authoritative model", which it is not — the reported fits add the
-    comparison-set reweighting on top. The old spelling is rejected loudly
-    rather than aliased, so a stale invocation can't quietly resolve to
-    alt/canonical/ (or, worse, be read as naming the reported model)."""
+
+def _config_dir(slug, tag):
+    """Outputs directory for one run-config tag. `reported` is the default
+    config, which writes the study root; anything else is an alt/ tag. Mirrors
+    `RunConfig.outputs_dir` (and `RunConfig.tag`, which generates the alt tags)."""
+    if tag in _RETIRED_CONFIG_TAGS:
+        raise SystemExit(f"run-config tag {_RETIRED_CONFIG_TAGS[tag]}")
     root = get_project_root() / "model" / "outputs" / slug
-    if tag == "canonical":
-        raise SystemExit(
-            "run-config tag 'canonical' was renamed to 'preregistered' on "
-            "2026-07-30 (it named the uniform-prior config, not the reported "
-            "model). Pass 'preregistered' instead."
-        )
-    return root if tag == "preregistered" else root / "alt" / tag
+    return root if tag == "reported" else root / "alt" / tag
 
 
 def compare_configs(slug, tag_a, tag_b, n_boot, seed):
@@ -439,8 +449,10 @@ def main():
         metavar=("TAG_A", "TAG_B"),
         default=None,
         help="Matched-trial held-out-LL comparison between two run configs of "
-        "one study. Each tag is `preregistered` (outputs/<slug>) or an alt/ tag "
-        "(outputs/<slug>/alt/<tag>). Requires --study to name a single study.",
+        "one study, reported as TAG_B minus TAG_A. Each tag is `reported` "
+        "(outputs/<slug>) or an alt/ tag (outputs/<slug>/alt/<tag>) — e.g. "
+        "`uniform-noreweight reported` for the reported model's gain over the "
+        "preregistered one. Requires --study to name a single study.",
     )
     args = parser.parse_args()
 

@@ -1,16 +1,25 @@
-"""Fit/CV run configuration: which priors the observer uses, and where outputs
-go.
+"""Fit/CV run configuration: which model the fit is, and where its outputs go.
 
-The default config (uniform priors) reproduces the **preregistered** pipeline
-byte-identically and keeps writing outputs/<slug>/. The informative-prior
-configs (the "build both" priors comparison) write outputs/<slug>/alt/<tag>/ so
-they never overwrite the preregistered baseline.
+The default config is the reported one: uniform priors, plus the
+surprise-weighted comparison-set reweighting that `_reweighting.py` layers on
+wherever its scope rule applies. It writes outputs/<slug>/. Every non-default
+config writes outputs/<slug>/alt/<tag>/ instead, so an exploratory or
+comparison run can never overwrite the reported baseline.
 
-Note on naming: this used to be called the "canonical" config, which read as
-"the authoritative one". It isn't — the fits reported in the paper add the
-surprise-weighted comparison-set reweighting on top of this config, so
-"canonical" pointed at the wrong model. It means *preregistered*: uniform
-priors, as every prereg specifies.
+Two axes move off the default:
+
+  - `priors_mode="informative"` — the "build both" priors comparison, evaluated
+    and not adopted (see the rules file); the machinery stays as tooling.
+  - `no_reweighting=True` — drop the reweighting, giving the **preregistered**
+    model (eta = 0, and no eta parameter at all). The paper reports the
+    reweighted fits and declares the reweighting a deviation, so the
+    preregistered model's held-out numbers have to be reportable alongside them.
+
+Note on naming: the default used to be called "canonical" and then
+"preregistered". Neither was right — it is the *reported* config, and the
+reported model is not the preregistered one, which is exactly what
+`no_reweighting` now names. `is_default` therefore means "writes to the reported
+output directory", nothing more.
 """
 
 from dataclasses import dataclass
@@ -36,9 +45,13 @@ class RunConfig:
     priors_mode: str = "uniform"  # "uniform" | "informative"
     priors_latents: tuple = ()  # () = all of the study's inferred latents
     priors_file: str | None = None  # None = lm_priors.jsonl
+    #: Drop the comparison-set reweighting → the preregistered model (eta = 0,
+    #: with no eta parameter). The reweighting is otherwise applied by
+    #: `_reweighting.config_for`'s scope rule, independently of this config.
+    no_reweighting: bool = False
 
     @classmethod
-    def parse(cls, priors, priors_file):
+    def parse(cls, priors, priors_file, no_reweighting=False):
         mode, _, latents = (priors or "uniform").partition(":")
         if mode not in ("uniform", "informative"):
             raise ValueError(
@@ -51,13 +64,15 @@ class RunConfig:
             raise ValueError(f"unknown latent(s) in --priors: {sorted(unknown)}")
         if mode == "uniform" and latents:
             raise ValueError("--priors uniform takes no :latents suffix")
-        return cls(mode, latents, priors_file or None)
+        return cls(mode, latents, priors_file or None, bool(no_reweighting))
 
     @property
-    def is_preregistered(self):
-        """True for the default (uniform-prior) config — the one the preregs
-        specify. Not "the reported model": the paper's fits layer the
-        comparison-set reweighting on top of this."""
+    def is_default(self):
+        """True for the default config — the reported one, which writes straight
+        to outputs/<slug>/. Everything else writes under alt/<tag>/. This is a
+        statement about the output location, not about the preregistration: the
+        reported model layers the comparison-set reweighting on top of the
+        preregistered specification (see `no_reweighting`)."""
         return self == RunConfig()
 
     def active_latents(self, slug):
@@ -72,13 +87,15 @@ class RunConfig:
         tag = self.priors_mode
         if self.priors_latents:
             tag += "-" + "-".join(self.priors_latents)
+        if self.no_reweighting:
+            tag += "-noreweight"
         if self.priors_file:
             tag += "_" + Path(self.priors_file).stem
         return tag
 
     def outputs_dir(self, slug):
         root = get_project_root() / "model" / "outputs" / slug
-        return root if self.is_preregistered else root / "alt" / self.tag()
+        return root if self.is_default else root / "alt" / self.tag()
 
     def priors_filename(self, base=False):
         if self.priors_file is not None:

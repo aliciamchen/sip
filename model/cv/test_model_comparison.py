@@ -218,17 +218,26 @@ def test_primary_comparisons_rejects_unmatched_trials():
     print("✓ primary comparisons reject trials unmatched across variants")
 
 
-def test_config_dir_routes_preregistered_to_the_root_and_rejects_the_old_name():
-    root = _config_dir("food_inv_desire", "preregistered")
+def test_config_dir_routes_reported_to_the_root_and_rejects_retired_names():
+    """`reported` is the root; every retired spelling of it raises rather than
+    resolving. Aliasing them would be worse than inconvenient: both named a
+    different model than a reader would now assume, so a stale invocation would
+    silently mislabel which model a comparison is about."""
+    root = _config_dir("food_inv_desire", "reported")
     assert root.name == "food_inv_desire" and "alt" not in root.parts
     alt = _config_dir("food_inv_desire", "informative")
     assert alt.parts[-2:] == ("alt", "informative"), alt
-    try:
-        _config_dir("food_inv_desire", "canonical")
-        raise AssertionError("the retired tag should raise")
-    except SystemExit as e:
-        assert "preregistered" in str(e)
-    print("✓ config_dir routes preregistered to the root, rejects 'canonical'")
+    # The preregistered model is now a real, separate run — its tag must resolve
+    # under alt/, never to the root the reported fits occupy.
+    prereg = _config_dir("food_inv_desire", "uniform-noreweight")
+    assert prereg.parts[-2:] == ("alt", "uniform-noreweight"), prereg
+    for retired in ("canonical", "preregistered"):
+        try:
+            _config_dir("food_inv_desire", retired)
+            raise AssertionError(f"the retired tag {retired!r} should raise")
+        except SystemExit as e:
+            assert "reported" in str(e), str(e)
+    print("✓ config_dir routes 'reported' to the root, rejects retired tags")
 
 
 def run_all_tests():

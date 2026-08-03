@@ -10,21 +10,43 @@ from run_config import INFERRED_LATENTS, RunConfig
 from utils import get_project_root
 
 
-def test_preregistered_default():
+def test_default_config_layout():
     c = RunConfig()
-    assert c.is_preregistered
+    assert c.is_default
+    assert not c.no_reweighting
     assert c.outputs_dir("food_inv_desire") == (
         get_project_root() / "model" / "outputs" / "food_inv_desire"
     )
     assert c.priors_filename(base=False) == "lm_priors.jsonl"
     assert c.priors_filename(base=True) == "lm_priors_base.jsonl"
     assert c.active_latents("food_inv_joint_de") == ()
-    print("✓ default config keeps the preregistered layout")
+    print("✓ default config keeps the reported output layout")
+
+
+def test_no_reweighting_is_named_and_routed_off_the_root():
+    """The preregistered model (no comparison-set reweighting) must never write
+    where the reported fits live, and its tag must say what it is."""
+    c = RunConfig.parse("uniform", None, True)
+    assert c.no_reweighting
+    assert not c.is_default, "the preregistered run must not claim the study root"
+    assert c.tag() == "uniform-noreweight"
+    assert c.outputs_dir("food_inv_joint_de") == (
+        get_project_root()
+        / "model"
+        / "outputs"
+        / "food_inv_joint_de"
+        / "alt"
+        / "uniform-noreweight"
+    )
+    # Orthogonal to the priors axis: both can move at once, and the tag composes.
+    both = RunConfig.parse("informative:desire", None, True)
+    assert both.tag() == "informative-desire-noreweight"
+    print("✓ --no-reweighting names itself in the tag and writes under alt/")
 
 
 def test_parse_informative_all_latents():
     c = RunConfig.parse("informative", None)
-    assert not c.is_preregistered
+    assert not c.is_default
     assert c.tag() == "informative"
     assert c.active_latents("food_inv_joint_de") == ("desire", "effort")
     assert c.active_latents("food_inv_intimacy") == ("intimacy",)
