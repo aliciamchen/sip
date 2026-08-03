@@ -171,22 +171,31 @@ def draw_panel(slug, stem):
     return True
 
 
-def draw_scatter_panel():
-    """Model-vs-humans scatter pooling all six studies, on its own artboard.
+def draw_scatter_panel(stem="panel_model_vs_humans", slugs=None, label="scatter"):
+    """Model-vs-humans scatter on its own artboard, over `slugs` (all six when
+    None).
 
     One point per (study x condition x latent): the model's out-of-sample LOSO-CV
     prediction on x against the human condition mean on y, with the human 95%
     bootstrap CI, one column per ablation and a pooled Pearson r per column.
-    Marker shape is the inferred latent, so `legend_target` covers it -- the
-    legend is left off the artboard like every other panel here.
+    Marker shape is the inferred latent, so `legend_target` covers it (or, for a
+    single study number, `legend_target_study<n>`) -- the legend is left off the
+    artboard like every other panel here.
 
     Aggregation and rendering live in `_agg`, which is also where the pooled
     bootstrap r is computed, so the panel and the reported correlation cannot
     disagree.
+
+    The axis limit is computed from the points drawn, so a per-study-number panel
+    fills its own axes rather than inheriting the pooled range. That is the right
+    default here -- each panel is read against its own identity line, and belief
+    updates differ severalfold across studies, so a shared range would compress
+    the smaller ones -- but it does mean the three per-number panels are not to a
+    common scale. Read each against its diagonal, not against its neighbours.
     """
-    agg, agg_cis = corr.agg_points()
+    agg, agg_cis = corr.agg_points(slugs)
     if not any(agg.values()):
-        print("[scatter] no CV predictions yet — skipped")
+        print(f"[{label}] no CV predictions yet — skipped")
         return
     vals = np.concatenate(
         [
@@ -218,7 +227,7 @@ def draw_scatter_panel():
     axes[len(keys) // 2].set_xlabel(
         "Model predicted belief update", fontsize=STYLE.label_fs
     )
-    _save(fig, "panel_model_vs_humans")
+    _save(fig, stem)
 
 
 def draw_legend(handles, stem, title, ncol=None):
@@ -298,7 +307,17 @@ def main():
                 continue
             if draw_panel(slug, stem):
                 drawn.append(stem)
+        # The pooled scatter, plus one per study number -- the grain the
+        # manuscript's results figures are assembled at, so a study's
+        # correlation can be reported beside its own panels if we decide to
+        # report them separately rather than only pooled.
         draw_scatter_panel()
+        for group_stem, name, members in corr.STUDY_GROUPS:
+            draw_scatter_panel(
+                stem=f"panel_model_vs_humans_{group_stem}",
+                slugs=[slug for slug, _paper in members],
+                label=name,
+            )
         n_legends = draw_legends()
     print(f"\n{len(drawn)} panel(s) + {n_legends} legend(s) in {OUT_DIR}")
 

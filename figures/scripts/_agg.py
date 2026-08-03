@@ -61,9 +61,10 @@ STUDY_GROUPS = [
 N_BOOT_AGG = 1000
 
 
-def agg_points():
-    """({model: [(dv, x, y, y_lo, y_hi), ...]}, {model: (r, lo, hi)}) pooling all
-    six experiments at condition level (averaged over the 16 scenarios).
+def agg_points(slugs=None):
+    """({model: [(dv, x, y, y_lo, y_hi), ...]}, {model: (r, lo, hi)}) over the
+    given studies at condition level (averaged over the 16 scenarios). `slugs`
+    None pools all six; a subset gives the same quantities for one study number.
 
     y is the human condition mean with its 95% subject-cluster bootstrap CI; the
     model x is the out-of-sample CV delta averaged over scenarios (a point
@@ -72,6 +73,10 @@ def agg_points():
     are different participant pools), every DV of a study reuses that study's
     draw, and r is recomputed over all pooled points per resample. This mirrors
     model_comparison._secondary_correlation's per-study convention.
+
+    Restricting `slugs` cannot perturb the studies that remain: each study's
+    resampling seed is derived from its own slug, so a per-study-number panel
+    reuses exactly the draws the pooled panel used for those studies.
     """
     out = {m: [] for m in data.MODEL_ORDER}
     boot_y = {m: [] for m in data.MODEL_ORDER}  # per-model list of (n_boot, k)
@@ -79,6 +84,8 @@ def agg_points():
     obs_y = {m: [] for m in data.MODEL_ORDER}  # observed human means
     for _stem, _name, members in STUDY_GROUPS:
         for slug, _paper in members:
+            if slugs is not None and slug not in slugs:
+                continue
             trials = data.load_trials(slug)
             preds = data.load_cv_preds(slug)
             if trials is None or preds is None:
