@@ -9,7 +9,8 @@ standalone files for one-time placement:
 
     figures/panels/results/panel_study1a.pdf ... panel_study3b.pdf
     figures/panels/results/panel_model_vs_humans.pdf
-    figures/panels/legends/legend_{relationship,desire,target,effort}.pdf
+    figures/panels/legends/legend_{relationship,desire,target}.pdf
+    figures/panels/legends/legend_target_study{1,2,3}.pdf
 
 Panels keep their column titles, action tick labels and y-axis label, so each
 one reads standalone; delete in Illustrator whatever the assembled layout
@@ -84,6 +85,36 @@ PANEL_RC = {
 
 # (slug, output stem), in paper order, from the study registry.
 STUDIES = [(s.slug, f"study{s.short_label}") for s in studies()]
+
+TARGET_TITLE = "Target of inference"
+#: Canonical order for the inferred-target legend entries: the two continuous
+#: latents, then the two-state world state. Fixed here rather than taken from
+#: whatever order a study's `dvs` happen to be in, so every legend lists the
+#: shapes the same way down the page.
+TARGET_ORDER = ["desire", "intimacy", "effort"]
+
+
+def targets_by_study_number():
+    """{study number: its targets of inference, in TARGET_ORDER}.
+
+    The union over the number's sub-studies, because the manuscript assembles one
+    results figure per number. Derived from the registry rather than written out,
+    so adding a sub-study or changing a DV cannot leave a legend claiming a shape
+    the figure no longer draws.
+    """
+    by_number = {}
+    for s in studies():
+        by_number.setdefault(s.number, set()).update(dv.name for dv in s.dvs)
+    unknown = set().union(*by_number.values()) - set(TARGET_ORDER)
+    if unknown:
+        raise ValueError(
+            f"inferred target(s) {sorted(unknown)} are missing from TARGET_ORDER, "
+            "so they would be silently dropped from the per-study legends"
+        )
+    return {
+        number: [n for n in TARGET_ORDER if n in names]
+        for number, names in sorted(by_number.items())
+    }
 
 
 def _save(fig, stem):
@@ -208,13 +239,21 @@ def draw_legend(handles, stem, title, ncol=None):
 
 
 def draw_legends():
-    """The three legends the six panels draw from between them: the two given
-    condition palettes and the inferred-target shapes.
+    """The legends the panels draw from between them: the two given-condition
+    palettes, and the inferred-target shapes in four versions.
+
+    The target legend comes in a full set plus one per study number. The full set
+    is for the pooled model-vs-humans panel, which really does span all three
+    targets; each assembled results figure covers a single study number and so
+    infers only two of them, unless the number spans both continuous latents
+    (Study 3 does). Placing the full legend on a figure that draws two shapes
+    leaves the reader looking for a third, so the per-number versions exist to be
+    placed instead.
 
     There is deliberately no world-state legend. The panels that have a given
     world state label both of its levels on their own top axis, so the only thing
     left to say -- what the two states are states of -- goes in the figure
-    caption rather than a fourth artboard.
+    caption rather than another artboard.
     """
     for condition, stem in (
         ("intimacy_condition", "relationship"),
@@ -222,16 +261,29 @@ def draw_legends():
     ):
         handles, title = points.condition_point_handles(condition, STYLE)
         draw_legend(handles, stem, title, ncol=2 if len(handles) > 2 else 1)
-    # One entry per line: the effort entry names a probability, so the three
+    # One entry per line: the effort entry names a probability, so the entries
     # read as a list rather than a row of unequal-width chips.
+    n = 2
+    # The full set, for the pooled model-vs-humans panel, which pools all six
+    # studies and so really does infer all three.
     draw_legend(
-        points.target_handles(["desire", "intimacy", "effort"], STYLE),
-        "target",
-        "Target of inference",
-        ncol=1,
+        points.target_handles(TARGET_ORDER, STYLE), "target", TARGET_TITLE, ncol=1
     )
-    return 3
-
+    n += 1
+    # Per assembled figure: the manuscript's results figures are one per study
+    # NUMBER (study-1-results.pdf pairs 1a with 1b, and so on), and a family
+    # infers only two of the three targets unless it spans both continuous
+    # latents. Listing a shape the figure never draws invites the reader to hunt
+    # for it, so each family gets a legend holding exactly its own targets.
+    for number, names in targets_by_study_number().items():
+        draw_legend(
+            points.target_handles(names, STYLE),
+            f"target_study{number}",
+            TARGET_TITLE,
+            ncol=1,
+        )
+        n += 1
+    return n
 
 
 def main():
