@@ -194,7 +194,7 @@ def slugs_given(condition: str) -> list[str]:
 # are always separable and no refitting is needed.
 PROMOTED_BASE_VARIANT = "base_shared"
 PREREG_BASE_KEY = "base_prereg"
-PREREG_BASE_LABEL = "Base (preregistered)"
+PREREG_BASE_LABEL = "Vanilla inv plan (preregistered)"
 
 
 def reported_base(slug: str) -> str:
