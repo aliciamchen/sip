@@ -576,8 +576,7 @@ JOURNAL_FIGURES := \
   si_scenarios_study2b.pdf:si-scenarios-study2b.pdf \
   si_scenarios_study3a.pdf:si-scenarios-study3a.pdf \
   si_scenarios_study3b.pdf:si-scenarios-study3b.pdf \
-  si_prior_posterior_levels.pdf:si-prior-posterior-levels.pdf \
-  si_prior_posterior_distributions.pdf:si-prior-posterior-distributions.pdf
+  si_prior_posterior_levels.pdf:si-prior-posterior-levels.pdf
 
 sync-journal-figures:
 	@test -d $(JOURNAL_DIR) || { echo "$(JOURNAL_DIR)/ not found (the Overleaf repo)"; exit 1; }

@@ -15,11 +15,14 @@ Levels (si_prior_posterior_levels). Each action slot splits into the prior and
     the model assumes, which is NOT where participants sit. One facet per given
     world state in 1a and 2a -- see `facets` for why it is not averaged over.
 
-Distributions (si_prior_posterior_distributions). What the levels cannot show:
-    cell means hide how much mass piles on the slider endpoints, which censors
-    the updates, and the residual spike at 0.5 where the slider was left at its
-    default. Both are small enough to state as numbers instead, so this figure is
-    a candidate for cutting.
+Distributions (si_prior_posterior_distributions). A DIAGNOSTIC, cut from the SI
+    on 2026-08-03: twelve histogram panels carried only two facts -- the share of
+    ratings at a slider endpoint, and the residual spike at 0.5 where the slider
+    was left at its default -- and both are stated as ranges in the SI text
+    instead. It stays runnable because those ranges have to remain reproducible,
+    and because the shape it shows (the world-state ratings are bimodal rather
+    than merely spread) is not recoverable from the numbers. Neither synced nor
+    cited; its output is gitignored.
 
 Usage:
     uv run python figures/scripts/figure_si_prior_posterior.py

@@ -78,10 +78,12 @@ writing/
 # weight for a preview that regenerates in seconds).
 figures/**/*.png
 
-# The per-study model-vs-human scatter is a diagnostic rather than a paper
-# figure (see figures/scripts/figure_si_model_scatter.py): nothing in the SI
-# cites it and the journal sync does not copy it, so its output is regenerated
-# on demand rather than committed alongside the figures that are in the paper.
+# Diagnostics that render into figures/si/ but are not paper figures: nothing in
+# the SI cites them and the journal sync does not copy them. Their scripts are
+# committed (the SI quotes numbers they print, so those have to stay
+# reproducible) but their output is regenerated on demand rather than tracked
+# alongside the figures that are actually in the paper.
 figures/si/si_model_scatter_all.pdf
+figures/si/si_prior_posterior_distributions.pdf
 
 .agents/skills
