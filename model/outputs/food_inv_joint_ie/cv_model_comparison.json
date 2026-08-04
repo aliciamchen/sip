@@ -90,5 +90,21 @@
       "n_cells": 96
     }
   ],
-  "prereg_deviation": []
+  "prereg_deviation": [],
+  "noise_ceilings": [
+    {
+      "dv": "intimacy",
+      "split_half": 0.8780871171339483,
+      "reliability": 0.9350866731613087,
+      "ceiling": 0.9669987968768672,
+      "n_splits": 400
+    },
+    {
+      "dv": "effort",
+      "split_half": 0.7871337546944067,
+      "reliability": 0.8808895838118213,
+      "ceiling": 0.9385571819616646,
+      "n_splits": 400
+    }
+  ]
 }

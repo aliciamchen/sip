@@ -198,6 +198,96 @@ def _primary_comparisons(trial_df, n_boot, rng):
     return out
 
 
+def subject_cell_matrices(data, keys, update_col, cells):
+    """Per-(subject, cell) sums and counts of `update_col`, each
+    (n_subjects, n_cells) with columns in `cells`' row order.
+
+    The two together are all any subject-level resampling or splitting needs: a
+    subset's cell mean is `Σ sums / Σ counts` over the chosen subjects, which is
+    the trial-level mean the observed cell mean is, not a mean of subject means.
+    """
+    cell_pos = {c: i for i, c in enumerate(cells.apply(tuple, axis=1))}
+    sc = data.groupby(["subject_id", *list(keys)])[update_col].agg(["sum", "count"])
+    subj_pos = {s: i for i, s in enumerate(sorted(data["subject_id"].unique()))}
+    mat_sum = np.zeros((len(subj_pos), len(cell_pos)))
+    mat_cnt = np.zeros((len(subj_pos), len(cell_pos)))
+    for row_key, row in sc.iterrows():
+        subj, cell = row_key[0], tuple(row_key[1:])
+        if cell not in cell_pos:  # cell missing from preds (shouldn't happen)
+            continue
+        mat_sum[subj_pos[subj], cell_pos[cell]] = row["sum"]
+        mat_cnt[subj_pos[subj], cell_pos[cell]] = row["count"]
+    return mat_sum, mat_cnt
+
+
+#: Random splits averaged when estimating a noise ceiling. A single split is noisy
+#: at these cell counts; the estimate is stable well before 400.
+N_CEILING_SPLITS = 400
+
+
+def split_half_ceiling(blocks, *, n_split=N_CEILING_SPLITS, rng=None):
+    """Upper bound on the correlation ANY model can reach with these cell means.
+
+    The cell means are noisy estimates of the true cell means, so even a perfect
+    model cannot correlate with them at 1. Split-half reliability measures how
+    much of them is signal: split the participants in half, correlate one half's
+    cell means against the other's across cells, average over splits in Fisher-z,
+    then Spearman-Brown correct from half- to full-sample length.
+
+    The ceiling on the CORRELATION is the SQUARE ROOT of that reliability, because
+    the reliability is the maximum explained *variance* of a perfect model. Using
+    the reliability itself is the error van Bree, Styrnal & Hebart (2025) document
+    as the prevalent one in this literature; it gives a too-low ceiling and makes
+    models look closer to it than they are.
+
+    What is split is participants, because participants are the unit whose
+    sampling generates the noise being bounded -- the same unit the primary
+    bootstrap and the human error bars cluster on. Scenarios are deliberately NOT
+    the split unit: cell means are averaged over scenarios, so two scenario-halves
+    differ in stimulus content rather than only in noise, and correlating them
+    would charge the model for real scenario heterogeneity it is not being asked
+    to predict at this grain (that is a generalization ceiling, not a noise one).
+
+    `blocks` is one entry per independent participant pool (i.e. per study), each
+    a list of that pool's (sums, counts) matrices from `subject_cell_matrices` --
+    one per DV, all sharing the pool's subject axis. Every DV of a study is split
+    on the SAME draw, so the pooled half-vectors come from the same people; the
+    matrices are concatenated across blocks in the order given, which must match
+    the order the correlation itself pools its cells in.
+
+    Returns {"split_half", "reliability", "ceiling", "n_splits"}.
+    """
+    rng = rng if rng is not None else np.random.default_rng(0)
+    zs = []
+    for _ in range(n_split):
+        halves = ([], [])
+        for mats in blocks:
+            n_subj = mats[0][0].shape[0]
+            pick = rng.permutation(n_subj) < n_subj // 2
+            for sums, counts in mats:
+                for sel, acc in ((pick, halves[0]), (~pick, halves[1])):
+                    num, den = sums[sel].sum(0), counts[sel].sum(0)
+                    with np.errstate(invalid="ignore", divide="ignore"):
+                        acc.append(np.where(den > 0, num / den, np.nan))
+        a, b = np.concatenate(halves[0]), np.concatenate(halves[1])
+        ok = ~np.isnan(a) & ~np.isnan(b)
+        if ok.sum() > 2 and np.std(a[ok]) > 1e-12 and np.std(b[ok]) > 1e-12:
+            zs.append(
+                np.arctanh(np.clip(np.corrcoef(a[ok], b[ok])[0, 1], -0.9999, 0.9999))
+            )
+    if not zs:
+        return None
+    r_half = float(np.tanh(np.mean(zs)))
+    # Spearman-Brown: a half-sample split understates the full sample's reliability.
+    reliability = 2 * r_half / (1 + r_half)
+    return {
+        "split_half": r_half,
+        "reliability": float(reliability),
+        "ceiling": float(np.sqrt(max(reliability, 0.0))),
+        "n_splits": len(zs),
+    }
+
+
 def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, n_boot, rng):
     """Pearson r between condition-averaged human updates and the model's
     per-cell delta, with a subject-cluster bootstrap CI. Cells that lose all
@@ -220,20 +310,8 @@ def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, n_boo
         return None
     r = float(np.corrcoef(merged[update_col], merged[delta_col])[0, 1])
 
-    # Per-(subject, cell) sums/counts aligned to the merged cell order.
-    cell_key = merged[keys].apply(tuple, axis=1)
-    cell_pos = {c: i for i, c in enumerate(cell_key)}
-    sc = data.groupby(["subject_id", *keys])[update_col].agg(["sum", "count"])
-    subjects = sorted(data["subject_id"].unique())
-    subj_pos = {s: i for i, s in enumerate(subjects)}
-    mat_sum = np.zeros((len(subjects), len(merged)))
-    mat_cnt = np.zeros((len(subjects), len(merged)))
-    for row_key, row in sc.iterrows():
-        subj, cell = row_key[0], tuple(row_key[1:])
-        if cell not in cell_pos:  # cell missing from preds (shouldn't happen)
-            continue
-        mat_sum[subj_pos[subj], cell_pos[cell]] = row["sum"]
-        mat_cnt[subj_pos[subj], cell_pos[cell]] = row["count"]
+    mat_sum, mat_cnt = subject_cell_matrices(data, keys, update_col, merged[keys])
+    subjects = range(mat_sum.shape[0])
 
     delta = merged[delta_col].to_numpy()
     boots = np.empty(n_boot)
@@ -316,6 +394,23 @@ def run_study(slug, n_boot, seed):
         _wide_trials(trial_df), slug, n_boot, np.random.default_rng(seed)
     )
 
+    # Likewise off its own stream. One ceiling per DV, not per (model, DV): it is a
+    # property of the human data alone, so every model in a study is judged against
+    # the same bound. Cells come from the `full` predictions purely to fix the cell
+    # ORDER -- the ceiling never reads a model's values.
+    ceil_rng = np.random.default_rng(seed + 1)
+    result["noise_ceilings"] = []
+    ref = preds[preds["model"] == "full"]
+    for update_col, _delta_col, dv in spec["dvs"]:
+        cells = data.groupby(spec["keys"], as_index=False)[update_col].mean()
+        cells = cells.merge(ref[spec["keys"]].drop_duplicates(), on=spec["keys"])
+        mats = subject_cell_matrices(
+            data, spec["keys"], update_col, cells[spec["keys"]]
+        )
+        got = split_half_ceiling([[mats]], rng=ceil_rng)
+        if got is not None:
+            result["noise_ceilings"].append({"dv": dv, **got})
+
     out_path = outputs_dir / "cv_model_comparison.json"
     write_json(out_path, result)
 
@@ -331,6 +426,19 @@ def run_study(slug, n_boot, seed):
         print(
             f"  r({row['model']}, {row['dv']}) = {row['r']:.3f} "
             f"[{lo:.3f}, {hi:.3f}] over {row['n_cells']} cells"
+        )
+    best = {
+        r["dv"]: r["r"]
+        for r in result["secondary_correlations"]
+        if r["model"] == "full"
+    }
+    for row in result["noise_ceilings"]:
+        r_full = best.get(row["dv"])
+        frac = f", full model at {r_full / row['ceiling']:.1%} of it" if r_full else ""
+        print(
+            f"  noise ceiling ({row['dv']}) = {row['ceiling']:.4f} "
+            f"(split-half {row['split_half']:.4f} -> reliability "
+            f"{row['reliability']:.4f}){frac}"
         )
     print(f"  wrote {out_path}")
     return result

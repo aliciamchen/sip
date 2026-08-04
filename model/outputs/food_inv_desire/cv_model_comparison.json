@@ -89,5 +89,14 @@
       ],
       "meaning": "the deviation itself: comparison set alone, utility and parameter count held fixed. Pairs with primary's full_minus_base (the preregistered contrast, which moves both) and full_minus_base_shared (the reported one, utility alone)"
     }
+  ],
+  "noise_ceilings": [
+    {
+      "dv": "desire",
+      "split_half": 0.8468356697544929,
+      "reliability": 0.9170666168333927,
+      "ceiling": 0.9576359521412052,
+      "n_splits": 400
+    }
   ]
 }
