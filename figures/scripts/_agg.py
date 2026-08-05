@@ -37,7 +37,7 @@ AGG_POINT_COLOR = "#333333"
 # the 0.5 the points panels use — at 0.7pt on a 4.6pt marker it ate enough of the
 # face that a cluster read as mostly white. The bars are one step lighter than
 # the marker faces so a long bar does not out-weigh the estimate it belongs to.
-AGG_POINT_MS = 5.2
+AGG_POINT_MS = 5.9
 AGG_POINT_EDGE = "white"
 AGG_POINT_EDGEWIDTH = 0.2
 AGG_BAR_COLOR = "#5A5A5A"
