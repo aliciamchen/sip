@@ -37,6 +37,7 @@
         NaN,
         NaN
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
     },
     {
@@ -44,9 +45,10 @@
       "dv": "intimacy",
       "r": 0.9007845424409258,
       "ci_95": [
-        0.8663801271740524,
-        0.8939042856410084
+        0.8746365147913061,
+        0.9214300984415826
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
     },
     {
@@ -54,9 +56,10 @@
       "dv": "intimacy",
       "r": 0.9023555058340409,
       "ci_95": [
-        0.8670425099657147,
-        0.8947734409520052
+        0.8746139873040805,
+        0.9235398475694371
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
     }
   ],

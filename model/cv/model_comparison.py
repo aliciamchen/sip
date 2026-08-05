@@ -11,9 +11,10 @@ scenario_label) — each participant sees each scenario exactly once — from
 
 SECONDARY (descriptive): the Pearson correlation between the model's
 out-of-sample per-cell belief-update predictions (`delta_<latent>` in
-`cv_preds_summary.json`) and the condition-averaged human belief updates, with
-a 95% CI from a subject-cluster bootstrap (resample participants, recompute the
-cell means, re-correlate against the fixed model predictions).
+`cv_preds_summary.json`) and the human cell means, with a 95% CI bootstrapped
+over the cells. Alongside it a split-half noise CEILING per DV, which is the
+maximum correlation any model could reach given the noise in those cell means --
+the quantity that says whether a given r is close to attainable.
 
 Writes `outputs/<slug>/cv_model_comparison.json` and prints a summary.
 
@@ -24,6 +25,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -220,6 +222,17 @@ def subject_cell_matrices(data, keys, update_col, cells):
     return mat_sum, mat_cnt
 
 
+#: Resamples for the cell/pair bootstrap on a correlation. Matches the panels'
+#: N_BOOT_AGG so the two report intervals of the same Monte-Carlo precision.
+N_PAIR_BOOT = 1000
+
+
+def _seed_for(key):
+    """Deterministic 32-bit seed from a purpose string (the repo's SHA-256
+    convention; Python's builtin hash is salted per process)."""
+    return int.from_bytes(hashlib.sha256(key.encode()).digest()[:4], "little")
+
+
 #: Random splits averaged when estimating a noise ceiling. A single split is noisy
 #: at these cell counts; the estimate is stable well before 400.
 N_CEILING_SPLITS = 400
@@ -288,11 +301,29 @@ def split_half_ceiling(blocks, *, n_split=N_CEILING_SPLITS, rng=None):
     }
 
 
-def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, n_boot, rng):
-    """Pearson r between condition-averaged human updates and the model's
-    per-cell delta, with a subject-cluster bootstrap CI. Cells that lose all
-    trials in a bootstrap resample are dropped pairwise from that resample's
-    correlation."""
+def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, model=""):
+    """Pearson r between per-cell human updates and the model's per-cell delta,
+    with the interval bootstrapped over the PLOTTED POINTS (the cells).
+
+    The interval was a subject-cluster bootstrap until 2026-08-04, and it was
+    mislocated: a resample holds ~63% unique participants, so its cell means carry
+    extra noise, noise in y attenuates r against a fixed x, and the whole bootstrap
+    distribution sits below the observed r. At these scenario-level cells — a
+    handful of judgments each — that put the interval below its own point estimate
+    for most correlations. Resampling the cells reuses the observed means untouched,
+    injects no noise, and is unbiased; it also matches both the panels
+    (`_agg.corr_with_pair_ci`) and what comparable papers report. See
+    `notes/2026-08-03-correlation-ci-audit.md`.
+
+    What the interval therefore means: how far r would move with a different sample
+    of *cells*, not of *participants*. The participant-driven limit on r is
+    reported separately as the noise ceiling (`split_half_ceiling`), which is the
+    quantity the old interval was gesturing at and getting wrong.
+
+    Seeded from (slug, model, delta_col) rather than drawing from the caller's
+    shared generator, so a correlation's interval no longer depends on how many
+    other (model, DV) pairs happened to be computed before it.
+    """
     cell_mean = data.groupby(keys, as_index=False)[update_col].mean()
     merged = cell_mean.merge(preds[keys + [delta_col]], on=keys, how="inner")
     if len(merged) != len(cell_mean):
@@ -310,25 +341,29 @@ def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, n_boo
         return None
     r = float(np.corrcoef(merged[update_col], merged[delta_col])[0, 1])
 
-    mat_sum, mat_cnt = subject_cell_matrices(data, keys, update_col, merged[keys])
-    subjects = range(mat_sum.shape[0])
-
-    delta = merged[delta_col].to_numpy()
-    boots = np.empty(n_boot)
-    for b in range(n_boot):
-        idx = rng.integers(0, len(subjects), size=len(subjects))
-        s = mat_sum[idx].sum(axis=0)
-        c = mat_cnt[idx].sum(axis=0)
-        mask = c > 0
-        boots[b] = np.corrcoef(s[mask] / c[mask], delta[mask])[0, 1]
+    x = merged[delta_col].to_numpy()
+    y = merged[update_col].to_numpy()
+    rng = np.random.default_rng(_seed_for(f"{slug}|{model}|{delta_col}|pair_ci"))
+    n = len(merged)
+    boots = []
+    for _ in range(N_PAIR_BOOT):
+        i = rng.integers(0, n, n)
+        if np.std(x[i]) > 1e-12 and np.std(y[i]) > 1e-12:
+            boots.append(np.corrcoef(x[i], y[i])[0, 1])
+    boots = np.asarray(boots)
+    boots = boots[np.isfinite(boots)]
+    ci = (
+        [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))]
+        if boots.size
+        else [float("nan"), float("nan")]
+    )
 
     return {
         "r": r,
-        # Percentile interval over the subject-cluster bootstrap. Conservative
-        # for r: resampling participants adds sampling noise to the cell means,
-        # which attenuates the bootstrapped correlations, so the interval sits
-        # below the point estimate when per-cell trial counts are small.
-        "ci_95": [float(np.percentile(boots, 2.5)), float(np.percentile(boots, 97.5))],
+        "ci_95": ci,
+        # Named on disk, because an interval whose construction is unstated is
+        # exactly what made six comparable papers' intervals un-auditable.
+        "ci_method": "percentile bootstrap over cells",
         "n_cells": int(len(merged)),
     }
 
@@ -380,7 +415,7 @@ def run_study(slug, n_boot, seed):
         pm = preds[preds["model"] == model]
         for update_col, delta_col, dv in spec["dvs"]:
             corr = _secondary_correlation(
-                slug, data, pm, spec["keys"], update_col, delta_col, n_boot, rng
+                slug, data, pm, spec["keys"], update_col, delta_col, model
             )
             if corr is not None:
                 result["secondary_correlations"].append(

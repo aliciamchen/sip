@@ -211,13 +211,21 @@ def corr_with_ci(x, y, ys):
 
 def _r_label(ci, x, y):
     """The panel annotation: "r = 0.96" over its bootstrap CI, or the bare
-    observed r when no CI was supplied."""
+    observed r when no CI was supplied.
+
+    Only the symbol `r` is mathtext; every number is plain text. The two lines used
+    to disagree -- `r = -0.18` was inside math, so its sign became a true minus and
+    its digits the math font, while the interval below it was text and got a
+    hyphen -- which showed up as two different minus signs stacked once r went
+    negative. Keeping the numbers in text puts hyphens on both lines and matches
+    the tick labels, which are text too.
+    """
     if ci is None or not np.isfinite(ci[0]):
-        return f"$r = {np.corrcoef(x, y)[0, 1]:.2f}$"
+        return f"$r$ = {np.corrcoef(x, y)[0, 1]:.2f}"
     r, lo, hi = ci
     if not (np.isfinite(lo) and np.isfinite(hi)):
-        return f"$r = {r:.2f}$"
-    return f"$r = {r:.2f}$\n[{lo:.2f}, {hi:.2f}]"
+        return f"$r$ = {r:.2f}"
+    return f"$r$ = {r:.2f}\n[{lo:.2f}, {hi:.2f}]"
 
 
 def draw_agg_panel(ax, groups, lim, ci=None):

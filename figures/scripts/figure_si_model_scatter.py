@@ -128,7 +128,7 @@ def _dv_label(dv, x, y, ys, *, note=None):
         note.append((dv, r, lo, hi, len(x)))
     if not np.isfinite(r):
         return f"{dv}  predicts no variation"
-    return f"{dv}  $r = {r:.2f}$"
+    return f"{dv}  $r$ = {r:.2f}"
 
 
 def draw_panel(ax, series, lim, note=None):

@@ -224,9 +224,9 @@ def draw_scatter_panel(stem="panel_model_vs_humans", slugs=None, label="scatter"
         ax.xaxis.set_major_locator(plt.MaxNLocator(5))
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))
     axes[0].set_ylabel("Human belief update", fontsize=STYLE.label_fs)
-    axes[len(keys) // 2].set_xlabel(
-        "Model predicted belief update", fontsize=STYLE.label_fs
-    )
+    # Parallel with the y label ("Human belief update"), so the axes read as the
+    # same quantity from two sources rather than as two different quantities.
+    axes[len(keys) // 2].set_xlabel("Model belief update", fontsize=STYLE.label_fs)
     _save(fig, stem)
 
 

@@ -43,9 +43,10 @@
       "dv": "desire",
       "r": 0.8990632789436536,
       "ci_95": [
-        0.8496618245363688,
-        0.8805557006547511
+        0.881012608454417,
+        0.915135825457551
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 384
     },
     {
@@ -53,9 +54,10 @@
       "dv": "desire",
       "r": 0.9025505296894734,
       "ci_95": [
-        0.8509596537299392,
-        0.8839987659782402
+        0.8866901629473408,
+        0.9173444851105689
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 384
     },
     {
@@ -66,6 +68,7 @@
         NaN,
         NaN
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 384
     },
     {
@@ -73,9 +76,10 @@
       "dv": "desire",
       "r": 0.9097644187058747,
       "ci_95": [
-        0.8568572679631167,
-        0.8916636514564856
+        0.8932512554847285,
+        0.9234233076018157
       ],
+      "ci_method": "percentile bootstrap over cells",
       "n_cells": 384
     }
   ],
