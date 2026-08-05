@@ -74,13 +74,15 @@ def agg_points(slugs=None):
     draw, and r is recomputed over all pooled points per resample. This mirrors
     model_comparison._secondary_correlation's per-study convention.
 
-    Restricting `slugs` cannot perturb the studies that remain: each study's
-    resampling seed is derived from its own slug, so a per-study-number panel
-    reuses exactly the draws the pooled panel used for those studies.
+    Restricting `slugs` cannot perturb the error bars of the studies that remain:
+    each study's resampling seed is derived from its own slug, so a
+    per-study-number panel reuses exactly the draws the pooled panel used for
+    those studies. The r interval DOES change with `slugs`, by design -- it is
+    bootstrapped over the points the panel plots, and a per-study panel plots
+    fewer of them.
     """
     out = {m: [] for m in data.MODEL_ORDER}
-    boot_y = {m: [] for m in data.MODEL_ORDER}  # per-model list of (n_boot, k)
-    boot_x = {m: [] for m in data.MODEL_ORDER}  # matching model deltas
+    model_x = {m: [] for m in data.MODEL_ORDER}  # per-model predictions
     obs_y = {m: [] for m in data.MODEL_ORDER}  # observed human means
     for _stem, _name, members in STUDY_GROUPS:
         for slug, _paper in members:
@@ -97,14 +99,16 @@ def agg_points(slugs=None):
             trials["action_label"] = data.action_label_col(trials)
             preds = preds.copy()
             preds["action_label"] = data.action_label_col(preds)
-            # One draw per study, shared by its DVs.
-            cells, boots = data.bootstrap_cell_means(
+            # Subject-cluster bootstrap for the human error bars. One draw per
+            # study, shared by its DVs. The r interval no longer reads these
+            # resamples (see `corr_with_pair_ci`), but the y error bars still do,
+            # and the bootstrap IS unbiased for a cell mean.
+            cells = data.bootstrap_cell_means(
                 trials,
                 [u for u, _d, _dv in spec["dvs"]],
                 keys,
                 n_boot=N_BOOT_AGG,
                 seed=data.seed_for(f"figures:agg:{slug}"),
-                return_boots=True,
             )
             for update_col, delta_col, dv in spec["dvs"]:
                 for model in data.MODEL_ORDER:
@@ -123,32 +127,64 @@ def agg_points(slugs=None):
                             merged[f"{update_col}_ci_upper"].to_numpy(),
                         )
                     )
-                    # Align the resampled human means to `merged`'s row order.
-                    # `merged` is pm.merge(cells), so the merge must run in that
-                    # same direction -- merging cells into pm the other way round
-                    # returns rows in `cells` order and silently mispairs x and y.
-                    order = pm.merge(cells.reset_index(), on=keys, how="inner")[
-                        "index"
-                    ].to_numpy()
-                    boot_y[model].append(boots[update_col][:, order])
-                    boot_x[model].append(merged[delta_col].to_numpy())
+                    model_x[model].append(merged[delta_col].to_numpy())
                     obs_y[model].append(merged[update_col].to_numpy())
-    return out, _agg_correlations(boot_x, boot_y, obs_y)
+    return out, _agg_correlations(model_x, obs_y)
 
 
-def _agg_correlations(boot_x, boot_y, obs_y):
+def _agg_correlations(model_x, obs_y):
     """{model: (r, lo, hi)} -- the correlation pooled over every study and DV,
-    from the per-resample pooled human means (see `corr_with_ci`)."""
+    with the interval bootstrapped over the plotted points (`corr_with_pair_ci`).
+
+    Both the estimate and its interval therefore come from exactly the points the
+    panel draws, which is what makes the annotation readable off the panel."""
     cis = {}
     for model in data.MODEL_ORDER:
-        if not boot_y[model]:
+        if not obs_y[model]:
             continue
-        cis[model] = corr_with_ci(
-            np.concatenate(boot_x[model]),
-            np.concatenate(obs_y[model]),
-            np.concatenate(boot_y[model], axis=1),  # (n_boot, n_points)
+        cis[model] = corr_with_pair_ci(
+            np.concatenate(model_x[model]), np.concatenate(obs_y[model])
         )
     return cis
+
+
+def corr_with_pair_ci(x, y, *, n_boot=None, seed_tag="figures:agg:pair_ci"):
+    """(r, lo, hi) with the interval bootstrapped over the PLOTTED POINTS.
+
+    Resamples the (x, y) pairs with replacement — the textbook bootstrap for a
+    correlation, and what this literature reports beside an r. Inverting the
+    published intervals of six comparable papers gives an effective sample size
+    that stays ~constant across correlations spanning r = 0.01 to 0.93, which is
+    the signature of resampling points rather than participants (see
+    `notes/2026-08-03-correlation-ci-audit.md`).
+
+    Chosen over the subject-cluster interval this replaced, which was *mislocated*:
+    a resample holds ~63% unique participants, so its cell means carry extra noise,
+    noise in y attenuates r against a fixed x, and the whole bootstrap distribution
+    sits below the observed r — for the pooled panel the percentile interval
+    excluded its own point estimate. Resampling pairs reuses the observed cell
+    means untouched, injects no noise, and is unbiased here (measured: −0.0000).
+
+    Note what this interval therefore means: how far r would move with a different
+    sample of *condition cells*, not with a different sample of *participants*.
+    The per-cell participant uncertainty is carried by the y error bars, and the
+    ceiling on r set by that noise is reported separately (`noise_ceilings` in
+    each study's cv_model_comparison.json).
+    """
+    if np.std(x) < 1e-12 or np.std(y) < 1e-12:
+        return (np.nan, np.nan, np.nan)
+    r = float(np.corrcoef(x, y)[0, 1])
+    rng = np.random.default_rng(data.seed_for(seed_tag))
+    n = len(x)
+    rs = []
+    for _ in range(n_boot or N_BOOT_AGG):
+        i = rng.integers(0, n, n)
+        if np.std(x[i]) > 1e-12 and np.std(y[i]) > 1e-12:
+            rs.append(np.corrcoef(x[i], y[i])[0, 1])
+    rs = np.asarray(rs)
+    rs = rs[np.isfinite(rs)]
+    lo, hi = np.percentile(rs, [2.5, 97.5]) if rs.size else (np.nan, np.nan)
+    return (r, float(lo), float(hi))
 
 
 def corr_with_ci(x, y, ys):

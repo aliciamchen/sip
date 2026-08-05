@@ -107,17 +107,21 @@ def _dv_label(dv, x, y, ys, *, note=None):
     printing "nan" would read as a failed computation instead of the structural
     fact it is.
 
-    Deliberately no confidence interval, unlike the condition-level panels. The
-    subject-cluster bootstrap resamples n participants with replacement, so a
-    resampled cell mean rests on fewer unique participants than the observed one
-    and is noisier; noise in the human means attenuates r, which puts the whole
-    bootstrap distribution BELOW the observed r. At condition level the cells are
-    thick enough that the bias is negligible, but these scenario-level cells hold
-    a handful of judgments each and the percentile interval ends up excluding the
-    estimate it is meant to bracket (for 15 of the 24 identified correlations
-    here). The intervals are printed to stdout instead of being published as if
-    they were valid; the main text's condition-level correlations are where the
-    uncertainty is reported.
+    Deliberately no confidence interval. This still calls the subject-cluster
+    `corr_with_ci`, which resamples participants with replacement, so a resampled
+    cell mean rests on fewer unique participants than the observed one and is
+    noisier; noise in the human means attenuates r against a fixed x, putting the
+    whole bootstrap distribution BELOW the observed r. These scenario-level cells
+    hold a handful of judgments each, so the percentile interval ends up excluding
+    the estimate it is meant to bracket, for 15 of the 24 identified correlations
+    here. The intervals are printed to stdout rather than published as if valid.
+
+    The 2026-08-03 audit found the same bias at condition level too -- smaller, but
+    still enough to make the pooled panel's interval exclude its own r -- so the
+    condition-level panels now bootstrap the plotted points instead
+    (`_agg.corr_with_pair_ci`). That construction is unbiased here and would work
+    at this grain as well; it is not used because a per-panel interval was never
+    the point of this diagnostic.
     """
     r, lo, hi = agg.corr_with_ci(x, y, ys)
     if note is not None and np.isfinite(r):
