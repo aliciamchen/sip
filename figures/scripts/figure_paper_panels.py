@@ -81,7 +81,15 @@ PANEL_MARGINS = dict(left=0.075, right=0.995, top=0.824, bottom=0.236, wspace=0.
 # column title above, x tick labels plus an x axis label below, and y tick labels
 # plus a y label at the left. Height is the binding dimension once the equal
 # aspect squares the box, so top/bottom are what the title clearance depends on.
-SCATTER_MARGINS = dict(left=0.062, right=0.995, top=0.885, bottom=0.16, wspace=0.09)
+#
+# Every margin here is set by a label that overflows the axes box rather than by
+# the box itself: the first and last x ticks sit ON the axis limits, so their
+# centred labels stick out half a label width past each side, and the rotated y
+# label and the x axis label each need their own line outside the box. Values were
+# tightened until no ink lands within 3 px of any canvas edge at 150 dpi (checked
+# per edge, per panel) -- the panels are placed in Illustrator, where content
+# flush to the artboard reads as cropped.
+SCATTER_MARGINS = dict(left=0.092, right=0.975, top=0.885, bottom=0.175, wspace=0.09)
 
 PANEL_RC = {
     "axes.linewidth": 1.4,
