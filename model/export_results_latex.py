@@ -77,10 +77,10 @@ _NUMBER_WORD = {"1": "One", "2": "Two", "3": "Three"}
 _PAPER_TARGET = {"desire": "desire", "intimacy": "relationship", "effort": "physical"}
 
 # Decimals per quantity kind. Held-out LL differences span two orders of
-# magnitude across studies (1a's is +0.0048, 2a's +0.2799), so 4 places are
-# needed for the small ones to be nonzero; the fitted-parameter table keeps the
-# 2 places it already used.
-DP_LL = 4
+# magnitude across studies, but PER PARTICIPANT (see `_per_participant`) even the
+# smallest is +0.077, so 3 places carry them all; the fitted-parameter table keeps
+# the 2 places it already used.
+DP_LL = 3
 DP_PARAM = 2
 DP_R = 3
 # sigma gets a third place: it is a response-noise scale where the third digit
@@ -110,6 +110,35 @@ def _fmt(value, dp, signed=False):
 def _fmt_int(value):
     """An integer with LaTeX's thousands separator (1{,}234)."""
     return f"{value:,}".replace(",", "{,}")
+
+
+def _per_participant(comparison):
+    """Trials per participant, the factor that turns a per-trial held-out LL into
+    a per-participant one.
+
+    The paper reports held-out log-likelihood per PARTICIPANT while the
+    preregistration specifies per trial. The two differ by exactly this constant,
+    so every sign, ordering, and interval-versus-zero conclusion is identical --
+    only the scale a reader has to interpret changes, and per trial the smallest
+    difference is +0.0048, which reads as nothing. The stored artifacts stay in the
+    preregistered unit; the rescale happens here, at the reporting layer, so the
+    preregistered quantity is always one division away.
+
+    Whole-number and equal to the scenario count by design: each participant sees
+    each scenario exactly once. Asserted rather than assumed, because a study with
+    unequal trials per participant would make a single factor wrong for it and the
+    error would be a silent constant on every number in the paper.
+    """
+    n_trials = comparison["n_trials_per_model"]
+    n_subj = comparison["n_subjects"]
+    factor = n_trials / n_subj
+    if abs(factor - round(factor)) > 1e-9:
+        raise ValueError(
+            f"{n_trials} trials over {n_subj} participants is {factor} trials each, "
+            "not a whole number -- a single per-participant factor cannot be right "
+            "for this study, so the reported LL scale would be silently wrong."
+        )
+    return round(factor)
 
 
 def _fmt_ci(ci, dp=DP_LL):
@@ -209,7 +238,7 @@ PREREG_TAG = "uniform-noreweight"
 PREREG_COMPARE_NAME = f"compare_{PREREG_TAG}_vs_reported.json"
 
 
-def _prereg_deviation_macros(m, tok, slug, reported_ll):
+def _prereg_deviation_macros(m, tok, slug, reported_ll, *, scale):
     """The preregistered (eta = 0) model's held-out likelihood beside the
     reported model's, and the paired difference between them.
 
@@ -258,10 +287,10 @@ def _prereg_deviation_macros(m, tok, slug, reported_ll):
         )
     m.add(
         f"llPrereg{tok}",
-        _fmt(entry["mean_ll_a"], DP_LL, signed=True),
-        "eta = 0 (preregistered) full model, mean per-trial held-out LL",
+        _fmt(scale * entry["mean_ll_a"], DP_LL, signed=True),
+        "eta = 0 (preregistered) full model, held-out LL per participant",
     )
-    _contrast_macros(m, tok, "Reweight", entry, "reported - preregistered")
+    _contrast_macros(m, tok, "Reweight", entry, "reported - preregistered", scale=scale)
     return entry
 
 
@@ -369,16 +398,16 @@ def _demographics(slug):
     }, n_retained
 
 
-def _contrast_macros(m, tok, label, entry, note):
+def _contrast_macros(m, tok, label, entry, note, *, scale):
     """The three macros for one held-out contrast: the point estimate, the CI,
     and a composed "value~[lo, hi]". The composed one is defined by reference to
     the other two, so a number exists in exactly one place."""
     m.add(
         f"dll{label}{tok}",
-        _fmt(entry["mean_per_trial_ll_diff"], DP_LL, signed=True),
+        _fmt(scale * entry["mean_per_trial_ll_diff"], DP_LL, signed=True),
         note,
     )
-    m.add(f"ci{label}{tok}", _fmt_ci(entry["ci_95"]))
+    m.add(f"ci{label}{tok}", _fmt_ci([scale * v for v in entry["ci_95"]]))
     m.add(f"stat{label}{tok}", rf"\dll{label}{tok}~\ci{label}{tok}")
 
 
@@ -450,24 +479,43 @@ def build(all_studies):
         m.add(f"nConditions{tok}", _fmt_int(n_cells // n_scenarios))
 
         # --- the full model's own held-out LL, and the reported contrasts ---
+        # Rescaled from the artifacts' preregistered per-trial unit; see
+        # `_per_participant` for why the paper reports per participant.
+        scale = _per_participant(comparison)
         m.add(
             f"llFull{tok}",
-            _fmt(comparison["mean_held_out_ll_per_trial"]["full"], DP_LL, signed=True),
-            "held-out LL / trial",
+            _fmt(
+                scale * comparison["mean_held_out_ll_per_trial"]["full"],
+                DP_LL,
+                signed=True,
+            ),
+            "held-out LL / participant",
         )
         # The preregistered (eta = 0) model beside it, for the deviation section.
         _prereg_deviation_macros(
-            m, tok, slug, comparison["mean_held_out_ll_per_trial"]["full"]
+            m, tok, slug, comparison["mean_held_out_ll_per_trial"]["full"], scale=scale
         )
-        _contrast_macros(m, tok, "Base", primary[base_key], f"full - {base_key}")
         _contrast_macros(
-            m, tok, "Disc", primary["discomfort_only"], "full - discomfort_only"
+            m, tok, "Base", primary[base_key], f"full - {base_key}", scale=scale
+        )
+        _contrast_macros(
+            m,
+            tok,
+            "Disc",
+            primary["discomfort_only"],
+            "full - discomfort_only",
+            scale=scale,
         )
 
         # --- preregistration deviation, only where the reported base differs ---
         if base_key != "base":
             _contrast_macros(
-                m, tok, "PreregBase", primary["base"], "preregistered full - base"
+                m,
+                tok,
+                "PreregBase",
+                primary["base"],
+                "preregistered full - base",
+                scale=scale,
             )
             set_only = deviation.get(f"{base_key}_minus_base")
             if set_only is None:
@@ -475,7 +523,9 @@ def build(all_studies):
                     f"{slug}: prereg_deviation has no {base_key}_minus_base entry; "
                     "re-run `make model-comparison`."
                 )
-            _contrast_macros(m, tok, "SetOnly", set_only, "comparison set alone")
+            _contrast_macros(
+                m, tok, "SetOnly", set_only, "comparison set alone", scale=scale
+            )
 
         # --- secondary correlations, per (reported variant, DV) ---
         by_key = {
@@ -586,7 +636,7 @@ def _tabular(colspec, header, rows):
 
 
 def model_comparison_table(all_studies):
-    """tab:model-comparison: held-out LL per trial, full and vs each ablation.
+    """tab:model-comparison: held-out LL per participant, full and vs each ablation.
     `\\statBase*` resolves to the REPORTED base (see reported_base)."""
 
     def cells(study):
@@ -596,7 +646,7 @@ def model_comparison_table(all_studies):
 
     header = "\n".join(
         [
-            r" & & \multicolumn{3}{c}{Held-out LL / trial} \\",
+            r" & & \multicolumn{3}{c}{Held-out LL / participant} \\",
             r"\cmidrule(lr){3-5}",
             r"Study & Inferred target & Full & Full $-$ base & "
             r"Full $-$ discomfort-only \\",
@@ -645,7 +695,7 @@ def prereg_deviation_table(all_studies):
 
     header = "\n".join(
         [
-            r" & & \multicolumn{2}{c}{Held-out LL / trial} & \\",
+            r" & & \multicolumn{2}{c}{Held-out LL / participant} & \\",
             r"\cmidrule(lr){3-4}",
             r"Study & $\eta$ & Preregistered & Reported & "
             r"Reported $-$ preregistered \\",
