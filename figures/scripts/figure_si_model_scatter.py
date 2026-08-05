@@ -15,11 +15,10 @@ the per-scenario counterpart of the averaged panels rather than a re-plot of
 them.
 
 Points are cells, marker shape is the inferred latent (matching the results
-figures), and the annotation is the Pearson r over a study's cells with a 95%
-subject-cluster bootstrap CI. Human cells at this grain rest on few judgments
-each, so the scatter is deliberately drawn without error bars -- per-cell
-uncertainty is what the bootstrap CI on r summarizes, and 300+ error bars per
-panel would obscure the cloud they describe. An ablation that cannot infer a
+figures), and the annotation is the Pearson r over a study's cells, per DV and
+without an interval (see `_dv_label` for why). Human cells at this grain rest on
+few judgments each, so each carries a 95% subject-cluster CI -- drawn very light,
+because a panel holds up to 384 of them. An ablation that cannot infer a
 latent predicts a constant for it, which shows up as a vertical stripe and an
 undefined r.
 
@@ -33,7 +32,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import DV_MARKERS, apply_style, savefig  # noqa: E402
@@ -45,6 +43,12 @@ import _panels as panels  # noqa: E402
 
 N_BOOT = 1000
 POINT_COLOR = "#333333"
+# Per-cell human CIs. A panel carries 96-384 of these, so they are drawn far
+# lighter and thinner than the aggregate panels' bars: at the aggregate weight the
+# whiskers merged into a wash and the cloud stopped being readable. They sit under
+# the markers so a point is never hidden by its own interval.
+CI_COLOR = "0.72"
+CI_LINEWIDTH = 0.45
 PANEL_IN = 1.75  # side of one square panel, inches
 
 
@@ -136,6 +140,21 @@ def draw_panel(ax, series, lim, note=None):
     ax.plot(lim, lim, **panels.IDENTITY_LINE)
     ax.axhline(0, **panels.ZERO_LINE)
     ax.axvline(0, **panels.ZERO_LINE)
+    # 95% subject-cluster CI on each human cell mean, from the same resamples the
+    # panel already holds. Drawn as one layer beneath every marker rather than
+    # per-DV, so no DV's bars sit systematically on top of another's.
+    for _dv, x, y, ys in series:
+        lo = np.nanpercentile(ys, 2.5, axis=0)
+        hi = np.nanpercentile(ys, 97.5, axis=0)
+        ax.errorbar(
+            x,
+            y,
+            yerr=np.clip(np.vstack([y - lo, hi - y]), 0, None),
+            fmt="none",
+            ecolor=CI_COLOR,
+            elinewidth=CI_LINEWIDTH,
+            zorder=2,
+        )
     for dv, x, y, _ys in series:
         ax.scatter(
             x,
@@ -203,7 +222,7 @@ def build(slugs):
     fig, axes = plt.subplots(
         len(rows),
         ncols,
-        figsize=(PANEL_IN * ncols + 0.85, PANEL_IN * len(rows) + 0.75),
+        figsize=(PANEL_IN * ncols + 0.85, PANEL_IN * len(rows) + 0.5),
         squeeze=False,
         sharex=True,
         sharey=True,
@@ -234,34 +253,11 @@ def build(slugs):
             f"annotates r only"
         )
 
-    dvs_present = []
-    for _slug, by_model in rows:
-        for series in by_model.values():
-            for dv, *_rest in series:
-                if dv not in dvs_present:
-                    dvs_present.append(dv)
-    fig.legend(
-        handles=[
-            Line2D(
-                [],
-                [],
-                linestyle="none",
-                marker=DV_MARKERS[dv],
-                markersize=4,
-                color=POINT_COLOR,
-                label=f"Inferred {dv}",
-            )
-            for dv in dvs_present
-        ],
-        loc="lower center",
-        ncol=len(dvs_present),
-        frameon=False,
-        fontsize=7.5,
-        handletextpad=0.3,
-        columnspacing=1.4,
-        borderaxespad=0.1,
-    )
-    fig.supxlabel("Model predicted belief update (out-of-sample)", fontsize=8.5)
+    # No legend: the shape encoding is the results figures' and is carried by the
+    # standalone `legend_target*.pdf` components, and every other SI grid here
+    # leaves its legend to the caption for the same reason. A strip along the
+    # bottom also cost this figure vertical room it would rather give the panels.
+    fig.supxlabel("Model belief update", fontsize=8.5)
     fig.supylabel("Human belief update", fontsize=8.5)
     return fig
 
