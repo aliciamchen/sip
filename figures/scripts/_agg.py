@@ -228,10 +228,13 @@ def _r_label(ci, x, y):
     return f"$r$ = {r:.2f}\n[{lo:.2f}, {hi:.2f}]"
 
 
-def draw_agg_panel(ax, groups, lim, ci=None):
+def draw_agg_panel(ax, groups, lim, ci=None, *, zero_lw=None):
     """groups: list of (dv, x, y, y_lo, y_hi). DV is encoded by MARKER SHAPE (one
     point color for all); vertical human-CI error bars sit behind the points; the
-    panel shows a single pooled Pearson r over all points. Sized for a poster."""
+    panel shows a single pooled Pearson r over all points. Sized for a poster.
+
+    `zero_lw` is the caller's points-style width for reference lines, so the
+    identity line and both zero rules match the results panels' zero rule."""
     by_dv = OrderedDict()
     for dv, x, y, ylo, yhi in groups:
         by_dv.setdefault(dv, []).append((x, y, ylo, yhi))
@@ -285,9 +288,17 @@ def draw_agg_panel(ax, groups, lim, ci=None):
 
     # The zero rules take the identity line's dashed style: all three are
     # reference geometry rather than data, and a solid rule reads as a series.
-    ax.plot(lim, lim, **panels.IDENTITY_LINE)
-    ax.axhline(0, **panels.ZERO_LINE)
-    ax.axvline(0, **panels.ZERO_LINE)
+    # `zero_lw` matches whatever the caller's points style uses for its own zero
+    # rule (`_points.draw_points` does the same), so these panels and the results
+    # panels don't sit side by side in one figure with reference lines of two
+    # different weights.
+    ident = dict(panels.IDENTITY_LINE)
+    zero = dict(panels.ZERO_LINE)
+    if zero_lw:
+        ident["linewidth"] = zero["linewidth"] = zero_lw
+    ax.plot(lim, lim, **ident)
+    ax.axhline(0, **zero)
+    ax.axvline(0, **zero)
     ax.set_xlim(lim)
     ax.set_ylim(lim)
     ax.set_aspect("equal")

@@ -77,6 +77,12 @@ STYLE = replace(
 # empty rather than growing their plot area.
 PANEL_MARGINS = dict(left=0.075, right=0.995, top=0.824, bottom=0.236, wspace=0.08)
 
+# The same idea for the model-vs-human scatter, which has its own furniture: a
+# column title above, x tick labels plus an x axis label below, and y tick labels
+# plus a y label at the left. Height is the binding dimension once the equal
+# aspect squares the box, so top/bottom are what the title clearance depends on.
+SCATTER_MARGINS = dict(left=0.062, right=0.995, top=0.885, bottom=0.16, wspace=0.09)
+
 PANEL_RC = {
     "axes.linewidth": 1.4,
     "xtick.major.width": 1.4,
@@ -171,7 +177,9 @@ def draw_panel(slug, stem):
     return True
 
 
-def draw_scatter_panel(stem="panel_model_vs_humans", slugs=None, label="scatter"):
+def draw_scatter_panel(
+    stem="panel_model_vs_humans", slugs=None, label="scatter", lim=None
+):
     """Model-vs-humans scatter on its own artboard, over `slugs` (all six when
     None).
 
@@ -186,27 +194,30 @@ def draw_scatter_panel(stem="panel_model_vs_humans", slugs=None, label="scatter"
     bootstrap r is computed, so the panel and the reported correlation cannot
     disagree.
 
-    The axis limit is computed from the points drawn, so a per-study-number panel
-    fills its own axes rather than inheriting the pooled range. That is the right
-    default here -- each panel is read against its own identity line, and belief
-    updates differ severalfold across studies, so a shared range would compress
-    the smaller ones -- but it does mean the three per-number panels are not to a
-    common scale. Read each against its diagonal, not against its neighbours.
+    Pass `lim` to force the axis range; without it the range is computed from the
+    points drawn and returned, so the caller can compute it once on the pooled
+    panel (whose points are every study's) and hand the same range to each
+    per-study-number panel. They are meant to be stacked into one figure, and
+    axes that differed between rows would invite exactly the cross-row comparison
+    they would then be misleading about. The cost is that a study with smaller
+    updates uses less of its axes; that is the correct trade when the rows sit
+    together.
     """
     agg, agg_cis = corr.agg_points(slugs)
     if not any(agg.values()):
         print(f"[{label}] no CV predictions yet — skipped")
-        return
-    vals = np.concatenate(
-        [
-            arr
-            for m in points.data.MODEL_ORDER
-            for _dv, x, y, ylo, yhi in agg[m]
-            for arr in (x, y, ylo, yhi)
-        ]
-    )
-    lim_hi = float(np.nanmax(np.abs(vals))) * 1.05
-    lim = (-lim_hi, lim_hi)
+        return None
+    if lim is None:
+        vals = np.concatenate(
+            [
+                arr
+                for m in points.data.MODEL_ORDER
+                for _dv, x, y, ylo, yhi in agg[m]
+                for arr in (x, y, ylo, yhi)
+            ]
+        )
+        lim_hi = float(np.nanmax(np.abs(vals))) * 1.05
+        lim = (-lim_hi, lim_hi)
 
     keys = points.data.MODEL_ORDER
     fig, axes = plt.subplots(
@@ -215,10 +226,21 @@ def draw_scatter_panel(stem="panel_model_vs_humans", slugs=None, label="scatter"
         figsize=(STYLE.panel_w * len(keys), STYLE.panel_h),
         sharex=True,
         sharey=True,
-        constrained_layout=True,
     )
+    # Fixed margins for the same reason `draw_panel` uses them, and one this panel
+    # needs even more: these axes are `set_aspect("equal")`, and under
+    # constrained_layout the reserved space depends on how wide the tick labels
+    # are. A study whose updates span a smaller range gets fewer x-tick labels, so
+    # the layout hands it more room, the square box grows to fill it, and it grows
+    # UPWARD into the title -- which is exactly how Study 2's column titles came to
+    # be clipped while Studies 1 and 3 were fine. A fixed rectangle makes the box
+    # identical across studies, so the titles land in the same place and the three
+    # artboards stack.
+    fig.subplots_adjust(**SCATTER_MARGINS)
     for ax, model in zip(axes, keys):
-        corr.draw_agg_panel(ax, agg[model], lim, agg_cis.get(model))
+        corr.draw_agg_panel(
+            ax, agg[model], lim, agg_cis.get(model), zero_lw=STYLE.zero_lw
+        )
         ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
         ax.tick_params(labelsize=STYLE.tick_fs)
         ax.xaxis.set_major_locator(plt.MaxNLocator(5))
@@ -228,6 +250,7 @@ def draw_scatter_panel(stem="panel_model_vs_humans", slugs=None, label="scatter"
     # same quantity from two sources rather than as two different quantities.
     axes[len(keys) // 2].set_xlabel("Model belief update", fontsize=STYLE.label_fs)
     _save(fig, stem)
+    return lim
 
 
 def draw_legend(handles, stem, title, ncol=None):
@@ -311,12 +334,16 @@ def main():
         # manuscript's results figures are assembled at, so a study's
         # correlation can be reported beside its own panels if we decide to
         # report them separately rather than only pooled.
-        draw_scatter_panel()
+        # The pooled panel's range spans every study's points, so reuse it for
+        # the per-number panels rather than letting each pick its own -- they are
+        # stacked into one figure and have to share axes to be comparable.
+        shared_lim = draw_scatter_panel()
         for group_stem, name, members in corr.STUDY_GROUPS:
             draw_scatter_panel(
                 stem=f"panel_model_vs_humans_{group_stem}",
                 slugs=[slug for slug, _paper in members],
                 label=name,
+                lim=shared_lim,
             )
         n_legends = draw_legends()
     print(f"\n{len(drawn)} panel(s) + {n_legends} legend(s) in {OUT_DIR}")
