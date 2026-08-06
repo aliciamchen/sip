@@ -76,11 +76,15 @@ _NUMBER_WORD = {"1": "One", "2": "Two", "3": "Three"}
 # the registry's figure-axis label ("Effort of low-risk share").
 _PAPER_TARGET = {"desire": "desire", "intimacy": "relationship", "effort": "physical"}
 
-# Decimals per quantity kind. Held-out LL differences span two orders of
-# magnitude across studies, but PER PARTICIPANT (see `_per_participant`) even the
-# smallest is +0.077, so 3 places carry them all; the fitted-parameter table keeps
-# the 2 places it already used.
-DP_LL = 3
+# Decimals per quantity kind. Per participant (see `_per_participant`) the
+# held-out LL quantities run from 0.01 to 10.6, so 2 places carry all of them and
+# no reliably nonzero effect displays as 0.00 -- checked across every emitted
+# contrast and its CI, including the smallest (Study 2b's reweighting gain, +0.01).
+# The two quantities that DO show 0.00 are a true zero (Study 1a's reweighting is
+# fitted to exactly zero) and a true null (Study 3a's full - base, whose CI spans
+# zero). Any future contrast smaller than 0.005 with an interval excluding zero
+# would need a third place back.
+DP_LL = 2
 DP_PARAM = 2
 DP_R = 3
 # sigma gets a third place: it is a response-noise scale where the third digit
