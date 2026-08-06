@@ -102,13 +102,17 @@ def token(study):
     return _NUMBER_WORD[study.number] + study.substudy.upper()
 
 
-def _fmt(value, dp, signed=False):
+def _fmt(value, dp):
     """A number as LaTeX math, so a negative renders as a real minus sign in
-    running text as well as in math mode."""
+    running text as well as in math mode.
+
+    Positives carry no sign. Differences were printed with an explicit `+` until
+    2026-08-06, which made a column of improvements read as a column of
+    annotations; the direction is legible from the minus signs alone.
+    """
     if value is None or (isinstance(value, float) and not math.isfinite(value)):
         return r"\textit{n/a}"
-    body = f"{value:+.{dp}f}" if signed else f"{value:.{dp}f}"
-    return rf"\ensuremath{{{body}}}"
+    return rf"\ensuremath{{{value:.{dp}f}}}"
 
 
 def _fmt_int(value):
@@ -146,8 +150,9 @@ def _per_participant(comparison):
 
 
 def _fmt_ci(ci, dp=DP_LL):
+    """An interval as `[lo, hi]`; unsigned positives, as in `_fmt`."""
     lo, hi = ci
-    return rf"\ensuremath{{[{lo:+.{dp}f},\ {hi:+.{dp}f}]}}"
+    return rf"\ensuremath{{[{lo:.{dp}f},\ {hi:.{dp}f}]}}"
 
 
 def _round_half_up(value, dp=0):
@@ -291,7 +296,7 @@ def _prereg_deviation_macros(m, tok, slug, reported_ll, *, scale):
         )
     m.add(
         f"llPrereg{tok}",
-        _fmt(scale * entry["mean_ll_a"], DP_LL, signed=True),
+        _fmt(scale * entry["mean_ll_a"], DP_LL),
         "eta = 0 (preregistered) full model, held-out LL per participant",
     )
     _contrast_macros(m, tok, "Reweight", entry, "reported - preregistered", scale=scale)
@@ -408,7 +413,7 @@ def _contrast_macros(m, tok, label, entry, note, *, scale):
     the other two, so a number exists in exactly one place."""
     m.add(
         f"dll{label}{tok}",
-        _fmt(scale * entry["mean_per_trial_ll_diff"], DP_LL, signed=True),
+        _fmt(scale * entry["mean_per_trial_ll_diff"], DP_LL),
         note,
     )
     m.add(f"ci{label}{tok}", _fmt_ci([scale * v for v in entry["ci_95"]]))
@@ -491,7 +496,6 @@ def build(all_studies):
             _fmt(
                 scale * comparison["mean_held_out_ll_per_trial"]["full"],
                 DP_LL,
-                signed=True,
             ),
             "held-out LL / participant",
         )
