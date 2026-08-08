@@ -38,8 +38,27 @@ model/model_viz_nonfit/
 
 # Live-run CV fold checkpoint (lets an interrupted LOSO run resume; deleted
 # when the run's final outputs are written). Transient by design — the
-# committed CV artifacts are the cv_* outputs, never this side file.
+# committed CV artifacts are the cv_* outputs, never this side file. Both the
+# study root and the alt/<tag>/ configs write one.
 model/outputs/*/cv_checkpoint.jsonl
+model/outputs/*/alt/*/cv_checkpoint.jsonl
+
+# Cross-study parameter-transfer runs (model/cv/transfer.py). Sixteen
+# (pair x arm) CV output sets at ~2.8 MB each, for an exploratory analysis that
+# is in no preregistration — the same reasoning that keeps the other
+# exploratory alt/ configs out of the repo, and unlike the preregistered-model
+# (uniform-noreweight) outputs, which are committed because the paper quotes
+# numbers derived from them. Regenerate with `make transfer`; the summary the
+# result is read from, model/outputs/transfer/transfer_summary.json, is small
+# and IS committed. If the analysis becomes paper material, promote it the same
+# way the eta = 0 run was.
+model/outputs/*/alt/transfer-*/
+
+# Pooled cross-experiment CV runs (model/cv/pooled.py), same reasoning as the
+# transfer runs above: exploratory, in no preregistration, and ~1.7 MB per
+# group. Regenerate with `make pooled`; the summary the result is read from,
+# model/outputs/pooled/, is small and IS committed.
+model/outputs/*/alt/pooled-*/
 
 # Diagnostic-arm LM elicitations, written by `generate_alternatives.py
 # --arm-output-only` and `score_merged.py --arm`. These exist to evaluate a

@@ -91,6 +91,8 @@ help:
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
 	@echo "  run-deltas       - per-run held-out deltas behind each cell mean (SI run-spread figure)"
+	@echo "  transfer         - cross-study parameter transfer over the designed pairs (exploratory)"
+	@echo "  pooled           - one shared utility per domain / across all six (exploratory)"
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
@@ -457,6 +459,38 @@ run-deltas: $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_ll.js
 	uv run python model/cv/run_deltas.py
 
 # =============================================================================
+# Cross-study parameter transfer (exploratory; in no preregistration): score one
+# study's fitted utility on another over the designed pairs, in two arms —
+# `frozen` (zero free parameters) and `refit` (utility frozen, alpha_observer /
+# sigma / eta re-estimated). Depends on every study's own CV, which supplies
+# both the donor parameters and the ceiling each arm is read against.
+#
+# Not a file target: outputs land per (recipient, donor, arm) under
+# outputs/<slug>/alt/transfer-*/, and the script skips pairs already on disk
+# (pass ARGS='--force' to redo them).
+# =============================================================================
+
+.PHONY: transfer
+transfer: $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_ll.jsonl)
+	uv run python model/cv/transfer.py $(ARGS)
+
+# =============================================================================
+# Pooled cross-experiment fits (exploratory; in no preregistration): one utility
+# shared across a group of experiments, with each keeping its own response
+# parameters. Rung 3 pools by stimulus domain, rung 4 pools all six; the
+# reported per-experiment fits are rung 1. Depends on every study's own fit and
+# CV, which supply the starting vectors and the per-experiment ceiling.
+#
+# Not a file target: outputs land per (experiment, group) under
+# outputs/<slug>/alt/pooled-<group>/, and the script skips groups already on
+# disk (pass ARGS='--force' to redo them).
+# =============================================================================
+
+.PHONY: pooled
+pooled: $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_ll.jsonl)
+	uv run python model/cv/pooled.py $(ARGS)
+
+# =============================================================================
 # Results LaTeX (SIP_journal/): every number the results section states, as
 # generated macros plus the two table bodies. Depends on the comparison JSONs,
 # so it rebuilds fit -> cv -> model-comparison first when any is stale, and the
@@ -703,6 +737,8 @@ test:
 	uv run python model/test_fit_protocol.py
 	uv run python model/cv/test_checkpoint.py
 	uv run python model/cv/test_model_comparison.py
+	uv run python model/cv/test_transfer.py
+	uv run python model/cv/test_pooled.py
 	uv run python model/lm/test_elicitation_guards.py
 	uv run python bin/test_overnight_reelicit.py
 	uv run python analysis/test_json_to_csv.py
