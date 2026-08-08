@@ -287,7 +287,13 @@ def _prereg_deviation_macros(m, tok, slug, reported_ll, *, scale):
     # The comparison's own reported-side mean must agree with the one the primary
     # statistics produced; they are computed from the same trials by different
     # code paths, so a disagreement means the two vintages differ.
-    if not math.isclose(entry["mean_ll_b"], reported_ll, abs_tol=10 ** (-DP_LL)):
+    # Fixed per-trial tolerance, deliberately NOT tied to DP_LL. DP_LL is a
+    # display precision on PER-PARTICIPANT numbers, while both operands here are
+    # per trial, so tracking it silently loosened this guard by the scenario
+    # count when the reported unit changed. The two sides average the same trials
+    # by different code paths and so agree to float noise; anything larger is a
+    # vintage difference, which is exactly what this exists to catch.
+    if not math.isclose(entry["mean_ll_b"], reported_ll, abs_tol=1e-6):
         raise ValueError(
             f"{slug}: the reported model's mean held-out LL is {reported_ll:.6f} in "
             f"cv_model_comparison.json but {entry['mean_ll_b']:.6f} in {path.name} "
