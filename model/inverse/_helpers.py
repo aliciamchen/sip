@@ -306,6 +306,107 @@ def _fit_multistart(
     return best_params, best_nll, records
 
 
+def fit_masked(
+    loss_fn,
+    n_params,
+    free_mask=None,
+    init_params=None,
+    alpha_obs_index=None,
+    upper=None,
+    **kwargs,
+):
+    """`_fit_multistart` restricted to a subset of the parameter vector.
+
+    `free_mask` is a boolean array over the full vector: True slots are
+    estimated, False slots stay at their `init_params` value. `None` (the
+    default) means every slot is free, and the call delegates to
+    `_fit_multistart` verbatim — the reported fits go through that path
+    unchanged.
+
+    A mask is only meaningful relative to a starting vector, so `init_params` is
+    required whenever one is given. A mask with NO free slot skips the optimizer
+    entirely and returns the init with its loss: that is the cross-study
+    transfer analysis's zero-free-parameter arm, where a donor study's
+    parameters are scored on a recipient study without any of them being
+    estimated there.
+
+    Restarts, bounds, and the returned records all live in the reduced space and
+    are mapped back to full-length vectors before returning, so callers — and
+    `restart_records_to_rows`, which flattens records by parameter name — see
+    the same layout either way.
+    """
+    if free_mask is None:
+        return _fit_multistart(
+            loss_fn,
+            n_params=n_params,
+            init_params=init_params,
+            alpha_obs_index=alpha_obs_index,
+            upper=upper,
+            **kwargs,
+        )
+    if init_params is None:
+        raise ValueError(
+            "fit_masked needs init_params when free_mask is given — the frozen "
+            "slots have no other source of values."
+        )
+    free = np.asarray(free_mask, dtype=bool)
+    if free.shape != (n_params,):
+        raise ValueError(
+            f"free_mask has shape {free.shape}, expected ({n_params},) — a mask "
+            "of the wrong length would freeze or free the wrong parameters."
+        )
+    if len(init_params) != n_params:
+        # JAX clamps out-of-bounds `.at[]` indices rather than raising, so a
+        # short init would silently write a free slot's value into the last
+        # position instead of failing — the same trap the fit helpers guard
+        # against for a prior_nu-length mismatch.
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params} — a masked fit indexes the init by slot, and JAX would "
+            "clamp the out-of-bounds writes instead of raising."
+        )
+    base = jnp.asarray(init_params, dtype=jnp.float32)
+    idx = np.flatnonzero(free)
+
+    def _to_full(vec):
+        return np.asarray(base.at[jnp.asarray(idx)].set(jnp.asarray(vec))).tolist()
+
+    if idx.size == 0:
+        nll = float(loss_fn(base))
+        full = np.asarray(base).tolist()
+        return (
+            base,
+            nll,
+            [{"restart": 0, "init": full, "final_params": full, "nll": nll}],
+        )
+
+    jidx = jnp.asarray(idx)
+
+    def loss_free(theta):
+        return loss_fn(base.at[jidx].set(theta))
+
+    # alpha_observer's index within the REDUCED vector (None when it is frozen),
+    # so `_fit_multistart`'s basin seeding still targets the right slot.
+    free_alpha = (
+        int(np.searchsorted(idx, alpha_obs_index))
+        if alpha_obs_index is not None and free[alpha_obs_index]
+        else None
+    )
+    best, nll, records = _fit_multistart(
+        loss_free,
+        n_params=int(idx.size),
+        init_params=base[jidx],
+        alpha_obs_index=free_alpha,
+        upper=None if upper is None else upper[jidx],
+        **kwargs,
+    )
+    records = [
+        dict(r, init=_to_full(r["init"]), final_params=_to_full(r["final_params"]))
+        for r in records
+    ]
+    return base.at[jidx].set(best), nll, records
+
+
 def restart_records_to_rows(
     slug, variant, utility_param_names, records, extra_param_names=()
 ):
@@ -1110,7 +1211,7 @@ def _build_observer_tables_runs(observer_fn, params, utility_param_names, table_
     return jax.vmap(_run_one)(run_tables)
 
 
-def fit_intimacy_observer_joint(
+def _intimacy_loss(
     observer_fn,
     utility_param_names,
     action,
@@ -1121,29 +1222,17 @@ def fit_intimacy_observer_joint(
     table_kwargs,
     priors=None,
     reweighting=None,
-    lr=0.1,
-    max_steps=1000,
-    verbose=True,
-    n_restarts=N_RESTARTS_FIT,
-    init_params=None,
-    patience=100,
-    seed_key=None,
 ):
-    """Study 2a — joint fit of utility weights + α_observer + σ on the intimacy
-    belief update via the K-run Gaussian mixture.
+    """Study 2a's mixture NLL as a function of the fit's parameter vector.
 
-    The stacked observer table is 7-D — (run, padded_slot, scenario,
-    observed_action, desire, effort, relationship[101]). The observed action sits
-    in slot 0, so each run's intimacy posterior is
-    `tables[:, 0, scenario, action, desire, effort, :]`; its mean minus the prior
-    mean gives that run's model update δ_k. `response` is the intimacy belief
-    update u, scored under (1/K)Σ N(u | δ_k, σ²).
+    Split out of `fit_intimacy_observer_joint` so the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
+    under one shared utility. The fit helper is the only other caller; both go
+    through this, so there is one definition of what a study's likelihood is.
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 2)) is active,
-    the intimacy latent gets a per-cell discretized-Beta prior with a single
-    fitted concentration `prior_nu` appended to the param vector at index
-    `n_core`; the uniform fit is nested at m=0.5, nu=2.
+    Returns (loss_fn, n_params, n_core), where the parameter vector is
+    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
+    index one past sigma.
     """
     if priors is not None and all(v is None for v in priors.values()):
         priors = None
@@ -1152,16 +1241,6 @@ def fit_intimacy_observer_joint(
     n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
     # eta is the LAST slot when the reweighting is active (after prior_nu).
     i_eta = n_params - 1 if reweighting else None
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
-            "A warm start that doesn't match the prior configuration would be "
-            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
-            "would read sigma). Build the warm start with "
-            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
-            "prior adds a grid latent."
-        )
 
     def loss_fn(params):
         tk = _reweighting.apply(
@@ -1193,9 +1272,76 @@ def fit_intimacy_observer_joint(
             )
         )
 
-    params, nll, restarts = _fit_multistart(
+    return loss_fn, n_params, n_core
+
+
+def fit_intimacy_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    desire_condition,
+    effort_condition,
+    response,
+    table_kwargs,
+    priors=None,
+    reweighting=None,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+    n_restarts=N_RESTARTS_FIT,
+    init_params=None,
+    patience=100,
+    seed_key=None,
+    free_mask=None,
+):
+    """Study 2a — joint fit of utility weights + α_observer + σ on the intimacy
+    belief update via the K-run Gaussian mixture.
+
+    The stacked observer table is 7-D — (run, padded_slot, scenario,
+    observed_action, desire, effort, relationship[101]). The observed action sits
+    in slot 0, so each run's intimacy posterior is
+    `tables[:, 0, scenario, action, desire, effort, :]`; its mean minus the prior
+    mean gives that run's model update δ_k. `response` is the intimacy belief
+    update u, scored under (1/K)Σ N(u | δ_k, σ²).
+
+    `priors=None` keeps the uniform-prior path byte-identical to the
+    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 2)) is active,
+    the intimacy latent gets a per-cell discretized-Beta prior with a single
+    fitted concentration `prior_nu` appended to the param vector at index
+    `n_core`; the uniform fit is nested at m=0.5, nu=2.
+
+    `free_mask` (see `fit_masked`) estimates only a subset of the vector,
+    holding the rest at `init_params`; the cross-study transfer analysis uses it
+    to freeze the utility weights. `None` is the ordinary fit.
+    """
+    loss_fn, n_params, n_core = _intimacy_loss(
+        observer_fn,
+        utility_param_names,
+        action,
+        scenario_idx,
+        desire_condition,
+        effort_condition,
+        response,
+        table_kwargs,
+        priors=priors,
+        reweighting=reweighting,
+    )
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
+            f"{n_params - n_core} extra slot(s) for this configuration's "
+            "prior_nu / eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "read sigma). Build it with params_dict_to_array(..., "
+            "extra_param_names=[...]) naming the same extras."
+        )
+
+    params, nll, restarts = fit_masked(
         loss_fn,
         n_params=n_params,
+        free_mask=free_mask,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,
@@ -1210,7 +1356,7 @@ def fit_intimacy_observer_joint(
     return params, float(nll), restarts
 
 
-def fit_desire_observer_joint(
+def _desire_loss(
     observer_fn,
     utility_param_names,
     action,
@@ -1221,29 +1367,17 @@ def fit_desire_observer_joint(
     table_kwargs,
     priors=None,
     reweighting=None,
-    lr=0.1,
-    max_steps=1000,
-    verbose=True,
-    n_restarts=N_RESTARTS_FIT,
-    init_params=None,
-    patience=100,
-    seed_key=None,
 ):
-    """Study 1a — joint fit of utility weights + α_observer + σ on the desire
-    belief update via the K-run Gaussian mixture.
+    """Study 1a's mixture NLL as a function of the fit's parameter vector.
 
-    The stacked observer table is 7-D —
-    `(run, padded_slot, scenario, observed_action, effort, intimacy, desire[101])`.
-    The observed action lives in slot 0, so each run's desire posterior is
-    `tables[:, 0, scenario, action, effort, intimacy, :]`; its mean minus the
-    prior mean gives that run's δ_k. `response` is the desire belief update u,
-    scored under (1/K)Σ N(u | δ_k, σ²).
+    Split out of `fit_desire_observer_joint` so the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
+    under one shared utility. The fit helper is the only other caller; both go
+    through this, so there is one definition of what a study's likelihood is.
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 4)) is active,
-    the desire latent gets a per-cell discretized-Beta prior with a single fitted
-    concentration `prior_nu` appended to the param vector at index `n_core`; the
-    uniform fit is nested at m=0.5, nu=2.
+    Returns (loss_fn, n_params, n_core), where the parameter vector is
+    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
+    index one past sigma.
     """
     if priors is not None and all(v is None for v in priors.values()):
         priors = None
@@ -1252,16 +1386,6 @@ def fit_desire_observer_joint(
     n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
     # eta is the LAST slot when the reweighting is active (after prior_nu).
     i_eta = n_params - 1 if reweighting else None
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
-            "A warm start that doesn't match the prior configuration would be "
-            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
-            "would read sigma). Build the warm start with "
-            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
-            "prior adds a grid latent."
-        )
 
     def loss_fn(params):
         tk = _reweighting.apply(
@@ -1293,9 +1417,76 @@ def fit_desire_observer_joint(
             )
         )
 
-    params, nll, restarts = _fit_multistart(
+    return loss_fn, n_params, n_core
+
+
+def fit_desire_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    effort_condition,
+    relationship_condition,
+    response,
+    table_kwargs,
+    priors=None,
+    reweighting=None,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+    n_restarts=N_RESTARTS_FIT,
+    init_params=None,
+    patience=100,
+    seed_key=None,
+    free_mask=None,
+):
+    """Study 1a — joint fit of utility weights + α_observer + σ on the desire
+    belief update via the K-run Gaussian mixture.
+
+    The stacked observer table is 7-D —
+    `(run, padded_slot, scenario, observed_action, effort, intimacy, desire[101])`.
+    The observed action lives in slot 0, so each run's desire posterior is
+    `tables[:, 0, scenario, action, effort, intimacy, :]`; its mean minus the
+    prior mean gives that run's δ_k. `response` is the desire belief update u,
+    scored under (1/K)Σ N(u | δ_k, σ²).
+
+    `priors=None` keeps the uniform-prior path byte-identical to the
+    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 4)) is active,
+    the desire latent gets a per-cell discretized-Beta prior with a single fitted
+    concentration `prior_nu` appended to the param vector at index `n_core`; the
+    uniform fit is nested at m=0.5, nu=2.
+
+    `free_mask` (see `fit_masked`) estimates only a subset of the vector,
+    holding the rest at `init_params`; the cross-study transfer analysis uses it
+    to freeze the utility weights. `None` is the ordinary fit.
+    """
+    loss_fn, n_params, n_core = _desire_loss(
+        observer_fn,
+        utility_param_names,
+        action,
+        scenario_idx,
+        effort_condition,
+        relationship_condition,
+        response,
+        table_kwargs,
+        priors=priors,
+        reweighting=reweighting,
+    )
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
+            f"{n_params - n_core} extra slot(s) for this configuration's "
+            "prior_nu / eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "read sigma). Build it with params_dict_to_array(..., "
+            "extra_param_names=[...]) naming the same extras."
+        )
+
+    params, nll, restarts = fit_masked(
         loss_fn,
         n_params=n_params,
+        free_mask=free_mask,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,
@@ -1310,7 +1501,7 @@ def fit_desire_observer_joint(
     return params, float(nll), restarts
 
 
-def fit_joint_de_observer_joint(
+def _joint_de_loss(
     observer_fn,
     utility_param_names,
     action,
@@ -1321,31 +1512,17 @@ def fit_joint_de_observer_joint(
     table_kwargs,
     priors=None,
     reweighting=None,
-    lr=0.1,
-    max_steps=1000,
-    verbose=True,
-    n_restarts=N_RESTARTS_FIT,
-    init_params=None,
-    patience=100,
-    seed_key=None,
 ):
-    """Study 1b — joint fit of utility weights + α_observer + σ on the joint
-    (desire, effort) belief update via the K-run bivariate Gaussian mixture
-    (isotropic σ²·I₂).
+    """Studies 1b/3a's bivariate mixture NLL as a function of the fit's parameter vector.
 
-    The stacked observer table is 7-D — (run, padded_slot, scenario,
-    observed_action, relationship, desire[101], effort[2]). The observed action
-    sits in slot 0, so each run's joint over (desire, effort) is
-    `tables[:, 0, scenario, action, relationship, :, :]`. Per run we take the
-    desire-marginal mean and P(effort=HIGH); each minus its prior mean gives that
-    run's 2-D model update δ_k. `response_desire`/`response_effort` are the two
-    belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
+    Split out of `fit_joint_de_observer_joint` so the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
+    under one shared utility. The fit helper is the only other caller; both go
+    through this, so there is one definition of what a study's likelihood is.
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. `priors` may carry `m_latent` (desire, shape (K, 16, 4);
-    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
-    P(effort=high), shape (K, 16, 4)); each None leaves that latent uniform. The
-    uniform fit is nested at m=0.5, nu=2, p=0.5.
+    Returns (loss_fn, n_params, n_core), where the parameter vector is
+    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
+    index one past sigma.
     """
     if priors is not None and all(v is None for v in priors.values()):
         priors = None
@@ -1355,16 +1532,6 @@ def fit_joint_de_observer_joint(
     n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
     # eta is the LAST slot when the reweighting is active (after prior_nu).
     i_eta = n_params - 1 if reweighting else None
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
-            "A warm start that doesn't match the prior configuration would be "
-            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
-            "would read sigma). Build the warm start with "
-            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
-            "prior adds a grid latent."
-        )
 
     def loss_fn(params):
         tk = _reweighting.apply(
@@ -1410,9 +1577,78 @@ def fit_joint_de_observer_joint(
             )
         )
 
-    params, nll, restarts = _fit_multistart(
+    return loss_fn, n_params, n_core
+
+
+def fit_joint_de_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    relationship_condition,
+    response_desire,
+    response_effort,
+    table_kwargs,
+    priors=None,
+    reweighting=None,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+    n_restarts=N_RESTARTS_FIT,
+    init_params=None,
+    patience=100,
+    seed_key=None,
+    free_mask=None,
+):
+    """Study 1b — joint fit of utility weights + α_observer + σ on the joint
+    (desire, effort) belief update via the K-run bivariate Gaussian mixture
+    (isotropic σ²·I₂).
+
+    The stacked observer table is 7-D — (run, padded_slot, scenario,
+    observed_action, relationship, desire[101], effort[2]). The observed action
+    sits in slot 0, so each run's joint over (desire, effort) is
+    `tables[:, 0, scenario, action, relationship, :, :]`. Per run we take the
+    desire-marginal mean and P(effort=HIGH); each minus its prior mean gives that
+    run's 2-D model update δ_k. `response_desire`/`response_effort` are the two
+    belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
+
+    `priors=None` keeps the uniform-prior path byte-identical to the
+    preregistered fit. `priors` may carry `m_latent` (desire, shape (K, 16, 4);
+    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
+    P(effort=high), shape (K, 16, 4)); each None leaves that latent uniform. The
+    uniform fit is nested at m=0.5, nu=2, p=0.5.
+
+    `free_mask` (see `fit_masked`) estimates only a subset of the vector,
+    holding the rest at `init_params`; the cross-study transfer analysis uses it
+    to freeze the utility weights. `None` is the ordinary fit.
+    """
+    loss_fn, n_params, n_core = _joint_de_loss(
+        observer_fn,
+        utility_param_names,
+        action,
+        scenario_idx,
+        relationship_condition,
+        response_desire,
+        response_effort,
+        table_kwargs,
+        priors=priors,
+        reweighting=reweighting,
+    )
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
+            f"{n_params - n_core} extra slot(s) for this configuration's "
+            "prior_nu / eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "read sigma). Build it with params_dict_to_array(..., "
+            "extra_param_names=[...]) naming the same extras."
+        )
+
+    params, nll, restarts = fit_masked(
         loss_fn,
         n_params=n_params,
+        free_mask=free_mask,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,
@@ -1427,7 +1663,7 @@ def fit_joint_de_observer_joint(
     return params, float(nll), restarts
 
 
-def fit_joint_ie_observer_joint(
+def _joint_ie_loss(
     observer_fn,
     utility_param_names,
     action,
@@ -1438,31 +1674,17 @@ def fit_joint_ie_observer_joint(
     table_kwargs,
     priors=None,
     reweighting=None,
-    lr=0.1,
-    max_steps=1000,
-    verbose=True,
-    n_restarts=N_RESTARTS_FIT,
-    init_params=None,
-    patience=100,
-    seed_key=None,
 ):
-    """Study 2b — joint fit of utility weights + α_observer + σ on the joint
-    (intimacy, effort) belief update via the K-run bivariate Gaussian mixture
-    (isotropic σ²·I₂).
+    """Studies 2b/3b's bivariate mixture NLL as a function of the fit's parameter vector.
 
-    The stacked observer table is 7-D — (run, padded_slot, scenario,
-    observed_action, desire, relationship[101], effort[2]). The observed action
-    sits in slot 0, so each run's joint over (intimacy, effort) is
-    `tables[:, 0, scenario, action, desire, :, :]`. Per run we take the
-    intimacy-marginal mean and P(effort=HIGH); each minus its prior mean gives
-    that run's 2-D model update δ_k. `response_intimacy`/`response_effort` are the
-    two belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
+    Split out of `fit_joint_ie_observer_joint` so the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
+    under one shared utility. The fit helper is the only other caller; both go
+    through this, so there is one definition of what a study's likelihood is.
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. `priors` may carry `m_latent` (intimacy, shape (K, 16, 2);
-    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
-    P(effort=high), shape (K, 16, 2)); each None leaves that latent uniform. The
-    uniform fit is nested at m=0.5, nu=2, p=0.5.
+    Returns (loss_fn, n_params, n_core), where the parameter vector is
+    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
+    index one past sigma.
     """
     if priors is not None and all(v is None for v in priors.values()):
         priors = None
@@ -1472,16 +1694,6 @@ def fit_joint_ie_observer_joint(
     n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
     # eta is the LAST slot when the reweighting is active (after prior_nu).
     i_eta = n_params - 1 if reweighting else None
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params} (utility+alpha_observer+sigma{'+prior_nu' if use_grid else ''}). "
-            "A warm start that doesn't match the prior configuration would be "
-            "silently mis-sliced (JAX clamps out-of-bounds indices, so prior_nu "
-            "would read sigma). Build the warm start with "
-            "params_dict_to_array(..., extra_param_names=['prior_nu']) when the "
-            "prior adds a grid latent."
-        )
 
     def loss_fn(params):
         tk = _reweighting.apply(
@@ -1527,9 +1739,78 @@ def fit_joint_ie_observer_joint(
             )
         )
 
-    params, nll, restarts = _fit_multistart(
+    return loss_fn, n_params, n_core
+
+
+def fit_joint_ie_observer_joint(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    desire_condition,
+    response_intimacy,
+    response_effort,
+    table_kwargs,
+    priors=None,
+    reweighting=None,
+    lr=0.1,
+    max_steps=1000,
+    verbose=True,
+    n_restarts=N_RESTARTS_FIT,
+    init_params=None,
+    patience=100,
+    seed_key=None,
+    free_mask=None,
+):
+    """Study 2b — joint fit of utility weights + α_observer + σ on the joint
+    (intimacy, effort) belief update via the K-run bivariate Gaussian mixture
+    (isotropic σ²·I₂).
+
+    The stacked observer table is 7-D — (run, padded_slot, scenario,
+    observed_action, desire, relationship[101], effort[2]). The observed action
+    sits in slot 0, so each run's joint over (intimacy, effort) is
+    `tables[:, 0, scenario, action, desire, :, :]`. Per run we take the
+    intimacy-marginal mean and P(effort=HIGH); each minus its prior mean gives
+    that run's 2-D model update δ_k. `response_intimacy`/`response_effort` are the
+    two belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
+
+    `priors=None` keeps the uniform-prior path byte-identical to the
+    preregistered fit. `priors` may carry `m_latent` (intimacy, shape (K, 16, 2);
+    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
+    P(effort=high), shape (K, 16, 2)); each None leaves that latent uniform. The
+    uniform fit is nested at m=0.5, nu=2, p=0.5.
+
+    `free_mask` (see `fit_masked`) estimates only a subset of the vector,
+    holding the rest at `init_params`; the cross-study transfer analysis uses it
+    to freeze the utility weights. `None` is the ordinary fit.
+    """
+    loss_fn, n_params, n_core = _joint_ie_loss(
+        observer_fn,
+        utility_param_names,
+        action,
+        scenario_idx,
+        desire_condition,
+        response_intimacy,
+        response_effort,
+        table_kwargs,
+        priors=priors,
+        reweighting=reweighting,
+    )
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
+            f"{n_params - n_core} extra slot(s) for this configuration's "
+            "prior_nu / eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "read sigma). Build it with params_dict_to_array(..., "
+            "extra_param_names=[...]) naming the same extras."
+        )
+
+    params, nll, restarts = fit_masked(
         loss_fn,
         n_params=n_params,
+        free_mask=free_mask,
         n_restarts=n_restarts,
         init_params=init_params,
         lr=lr,

@@ -23,6 +23,7 @@ wrapper rather than another copy of the protocol.
 """
 
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 _project_root = Path(__file__).resolve().parent.parent.parent
@@ -62,6 +63,7 @@ from observers import (  # noqa: E402
     VARIANTS_JOINT_DE,
     VARIANTS_JOINT_IE,
 )
+from run_config import RunConfig  # noqa: E402
 
 # `data_names` names the loader's return values AFTER the leading
 # (data, action, scenario_idx), in order, using the keyword each one is passed
@@ -156,6 +158,93 @@ def _check_priors_k_alignment(slug, variant, priors, table_kwargs):
             )
 
 
+@dataclass(frozen=True)
+class FitContext:
+    """Everything a full-data fit of one study needs, resolved once: the data
+    arrays as the fitter's keyword arguments, each variant's LM tables, and each
+    variant's informative-prior kwargs.
+
+    `main` builds every variant from it; the cross-study transfer analysis
+    (`model/cv/transfer.py`) reuses it to refit a single variant with the
+    utility weights frozen, so the two cannot disagree about what a full-data
+    fit of a study consists of.
+    """
+
+    slug: str
+    family: str
+    spec: dict
+    config: object
+    data_kwargs: dict
+    table_kwargs: dict  # variant -> observer-table kwargs
+    priors: dict  # variant -> informative-prior kwargs, or None
+
+    @property
+    def variants(self):
+        return self.spec["variants"]
+
+    @property
+    def fitter(self):
+        return self.spec["fitter"]
+
+    def reweighting(self, variant):
+        """This (study, variant)'s reweighting config, or None where the scope
+        rule grants none."""
+        _, utility_names = self.variants[variant]
+        return _reweighting.config_for(
+            self.slug,
+            variant,
+            list(utility_names),
+            enabled=not self.config.no_reweighting,
+        )
+
+
+def fit_context(slug, config=None):
+    """Resolve one study's data, tables and priors for a full-data fit.
+
+    Tables are resolved for every variant before any fitting starts, so a
+    missing table fails up front rather than after hours of fitting earlier
+    variants. `priors_base_variant` (the single source of truth, shared with the
+    CV dispatcher) routes only the base variant to its relationship-free priors
+    vintage, and only when no explicit `--priors-file` is set (see `_priors.py`);
+    the preregistered uniform config gets None throughout, which keeps the fit
+    byte-identical.
+    """
+    config = config or RunConfig()
+    family = FAMILY_BY_SLUG[slug]
+    spec = _FAMILIES[family]
+    variants = spec["variants"]
+
+    data, action, scenario_idx, *rest = spec["loader"](slug)
+    data_kwargs = dict(zip(spec["data_names"], rest))
+    assert len(rest) == len(spec["data_names"]), (
+        f"{family}: loader returned {len(rest)} arrays after scenario_idx but "
+        f"data_names lists {len(spec['data_names'])}"
+    )
+    data_kwargs["action"] = action
+    data_kwargs["scenario_idx"] = scenario_idx
+
+    table_kwargs = resolve_variant_table_kwargs(
+        variants, _table_kwargs_builder(family, slug)
+    )
+    priors = {
+        name: build_priors_kwarg(
+            slug, config, base=priors_base_variant(slug, name, config.priors_file)
+        )
+        for name in variants
+    }
+    for name, pr in priors.items():
+        _check_priors_k_alignment(slug, name, pr, table_kwargs[name])
+    return FitContext(
+        slug=slug,
+        family=family,
+        spec=spec,
+        config=config,
+        data_kwargs=data_kwargs,
+        table_kwargs=table_kwargs,
+        priors=priors,
+    )
+
+
 def _result_row(slug, variant, utility_names, params, nll, use_grid, rw):
     """One `fit_results.json` record.
 
@@ -211,35 +300,10 @@ def main(slug, config=None, description=None):
     print("Fitting utility weights + alpha_observer + sigma per variant")
     print("=" * 60)
 
-    data, action, scenario_idx, *rest = spec["loader"](slug)
-    fit_data_kwargs = dict(zip(spec["data_names"], rest))
-    assert len(rest) == len(spec["data_names"]), (
-        f"{family}: loader returned {len(rest)} arrays after scenario_idx but "
-        f"data_names lists {len(spec['data_names'])}"
-    )
-    fit_data_kwargs["action"] = action
-    fit_data_kwargs["scenario_idx"] = scenario_idx
-
-    # Resolve every variant's LM tables before any fitting starts, so a missing
-    # table fails up front rather than after hours of fitting earlier variants.
-    table_kwargs_by_variant = resolve_variant_table_kwargs(
-        variants, _table_kwargs_builder(family, slug)
-    )
-    # Informative-prior kwargs per variant (None in the preregistered uniform
-    # config, which keeps the fit byte-identical). priors_base_variant (the
-    # single source of truth, shared with the CV dispatcher) routes only the
-    # base variant to its relationship-free priors vintage, and only when no
-    # explicit --priors-file is set (see _priors.py).
-    priors_by_variant = {
-        name: build_priors_kwarg(
-            slug,
-            config,
-            base=priors_base_variant(slug, name, config.priors_file),
-        )
-        for name in variants
-    }
-    for name, pr in priors_by_variant.items():
-        _check_priors_k_alignment(slug, name, pr, table_kwargs_by_variant[name])
+    ctx = fit_context(slug, config)
+    fit_data_kwargs = ctx.data_kwargs
+    table_kwargs_by_variant = ctx.table_kwargs
+    priors_by_variant = ctx.priors
 
     results = []
     restart_rows = []
