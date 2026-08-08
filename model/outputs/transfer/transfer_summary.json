@@ -1,0 +1,1102 @@
+{
+  "n_boot": 1000,
+  "seed": 0,
+  "pairs": [
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3824,
+      "transfer_ll": 0.0006837530926680465,
+      "own_ll": 0.060834087899040476,
+      "diff": -0.060150334806372434,
+      "ci_95": [
+        -0.0730305881360273,
+        -0.04799453381869833
+      ]
+    },
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (desire null)",
+      "n_trials": 3824,
+      "transfer_ll": -0.21875083870468778,
+      "own_ll": 0.05615054220584646,
+      "diff": -0.27490138091053423,
+      "ci_95": [
+        -0.298382147501328,
+        -0.2486305531745613
+      ]
+    },
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "recipient cannot use them (intimacy null)",
+      "n_trials": 3824,
+      "transfer_ll": -0.25407863324157365,
+      "own_ll": -0.21908331581364118,
+      "diff": -0.034995317427932465,
+      "ci_95": [
+        -0.05820827393258715,
+        -0.015200217132101996
+      ]
+    },
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3824,
+      "transfer_ll": 0.05885017117695828,
+      "own_ll": 0.060834087899040476,
+      "diff": -0.001983916722082194,
+      "ci_95": [
+        -0.008265414991451107,
+        0.004758961086461481
+      ]
+    },
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (desire null)",
+      "n_trials": 3824,
+      "transfer_ll": -0.2190805891817085,
+      "own_ll": 0.05615054220584646,
+      "diff": -0.27523113138755495,
+      "ci_95": [
+        -0.29815483040032154,
+        -0.2502649730500068
+      ]
+    },
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "recipient cannot use them (intimacy null)",
+      "n_trials": 3824,
+      "transfer_ll": -0.21908734445791364,
+      "own_ll": -0.21908331581364118,
+      "diff": -4.028644272473068e-06,
+      "ci_95": [
+        -6.8770113662196995e-06,
+        -1.3758034823329887e-06
+      ]
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 7696,
+      "transfer_ll": -0.231651048913691,
+      "own_ll": -0.051820955117254396,
+      "diff": -0.1798300937964366,
+      "ci_95": [
+        -0.2044649718220882,
+        -0.1527943843615526
+      ]
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "recipient cannot use them (desire null)",
+      "n_trials": 7696,
+      "transfer_ll": -0.41033713133877875,
+      "own_ll": -0.2580767009802271,
+      "diff": -0.15226043035855163,
+      "ci_95": [
+        -0.18368834066562925,
+        -0.11977326662866342
+      ]
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (intimacy null)",
+      "n_trials": 7696,
+      "transfer_ll": -0.25672080981198564,
+      "own_ll": -0.05661539510357157,
+      "diff": -0.2001054147084141,
+      "ci_95": [
+        -0.221843506809781,
+        -0.18076941711158181
+      ]
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 7696,
+      "transfer_ll": -0.06437809094631747,
+      "own_ll": -0.051820955117254396,
+      "diff": -0.012557135829063067,
+      "ci_95": [
+        -0.018015883746024475,
+        -0.007568814018412093
+      ]
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "recipient cannot use them (desire null)",
+      "n_trials": 7696,
+      "transfer_ll": -0.2580754965884522,
+      "own_ll": -0.2580767009802271,
+      "diff": 1.2043917749131296e-06,
+      "ci_95": [
+        -9.499250169603344e-07,
+        3.2692408022662457e-06
+      ]
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (intimacy null)",
+      "n_trials": 7696,
+      "transfer_ll": -0.194237319307243,
+      "own_ll": -0.05661539510357157,
+      "diff": -0.13762192420367145,
+      "ci_95": [
+        -0.15507070964314584,
+        -0.12121767991855587
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 1920,
+      "transfer_ll": -0.3982708519945542,
+      "own_ll": -0.28806528182079394,
+      "diff": -0.11020557017376026,
+      "ci_95": [
+        -0.15344428988173606,
+        -0.0672046323384469
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (desire, effort null)",
+      "n_trials": 1920,
+      "transfer_ll": -0.6503978620593747,
+      "own_ll": -0.4823863790060083,
+      "diff": -0.16801148305336636,
+      "ci_95": [
+        -0.20972863357979804,
+        -0.12406496988764655
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "recipient cannot use them (intimacy null)",
+      "n_trials": 1920,
+      "transfer_ll": -0.4789354438583056,
+      "own_ll": -0.4484495321288705,
+      "diff": -0.030485911729435124,
+      "ci_95": [
+        -0.045080914399586614,
+        -0.015719157406128944
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 1920,
+      "transfer_ll": -0.2881935085480412,
+      "own_ll": -0.28806528182079394,
+      "diff": -0.00012822672724723815,
+      "ci_95": [
+        -0.0063136593857780095,
+        0.006290356616179145
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (desire, effort null)",
+      "n_trials": 1920,
+      "transfer_ll": -0.4826021999120712,
+      "own_ll": -0.4823863790060083,
+      "diff": -0.00021582090606292088,
+      "ci_95": [
+        -0.003266605952133735,
+        0.0030040924514954286
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "recipient cannot use them (intimacy null)",
+      "n_trials": 1920,
+      "transfer_ll": -0.4590591343740622,
+      "own_ll": -0.4484495321288705,
+      "diff": -0.010609602245191732,
+      "ci_95": [
+        -0.018480602554045617,
+        -0.00263947894331068
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3792,
+      "transfer_ll": -0.4204890575527139,
+      "own_ll": -0.3667500774191402,
+      "diff": -0.05373898013357372,
+      "ci_95": [
+        -0.07161621501362776,
+        -0.03682673244426648
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (effort null)",
+      "n_trials": 3792,
+      "transfer_ll": -0.7589500082444541,
+      "own_ll": -0.7253970700602994,
+      "diff": -0.03355293818415469,
+      "ci_95": [
+        -0.05643000330320139,
+        -0.013075457735749491
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (intimacy null)",
+      "n_trials": 3792,
+      "transfer_ll": -0.5253400631594759,
+      "own_ll": -0.3881735730963417,
+      "diff": -0.13716649006313414,
+      "ci_95": [
+        -0.16035336719802287,
+        -0.11352417000691221
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3792,
+      "transfer_ll": -0.40200893744386196,
+      "own_ll": -0.3667500774191402,
+      "diff": -0.03525886002472181,
+      "ci_95": [
+        -0.046579342662407874,
+        -0.023410007823651612
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (effort null)",
+      "n_trials": 3792,
+      "transfer_ll": -0.7254036244963795,
+      "own_ll": -0.7253970700602994,
+      "diff": -6.554436080063446e-06,
+      "ci_95": [
+        -1.1439437541780593e-05,
+        -2.383302409940632e-06
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "control",
+      "status_reason": "donor cannot identify these weights (intimacy null)",
+      "n_trials": 3792,
+      "transfer_ll": -0.5153621801721395,
+      "own_ll": -0.3881735730963417,
+      "diff": -0.12718860707579785,
+      "ci_95": [
+        -0.15195847321773256,
+        -0.1001318828874751
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3824,
+      "transfer_ll": -0.7197350447522047,
+      "own_ll": -0.6638626389236629,
+      "diff": -0.05587240582854179,
+      "ci_95": [
+        -0.0858852892989394,
+        -0.02621721635927217
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on desire, effort in both studies",
+      "n_trials": 3824,
+      "transfer_ll": -0.9547013094547403,
+      "own_ll": -0.9328771353266728,
+      "diff": -0.021824174128067544,
+      "ci_95": [
+        -0.03715843288344818,
+        -0.006401597782501867
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3824,
+      "transfer_ll": -0.7141384023814521,
+      "own_ll": -0.6735197971243738,
+      "diff": -0.040618605257078194,
+      "ci_95": [
+        -0.06651137908414068,
+        -0.014047466483450337
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3824,
+      "transfer_ll": -0.6644069860732206,
+      "own_ll": -0.6638626389236629,
+      "diff": -0.0005443471495576483,
+      "ci_95": [
+        -0.007132180296975698,
+        0.00595998588606528
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on desire, effort in both studies",
+      "n_trials": 3824,
+      "transfer_ll": -0.9328831068267384,
+      "own_ll": -0.9328771353266728,
+      "diff": -5.9715000655361795e-06,
+      "ci_95": [
+        -9.685534999460357e-06,
+        -2.7388513524662004e-06
+      ]
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3824,
+      "transfer_ll": -0.668617440504509,
+      "own_ll": -0.6735197971243738,
+      "diff": 0.004902356619864827,
+      "ci_95": [
+        -0.0010906192298713586,
+        0.010418886988263997
+      ]
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3792,
+      "transfer_ll": -0.40862126000822846,
+      "own_ll": -0.3667500774191402,
+      "diff": -0.04187118258908831,
+      "ci_95": [
+        -0.06704968290898618,
+        -0.017947162525091754
+      ]
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on desire, effort in both studies",
+      "n_trials": 3792,
+      "transfer_ll": -0.7438953295978816,
+      "own_ll": -0.7253970700602994,
+      "diff": -0.018498259537582155,
+      "ci_95": [
+        -0.03250669861440291,
+        -0.00472758090681542
+      ]
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3792,
+      "transfer_ll": -0.41659971402038504,
+      "own_ll": -0.3881735730963417,
+      "diff": -0.028426140924043292,
+      "ci_95": [
+        -0.05004550198776812,
+        -0.004777850072343642
+      ]
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3792,
+      "transfer_ll": -0.37468990935051993,
+      "own_ll": -0.3667500774191402,
+      "diff": -0.007939831931379777,
+      "ci_95": [
+        -0.015244743072345286,
+        -0.0008473577865945655
+      ]
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on desire, effort in both studies",
+      "n_trials": 3792,
+      "transfer_ll": -0.7253975793404921,
+      "own_ll": -0.7253970700602994,
+      "diff": -5.092801927011224e-07,
+      "ci_95": [
+        -5.003442115421537e-06,
+        3.981737239199852e-06
+      ]
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base_shared",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3792,
+      "transfer_ll": -0.3872638941439898,
+      "own_ll": -0.3881735730963417,
+      "diff": 0.0009096789523519041,
+      "ci_95": [
+        -0.004996002931540777,
+        0.006975629777973714
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3808,
+      "transfer_ll": -0.49327144677899465,
+      "own_ll": -0.4885254563341121,
+      "diff": -0.004745990444882577,
+      "ci_95": [
+        -0.026488231653895446,
+        0.016014410661799563
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on effort in both studies",
+      "n_trials": 3808,
+      "transfer_ll": -0.6089826862351233,
+      "own_ll": -0.5988508026514735,
+      "diff": -0.010131883583649868,
+      "ci_95": [
+        -0.02285094220551247,
+        0.00199525356370987
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "null on intimacy in both studies",
+      "n_trials": 3808,
+      "transfer_ll": -0.6254118110264549,
+      "own_ll": -0.6266572582183265,
+      "diff": 0.0012454471918715148,
+      "ci_95": [
+        -0.016221552282697012,
+        0.016095844933277915
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 3808,
+      "transfer_ll": -0.48917284673627687,
+      "own_ll": -0.4885254563341121,
+      "diff": -0.0006473904021647797,
+      "ci_95": [
+        -0.004404565486900446,
+        0.0033222152162812836
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on effort in both studies",
+      "n_trials": 3808,
+      "transfer_ll": -0.6002664708790659,
+      "own_ll": -0.5988508026514735,
+      "diff": -0.0014156682275924361,
+      "ci_95": [
+        -0.002888648009256405,
+        -5.558278771633864e-05
+      ]
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "null on intimacy in both studies",
+      "n_trials": 3808,
+      "transfer_ll": -0.6189506457445502,
+      "own_ll": -0.6266572582183265,
+      "diff": 0.007706612473776361,
+      "ci_95": [
+        0.004217203373887709,
+        0.011156551539897917
+      ]
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 1920,
+      "transfer_ll": -0.2951655951639017,
+      "own_ll": -0.28806528182079394,
+      "diff": -0.007100313343107701,
+      "ci_95": [
+        -0.029673322858288883,
+        0.016281906380318085
+      ]
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on effort in both studies",
+      "n_trials": 1920,
+      "transfer_ll": -0.488969988313814,
+      "own_ll": -0.4823863790060083,
+      "diff": -0.006583609307805697,
+      "ci_95": [
+        -0.022149553000926973,
+        0.010180055503733456
+      ]
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "frozen",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "null on intimacy in both studies",
+      "n_trials": 1920,
+      "transfer_ll": -0.4553925210610032,
+      "own_ll": -0.4484495321288705,
+      "diff": -0.006942988932132721,
+      "ci_95": [
+        -0.024864384454364577,
+        0.012574525436696906
+      ]
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "full",
+      "variant": "full",
+      "status": "test",
+      "status_reason": "",
+      "n_trials": 1920,
+      "transfer_ll": -0.2813299497589469,
+      "own_ll": -0.28806528182079394,
+      "diff": 0.006735332061847051,
+      "ci_95": [
+        0.00042473254259675755,
+        0.012616078752713892
+      ]
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "discomfort_only",
+      "variant": "discomfort_only",
+      "status": "control",
+      "status_reason": "null on effort in both studies",
+      "n_trials": 1920,
+      "transfer_ll": -0.48086664645622174,
+      "own_ll": -0.4823863790060083,
+      "diff": 0.0015197325497865676,
+      "ci_95": [
+        -0.0011854169238358734,
+        0.00429041693918407
+      ]
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "refit",
+      "role": "base",
+      "variant": "base",
+      "status": "control",
+      "status_reason": "null on intimacy in both studies",
+      "n_trials": 1920,
+      "transfer_ll": -0.446022213002046,
+      "own_ll": -0.4484495321288705,
+      "diff": 0.002427319126824538,
+      "ci_95": [
+        -0.0028457052167505026,
+        0.007691530822776258
+      ]
+    }
+  ],
+  "ablation_contrasts": [
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.2547623863342417,
+      "ci_95": [
+        0.23524199177873434,
+        0.2742017299661639
+      ],
+      "full_minus_base_own": 0.27991740371268165
+    },
+    {
+      "donor": "1a",
+      "recipient": "2a",
+      "kind": "inference",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.2779375156348719,
+      "ci_95": [
+        0.25348644092460804,
+        0.30080500506098423
+      ],
+      "full_minus_base_own": 0.27991740371268165
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.025069760898294668,
+      "ci_95": [
+        -0.018228045729010243,
+        0.0697901275028279
+      ],
+      "full_minus_base_own": 0.004794439986317172
+    },
+    {
+      "donor": "2a",
+      "recipient": "1a",
+      "kind": "inference",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.12985922836092553,
+      "ci_95": [
+        0.11216874962513822,
+        0.1484330378507657
+      ],
+      "full_minus_base_own": 0.004794439986317172
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.08066459186375141,
+      "ci_95": [
+        0.018532428008814654,
+        0.13880667967566596
+      ],
+      "full_minus_base_own": 0.16038425030807654
+    },
+    {
+      "donor": "1b",
+      "recipient": "2b",
+      "kind": "inference",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.17086562582602102,
+      "ci_95": [
+        0.13914583264229197,
+        0.2015236508861805
+      ],
+      "full_minus_base_own": 0.16038425030807654
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.10485100560676197,
+      "ci_95": [
+        0.08242108758837614,
+        0.1263377206557222
+      ],
+      "full_minus_base_own": 0.021423495677201556
+    },
+    {
+      "donor": "2b",
+      "recipient": "1b",
+      "kind": "inference",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.1133532427282776,
+      "ci_95": [
+        0.09328161157384704,
+        0.13355022069255384
+      ],
+      "full_minus_base_own": 0.021423495677201556
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "frozen",
+      "full_minus_base_transfer": -0.0055966423707527095,
+      "ci_95": [
+        -0.01486057498994981,
+        0.0033784392511931895
+      ],
+      "full_minus_base_own": 0.009657158200710888
+    },
+    {
+      "donor": "1b",
+      "recipient": "3a",
+      "kind": "domain",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.004210454431288412,
+      "ci_95": [
+        -0.0032567425697231393,
+        0.011119667527160634
+      ],
+      "full_minus_base_own": 0.009657158200710888
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.007978454012156539,
+      "ci_95": [
+        0.003771655153058752,
+        0.01221791681939665
+      ],
+      "full_minus_base_own": 0.021423495677201556
+    },
+    {
+      "donor": "3a",
+      "recipient": "1b",
+      "kind": "domain",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.012573984793469876,
+      "ci_95": [
+        0.007680004296769322,
+        0.01729249384820084
+      ],
+      "full_minus_base_own": 0.021423495677201556
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.1321403642474603,
+      "ci_95": [
+        0.10998399201232721,
+        0.1548244658114091
+      ],
+      "full_minus_base_own": 0.13813180188421442
+    },
+    {
+      "donor": "2b",
+      "recipient": "3b",
+      "kind": "domain",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.12977779900827327,
+      "ci_95": [
+        0.11044596692688075,
+        0.14718160669499336
+      ],
+      "full_minus_base_own": 0.13813180188421442
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "frozen",
+      "full_minus_base_transfer": 0.16022692589710155,
+      "ci_95": [
+        0.13660866361577065,
+        0.1828820861860489
+      ],
+      "full_minus_base_own": 0.16038425030807654
+    },
+    {
+      "donor": "3b",
+      "recipient": "2b",
+      "kind": "domain",
+      "arm": "refit",
+      "full_minus_base_transfer": 0.16469226324309905,
+      "ci_95": [
+        0.13867855920145908,
+        0.1929040292277932
+      ],
+      "full_minus_base_own": 0.16038425030807654
+    }
+  ],
+  "pooled_donor": [
+    {
+      "donor_group": "food",
+      "recipient": "3a",
+      "n_trials": 3824,
+      "transfer_ll": -0.6595489102801518,
+      "own_ll": -0.6638626389236629,
+      "diff": 0.00431372864351113,
+      "ci_95": [
+        0.0003712886453423041,
+        0.008347626529228736
+      ]
+    },
+    {
+      "donor_group": "food",
+      "recipient": "3b",
+      "n_trials": 3808,
+      "transfer_ll": -0.49586649821335527,
+      "own_ll": -0.4885254563341121,
+      "diff": -0.00734104187924321,
+      "ci_95": [
+        -0.014283263090872715,
+        -0.00040042953675284166
+      ]
+    },
+    {
+      "donor_group": "food",
+      "recipient": "combined",
+      "n_trials": 7632,
+      "transfer_ll": -0.5778792791021695,
+      "own_ll": -0.5763778392248934,
+      "diff": -0.0015014398772761506,
+      "ci_95": [
+        -0.005536211462812479,
+        0.002506005940119298
+      ]
+    }
+  ]
+}
