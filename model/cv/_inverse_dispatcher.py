@@ -40,8 +40,11 @@ The nonfood studies reuse the joint mains with their own slug
 (`main_joint_de("nonfood_inv_joint_de")` etc.): the designs are identical, and
 only the stimulus set, scenario labels, and LM-table folder differ.
 
-All share the joint-fit logic in `model/inverse/_helpers.py` — there is no
-transfer between studies.
+All share the joint-fit logic in `model/inverse/_helpers.py`. The reported fits
+estimate every study's parameters from its own data alone. Two exploratory
+analyses reuse this runner through `RunOverride` to score parameters that came
+from elsewhere: `model/cv/transfer.py` (one study's parameters on another) and
+`model/cv/pooled.py` (a utility shared across several studies).
 """
 
 import contextlib
@@ -51,6 +54,7 @@ import multiprocessing as mp
 import os
 import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -388,8 +392,18 @@ def _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test):
 _CV_W = {}
 
 
-def _cv_worker_init(family, slug, arrays, config):
-    _CV_W.update(family=family, slug=slug, arrays=arrays, config=config)
+def _cv_worker_init(family, slug, arrays, config, free_mask=None):
+    _CV_W.update(
+        family=family, slug=slug, arrays=arrays, config=config, free_mask=free_mask
+    )
+
+
+def _free_mask(variant):
+    """The fold refit's free-parameter mask for one variant, or None (estimate
+    every parameter — the reported path). Non-None only under a `RunOverride`;
+    see `fit_masked` in `model/inverse/_helpers.py`."""
+    masks = _CV_W.get("free_mask")
+    return None if masks is None else masks[variant]
 
 
 @functools.lru_cache(maxsize=None)
@@ -508,7 +522,42 @@ def _capped_worker_threads(n_threads=1):
                 os.environ[k] = v
 
 
-def _run_loso(family, slug, workers=None, patience=None, config=None):
+@dataclass(frozen=True)
+class RunOverride:
+    """Substitutions that turn `_run_loso` into a non-reported run.
+
+    Two users, both exploratory analyses that need a fold to start from
+    parameters this study's own data did not produce and to hold some of them
+    fixed: the cross-study transfer analysis (`model/cv/transfer.py`), which
+    starts from a DONOR study's fit, and the pooled fits (`model/cv/pooled.py`),
+    which start from a utility shared across several studies. Everything here
+    defaults to None/(), and `None` for the whole override is the reported run
+    — so the reported path never sees a branch it did not have before.
+
+      variants     restrict which ablations run; () = the family's full set.
+      init_params  {variant: vector} -- or {(variant, fold): vector} when the
+                   start differs per fold -- replacing the warm start normally
+                   read from this study's own full-data fit. The per-fold form
+                   is what the pooled fits use: each fold has its own shared
+                   utility, estimated on that fold's training scenarios.
+      free_mask    {variant: boolean mask over that vector}; False slots stay at
+                   their init value. An all-False mask estimates nothing, which
+                   is the zero-free-parameter transfer arm.
+      outputs_dir  where the fold checkpoint lives (the caller writes the final
+                   outputs itself).
+      fingerprint  extra fields folded into the checkpoint fingerprint, so a
+                   transfer run can never resume from the reported run's folds
+                   — or from another donor's.
+    """
+
+    variants: tuple = ()
+    init_params: dict | None = None
+    free_mask: dict | None = None
+    outputs_dir: Path | None = None
+    fingerprint: dict | None = None
+
+
+def _run_loso(family, slug, workers=None, patience=None, config=None, override=None):
     """LOSO CV for one study. Runs the (variant × fold) refits concurrently when
     `workers` > 1 (env `CV_WORKERS`; default from the family registry): folds
     are independent and each refit is deterministic, so the output is identical
@@ -521,6 +570,11 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
     the alternatives vintage, whether the observer posterior is reweighted by an
     informative prior, which fit dir warm-starts the folds, and where the
     outputs land. The default keeps the preregistered path byte-identical.
+
+    `override` (a `RunOverride`; default None) replaces the warm start, freezes
+    part of the parameter vector, restricts the variant set, and redirects the
+    checkpoint — everything the cross-study transfer analysis needs. None is the
+    reported run.
 
     Every completed fold is appended to `<outputs_dir>/cv_checkpoint.jsonl`
     (fingerprint-guarded; see _checkpoint.py), and completed folds found there
@@ -547,12 +601,22 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
             f"thread pools need a positive thread count."
         )
     arrays = fam["load_arrays"](slug)
-    variants = fam["variants"]
+    override = override or RunOverride()
+    variants = {
+        v: spec
+        for v, spec in fam["variants"].items()
+        if not override.variants or v in override.variants
+    }
+    if override.variants and set(override.variants) - set(fam["variants"]):
+        raise ValueError(
+            f"override.variants {sorted(set(override.variants) - set(fam['variants']))} "
+            f"are not {family} ablations ({sorted(fam['variants'])})"
+        )
     # Populate the parent's worker state up front: the warm-up `_tk_cached`
     # calls below read the run config's alternatives suffix from `_CV_W`, and
     # the sequential path reuses this same state. Spawn workers get their own
     # copy via the pool `initargs`.
-    _cv_worker_init(family, slug, arrays, config)
+    _cv_worker_init(family, slug, arrays, config, override.free_mask)
     # The informative-prior fit appends a fitted `prior_nu` to the param vector
     # (index `n_core`), so the warm start must carry it too — otherwise a length
     # mismatch is silently mis-sliced. Uniform runs keep the bare vector.
@@ -572,19 +636,25 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
 
     # Warm-start source: the full-data fit under THIS config (refits perturb it
     # only slightly), provenance-verified against fit_manifest.json and the data.
-    full_fit = _load_verified_warm_start(slug, fit_dir=config.outputs_dir(slug))
-    warms = {
-        v: (
-            np.asarray(
-                params_dict_to_array(
-                    full_fit[v], util, extra_param_names=_extras(v, util)
+    # A RunOverride supplies its own starting vectors instead — for the transfer
+    # analysis those carry the donor study's utility weights, which no fit of
+    # this study could provide.
+    if override.init_params is not None:
+        warms = {v: None for v in variants}  # resolved per fold below
+    else:
+        full_fit = _load_verified_warm_start(slug, fit_dir=config.outputs_dir(slug))
+        warms = {
+            v: (
+                np.asarray(
+                    params_dict_to_array(
+                        full_fit[v], util, extra_param_names=_extras(v, util)
+                    )
                 )
+                if v in full_fit
+                else None
             )
-            if v in full_fit
-            else None
-        )
-        for v, (_, util) in variants.items()
-    }
+            for v, (_, util) in variants.items()
+        }
     # Resolve every variant's LM tables before submitting any fold refits, so a
     # missing table (e.g. an unelicited lm_runs_base.jsonl) fails up front
     # rather than after hours of fitting earlier variants (workers rebuild their
@@ -594,11 +664,21 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
     n_folds = len(STUDY_SCENARIO_LABELS[slug])
     jobs = [(v, f) for v in variants for f in range(n_folds)]
 
+    def warm_for(variant, fold):
+        """This fold's starting vector. Without an override it is the study's
+        full-data fit (one per variant); an override may instead key its vectors
+        by (variant, fold), which is how the pooled fits hand each fold the
+        shared utility estimated on that fold's training scenarios."""
+        ip = override.init_params
+        if ip is None:
+            return warms[variant]
+        return np.asarray(ip[(variant, fold)] if (variant, fold) in ip else ip[variant])
+
     # Resume any completed folds from an interrupted run's checkpoint. The
     # fingerprint ties them to this run's exact inputs, run config, and refit
     # config, so a resume can never splice folds from different vintages; keys
     # outside this run's job list are dropped rather than trusted.
-    outputs_dir = config.outputs_dir(slug)
+    outputs_dir = override.outputs_dir or config.outputs_dir(slug)
     outputs_dir.mkdir(parents=True, exist_ok=True)
     ckpt = checkpoint_path(outputs_dir)
     fingerprint = run_fingerprint(
@@ -615,6 +695,7 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
                 else None
             ),
             "fit_dir": str(config.outputs_dir(slug)),
+            **(override.fingerprint or {}),
         },
     )
     results = {
@@ -637,10 +718,10 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
                 max_workers=workers,
                 mp_context=mp.get_context("spawn"),
                 initializer=_cv_worker_init,
-                initargs=(family, slug, arrays, config),
+                initargs=(family, slug, arrays, config, override.free_mask),
             ) as ex:
                 futs = {
-                    ex.submit(_cv_fold, v, f, warms[v], patience): (v, f)
+                    ex.submit(_cv_fold, v, f, warm_for(v, f), patience): (v, f)
                     for v, f in pending
                 }
                 try:
@@ -666,7 +747,7 @@ def _run_loso(family, slug, workers=None, patience=None, config=None):
         # `_CV_W` is already populated in the parent above; the sequential path
         # runs folds in-process, so no re-init is needed.
         for v, f in pending:
-            res = _cv_fold(v, f, warms[v], patience)
+            res = _cv_fold(v, f, warm_for(v, f), patience)
             results[(v, f)] = res
             append_fold(ckpt, v, f, *res)
 
@@ -735,6 +816,7 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
+        free_mask=_free_mask(variant),
     )
     sigma = float(params[n_core - 1])
     nu = float(params[n_core]) if use_grid else None
@@ -895,6 +977,7 @@ def _fold_impl_desire(variant, fold, warm, patience):
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
+        free_mask=_free_mask(variant),
     )
     sigma = float(params[n_core - 1])
     nu = float(params[n_core]) if use_grid else None
@@ -1058,6 +1141,7 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
+        free_mask=_free_mask(variant),
     )
     sigma = float(params[n_core - 1])
     nu = float(params[n_core]) if use_grid else None
@@ -1233,6 +1317,7 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
         init_params=warm,
         patience=patience,
         seed_key=f"{slug}|{variant}|{scenario_label}",
+        free_mask=_free_mask(variant),
     )
     sigma = float(params[n_core - 1])
     nu = float(params[n_core]) if use_grid else None
