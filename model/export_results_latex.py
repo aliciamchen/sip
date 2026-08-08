@@ -64,7 +64,7 @@ from run_delta_io import (  # noqa: E402
     load_per_run_deltas,
     sha256_file,
 )
-from study_registry import reported_base, studies  # noqa: E402
+from study_registry import STUDIES, reported_base, studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 # LaTeX command names may contain letters only -- no digits -- so the study
@@ -420,6 +420,83 @@ def _contrast_macros(m, tok, label, entry, note, *, scale):
     m.add(f"stat{label}{tok}", rf"\dll{label}{tok}~\ci{label}{tok}")
 
 
+GENERALIZATION_SOURCES = (
+    ("transfer", ("model", "outputs", "transfer", "transfer_summary.json")),
+    ("pooled", ("model", "outputs", "pooled", "pooled_summary.json")),
+)
+
+
+def _load_generalization():
+    """The cross-experiment generalization artifacts, or None if not yet run.
+
+    Absent artifacts are not an error: the analyses are exploratory and a
+    checkout that has only run fit/CV should still be able to regenerate every
+    other macro. The paper's ``stat`` references are what would then fail to
+    resolve, loudly, at LaTeX time.
+    """
+    out = {}
+    for key, parts in GENERALIZATION_SOURCES:
+        path = get_project_root().joinpath(*parts)
+        if not path.exists():
+            return None
+        with open(path) as f:
+            out[key] = json.load(f)
+    return out
+
+
+def _generalization_macros(m, gen, *, scale):
+    """Macros for the two cross-experiment generalization analyses.
+
+    `scale` turns the stored per-trial numbers into the per-participant unit the
+    paper reports, exactly as the primary contrasts do -- these come from the
+    same held-out likelihood and must not be quoted in a different unit from the
+    numbers beside them.
+    """
+    if gen is None:
+        return
+
+    def contrast(label, diff, ci, note):
+        m.add(f"dll{label}", _fmt(scale * diff, DP_LL), note)
+        m.add(f"ci{label}", _fmt_ci([scale * v for v in ci]))
+        m.add(f"stat{label}", rf"\dll{label}~\ci{label}")
+
+    # (1) A pooled group's utility applied outside that group (food -> nonfood).
+    xfer = {r["recipient"]: r for r in gen["transfer"].get("pooled_donor", [])}
+    names = {"3a": "XferThreeA", "3b": "XferThreeB", "combined": "XferNonfood"}
+    for recipient, label in names.items():
+        if recipient in xfer:
+            contrast(
+                label,
+                xfer[recipient]["diff"],
+                xfer[recipient]["ci_95"],
+                f"food-fitted utility on {recipient}, minus its own fit",
+            )
+
+    # (2) One utility shared across all six.
+    pooled = [r for r in gen["pooled"]["rows"] if r["group"] == "all"]
+    if pooled:
+        for r in pooled:
+            contrast(
+                "Pool" + token(STUDIES[r["slug"]]),
+                r["diff"],
+                r["ci_95"],
+                f"one shared utility on {r['experiment']}, minus its own fit",
+            )
+        agg = next(
+            (c for c in gen["pooled"].get("combined", []) if c["group"] == "all"),
+            None,
+        )
+        if agg is not None:
+            contrast(
+                "PoolAll",
+                agg["diff"],
+                agg["ci_95"],
+                "one shared utility, combined over all six experiments",
+            )
+        m.add("nUtilityParamsPooled", "4")
+        m.add("nUtilityParamsSeparate", str(4 * len(pooled)))
+
+
 def build(all_studies):
     m = Macros()
     loaded = {}
@@ -573,6 +650,14 @@ def build(all_studies):
     # --- SI likelihood check: the elicitation mixture's own spread ---
     _run_spread_macros(m, all_studies)
 
+    # --- SI cross-experiment generalization (exploratory; skipped if unrun) ---
+    # Scale comes from `shared`, which has already checked every study agrees on
+    # the trials-per-participant factor -- these numbers are quoted beside the
+    # primary contrasts and must be in the same unit.
+    _generalization_macros(
+        m, _load_generalization(), scale=shared["nScenarios"][all_studies[0].slug]
+    )
+
     # Cross-study totals, for the abstract's overall N.
     m.add("nRecruitedTotal", _fmt_int(totals["recruited"]), "all six experiments")
     m.add("nRetainedTotal", _fmt_int(totals["retained"]))
@@ -680,6 +765,22 @@ def fitted_params_table(all_studies):
     return _tabular("lccccccc", header, _rows(all_studies, cells))
 
 
+def generalization_table(all_studies):
+    """tab:generalization: what a single shared utility costs each experiment.
+
+    Cells are macro references, so this table and any in-text mention of the
+    same number cannot drift apart."""
+    return _tabular(
+        "lr",
+        r"Experiment & $\Delta$ held-out log-likelihood per participant \\",
+        _rows(
+            all_studies,
+            lambda study: rf"\statPool{token(study)}",
+            domain_heading=2,
+        ),
+    )
+
+
 def prereg_deviation_table(all_studies):
     """tab:prereg-deviation: the preregistered (eta = 0) model's held-out
     likelihood beside the reported model's, with the paired difference.
@@ -757,6 +858,13 @@ def main():
             HEADER + provenance() + prereg_deviation_table(all_studies) + "\n"
         ),
     }
+    # Only when the exploratory generalization analyses have been run -- writing
+    # a table of macro references that `build` did not define would turn a
+    # not-yet-run analysis into an undefined-control-sequence error.
+    if _load_generalization() is not None:
+        files["results_table_generalization.tex"] = (
+            HEADER + provenance() + generalization_table(all_studies) + "\n"
+        )
 
     if args.print:
         for name, text in files.items():
