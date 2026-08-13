@@ -19,15 +19,16 @@ panels per study, columns Base | Discomfort-only | Full | Humans, with
   figure with 1a. Fill, size and marker shape all collide this way; the axis and
   the connector do not. The slope of each line is the effort effect.
 
-Two styles remain. `PAPER` renders at `si` scale with the legends inline, for a
-figure that has to be self-contained (`figure_si_scenarios.py`). `POSTER` is the
-larger-marker scale with legends omitted, which `figure_paper_panels.py` uses
-for the Illustrator components, since those place the legends as separate
-artboards. The name is historical -- it came from the 2026-07 poster, whose
-scripts were removed on 2026-08-02. Palettes stay in `plot_style.py`.
+Two styles remain. `PAPER` renders at `si` scale, for the SI figures that draw
+these panels (`figure_si_scenarios.py` and the prereg/prior-posterior set).
+`POSTER` is the larger-marker scale `figure_paper_panels.py` uses for the
+Illustrator components; the name is historical -- it came from the 2026-07
+poster, whose scripts were removed on 2026-08-02. Neither draws a legend: every
+figure here is assembled in Illustrator against the standalone artboards
+`figure_paper_panels.py` writes, from the handle builders at the foot of this
+module. Palettes stay in `plot_style.py`.
 """
 
-import math
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -117,10 +118,6 @@ class PointsStyle:
     title_y: float = 1.06
 
 
-# Height one legend entry-row adds to the figure, inches (at `si` font sizes).
-LEGEND_ROW_H = 0.22
-# Entry rows every legend group is laid out over, so their titles align.
-LEGEND_ENTRY_ROWS = 2
 # Purpose string the human-CI bootstrap is seeded from. Every figure drawn from
 # these panels shares it, so the assembled previews and the Illustrator panels
 # report the same intervals for the same data instead of two resample vintages.
@@ -129,10 +126,10 @@ BOOTSTRAP_SEED_TAG = "figures"
 X_AXIS_LABEL = "Observed action"
 
 PAPER = PointsStyle(
-    markersize=5.5,
+    markersize=5.8,
     panel_w=1.55,
     panel_h=1.95,
-    xtick_fs=7.5,
+    xtick_fs=7.8,
     ytick_len=3.5,
     ytick_w=0.8,
     errbar=dict(elinewidth=1.5, capsize=0, zorder=2),
@@ -321,9 +318,10 @@ def iter_cells(
                     if row.empty:
                         continue
                     gi = di * len(fill_levels) + cj
-                    inner = -(within if style_col else style.dodge_width) / 2 + (
-                        gi + 0.5
-                    ) * step
+                    inner = (
+                        -(within if style_col else style.dodge_width) / 2
+                        + (gi + 0.5) * step
+                    )
                     x = ai + inner
                     if style_col:
                         x += (si - (len(styles) - 1) / 2) * sep
@@ -421,8 +419,7 @@ def draw_points(
         # sit over their sub-groups, and marks would read as data positions.
         sep = style.dodge_width * style.split_sep_frac
         offsets = [
-            (si - (len(style_levels) - 1) / 2) * sep
-            for si in range(len(style_levels))
+            (si - (len(style_levels) - 1) / 2) * sep for si in range(len(style_levels))
         ]
         top = ax.secondary_xaxis("top")
         top.set_xticks(
@@ -486,58 +483,6 @@ def draw_row(axes, slug, human, model, *, style, keys, lim, titles, xticklabels=
         ax.tick_params(axis="y", **ytick_kw)
 
 
-def _center_xlabel(bottom_axes, style):
-    """Put the x axis label under the centre of the bottom row.
-
-    fig.supxlabel would be laid out in the same band as the outside-lower
-    legends and collide with them, so the label rides on a bottom-row Axes:
-    on the right edge of the left-of-centre panel when the row has an even
-    number of columns, and mid-panel when it is odd.
-    """
-    n = len(bottom_axes)
-    if n % 2:
-        bottom_axes[n // 2].set_xlabel(X_AXIS_LABEL, fontsize=style.label_fs)
-    else:
-        bottom_axes[n // 2 - 1].set_xlabel(
-            X_AXIS_LABEL, x=1.0, ha="center", fontsize=style.label_fs
-        )
-
-
-def _group(handles, title):
-    """Lay a legend group's entries over LEGEND_ENTRY_ROWS rows."""
-    return (handles, title, math.ceil(len(handles) / LEGEND_ENTRY_ROWS))
-
-
-def legend_rows(legends):
-    """Height of the bottom legend strip, in entry-rows: the tallest group's
-    entry rows plus its title line."""
-    if not legends:
-        return 0
-    return 1 + max(math.ceil(len(hs) / ncol) for hs, _t, ncol in legends)
-
-
-def place_legends(fig, legends, style):
-    """Lay the groups out along the bottom strip, left to right, titles above
-    their entries and aligned across groups."""
-    locs = {
-        1: ["outside lower left"],
-        2: ["outside lower left", "outside lower right"],
-        3: ["outside lower left", "outside lower center", "outside lower right"],
-    }.get(len(legends))
-    if locs is None:  # more groups than slots: stack them all at the left
-        locs = ["outside lower left"] * len(legends)
-    for (handles, title, ncol), loc in zip(legends, locs):
-        fig.legend(
-            handles=handles,
-            loc=loc,
-            ncol=ncol,
-            title=title,
-            alignment="left",
-            borderaxespad=0.2,
-            **({"fontsize": style.legend_fs} if style.legend_fs else {}),
-        )
-
-
 def ylabel_for(slug):
     """ "Belief update" alone for the joint studies (two latents share the
     axis), qualified by the latent for the single-DV studies."""
@@ -567,15 +512,23 @@ def marker_fill(colour, style):
     )
 
 
+#: Legend markers are drawn a little larger than the panels' own. A shape has to
+#: be told apart from two others here, on its own beside a line of text, where a
+#: panel marker is read in a field of its neighbours; at panel size the square
+#: and the circle are hard to separate in the legend.
+LEGEND_MARKER_SCALE = 1.4
+
+
 def _grey_marker(marker, label, style):
-    """A neutral-grey swatch drawn exactly as the panels draw their markers, so
-    the legend cannot describe an encoding the panels do not use."""
+    """A neutral-grey swatch drawn as the panels draw their markers, up to
+    `LEGEND_MARKER_SCALE`, so the legend cannot describe an encoding the panels
+    do not use."""
     return Line2D(
         [],
         [],
         linestyle="none",
         marker=marker,
-        markersize=style.markersize,
+        markersize=style.markersize * LEGEND_MARKER_SCALE,
         label=label,
         **marker_fill("0.35", style),
     )
@@ -587,21 +540,27 @@ def target_handles(names, style):
     return [_grey_marker(DV_MARKERS[n], DV_LEGEND_LABELS[n], style) for n in names]
 
 
-def condition_point_handles(condition, style):
+def condition_color_handles(condition, style):
     """Colour legend for one given condition ("intimacy_condition" or
-    "desire_condition"), drawn as filled points rather than patches so it
-    matches how the panels encode colour. Returns (handles, title)."""
+    "desire_condition"), drawn as a rounded bar rather than a marker. Returns
+    (handles, title).
+
+    Deliberately shape-free: marker shape is the inferred target (`DV_MARKERS`),
+    so a swatch drawn as a point would spend one of those shapes on a palette
+    entry -- a circle in the relationship legend reads as the desire marker. The
+    bar is as thick as a marker is wide, and its round caps echo the connector
+    the panels draw between a condition's easy/hard pair in this same colour, so
+    the swatch still names something the panels draw.
+    """
     levels, colors, labels, title = CONDITION_COLOR_AXES[condition]
     handles = [
         Line2D(
             [],
             [],
-            linestyle="none",
-            marker="o",
-            markerfacecolor=colors[lvl],
-            markeredgecolor="white",
-            markeredgewidth=style.filled_edgewidth,
-            markersize=style.markersize,
+            linestyle="-",
+            color=colors[lvl],
+            linewidth=style.markersize,
+            solid_capstyle="round",
             label=labels[lvl],
         )
         for lvl in levels

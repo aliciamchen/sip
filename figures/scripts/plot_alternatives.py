@@ -951,7 +951,7 @@ def _draw_base_vs_full(ax, base_runs, runs, ylabel):
             lw=1.2,
             zorder=5,
         )
-    ax.axvline(len(INTIMACY_LEVELS) - 0.5, color="#CCCCCC", lw=1.1, ls=(0, (4, 3)))
+    ax.axvline(len(INTIMACY_LEVELS) - 0.5, color="0.85", lw=1.1, ls=(0, (4, 3)))
     ax.set_xticks(range(len(cats)))
     ax.set_xticklabels(
         [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in INTIMACY_LEVELS]

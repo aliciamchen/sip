@@ -53,18 +53,21 @@ LEGEND_DIR = PANELS_LEGENDS
 # Square panels at the poster's scale (the aspect that reads best), with heavier
 # axis furniture for Illustrator. Fonts are poster-scale: the artboard is ~10 in
 # wide, so text lands at print size once the row is scaled to column width.
-# Markers are smaller than the poster's so the human CIs stay visible: the
-# whiskers are drawn behind the marker in its own colour with no caps, so a
-# marker wider than its CI would swallow them (at markersize 10 it did; 9.5
-# still clears them, checked against the Humans columns).
+# Markers are smaller than the poster's because they trade against the human
+# CIs: the whiskers are drawn behind the marker in its own colour with no caps,
+# so any CI narrower than the marker disappears under it. Measured over all six
+# studies' Humans columns, the share of whisker ends the marker hides runs 37%
+# at markersize 9.5, 43% at 10, 51% at 10.5 -- the size below is the last one
+# that keeps most of them, so raising it further should come with a change to
+# how the CIs are drawn (caps, or a darker whisker) rather than on its own.
 STYLE = replace(
     points.POSTER,
     panel_w=2.9,
     panel_h=3.3,
-    markersize=9.5,
+    markersize=10.0,
     tick_len=4.5,
     tick_w=1.4,
-    xtick_fs=12,
+    xtick_fs=12.5,
     ytick_len=4.5,
     ytick_w=1.4,
     zero_lw=1.3,
@@ -77,19 +80,27 @@ STYLE = replace(
 # empty rather than growing their plot area.
 PANEL_MARGINS = dict(left=0.075, right=0.995, top=0.824, bottom=0.236, wspace=0.08)
 
-# The same idea for the model-vs-human scatter, which has its own furniture: a
-# column title above, x tick labels plus an x axis label below, and y tick labels
-# plus a y label at the left. Height is the binding dimension once the equal
-# aspect squares the box, so top/bottom are what the title clearance depends on.
+# Columns PANEL_MARGINS is written against: the fractions above describe a
+# four-column row, so anything sized from them has to know that.
+REF_NCOLS = 4
+
+# The model-vs-human scatter is laid out FROM the points row rather than tuned on
+# its own, so the two stack: `scatter_layout` gives each square box the same
+# width, column pitch and left offset as one points column, and lets the canvas
+# come out however wide that makes it. Sizing it independently is what left the
+# boxes narrower than the panels above them -- the equal aspect squares the box
+# to the shorter side, so the scatter's width was really being set by its height.
 #
-# Every margin here is set by a label that overflows the axes box rather than by
-# the box itself: the first and last x ticks sit ON the axis limits, so their
-# centred labels stick out half a label width past each side, and the rotated y
-# label and the x axis label each need their own line outside the box. Values were
-# tightened until no ink lands within 3 px of any canvas edge at 150 dpi (checked
-# per edge, per panel) -- the panels are placed in Illustrator, where content
-# flush to the artboard reads as cropped.
-SCATTER_MARGINS = dict(left=0.092, right=0.975, top=0.885, bottom=0.175, wspace=0.09)
+# Only the outward reserves below are the scatter's own, because its labels
+# overflow where the points row's do not: the first and last x ticks sit ON the
+# axis limits, so their centred labels stick out half a label width past each
+# side, and the column title, the x axis label and the rotated y label each need
+# a line outside the box. In inches, converted once from the fractions they were
+# tuned as (against the fixed 8.70 x 3.30 canvas this replaces), which were
+# tightened until no ink landed within 3 px of any canvas edge at 150 dpi --
+# these are placed in Illustrator, where content flush to the artboard reads as
+# cropped. The left reserve is the points row's, which is the larger of the two.
+SCATTER_RESERVE_IN = dict(right=0.218, top=0.380, bottom=0.578)
 
 PANEL_RC = {
     "axes.linewidth": 1.4,
@@ -185,6 +196,40 @@ def draw_panel(slug, stem):
     return True
 
 
+def points_column_geometry():
+    """(left offset, axes width, inter-column gap) of a points-panel column, in
+    inches -- PANEL_MARGINS read back out as absolute lengths."""
+    fig_w = STYLE.panel_w * REF_NCOLS
+    span = (PANEL_MARGINS["right"] - PANEL_MARGINS["left"]) * fig_w
+    axes_w = span / (REF_NCOLS + (REF_NCOLS - 1) * PANEL_MARGINS["wspace"])
+    return PANEL_MARGINS["left"] * fig_w, axes_w, axes_w * PANEL_MARGINS["wspace"]
+
+
+def scatter_layout(ncols):
+    """(figsize, margins) for an `ncols`-column scatter row that stacks under a
+    points row: same left offset, same box width, same column pitch.
+
+    The axes rectangle is made SQUARE (height = the points row's column width),
+    because `set_aspect("equal")` otherwise shrinks the box to the shorter side
+    and the width asked for here would not be the width drawn.
+    """
+    left, axes_w, gap = points_column_geometry()
+    fig_w = left + ncols * axes_w + (ncols - 1) * gap + SCATTER_RESERVE_IN["right"]
+    fig_h = SCATTER_RESERVE_IN["top"] + axes_w + SCATTER_RESERVE_IN["bottom"]
+    return (fig_w, fig_h), dict(
+        left=left / fig_w,
+        right=1 - SCATTER_RESERVE_IN["right"] / fig_w,
+        top=1 - SCATTER_RESERVE_IN["top"] / fig_h,
+        bottom=SCATTER_RESERVE_IN["bottom"] / fig_h,
+        wspace=PANEL_MARGINS["wspace"],
+    )
+
+
+def visible_ticks(lim, nbins=5):
+    """The ticks `MaxNLocator` would draw inside `lim`, as fixed positions."""
+    return [t for t in plt.MaxNLocator(nbins).tick_values(*lim) if lim[0] < t < lim[1]]
+
+
 def draw_scatter_panel(
     stem="panel_model_vs_humans", slugs=None, label="scatter", lim=None
 ):
@@ -228,10 +273,11 @@ def draw_scatter_panel(
         lim = (-lim_hi, lim_hi)
 
     keys = points.data.MODEL_ORDER
+    figsize, margins = scatter_layout(len(keys))
     fig, axes = plt.subplots(
         1,
         len(keys),
-        figsize=(STYLE.panel_w * len(keys), STYLE.panel_h),
+        figsize=figsize,
         sharex=True,
         sharey=True,
     )
@@ -244,15 +290,26 @@ def draw_scatter_panel(
     # be clipped while Studies 1 and 3 were fine. A fixed rectangle makes the box
     # identical across studies, so the titles land in the same place and the three
     # artboards stack.
-    fig.subplots_adjust(**SCATTER_MARGINS)
+    fig.subplots_adjust(**margins)
     for ax, model in zip(axes, keys):
         corr.draw_agg_panel(
             ax, agg[model], lim, agg_cis.get(model), zero_lw=STYLE.zero_lw
         )
         ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
         ax.tick_params(labelsize=STYLE.tick_fs)
-        ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+        # The x axis keeps its full labelled range, at the cost of the two end
+        # labels not being centred on their ticks: they sit at the ends of the
+        # axis, so centred they hang half their width into the gap between
+        # columns -- which is the points row's gap now, not one this row can
+        # widen for itself -- and one column's "0.4" lands on the next column's
+        # "-0.4". Aligned inward, no label crosses its own box edge. Ticks are
+        # fixed rather than left to the locator so the two end labels can be
+        # addressed at all.
+        ax.set_xticks(visible_ticks(lim))
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+        xlabels = ax.get_xticklabels()
+        xlabels[0].set_horizontalalignment("left")
+        xlabels[-1].set_horizontalalignment("right")
     axes[0].set_ylabel("Human belief update", fontsize=STYLE.label_fs)
     # Parallel with the y label ("Human belief update"), so the axes read as the
     # same quantity from two sources rather than as two different quantities.
@@ -261,7 +318,7 @@ def draw_scatter_panel(
     return lim
 
 
-def draw_legend(handles, stem, title, ncol=None):
+def draw_legend(handles, stem, title, ncol=None, **legend_kw):
     """One legend on its own tight-cropped artboard."""
     fig = plt.figure(figsize=(0.1, 0.1))
     fig.legend(
@@ -272,8 +329,7 @@ def draw_legend(handles, stem, title, ncol=None):
         frameon=False,
         fontsize=STYLE.legend_fs,
         title_fontsize=STYLE.legend_fs,
-        columnspacing=1.5,
-        handletextpad=0.5,
+        **{"columnspacing": 1.5, "handletextpad": 0.5, **legend_kw},
     )
     _save(fig, f"legend_{stem}")
 
@@ -299,8 +355,23 @@ def draw_legends():
         ("intimacy_condition", "relationship"),
         ("desire_condition", "desire"),
     ):
-        handles, title = points.condition_point_handles(condition, STYLE)
-        draw_legend(handles, stem, title, ncol=2 if len(handles) > 2 else 1)
+        handles, title = points.condition_color_handles(condition, STYLE)
+        # A bar swatch fills its whole handle box, where a marker sits centred in
+        # one, so the shared handle length and text pad that suit the target
+        # legends leave these entries running into their labels. Shortened and
+        # padded here rather than in the defaults: only the colour legends draw
+        # bars.
+        # One entry per line, relationship's four included: the levels are
+        # ordered (formal to intimate), and a two-column block reads down one
+        # column and back up the other, which loses that order.
+        draw_legend(
+            handles,
+            stem,
+            title,
+            ncol=1,
+            handlelength=1.1,
+            handletextpad=0.8,
+        )
     # One entry per line: the effort entry names a probability, so the entries
     # read as a list rather than a row of unequal-width chips.
     n = 2
