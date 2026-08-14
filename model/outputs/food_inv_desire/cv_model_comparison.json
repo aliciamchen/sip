@@ -102,5 +102,292 @@
       "ceiling": 0.9576359521412052,
       "n_splits": 400
     }
+  ],
+  "variance_decomposition": [
+    {
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "within_cell_var": 0.06115001344059704,
+      "between_cell_var": 0.036117891167775924,
+      "total_var": 0.09726790460837297,
+      "frac_explainable": 0.3713238330073664,
+      "focal_var": 0.0007901003063827444,
+      "focal_frac_of_total": 0.008122929239237785,
+      "focal_frac_of_explainable": 0.021875593530988464,
+      "focal_scenario_consistent_var": 0.0004631559684870803,
+      "focal_scenario_specific_var": 0.00032694433789566416,
+      "focal_frac_scenario_specific": 0.41380105191009015,
+      "bias_correction": {
+        "pooled_within_var": 0.06115001344059704,
+        "cell_mean_sampling_var": 0.003103804679074807,
+        "focal_deviation_sampling_var": 0.0023278535093061055,
+        "uncorrected_between_cell_var": 0.03922169584685073,
+        "uncorrected_focal_var": 0.00311795381568885
+      },
+      "focal_frac_of_total_ci_95": [
+        0.0,
+        0.017079053272798534
+      ],
+      "focal_frac_scenario_specific_ci_95": [
+        0.0,
+        0.8132207585386952
+      ],
+      "n_boot": 1000
+    }
+  ],
+  "condition_gradients": [
+    {
+      "model": "base",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 0,
+      "human_gradient": -0.0937183633726669,
+      "human_ci_95": [
+        -0.12308372935265394,
+        -0.06668442029892563
+      ],
+      "model_gradient": -0.001807614646541611,
+      "human_endpoint_gradient": -0.09850628930817593,
+      "model_endpoint_gradient": -0.0027484885832798622,
+      "human_minus_model": -0.09191074872612529,
+      "human_minus_model_ci_95": [
+        -0.12127611470611233,
+        -0.06487680565238402
+      ],
+      "recovered_fraction": 0.01928773168342379
+    },
+    {
+      "model": "base",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 1,
+      "human_gradient": -0.051732650309843316,
+      "human_ci_95": [
+        -0.07166016368861126,
+        -0.032520471021644945
+      ],
+      "model_gradient": 0.0006302598244701391,
+      "human_endpoint_gradient": -0.04752799034211512,
+      "model_endpoint_gradient": 0.0007081074530406184,
+      "human_minus_model": -0.052362910134313455,
+      "human_minus_model_ci_95": [
+        -0.0722904235130814,
+        -0.033150730846115084
+      ],
+      "recovered_fraction": -0.012183018281400861
+    },
+    {
+      "model": "base",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 2,
+      "human_gradient": -0.006901177609038869,
+      "human_ci_95": [
+        -0.03322831943670439,
+        0.01920508730431778
+      ],
+      "model_gradient": 0.0011678311016835793,
+      "human_endpoint_gradient": -0.012337786441909027,
+      "model_endpoint_gradient": 0.0011348231497836786,
+      "human_minus_model": -0.008069008710722449,
+      "human_minus_model_ci_95": [
+        -0.034396150538387966,
+        0.0180372562026342
+      ],
+      "recovered_fraction": null
+    },
+    {
+      "model": "base_shared",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 0,
+      "human_gradient": -0.0937183633726669,
+      "human_ci_95": [
+        -0.12308372935265394,
+        -0.06668442029892563
+      ],
+      "model_gradient": -0.00429538788258324,
+      "human_endpoint_gradient": -0.09850628930817593,
+      "model_endpoint_gradient": -0.004575890869651933,
+      "human_minus_model": -0.08942297549008366,
+      "human_minus_model_ci_95": [
+        -0.1187883414700707,
+        -0.06238903241634238
+      ],
+      "recovered_fraction": 0.04583293740953224
+    },
+    {
+      "model": "base_shared",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 1,
+      "human_gradient": -0.051732650309843316,
+      "human_ci_95": [
+        -0.07166016368861126,
+        -0.032520471021644945
+      ],
+      "model_gradient": 0.00036828865705398894,
+      "human_endpoint_gradient": -0.04752799034211512,
+      "model_endpoint_gradient": -0.00046198194488576705,
+      "human_minus_model": -0.052100938966897305,
+      "human_minus_model_ci_95": [
+        -0.07202845234566525,
+        -0.032888759678698934
+      ],
+      "recovered_fraction": -0.007119075764496713
+    },
+    {
+      "model": "base_shared",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 2,
+      "human_gradient": -0.006901177609038869,
+      "human_ci_95": [
+        -0.03322831943670439,
+        0.01920508730431778
+      ],
+      "model_gradient": -0.0011995524930936696,
+      "human_endpoint_gradient": -0.012337786441909027,
+      "model_endpoint_gradient": -0.0021756980129680054,
+      "human_minus_model": -0.0057016251159452,
+      "human_minus_model_ci_95": [
+        -0.03202876694361072,
+        0.020404639797411448
+      ],
+      "recovered_fraction": null
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 0,
+      "human_gradient": -0.0937183633726669,
+      "human_ci_95": [
+        -0.12308372935265394,
+        -0.06668442029892563
+      ],
+      "model_gradient": 0.0,
+      "human_endpoint_gradient": -0.09850628930817593,
+      "model_endpoint_gradient": 0.0,
+      "human_minus_model": -0.0937183633726669,
+      "human_minus_model_ci_95": [
+        -0.12308372935265394,
+        -0.06668442029892563
+      ],
+      "recovered_fraction": -0.0
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 1,
+      "human_gradient": -0.051732650309843316,
+      "human_ci_95": [
+        -0.07166016368861126,
+        -0.032520471021644945
+      ],
+      "model_gradient": 0.0,
+      "human_endpoint_gradient": -0.04752799034211512,
+      "model_endpoint_gradient": 0.0,
+      "human_minus_model": -0.051732650309843316,
+      "human_minus_model_ci_95": [
+        -0.07166016368861126,
+        -0.032520471021644945
+      ],
+      "recovered_fraction": -0.0
+    },
+    {
+      "model": "discomfort_only",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 2,
+      "human_gradient": -0.006901177609038869,
+      "human_ci_95": [
+        -0.03322831943670439,
+        0.01920508730431778
+      ],
+      "model_gradient": 0.0,
+      "human_endpoint_gradient": -0.012337786441909027,
+      "model_endpoint_gradient": 0.0,
+      "human_minus_model": -0.006901177609038869,
+      "human_minus_model_ci_95": [
+        -0.03322831943670439,
+        0.01920508730431778
+      ],
+      "recovered_fraction": null
+    },
+    {
+      "model": "full",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 0,
+      "human_gradient": -0.0937183633726669,
+      "human_ci_95": [
+        -0.12308372935265394,
+        -0.06668442029892563
+      ],
+      "model_gradient": -0.06177230962518496,
+      "human_endpoint_gradient": -0.09850628930817593,
+      "model_endpoint_gradient": -0.06258649338013347,
+      "human_minus_model": -0.03194605374748194,
+      "human_minus_model_ci_95": [
+        -0.06131141972746898,
+        -0.004912110673740667
+      ],
+      "recovered_fraction": 0.6591270632794783
+    },
+    {
+      "model": "full",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 1,
+      "human_gradient": -0.051732650309843316,
+      "human_ci_95": [
+        -0.07166016368861126,
+        -0.032520471021644945
+      ],
+      "model_gradient": -0.06229961304809044,
+      "human_endpoint_gradient": -0.04752799034211512,
+      "model_endpoint_gradient": -0.06226765915687189,
+      "human_minus_model": 0.010566962738247122,
+      "human_minus_model_ci_95": [
+        -0.009360550640520826,
+        0.029779142026445493
+      ],
+      "recovered_fraction": 1.2042609971644256
+    },
+    {
+      "model": "full",
+      "dv": "desire",
+      "focal_condition": "intimacy_condition",
+      "n_levels": 4,
+      "action": 2,
+      "human_gradient": -0.006901177609038869,
+      "human_ci_95": [
+        -0.03322831943670439,
+        0.01920508730431778
+      ],
+      "model_gradient": -0.07469178505006127,
+      "human_endpoint_gradient": -0.012337786441909027,
+      "model_endpoint_gradient": -0.07717541683114468,
+      "human_minus_model": 0.0677906074410224,
+      "human_minus_model_ci_95": [
+        0.041463465613356884,
+        0.09389687235437905
+      ],
+      "recovered_fraction": null
+    }
   ]
 }

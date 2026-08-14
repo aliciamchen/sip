@@ -16,6 +16,15 @@ over the cells. Alongside it a split-half noise CEILING per DV, which is the
 maximum correlation any model could reach given the noise in those cell means --
 the quantity that says whether a given r is close to attainable.
 
+HYPOTHESIS-MATCHED (secondary, `cv/contrast_tests.py`): the preregistered
+primary is a global fit index, and the paper's claim is about a modulation worth
+1-3% of trial-level variance, which such an index is close to blind to. Two
+blocks quantify that and test the claim directly: `variance_decomposition` (where
+the variance lives, bias-corrected, with participant-bootstrap intervals) and
+`condition_gradients` (the belief-update change across the focal condition's
+ordered levels, human against each variant's held-out predictions). Reported
+BESIDE the preregistered primary, never in place of it.
+
 Writes `outputs/<slug>/cv_model_comparison.json` and prints a summary.
 
 Usage:
@@ -45,8 +54,10 @@ from _helpers import (  # noqa: E402
     verify_fit_manifest,
     write_json,
 )
-from study_registry import STUDIES, reported_base  # noqa: E402
+from study_registry import STUDIES, reported_base, study  # noqa: E402
 from utils import get_project_root  # noqa: E402
+
+from contrast_tests import condition_gradients, variance_decomposition  # noqa: E402
 
 # The three CV output files written together by the dispatcher's _write_outputs
 # and hashed into cv_manifest.json (must match CV_OUTPUT_NAMES there).
@@ -368,6 +379,13 @@ def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, model
     }
 
 
+def fmt_ci(ci, pct=True):
+    """`[lo, hi]` for the console, or an empty string when absent/undefined."""
+    if not ci or any(v != v for v in ci):
+        return ""
+    return f"[{ci[0]:.1%}, {ci[1]:.1%}]" if pct else f"[{ci[0]:+.4f}, {ci[1]:+.4f}]"
+
+
 def run_study(slug, n_boot, seed):
     spec = STUDY_SPECS[slug]
     outputs_dir = get_project_root() / "model" / "outputs" / slug
@@ -446,6 +464,44 @@ def run_study(slug, n_boot, seed):
         if got is not None:
             result["noise_ceilings"].append({"dv": dv, **got})
 
+    # Hypothesis-matched statistics (see cv/contrast_tests.py). Secondary to the
+    # preregistered primary above and reported beside it, never in place of it.
+    # Each draws from its own `_seed_for` stream for the same reason the ceiling
+    # does: the primary and secondary numbers are already published, and sharing
+    # a generator would move their CIs in the third decimal.
+    st = study(slug)
+    result["variance_decomposition"] = []
+    result["condition_gradients"] = []
+    # One entry per variant, so the gradient code can compute the model-free
+    # human bootstrap once and reuse it across variants rather than redrawing a
+    # different interval for the same human statistic under each.
+    preds_by_model = {
+        m: preds[preds["model"] == m] for m in sorted(preds["model"].unique())
+    }
+    for update_col, delta_col, dv in spec["dvs"]:
+        vd = variance_decomposition(
+            data,
+            st,
+            update_col,
+            dv,
+            n_boot=n_boot,
+            rng=np.random.default_rng(_seed_for(f"{slug}|{dv}|variance")),
+        )
+        if vd is not None:
+            result["variance_decomposition"].append(vd)
+        result["condition_gradients"].extend(
+            condition_gradients(
+                data,
+                preds_by_model,
+                st,
+                update_col,
+                delta_col,
+                dv,
+                n_boot=n_boot,
+                rng=np.random.default_rng(_seed_for(f"{slug}|{delta_col}|gradient")),
+            )
+        )
+
     out_path = outputs_dir / "cv_model_comparison.json"
     write_json(out_path, result)
 
@@ -474,6 +530,24 @@ def run_study(slug, n_boot, seed):
             f"  noise ceiling ({row['dv']}) = {row['ceiling']:.4f} "
             f"(split-half {row['split_half']:.4f} -> reliability "
             f"{row['reliability']:.4f}){frac}"
+        )
+    for row in result["variance_decomposition"]:
+        print(
+            f"  variance ({row['dv']}): {row['frac_explainable']:.0%} explainable; "
+            f"{row['focal_condition'].split('_')[0]} effect is "
+            f"{row['focal_frac_of_total']:.1%} of trial variance "
+            f"({row['focal_frac_of_explainable']:.0%} of explainable) "
+            f"CI {fmt_ci(row.get('focal_frac_of_total_ci_95'))}, "
+            f"{row['focal_frac_scenario_specific']:.0%} of it scenario-specific"
+        )
+    for row in result["condition_gradients"]:
+        lo, hi = row["human_ci_95"]
+        rec = row["recovered_fraction"]
+        rec_s = f"{rec:+.0%} recovered" if rec is not None else "human gradient n.s."
+        print(
+            f"  gradient ({row['model']}, {row['dv']}, action {row['action']}): "
+            f"human {row['human_gradient']:+.4f} [{lo:+.4f}, {hi:+.4f}] vs "
+            f"model {row['model_gradient']:+.4f} -- {rec_s}"
         )
     print(f"  wrote {out_path}")
     return result

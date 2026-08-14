@@ -44,6 +44,7 @@ Usage:
 import argparse
 import json
 import math
+import statistics
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -657,6 +658,27 @@ def build(all_studies):
     _run_spread_macros(m, all_studies)
 
     # --- SI cross-experiment generalization (exploratory; skipped if unrun) ---
+    focal_fracs = []
+    for study in all_studies:
+        comparison, _full_fit, _primary, _deviation = loaded[study.slug]
+        _modulation_macros(m, token(study), study.slug, comparison)
+        _ceiling_macros(m, token(study), comparison)
+        # The range quoted in Methods is over each study's PRIMARY inferred
+        # latent (desire or intimacy), not the physical world state: the world
+        # state is a second DV in four studies only, and its focal share is the
+        # noisiest number in the set (one estimate corrects to exactly zero), so
+        # including it would widen the quoted range without adding a claim.
+        primary_dv = study.dvs[0].name
+        for d in comparison.get("variance_decomposition", []):
+            if d["dv"] == primary_dv:
+                focal_fracs.append(d["focal_frac_of_total"])
+    if focal_fracs:
+        m.add(
+            "modFracRange",
+            _fmt_range(100 * min(focal_fracs), 100 * max(focal_fracs), dp=1) + r"\%",
+            "focal effect, share of trial-level variance, primary latent",
+        )
+
     # Scale comes from `shared`, which has already checked every study agrees on
     # the trials-per-participant factor -- these numbers are quoted beside the
     # primary contrasts and must be in the same unit.
@@ -688,6 +710,216 @@ def build(all_studies):
         m.add(key, body, "shared across studies")
 
     return m, loaded
+
+
+def _ceiling_macros(m, tok, comparison):
+    """Full-model correlation as a fraction of the split-half noise ceiling.
+
+    The ceiling is the highest correlation ANY model could reach given the
+    sampling noise in the cell means, so this ratio is what says whether a given
+    r is near the attainable limit -- an r of 0.64 against a ceiling of 0.96
+    means something different from the same r against a ceiling of 0.70. Emitted
+    per DV, because the two kinds of inferred variable sit at very different
+    fractions and reporting one number for a study would hide that.
+    """
+    ceilings = {c["dv"]: c["ceiling"] for c in comparison.get("noise_ceilings", [])}
+    r_full = {
+        c["dv"]: c["r"]
+        for c in comparison.get("secondary_correlations", [])
+        if c["model"] == "full"
+    }
+    for dv, ceiling in ceilings.items():
+        r = r_full.get(dv)
+        if r is None or not ceiling:
+            continue
+        m.add(
+            f"ceil{dv.capitalize()}{tok}",
+            rf"\ensuremath{{{100 * r / ceiling:.0f}\%}}",
+            f"full-model r as a fraction of the {dv} noise ceiling",
+        )
+
+
+def _modulation_macros(m, tok, slug, comparison):
+    """Macros for the hypothesis-matched statistics (cv/contrast_tests.py).
+
+    Two things the paper quotes. The focal effect's share of trial-level
+    variance, which is why the global held-out likelihood is insensitive to the
+    modulation these studies manipulate; and how much of participants' gradient
+    each model variant recovers, summarized as the median over the cells where
+    that gradient is reliably nonzero.
+
+    The median, not the mean: a recovered fraction is a ratio, and the cells
+    where the human denominator is small but survives the reliability screen
+    would otherwise dominate. Cells whose human gradient is NOT reliable carry no
+    ratio at all (contrast_tests withholds it), and are excluded here rather than
+    counted as zero -- the model is not wrong there, the data are silent.
+    """
+    decomp = comparison.get("variance_decomposition", [])
+    grads = comparison.get("condition_gradients", [])
+    if not decomp or not grads:
+        return
+    base_key = reported_base(slug)
+
+    # Focal share of trial-level variance: the widest interval across this
+    # study's DVs, so the quoted range covers every DV it reports.
+    lo = min(d["focal_frac_of_total_ci_95"][0] for d in decomp)
+    hi = max(d["focal_frac_of_total_ci_95"][1] for d in decomp)
+    m.add(f"focalVar{tok}", _fmt_range(100 * lo, 100 * hi, dp=1) + r"\%")
+
+    reliable = [
+        (g["dv"], g["action"])
+        for g in grads
+        if g["model"] == "full" and g["recovered_fraction"] is not None
+    ]
+    m.add(f"nGradCells{tok}", str(len(reliable)), "cells with a reliable gradient")
+    if not reliable:
+        return
+    by = {(g["model"], g["dv"], g["action"]): g for g in grads}
+    for name, variant in (("Full", "full"), ("Base", base_key), ("Disc", "discomfort_only")):
+        vals = []
+        for dv, action in reliable:
+            got, ref = by.get((variant, dv, action)), by[("full", dv, action)]
+            if got is None:
+                continue
+            vals.append(abs(got["model_gradient"] / ref["human_gradient"]))
+        if vals:
+            m.add(f"grad{name}{tok}", rf"\ensuremath{{{100 * statistics.median(vals):.0f}\%}}")
+
+
+def gradients_table(all_studies):
+    """tab:gradients: how much of participants' modulation each variant recovers.
+
+    One row per study rather than per (study, action): the per-action detail is a
+    30-row table that belongs in the SI, and the main text's claim is about the
+    ordering of the three variants, which the summary carries.
+    """
+
+    def cells(study):
+        tok = token(study)
+        return (
+            rf"\nGradCells{tok} & \gradFull{tok} & \gradBase{tok} & \gradDisc{tok}"
+        )
+
+    header = (
+        r" & \multicolumn{1}{c}{Cells} & \multicolumn{3}{c}{Median gradient recovered} \\"
+        "\n"
+        r"\cmidrule(lr){3-5}"
+        "\n"
+        r"Study & $n$ & Full & Base & Discomfort-only \\"
+    )
+    return _tabular("lcccc", header, _rows(all_studies, cells, domain_heading=5))
+
+
+#: Human-readable action names for the SI gradient table, by the integer index
+#: cv_preds_summary.json uses.
+_ACTION_LABEL = {0: "no share", 1: "low-risk", 2: "high-risk"}
+
+
+def variance_table(all_studies, loaded):
+    """tab:variance-decomposition (SI): where each DV's trial variance lives."""
+    lines = []
+    for study in all_studies:
+        comparison = loaded[study.slug][0]
+        for d in comparison.get("variance_decomposition", []):
+            lo, hi = d["focal_frac_of_total_ci_95"]
+            lines.append(
+                rf"{study.short_label} & {_PAPER_TARGET[d['dv']]} & "
+                rf"{100 * d['frac_explainable']:.0f}\% & "
+                rf"{100 * d['focal_frac_of_total']:.1f}\% & "
+                rf"\ensuremath{{[{100 * lo:.1f},\ {100 * hi:.1f}]}}\% & "
+                rf"{100 * d['focal_frac_of_explainable']:.0f}\% \\"
+            )
+    header = (
+        r"Study & Inferred & Explainable & Focal & 95\% CI & "
+        r"Focal / explainable \\"
+    )
+    return _tabular("llrrcr", header, "\n".join(lines))
+
+
+def gradients_full_table(all_studies, loaded):
+    """tab:gradients-full (SI): the per-action gradients behind tab:gradients."""
+    lines = []
+    for study in all_studies:
+        comparison = loaded[study.slug][0]
+        grads = comparison.get("condition_gradients", [])
+        if not grads:
+            continue
+        base_key = reported_base(study.slug)
+        by = {(g["model"], g["dv"], g["action"]): g for g in grads}
+        for dv in (d.name for d in study.dvs):
+            for action in sorted({g["action"] for g in grads if g["dv"] == dv}):
+                ref = by.get(("full", dv, action))
+                if ref is None:
+                    continue
+                lo, hi = ref["human_ci_95"]
+                rec = ref["recovered_fraction"]
+                cells = " & ".join(
+                    _fmt(by[(v, dv, action)]["model_gradient"], 3)
+                    if (v, dv, action) in by
+                    else r"\textit{n/a}"
+                    for v in ("full", base_key, "discomfort_only")
+                )
+                lines.append(
+                    rf"{study.short_label} & {_PAPER_TARGET[dv]} & "
+                    rf"{_ACTION_LABEL.get(action, action)} & "
+                    rf"{_fmt(ref['human_gradient'], 3)} "
+                    rf"\ensuremath{{[{lo:.3f},\ {hi:.3f}]}} & {cells} & "
+                    + (rf"\ensuremath{{{100 * rec:.0f}\%}}" if rec is not None
+                       else r"\textit{n.s.}")
+                    + r" \\"
+                )
+    header = (
+        r" & & & \multicolumn{1}{c}{Human} & \multicolumn{3}{c}{Model gradient} & \\"
+        "\n"
+        r"\cmidrule(lr){5-7}"
+        "\n"
+        r"Study & Inferred & Action & gradient [95\% CI] & Full & Base & "
+        r"Disc.\ only & Recovered \\"
+    )
+    return _tabular("lllccccr", header, "\n".join(lines))
+
+
+def design_table(all_studies):
+    """tab:design: the design space the six studies traverse.
+
+    Derived from the registry rather than written out, so it cannot disagree
+    with what was actually fitted. The layout follows how the text describes the
+    space: the observer's primary inference target crossed with whether the
+    competing physical cause is given in the vignette or inferred alongside it
+    (the `a' versus `b' variants). Each study gives the observer exactly one of
+    relationship or desire and infers the other, so naming the inferred latent in
+    the row header fixes the given one too.
+    """
+    rows = {}
+    for study in all_studies:
+        primary = study.dvs[0].name
+        physical_given = "effort_condition" in study.given_conditions
+        label = study.short_label
+        if study.domain != "food":
+            label = rf"{label}\textsuperscript{{$\dagger$}}"
+        rows.setdefault(primary, {}).setdefault(physical_given, []).append(label)
+
+    body = []
+    for primary, given_label in (
+        ("desire", r"Desire \emph{(relationship given)}"),
+        ("intimacy", r"Relationship \emph{(desire given)}"),
+    ):
+        if primary not in rows:
+            continue
+        cells = [
+            ", ".join(rows[primary].get(is_given, [])) or r"\textit{--}"
+            for is_given in (True, False)
+        ]
+        body.append(rf"{given_label} & {cells[0]} & {cells[1]} \\")
+
+    header = "\n".join(
+        [
+            r" & \multicolumn{2}{c}{Physical world state} \\",
+            r"\cmidrule(lr){2-3}",
+            r"Observer infers & Given & Inferred \\",
+        ]
+    )
+    return _tabular("lcc", header, "\n".join(body))
 
 
 def _rows(all_studies, cells_for, *, domain_heading=None):
@@ -862,6 +1094,18 @@ def main():
         ),
         "results_table_prereg_deviation.tex": (
             HEADER + provenance() + prereg_deviation_table(all_studies) + "\n"
+        ),
+        "results_table_design.tex": (
+            HEADER + provenance() + design_table(all_studies) + "\n"
+        ),
+        "results_table_gradients.tex": (
+            HEADER + provenance() + gradients_table(all_studies) + "\n"
+        ),
+        "results_table_variance.tex": (
+            HEADER + provenance() + variance_table(all_studies, _loaded) + "\n"
+        ),
+        "results_table_gradients_full.tex": (
+            HEADER + provenance() + gradients_full_table(all_studies, _loaded) + "\n"
         ),
     }
     # Only when the exploratory generalization analyses have been run -- writing

@@ -198,11 +198,17 @@ def _apply_reported_base(slug, comparison):
     """Rewrite a cv_model_comparison.json payload so `base` names the variant
     the paper reports (see study_registry.reported_base).
 
-    Touches both blocks the figures read: `primary` entries are keyed by a
-    "full_minus_<variant>" string and `secondary_correlations` rows by a
-    `model` field. Returns a copy — the on-disk artifact keeps the raw keys.
+    Touches every block that names a variant: `primary` entries are keyed by a
+    "full_minus_<variant>" string, and `secondary_correlations` and
+    `condition_gradients` rows by a `model` field. Missing one of them would put
+    two meanings of `base` in a single payload — the promoted variant under its
+    raw name `base_shared`, and the preregistered broadcast variant under `base`.
+    Returns a copy — the on-disk artifact keeps the raw keys.
     """
-    present = {row["model"] for row in comparison.get("secondary_correlations", [])}
+    _MODEL_KEYED = ("secondary_correlations", "condition_gradients")
+    present = {
+        row["model"] for block in _MODEL_KEYED for row in comparison.get(block, [])
+    }
     present |= {
         entry["comparison"].removeprefix("full_minus_")
         for entry in comparison.get("primary", [])
@@ -214,8 +220,9 @@ def _apply_reported_base(slug, comparison):
     for entry in comparison.get("primary", []):
         variant = entry["comparison"].removeprefix("full_minus_")
         entry["comparison"] = f"full_minus_{ren.get(variant, variant)}"
-    for row in comparison.get("secondary_correlations", []):
-        row["model"] = ren.get(row["model"], row["model"])
+    for block in _MODEL_KEYED:
+        for row in comparison.get(block, []):
+            row["model"] = ren.get(row["model"], row["model"])
     return comparison
 
 
