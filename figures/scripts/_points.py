@@ -11,7 +11,7 @@ panels per study, columns Base | Discomfort-only | Full | Humans, with
   their targets in one panel,
 - COLOR = the given condition (relationship for 1a/1b/3a, desire for 2a/2b/3b),
 - the GIVEN EFFORT CONDITION, where effort is given rather than inferred (1a and
-  2a), splits each action into two labelled sub-groups on the axis, low then
+  2a), splits each action into two labeled sub-groups on the axis, low then
   high, with each condition's pair joined by a line. It is deliberately NOT a
   marker style: a study that infers effort still has to draw its markers
   somehow, and any style they take then also reads as one of the levels -- which
@@ -55,7 +55,7 @@ import _panels as panels  # noqa: E402
 
 # Shape per inferred latent comes from plot_style (the visual source of truth).
 # Note figure_model_scatter.py reads against this convention -- there the shape is
-# the sub-study and the colour is the latent.
+# the sub-study and the color is the latent.
 # The effort entry names the quantity, not the construct: what 1b/2b/3a/3b
 # infer is the probability that the world is the harder of the two states,
 # which is the same variable 1a/2a put on the axis as Easy | Hard.
@@ -97,14 +97,14 @@ class PointsStyle:
             ecolor="0.15", elinewidth=0.8, capsize=1.4, capthick=0.8, zorder=5
         )
     )
-    # Draw each whisker in its own point's condition colour instead of `errbar`'s
+    # Draw each whisker in its own point's condition color instead of `errbar`'s
     # ecolor, so the CI reads as that point's stem. Combined with a zorder below
     # the marker this hides the bar inside the marker and shows only the extent,
     # which also keeps the open (high-effort) markers' white fill clean.
     errbar_from_point: bool = False
     dodge_width: float = 0.72  # fraction of an action slot the points span
     # Where a study's effort condition is GIVEN, each action splits into two
-    # labelled sub-groups (low | high) and the pair is joined by a line. These
+    # labeled sub-groups (low | high) and the pair is joined by a line. These
     # set that geometry, as fractions of dodge_width: the sub-group centres'
     # separation, and the span the conditions occupy inside one sub-group.
     split_sep_frac: float = 0.60
@@ -152,7 +152,7 @@ POSTER = PointsStyle(
 # --------------------------------------------------------------- study config
 
 
-# The two given conditions a study can colour its points by:
+# The two given conditions a study can color its points by:
 #   condition column -> (levels in plot order, palette, labels, legend title)
 CONDITION_COLOR_AXES = {
     "intimacy_condition": (
@@ -171,14 +171,14 @@ CONDITION_COLOR_AXES = {
 
 
 def color_axis(slug):
-    """Which given condition this study colours its points by. Relationship
+    """Which given condition this study colors its points by. Relationship
     where it is given (1a/1b/3a), desire otherwise (2a/2b/3b)."""
     given = data.condition_cols(slug)[1:]
     return "intimacy_condition" if "intimacy_condition" in given else "desire_condition"
 
 
 def fill_spec(slug):
-    """(column, levels, colors, legend_title) for the study's colour axis."""
+    """(column, levels, colors, legend_title) for the study's color axis."""
     col = color_axis(slug)
     levels, colors, _labels, title = CONDITION_COLOR_AXES[col]
     return col, levels, colors, title
@@ -186,7 +186,7 @@ def fill_spec(slug):
 
 def style_col(slug):
     """The given effort column when effort is given rather than inferred (1a,
-    2a), else None. Where set, the action splits into two labelled sub-groups
+    2a), else None. Where set, the action splits into two labeled sub-groups
     joined by a line (see `iter_cells`); where None the study just has three
     action groups."""
     return (
@@ -495,7 +495,7 @@ def ylabel_for(slug):
 # ------------------------------------------------------------------- legends
 
 
-def marker_fill(colour, style):
+def marker_fill(color, style):
     """Face/edge kwargs for one marker.
 
     Every marker is solid. Fill deliberately carries NO meaning: the given
@@ -506,7 +506,7 @@ def marker_fill(colour, style):
     as one of the levels.
     """
     return dict(
-        markerfacecolor=colour,
+        markerfacecolor=color,
         markeredgecolor="white",
         markeredgewidth=style.filled_edgewidth,
     )
@@ -520,7 +520,7 @@ LEGEND_MARKER_SCALE = 1.4
 
 
 def _grey_marker(marker, label, style):
-    """A neutral-grey swatch drawn as the panels draw their markers, up to
+    """A neutral-gray swatch drawn as the panels draw their markers, up to
     `LEGEND_MARKER_SCALE`, so the legend cannot describe an encoding the panels
     do not use."""
     return Line2D(
@@ -535,13 +535,13 @@ def _grey_marker(marker, label, style):
 
 
 def target_handles(names, style):
-    """Shape legend for the inferred latents, in neutral grey so the shapes
+    """Shape legend for the inferred latents, in neutral gray so the shapes
     read as shape rather than palette."""
     return [_grey_marker(DV_MARKERS[n], DV_LEGEND_LABELS[n], style) for n in names]
 
 
 def condition_color_handles(condition, style):
-    """Colour legend for one given condition ("intimacy_condition" or
+    """Color legend for one given condition ("intimacy_condition" or
     "desire_condition"), drawn as a rounded bar rather than a marker. Returns
     (handles, title).
 
@@ -549,7 +549,7 @@ def condition_color_handles(condition, style):
     so a swatch drawn as a point would spend one of those shapes on a palette
     entry -- a circle in the relationship legend reads as the desire marker. The
     bar is as thick as a marker is wide, and its round caps echo the connector
-    the panels draw between a condition's easy/hard pair in this same colour, so
+    the panels draw between a condition's easy/hard pair in this same color, so
     the swatch still names something the panels draw.
     """
     levels, colors, labels, title = CONDITION_COLOR_AXES[condition]

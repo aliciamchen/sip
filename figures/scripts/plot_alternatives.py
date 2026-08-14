@@ -181,7 +181,7 @@ def fig_si_semantic_space(
     cbar.set_label("LM-scored risk")
     cbar.set_ticks([0, 0.5, 1])
     cbar.outline.set_visible(False)
-    # grey stars with text labels (the three actions are named on the map, so
+    # gray stars with text labels (the three actions are named on the map, so
     # they don't need per-action colors that would compete with the risk map)
     label_bbox = dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.7)
     x_mid = 0.5 * (alts["dim1"].min() + alts["dim1"].max())
@@ -311,7 +311,7 @@ def fig_si_semantic_space(
     put_header("Action conditions")
     for act, body in zip(OBSERVED_ACTIONS, obs_bodies):
         # bold action name (the map labels the stars by name, not color) then the
-        # full observed-action sentence; drawn grey marker matching the map's stars
+        # full observed-action sentence; drawn gray marker matching the map's stars
         # (not a "★" glyph, missing from Arial Nova)
         ax2.scatter(
             [0.018],

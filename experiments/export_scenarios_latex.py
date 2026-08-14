@@ -4,7 +4,7 @@ Material.
 
 This reads the stimulus CSVs (``scenarios.csv`` for the food studies and
 ``scenarios_nonfood.csv`` for the non-food studies) and writes one ``longtable``
-per set. Each scenario is rendered as a labelled block listing its vignette, the
+per set. Each scenario is rendered as a labeled block listing its vignette, the
 resource at stake, the two motivational states (low/high desire), the two
 physical-effort world states, and the three action descriptions (no-share,
 low-risk share, high-risk share) -- i.e. the full stimulus the way the model and

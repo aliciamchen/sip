@@ -447,7 +447,7 @@ def fig_manipulation_checks(observed, rows, figname="si_lm_manipulation_checks")
 def _draw_observed_scatter(ax, df, rng, show_effort_condition):
     """Draw one study's observed actions in the (risk, effort) plane onto ax.
     With show_effort_condition, each scenario x action contributes a low/high
-    pair joined by a grey segment (low = open marker, high = filled); otherwise
+    pair joined by a gray segment (low = open marker, high = filled); otherwise
     one filled marker per scenario x action."""
     if show_effort_condition:
         agg = df.groupby(
@@ -508,7 +508,7 @@ def fig_observed_scatter(
 ):
     """The three action conditions in the (risk, effort) plane, one panel per
     study on a 3x2 grid. Each point is one scenario x action x effort condition
-    (features averaged over runs and the study's other conditions), with grey
+    (features averaged over runs and the study's other conditions), with gray
     segments joining the two effort conditions of the same scenario x action."""
     ncols = 2
     nrows = (len(studies) + ncols - 1) // ncols
@@ -703,7 +703,7 @@ def fig_run_spread(figname="si_lm_run_spread"):
 # ------------------------------------------------------- figure 4b (all six)
 
 
-#: The two-state world-state DV is coloured apart from the continuous latents:
+#: The two-state world-state DV is colored apart from the continuous latents:
 #: its per-run spread behaves differently (it is a probability difference on a
 #: 2-point support, not a posterior mean over a 101-bin grid). Which DV that is
 #: comes from run_delta_io, shared with the results-LaTeX exporter.

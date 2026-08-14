@@ -30,15 +30,15 @@ DV_COLORS = {"desire": "#7A4A5A", "effort": "#4A7A4A", "intimacy": "#274D77"}
 DV_LABELS = {"desire": "Desire", "effort": "Effort", "intimacy": "Intimacy"}
 DV_LEGEND_ORDER = ["desire", "intimacy", "effort"]
 # Aggregate poster figure: DV -> marker shape (from plot_style, shared with the
-# points panels). Point colour is the given condition, per study, so the two
+# points panels). Point color is the given condition, per study, so the two
 # encodings match the results panels -- `agg_points` resolves it there.
 # Markers and their human-CI error bars are fully opaque, so a crowded cluster
 # cannot darken into a blob: overlap is shown by the white seam each marker
 # carries rather than by accumulated tint. The seam is deliberately thinner than
 # the 0.5 the points panels use — at 0.7pt on a 4.6pt marker it ate enough of the
-# face that a cluster read as mostly white. The bars stay a neutral grey rather
-# than taking each point's colour: they are uncertainty about the estimate, and
-# at this density colouring them too turns a crowded region into hatching.
+# face that a cluster read as mostly white. The bars stay a neutral gray rather
+# than taking each point's color: they are uncertainty about the estimate, and
+# at this density coloring them too turns a crowded region into hatching.
 AGG_POINT_MS = 7.0
 AGG_POINT_EDGE = "white"
 AGG_POINT_EDGEWIDTH = 0.2
@@ -112,8 +112,8 @@ def agg_points(slugs=None):
                 n_boot=N_BOOT_AGG,
                 seed=data.seed_for(f"figures:agg:{slug}"),
             )
-            # Point colour is the study's own given condition, the same axis its
-            # results panel colours by (`_points.fill_spec`) -- relationship
+            # Point color is the study's own given condition, the same axis its
+            # results panel colors by (`_points.fill_spec`) -- relationship
             # where relationship is given, desire otherwise. A panel pooling
             # studies from both families therefore carries both palettes; they
             # are far enough apart in hue to read as two axes rather than one.
@@ -239,14 +239,14 @@ def _r_label(ci, x, y):
 
 def draw_agg_panel(ax, groups, lim, ci=None, *, zero_lw=None, style=None):
     """groups: list of (dv, x, y, y_lo, y_hi, colors). DV is encoded by MARKER
-    SHAPE and the given condition by COLOUR, the same two encodings the results
+    SHAPE and the given condition by Color, the same two encodings the results
     panels use, so a reader carries one key between the rows; vertical human-CI
     error bars sit behind the points; the panel shows a single pooled Pearson r
     over all points.
 
     Pass the caller's points `style` to draw the points and their CIs exactly as
     the results panels draw theirs -- same marker size, same bar weight, and the
-    bar in the point's own colour where the style says so. Without it the panel
+    bar in the point's own color where the style says so. Without it the panel
     falls back to the AGG_* constants, which are the same design at its own
     scale. `zero_lw` likewise matches the results panels' zero rule."""
     ms = style.markersize if style else AGG_POINT_MS
@@ -283,19 +283,19 @@ def draw_agg_panel(ax, groups, lim, ci=None, *, zero_lw=None, style=None):
     # drawn in a deterministic shuffle -- drawn DV by DV, one marker shape would
     # sit systematically on top of another and the panel would misreport which
     # latent occupies a crowded region.
-    # Coloured bars go down one palette level at a time rather than per point, so
+    # Colored bars go down one palette level at a time rather than per point, so
     # the panel carries a handful of artists instead of one per cell; they all
     # share zorder, so grouping them cannot change what covers what.
     all_color = np.asarray(all_color)
     if bar_from_point:
-        for colour in dict.fromkeys(all_color):
-            sel = all_color == colour
+        for color in dict.fromkeys(all_color):
+            sel = all_color == color
             ax.errorbar(
                 all_x[sel],
                 all_y[sel],
                 yerr=yerr[:, sel],
                 fmt="none",
-                ecolor=colour,
+                ecolor=color,
                 elinewidth=bar_lw,
                 zorder=1,
             )

@@ -254,7 +254,7 @@ INTIMACY_COLORS = {
 ALT_GREY = "#9AA0A6"
 
 # Neutral marker for the observed actions in figures that color the alternatives
-# by a continuous feature: the stars are drawn in this grey with text labels, so
+# by a continuous feature: the stars are drawn in this gray with text labels, so
 # a feature colormap never competes with an action color.
 OBSERVED_STAR_COLOR = "#8A8A8A"
 

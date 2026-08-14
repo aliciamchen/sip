@@ -67,8 +67,8 @@ Linear interpolation between an LM-elicited `V_low` and `V_high` forces the
 continuum to be a blend of two arbitrary endpoints. The multiplicative
 `d · g(a|s)` instead treats desire as a real continuous intensity parameter
 scaling a stable per-action value, which is a genuine generative story rather
-than a blend, and gives the monotone behaviour we want (more desire → more
-willing to pay an risk/effort cost to share). The one modelling commitment is
+than a blend, and gives the monotone behavior we want (more desire → more
+willing to pay an risk/effort cost to share). The one modeling commitment is
 that desire scales a fixed action-value profile and cannot re-rank which action
 is most goal-serving; with the literal "not at all → extremely" anchors there
 is no aversion region (`d = 0` means "no reward pull", not "repelled").

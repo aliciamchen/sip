@@ -44,13 +44,13 @@ import _points as points  # noqa: E402
 
 N_BOOT = 1000
 # Points carry the same two encodings as the results panels and the pooled
-# correlation panel -- shape is the inferred latent, colour the given condition
+# correlation panel -- shape is the inferred latent, color the given condition
 # (`panel_series`) -- at this figure's own scale: a 6x3 grid of small panels
 # holding 96-384 cells each.
 POINT_S = 6.5
 POINT_EDGE = "white"
 POINT_EDGEWIDTH = 0.15
-# Per-cell human CIs, in the point's colour like the main figures' but far
+# Per-cell human CIs, in the point's color like the main figures' but far
 # lighter and thinner: at the aggregate panels' weight the whiskers merged into a
 # wash and the cloud stopped being readable. They sit under the markers so a
 # point is never hidden by its own interval.
@@ -88,9 +88,9 @@ def panel_series(slug, cells, boots, preds, keys, model):
     The merge runs predictions-into-cells so that x, y and the resampled y share
     one row order; reversing it silently mispairs them (see `_agg.agg_points`).
 
-    `colors` is the cell's given condition under the study's own colour axis, the
+    `colors` is the cell's given condition under the study's own color axis, the
     same one its results panel and the pooled correlation panel use, so a cell is
-    the colour here that it is there.
+    the color here that it is there.
     """
     series = []
     sub = preds[preds["model"] == model]
@@ -156,7 +156,7 @@ def draw_panel(ax, series, lim, note=None):
     ax.axhline(0, **panels.ZERO_LINE)
     ax.axvline(0, **panels.ZERO_LINE)
     # 95% subject-cluster CI on each human cell mean, from the same resamples the
-    # panel already holds, in the cell's own colour as the results panels and the
+    # panel already holds, in the cell's own color as the results panels and the
     # pooled correlation panel draw theirs -- but at this figure's much lighter
     # weight, because a panel carries up to 384 of them and at the main figures'
     # 2.2pt the bars merge into a wash. Drawn as one layer beneath every marker
@@ -165,20 +165,20 @@ def draw_panel(ax, series, lim, note=None):
         lo = np.nanpercentile(ys, 2.5, axis=0)
         hi = np.nanpercentile(ys, 97.5, axis=0)
         yerr = np.clip(np.vstack([y - lo, hi - y]), 0, None)
-        for colour in dict.fromkeys(colors):
-            sel = colors == colour
+        for color in dict.fromkeys(colors):
+            sel = colors == color
             ax.errorbar(
                 x[sel],
                 y[sel],
                 yerr=yerr[:, sel],
                 fmt="none",
-                ecolor=colour,
+                ecolor=color,
                 elinewidth=CI_LINEWIDTH,
                 alpha=CI_ALPHA,
                 zorder=2,
             )
     # Opaque with a hairline white seam, like the main figures' points: at this
-    # density the old translucent fill let two colours blend into a third that
+    # density the old translucent fill let two colors blend into a third that
     # names no condition.
     for dv, x, y, _ys, colors in series:
         ax.scatter(

@@ -8,7 +8,7 @@ can see how much of the averaged pattern each individual scenario carries.
 Human data only -- the model's per-scenario predictions are deliberately not
 overlaid, so these read as the data behind the averages rather than as a fit
 check. Within a facet the encoding is the results figures' (see `_points.py`):
-x is the observed action, marker shape is the inferred latent, and colour is the
+x is the observed action, marker shape is the inferred latent, and color is the
 given relationship/desire condition. Where the effort of the low-risk share is
 given rather than inferred (1a and 2a) each action splits into its two world
 states, joined by a line, with the states named in the caption rather than on

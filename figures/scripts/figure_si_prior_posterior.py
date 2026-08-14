@@ -9,7 +9,7 @@ it is human data only: no model predictions, no CV outputs.
 Levels (si_prior_posterior_levels). Each action slot splits into the prior and
     posterior rating, joined by a line whose slope IS the belief update the
     results figures plot. Deliberately the same grammar as the results panels (x
-    is the observed action, colour is the given condition, marker is the rated
+    is the observed action, color is the given condition, marker is the rated
     latent), so the only new thing a reader has to absorb is that y is a level
     rather than a difference. The dashed rule at 0.5 is the uniform prior mean
     the model assumes, which is NOT where participants sit. One facet per given
@@ -74,10 +74,10 @@ STYLE = points.PAPER
 
 
 def condition_spec(slug):
-    """(long-CSV condition column, ordered levels, level -> colour) for the given
-    condition that colours a study's points -- the relationship descriptor or the
+    """(long-CSV condition column, ordered levels, level -> color) for the given
+    condition that colors a study's points -- the relationship descriptor or the
     desire level. A study's second given condition (the world state, in 1a and
-    2a) gets its own facet instead of a colour; see `facets`."""
+    2a) gets its own facet instead of a color; see `facets`."""
     given = study(slug).given_conditions[0]
     col = given.removesuffix("_condition")
     if given == "intimacy_condition":
@@ -231,9 +231,9 @@ def draw_distribution(ax, df, rating_col):
             zorder=3 if stage == "posterior" else 2,
         )
         ends[stage] = 100 * float(((v <= END_EPS) | (v >= 1 - END_EPS)).mean())
-    # Each stage's endpoint share is printed in that stage's own colour, rather
+    # Each stage's endpoint share is printed in that stage's own color, rather
     # than as one "prior -> posterior" string: the arrow glyph is missing from the
-    # house font, and the colour says which is which without a key.
+    # house font, and the color says which is which without a key.
     for k, stage in enumerate(s for s in STAGES if s in ends):
         ax.annotate(
             f"{ends[stage]:.0f}% at ends",
@@ -300,8 +300,8 @@ def build_levels(rows, loaded):
 
 
 def stage_handles():
-    """The prior/posterior marker pair, in the neutral grey the facets' own
-    colours stand in for."""
+    """The prior/posterior marker pair, in the neutral gray the facets' own
+    colors stand in for."""
     return [
         Line2D(
             [],

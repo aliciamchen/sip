@@ -27,7 +27,7 @@ included**.
 Three pairs are maintained by hand as near-copies, and each one has drifted. The
 failure is always directional: the newer edit lands on the Claude side and the
 Codex side silently keeps the old version. That is worse for instructions than
-for docs, because they direct behaviour rather than inform it. Diff each pair
+for docs, because they direct behavior rather than inform it. Diff each pair
 modulo the agent name and report any difference that is not just "Claude" vs
 "Codex":
 

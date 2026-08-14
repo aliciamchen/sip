@@ -298,7 +298,7 @@ def _full_data_refit(ctx, variant, init, mask, label):
     alpha_observer's two known basins are covered explicitly (ALPHA_OBS_SEEDS)
     rather than by luck: `_fit_multistart` only adds its basin seeds when it is
     given no init, and a masked fit always has one. Cold lognormal draws are
-    centred at 1 and would essentially never reach the sharp basin, which three
+    centered at 1 and would essentially never reach the sharp basin, which three
     of the six studies sit in.
     """
     obs_fn, utility_names = ctx.variants[variant]

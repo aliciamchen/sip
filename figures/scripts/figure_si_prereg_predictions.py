@@ -13,7 +13,7 @@ One row per study, three columns: the reported model, the preregistered ($\\eta 
 out-of-sample leave-one-scenario-out predictions, so they are directly comparable
 and neither has seen the cell it predicts. Within a panel the encoding is the
 results figures' (`_points.py`): x is the observed action, marker shape is the
-inferred latent, colour is the given relationship/desire condition, and where the
+inferred latent, color is the given relationship/desire condition, and where the
 world state is given rather than inferred (Studies 1a and 2a) each action splits
 into its two states joined by a line. Error bars appear on the human column only
 -- the model columns are point predictions -- and the two states are named in the

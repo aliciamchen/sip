@@ -54,7 +54,7 @@ LEGEND_DIR = PANELS_LEGENDS
 # axis furniture for Illustrator. Fonts are poster-scale: the artboard is ~10 in
 # wide, so text lands at print size once the row is scaled to column width.
 # Markers are smaller than the poster's because they trade against the human
-# CIs: the whiskers are drawn behind the marker in its own colour with no caps,
+# CIs: the whiskers are drawn behind the marker in its own color with no caps,
 # so any CI narrower than the marker disappears under it. Measured over all six
 # studies' Humans columns, the share of whisker ends the marker hides runs 37%
 # at markersize 9.5, 43% at 10, 51% at 10.5 -- the size below is the last one
@@ -98,7 +98,7 @@ POOLED_POINT_MS = 9.0
 #
 # Only the outward reserves below are the scatter's own, because its labels
 # overflow where the points row's do not: the first and last x ticks sit ON the
-# axis limits, so their centred labels stick out half a label width past each
+# axis limits, so their centered labels stick out half a label width past each
 # side, and the column title, the x axis label and the rotated y label each need
 # a line outside the box. In inches, converted once from the fractions they were
 # tuned as (against the fixed 8.70 x 3.30 canvas this replaces), which were
@@ -263,8 +263,8 @@ def draw_scatter_panel(
     """
     # The pooled panel draws every study's points into the box a per-study-number
     # panel gives one study's, so it takes a smaller marker than the results
-    # panels' -- at the shared size its clusters merge into blocks of colour, and
-    # it also hides more of the CI bars, which are drawn in the point's colour.
+    # panels' -- at the shared size its clusters merge into blocks of color, and
+    # it also hides more of the CI bars, which are drawn in the point's color.
     style = replace(STYLE, markersize=POOLED_POINT_MS) if slugs is None else STYLE
     agg, agg_cis = corr.agg_points(slugs)
     if not any(agg.values()):
@@ -307,9 +307,9 @@ def draw_scatter_panel(
         )
         ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
         ax.tick_params(labelsize=STYLE.tick_fs)
-        # The x axis keeps its full labelled range, at the cost of the two end
-        # labels not being centred on their ticks: they sit at the ends of the
-        # axis, so centred they hang half their width into the gap between
+        # The x axis keeps its full labeled range, at the cost of the two end
+        # labels not being centered on their ticks: they sit at the ends of the
+        # axis, so centered they hang half their width into the gap between
         # columns -- which is the points row's gap now, not one this row can
         # widen for itself -- and one column's "0.4" lands on the next column's
         # "-0.4". Aligned inward, no label crosses its own box edge. Ticks are
@@ -366,10 +366,10 @@ def draw_legends():
         ("desire_condition", "desire"),
     ):
         handles, title = points.condition_color_handles(condition, STYLE)
-        # A bar swatch fills its whole handle box, where a marker sits centred in
+        # A bar swatch fills its whole handle box, where a marker sits centered in
         # one, so the shared handle length and text pad that suit the target
         # legends leave these entries running into their labels. Shortened and
-        # padded here rather than in the defaults: only the colour legends draw
+        # padded here rather than in the defaults: only the color legends draw
         # bars.
         # One entry per line, relationship's four included: the levels are
         # ordered (formal to intimate), and a two-column block reads down one
