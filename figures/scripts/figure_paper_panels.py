@@ -84,6 +84,11 @@ PANEL_MARGINS = dict(left=0.075, right=0.995, top=0.824, bottom=0.236, wspace=0.
 # four-column row, so anything sized from them has to know that.
 REF_NCOLS = 4
 
+# Marker size for the pooled model-vs-humans panel, which is the only scatter
+# that draws all six studies at once (see `draw_scatter_panel`). Every other
+# panel here uses STYLE.markersize.
+POOLED_POINT_MS = 9.0
+
 # The model-vs-human scatter is laid out FROM the points row rather than tuned on
 # its own, so the two stack: `scatter_layout` gives each square box the same
 # width, column pitch and left offset as one points column, and lets the canvas
@@ -256,6 +261,11 @@ def draw_scatter_panel(
     updates uses less of its axes; that is the correct trade when the rows sit
     together.
     """
+    # The pooled panel draws every study's points into the box a per-study-number
+    # panel gives one study's, so it takes a smaller marker than the results
+    # panels' -- at the shared size its clusters merge into blocks of colour, and
+    # it also hides more of the CI bars, which are drawn in the point's colour.
+    style = replace(STYLE, markersize=POOLED_POINT_MS) if slugs is None else STYLE
     agg, agg_cis = corr.agg_points(slugs)
     if not any(agg.values()):
         print(f"[{label}] no CV predictions yet — skipped")
@@ -265,7 +275,7 @@ def draw_scatter_panel(
             [
                 arr
                 for m in points.data.MODEL_ORDER
-                for _dv, x, y, ylo, yhi in agg[m]
+                for _dv, x, y, ylo, yhi, _colors in agg[m]
                 for arr in (x, y, ylo, yhi)
             ]
         )
@@ -293,7 +303,7 @@ def draw_scatter_panel(
     fig.subplots_adjust(**margins)
     for ax, model in zip(axes, keys):
         corr.draw_agg_panel(
-            ax, agg[model], lim, agg_cis.get(model), zero_lw=STYLE.zero_lw
+            ax, agg[model], lim, agg_cis.get(model), zero_lw=STYLE.zero_lw, style=style
         )
         ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
         ax.tick_params(labelsize=STYLE.tick_fs)

@@ -40,15 +40,22 @@ from study_registry import studies, study  # noqa: E402
 import _agg as agg  # noqa: E402
 import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
+import _points as points  # noqa: E402
 
 N_BOOT = 1000
-POINT_COLOR = "#333333"
-# Per-cell human CIs. A panel carries 96-384 of these, so they are drawn far
-# lighter and thinner than the aggregate panels' bars: at the aggregate weight the
-# whiskers merged into a wash and the cloud stopped being readable. They sit under
-# the markers so a point is never hidden by its own interval.
-CI_COLOR = "0.72"
+# Points carry the same two encodings as the results panels and the pooled
+# correlation panel -- shape is the inferred latent, colour the given condition
+# (`panel_series`) -- at this figure's own scale: a 6x3 grid of small panels
+# holding 96-384 cells each.
+POINT_S = 6.5
+POINT_EDGE = "white"
+POINT_EDGEWIDTH = 0.15
+# Per-cell human CIs, in the point's colour like the main figures' but far
+# lighter and thinner: at the aggregate panels' weight the whiskers merged into a
+# wash and the cloud stopped being readable. They sit under the markers so a
+# point is never hidden by its own interval.
 CI_LINEWIDTH = 0.45
+CI_ALPHA = 0.45
 PANEL_IN = 1.75  # side of one square panel, inches
 
 
@@ -75,10 +82,15 @@ def study_cells(slug):
 
 
 def panel_series(slug, cells, boots, preds, keys, model):
-    """[(dv, x, y, ys_boot), ...] for one study x model panel, one entry per DV.
+    """[(dv, x, y, ys_boot, colors), ...] for one study x model panel, one entry
+    per DV.
 
     The merge runs predictions-into-cells so that x, y and the resampled y share
     one row order; reversing it silently mispairs them (see `_agg.agg_points`).
+
+    `colors` is the cell's given condition under the study's own colour axis, the
+    same one its results panel and the pooled correlation panel use, so a cell is
+    the colour here that it is there.
     """
     series = []
     sub = preds[preds["model"] == model]
@@ -88,6 +100,8 @@ def panel_series(slug, cells, boots, preds, keys, model):
     if merged.empty:
         return series
     order = merged["index"].to_numpy()
+    color_col, _levels, palette, _title = points.fill_spec(slug)
+    colors = merged[color_col].map(palette).to_numpy()
     for update_col, delta_col, dv in data.STUDY_SPECS[slug]["dvs"]:
         if delta_col not in merged.columns:
             continue
@@ -97,6 +111,7 @@ def panel_series(slug, cells, boots, preds, keys, model):
                 merged[delta_col].to_numpy(),
                 merged[update_col].to_numpy(),
                 boots[update_col][:, order],
+                colors,
             )
         )
     return series
@@ -141,36 +156,46 @@ def draw_panel(ax, series, lim, note=None):
     ax.axhline(0, **panels.ZERO_LINE)
     ax.axvline(0, **panels.ZERO_LINE)
     # 95% subject-cluster CI on each human cell mean, from the same resamples the
-    # panel already holds. Drawn as one layer beneath every marker rather than
-    # per-DV, so no DV's bars sit systematically on top of another's.
-    for _dv, x, y, ys in series:
+    # panel already holds, in the cell's own colour as the results panels and the
+    # pooled correlation panel draw theirs -- but at this figure's much lighter
+    # weight, because a panel carries up to 384 of them and at the main figures'
+    # 2.2pt the bars merge into a wash. Drawn as one layer beneath every marker
+    # rather than per-DV, so no DV's bars sit systematically on top of another's.
+    for _dv, x, y, ys, colors in series:
         lo = np.nanpercentile(ys, 2.5, axis=0)
         hi = np.nanpercentile(ys, 97.5, axis=0)
-        ax.errorbar(
-            x,
-            y,
-            yerr=np.clip(np.vstack([y - lo, hi - y]), 0, None),
-            fmt="none",
-            ecolor=CI_COLOR,
-            elinewidth=CI_LINEWIDTH,
-            zorder=2,
-        )
-    for dv, x, y, _ys in series:
+        yerr = np.clip(np.vstack([y - lo, hi - y]), 0, None)
+        for colour in dict.fromkeys(colors):
+            sel = colors == colour
+            ax.errorbar(
+                x[sel],
+                y[sel],
+                yerr=yerr[:, sel],
+                fmt="none",
+                ecolor=colour,
+                elinewidth=CI_LINEWIDTH,
+                alpha=CI_ALPHA,
+                zorder=2,
+            )
+    # Opaque with a hairline white seam, like the main figures' points: at this
+    # density the old translucent fill let two colours blend into a third that
+    # names no condition.
+    for dv, x, y, _ys, colors in series:
         ax.scatter(
             x,
             y,
-            s=5.5,
+            s=POINT_S,
             marker=DV_MARKERS[dv],
-            color=POINT_COLOR,
-            alpha=0.55,
-            linewidths=0,
+            c=colors,
+            edgecolors=POINT_EDGE,
+            linewidths=POINT_EDGEWIDTH,
             zorder=3,
         )
     if series:
         # One r per DV rather than one per panel: a study's latents are what the
         # ablations differ on, and pooling them would average a latent the
         # variant cannot infer together with one it can.
-        lines = [_dv_label(dv, x, y, ys, note=note) for dv, x, y, ys in series]
+        lines = [_dv_label(dv, x, y, ys, note=note) for dv, x, y, ys, _c in series]
         ax.text(
             0.05,
             0.95,
