@@ -188,6 +188,9 @@ def savefig(fig, name, png=True, *, out_dir=None, formats=("pdf",), tight=True):
     return out_dir / f"{name}.{formats[0]}"
 
 
+PANEL_LETTER_SIZE = 14
+
+
 def panel_label(ax, letter, dx=-0.02, dy=1.04):
     """Bold panel letter at the top-left of an axes, in figure convention."""
     ax.text(
@@ -195,10 +198,29 @@ def panel_label(ax, letter, dx=-0.02, dy=1.04):
         dy,
         letter,
         transform=ax.transAxes,
-        fontsize=14,
+        fontsize=PANEL_LETTER_SIZE,
         fontweight="bold",
         va="bottom",
         ha="right",
+    )
+
+
+def panel_label_at(fig, letter, x, y):
+    """Bold panel letter at an explicit figure coordinate, anchored top-left.
+
+    Use this rather than panel_label() when a multi-panel figure has to line its
+    letters up with each other: an offset in axes fractions is a different
+    distance on the page for every panel, so panels of different widths end up
+    with their letters scattered across the margin.
+    """
+    fig.text(
+        x,
+        y,
+        letter,
+        fontsize=PANEL_LETTER_SIZE,
+        fontweight="bold",
+        va="top",
+        ha="left",
     )
 
 
