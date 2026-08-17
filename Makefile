@@ -51,7 +51,8 @@ ANALYSIS_QMDS := \
         data lm lm-alternatives lm-base lm-diag lm-base-diag lm-priors \
         fit fit-inverse \
         cv cv-inverse model-comparison \
-        analysis figures-lm-si figures-panels figures-si-scenarios \
+        analysis figures-lm-si figures-panels figures-nonfood-domains \
+        figures-si-scenarios \
         figures-si-model-scatter figures-si-prior-posterior \
         figures-si-prereg-deviation figures-si-prereg-predictions \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
@@ -86,13 +87,14 @@ help:
 	@echo "Saliva inverse planning pipeline"
 	@echo ""
 	@echo "Aggregates (active experiments only; incremental -- rebuild only what is stale):"
-	@echo "  all        - fit -> cv -> model-comparison -> analysis, in order"
+	@echo "  all        - fit -> cv -> model-comparison -> figures-panels -> analysis, in order"
 	@echo "  fit        - fit all active experiments"
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
 	@echo "  run-deltas       - per-run held-out deltas behind each cell mean (SI run-spread figure)"
 	@echo "  transfer         - cross-study parameter transfer over the designed pairs (exploratory)"
 	@echo "  pooled           - one shared utility per domain / across all six (exploratory)"
+	@echo "  generalization-primary - score the transfer/pooled arms on the primary metric"
 	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
@@ -100,6 +102,7 @@ help:
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/si/"
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
+	@echo "  figures-nonfood-domains - render the Study 3 human panels split by sharing domain into figures/panels/"
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
 	@echo "  figures-si-model-scatter - per-study model-vs-human scatter grid (a diagnostic, not in the paper)"
 	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
@@ -491,6 +494,19 @@ pooled: $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_ll.jsonl)
 	uv run python model/cv/pooled.py $(ARGS)
 
 # =============================================================================
+# The same generalization arms on the PRIMARY metric. `transfer` and `pooled`
+# score a shared utility by held-out log-likelihood, which the paper demotes for
+# being insensitive to the modulation these studies test; this scores the arms
+# they already ran on the condition-averaged correlation and the recovered
+# modulation instead. Refits nothing -- it reads their CV predictions -- so it is
+# cheap and must be re-run after either of them.
+# =============================================================================
+
+.PHONY: generalization-primary
+generalization-primary:
+	uv run python model/cv/generalization_primary.py $(ARGS)
+
+# =============================================================================
 # Results LaTeX (SIP_journal/): every number the results section states, as
 # generated macros plus the two table bodies. Depends on the comparison JSONs,
 # so it rebuilds fit -> cv -> model-comparison first when any is stale, and the
@@ -524,6 +540,7 @@ $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 figures-lm-si:
 	uv run python figures/scripts/plot_si_validation.py
 	uv run python figures/scripts/plot_alternatives.py --figures si
+	uv run python figures/scripts/figure_si_consolidated.py
 
 # =============================================================================
 # Figure build inputs, shared by the panel and SI targets.
@@ -531,8 +548,12 @@ figures-lm-si:
 
 FIG_SCRIPTS := figures/scripts
 FIG_SI := figures/si
-# Shared code every figure depends on (a change here rebuilds them all).
+# Shared code every figure depends on (a change here rebuilds them all). _agg.py
+# belongs here even though only some figures draw a correlation panel: it is
+# imported by figure_paper_panels.py, so leaving it out made an _agg.py-only edit
+# a silent no-op for `make figures-panels`.
 FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_points.py \
+              $(FIG_SCRIPTS)/_agg.py \
               plot_style.py study_registry.py model/cv/model_comparison.py
 
 # The data + model outputs a study contributes to a figure. Deliberately only
@@ -562,6 +583,25 @@ $(PANEL_WITNESS): $(FIG_SCRIPTS)/figure_paper_panels.py $(FIG_SHARED) \
 figures-panels: $(PANEL_WITNESS)
 
 # =============================================================================
+# Non-food domain panels: the Humans column of the Study 3 rows, split into the
+# three sharing domains the non-food scenarios span (bodily access / shared
+# exposure / private access) instead of averaged over all 16. Human data only,
+# so this depends on the two non-food data CSVs rather than any model output.
+# Witness on 3a's file; the script writes both.
+# =============================================================================
+
+NONFOOD_DOMAIN_WITNESS := $(PANEL_DIR)/results/panel_study3a_domains.pdf
+EXPERIMENTS_NONFOOD_SET := nonfood_inv_joint_de nonfood_inv_joint_ie
+
+$(NONFOOD_DOMAIN_WITNESS): $(FIG_SCRIPTS)/figure_nonfood_domains.py \
+    $(FIG_SCRIPTS)/figure_paper_panels.py $(FIG_SHARED) \
+    experiments/scenarios_nonfood.csv \
+    $(foreach s,$(EXPERIMENTS_NONFOOD_SET),data/$(s)/main_trials_long.csv)
+	uv run python $(FIG_SCRIPTS)/figure_nonfood_domains.py
+
+figures-nonfood-domains: $(NONFOOD_DOMAIN_WITNESS)
+
+# =============================================================================
 # SI per-scenario figures: one 4x4 scenario facet grid per study, showing the
 # cell means the main figures average over. Witness on the first study's file,
 # since the script writes all six in one pass.
@@ -585,7 +625,7 @@ figures-si-scenarios: $(SI_SCENARIO_WITNESS)
 
 SI_SCATTER := $(FIG_SI)/si_model_scatter_all.pdf
 
-$(SI_SCATTER): $(FIG_SCRIPTS)/figure_si_model_scatter.py $(FIG_SCRIPTS)/_agg.py \
+$(SI_SCATTER): $(FIG_SCRIPTS)/figure_si_model_scatter.py \
     $(FIG_SHARED) $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
 	uv run python $(FIG_SCRIPTS)/figure_si_model_scatter.py
 
@@ -670,9 +710,11 @@ JOURNAL_FIGURES := \
   si_lm_alternatives_composition_desire.pdf:si-lm-alternatives-composition-desire.pdf \
   si_lm_alternatives_set_similarity_all.pdf:si-lm-alternatives-set-similarity.pdf \
   si_lm_base_vs_full_1a_1b_3a.pdf:si-lm-base-vs-full.pdf \
+  si_lm_action_sets_combined.pdf:si-lm-action-sets-combined.pdf \
   si_lm_run_spread_1a.pdf:si-lm-run-spread.pdf \
   si_lm_run_spread_all.pdf:si-lm-run-spread-all.pdf \
   si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf \
+  si_lm_variability_checks.pdf:si-lm-variability-checks.pdf \
   si_scenarios_study1a.pdf:si-scenarios-study1a.pdf \
   si_scenarios_study1b.pdf:si-scenarios-study1b.pdf \
   si_scenarios_study2a.pdf:si-scenarios-study2a.pdf \
@@ -737,6 +779,7 @@ test:
 	uv run python model/test_fit_protocol.py
 	uv run python model/cv/test_checkpoint.py
 	uv run python model/cv/test_model_comparison.py
+	uv run python model/cv/test_contrast_tests.py
 	uv run python model/cv/test_transfer.py
 	uv run python model/cv/test_pooled.py
 	uv run python model/lm/test_elicitation_guards.py
