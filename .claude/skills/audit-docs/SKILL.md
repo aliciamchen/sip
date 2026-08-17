@@ -24,9 +24,13 @@ included**.
 
 ### Check the mirrored pairs, not each file alone
 
-Three pairs are maintained by hand as near-copies, and each one has drifted. The
-failure is always directional: the newer edit lands on the Claude side and the
-Codex side silently keeps the old version. That is worse for instructions than
+Three pairs are maintained by hand as near-copies, and each one has drifted.
+**Don't assume a direction** — it goes both ways, so establish which side is
+right by checking the *code*, not by preferring one tree. (The Claude side has
+been the newer one more often, but `rerun-lm-elicitation` drifted the other way:
+the `.agents` copy correctly described the `.rationale.jsonl` sidecar and the
+stage-specific `prompt_sha256` while the `.claude` copy still described the old
+`.reasoning.jsonl` and whole-file hash.) Drift is worse for instructions than
 for docs, because they direct behavior rather than inform it. Diff each pair
 modulo the agent name and report any difference that is not just "Claude" vs
 "Codex":
@@ -43,8 +47,9 @@ for n in .claude/skills/*/; do diff "$n/SKILL.md" ".agents/skills/$(basename $n)
 2. **`~/.claude/CLAUDE.md` vs `~/.codex/AGENTS.md`** (global preferences —
    outside the repo, but in scope precisely because nothing else audits them).
    The commit-message convention was updated in one and not the other.
-3. **The two skill trees.** Seven of eleven copies diverged at once, and the
-   `.agents` copies referenced a `.Codex/` directory that has never existed.
+3. **The two skill trees.** Copies diverge in batches, and the `.agents` copies
+   once referenced a `.Codex/` directory that has never existed. Report the
+   drifted pairs by name rather than counting them.
 
 Expected, legitimate differences: the agent's name, `.claude/` vs `.agents/`
 paths, and tool-specific instructions (Claude slash commands, Codex hooks).
