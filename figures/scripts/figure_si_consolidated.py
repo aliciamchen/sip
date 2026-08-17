@@ -242,17 +242,20 @@ def figure_action_sets(runs_by_study):
     # composition lines from stretching into near-vertical strokes. The gap
     # between the rows carries the top row's x-axis and the bottom row's
     # headings; the bottom margin carries the shared legend.
-    width, height = 7.6, 6.33
-    rows_in, gap_in, top_in = (2.18, 1.45), 1.15, 0.42
+    width, height = 7.9, 6.37
+    rows_in, gap_in, top_in = (2.22, 1.45), 1.15, 0.42
+    # The column gap has to hold the right-hand letters as well as separate the
+    # two halves, so it is wider than the space a plain two-column figure needs.
+    col_in, col_gap_in, right_in = 2.71, 1.12, 0.15
     fig = plt.figure(figsize=(width, height))
     outer = fig.add_gridspec(
         2,
         2,
         height_ratios=rows_in,
         hspace=gap_in / np.mean(rows_in),
-        wspace=0.30,
-        left=0.16,
-        right=0.98,
+        wspace=col_gap_in / col_in,
+        left=(width - right_in - 2 * col_in - col_gap_in) / width,
+        right=1 - right_in / width,
         top=1 - top_in / height,
         bottom=(height - top_in - sum(rows_in) - gap_in) / height,
     )
@@ -265,6 +268,12 @@ def figure_action_sets(runs_by_study):
     desire_axes = _draw_composition_family(
         fig, outer[1, 1], given_desire, runs_by_study
     )
+
+    # Default label and tick padding puts an eighth of an inch of nothing on
+    # each panel's left, which the letter column then has to sit outside of.
+    for ax in (ax_size, *fair_axes, *rel_axes, *desire_axes):
+        ax.yaxis.labelpad = 2
+        ax.tick_params(axis="y", pad=2)
 
     # Equal gridspec boxes do not make a flush column: the composition panels
     # spend a two-line y-axis label on the left, so they reach a fifth of an inch
