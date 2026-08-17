@@ -43,8 +43,8 @@
       "dv": "desire",
       "r": 0.8990632789436536,
       "ci_95": [
-        0.881012608454417,
-        0.915135825457551
+        0.8818234742929525,
+        0.914149410345396
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 384
@@ -54,8 +54,8 @@
       "dv": "desire",
       "r": 0.9025505296894734,
       "ci_95": [
-        0.8866901629473408,
-        0.9173444851105689
+        0.8872741759148366,
+        0.9174157120414017
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 384
@@ -68,16 +68,16 @@
         NaN,
         NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 384
     },
     {
       "model": "full",
       "dv": "desire",
-      "r": 0.9097644187058747,
+      "r": 0.9097644187058749,
       "ci_95": [
-        0.8932512554847285,
-        0.9234233076018157
+        0.8957975304043562,
+        0.9233638567274944
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 384

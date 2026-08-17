@@ -32,21 +32,21 @@
     {
       "model": "base",
       "dv": "intimacy",
-      "r": 0.030429784765642315,
+      "r": NaN,
       "ci_95": [
-        -0.1808072782455193,
-        0.2196215659574866
+        NaN,
+        NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 96
     },
     {
       "model": "base",
       "dv": "effort",
-      "r": 0.624069390002967,
+      "r": 0.6240693900029671,
       "ci_95": [
-        0.49055938298858937,
-        0.7410478761657221
+        0.4816667580010847,
+        0.7402167210824957
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96
@@ -54,10 +54,10 @@
     {
       "model": "discomfort_only",
       "dv": "intimacy",
-      "r": 0.8583094936759158,
+      "r": 0.8583094936759159,
       "ci_95": [
-        0.8022811954799852,
-        0.9020014809338648
+        0.8049510180736065,
+        0.9014184009175333
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96
@@ -65,12 +65,12 @@
     {
       "model": "discomfort_only",
       "dv": "effort",
-      "r": -0.20329781303702166,
+      "r": NaN,
       "ci_95": [
-        -0.3624860580300952,
-        -0.03554966918343067
+        NaN,
+        NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 96
     },
     {
@@ -78,8 +78,8 @@
       "dv": "intimacy",
       "r": 0.8717287304314814,
       "ci_95": [
-        0.8073647625249614,
-        0.9189504689780619
+        0.8111198248054159,
+        0.9185435858408085
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96
@@ -87,10 +87,10 @@
     {
       "model": "full",
       "dv": "effort",
-      "r": 0.641115096918589,
+      "r": 0.6411150969185889,
       "ci_95": [
-        0.4824756171031765,
-        0.7561504025192802
+        0.49099587730101907,
+        0.7601356052559588
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96

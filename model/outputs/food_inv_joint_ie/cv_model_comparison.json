@@ -32,21 +32,21 @@
     {
       "model": "base",
       "dv": "intimacy",
-      "r": 0.2645899885692953,
+      "r": NaN,
       "ci_95": [
-        0.0785110784209051,
-        0.4474345643485571
+        NaN,
+        NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 96
     },
     {
       "model": "base",
       "dv": "effort",
-      "r": 0.8140465185390453,
+      "r": 0.8140465185390452,
       "ci_95": [
-        0.7602660330593028,
-        0.8641633568716317
+        0.7611091138657801,
+        0.8594552785275936
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96
@@ -54,10 +54,10 @@
     {
       "model": "discomfort_only",
       "dv": "intimacy",
-      "r": 0.8634364790392992,
+      "r": 0.8634364790392995,
       "ci_95": [
-        0.8213035202259674,
-        0.8999416961962515
+        0.8236303464136505,
+        0.8977272628960221
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96
@@ -65,12 +65,12 @@
     {
       "model": "discomfort_only",
       "dv": "effort",
-      "r": 0.15251700061782242,
+      "r": NaN,
       "ci_95": [
-        -0.06641386949298494,
-        0.34605635042350696
+        NaN,
+        NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 96
     },
     {
@@ -78,8 +78,8 @@
       "dv": "intimacy",
       "r": 0.8727161471364538,
       "ci_95": [
-        0.8283248509836737,
-        0.9116612132892876
+        0.8348272057055065,
+        0.9094130139297703
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96
@@ -89,8 +89,8 @@
       "dv": "effort",
       "r": 0.8103604283316478,
       "ci_95": [
-        0.7533403656358247,
-        0.8562252275244625
+        0.758239624696737,
+        0.8584301684738558
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 96

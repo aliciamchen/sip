@@ -18,7 +18,7 @@ from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import DV_MARKERS, apply_style, savefig  # noqa: E402
-from study_registry import study_groups  # noqa: E402
+from study_registry import study, study_groups  # noqa: E402
 
 import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
@@ -86,6 +86,7 @@ def agg_points(slugs=None):
     out = {m: [] for m in data.MODEL_ORDER}
     model_x = {m: [] for m in data.MODEL_ORDER}  # per-model predictions
     obs_y = {m: [] for m in data.MODEL_ORDER}  # observed human means
+    contributed = set()
     for _stem, _name, members in STUDY_GROUPS:
         for slug, _paper in members:
             if slugs is not None and slug not in slugs:
@@ -95,6 +96,7 @@ def agg_points(slugs=None):
             if trials is None or preds is None:
                 continue
             data.warn_if_stale(slug, trials, data.load_comparison(slug))
+            contributed.add(study(slug).number)
             spec = data.STUDY_SPECS[slug]
             keys = data.condition_cols(slug)
             trials = trials.copy()
@@ -138,41 +140,60 @@ def agg_points(slugs=None):
                     )
                     model_x[model].append(merged[delta_col].to_numpy())
                     obs_y[model].append(merged[update_col].to_numpy())
-    return out, _agg_correlations(model_x, obs_y)
+    # One paper study number -> that group's seed key, so the panel annotation
+    # and the manuscript's `\rStudyOne`-family macros are the same numbers.
+    number = contributed.pop() if len(contributed) == 1 else None
+    return out, _agg_correlations(model_x, obs_y, number)
 
 
-def _agg_correlations(model_x, obs_y):
-    """{model: (r, lo, hi)} -- the correlation pooled over every study and DV,
-    with the interval bootstrapped over the plotted points (`corr_with_pair_ci`).
+def _agg_correlations(model_x, obs_y, number=None):
+    """{model: (r, lo, hi)} -- the correlation pooled over the panel's studies and
+    DVs, with the interval bootstrapped over the plotted points.
 
-    Both the estimate and its interval therefore come from exactly the points the
-    panel draws, which is what makes the annotation readable off the panel."""
+    Both the estimate and its interval come from exactly the points the panel
+    draws, which is what makes the annotation readable off the panel. When the
+    panel covers one paper study number, `number` names it and the bootstrap runs
+    on that group's seed key, so the annotation is byte-identical to the
+    `group_correlations.json` entry the manuscript quotes."""
     cis = {}
     for model in data.MODEL_ORDER:
         if not obs_y[model]:
             continue
+        seed_key = (
+            data._mc.group_corr_seed_key(number, model)
+            if number is not None
+            else f"figures:agg:pooled|{model}|pair_ci"
+        )
         cis[model] = corr_with_pair_ci(
-            np.concatenate(model_x[model]), np.concatenate(obs_y[model])
+            np.concatenate(model_x[model]),
+            np.concatenate(obs_y[model]),
+            seed_key=seed_key,
         )
     return cis
 
 
-def corr_with_pair_ci(x, y, *, n_boot=None, seed_tag="figures:agg:pair_ci"):
+def corr_with_pair_ci(x, y, *, n_boot=None, seed_key="figures:agg:pair_ci"):
     """(r, lo, hi) with the interval bootstrapped over the PLOTTED POINTS.
 
-    Resamples the (x, y) pairs with replacement — the textbook bootstrap for a
-    correlation, and what this literature reports beside an r. Inverting the
-    published intervals of six comparable papers gives an effective sample size
-    that stays ~constant across correlations spanning r = 0.01 to 0.93, which is
-    the signature of resampling points rather than participants (see
-    `notes/2026-08-03-correlation-ci-audit.md`).
+    Delegates to `model_comparison.pair_bootstrap_corr`, which is the single
+    implementation behind every correlation the paper reports. It kept its own
+    copy until 2026-08-16, and the copies disagreed: same point estimates, but
+    Study 2's vanilla interval printed [0.20, 0.70] on the panel against
+    [0.23, 0.69] in the artifact, because the two sides concatenate their cells
+    in different orders and a bootstrap draws indices. `pair_bootstrap_corr` now
+    sorts its points canonically, so passing the same seed key gives the same
+    interval.
 
-    Chosen over the subject-cluster interval this replaced, which was *mislocated*:
-    a resample holds ~63% unique participants, so its cell means carry extra noise,
-    noise in y attenuates r against a fixed x, and the whole bootstrap distribution
-    sits below the observed r — for the pooled panel the percentile interval
-    excluded its own point estimate. Resampling pairs reuses the observed cell
-    means untouched, injects no noise, and is unbiased here (measured: −0.0000).
+    Why the pair bootstrap at all: resampling the (x, y) pairs is the textbook
+    bootstrap for a correlation, and what this literature reports beside an r.
+    Inverting the published intervals of six comparable papers gives an effective
+    sample size that stays ~constant across correlations spanning r = 0.01 to
+    0.93, the signature of resampling points rather than participants (see
+    `notes/2026-08-03-correlation-ci-audit.md`). It replaced a subject-cluster
+    interval that was *mislocated*: a resample holds ~63% unique participants, so
+    its cell means carry extra noise, noise in y attenuates r against a fixed x,
+    and the whole bootstrap distribution sat below the observed r -- for the
+    pooled panel the percentile interval excluded its own point estimate.
 
     Note what this interval therefore means: how far r would move with a different
     sample of *condition cells*, not with a different sample of *participants*.
@@ -180,20 +201,10 @@ def corr_with_pair_ci(x, y, *, n_boot=None, seed_tag="figures:agg:pair_ci"):
     ceiling on r set by that noise is reported separately (`noise_ceilings` in
     each study's cv_model_comparison.json).
     """
-    if np.std(x) < 1e-12 or np.std(y) < 1e-12:
-        return (np.nan, np.nan, np.nan)
-    r = float(np.corrcoef(x, y)[0, 1])
-    rng = np.random.default_rng(data.seed_for(seed_tag))
-    n = len(x)
-    rs = []
-    for _ in range(n_boot or N_BOOT_AGG):
-        i = rng.integers(0, n, n)
-        if np.std(x[i]) > 1e-12 and np.std(y[i]) > 1e-12:
-            rs.append(np.corrcoef(x[i], y[i])[0, 1])
-    rs = np.asarray(rs)
-    rs = rs[np.isfinite(rs)]
-    lo, hi = np.percentile(rs, [2.5, 97.5]) if rs.size else (np.nan, np.nan)
-    return (r, float(lo), float(hi))
+    got = data._mc.pair_bootstrap_corr(
+        x, y, seed_key=seed_key, n_boot=n_boot or N_BOOT_AGG
+    )
+    return (got["r"], got["ci_95"][0], got["ci_95"][1])
 
 
 def corr_with_ci(x, y, ys):
@@ -201,16 +212,21 @@ def corr_with_ci(x, y, ys):
     over (x, y), with a percentile CI recomputed over the resampled human means
     `ys` (n_boot, n_points). Resamples that lose a cell drop it pairwise.
 
-    An ablation whose predictions have no spread (base or discomfort-only on a
-    latent it cannot infer) yields NaN rather than a spurious r.
+    An ablation whose predictions have no spread (vanilla or discomfort-only on a
+    latent it cannot infer) yields NaN rather than a spurious r. The threshold is
+    `CONSTANT_PREDICTION_TOL`, shared with `pair_bootstrap_corr`: the vanilla
+    model's intimacy predictions in 2b/3b are flat only to float32 rounding
+    (std ~2e-8), so a tighter guard here would print `r = 0.26` on the SI scatter
+    for exactly the cells the SI table and the pooled panels report as `n/a`.
     """
-    if np.std(x) < 1e-12:
+    tol = data._mc.CONSTANT_PREDICTION_TOL
+    if np.std(x) < tol:
         return (np.nan, np.nan, np.nan)
     r = float(np.corrcoef(x, y)[0, 1])
     rs = []
     for b in range(ys.shape[0]):
         ok = ~np.isnan(ys[b])
-        if ok.sum() > 2 and np.std(x[ok]) > 1e-12:
+        if ok.sum() > 2 and np.std(x[ok]) > tol:
             rs.append(np.corrcoef(x[ok], ys[b][ok])[0, 1])
     rs = np.asarray(rs)
     rs = rs[np.isfinite(rs)]
@@ -230,6 +246,12 @@ def _r_label(ci, x, y):
     the tick labels, which are text too.
     """
     if ci is None or not np.isfinite(ci[0]):
+        # An ablation with no term for the latent predicts the same value in
+        # every cell, so there is no correlation to report -- printing one (or a
+        # NaN) beside a column that is visibly a vertical stripe reads as a fit.
+        # `n/a` is what tab:scenario-correlations shows for the same cases.
+        if np.std(x) < data._mc.CONSTANT_PREDICTION_TOL:
+            return "$r$ = n/a"
         return f"$r$ = {np.corrcoef(x, y)[0, 1]:.2f}"
     r, lo, hi = ci
     if not (np.isfinite(lo) and np.isfinite(hi)):

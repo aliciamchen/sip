@@ -37,16 +37,16 @@
         NaN,
         NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 192
     },
     {
       "model": "discomfort_only",
       "dv": "intimacy",
-      "r": 0.9007845424409258,
+      "r": 0.9007845424409259,
       "ci_95": [
-        0.8746365147913061,
-        0.9214300984415826
+        0.8737503641987089,
+        0.9219539047154498
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -54,10 +54,10 @@
     {
       "model": "full",
       "dv": "intimacy",
-      "r": 0.9023555058340409,
+      "r": 0.9023555058340411,
       "ci_95": [
-        0.8746139873040805,
-        0.9235398475694371
+        0.8749104733707036,
+        0.9237164697346886
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192

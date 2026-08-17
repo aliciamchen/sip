@@ -67,9 +67,10 @@ def dvs_display(slug):
 MODEL_ORDER = ["base", "discomfort_only", "full"]
 # Figure column headings. Named for what each model IS rather than for its role
 # in the comparison, so a reader looking only at a figure can tell the ablations
-# apart: the base model is inverse planning without any social term, the full
-# model is inverse planning with one. NOTE these no longer match the manuscript
-# prose or tab:model-comparison, which still say "base" and "full".
+# apart: the vanilla model is inverse planning without any social term, the full
+# model is inverse planning with one. The manuscript prose and the generated
+# tables now say "vanilla" too; the variant KEYS stay `base`, so nothing on disk
+# was renamed.
 MODEL_LABELS = {
     "base": "Vanilla inv plan",
     "discomfort_only": "Discomfort-only",

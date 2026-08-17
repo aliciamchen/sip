@@ -1,0 +1,155 @@
+[
+  {
+    "study": "1",
+    "slugs": [
+      "food_inv_desire",
+      "food_inv_joint_de"
+    ],
+    "grain": "condition (averaged over scenarios)",
+    "seed": 0,
+    "source": {
+      "food_inv_desire": "c8522d4268bc8ca5737c117954f8e7e93c994525f658f5133e25af14656c6294",
+      "food_inv_joint_de": "f15bac3a0bc82a9348d69b603a4385774d6aa2ff621c3edd96d7a658b60ed126"
+    },
+    "correlations": [
+      {
+        "model": "base",
+        "r": 0.9861206364084754,
+        "ci_95": [
+          0.9795301787456684,
+          0.9915663622191692
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 48
+      },
+      {
+        "model": "discomfort_only",
+        "r": NaN,
+        "ci_95": [
+          NaN,
+          NaN
+        ],
+        "ci_method": "undefined (constant predictions)",
+        "n_cells": 48
+      },
+      {
+        "model": "full",
+        "r": 0.9914478304308806,
+        "ci_95": [
+          0.9871074314335814,
+          0.9946143996472194
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 48
+      }
+    ],
+    "noise_ceiling": {
+      "split_half": 0.9881772577323948,
+      "reliability": 0.9940534767603721,
+      "ceiling": 0.9970223050465682,
+      "n_splits": 400
+    }
+  },
+  {
+    "study": "2",
+    "slugs": [
+      "food_inv_intimacy",
+      "food_inv_joint_ie"
+    ],
+    "grain": "condition (averaged over scenarios)",
+    "seed": 0,
+    "source": {
+      "food_inv_intimacy": "10e307f6a14ce6d2a16ec8e89ab7b92156fb9669558be687c5105319738c243a",
+      "food_inv_joint_ie": "20f6cae2912b74e8a6b3f22501056182f8d42c96f9ef72ec7922b2f7731fc22d"
+    },
+    "correlations": [
+      {
+        "model": "base",
+        "r": 0.4853229955863986,
+        "ci_95": [
+          0.1882933723935787,
+          0.6949030637005233
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 24
+      },
+      {
+        "model": "discomfort_only",
+        "r": 0.8451145005157817,
+        "ci_95": [
+          0.6929494932034623,
+          0.9452698822467696
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 24
+      },
+      {
+        "model": "full",
+        "r": 0.9873275869989694,
+        "ci_95": [
+          0.9782625110723479,
+          0.9940932783948253
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 24
+      }
+    ],
+    "noise_ceiling": {
+      "split_half": 0.9898490478513384,
+      "reliability": 0.9948986320547165,
+      "ceiling": 0.9974460547090838,
+      "n_splits": 400
+    }
+  },
+  {
+    "study": "3",
+    "slugs": [
+      "nonfood_inv_joint_de",
+      "nonfood_inv_joint_ie"
+    ],
+    "grain": "condition (averaged over scenarios)",
+    "seed": 0,
+    "source": {
+      "nonfood_inv_joint_de": "699bac0494c03f8c8c6bd1f8b0fe8c90259d587a43fe80b431921ce76ae335a4",
+      "nonfood_inv_joint_ie": "f6eef1fc565736cf2a0c2f71b92f68fa9887decf1e624cdaf03d8b52bf934415"
+    },
+    "correlations": [
+      {
+        "model": "base",
+        "r": 0.9066342594125089,
+        "ci_95": [
+          0.8124048754763098,
+          0.9626798134782275
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 36
+      },
+      {
+        "model": "discomfort_only",
+        "r": 0.3588835004525145,
+        "ci_95": [
+          0.1529122190000329,
+          0.5358247222503596
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 36
+      },
+      {
+        "model": "full",
+        "r": 0.9877145154998745,
+        "ci_95": [
+          0.9801286045567165,
+          0.9926087415550705
+        ],
+        "ci_method": "percentile bootstrap over cells",
+        "n_cells": 36
+      }
+    ],
+    "noise_ceiling": {
+      "split_half": 0.9840746470647426,
+      "reliability": 0.9919734103962179,
+      "ceiling": 0.9959786194473342,
+      "n_splits": 400
+    }
+  }
+]

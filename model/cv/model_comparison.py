@@ -54,7 +54,7 @@ from _helpers import (  # noqa: E402
     verify_fit_manifest,
     write_json,
 )
-from study_registry import STUDIES, reported_base, study  # noqa: E402
+from study_registry import STUDIES, reported_base, study, study_groups  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 from contrast_tests import condition_gradients, variance_decomposition  # noqa: E402
@@ -350,16 +350,74 @@ def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, model
         )
     if len(merged) < 3:
         return None
-    r = float(np.corrcoef(merged[update_col], merged[delta_col])[0, 1])
+    return pair_bootstrap_corr(
+        merged[delta_col].to_numpy(),
+        merged[update_col].to_numpy(),
+        seed_key=f"{slug}|{model}|{delta_col}|pair_ci",
+    )
 
-    x = merged[delta_col].to_numpy()
-    y = merged[update_col].to_numpy()
-    rng = np.random.default_rng(_seed_for(f"{slug}|{model}|{delta_col}|pair_ci"))
-    n = len(merged)
+
+#: Below this, a variant's per-cell predictions are treated as CONSTANT and its
+#: correlation as undefined rather than computed.
+#:
+#: An ablation missing a utility term cannot infer the latent that term carries,
+#: so its posterior stays exactly the prior and every cell gets the same
+#: prediction. That should surface as `n/a` -- it is the visible ablation
+#: contrast, not a fit. The guard was 1e-12, which only catches it when the
+#: constant is bit-exact: the intimacy posterior of the vanilla model in 2b/3b is
+#: flat to float32 rounding and spans about 1e-7, so 1e-12 let a correlation of
+#: pure numerical noise through and the paper would have printed r = 0.265 for a
+#: model the same paragraph says cannot infer intimacy at all. The predictions
+#: are belief updates on a [-0.5, 0.5] scale, so 1e-6 is six orders of magnitude
+#: below anything a model means to say and far above float32 noise.
+CONSTANT_PREDICTION_TOL = 1e-6
+
+
+def pair_bootstrap_corr(x, y, *, seed_key, n_boot=N_PAIR_BOOT):
+    """Pearson r over (x, y) with a 95% CI bootstrapped over the PAIRS.
+
+    The one implementation behind every correlation the paper reports -- the
+    per-study `secondary_correlations` here, the pooled per-study-number ones in
+    `study_group_correlations`, the generalization arms in
+    `generalization_primary.py`, and the panel annotations (`_agg.corr_with_pair_ci`
+    delegates here), so a number in the text cannot disagree with the same number
+    on a figure.
+
+    Making that hold takes more than sharing the code, because a bootstrap draws
+    INDICES: two callers holding the same points in a different order get
+    different resamples and so different intervals from the same seed. The
+    figure side concatenates its cells grouped by display label and this module
+    groups by the raw condition columns, which sort differently -- that is how
+    Study 2's vanilla interval came out [0.228, 0.691] here and [0.200, 0.703] on
+    the panel. The points are therefore sorted canonically before resampling, so
+    the interval depends on the SET of points and not on the order a caller
+    happened to build them in. The point estimate never depended on order.
+
+    `r` is NaN when the model's predictions are constant (see
+    `CONSTANT_PREDICTION_TOL`) -- the same shape an exactly-constant variant
+    already produced on disk, so downstream consumers keep rendering those as
+    `n/a` rather than losing the entry.
+    """
+    x, y = np.asarray(x, dtype=float), np.asarray(y, dtype=float)
+    if np.std(x) < CONSTANT_PREDICTION_TOL or np.std(y) < CONSTANT_PREDICTION_TOL:
+        return {
+            "r": float("nan"),
+            "ci_95": [float("nan"), float("nan")],
+            "ci_method": "undefined (constant predictions)",
+            "n_cells": int(len(x)),
+        }
+    order = np.lexsort((y, x))
+    x, y = x[order], y[order]
+    r = float(np.corrcoef(x, y)[0, 1])
+    rng = np.random.default_rng(_seed_for(seed_key))
+    n = len(x)
     boots = []
-    for _ in range(N_PAIR_BOOT):
+    for _ in range(n_boot):
         i = rng.integers(0, n, n)
-        if np.std(x[i]) > 1e-12 and np.std(y[i]) > 1e-12:
+        if (
+            np.std(x[i]) > CONSTANT_PREDICTION_TOL
+            and np.std(y[i]) > CONSTANT_PREDICTION_TOL
+        ):
             boots.append(np.corrcoef(x[i], y[i])[0, 1])
     boots = np.asarray(boots)
     boots = boots[np.isfinite(boots)]
@@ -368,15 +426,164 @@ def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, model
         if boots.size
         else [float("nan"), float("nan")]
     )
-
     return {
         "r": r,
         "ci_95": ci,
         # Named on disk, because an interval whose construction is unstated is
         # exactly what made six comparable papers' intervals un-auditable.
         "ci_method": "percentile bootstrap over cells",
-        "n_cells": int(len(merged)),
+        "n_cells": int(n),
     }
+
+
+#: Variant order for the pooled panels and the group correlations, after the
+#: reported-base promotion below (so "base" here always means the variant the
+#: paper calls the vanilla model).
+GROUP_MODEL_ORDER = ("base", "discomfort_only", "full")
+
+
+def _condition_cells(slug):
+    """Condition-grain grouping columns: the study's cell keys without the
+    scenario. The main text and the results figures quote a correlation over
+    these cells -- each averaged over the \\nScenarios{} scenarios -- while
+    `secondary_correlations` above is at scenario x condition grain. Two
+    different numbers, so the paper names the grain wherever it quotes one."""
+    return [k for k in STUDY_SPECS[slug]["keys"] if k != "scenario_label"]
+
+
+def _promote_reported_base(slug, preds):
+    """Rename this study's reported base variant to `base` and drop the other.
+
+    The desire-inferring studies report `base_shared` as the vanilla model
+    because the preregistered `base` also swaps the comparison set (see
+    study_registry.reported_base). Doing it here means the pooled correlation
+    describes the same three models the paper's tables and figures do.
+    """
+    promoted = reported_base(slug)
+    if promoted == "base":
+        return preds
+    present = set(preds["model"].unique())
+    if promoted not in present:
+        raise KeyError(
+            f"{slug}: cv_preds_summary.json has no `{promoted}` variant, but "
+            f"study_registry.reported_base says the paper reports it as the "
+            f"vanilla model. Re-run `make fit-{slug} cv-{slug}`."
+        )
+    out = preds[preds["model"] != "base"].copy()
+    out.loc[out["model"] == promoted, "model"] = "base"
+    return out
+
+
+def group_corr_seed_key(number, model, seed=0):
+    """The bootstrap seed key for one pooled study-group correlation.
+
+    Exported because `figures/scripts/_agg.py` annotates its panels with these
+    same correlations and must draw the same resamples to print the same
+    interval; with `pair_bootstrap_corr` sorting its points canonically, a shared
+    seed key is the remaining thing the two sides need to agree on.
+    """
+    return f"group|{seed}|{number}|{model}|pair_ci"
+
+
+def study_group_correlations(seed):
+    """Pooled model-vs-human correlation per paper study number, at condition grain.
+
+    This is the number the main text quotes and the number the results figures'
+    scatter columns annotate: one point per (sub-study x condition x inferred
+    latent), the model's out-of-sample prediction against the human mean, both
+    averaged over the scenarios. Pooling the sub-studies is what makes it one
+    correlation per study rather than one per DV per sub-study.
+
+    Reported beside a split-half noise ceiling computed at the SAME grain, since
+    a ceiling from the scenario-grain cells would not bound these. Participants
+    are split within each sub-study independently (separate participant pools)
+    and every DV of a sub-study uses that sub-study's draw, matching how the
+    correlation pools its cells.
+
+    A variant whose predictions are constant gets `r: null` -- see
+    `CONSTANT_PREDICTION_TOL`.
+
+    `seed` enters every stream this computes, so `--seed` moves these intervals
+    the way it moves the primary ones. It was accepted and ignored until
+    2026-08-16, which made a seed-sensitivity check wrongly conclude the pooled
+    correlations were seed-independent.
+
+    Each entry records the SHA-256 of the `cv_preds_summary.json` it read, so the
+    exporter can refuse to quote these beside per-study numbers from a newer CV
+    run -- this file is written only by the all-studies pass, so re-running one
+    study leaves it a vintage behind with nothing else to notice.
+    """
+    out = []
+    for number, members in study_groups():
+        loaded, sources = [], {}
+        for st in members:
+            outputs_dir = get_project_root() / "model" / "outputs" / st.slug
+            preds_path = outputs_dir / "cv_preds_summary.json"
+            if not preds_path.exists():
+                loaded = None
+                break
+            _verify_cv_manifest(st.slug, outputs_dir)
+            sources[st.slug] = sha256_file(preds_path)
+            with open(preds_path) as f:
+                preds = _promote_reported_base(st.slug, pd.DataFrame(json.load(f)))
+            loaded.append((st, _prepare_data(st.slug), preds))
+        if not loaded:
+            print(f"[Study {number}] missing CV outputs — skipping group correlation.")
+            continue
+
+        entry = {
+            "study": number,
+            "slugs": [st.slug for st, _d, _p in loaded],
+            "grain": "condition (averaged over scenarios)",
+            "seed": seed,
+            "source": sources,
+            "correlations": [],
+        }
+        # Human cells and the ceiling blocks first: both are properties of the
+        # data alone, so every variant is judged against the same points.
+        human, blocks = {}, []
+        for st, data, _preds in loaded:
+            keys = _condition_cells(st.slug)
+            mats = []
+            for update_col, _delta_col, dv in STUDY_SPECS[st.slug]["dvs"]:
+                cells = data.groupby(keys, as_index=False)[update_col].mean()
+                human[(st.slug, dv)] = (keys, cells, update_col)
+                mats.append(subject_cell_matrices(data, keys, update_col, cells[keys]))
+            blocks.append(mats)
+        ceiling = split_half_ceiling(
+            blocks,
+            rng=np.random.default_rng(_seed_for(f"group|{seed}|{number}|ceiling")),
+        )
+        entry["noise_ceiling"] = ceiling
+
+        for model in GROUP_MODEL_ORDER:
+            xs, ys = [], []
+            for st, _data, preds in loaded:
+                pm = preds[preds["model"] == model]
+                if pm.empty:
+                    continue
+                for update_col, delta_col, dv in STUDY_SPECS[st.slug]["dvs"]:
+                    keys, cells, _u = human[(st.slug, dv)]
+                    model_cells = pm.groupby(keys, as_index=False)[delta_col].mean()
+                    merged = cells.merge(model_cells, on=keys, how="inner")
+                    if len(merged) != len(cells):
+                        raise RuntimeError(
+                            f"{st.slug}: {len(cells) - len(merged)} condition "
+                            f"cell(s) have no {model} prediction — stale CV "
+                            f"outputs; re-run `make cv-{st.slug}`."
+                        )
+                    xs.append(merged[delta_col].to_numpy())
+                    ys.append(merged[update_col].to_numpy())
+            if not xs:
+                continue
+            got = pair_bootstrap_corr(
+                np.concatenate(xs),
+                np.concatenate(ys),
+                seed_key=group_corr_seed_key(number, model, seed),
+            )
+            entry["correlations"].append({"model": model, **got})
+        out.append(entry)
+    return out
 
 
 def fmt_ci(ci, pct=True):
@@ -689,6 +896,42 @@ def main():
     slugs = list(STUDY_SPECS) if args.study == "all" else [args.study]
     for slug in slugs:
         run_study(slug, n_boot=args.n_boot, seed=args.seed)
+
+    # The pooled per-study-number correlations pool ACROSS studies, so they can
+    # only be computed once every study has been run. Written to their own
+    # artifact rather than into any one study's file for the same reason.
+    if args.study == "all":
+        groups = study_group_correlations(seed=args.seed)
+        if groups:
+            out_path = (
+                get_project_root() / "model" / "outputs" / "group_correlations.json"
+            )
+            write_json(out_path, groups)
+            print("\n=== pooled correlations by study (condition grain) ===")
+            for entry in groups:
+                ceil = entry.get("noise_ceiling")
+                for row in entry["correlations"]:
+                    r, (lo, hi) = row["r"], row["ci_95"]
+                    if r != r:
+                        print(
+                            f"  Study {entry['study']} {row['model']}: n/a (constant)"
+                        )
+                        continue
+                    frac = (
+                        f", {r / ceil['ceiling']:.1%} of ceiling"
+                        if ceil and row["model"] == "full"
+                        else ""
+                    )
+                    print(
+                        f"  Study {entry['study']} {row['model']}: r = {r:.3f} "
+                        f"[{lo:.3f}, {hi:.3f}] over {row['n_cells']} cells{frac}"
+                    )
+                if ceil:
+                    print(
+                        f"  Study {entry['study']} noise ceiling = "
+                        f"{ceil['ceiling']:.4f}"
+                    )
+            print(f"  wrote {out_path}")
 
 
 if __name__ == "__main__":

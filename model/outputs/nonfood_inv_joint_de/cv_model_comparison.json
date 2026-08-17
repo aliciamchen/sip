@@ -43,8 +43,8 @@
       "dv": "desire",
       "r": 0.8616182865889171,
       "ci_95": [
-        0.8306832117369011,
-        0.887557240503076
+        0.8267523168926896,
+        0.8887408078268264
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -54,8 +54,8 @@
       "dv": "effort",
       "r": 0.6487998646049441,
       "ci_95": [
-        0.5406883755423734,
-        0.7483438121401615
+        0.5372564446560614,
+        0.7435566778480003
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -63,10 +63,10 @@
     {
       "model": "base_shared",
       "dv": "desire",
-      "r": 0.8642538466599387,
+      "r": 0.8642538466599384,
       "ci_95": [
-        0.8333597571468901,
-        0.8896147124501801
+        0.8320799490125244,
+        0.8903777148577176
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -74,10 +74,10 @@
     {
       "model": "base_shared",
       "dv": "effort",
-      "r": 0.6316513204310653,
+      "r": 0.6316513204310652,
       "ci_95": [
-        0.5188274873907184,
-        0.7228656071999262
+        0.5274604215029679,
+        0.72227923283666
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -90,7 +90,7 @@
         NaN,
         NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 192
     },
     {
@@ -101,7 +101,7 @@
         NaN,
         NaN
       ],
-      "ci_method": "percentile bootstrap over cells",
+      "ci_method": "undefined (constant predictions)",
       "n_cells": 192
     },
     {
@@ -109,8 +109,8 @@
       "dv": "desire",
       "r": 0.8753491644058929,
       "ci_95": [
-        0.8478012177822668,
-        0.8990758891894979
+        0.8457096228871984,
+        0.8973337540347084
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -120,8 +120,8 @@
       "dv": "effort",
       "r": 0.6347312945150564,
       "ci_95": [
-        0.5297545532192717,
-        0.7274275041344935
+        0.5283229814648427,
+        0.7308852612659714
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
