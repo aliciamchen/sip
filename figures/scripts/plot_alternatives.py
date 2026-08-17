@@ -67,7 +67,9 @@ import pandas as pd
 import umap
 from scipy.spatial.distance import cdist
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+_project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root))
+sys.path.insert(0, str(_project_root / "model" / "lm"))
 from plot_style import (  # noqa: E402
     ACTION_COLORS,
     ACTION_LABELS,
@@ -86,6 +88,7 @@ from plot_style import (  # noqa: E402
     savefig,
 )
 from study_registry import SLUGS, slugs_given  # noqa: E402
+import set_diagnostics  # noqa: E402  (model/lm)
 from utils import get_project_root  # noqa: E402
 
 # The six active studies, in roster order (1a, 1b, 2a, 2b, 3a, 3b). The SI
@@ -735,48 +738,10 @@ def fig_si_g_contrast(runs, figname="si_lm_g_contrast"):
     return savefig(fig, figname, **SAVE_KW)
 
 
-def _g_contrast_rates(runs, flat=0.01):
-    """(observed action) -> (% of sets with no g contrast over the whole
-    comparison set, % with none among the forgone alternatives, n sets, n sets
-    dropped for having no alternatives at all).
-
-    The two quantities answer different questions. The whole-set range says
-    whether the observation itself can speak to desire: an action's own g
-    prices desire directly, so a set spanning g~0 to g~1 makes the choice
-    informative. The alternatives-only range says whether *reweighting* that
-    set can speak to desire: the reweighting moves mass among the forgone
-    actions, so when those are uniform in g no weighting of them shifts the
-    desire posterior, however surprising the observation is."""
-    rates = {}
-    for act in OBSERVED_ACTIONS:
-        full, alts, empty = [], [], 0
-        for actions, obs in zip(runs["actions"], runs["observed_action"]):
-            if obs != act:
-                continue
-            gs = [a["g"] for a in actions if a.get("g") is not None]
-            if not gs:
-                continue
-            full.append(max(gs) - min(gs))
-            ga = [
-                a["g"]
-                for a in actions
-                if a.get("g") is not None and not a.get("is_observed")
-            ]
-            # A set with no alternatives has nothing to reweight and no range to
-            # measure; counted separately rather than scored as "no contrast".
-            if ga:
-                alts.append(max(ga) - min(ga))
-            else:
-                empty += 1
-        if not full:
-            continue
-        rates[act] = (
-            100 * float(np.mean(np.asarray(full) <= flat)),
-            100 * float(np.mean(np.asarray(alts) <= flat)) if alts else float("nan"),
-            len(full),
-            empty,
-        )
-    return rates
+# The g-contrast rates are computed in model/lm/set_diagnostics.py, which the
+# results macros also read -- this figure and the SI prose quote the same
+# numbers, so they cannot be computed two ways.
+_g_contrast_rates = set_diagnostics.g_contrast_rates
 
 
 def fig_si_g_contrast_all(studies_data, figname="si_lm_g_contrast_all"):
