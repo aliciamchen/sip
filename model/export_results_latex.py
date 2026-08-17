@@ -22,11 +22,13 @@ spacing stay hand-controlled while the columns and numbers are generated:
 Two invariants this enforces, both of which have bitten before:
 
 - **The reported base.** In the given-relationship studies the paper reports
-  `base_shared` as "Base" (see `study_registry.reported_base`), because the
-  preregistered `base` also swaps the comparison set. The macros read that same
-  helper, so the prose, the tables and the figures cannot disagree about which
-  model "Base" means. The preregistered contrast is emitted separately, under
-  `Prereg` names, for the deviation section.
+  `base_shared` as the vanilla model (see `study_registry.reported_base`),
+  because the preregistered `base` also swaps the comparison set. The macros read
+  that same helper, so the prose, the tables and the figures cannot disagree
+  about which model "vanilla" means. The preregistered contrast is emitted
+  separately, under `Prereg` names, for the deviation section. Note the variant
+  keys on disk stay `base`/`base_shared`; only the reader-facing label is
+  "vanilla", which is what the manuscript and the figure columns both say.
 - **Provenance.** Both manifests are verified before anything is emitted, so a
   stale or mixed-vintage output set raises instead of quietly producing numbers
   that no longer match the data.
@@ -659,10 +661,12 @@ def build(all_studies):
 
     # --- SI cross-experiment generalization (exploratory; skipped if unrun) ---
     focal_fracs = []
+    ceil_fracs = {}
     for study in all_studies:
         comparison, _full_fit, _primary, _deviation = loaded[study.slug]
         _modulation_macros(m, token(study), study.slug, comparison)
-        _ceiling_macros(m, token(study), comparison)
+        for dv, pct in _ceiling_macros(m, token(study), comparison).items():
+            ceil_fracs.setdefault(dv, []).append(pct)
         # The range quoted in Methods is over each study's PRIMARY inferred
         # latent (desire or intimacy), not the physical world state: the world
         # state is a second DV in four studies only, and its focal share is the
@@ -678,6 +682,24 @@ def build(all_studies):
             _fmt_range(100 * min(focal_fracs), 100 * max(focal_fracs), dp=1) + r"\%",
             "focal effect, share of trial-level variance, primary latent",
         )
+    # Min--max over the studies reporting each DV, so the SI's "the full model
+    # reaches X--Y of the ceiling on desire" cannot invert when a refit moves
+    # which study sits at either end.
+    for dv, pcts in ceil_fracs.items():
+        m.add(
+            f"ceilRange{dv.capitalize()}",
+            _fmt_range(min(pcts), max(pcts)) + r"\%",
+            f"full-model r as a fraction of the {dv} ceiling, min--max over studies",
+        )
+
+    # --- the results text's one correlation per study, and its ceiling ---
+    _group_correlation_macros(m)
+
+    # --- SI descriptive claims about the elicited comparison sets ---
+    _set_diagnostics_macros(m, all_studies)
+
+    # --- the generalization arms on the primary metric (exploratory) ---
+    _generalization_primary_macros(m, _load_generalization_primary())
 
     # Scale comes from `shared`, which has already checked every study agrees on
     # the trials-per-participant factor -- these numbers are quoted beside the
@@ -712,6 +734,235 @@ def build(all_studies):
     return m, loaded
 
 
+#: Generalization arm -> macro-name fragment. Keys match
+#: `cv/generalization_primary.ARMS`.
+_ARM_LABEL = {"own": "OwnFit", "food": "FoodFit", "pooled": "PooledFit"}
+
+
+def _load_generalization_primary():
+    """The generalization arms scored on the primary metric, or None if unrun."""
+    path = get_project_root() / "model" / "outputs" / "generalization_primary.json"
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
+def _generalization_primary_macros(m, gen):
+    """The nonfood pair's correlation under each generalization arm.
+
+    The main text states the food-to-nonfood result, and states it on the metric
+    the paper made primary. Quoting the held-out likelihood there instead would
+    put the paper's one main-text use of that metric in the position of carrying
+    an equivalence claim, three paragraphs after the Methods explain that it is
+    insensitive to the effect these studies test.
+    """
+    if gen is None:
+        return
+    for row in gen.get("combined", []):
+        if row["group"] != "nonfood":
+            continue
+        label = _ARM_LABEL[row["arm"]]
+        m.add(f"rNonfood{label}", _fmt(row["r"], DP_R))
+        m.add(f"ciNonfood{label}", _fmt_ci(row["ci_95"], DP_R))
+
+
+def generalization_primary_table(gen):
+    """tab:generalization-primary (SI): each generalization arm on the two
+    measures the paper made primary, beside the held-out likelihoods in
+    tab:generalization.
+
+    Both measures are here because they can disagree, and the disagreement is
+    the point: the correlation describes the whole predicted response while the
+    recovered gradient describes only the modulation, which is 1-3% of trial
+    variance. An arm can lose a little of the first and gain on the second.
+    """
+    by_exp = {}
+    for row in gen["per_experiment"]:
+        by_exp.setdefault(row["experiment"], {})[row["arm"]] = row
+    arms = ("own", "food", "pooled")
+    lines = []
+    for experiment, rows in by_exp.items():
+        cells = [
+            _fmt(rows[a]["r"], DP_R) if a in rows else r"\textit{n/a}" for a in arms
+        ]
+        grads = [
+            rf"\ensuremath{{{100 * rows[a]['grad_median_recovered']:.0f}\%}}"
+            if a in rows and rows[a]["grad_median_recovered"] is not None
+            else r"\textit{n/a}"
+            for a in arms
+        ]
+        lines.append(f"{experiment} & " + " & ".join([*cells, *grads]) + r" \\")
+    header = (
+        r" & \multicolumn{3}{c}{Correlation $r$} & "
+        r"\multicolumn{3}{c}{Modulation recovered} \\"
+        "\n"
+        r"\cmidrule(lr){2-4}\cmidrule(lr){5-7}"
+        "\n"
+        r"Experiment & Own & Food & All six & Own & Food & All six \\"
+    )
+    return _tabular("lcccccc", header, "\n".join(lines))
+
+
+def _set_diagnostics_macros(m, all_studies):
+    """The SI's descriptive claims about the elicited comparison sets.
+
+    Ranges over studies rather than one macro per study: the prose only ever
+    quotes them as ranges ("in 40--61% of refusal sets ..."), and a range emitted
+    whole cannot be mis-paired or hand-ordered backwards, which is what a pair of
+    per-study macros in running text invites.
+    """
+    import set_diagnostics as sd
+
+    wanted = [s.slug for s in all_studies]
+    summary = sd.summarize(wanted)
+    missing = [s for s in wanted if s not in summary]
+    if missing:
+        # Not just "none found": these macros are documented as min--max over
+        # STUDIES, so a partially re-elicited state would quietly narrow the
+        # range to whichever studies happen to be on disk.
+        raise FileNotFoundError(
+            f"no outputs/lm/<slug>/lm_runs.jsonl for {missing} -- the SI quotes "
+            "these as ranges over every study, so a subset would understate "
+            "them. Re-run the LM elicitation for those studies."
+        )
+
+    refusal_whole, refusal_alts, share_whole = [], [], []
+    for entry in summary.values():
+        for act, (whole, alts, _n, _empty) in entry["g_contrast"].items():
+            if act == sd.REFUSAL:
+                refusal_whole.append(whole)
+                if alts == alts:  # NaN where every set was alternative-free
+                    refusal_alts.append(alts)
+            else:
+                share_whole.append(whole)
+    m.add(
+        "gFlatRefusalWhole",
+        _fmt_range(min(refusal_whole), max(refusal_whole), dp=1) + r"\%",
+        "refusal sets with no g contrast over the whole comparison set",
+    )
+    m.add(
+        "gFlatShareWhole",
+        _fmt_range(min(share_whole), max(share_whole)) + r"\%",
+        "share sets with no g contrast over the whole comparison set",
+    )
+    m.add(
+        "gFlatRefusalAlts",
+        _fmt_range(min(refusal_alts), max(refusal_alts)) + r"\%",
+        "refusal sets whose forgone alternatives carry no g contrast",
+    )
+
+    # The physical-state claim covers the refusal and the high-risk share. The
+    # low-risk share is the action the state paragraph is written to describe, so
+    # it swings by design and is quoted separately as the contrast.
+    flat_acts = (sd.REFUSAL, "high_risk_share")
+    flat, described, alt_max = [], [], []
+    for entry in summary.values():
+        swings = entry.get("effort_swing_observed")
+        if not swings:
+            continue
+        flat += [v for act, v in swings.items() if act in flat_acts]
+        described += [v for act, v in swings.items() if act not in flat_acts]
+        alt_max.append(entry["effort_swing_alt_max"])
+    if flat:
+        m.add(
+            "effortSwingFlat",
+            _fmt_range(min(flat), max(flat), dp=2),
+            "|effort(high) - effort(low)| for a refusal or high-risk share",
+        )
+        m.add("effortSwingDescribed", _fmt_range(min(described), max(described), dp=2))
+        m.add("effortSwingAltMax", _fmt(max(alt_max), 2))
+
+    medians = [entry["n_alts_median"] for entry in summary.values()]
+    m.add(
+        "nAltsMedianRange",
+        _fmt_range(min(medians), max(medians)),
+        "median alternatives per comparison set, min--max over studies",
+    )
+
+
+#: Paper study number -> letters-only macro token, for the pooled correlations
+#: (`\rStudyOne`), which are per study number rather than per sub-study.
+def _group_token(number):
+    return "Study" + _NUMBER_WORD[number]
+
+
+def _group_correlation_macros(m):
+    """The pooled model-vs-human correlation the results text quotes, one per
+    study, with the noise ceiling it is judged against.
+
+    Condition grain -- each point averaged over the scenarios -- which is the
+    grain the results figures plot and a DIFFERENT number from the per-(study,
+    DV) `r*` macros above, which are at scenario x condition grain. Both are
+    emitted; the paper says which grain it is quoting where it quotes one.
+
+    Only the full model gets macros: the text reports one correlation per study,
+    and an ablation's pooled r mixes a DV it can predict with one whose
+    prediction is constant, which is a number the figure shows honestly (as a
+    vertical stripe) and prose cannot.
+    """
+    path = get_project_root() / "model" / "outputs" / "group_correlations.json"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} missing -- the results text quotes one pooled correlation "
+            "per study. Run `make model-comparison` (it writes this after every "
+            "study, since the correlations pool across studies)."
+        )
+    fracs = []
+    for entry in json.loads(path.read_text()):
+        tok = _group_token(entry["study"])
+        # This file is written only by the ALL-studies pass, so re-running one
+        # study (`model_comparison.py --study <slug>`, the documented single-study
+        # path) refreshes that study's cv_model_comparison.json and leaves this a
+        # vintage behind -- and `\rStudyOne` would then sit beside
+        # `\rFullDesireOneB` from a different CV run. Every other input here is
+        # manifest-verified; this one carries the hashes it was computed from.
+        for slug, recorded in entry.get("source", {}).items():
+            actual = (
+                get_project_root()
+                / "model"
+                / "outputs"
+                / slug
+                / "cv_preds_summary.json"
+            )
+            if sha256_file(actual) != recorded:
+                raise ValueError(
+                    f"{actual} has changed since {path.name} was computed, so the "
+                    f"pooled correlation for Study {entry['study']} describes a CV "
+                    f"run that no longer exists. Re-run `make model-comparison` "
+                    "(all studies -- the pooled correlations need every one)."
+                )
+        full = next((c for c in entry["correlations"] if c["model"] == "full"), None)
+        if full is None or full["r"] != full["r"]:
+            raise ValueError(
+                f"Study {entry['study']}: no full-model correlation in {path.name}"
+            )
+        m.add(
+            f"r{tok}",
+            _fmt(full["r"], DP_R),
+            "pooled over sub-studies and DVs, condition grain",
+        )
+        m.add(f"ci{tok}", _fmt_ci(full["ci_95"], DP_R))
+        ceiling = entry.get("noise_ceiling")
+        if ceiling:
+            m.add(
+                f"ceil{tok}",
+                _fmt(ceiling["ceiling"], DP_R),
+                "split-half noise ceiling, same grain",
+            )
+            frac = 100 * full["r"] / ceiling["ceiling"]
+            fracs.append(frac)
+            m.add(f"ceilFrac{tok}", rf"\ensuremath{{{frac:.0f}\%}}")
+    if fracs:
+        # The SI says the model reaches "at least X% of it in every study". A
+        # minimum stays true however the studies move, where naming one study's
+        # figure and asserting the others match it would not.
+        m.add(
+            "ceilFracStudyMin",
+            rf"\ensuremath{{{_round_half_up(min(fracs)):.0f}\%}}",
+            "smallest of the per-study fractions of the ceiling",
+        )
+
+
 def _ceiling_macros(m, tok, comparison):
     """Full-model correlation as a fraction of the split-half noise ceiling.
 
@@ -721,7 +972,13 @@ def _ceiling_macros(m, tok, comparison):
     means something different from the same r against a ceiling of 0.70. Emitted
     per DV, because the two kinds of inferred variable sit at very different
     fractions and reporting one number for a study would hide that.
+
+    Returns {dv: percentage} so the caller can emit the across-study ranges the
+    SI quotes. Those ranges are computed rather than written into the prose as a
+    pair of per-study macros: which study sits at the minimum is itself a result,
+    and a hand-ordered range would silently invert if a refit moved it.
     """
+    out = {}
     ceilings = {c["dv"]: c["ceiling"] for c in comparison.get("noise_ceilings", [])}
     r_full = {
         c["dv"]: c["r"]
@@ -730,13 +987,19 @@ def _ceiling_macros(m, tok, comparison):
     }
     for dv, ceiling in ceilings.items():
         r = r_full.get(dv)
-        if r is None or not ceiling:
+        # `r != r` is the NaN test: with CONSTANT_PREDICTION_TOL a NaN r is a
+        # normal outcome for a variant that cannot infer the DV, and one
+        # reaching here would print `nan%` in tab:scenario-correlations AND
+        # poison the ceilRange* min/max the SI quotes.
+        if r is None or r != r or not ceiling:
             continue
+        out[dv] = 100 * r / ceiling
         m.add(
             f"ceil{dv.capitalize()}{tok}",
-            rf"\ensuremath{{{100 * r / ceiling:.0f}\%}}",
+            rf"\ensuremath{{{out[dv]:.0f}\%}}",
             f"full-model r as a fraction of the {dv} noise ceiling",
         )
+    return out
 
 
 def _modulation_macros(m, tok, slug, comparison):
@@ -775,7 +1038,11 @@ def _modulation_macros(m, tok, slug, comparison):
     if not reliable:
         return
     by = {(g["model"], g["dv"], g["action"]): g for g in grads}
-    for name, variant in (("Full", "full"), ("Base", base_key), ("Disc", "discomfort_only")):
+    for name, variant in (
+        ("Full", "full"),
+        ("Base", base_key),
+        ("Disc", "discomfort_only"),
+    ):
         vals = []
         for dv, action in reliable:
             got, ref = by.get((variant, dv, action)), by[("full", dv, action)]
@@ -783,7 +1050,10 @@ def _modulation_macros(m, tok, slug, comparison):
                 continue
             vals.append(abs(got["model_gradient"] / ref["human_gradient"]))
         if vals:
-            m.add(f"grad{name}{tok}", rf"\ensuremath{{{100 * statistics.median(vals):.0f}\%}}")
+            m.add(
+                f"grad{name}{tok}",
+                rf"\ensuremath{{{100 * statistics.median(vals):.0f}\%}}",
+            )
 
 
 def gradients_table(all_studies):
@@ -796,16 +1066,14 @@ def gradients_table(all_studies):
 
     def cells(study):
         tok = token(study)
-        return (
-            rf"\nGradCells{tok} & \gradFull{tok} & \gradBase{tok} & \gradDisc{tok}"
-        )
+        return rf"\nGradCells{tok} & \gradFull{tok} & \gradBase{tok} & \gradDisc{tok}"
 
     header = (
         r" & \multicolumn{1}{c}{Cells} & \multicolumn{3}{c}{Median gradient recovered} \\"
         "\n"
         r"\cmidrule(lr){3-5}"
         "\n"
-        r"Study & $n$ & Full & Base & Discomfort-only \\"
+        r"Study & $n$ & Full & Vanilla & Discomfort-only \\"
     )
     return _tabular("lcccc", header, _rows(all_studies, cells, domain_heading=5))
 
@@ -864,8 +1132,11 @@ def gradients_full_table(all_studies, loaded):
                     rf"{_ACTION_LABEL.get(action, action)} & "
                     rf"{_fmt(ref['human_gradient'], 3)} "
                     rf"\ensuremath{{[{lo:.3f},\ {hi:.3f}]}} & {cells} & "
-                    + (rf"\ensuremath{{{100 * rec:.0f}\%}}" if rec is not None
-                       else r"\textit{n.s.}")
+                    + (
+                        rf"\ensuremath{{{100 * rec:.0f}\%}}"
+                        if rec is not None
+                        else r"\textit{n.s.}"
+                    )
                     + r" \\"
                 )
     header = (
@@ -873,10 +1144,48 @@ def gradients_full_table(all_studies, loaded):
         "\n"
         r"\cmidrule(lr){5-7}"
         "\n"
-        r"Study & Inferred & Action & gradient [95\% CI] & Full & Base & "
+        r"Study & Inferred & Action & gradient [95\% CI] & Full & Vanilla & "
         r"Disc.\ only & Recovered \\"
     )
     return _tabular("lllccccr", header, "\n".join(lines))
+
+
+def scenario_correlations_table(all_studies, loaded):
+    """tab:scenario-correlations (SI): the model-vs-human correlation per
+    (study, inferred variable) at SCENARIO x CONDITION grain, against that DV's
+    noise ceiling.
+
+    The main text quotes one correlation per study over condition means, where
+    averaging the scenarios leaves both r and the ceiling near one. This table is
+    the grain at which the ceiling separates the DVs -- the continuous latents
+    sit near it and the world state does not -- which is the comparison that says
+    something. Cells are macro references wherever a macro exists, so the table
+    and any in-text mention cannot drift apart.
+    """
+    lines = []
+    for study in all_studies:
+        comparison = loaded[study.slug][0]
+        tok = token(study)
+        ceilings = {c["dv"]: c["ceiling"] for c in comparison.get("noise_ceilings", [])}
+        for dv in study.dvs:
+            if dv.name not in ceilings:
+                continue
+            dv_tok = dv.name.capitalize()
+            lines.append(
+                rf"{study.short_label} & {_PAPER_TARGET[dv.name]} & "
+                rf"\rFull{dv_tok}{tok} & \rBase{dv_tok}{tok} & "
+                rf"\rDisc{dv_tok}{tok} & {_fmt(ceilings[dv.name], DP_R)} & "
+                rf"\ceil{dv_tok}{tok} \\"
+            )
+    header = (
+        r" & & \multicolumn{3}{c}{Pearson $r$} & & \\"
+        "\n"
+        r"\cmidrule(lr){3-5}"
+        "\n"
+        r"Study & Inferred & Full & Vanilla & Disc.\ only & Ceiling & "
+        r"Full / ceiling \\"
+    )
+    return _tabular("llccccr", header, "\n".join(lines))
 
 
 def design_table(all_studies):
@@ -979,7 +1288,7 @@ def model_comparison_table(all_studies):
         [
             r" & & \multicolumn{3}{c}{Held-out LL / participant} \\",
             r"\cmidrule(lr){3-5}",
-            r"Study & Inferred target & Full & Full $-$ base & "
+            r"Study & Inferred target & Full & Full $-$ vanilla & "
             r"Full $-$ discomfort-only \\",
         ]
     )
@@ -1107,6 +1416,12 @@ def main():
         "results_table_gradients_full.tex": (
             HEADER + provenance() + gradients_full_table(all_studies, _loaded) + "\n"
         ),
+        "results_table_scenario_correlations.tex": (
+            HEADER
+            + provenance()
+            + scenario_correlations_table(all_studies, _loaded)
+            + "\n"
+        ),
     }
     # Only when the exploratory generalization analyses have been run -- writing
     # a table of macro references that `build` did not define would turn a
@@ -1114,6 +1429,11 @@ def main():
     if _load_generalization() is not None:
         files["results_table_generalization.tex"] = (
             HEADER + provenance() + generalization_table(all_studies) + "\n"
+        )
+    gen_primary = _load_generalization_primary()
+    if gen_primary is not None:
+        files["results_table_generalization_primary.tex"] = (
+            HEADER + provenance() + generalization_primary_table(gen_primary) + "\n"
         )
 
     if args.print:
