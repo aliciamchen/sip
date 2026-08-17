@@ -37,7 +37,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from plot_style import apply_style, savefig  # noqa: E402
-from study_registry import studies  # noqa: E402
+from study_registry import studies, study  # noqa: E402
 
 import _data as data  # noqa: E402
 import _points as points  # noqa: E402
@@ -54,21 +54,37 @@ COLUMNS = [
     ("humans", "Humans"),
 ]
 
-# Denser than the paper panels: six stacked rows, so markers and CI stems come
-# down to keep a row legible at SI width. `panel_h` is deliberately short of
-# square -- six rows plus a caption that has to carry the whole encoding (these
-# SI grids draw no legend) is more than a float page holds at a square aspect,
-# and the wasted space in a panel is vertical: the updates occupy well under half
-# the symmetric y range.
+# Sized 1:1 with where it is placed, so a point here is a point on the page: the
+# canvas is 0.75\textwidth wide (4.875in of a 6.5in column) and the manuscript
+# includes it at that width, which is what lets the sizes below be read as the
+# printed ones rather than as pre-scaling guesses.
+#
+# Everything is set against what the main text's panels come out at once
+# `figure_paper_panels.py`'s artboard is scaled into the column -- ~5.3pt markers
+# on a 1.55 x 1.76in panel -- rather than against SI density for its own sake.
+# Markers and type go up to (past, for the markers) the printed sizes the results
+# figures are read at. The panel aspect is the one thing that cannot follow: six
+# stacked rows plus a caption carrying the whole encoding (these SI grids draw no
+# legend) already overfills the 9in text height of a [p] float, so a panel has no
+# height to buy and narrowing the figure is the only lever left on how horizontal
+# one looks. That trade is what the width above is: the panel goes from
+# 1.52 x 1.00in to 1.32 x 0.98in, and the width it gives up pays for the type.
 STYLE = replace(
     points.PAPER,
-    markersize=4.6,
-    panel_w=1.72,
-    panel_h=1.13,
-    xtick_fs=7.0,
-    label_fs=8.0,
-    title_fs=9.0,
-    errbar=dict(elinewidth=1.0, capsize=0, zorder=2),
+    markersize=6.4,
+    panel_w=1.45,
+    panel_h=1.02,
+    xtick_fs=6.8,
+    tick_fs=8.5,
+    label_fs=9.5,
+    title_fs=10.0,
+    tick_len=3.5,
+    tick_w=0.9,
+    ytick_len=3.5,
+    ytick_w=0.9,
+    zero_lw=0.9,
+    split_linewidth=1.6,
+    errbar=dict(elinewidth=1.5, capsize=0, zorder=2),
 )
 
 
@@ -90,6 +106,20 @@ def _model_cells(slug, config_tag, name):
         [d for _h, d, _l in data.dvs_display(slug)]
     ].mean()
     return cells.assign(model=name)
+
+
+def row_label(st):
+    """The left-hand label for one study's row: the study, and the latent it
+    infers where there is only one.
+
+    Deliberately NOT `points.ylabel_for`, which spells out "Belief update
+    (desire)" -- at the type size these panels are set in, that string is wider
+    than a row is tall, so six of them collide down the left edge. The quantity
+    is the same in every row, so it is named once as the figure's y label and
+    what varies is left here.
+    """
+    dvs = study(st.slug).dvs
+    return st.paper_label if len(dvs) > 1 else f"{st.paper_label}\n({dvs[0].name})"
 
 
 def build_row(slug):
@@ -140,14 +170,30 @@ def build(figname="si_prereg_predictions"):
         return None
 
     ncols = len(COLUMNS)
+    # The reserves are what the decorations actually take at the sizes above --
+    # the two-line study/DV y label plus its ticks on the left, the two-line
+    # action labels and the x axis label below, the column titles on top. Held
+    # apart from `panel_w`/`panel_h` so those stay readable as the panel geometry
+    # the figure is sized 1:1 for, and the canvas comes out 5.16 x 6.40in: a
+    # 0.75\textwidth placement that leaves the caption its ~1.7in with room to
+    # spare. The ceiling is real and close -- at 7.12in tall LaTeX reported the
+    # float as too large for the page by 10pt and set it over-full -- so a later
+    # taller row, or a caption that grows, has to be checked against a build.
     fig, axes = plt.subplots(
         len(rows),
         ncols,
-        figsize=(STYLE.panel_w * ncols + 0.75, STYLE.panel_h * len(rows) + 0.75),
+        figsize=(STYLE.panel_w * ncols + 0.81, STYLE.panel_h * len(rows) + 0.70),
         sharex=True,
         squeeze=False,
         constrained_layout=True,
     )
+    # constrained_layout's default gaps are sized for panels that each carry
+    # their own tick labels; only the first column does, so the default spends
+    # about a fifth of the canvas width on gaps the figure has no use for. That
+    # width is worth more inside the panels: "Low-risk" and "High-risk" sit one x
+    # unit apart, and at this figure's width that unit is what decides whether
+    # the two action labels touch.
+    fig.get_layout_engine().set(wspace=0.03, hspace=0.05)
     for r, (st, human, model) in enumerate(rows):
         # y limits are shared across a row but not down the figure: the studies
         # differ severalfold in update magnitude, and one global limit would
@@ -166,10 +212,9 @@ def build(figname="si_prereg_predictions"):
             )
             if c:
                 axes[r][c].tick_params(axis="y", labelleft=False)
-        axes[r][0].set_ylabel(
-            f"{st.paper_label}\n{points.ylabel_for(st.slug)}", fontsize=STYLE.label_fs
-        )
+        axes[r][0].set_ylabel(row_label(st), fontsize=STYLE.label_fs)
     fig.supxlabel(points.X_AXIS_LABEL, fontsize=STYLE.label_fs)
+    fig.supylabel("Belief update", fontsize=STYLE.label_fs)
     return savefig(fig, figname, png=False)
 
 

@@ -29,6 +29,7 @@ Usage:
 """
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -70,7 +71,26 @@ BINS = np.linspace(0, 1, 21)
 # 0-100 integers scaled to 0-1, so this catches exactly 0 and 100.
 END_EPS = 0.01
 
-STYLE = points.PAPER
+# Markers and type are set against what the main text's panels print at -- ~5.3pt
+# markers, once `figure_paper_panels.py`'s artboard is scaled into the column --
+# rather than at the smaller sizes these facets used to carry. Both figures are
+# full-page [p] floats that were giving up around 2.5in of page height, so the
+# facets can take the size without anything else moving. They take it as width
+# and marker size rather than as height: a facet's y axis is the fixed 0-1 rating
+# scale, and stretching it vertically lengthens the prior-to-posterior connectors
+# without separating any two of them, so the facets are held near square.
+STYLE = replace(points.PAPER, markersize=7.0)
+
+#: Facet titles and the axis labels, at that same scale. Named once because the
+#: levels and distribution grids share them and are read as a pair.
+FACET_TITLE_FS = 9.0
+AXIS_LABEL_FS = 9.5
+FACET_TICK_FS = 8.0
+#: The action labels get their own, smaller size. They are the one piece of type
+#: here that is width-bound rather than height-bound: "Low-risk" and "High-risk"
+#: sit one x unit apart, which is about 0.43in across a facet of this grid, so at
+#: the y ticks' size the two run into each other.
+FACET_XTICK_FS = 7.0
 
 
 def condition_spec(slug):
@@ -176,7 +196,7 @@ def draw_levels(ax, cells, rating_col, dv, cond_col, levels, colors, *, xticklab
             yerr=[[max(y - lo, 0)], [max(hi - y, 0)]],
             fmt="none",
             ecolor=colors[cond],
-            elinewidth=1.0,
+            elinewidth=1.3,
             capsize=0,
             zorder=2,
         )
@@ -190,7 +210,7 @@ def draw_levels(ax, cells, rating_col, dv, cond_col, levels, colors, *, xticklab
             markersize=STYLE.markersize,
             markerfacecolor=colors[cond] if filled else "white",
             markeredgecolor=colors[cond],
-            markeredgewidth=1.1,
+            markeredgewidth=1.3,
             zorder=3,
         )
     for (_action, cond), pts in pairs.items():
@@ -202,7 +222,7 @@ def draw_levels(ax, cells, rating_col, dv, cond_col, levels, colors, *, xticklab
             [p[1] for p in pts],
             "-",
             color=colors[cond],
-            linewidth=1.3,
+            linewidth=1.6,
             zorder=2,
             solid_capstyle="round",
         )
@@ -211,7 +231,8 @@ def draw_levels(ax, cells, rating_col, dv, cond_col, levels, colors, *, xticklab
     ax.set_xlim(-0.6, 2.6)
     ax.set_xticks(range(3))
     ax.set_xticklabels(panels.ACTION_AXIS_LABELS if xticklabels else [])
-    ax.tick_params(labelsize=6.5)
+    ax.tick_params(axis="y", labelsize=FACET_TICK_FS)
+    ax.tick_params(axis="x", labelsize=FACET_XTICK_FS)
 
 
 def draw_distribution(ax, df, rating_col):
@@ -237,11 +258,11 @@ def draw_distribution(ax, df, rating_col):
     for k, stage in enumerate(s for s in STAGES if s in ends):
         ax.annotate(
             f"{ends[stage]:.0f}% at ends",
-            (0.03, 0.97 - 0.13 * k),
+            (0.03, 0.95 - 0.12 * k),
             xycoords="axes fraction",
             ha="left",
             va="top",
-            fontsize=6,
+            fontsize=7.5,
             color=ALT_GREY if stage == "prior" else POSTERIOR_COLOR,
             # Several studies pile mass in the first bin, which reaches the
             # annotation; the plate keeps both readable.
@@ -249,7 +270,7 @@ def draw_distribution(ax, df, rating_col):
         )
     ax.set_xlim(0, 1)
     ax.set_xticks([0, 0.5, 1])
-    ax.tick_params(labelsize=6.5)
+    ax.tick_params(labelsize=FACET_TICK_FS)
 
 
 def _bottom_of_column(n, ncols):
@@ -260,20 +281,26 @@ def _bottom_of_column(n, ncols):
     return {c: max(i for i in range(n) if i % ncols == c) for c in range(min(n, ncols))}
 
 
-def _grid(rows, ncols, panel_w, panel_h, pad_w, pad_h):
+def _grid(rows, ncols, panel_w, panel_h, pad_w, pad_h, hspace=0.45, wspace=0.30):
     """A figure sized so its panels land at `panel_w` x `panel_h` inches at 1:1.
-    Both figures are laid out for \\textwidth so the 6.5-7.5pt type is read at
-    the size it is set -- a single 5-column figure holding both blocks came out
-    11in wide, which \\textwidth would have shrunk to roughly 4pt."""
+    Both figures are laid out for \\textwidth so the 7-9.5pt type is read at the
+    size it is set -- a single 5-column figure holding both blocks came out 11in
+    wide, which \\textwidth would have shrunk to roughly 4pt.
+
+    `hspace` is a fraction of the panel height, so it has to come down as the
+    panels grow taller or the row gaps grow with them and eat the height the
+    facets were given."""
     nrows = -(-len(rows) // ncols)
     fig = plt.figure(figsize=(panel_w * ncols + pad_w, panel_h * nrows + pad_h))
-    gs = fig.add_gridspec(nrows, ncols, hspace=0.45, wspace=0.30)
+    gs = fig.add_gridspec(nrows, ncols, hspace=hspace, wspace=wspace)
     return fig, gs, nrows
 
 
 def build_levels(rows, loaded):
     """The paired prior/posterior levels, one facet per study x rated latent."""
-    fig, gs, nrows = _grid(rows, NCOLS_LEVELS, 1.55, 1.42, 0.80, 0.72)
+    fig, gs, nrows = _grid(
+        rows, NCOLS_LEVELS, 1.55, 1.52, 0.80, 0.72, hspace=0.28, wspace=0.24
+    )
     bottom = _bottom_of_column(len(rows), NCOLS_LEVELS)
     for i, (slug, dv, rating_col, eff) in enumerate(rows):
         cond_col, levels, colors = condition_spec(slug)
@@ -289,9 +316,9 @@ def build_levels(rows, loaded):
             colors,
             xticklabels=(i == bottom[c]),
         )
-        ax.set_title(facet_title(slug, dv, eff), fontsize=7.0, pad=3)
+        ax.set_title(facet_title(slug, dv, eff), fontsize=FACET_TITLE_FS, pad=3)
         if c == 0:
-            ax.set_ylabel("Rating", fontsize=7.5)
+            ax.set_ylabel("Rating", fontsize=AXIS_LABEL_FS)
     for j in range(len(rows), nrows * NCOLS_LEVELS):
         fig.add_subplot(gs[j // NCOLS_LEVELS, j % NCOLS_LEVELS]).set_axis_off()
 
@@ -336,17 +363,17 @@ def build_legend():
 
 def build_distributions(rows, loaded):
     """The raw rating distributions by stage, on the same facet set."""
-    fig, gs, nrows = _grid(rows, NCOLS_DIST, 1.52, 1.24, 0.80, 1.10)
+    fig, gs, nrows = _grid(rows, NCOLS_DIST, 1.52, 1.75, 0.80, 1.10)
     bottom = _bottom_of_column(len(rows), NCOLS_DIST)
     for i, (slug, dv, rating_col, eff) in enumerate(rows):
         r, c = divmod(i, NCOLS_DIST)
         ax = fig.add_subplot(gs[r, c])
         draw_distribution(ax, facet_rows(loaded[slug], eff), rating_col)
-        ax.set_title(facet_title(slug, dv, eff), fontsize=7.0, pad=3)
+        ax.set_title(facet_title(slug, dv, eff), fontsize=FACET_TITLE_FS, pad=3)
         if c == 0:
-            ax.set_ylabel("% of ratings", fontsize=7.5)
+            ax.set_ylabel("% of ratings", fontsize=AXIS_LABEL_FS)
         if i == bottom[c]:
-            ax.set_xlabel("Rating", fontsize=7.5)
+            ax.set_xlabel("Rating", fontsize=AXIS_LABEL_FS)
     for j in range(len(rows), nrows * NCOLS_DIST):
         fig.add_subplot(gs[j // NCOLS_DIST, j % NCOLS_DIST]).set_axis_off()
 
@@ -358,7 +385,7 @@ def build_distributions(rows, loaded):
         loc="lower center",
         ncol=2,
         frameon=False,
-        fontsize=7.5,
+        fontsize=AXIS_LABEL_FS,
         handletextpad=0.5,
         columnspacing=1.8,
         borderaxespad=0.3,

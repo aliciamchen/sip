@@ -37,16 +37,28 @@ import _data as data  # noqa: E402
 import _points as points  # noqa: E402
 
 NCOLS = 4
-# Denser than the averaged panels: 16 facets of three action slots each, so the
-# markers and CI stems come down to keep a facet legible.
+# Sized against what the main text's panels print at -- ~5.3pt markers on a
+# 1.55 x 1.76in panel, once `figure_paper_panels.py`'s artboard is scaled into
+# the column -- rather than against SI density for its own sake. Sixteen facets
+# of three action slots each used to be the reason to shrink everything, but the
+# figure is a full-page [p] float carrying a one-line caption, so it was giving
+# up around 2in of page height to stay wide-and-short. Spending part of that
+# height on the facets squares them up and pays for markers and type at the
+# sizes the results panels are read at. Only part: a facet holds three action
+# slots of dodged points inside roughly half its y range, so past about square
+# the extra height goes to empty margin rather than to separating anything.
 STYLE = replace(
     points.PAPER,
-    markersize=4.3,
+    markersize=6.0,
     panel_w=1.5,
-    panel_h=1.15,
-    xtick_fs=6.5,
-    errbar=dict(elinewidth=1.0, capsize=0, zorder=2),
+    panel_h=1.45,
+    xtick_fs=7.2,
+    tick_fs=8.0,
+    errbar=dict(elinewidth=1.4, capsize=0, zorder=2),
 )
+#: Facet (scenario name) and figure-level axis label sizes, at the same scale.
+FACET_TITLE_FS = 9.0
+AXIS_LABEL_FS = 10.0
 
 
 def build_scenario_cells(slug):
@@ -120,12 +132,12 @@ def build_study(slug, stem):
             lim,
             xticklabels=(i // NCOLS == nrows - 1),
         )
-        ax.set_title(scenario, fontsize=7.5, pad=2.5)
+        ax.set_title(scenario, fontsize=FACET_TITLE_FS, pad=2.5)
     for j in range(len(scenarios), nrows * NCOLS):
         axes[j // NCOLS][j % NCOLS].set_axis_off()
 
-    fig.supylabel(points.ylabel_for(slug), fontsize=9)
-    fig.supxlabel(points.X_AXIS_LABEL, fontsize=9)
+    fig.supylabel(points.ylabel_for(slug), fontsize=AXIS_LABEL_FS)
+    fig.supxlabel(points.X_AXIS_LABEL, fontsize=AXIS_LABEL_FS)
     out = savefig(fig, f"si_scenarios_{stem}")
     print(f"wrote {out}")
     return True
