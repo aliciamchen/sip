@@ -165,6 +165,12 @@
       "frac_explainable": 0.4358946471634877,
       "focal_var": 0.0027717464462711974,
       "focal_frac_of_total": 0.022639726253953874,
+      "action_var": 0.04377326150297457,
+      "action_frac_of_total": 0.3575415994501531,
+      "action_frac_of_explainable": 0.8202477405418854,
+      "manipulated_var": 0.04654500794924577,
+      "manipulated_frac_of_total": 0.380181325704107,
+      "manipulated_frac_of_explainable": 0.872186268351938,
       "focal_frac_of_explainable": 0.05193852781005261,
       "focal_scenario_consistent_var": 0.0024144459472149092,
       "focal_scenario_specific_var": 0.0003573004990562881,
@@ -184,6 +190,10 @@
         0.0,
         0.42116990738881244
       ],
+      "manipulated_frac_of_total_ci_95": [
+        0.3425539123360106,
+        0.41201169598798393
+      ],
       "n_boot": 1000
     },
     {
@@ -196,6 +206,12 @@
       "frac_explainable": 0.26984631268616716,
       "focal_var": 0.0,
       "focal_frac_of_total": 0.0,
+      "action_var": 0.041500374755909945,
+      "action_frac_of_total": 0.23808849966170315,
+      "action_frac_of_explainable": 0.8823114805300358,
+      "manipulated_var": 0.041500374755909945,
+      "manipulated_frac_of_total": 0.23808849966170315,
+      "manipulated_frac_of_explainable": 0.8823114805300358,
       "focal_frac_of_explainable": 0.0,
       "focal_scenario_consistent_var": 0.0,
       "focal_scenario_specific_var": 0.0,
@@ -214,6 +230,10 @@
       "focal_frac_scenario_specific_ci_95": [
         0.0,
         1.0
+      ],
+      "manipulated_frac_of_total_ci_95": [
+        0.2111856497816379,
+        0.265796294493904
       ],
       "n_boot": 1000
     }

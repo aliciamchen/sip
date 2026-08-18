@@ -114,6 +114,12 @@
       "frac_explainable": 0.3713238330073664,
       "focal_var": 0.0007901003063827444,
       "focal_frac_of_total": 0.008122929239237785,
+      "action_var": 0.03372562316065749,
+      "action_frac_of_total": 0.34672920421639614,
+      "action_frac_of_explainable": 0.9337650142416732,
+      "manipulated_var": 0.03417231847947068,
+      "manipulated_frac_of_total": 0.35132162676946443,
+      "manipulated_frac_of_explainable": 0.9461327163519151,
       "focal_frac_of_explainable": 0.021875593530988464,
       "focal_scenario_consistent_var": 0.0004631559684870803,
       "focal_scenario_specific_var": 0.00032694433789566416,
@@ -132,6 +138,10 @@
       "focal_frac_scenario_specific_ci_95": [
         0.0,
         0.8132207585386952
+      ],
+      "manipulated_frac_of_total_ci_95": [
+        0.32427699773323027,
+        0.37376979116547693
       ],
       "n_boot": 1000
     }

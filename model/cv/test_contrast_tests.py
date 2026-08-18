@@ -187,6 +187,78 @@ def test_variance_decomposition_recovers_a_noiseless_design():
     print("✓ variance decomposition is exact on a noiseless design")
 
 
+def test_action_component_recovers_a_noiseless_design():
+    """The action share the SI table reports beside the condition share, on data
+    where both true components are known by construction."""
+    slope, act = 0.05, 0.20
+    data, z = _synth(focal_slope=slope, action_effect=act, within_sd=0.0)
+    got = variance_decomposition(data, STUDY_1B, "u", "desire")
+    a = np.arange(3, dtype=float)
+    true_action = (act**2) * float(((a - a.mean()) ** 2).mean())
+    assert abs(got["action_var"] - true_action) < 1e-12, (
+        got["action_var"],
+        true_action,
+    )
+    print("✓ the action component is exact on a noiseless design")
+
+
+def test_action_component_correction_is_two_sided():
+    """A TRUE action effect that is nonzero, so the estimate is not sitting on
+    the `max(..., 0)` floor and an OVER-correction is visible.
+
+    The zero-effect version of this test cannot see over-correction: every draw
+    clips to 0 and passes. Here the target is interior, so a correction that is
+    too large fails just as loudly as one that is too small.
+    """
+    act, sd_w = 0.20, 0.25
+    a = np.arange(3, dtype=float)
+    true_action = (act**2) * float(((a - a.mean()) ** 2).mean())
+    est = [
+        variance_decomposition(
+            _synth(focal_slope=0.05, action_effect=act, within_sd=sd_w, seed=s)[0],
+            STUDY_1B,
+            "u",
+            "desire",
+        )["action_var"]
+        for s in range(40)
+    ]
+    mean = float(np.mean(est))
+    assert abs(mean - true_action) < 0.02 * true_action, (mean, true_action)
+    print("✓ the action component's correction is unbiased from both sides")
+
+
+def test_joint_component_equals_the_sum_when_effects_are_additive():
+    """`_synth` builds an additive design -- no action x condition interaction --
+    so the joint component must equal the two parts summed, with no overlap."""
+    slope, act = 0.05, 0.20
+    data, z = _synth(focal_slope=slope, action_effect=act, within_sd=0.0)
+    got = variance_decomposition(data, STUDY_1B, "u", "desire")
+    assert abs(
+        got["manipulated_var"] - (got["action_var"] + got["focal_var"])
+    ) < 1e-12, (got["manipulated_var"], got["action_var"], got["focal_var"])
+    print("✓ the joint component is the sum of its parts on an additive design")
+
+
+def test_joint_component_stays_coherent_with_its_parts_under_noise():
+    """The invariant the SI table depends on: action + condition together can
+    never explain less than either alone, nor more than both summed.
+
+    Unconstrained this fails on real data -- Study 3a's physical DV, whose
+    condition component corrects to exactly zero, had the joint land below the
+    action component. Checked here across seeds AND on a near-null condition
+    effect, which is the regime that breaks it.
+    """
+    for slope in (0.0, 0.05):
+        for seed in range(15):
+            data, _ = _synth(
+                focal_slope=slope, action_effect=0.2, within_sd=0.25, seed=seed
+            )
+            g = variance_decomposition(data, STUDY_1B, "u", "desire")
+            a, c, j = g["action_var"], g["focal_var"], g["manipulated_var"]
+            assert max(a, c) - 1e-12 <= j <= a + c + 1e-12, (slope, seed, a, c, j)
+    print("✓ the joint component stays between the larger part and the sum")
+
+
 def test_second_given_condition_does_not_change_the_focal_component():
     """The 1a shape. Crossing in an inert second given condition adds cells but no
     signal, so the focal component must come out the same as the 1b shape."""

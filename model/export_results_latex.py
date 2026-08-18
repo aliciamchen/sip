@@ -661,6 +661,7 @@ def build(all_studies):
 
     # --- SI cross-experiment generalization (exploratory; skipped if unrun) ---
     focal_fracs = []
+    manip_fracs, action_fracs, within_fracs = [], [], []
     ceil_fracs = {}
     for study in all_studies:
         comparison, _full_fit, _primary, _deviation = loaded[study.slug]
@@ -674,13 +675,39 @@ def build(all_studies):
         # including it would widen the quoted range without adding a claim.
         primary_dv = study.dvs[0].name
         for d in comparison.get("variance_decomposition", []):
+            if "manipulated_frac_of_total" not in d:
+                raise RuntimeError(
+                    f"{study.slug}: cv_model_comparison.json predates the "
+                    f"action/manipulated variance components. Re-run "
+                    f"`make model-comparison` before `make results-latex`."
+                )
             if d["dv"] == primary_dv:
                 focal_fracs.append(d["focal_frac_of_total"])
+                manip_fracs.append(d["manipulated_frac_of_total"])
+                action_fracs.append(d["action_frac_of_total"])
+                within_fracs.append(1.0 - d["frac_explainable"])
     if focal_fracs:
         m.add(
             "modFracRange",
             _fmt_range(100 * min(focal_fracs), 100 * max(focal_fracs), dp=1) + r"\%",
-            "focal effect, share of trial-level variance, primary latent",
+            "manipulated condition alone, share of trial variance, primary latent",
+        )
+        # The three the Methods paragraph quotes: what no model can predict, what
+        # the design accounts for, and how much of that is the observed action.
+        m.add(
+            "withinFracRange",
+            _fmt_range(100 * min(within_fracs), 100 * max(within_fracs)) + r"\%",
+            "within-cell participant variance, share of trial variance",
+        )
+        m.add(
+            "manipFracRange",
+            _fmt_range(100 * min(manip_fracs), 100 * max(manip_fracs)) + r"\%",
+            "action + condition jointly, share of trial variance",
+        )
+        m.add(
+            "actionFracRange",
+            _fmt_range(100 * min(action_fracs), 100 * max(action_fracs)) + r"\%",
+            "observed action, share of trial variance",
         )
     # Min--max over the studies reporting each DV, so the SI's "the full model
     # reaches X--Y of the ceiling on desire" cannot invert when a refit moves
@@ -767,14 +794,14 @@ def _generalization_primary_macros(m, gen):
 
 
 def generalization_primary_table(gen):
-    """tab:generalization-primary (SI): each generalization arm on the two
-    measures the paper made primary, beside the held-out likelihoods in
+    """tab:generalization-primary (SI): each shared-utility fit on the
+    condition-averaged correlation, beside the held-out likelihoods in
     tab:generalization.
 
-    Both measures are here because they can disagree, and the disagreement is
-    the point: the correlation describes the whole predicted response while the
-    recovered gradient describes only the modulation, which is 1-3% of trial
-    variance. An arm can lose a little of the first and gain on the second.
+    The recovered-gradient columns were dropped from this table; the gradient
+    comparison lives in tab:gradients, which is where the model variants are
+    compared on it. `generalization_primary.json` still carries
+    `grad_median_recovered` for anyone reading the numbers directly.
     """
     by_exp = {}
     for row in gen["per_experiment"]:
@@ -785,22 +812,15 @@ def generalization_primary_table(gen):
         cells = [
             _fmt(rows[a]["r"], DP_R) if a in rows else r"\textit{n/a}" for a in arms
         ]
-        grads = [
-            rf"\ensuremath{{{100 * rows[a]['grad_median_recovered']:.0f}\%}}"
-            if a in rows and rows[a]["grad_median_recovered"] is not None
-            else r"\textit{n/a}"
-            for a in arms
-        ]
-        lines.append(f"{experiment} & " + " & ".join([*cells, *grads]) + r" \\")
+        lines.append(f"{experiment} & " + " & ".join(cells) + r" \\")
     header = (
-        r" & \multicolumn{3}{c}{Correlation $r$} & "
-        r"\multicolumn{3}{c}{Modulation recovered} \\"
+        r" & \multicolumn{3}{c}{Correlation $r$} \\"
         "\n"
-        r"\cmidrule(lr){2-4}\cmidrule(lr){5-7}"
+        r"\cmidrule(lr){2-4}"
         "\n"
-        r"Experiment & Own & Food & All six & Own & Food & All six \\"
+        r"Experiment & Own & Food & All six \\"
     )
-    return _tabular("lcccccc", header, "\n".join(lines))
+    return _tabular("lccc", header, "\n".join(lines))
 
 
 def _set_diagnostics_macros(m, all_studies):
@@ -1089,17 +1109,17 @@ def variance_table(all_studies, loaded):
     for study in all_studies:
         comparison = loaded[study.slug][0]
         for d in comparison.get("variance_decomposition", []):
-            lo, hi = d["focal_frac_of_total_ci_95"]
+            lo, hi = d["manipulated_frac_of_total_ci_95"]
             lines.append(
                 rf"{study.short_label} & {_PAPER_TARGET[d['dv']]} & "
                 rf"{100 * d['frac_explainable']:.0f}\% & "
-                rf"{100 * d['focal_frac_of_total']:.1f}\% & "
-                rf"\ensuremath{{[{100 * lo:.1f},\ {100 * hi:.1f}]}}\% & "
-                rf"{100 * d['focal_frac_of_explainable']:.0f}\% \\"
+                rf"{100 * d['manipulated_frac_of_total']:.0f}\% & "
+                rf"\ensuremath{{[{100 * lo:.0f},\ {100 * hi:.0f}]}}\% & "
+                rf"{100 * d['manipulated_frac_of_explainable']:.0f}\% \\"
             )
     header = (
-        r"Study & Inferred & Explainable & Focal & 95\% CI & "
-        r"Focal / explainable \\"
+        r"Study & Inferred & Explainable & Manipulated & 95\% CI & "
+        r"Manipulated / explainable \\"
     )
     return _tabular("llrrcr", header, "\n".join(lines))
 

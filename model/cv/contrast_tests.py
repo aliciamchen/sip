@@ -188,6 +188,101 @@ def _decompose(wide, rel_noise, n_scen, resid_of_row):
     return ms_rel, ms_spec, ms_rel - ms_spec
 
 
+def _coherent_joint(ms_joint, *parts):
+    """Clamp a joint component into [max(part), sum(parts)].
+
+    The joint estimate is corrected independently of its parts and over a
+    different number of levels, so nothing makes the three agree: the joint axis
+    has L_a * L_f levels and subtracts (1 - 1/(L_a*L_f)) of the mean cell-sampling
+    variance where the action axis subtracts (1 - 1/L_a), a larger correction on
+    the joint. When one part's true effect is near zero that difference can push
+    the joint BELOW the other part -- measured here on Study 3a's physical DV,
+    whose condition component corrects to exactly zero -- which would publish
+    "action and condition together explain less than action alone". In the other
+    direction an unconstrained joint can exceed the sum of its parts, implying a
+    negative overlap, which a sum of squares cannot have.
+
+    Both bounds hold for the true quantities, so imposing them is a statement
+    about the estimator, not about the data. This is the same coherence repair
+    `_decompose` applies to the scenario-consistent / scenario-specific split.
+    """
+    lo, hi = max(parts), sum(parts)
+    return float(np.clip(ms_joint, lo, hi))
+
+
+def _own_component(cells, cell_mean, counts, sig2_w, keys, factors, return_layout=False):
+    """The variance component of one factor, or of several taken together: the
+    mean square of each cell mean's deviation from the average over those
+    factors' levels, everything else held fixed, less the sampling variance that
+    deviation carries.
+
+    Passing several factors gives their JOINT component -- every term involving
+    any of them, counted once -- which is what the SI table's manipulated-variable
+    share reports. It is strictly less than the sum of the separate components,
+    because the interaction between them belongs to both.
+
+    This is the same construction the focal component uses, factored out so that
+    the action share and the condition share the SI table reports side by side
+    are defined identically rather than by two similar-looking formulas. Note
+    that a factor's component includes its interactions with everything else, so
+    two components overlap on their interaction term and do not sum to the
+    between-cell variance -- see `variance_decomposition`'s docstring.
+    """
+    if isinstance(factors, str):
+        factors = [factors]
+    if len(factors) > 1:
+        cells = cells.copy()
+    if len(factors) == 1:
+        joint, levels = factors[0], sorted(cells[factors[0]].unique())
+    else:
+        # One synthetic axis whose levels are the observed combinations, so the
+        # single-factor construction below applies unchanged.
+        joint = "__joint__"
+        cells[joint] = list(zip(*(cells[f] for f in factors)))
+        levels = sorted(cells[joint].unique())
+    n_lev = len(levels)
+    if n_lev < 2:
+        return (float("nan"), None) if return_layout else float("nan")
+    # Indexed here rather than via `_cell_layout`: that helper also derives the
+    # scenario-consistent split, which this does not need and which is undefined
+    # when the removed factors leave scenario as the only grouping key.
+    group_keys = [k for k in keys if k not in factors]
+    grp = pd.MultiIndex.from_frame(cells[group_keys])
+    groups = grp.unique()
+    row = groups.get_indexer(grp)
+    col = cells[joint].map({lv: i for i, lv in enumerate(levels)}).to_numpy()
+    n_groups = len(groups)
+    if len(cells) != n_groups * n_lev:
+        raise RuntimeError(
+            f"the {factors} grid is ragged ({len(cells)} cells for {n_groups} "
+            f"groups x {n_lev} levels); the decomposition assumes every group "
+            f"has every level."
+        )
+    layout = (row, col, n_groups, n_lev)
+    ms = _ms_from_layout(layout, cell_mean, sig2_w / counts)
+    return (ms, layout) if return_layout else ms
+
+
+def _ms_from_layout(layout, cell_mean, cell_noise):
+    """The corrected mean square for one layout: deviations of the cell means
+    from their average over that layout's axis, less the sampling variance a
+    deviation carries.
+
+    The single definition of the quantity. The point estimate reaches it through
+    `_own_component` with the observed `sigma_w^2 / n`; the participant bootstrap
+    calls it directly with that draw's per-cell sampling variance, so the CI and
+    the estimate it brackets cannot drift apart.
+    """
+    row, col, n_groups, n_lev = layout
+    wide = np.full((n_groups, n_lev), np.nan)
+    wide[row, col] = cell_mean
+    noise_wide = np.full((n_groups, n_lev), np.nan)
+    noise_wide[row, col] = cell_noise
+    rel = wide - wide.mean(axis=1, keepdims=True)
+    noise = float(np.nanmean(noise_wide) * (1.0 - 1.0 / n_lev))
+    return max(float((rel**2).mean()) - noise, 0.0)
+
+
 def _cell_layout(cells, group_keys, focal, levels):
     """Map each cell row to its (group row, focal column) slot in the wide matrix,
     plus each group row's residual-key id (everything but scenario)."""
@@ -211,6 +306,16 @@ def variance_decomposition(data, study, update_col, dv_name, *, n_boot=0, rng=No
     so each is corrected by the sampling variance of the quantity it is computed
     from. Uncorrected, a design with ~20 observations per cell reports a focal
     effect roughly twice its true size.
+
+    The observed action's component is reported alongside, by the same
+    construction, because the action is also a manipulation and is the largest
+    explainable effect in every study. A factor's component includes that
+    factor's interactions with everything else, so the action and focal
+    components overlap on the action x focal term and are not additive; each
+    answers "how much of the variance exists because this factor was
+    manipulated", which is what the table quotes. The joint component is
+    constrained to lie between the larger part and the sum of the parts -- see
+    `_coherent_joint` for why the raw estimates need not.
 
     With `n_boot > 0` the shares also carry participant-bootstrap intervals --
     the paper quotes these numbers against each other across studies, and a
@@ -269,6 +374,22 @@ def variance_decomposition(data, study, update_col, dv_name, *, n_boot=0, rng=No
     rel_noise = float((sig2_w / cnt_wide).mean() * (1.0 - 1.0 / n_lev))
     ms_rel, ms_spec, ms_cons = _decompose(wide, rel_noise, n_scen, resid_of_row)
 
+    # The observed action's component, by the same construction. Reported beside
+    # the focal one because the action is also a manipulation, and in every study
+    # it is by far the largest explainable effect -- which is the reason a global
+    # fit index cannot resolve the focal contrast, and so belongs in the table
+    # that makes that argument rather than only in the prose.
+    ms_action, action_layout = _own_component(
+        cells, cell_mean, counts, sig2_w, keys, "action", return_layout=True
+    )
+    # The manipulated variables taken together: every term involving the observed
+    # action or the focal condition, counted once. Their interaction belongs to
+    # both, so this is less than ms_action + ms_rel.
+    ms_manip, manip_layout = _own_component(
+        cells, cell_mean, counts, sig2_w, keys, ["action", focal], return_layout=True
+    )
+    ms_manip = _coherent_joint(ms_manip, ms_action, ms_rel)
+
     out = {
         "dv": dv_name,
         "focal_condition": focal,
@@ -279,6 +400,23 @@ def variance_decomposition(data, study, update_col, dv_name, *, n_boot=0, rng=No
         "frac_explainable": var_between / total if total > 0 else float("nan"),
         "focal_var": ms_rel,
         "focal_frac_of_total": ms_rel / total if total > 0 else float("nan"),
+        "action_var": ms_action,
+        "action_frac_of_total": ms_action / total if total > 0 else float("nan"),
+        "action_frac_of_explainable": (
+            ms_action / var_between if var_between > 0 else float("nan")
+        ),
+        "manipulated_var": ms_manip,
+        "manipulated_frac_of_total": ms_manip / total if total > 0 else float("nan"),
+        # Like `focal_frac_of_explainable` above, a ratio of two independently
+        # corrected estimates over different cell subsets, so nothing bounds it
+        # at 1. Unlike that one it sits at 0.88-0.97, so a refit or a noisier
+        # study could print a value above 100% of the explainable variance in the
+        # SI table. Left unclipped deliberately -- a value above 1 is a real
+        # disagreement between the two corrections and should be visible -- but
+        # it is the number to sanity-check after any refit.
+        "manipulated_frac_of_explainable": (
+            ms_manip / var_between if var_between > 0 else float("nan")
+        ),
         # Ratio of two independently corrected estimates over two different cell
         # subsets, so nothing constrains it to <= 1; it is reported unclipped so
         # that a value above 1 shows up as the disagreement it is rather than
@@ -318,6 +456,8 @@ def variance_decomposition(data, study, update_col, dv_name, *, n_boot=0, rng=No
                 rel_noise,
                 n_boot,
                 rng,
+                action_layout,
+                manip_layout,
             )
         )
     return out
@@ -338,6 +478,8 @@ def _decomposition_ci(
     rel_noise,  # unused by the bootstrap: recomputed per draw from multiplicities
     n_boot,
     rng,
+    action_layout,
+    manip_layout,
 ):
     """Participant-bootstrap intervals on the decomposition's reported shares.
 
@@ -360,7 +502,7 @@ def _decomposition_ci(
     S, C = _subject_cell_matrices(data, keys, update_col, cells)
     n_subj = S.shape[0]
     idx = rng.integers(0, n_subj, size=(n_boot, n_subj))
-    fracs, spec_fracs = [], []
+    fracs, spec_fracs, manip_fracs = [], [], []
     for i in idx:
         w = np.bincount(i, minlength=n_subj).astype(float)
         num, den = w @ S, w @ C
@@ -380,6 +522,12 @@ def _decomposition_ci(
             fracs.append(ms_rel_b / total_b)
         if ms_rel_b > 0:
             spec_fracs.append(ms_spec_b / ms_rel_b)
+        ms_action_b = _ms_from_layout(action_layout, cm, cell_noise_b)
+        ms_manip_b = _coherent_joint(
+            _ms_from_layout(manip_layout, cm, cell_noise_b), ms_action_b, ms_rel_b
+        )
+        if total_b > 0:
+            manip_fracs.append(ms_manip_b / total_b)
 
     def ci(v):
         return (
@@ -391,6 +539,7 @@ def _decomposition_ci(
     return {
         "focal_frac_of_total_ci_95": ci(fracs),
         "focal_frac_scenario_specific_ci_95": ci(spec_fracs),
+        "manipulated_frac_of_total_ci_95": ci(manip_fracs),
         "n_boot": int(n_boot),
     }
 

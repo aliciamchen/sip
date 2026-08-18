@@ -747,6 +747,15 @@ def run_study(slug, n_boot, seed):
             f"CI {fmt_ci(row.get('focal_frac_of_total_ci_95'))}, "
             f"{row['focal_frac_scenario_specific']:.0%} of it scenario-specific"
         )
+        # The action and joint components too: the joint one is what the SI
+        # table prints, so it has to be visible in the run log like every other
+        # reported statistic rather than only in the JSON.
+        print(
+            f"    action is {row['action_frac_of_total']:.1%} of trial variance; "
+            f"action+condition {row['manipulated_frac_of_total']:.1%} "
+            f"({row['manipulated_frac_of_explainable']:.0%} of explainable) "
+            f"CI {fmt_ci(row.get('manipulated_frac_of_total_ci_95'))}"
+        )
     for row in result["condition_gradients"]:
         lo, hi = row["human_ci_95"]
         rec = row["recovered_fraction"]
