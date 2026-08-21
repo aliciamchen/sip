@@ -15,9 +15,9 @@ and neither has seen the cell it predicts. Within a panel the encoding is the
 results figures' (`_points.py`): x is the observed action, marker shape is the
 inferred latent, color is the given relationship/desire condition, and where the
 world state is given rather than inferred (Studies 1a and 2a) each action splits
-into its two states joined by a line. Error bars appear on the human column only
--- the model columns are point predictions -- and the two states are named in the
-caption rather than on six rows of ticks.
+into its two states joined by a line. All four of those are named in the legend
+band under the figure, which unions the six studies' encodings; error bars appear
+on the human column only, since the model columns are point predictions.
 
 Reads the reported CV outputs and the `alt/uniform-noreweight/` ones, which
 `bin/prereg-eta0.sh` produces. Studies missing either side are skipped with a
@@ -64,11 +64,12 @@ COLUMNS = [
 # on a 1.55 x 1.76in panel -- rather than against SI density for its own sake.
 # Markers and type go up to (past, for the markers) the printed sizes the results
 # figures are read at. The panel aspect is the one thing that cannot follow: six
-# stacked rows plus a caption carrying the whole encoding (these SI grids draw no
-# legend) already overfills the 9in text height of a [p] float, so a panel has no
-# height to buy and narrowing the figure is the only lever left on how horizontal
-# one looks. That trade is what the width above is: the panel goes from
-# 1.52 x 1.00in to 1.32 x 0.98in, and the width it gives up pays for the type.
+# stacked rows plus the legend band already overfill the 9in text height of a [p]
+# float, so a panel has no height to buy and narrowing the figure is the only
+# lever left on how horizontal one looks. That trade is what the width above is:
+# the panel goes from 1.52 x 1.00in to 1.32 x 0.98in, and the width it gives up
+# pays for the type. The band is what pays for itself: naming the encoding on the
+# figure took five lines of caption off the float.
 STYLE = replace(
     points.PAPER,
     markersize=6.4,
@@ -86,6 +87,9 @@ STYLE = replace(
     split_linewidth=1.6,
     errbar=dict(elinewidth=1.5, capsize=0, zorder=2),
 )
+#: A step below the axis labels: the band is read once on the way in, where the
+#: axis labels are read against every row.
+LEGEND_FS = 8.5
 
 
 def _model_cells(slug, config_tag, name):
@@ -150,7 +154,7 @@ def draw_cell(ax, slug, key, human, model, lim, *, title, xticklabels):
         style_col=points.style_col(slug),
         xticklabels=xticklabels,
         # Six rows of "Easy Hard" would repeat the same two words up to twelve
-        # times; the caption names the states once instead.
+        # times; the legend band names the states once instead.
         state_labels=False,
     )
     if title:
@@ -215,6 +219,13 @@ def build(figname="si_prereg_predictions"):
         axes[r][0].set_ylabel(row_label(st), fontsize=STYLE.label_fs)
     fig.supxlabel(points.X_AXIS_LABEL, fontsize=STYLE.label_fs)
     fig.supylabel("Belief update", fontsize=STYLE.label_fs)
+    # Over the drawn rows, not the roster: a study whose CV outputs are missing
+    # is skipped above, and its palette has no business in the legend.
+    points.legend_band(
+        fig,
+        points.legend_groups_for([st.slug for st, _h, _m in rows], STYLE),
+        fontsize=LEGEND_FS,
+    )
     return savefig(fig, figname, png=False)
 
 

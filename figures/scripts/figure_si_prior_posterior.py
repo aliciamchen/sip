@@ -91,6 +91,10 @@ FACET_TICK_FS = 8.0
 #: sit one x unit apart, which is about 0.43in across a facet of this grid, so at
 #: the y ticks' size the two run into each other.
 FACET_XTICK_FS = 7.0
+#: The levels figure's legend band, a step below the facet titles: it is read
+#: once on the way in, where the titles are read against every facet.
+LEGEND_FS = 8.5
+STAGE_TITLE = "Rating"
 
 
 def condition_spec(slug):
@@ -323,6 +327,9 @@ def build_levels(rows, loaded):
         fig.add_subplot(gs[j // NCOLS_LEVELS, j % NCOLS_LEVELS]).set_axis_off()
 
     fig.subplots_adjust(bottom=0.075, top=0.955, left=0.075, right=0.99)
+    # `inside`, because this figure is saved untrimmed (`tight=False` in `main`)
+    # so a band hanging off the canvas would be cut at the page edge.
+    points.legend_band(fig, legend_groups(), fontsize=LEGEND_FS, inside=True)
     return fig
 
 
@@ -339,23 +346,43 @@ def stage_handles():
             markerfacecolor="white" if stage == "prior" else "0.35",
             markeredgecolor="0.35",
             markeredgewidth=1.1,
-            label=f"{stage.capitalize()} rating ({when} the action)",
+            label=f"{stage.capitalize()} ({when} the action)",
         )
         for stage, when in zip(STAGES, ("before", "after"))
     ]
 
 
+def legend_groups():
+    """The three encodings the levels facets use: the two given-condition
+    palettes, and the prior/posterior marker pair.
+
+    No group for the rated latent, though its shape varies across facets. Every
+    facet is titled with the latent it rates, so the shape says nothing the panel
+    does not; and here, unlike the results panels, marker FILL already means
+    something (`draw_levels`), so a solid swatch in a shape legend would read as
+    a posterior rating.
+    """
+    groups = []
+    for condition in ("intimacy_condition", "desire_condition"):
+        handles, title = points.condition_color_handles(condition, STYLE)
+        groups.append((handles, title, dict(handlelength=1.1, handletextpad=0.8)))
+    return [*groups, (stage_handles(), STAGE_TITLE, {})]
+
+
 def build_legend():
-    """The stage legend on its own tight-cropped artboard, placed by hand like
-    the results legends. Only the marker pair: the connector and the 0.5 rule are
-    explained in the caption, where they cost a clause rather than an artboard."""
+    """The stage legend on its own tight-cropped artboard, for placing by hand
+    beside a panel that is not this figure -- the levels grid carries its own
+    band. Only the marker pair: the connector and the 0.5 rule are explained in
+    the caption, where they cost a clause rather than an artboard."""
     fig = plt.figure(figsize=(0.1, 0.1))
     fig.legend(
         handles=stage_handles(),
+        title=STAGE_TITLE,
         loc="center",
         ncol=1,
         frameon=False,
         fontsize=STYLE.legend_fs,
+        title_fontsize=STYLE.legend_fs,
         handletextpad=0.5,
     )
     return fig

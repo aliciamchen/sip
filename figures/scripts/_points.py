@@ -23,10 +23,11 @@ Two styles remain. `PAPER` renders at `si` scale, for the SI figures that draw
 these panels (`figure_si_scenarios.py` and the prereg/prior-posterior set).
 `POSTER` is the larger-marker scale `figure_paper_panels.py` uses for the
 Illustrator components; the name is historical -- it came from the 2026-07
-poster, whose scripts were removed on 2026-08-02. Neither draws a legend: every
-figure here is assembled in Illustrator against the standalone artboards
-`figure_paper_panels.py` writes, from the handle builders at the foot of this
-module. Palettes stay in `plot_style.py`.
+poster, whose scripts were removed on 2026-08-02. Neither draws a legend into a
+panel: the handle builders at the foot of this module serve both consumers, the
+Illustrator components as standalone artboards (`figure_paper_panels.py`) and
+the SI grids as a band under the figure (`legend_band`). Palettes stay in
+`plot_style.py`.
 """
 
 import sys
@@ -566,3 +567,193 @@ def condition_color_handles(condition, style):
         for lvl in levels
     ]
     return handles, title
+
+
+#: Titles for the two encodings a study's panels share with the results figures.
+#: Held here rather than in a consumer because both the standalone artboards
+#: (`figure_paper_panels.py`) and the SI grids' own bands draw them.
+TARGET_TITLE = "Target of inference"
+GIVEN_STATE_TITLE = "Given physical state"
+#: Canonical order for the inferred-target entries: the two continuous latents,
+#: then the two-state world state. Fixed here rather than taken from whatever
+#: order a study's `dvs` happen to be in, so every legend that spans more than
+#: one study lists the shapes the same way.
+TARGET_ORDER = ["desire", "intimacy", "effort"]
+
+
+def state_handles(style):
+    """Legend entry for the given world state of 1a and 2a.
+
+    Those studies show the state by splitting each action into two sub-groups
+    joined by a connector, never by styling the markers (see `iter_cells`), so
+    what the legend has to name is the split itself rather than a swatch. The
+    handle is drawn as the panels draw one pair -- two markers joined by the
+    connector -- and the label says which side is which, since position is the
+    encoding. Neutral gray for the same reason `target_handles` is: in the
+    panels the connector takes its condition's color.
+    """
+    return [
+        Line2D(
+            [],
+            [],
+            linestyle="-",
+            color="0.35",
+            linewidth=style.split_linewidth,
+            solid_capstyle="round",
+            marker="o",
+            markersize=style.markersize * LEGEND_MARKER_SCALE,
+            label=(
+                f"{panels.EFFORT_LABELS['low']} (left), "
+                f"{panels.EFFORT_LABELS['high']} (right)"
+            ),
+            **marker_fill("0.35", style),
+        )
+    ]
+
+
+def legend_groups(slug, style):
+    """`legend_groups_for` for a single study."""
+    return legend_groups_for([slug], style)
+
+
+def legend_groups_for(slugs, style):
+    """(handles, title, legend kwargs) per encoding the panels of `slugs` use,
+    in the order they should be read: the given conditions' colors, the inferred
+    latents' shapes, and the split that carries a given world state.
+
+    A union, so one figure spanning several studies gets one legend covering all
+    of them rather than a stack of per-study ones. The shape group is dropped
+    where the whole set infers a single latent (a figure of 1a alone, say): its
+    name is already in the y axis label there (`ylabel_for`), so the group would
+    be a one-entry legend naming the only shape on the figure, and it invites the
+    reader to look for a second one.
+    """
+    groups = []
+    for condition in CONDITION_COLOR_AXES:  # relationship, then desire
+        if any(color_axis(slug) == condition for slug in slugs):
+            handles, title = condition_color_handles(condition, style)
+            # A bar swatch fills its whole handle box where a marker sits
+            # centered in one, so it needs a shorter handle and a wider text pad
+            # than the marker groups to keep the swatch off its label.
+            groups.append((handles, title, dict(handlelength=1.1, handletextpad=0.8)))
+    names = {dv.name for slug in slugs for dv in study(slug).dvs}
+    if len(names) > 1:
+        ordered = [n for n in TARGET_ORDER if n in names]
+        if len(ordered) != len(names):
+            raise ValueError(
+                f"inferred target(s) {sorted(names - set(TARGET_ORDER))} are "
+                "missing from TARGET_ORDER, so the legend would drop them"
+            )
+        groups.append((target_handles(ordered, style), TARGET_TITLE, {}))
+    if any(style_col(slug) for slug in slugs):
+        # numpoints=2 is what puts a marker at each end of the connector, so
+        # the handle shows a pair rather than one point on a line.
+        groups.append(
+            (
+                state_handles(style),
+                GIVEN_STATE_TITLE,
+                dict(numpoints=2, handlelength=3.2),
+            )
+        )
+    return groups
+
+
+def legend_band(
+    fig, groups, *, fontsize, pad_in=0.12, gap_in=0.45, row_gap_in=0.10, inside=False
+):
+    """Draw `groups` as a row of columns in a band under the figure.
+
+    Each group is one COLUMN of entries under its title, and the groups sit side
+    by side, top-aligned and centered as a set. One entry per line because the
+    relationship palette is an ordered ramp: a row, or a multi-column block,
+    breaks that order for a reader whose eye goes down a list. Side by side
+    because the groups are independent encodings -- stacking them reads as one
+    long list that happens to have headings in it. Groups that would run past
+    the figure's own width wrap onto another line, so a figure spanning every
+    study can carry all four groups without being widened for them.
+
+    By default the band hangs BELOW the drawn canvas, anchored to whatever the
+    figure's content already reaches down to (the x axis label), and `savefig`'s
+    tight crop grows the saved page to hold it. Reserving space inside the canvas
+    instead would mean taking it off the panels, which are sized against what
+    they print at.
+
+    `inside=True` is for a figure saved with `tight=False`, where the canvas IS
+    the page and anything hanging off it is simply cut: the canvas grows by the
+    band's height and every axes shifts up by the same amount, so the panels keep
+    their inch geometry and the band lands in the space that opens under them.
+    The axes are repositioned directly, so this cannot be used on a figure whose
+    layout engine will run again at draw time (constrained or tight layout).
+    """
+    fig.canvas.draw()  # tight bbox and window extents both need a renderer
+    w_in, h_in = fig.get_size_inches()
+    # What the figure's own artists reach, in inches from its lower left. The
+    # band hangs off that rather than off the canvas edge, so the gap under the
+    # x axis label is the one set here whatever slack the layout left below it.
+    content = fig.get_tightbbox()
+    legends = [
+        fig.legend(
+            handles=handles,
+            title=title,
+            ncol=1,
+            loc="upper left",
+            bbox_to_anchor=(0.0, 0.0),
+            frameon=False,
+            fontsize=fontsize,
+            title_fontsize=fontsize,
+            **{"handletextpad": 0.5, **kw},
+        )
+        for handles, title, kw in groups
+    ]
+    fig.canvas.draw()
+    boxes = [
+        leg.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        for leg in legends
+    ]
+    rows = [[]]
+    for entry in zip(legends, boxes):
+        row = rows[-1] + [entry]
+        if rows[-1] and _span(row, gap_in) > content.width:
+            rows.append([entry])
+        else:
+            rows[-1] = row
+
+    top_in = content.y0 - pad_in
+    if inside:
+        # Grow by exactly what the band needs, then slide every axes up by the
+        # same distance. The band then sits below the content with `pad_in` above
+        # it and the figure's own bottom margin (`content.y0`) below it, so the
+        # page keeps the margins it was laid out with.
+        band_in = sum(max(b.height for _l, b in row) for row in rows)
+        band_in += row_gap_in * (len(rows) - 1) + pad_in
+        fig.set_size_inches(w_in, h_in + band_in)
+        scale, offset = h_in / (h_in + band_in), band_in / (h_in + band_in)
+        for ax in fig.axes:
+            pos = ax.get_position()
+            ax.set_position(
+                [pos.x0, pos.y0 * scale + offset, pos.width, pos.height * scale]
+            )
+        h_in += band_in
+        top_in += band_in
+    for row in rows:
+        # Centered on the content rather than the canvas: the tight crop that
+        # makes room for the band also trims the right margin, which has no
+        # counterpart for the y axis label on the left, so a canvas-centered row
+        # would come out sitting left of the panels it describes.
+        x_in = (content.x0 + content.x1 - _span(row, gap_in)) / 2
+        for leg, box in row:
+            # Explicitly against transFigure: the default anchor transform binds
+            # to `fig.bbox`, which `savefig(bbox_inches="tight")` REPLACES when
+            # it grows the page, leaving anything anchored to it drawn off the
+            # new canvas. transFigure is mutated in place by the same code, so it
+            # survives.
+            leg.set_bbox_to_anchor(
+                (x_in / w_in, top_in / h_in), transform=fig.transFigure
+            )
+            x_in += box.width + gap_in
+        top_in -= max(box.height for _leg, box in row) + row_gap_in
+
+
+def _span(row, gap_in):
+    """Width in inches of one packed row of legends, gaps included."""
+    return sum(box.width for _leg, box in row) + gap_in * (len(row) - 1)

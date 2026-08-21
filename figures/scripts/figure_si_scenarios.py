@@ -11,12 +11,13 @@ check. Within a facet the encoding is the results figures' (see `_points.py`):
 x is the observed action, marker shape is the inferred latent, and color is the
 given relationship/desire condition. Where the effort of the low-risk share is
 given rather than inferred (1a and 2a) each action splits into its two world
-states, joined by a line, with the states named in the caption rather than on
-every facet. Error bars are 95% subject-cluster bootstrap CIs; per-scenario cells
+states, joined by a line, named in the legend rather than on every facet.
+Error bars are 95% subject-cluster bootstrap CIs; per-scenario cells
 are thin (often one observation per participant), so they are wide by design.
 
-No legend is drawn: these are assembled in Illustrator, where the legend is
-placed by hand. `figures/panels/legends/legend_*.pdf` carry the same encoding.
+A legend band under the x axis names the encodings the facets cannot label
+themselves: the given condition's colors, the inferred latents' shapes, and --
+for 1a and 2a -- which side of a split action is which state.
 
 Usage:
     uv run python figures/scripts/figure_si_scenarios.py [--study <slug>]
@@ -56,9 +57,12 @@ STYLE = replace(
     tick_fs=8.0,
     errbar=dict(elinewidth=1.4, capsize=0, zorder=2),
 )
-#: Facet (scenario name) and figure-level axis label sizes, at the same scale.
+#: Facet (scenario name), figure-level axis label, and legend sizes, at the
+#: same scale. The legend sits a step below the axis labels: it is read once on
+#: the way in, where the axis labels are read against every facet.
 FACET_TITLE_FS = 9.0
 AXIS_LABEL_FS = 10.0
+LEGEND_FS = 9.0
 
 
 def build_scenario_cells(slug):
@@ -93,7 +97,7 @@ def draw_facet(ax, slug, cells, lim, *, xticklabels):
         style_col=points.style_col(slug),
         xticklabels=xticklabels,
         # 48 repetitions of "Easy Hard" across a 16-facet grid, at 5pt,
-        # would be noise; the caption names the two states instead.
+        # would be noise; the legend band names the two states once instead.
         state_labels=False,
     )
 
@@ -138,6 +142,7 @@ def build_study(slug, stem):
 
     fig.supylabel(points.ylabel_for(slug), fontsize=AXIS_LABEL_FS)
     fig.supxlabel(points.X_AXIS_LABEL, fontsize=AXIS_LABEL_FS)
+    points.legend_band(fig, points.legend_groups(slug, STYLE), fontsize=LEGEND_FS)
     out = savefig(fig, f"si_scenarios_{stem}")
     print(f"wrote {out}")
     return True

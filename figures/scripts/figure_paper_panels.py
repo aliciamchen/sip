@@ -116,12 +116,10 @@ PANEL_RC = {
 # (slug, output stem), in paper order, from the study registry.
 STUDIES = [(s.slug, f"study{s.short_label}") for s in studies()]
 
-TARGET_TITLE = "Target of inference"
-#: Canonical order for the inferred-target legend entries: the two continuous
-#: latents, then the two-state world state. Fixed here rather than taken from
-#: whatever order a study's `dvs` happen to be in, so every legend lists the
-#: shapes the same way down the page.
-TARGET_ORDER = ["desire", "intimacy", "effort"]
+# Shared with the SI grids that draw their own legend band, so the same
+# encoding is never titled two ways.
+TARGET_TITLE = points.TARGET_TITLE
+TARGET_ORDER = points.TARGET_ORDER
 
 
 def targets_by_study_number():
