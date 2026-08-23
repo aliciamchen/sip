@@ -166,9 +166,6 @@ def test_rating_prompts_stay_intuition_only():
     rating_prompts = [
         prompts.DESIRE_SYSTEM_PROMPT,
         prompts.INTIMACY_SYSTEM_PROMPT,
-        prompts.PRIOR_DESIRE_SYSTEM_PROMPT,
-        prompts.PRIOR_EFFORT_SYSTEM_PROMPT,
-        prompts.PRIOR_INTIMACY_SYSTEM_PROMPT,
     ] + [prompts.system_prompt(t) for t in ("g", "effort", "risk")]
     for p in rating_prompts:
         assert "step by step" not in p, p[:80]
@@ -488,26 +485,6 @@ def test_scoring_completion_requires_every_unit_and_nonnull_feature():
     )
 
 
-def test_prior_rendered_fingerprint_tracks_condition_assembly():
-    """Prior provenance must cover the caller-owned visible-condition text."""
-    import elicit_priors as ep
-
-    cell = {
-        "scenario_label": "hot-dog",
-        "vignette": "Two people have one hot dog.",
-        "desire_object": "the hot dog",
-        "effort_low_text": "A clean knife is nearby.",
-        "effort_high_text": "A clean knife is far away.",
-        "condition_texts": ("They are colleagues.",),
-        "quantities": ("prior_desire",),
-    }
-    before = ep._prior_prompt_sha([cell])
-    after = ep._prior_prompt_sha(
-        [{**cell, "condition_texts": ("They are close friends.",)}]
-    )
-    assert after != before
-
-
 def test_resume_uses_the_stage_hash_when_available():
     """A new-style manifest stays resumable across unrelated prompt edits."""
     with _manifest(prompt_sha256=_prompt_sha("generate_alternatives")) as out:
@@ -761,16 +738,6 @@ def test_score_refuses_an_in_progress_alternatives_artifact():
             sm._alternatives_provenance(alts, "food_inv_desire")
 
 
-def test_backfill_distinguishes_checkpoint_and_completed_manifests():
-    """Only a completed generation pass makes grid absence mean a valid empty
-    response; legacy manifests predate statuses but were written only at end."""
-    import backfill_empty_units as backfill
-
-    assert backfill._manifest_is_completed({"status": "complete"})
-    assert backfill._manifest_is_completed({})
-    assert not backfill._manifest_is_completed({"status": "in_progress"})
-
-
 def test_score_resume_refuses_a_replaced_alternatives_file():
     """A partial scoring file must remain bound to the exact alternatives
     content it began with."""
@@ -852,12 +819,8 @@ def test_the_reported_tables_match_the_current_prompt():
     clean. Once that re-elicitation ran (2026-07-31, K=20 across all six studies
     plus the three base overlays), the useful invariant inverted: a mismatch here
     now means the reported tables and the prompt source have drifted apart, which
-    is exactly what must never ship.
-
-    Scope is the reported path only — `lm_alternatives*` and `lm_runs*`. The
-    `lm_priors*` tables are deliberately excluded: informative priors were
-    evaluated and not adopted (see model/inverse/_priors.py), so those tables
-    were not regenerated and legitimately carry an older whole-file hash.
+    is exactly what must never ship. Scope is the reported path —
+    `lm_alternatives*` and `lm_runs*`.
     """
     root = Path(__file__).resolve().parents[2]
     lm = root / "model" / "outputs" / "lm"
@@ -1018,55 +981,6 @@ def test_score_arm_routes_the_base_overlay_to_a_diagnostic_vintage():
                     sm.main("food_inv_desire", base=True, arm=True)
 
         assert captured == [(expected, "food_inv_desire")]
-
-
-def test_overnight_validator_reads_main_and_base_diagnostic_vintages():
-    """`--diag` must validate diag files rather than canonical lookalikes."""
-    root = Path(__file__).resolve().parents[2]
-    validator = root / "bin" / "_overnight_validate.py"
-    with tempfile.TemporaryDirectory() as d:
-        sandbox = Path(d)
-        (sandbox / "bin").mkdir()
-        copied_validator = sandbox / "bin" / validator.name
-        copied_validator.write_bytes(validator.read_bytes())
-        study_dir = sandbox / "model" / "outputs" / "lm" / "food_inv_desire"
-        study_dir.mkdir(parents=True)
-        record = {
-            "actions": [
-                {
-                    "slot": 0,
-                    "is_observed": True,
-                    "action_text": "Use separate utensils.",
-                    "risk": 0.25,
-                    "effort": 0.5,
-                    "g": 1.0,
-                }
-            ]
-        }
-        line = json.dumps(record) + "\n"
-        (study_dir / "lm_runs_diag.jsonl").write_text(line * 384)
-        (study_dir / "lm_runs_base_diag.jsonl").write_text(line * 96)
-
-        completed = subprocess.run(
-            [
-                sys.executable,
-                str(copied_validator),
-                "--k",
-                "1",
-                "--diag",
-                "--studies",
-                "food_inv_desire",
-            ],
-            cwd=sandbox,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0, completed.stdout + completed.stderr
-        assert "food_inv_desire" in completed.stdout
-        assert "food_inv_desire (base)" in completed.stdout
-        assert "ALL PASS" in completed.stdout
 
 
 def run_all_tests():

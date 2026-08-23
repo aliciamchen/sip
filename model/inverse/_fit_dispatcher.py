@@ -31,7 +31,6 @@ sys.path.insert(0, str(_project_root))
 sys.path.insert(0, str(_project_root / "model"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 
-import jax.numpy as jnp  # noqa: E402
 import pandas as pd  # noqa: E402
 
 import _reweighting  # noqa: E402
@@ -56,7 +55,6 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
-from _priors import build_priors_kwarg, priors_base_variant  # noqa: E402
 from observers import (  # noqa: E402
     VARIANTS_DESIRE,
     VARIANTS_INTIMACY,
@@ -134,35 +132,10 @@ def _table_kwargs_builder(family, slug):
     return build
 
 
-def _check_priors_k_alignment(slug, variant, priors, table_kwargs):
-    """The priors' run axis must match the feature tables' K.
-
-    A K=1 priors file (the human-ceiling vintage) tiles up to the tables' K;
-    any other mismatch is a hard error rather than a silent broadcast, since
-    mismatched K would pair each run's tables with the wrong run's priors.
-    Mutates `priors` in place, as the fitters expect aligned arrays.
-    """
-    if priors is None:
-        return
-    k_tables = table_kwargs["risk_table"].shape[0]
-    for key, arr in priors.items():
-        if arr is None:
-            continue
-        if arr.shape[0] == 1 and k_tables > 1:
-            priors[key] = jnp.repeat(arr, k_tables, axis=0)
-        elif arr.shape[0] != k_tables:
-            raise ValueError(
-                f"{slug}/{variant}: priors K={arr.shape[0]} != feature tables "
-                f"K={k_tables} — re-run the priors elicitation with matching "
-                "K_RUNS."
-            )
-
-
 @dataclass(frozen=True)
 class FitContext:
     """Everything a full-data fit of one study needs, resolved once: the data
-    arrays as the fitter's keyword arguments, each variant's LM tables, and each
-    variant's informative-prior kwargs.
+    arrays as the fitter's keyword arguments and each variant's LM tables.
 
     `main` builds every variant from it; the cross-study transfer analysis
     (`model/cv/transfer.py`) reuses it to refit a single variant with the
@@ -176,7 +149,6 @@ class FitContext:
     config: object
     data_kwargs: dict
     table_kwargs: dict  # variant -> observer-table kwargs
-    priors: dict  # variant -> informative-prior kwargs, or None
 
     @property
     def variants(self):
@@ -199,15 +171,11 @@ class FitContext:
 
 
 def fit_context(slug, config=None):
-    """Resolve one study's data, tables and priors for a full-data fit.
+    """Resolve one study's data and tables for a full-data fit.
 
     Tables are resolved for every variant before any fitting starts, so a
     missing table fails up front rather than after hours of fitting earlier
-    variants. `priors_base_variant` (the single source of truth, shared with the
-    CV dispatcher) routes only the base variant to its relationship-free priors
-    vintage, and only when no explicit `--priors-file` is set (see `_priors.py`);
-    the preregistered uniform config gets None throughout, which keeps the fit
-    byte-identical.
+    variants.
     """
     config = config or RunConfig()
     family = FAMILY_BY_SLUG[slug]
@@ -226,14 +194,6 @@ def fit_context(slug, config=None):
     table_kwargs = resolve_variant_table_kwargs(
         variants, _table_kwargs_builder(family, slug)
     )
-    priors = {
-        name: build_priors_kwarg(
-            slug, config, base=priors_base_variant(slug, name, config.priors_file)
-        )
-        for name in variants
-    }
-    for name, pr in priors.items():
-        _check_priors_k_alignment(slug, name, pr, table_kwargs[name])
     return FitContext(
         slug=slug,
         family=family,
@@ -241,16 +201,15 @@ def fit_context(slug, config=None):
         config=config,
         data_kwargs=data_kwargs,
         table_kwargs=table_kwargs,
-        priors=priors,
     )
 
 
-def _result_row(slug, variant, utility_names, params, nll, use_grid, rw):
+def _result_row(slug, variant, utility_names, params, nll, rw):
     """One `fit_results.json` record.
 
     The parameter vector is laid out [*utility, alpha_observer, sigma, *extras]
-    with extras in a fixed order (prior_nu, then eta), so the offsets below
-    follow the same order the fitters pack.
+    (the reweighted fit's `eta` is the one extra), so the offsets below follow
+    the same order the fitters pack.
     """
     n_util = len(utility_names)
     alpha_obs = float(params[n_util])
@@ -258,7 +217,7 @@ def _result_row(slug, variant, utility_names, params, nll, use_grid, rw):
         "model": variant,
         "experiment": slug,
         "nll": nll,
-        "n_params": n_util + 2 + (1 if use_grid else 0) + (1 if rw else 0),
+        "n_params": n_util + 2 + (1 if rw else 0),
         "param_alpha": 1.0,
         "alpha_observer": alpha_obs,
         # True only when the optional alpha_observer bound is enabled AND this
@@ -269,8 +228,6 @@ def _result_row(slug, variant, utility_names, params, nll, use_grid, rw):
         ),
         "param_sigma": float(params[n_util + 1]),
     }
-    if use_grid:
-        row["param_prior_nu"] = float(params[n_util + 2])
     if rw:
         row["param_eta"] = float(params[-1])
         row["reweighting_targets"] = list(rw["targets"])
@@ -303,7 +260,6 @@ def main(slug, config=None, description=None):
     ctx = fit_context(slug, config)
     fit_data_kwargs = ctx.data_kwargs
     table_kwargs_by_variant = ctx.table_kwargs
-    priors_by_variant = ctx.priors
 
     results = []
     restart_rows = []
@@ -323,15 +279,12 @@ def main(slug, config=None, description=None):
             observer_fn=obs_fn,
             utility_param_names=utility_names,
             table_kwargs=table_kwargs_by_variant[variant_name],
-            priors=priors_by_variant[variant_name],
             reweighting=rw,
             seed_key=f"{slug}|{variant_name}",
             **fit_data_kwargs,
         )
-        priors = priors_by_variant[variant_name]
-        use_grid = priors is not None and priors["m_latent"] is not None
         results.append(
-            _result_row(slug, variant_name, utility_names, params, nll, use_grid, rw)
+            _result_row(slug, variant_name, utility_names, params, nll, rw)
         )
         restart_rows.extend(
             restart_records_to_rows(
@@ -339,8 +292,7 @@ def main(slug, config=None, description=None):
                 variant_name,
                 utility_names,
                 restarts,
-                extra_param_names=(("prior_nu",) if use_grid else ())
-                + (("eta",) if rw else ()),
+                extra_param_names=(("eta",) if rw else ()),
             )
         )
 

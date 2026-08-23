@@ -31,7 +31,6 @@ import pandas as pd
 from jax.scipy.special import logsumexp
 
 import _reweighting
-from _priors import beta_prior_on_grid, reweight_grid, reweight_joint
 from tables import (
     ACTION_LABEL_TO_IDX,
     DesireLevels,
@@ -44,25 +43,13 @@ from utils import get_project_root
 
 def parse_run_config_args(argv=None, description=None):
     """Shared CLI for the fit wrappers and CV scripts: the run configuration.
-    The default (no flags) is the reported config — uniform priors, the
-    unsuffixed lm_runs.jsonl vintage, the comparison-set reweighting where its
-    scope rule applies, outputs to outputs/<slug>/ — so a plain invocation stays
-    byte-identical to the pre-config pipeline."""
+    The default (no flags) is the reported config — the comparison-set
+    reweighting where its scope rule applies, outputs to outputs/<slug>/."""
     import argparse
 
     from run_config import RunConfig
 
     p = argparse.ArgumentParser(description=description)
-    p.add_argument(
-        "--priors",
-        default="uniform",
-        help="uniform | informative | informative:<latent,...> (e.g. informative:desire)",
-    )
-    p.add_argument(
-        "--priors-file",
-        default=None,
-        help="override the priors JSONL name (e.g. lm_priors_human.jsonl)",
-    )
     p.add_argument(
         "--no-reweighting",
         action="store_true",
@@ -71,7 +58,7 @@ def parse_run_config_args(argv=None, description=None):
         "reported ones.",
     )
     a = p.parse_args(argv)
-    return RunConfig.parse(a.priors, a.priors_file, a.no_reweighting)
+    return RunConfig.parse(a.no_reweighting)
 
 
 # Optional upper bound on the observer inverse temperature. DEFAULT: OFF.
@@ -359,7 +346,7 @@ def fit_masked(
         # JAX clamps out-of-bounds `.at[]` indices rather than raising, so a
         # short init would silently write a free slot's value into the last
         # position instead of failing — the same trap the fit helpers guard
-        # against for a prior_nu-length mismatch.
+        # against for an extras-length mismatch.
         raise ValueError(
             f"init_params has length {len(init_params)} but this fit expects "
             f"{n_params} — a masked fit indexes the init by slot, and JAX would "
@@ -414,9 +401,9 @@ def restart_records_to_rows(
 
     One row per restart with init_<name> / param_<name> columns (the params
     layout is [*utility_param_names, alpha_observer, sigma, *extra_param_names]).
-    `extra_param_names` carries the informative-prior fit's fitted `prior_nu`
-    (empty in the preregistered uniform-prior fits). Variants with different
-    parameter sets just leave the other variants' columns empty.
+    `extra_param_names` carries the reweighted fit's fitted `eta` (empty for the
+    preregistered variants). Variants with different parameter sets just leave
+    the other variants' columns empty.
     """
     rows = []
     names = (
@@ -688,12 +675,11 @@ def load_fit_results(slug: str) -> dict:
         if row.get("param_sigma") is not None:
             params["sigma"] = float(row["param_sigma"])
         # Must list every optimizer-vector member that fit_results.json stores
-        # under a `param_` prefix, including the extras (`prior_nu` for
-        # informative-prior runs, `eta` for reweighted variants) -- otherwise a
-        # caller round-tripping through params_dict_to_array gets a KeyError, or
-        # worse a short vector. The CV dispatcher's own reader had the same
-        # omission; see test_fit_protocol.py.
-        for pn in ("w_v", "w_d", "w_e", "gamma", "prior_nu", "eta"):
+        # under a `param_` prefix, including the `eta` extra of the reweighted
+        # variants -- otherwise a caller round-tripping through
+        # params_dict_to_array gets a KeyError, or worse a short vector. The CV
+        # dispatcher's own reader had the same omission; see test_fit_protocol.py.
+        for pn in ("w_v", "w_d", "w_e", "gamma", "eta"):
             if row.get(f"param_{pn}") is not None:
                 params[pn] = float(row[f"param_{pn}"])
         out[variant] = params
@@ -1171,8 +1157,8 @@ def params_dict_to_array(params, utility_param_names, extra_param_names=()):
     """Reconstruct the optimizer's parameter vector [*utility, alpha_observer,
     sigma, *extra] from a `load_fit_results` dict, for re-running the observer
     (e.g. the CV warm-start). sigma defaults to 1.0 if absent (it doesn't affect
-    the observer build); `extra_param_names` (e.g. the informative-prior fit's
-    `prior_nu`) are appended and KeyError if missing — a deliberate fail-fast on
+    the observer build); `extra_param_names` (e.g. the reweighted fit's `eta`)
+    are appended and KeyError if missing — a deliberate fail-fast on
     a warm start whose params don't carry the extended vector."""
     return jnp.array(
         [params[name] for name in utility_param_names]
@@ -1220,7 +1206,6 @@ def _intimacy_loss(
     effort_condition,
     response,
     table_kwargs,
-    priors=None,
     reweighting=None,
 ):
     """Study 2a's mixture NLL as a function of the fit's parameter vector.
@@ -1231,15 +1216,12 @@ def _intimacy_loss(
     through this, so there is one definition of what a study's likelihood is.
 
     Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
-    index one past sigma.
+    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
+    past sigma.
     """
-    if priors is not None and all(v is None for v in priors.values()):
-        priors = None
     n_core = len(utility_param_names) + 2
-    use_grid = priors is not None and priors.get("m_latent") is not None
-    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    n_params = n_core + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active.
     i_eta = n_params - 1 if reweighting else None
 
     def loss_fn(params):
@@ -1253,17 +1235,10 @@ def _intimacy_loss(
             observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
-        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, r, e, u):
             post_runs = tables[:, 0, s, a, r, e, :]  # (K, 101)
-            if use_grid:
-                w = beta_prior_on_grid(priors["m_latent"][:, s, r, e], nu)  # (K, 101)
-                post_runs = reweight_grid(post_runs, w)
-                prior_mean = w @ GRID  # (K,)
-            else:
-                prior_mean = PRIOR_MEAN
-            deltas = delta_latent(post_runs, GRID, prior_mean)  # (K,)
+            deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
         return jnp.sum(
@@ -1284,7 +1259,6 @@ def fit_intimacy_observer_joint(
     effort_condition,
     response,
     table_kwargs,
-    priors=None,
     reweighting=None,
     lr=0.1,
     max_steps=1000,
@@ -1305,12 +1279,6 @@ def fit_intimacy_observer_joint(
     mean gives that run's model update δ_k. `response` is the intimacy belief
     update u, scored under (1/K)Σ N(u | δ_k, σ²).
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 2)) is active,
-    the intimacy latent gets a per-cell discretized-Beta prior with a single
-    fitted concentration `prior_nu` appended to the param vector at index
-    `n_core`; the uniform fit is nested at m=0.5, nu=2.
-
     `free_mask` (see `fit_masked`) estimates only a subset of the vector,
     holding the rest at `init_params`; the cross-study transfer analysis uses it
     to freeze the utility weights. `None` is the ordinary fit.
@@ -1324,7 +1292,6 @@ def fit_intimacy_observer_joint(
         effort_condition,
         response,
         table_kwargs,
-        priors=priors,
         reweighting=reweighting,
     )
     if init_params is not None and len(init_params) != n_params:
@@ -1332,8 +1299,8 @@ def fit_intimacy_observer_joint(
             f"init_params has length {len(init_params)} but this fit expects "
             f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
             f"{n_params - n_core} extra slot(s) for this configuration's "
-            "prior_nu / eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
             "read sigma). Build it with params_dict_to_array(..., "
             "extra_param_names=[...]) naming the same extras."
         )
@@ -1365,7 +1332,6 @@ def _desire_loss(
     relationship_condition,
     response,
     table_kwargs,
-    priors=None,
     reweighting=None,
 ):
     """Study 1a's mixture NLL as a function of the fit's parameter vector.
@@ -1376,15 +1342,12 @@ def _desire_loss(
     through this, so there is one definition of what a study's likelihood is.
 
     Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
-    index one past sigma.
+    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
+    past sigma.
     """
-    if priors is not None and all(v is None for v in priors.values()):
-        priors = None
     n_core = len(utility_param_names) + 2
-    use_grid = priors is not None and priors.get("m_latent") is not None
-    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    n_params = n_core + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active.
     i_eta = n_params - 1 if reweighting else None
 
     def loss_fn(params):
@@ -1398,17 +1361,10 @@ def _desire_loss(
             observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
-        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, e, rel, u):
             post_runs = tables[:, 0, s, a, e, rel, :]  # (K, 101)
-            if use_grid:
-                w = beta_prior_on_grid(priors["m_latent"][:, s, e, rel], nu)  # (K, 101)
-                post_runs = reweight_grid(post_runs, w)
-                prior_mean = w @ GRID  # (K,)
-            else:
-                prior_mean = PRIOR_MEAN
-            deltas = delta_latent(post_runs, GRID, prior_mean)  # (K,)
+            deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
         return jnp.sum(
@@ -1429,7 +1385,6 @@ def fit_desire_observer_joint(
     relationship_condition,
     response,
     table_kwargs,
-    priors=None,
     reweighting=None,
     lr=0.1,
     max_steps=1000,
@@ -1450,12 +1405,6 @@ def fit_desire_observer_joint(
     prior mean gives that run's δ_k. `response` is the desire belief update u,
     scored under (1/K)Σ N(u | δ_k, σ²).
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. When `priors["m_latent"]` (shape (K, 16, 2, 4)) is active,
-    the desire latent gets a per-cell discretized-Beta prior with a single fitted
-    concentration `prior_nu` appended to the param vector at index `n_core`; the
-    uniform fit is nested at m=0.5, nu=2.
-
     `free_mask` (see `fit_masked`) estimates only a subset of the vector,
     holding the rest at `init_params`; the cross-study transfer analysis uses it
     to freeze the utility weights. `None` is the ordinary fit.
@@ -1469,7 +1418,6 @@ def fit_desire_observer_joint(
         relationship_condition,
         response,
         table_kwargs,
-        priors=priors,
         reweighting=reweighting,
     )
     if init_params is not None and len(init_params) != n_params:
@@ -1477,8 +1425,8 @@ def fit_desire_observer_joint(
             f"init_params has length {len(init_params)} but this fit expects "
             f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
             f"{n_params - n_core} extra slot(s) for this configuration's "
-            "prior_nu / eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
             "read sigma). Build it with params_dict_to_array(..., "
             "extra_param_names=[...]) naming the same extras."
         )
@@ -1510,7 +1458,6 @@ def _joint_de_loss(
     response_desire,
     response_effort,
     table_kwargs,
-    priors=None,
     reweighting=None,
 ):
     """Studies 1b/3a's bivariate mixture NLL as a function of the fit's parameter vector.
@@ -1521,16 +1468,12 @@ def _joint_de_loss(
     through this, so there is one definition of what a study's likelihood is.
 
     Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
-    index one past sigma.
+    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
+    past sigma.
     """
-    if priors is not None and all(v is None for v in priors.values()):
-        priors = None
     n_core = len(utility_param_names) + 2
-    use_grid = priors is not None and priors.get("m_latent") is not None
-    use_eff = priors is not None and priors.get("p_effort") is not None
-    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    n_params = n_core + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active.
     i_eta = n_params - 1 if reweighting else None
 
     def loss_fn(params):
@@ -1544,25 +1487,11 @@ def _joint_de_loss(
             observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
-        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, rel, u_desire, u_effort):
             joint = tables[:, 0, s, a, rel, :, :]  # (K, 101, 2)
-            if use_grid:
-                w = beta_prior_on_grid(priors["m_latent"][:, s, rel], nu)
-                lat_prior_mean = w @ GRID
-            else:
-                w = None
-                lat_prior_mean = PRIOR_MEAN
-            if use_eff:
-                p = priors["p_effort"][:, s, rel]
-                eff_prior_mean = p
-            else:
-                p = None
-                eff_prior_mean = EFFORT_PRIOR_MEAN
-            joint = reweight_joint(joint, w, p)
             d_desire, d_effort = delta_joint(
-                joint, GRID, lat_prior_mean, eff_prior_mean
+                joint, GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN
             )  # each (K,)
             deltas = jnp.stack([d_desire, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_desire, u_effort]), deltas, sigma)
@@ -1589,7 +1518,6 @@ def fit_joint_de_observer_joint(
     response_desire,
     response_effort,
     table_kwargs,
-    priors=None,
     reweighting=None,
     lr=0.1,
     max_steps=1000,
@@ -1612,12 +1540,6 @@ def fit_joint_de_observer_joint(
     run's 2-D model update δ_k. `response_desire`/`response_effort` are the two
     belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. `priors` may carry `m_latent` (desire, shape (K, 16, 4);
-    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
-    P(effort=high), shape (K, 16, 4)); each None leaves that latent uniform. The
-    uniform fit is nested at m=0.5, nu=2, p=0.5.
-
     `free_mask` (see `fit_masked`) estimates only a subset of the vector,
     holding the rest at `init_params`; the cross-study transfer analysis uses it
     to freeze the utility weights. `None` is the ordinary fit.
@@ -1631,7 +1553,6 @@ def fit_joint_de_observer_joint(
         response_desire,
         response_effort,
         table_kwargs,
-        priors=priors,
         reweighting=reweighting,
     )
     if init_params is not None and len(init_params) != n_params:
@@ -1639,8 +1560,8 @@ def fit_joint_de_observer_joint(
             f"init_params has length {len(init_params)} but this fit expects "
             f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
             f"{n_params - n_core} extra slot(s) for this configuration's "
-            "prior_nu / eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
             "read sigma). Build it with params_dict_to_array(..., "
             "extra_param_names=[...]) naming the same extras."
         )
@@ -1672,7 +1593,6 @@ def _joint_ie_loss(
     response_intimacy,
     response_effort,
     table_kwargs,
-    priors=None,
     reweighting=None,
 ):
     """Studies 2b/3b's bivariate mixture NLL as a function of the fit's parameter vector.
@@ -1683,16 +1603,12 @@ def _joint_ie_loss(
     through this, so there is one definition of what a study's likelihood is.
 
     Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(prior_nu), *(eta)]` and `n_core` is the
-    index one past sigma.
+    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
+    past sigma.
     """
-    if priors is not None and all(v is None for v in priors.values()):
-        priors = None
     n_core = len(utility_param_names) + 2
-    use_grid = priors is not None and priors.get("m_latent") is not None
-    use_eff = priors is not None and priors.get("p_effort") is not None
-    n_params = n_core + (1 if use_grid else 0) + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active (after prior_nu).
+    n_params = n_core + (1 if reweighting else 0)
+    # eta is the LAST slot when the reweighting is active.
     i_eta = n_params - 1 if reweighting else None
 
     def loss_fn(params):
@@ -1706,25 +1622,11 @@ def _joint_ie_loss(
             observer_fn, params[:n_core], utility_param_names, tk
         )
         sigma = params[n_core - 1]
-        nu = params[n_core] if use_grid else None
 
         def nll_trial(a, s, r, u_intimacy, u_effort):
             joint = tables[:, 0, s, a, r, :, :]  # (K, 101, 2)
-            if use_grid:
-                w = beta_prior_on_grid(priors["m_latent"][:, s, r], nu)
-                lat_prior_mean = w @ GRID
-            else:
-                w = None
-                lat_prior_mean = PRIOR_MEAN
-            if use_eff:
-                p = priors["p_effort"][:, s, r]
-                eff_prior_mean = p
-            else:
-                p = None
-                eff_prior_mean = EFFORT_PRIOR_MEAN
-            joint = reweight_joint(joint, w, p)
             d_intimacy, d_effort = delta_joint(
-                joint, GRID, lat_prior_mean, eff_prior_mean
+                joint, GRID, PRIOR_MEAN, EFFORT_PRIOR_MEAN
             )  # each (K,)
             deltas = jnp.stack([d_intimacy, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_intimacy, u_effort]), deltas, sigma)
@@ -1751,7 +1653,6 @@ def fit_joint_ie_observer_joint(
     response_intimacy,
     response_effort,
     table_kwargs,
-    priors=None,
     reweighting=None,
     lr=0.1,
     max_steps=1000,
@@ -1774,12 +1675,6 @@ def fit_joint_ie_observer_joint(
     that run's 2-D model update δ_k. `response_intimacy`/`response_effort` are the
     two belief updates, scored jointly under (1/K)Σ N(u | δ_k, σ²·I₂).
 
-    `priors=None` keeps the uniform-prior path byte-identical to the
-    preregistered fit. `priors` may carry `m_latent` (intimacy, shape (K, 16, 2);
-    adds a fitted `prior_nu` at index `n_core`) and/or `p_effort` (the elicited
-    P(effort=high), shape (K, 16, 2)); each None leaves that latent uniform. The
-    uniform fit is nested at m=0.5, nu=2, p=0.5.
-
     `free_mask` (see `fit_masked`) estimates only a subset of the vector,
     holding the rest at `init_params`; the cross-study transfer analysis uses it
     to freeze the utility weights. `None` is the ordinary fit.
@@ -1793,7 +1688,6 @@ def fit_joint_ie_observer_joint(
         response_intimacy,
         response_effort,
         table_kwargs,
-        priors=priors,
         reweighting=reweighting,
     )
     if init_params is not None and len(init_params) != n_params:
@@ -1801,8 +1695,8 @@ def fit_joint_ie_observer_joint(
             f"init_params has length {len(init_params)} but this fit expects "
             f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
             f"{n_params - n_core} extra slot(s) for this configuration's "
-            "prior_nu / eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so prior_nu would "
+            "eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
             "read sigma). Build it with params_dict_to_array(..., "
             "extra_param_names=[...]) naming the same extras."
         )

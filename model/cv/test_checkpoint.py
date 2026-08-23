@@ -254,8 +254,8 @@ def test_run_fingerprint_tracks_inputs():
 
 
 def test_fingerprint_distinguishes_configs():
-    """Two fingerprints differing only in `config_fields` (the reported run vs an
-    informative-priors + suffixed-alts run) must mismatch, so a checkpoint
+    """Two fingerprints differing only in `config_fields` (the reported run vs
+    the preregistered no-reweighting run) must mismatch, so a checkpoint
     written under one run config is never resumed under another."""
     slug = "food_inv_desire"
     with tempfile.TemporaryDirectory() as d:
@@ -266,7 +266,7 @@ def test_fingerprint_distinguishes_configs():
             "desire",
             100,
             2,
-            {"tag": "reported", "runs": "lm_runs.jsonl", "priors": None},
+            {"tag": "reported", "runs": "lm_runs.jsonl"},
             project_root=root,
         )
         fp_b = run_fingerprint(
@@ -275,9 +275,8 @@ def test_fingerprint_distinguishes_configs():
             100,
             2,
             {
-                "tag": "informative_current",
+                "tag": "uniform-noreweight",
                 "runs": "lm_runs.jsonl",
-                "priors": "lm_priors.jsonl",
             },
             project_root=root,
         )

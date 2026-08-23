@@ -110,48 +110,6 @@ def parse_desire_response(response_text):
     return None
 
 
-def numeric_effort_prior_schema(name="effort"):
-    """response_format constraining the LM to emit ``{"effort": <number>}`` for
-    the prior-effort scalar (the informative-prior effort rating)."""
-    return {
-        "type": "json_schema",
-        "json_schema": {
-            "name": name,
-            "strict": True,
-            "schema": {
-                "type": "object",
-                "properties": {"effort": {"type": "number"}},
-                "required": ["effort"],
-                "additionalProperties": False,
-            },
-        },
-    }
-
-
-def parse_effort_prior_response(response_text):
-    """Parse the prior-effort ``{"effort": <number>}`` scalar response. The
-    prior-effort prompt asks for a 0-100 rating (PRIOR_EFFORT_SYSTEM_PROMPT), so
-    out-of-range values are rejected (-> None, the caller's failure path) rather
-    than silently kept."""
-    if response_text is None:
-        return None
-    js = find_json(response_text)
-    if js is None:
-        return None
-    js = strip_leading_plus(js)
-    try:
-        d = json.loads(js)
-        if "effort" in d:
-            v = float(d["effort"])
-            if not 0.0 <= v <= 100.0:
-                print(f"  effort rating {v} outside the 0-100 scale; rejected")
-                return None
-            return v
-    except (json.JSONDecodeError, ValueError, TypeError) as e:
-        print(f"  Failed to parse effort JSON: {e}")
-    return None
-
-
 def numeric_intimacy_schema(name="intimacy"):
     """response_format constraining the LM to emit ``{"intimacy": <number>}`` for
     the per-level relationship-intimacy rating in the given-relationship studies."""

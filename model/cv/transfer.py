@@ -40,8 +40,8 @@ difference:
 
   across domain, matched design (1b<->3a, 2b<->3b)
       Same observer family and design, different stimulus set. Partial failure
-      is expected here and already has a reading (the feature-validity account
-      in notes/decisions.md, 2026-08-04).
+      is expected here and has a reading: the domain change enters through the
+      elicited features as much as through the weights.
 
 The utility weights are commensurable across all six by construction: d and I
 are in [0, 1] whether inferred over the 101-bin grid or given as an LM scalar,
@@ -243,13 +243,7 @@ def _fit_params(slug, variant):
 
 def _param_layout(ctx, variant):
     """(utility_param_names, has_eta) for one (study, variant) — the layout of
-    the fit's parameter vector, which is [*utility, alpha_observer, sigma, eta?].
-    Uniform priors only; an informative-prior config would insert `prior_nu`."""
-    if ctx.priors[variant] is not None:
-        raise SystemExit(
-            "the transfer analysis runs on the reported (uniform-prior) config "
-            "only — an informative-prior vector carries an extra `prior_nu` slot"
-        )
+    the fit's parameter vector, which is [*utility, alpha_observer, sigma, eta?]."""
     _, utility_names = ctx.variants[variant]
     return list(utility_names), ctx.reweighting(variant) is not None
 
@@ -315,7 +309,6 @@ def _full_data_refit(ctx, variant, init, mask, label):
             observer_fn=obs_fn,
             utility_param_names=utility_names,
             table_kwargs=ctx.table_kwargs[variant],
-            priors=ctx.priors[variant],
             reweighting=ctx.reweighting(variant),
             seed_key=f"{label}|init{k}",
             init_params=start,

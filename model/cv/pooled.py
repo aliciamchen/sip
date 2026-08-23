@@ -176,7 +176,6 @@ def _study_losses(slugs, ctxs, fold):
             observer_fn=obs_fn,
             utility_param_names=utility_names,
             table_kwargs=ctx.table_kwargs[VARIANT],
-            priors=ctx.priors[VARIANT],
             reweighting=ctx.reweighting(VARIANT),
             **data,
         )

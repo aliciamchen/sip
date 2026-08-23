@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Schematic-figure plot panels for Study 1a (food desire), the burrito example.
 
-Reads the LM scores cached by `figure_lm_calls.py` and the fitted full-model
-weights, recomputes the actor utility / choice / desire-posterior standalone, and
-renders the vector panels for the Illustrator figures:
+Reads the LM scores cached in `figures/figure_data/figure_scores.json` and the
+fitted full-model weights, recomputes the actor utility / choice /
+desire-posterior standalone, and renders the vector panels for the Illustrator
+figures:
 
   bars_all                          per-action feature bars (goal / effort / risk)
   utility_vs_desire                 total utility vs. desire over the example's four

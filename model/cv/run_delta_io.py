@@ -34,11 +34,9 @@ WORLD_STATE_DV = "effort"
 
 
 class RunDeltasUnavailable(Exception):
-    """A study's per-run deltas cannot be read. Carries a message naming the
-    command that would produce them. Raised rather than returning None so a
-    caller chooses the policy: the SI figure skips the study, while the
-    results-LaTeX exporter lets it propagate (a silently missing macro would
-    surface as an undefined control sequence far from the cause)."""
+    """A study's per-run deltas cannot be read. Raised rather than returning
+    None so each caller chooses its own policy (the SI variability figure
+    skips the study with a message)."""
 
 
 def sha256_file(path):
@@ -101,8 +99,10 @@ def load_per_run_deltas(outputs_dir, variant="full"):
     if side.get("source", {}).get("cv_preds_summary.json") != sha256_file(preds_path):
         raise RunDeltasUnavailable(
             f"{side_path.name} was gated against a different "
-            f"{preds_path.name} than the one on disk -- CV has been re-run since, "
-            f"so this sidecar is stale. Regenerate with `make run-deltas`"
+            f"{preds_path.name} than the one on disk -- CV has been re-run "
+            f"since, so this sidecar is stale (a fresh CV run writes the "
+            f"per-run deltas into {preds_path.name} directly; delete the "
+            f"stale sidecar)"
         )
     cells = side["cells"]
     return {

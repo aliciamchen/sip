@@ -48,30 +48,27 @@ CHECKPOINT_NAME = "cv_checkpoint.jsonl"
 # its own vintage via `config_fields["runs"]` (see `run_fingerprint`).
 _LM_TABLE_NAMES = ("lm_runs.jsonl", "lm_runs_base.jsonl")
 
-# The config descriptor a plain (default, uniform-prior, reweighted) CV run
-# fingerprints under — the reported model. Kept as a module constant so the
-# no-config default and the checkpoint header agree on the exact dict.
-# The tag was "canonical" until 2026-07-30 and "preregistered" until 2026-08-03,
-# when `--no-reweighting` made a genuinely preregistered run possible and the
-# root had to stop claiming that name. Renaming changes the fingerprint, so any
-# checkpoint written before it is discarded on the next run rather than misread —
-# the designed behavior for an input change, and none were in flight.
+# The config descriptor a plain (default, reweighted) CV run fingerprints
+# under — the reported model. Kept as a module constant so the no-config
+# default and the checkpoint header agree on the exact dict. Renaming a field
+# changes the fingerprint, so any checkpoint written before a rename is
+# discarded on the next run rather than misread — the designed behavior for an
+# input change.
 _REPORTED_CONFIG = {
     "tag": "reported",
     "runs": "lm_runs.jsonl",
-    "priors": None,
 }
 
 
 def _base_sibling(name):
     """The `_base` companion of an LM table vintage: `lm_runs<suffix>.jsonl` →
     `lm_runs_base<suffix>.jsonl` (the relationship-free set for the base
-    ablation), and likewise `lm_priors<...>.jsonl` → `lm_priors_base<...>.jsonl`.
-    Returns None when the name doesn't follow the `lm_<kind>...` shape (e.g. an
-    absolute-path override), so the caller just hashes the single file."""
-    for prefix in ("lm_runs", "lm_priors"):
-        if name.startswith(prefix) and not name.startswith(prefix + "_base"):
-            return name.replace(prefix, prefix + "_base", 1)
+    ablation). Returns None when the name doesn't follow the `lm_runs...` shape
+    (e.g. an absolute-path override), so the caller just hashes the single
+    file."""
+    prefix = "lm_runs"
+    if name.startswith(prefix) and not name.startswith(prefix + "_base"):
+        return name.replace(prefix, prefix + "_base", 1)
     return None
 
 
@@ -83,7 +80,6 @@ def _base_sibling(name):
 # tweaks don't cost a resume.
 _CODE_FILES = (
     "model/inverse/_helpers.py",
-    "model/inverse/_priors.py",
     "model/inverse/_reweighting.py",
     "model/observers.py",
     "model/actors.py",
@@ -91,12 +87,11 @@ _CODE_FILES = (
     "model/tables.py",
     "model/cv/_inverse_dispatcher.py",
 )
-# Every file whose contents change a fold's numbers must be listed above.
-# `_reweighting.py` (the comparison-set reweighting) and `_priors.py` (the
-# informative-prior layer) both sit at the likelihood layer and were missing
-# until 2026-07-30 — a mid-run edit to either would have silently spliced two
-# model vintages into one CV output set. Add any future likelihood-layer module
-# here at the same time it is written.
+# Every file whose contents change a fold's numbers must be listed above —
+# `_reweighting.py` (the comparison-set reweighting) sits at the likelihood
+# layer, not just the model stack. A mid-run edit to an unlisted file would
+# silently splice two model vintages into one CV output set, so add any future
+# likelihood-layer module here at the same time it is written.
 
 
 def checkpoint_path(outputs_dir):
@@ -127,16 +122,13 @@ def run_fingerprint(
     may change CV_WORKERS or CV_WORKER_THREADS freely — including retuning
     threads partway through a long run.
 
-    `config_fields` (the RunConfig descriptor: `{"tag", "runs", "priors",
-    "fit_dir"}`) ties the checkpoint to the run configuration, so the reported
-    run and a variant run over the same study — informative priors, a suffixed
-    alternatives vintage, or `--no-reweighting` — never resume from each other's
-    folds. It selects which LM run tables
-    (the config's `runs` vintage + its `_base` sibling), which prior tables
-    (when informative), and which fit directory (`fit_dir`) feed the hash. The
-    default is the reported descriptor, so a plain CV run's fingerprint is
-    the pre-config one plus the constant `"config"` key (a one-time checkpoint
-    invalidation on upgrade).
+    `config_fields` (the RunConfig descriptor: `{"tag", "runs", "fit_dir"}`)
+    ties the checkpoint to the run configuration, so the reported run and a
+    variant run over the same study — a suffixed alternatives vintage, or
+    `--no-reweighting` — never resume from each other's folds. It selects which
+    LM run tables (the config's `runs` vintage + its `_base` sibling) and which
+    fit directory (`fit_dir`) feed the hash. The default is the reported
+    descriptor.
     """
     if project_root is None:
         from utils import get_project_root  # deferred: repo import, tests inject
@@ -152,17 +144,10 @@ def run_fingerprint(
     lm_names = [runs_name]
     if (sib := _base_sibling(runs_name)) is not None:
         lm_names.append(sib)
-    # Priors tables (informative runs only): the config's priors file plus its
-    # `_base` sibling, hashed alongside the run tables.
-    priors_name = config.get("priors")
-    if priors_name:
-        lm_names.append(priors_name)
-        if (sib := _base_sibling(priors_name)) is not None:
-            lm_names.append(sib)
     lm_sha = {name: _sha256(lm_dir / name) for name in lm_names}
 
-    # Warm-start fit from the config's own fit directory (informative/suffixed
-    # runs write outside the default outputs/<slug>/); default is the study root.
+    # Warm-start fit from the config's own fit directory (a non-default run
+    # writes outside the default outputs/<slug>/); default is the study root.
     fit_dir = config.get("fit_dir")
     warm_path = (
         Path(fit_dir) if fit_dir else root / "model" / "outputs" / slug

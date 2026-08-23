@@ -36,9 +36,6 @@ block, in group order, carrying an `eta` only where the reweighting scope rule
 grants it one. `study_slice` rebuilds a single experiment's ordinary fit vector
 (`[*utility, alpha_observer, sigma, eta?]`) out of the pooled one, which is what
 lets the existing per-study scoring code do the scoring unchanged.
-
-Uniform priors only: an informative-prior configuration would add a `prior_nu`
-per experiment, and nothing here has been checked against that.
 """
 
 import sys

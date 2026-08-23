@@ -27,9 +27,10 @@ import numpy as np  # noqa: E402
 
 import _fit_dispatcher as fd  # noqa: E402
 import _reweighting  # noqa: E402
-from run_config import INFERRED_LATENTS, RunConfig  # noqa: E402
+from run_config import RunConfig  # noqa: E402
+from study_registry import SLUGS  # noqa: E402
 
-ROSTER = sorted(INFERRED_LATENTS)
+ROSTER = sorted(SLUGS)
 
 
 def test_registry_covers_the_roster():
@@ -146,7 +147,7 @@ def test_result_row_layout_for_every_study_and_variant():
             n_util = len(util)
             extras = 1 if rw else 0
             params = _params_for(n_util, extras)
-            row = fd._result_row(slug, variant, util, params, 9.5, False, rw)
+            row = fd._result_row(slug, variant, util, params, 9.5, rw)
 
             assert row["model"] == variant and row["experiment"] == slug
             assert row["nll"] == 9.5
@@ -162,25 +163,7 @@ def test_result_row_layout_for_every_study_and_variant():
             else:
                 assert "param_eta" not in row
                 assert "reweighting_targets" not in row
-            # prior_nu only appears in informative-prior runs.
-            assert "param_prior_nu" not in row
     print("✓ result-row layout correct for all 18 (study, variant) pairs")
-
-
-def test_result_row_with_informative_prior_adds_nu_before_eta():
-    """Extras are packed (prior_nu, then eta); the row must read them in that
-    order or an informative-prior reweighted fit mislabels both."""
-    slug, variant = "food_inv_joint_de", "full"
-    util = fd._FAMILIES["joint_de"]["variants"][variant][1]
-    rw = _reweighting.config_for(slug, variant, list(util))
-    assert rw, "1b/full should be reweighted"
-    n_util = len(util)
-    params = _params_for(n_util, 2)
-    row = fd._result_row(slug, variant, util, params, 1.0, True, rw)
-    assert row["param_prior_nu"] == params[n_util + 2]
-    assert row["param_eta"] == params[-1]
-    assert row["n_params"] == len(params)
-    print("✓ informative-prior + reweighted row packs prior_nu before eta")
 
 
 def test_alpha_observer_at_bound_is_false_while_the_bound_is_disabled():
@@ -189,7 +172,7 @@ def test_alpha_observer_at_bound_is_false_while_the_bound_is_disabled():
     ceiling that does not exist."""
     util = ("w_v", "w_d", "w_e", "gamma")
     row = fd._result_row(
-        "food_inv_joint_de", "full", util, _params_for(4, 0), 1.0, False, None
+        "food_inv_joint_de", "full", util, _params_for(4, 0), 1.0, None
     )
     assert fd.ALPHA_OBS_MAX is None, (
         "ALPHA_OBS_MAX is enabled; update this test and the reported "
@@ -197,29 +180,6 @@ def test_alpha_observer_at_bound_is_false_while_the_bound_is_disabled():
     )
     assert row["alpha_observer_at_bound"] is False
     print("✓ alpha_observer_at_bound is False while the bound is disabled")
-
-
-def test_priors_k_alignment_tiles_k1_and_rejects_mismatch():
-    """A K=1 priors vintage (the human-ceiling file) tiles up to the tables' K;
-    any other mismatch must raise rather than broadcast, since mismatched K
-    pairs each run's tables with another run's priors."""
-    tk = {"risk_table": np.zeros((20, 2, 3))}
-
-    pr = {"m_latent": np.ones((1, 4)), "effort_prior": np.ones((1, 2)), "other": None}
-    fd._check_priors_k_alignment("s", "full", pr, tk)
-    assert pr["m_latent"].shape[0] == 20, pr["m_latent"].shape
-    assert pr["effort_prior"].shape[0] == 20
-    assert pr["other"] is None
-
-    bad = {"m_latent": np.ones((7, 4))}
-    try:
-        fd._check_priors_k_alignment("s", "full", bad, tk)
-        raise AssertionError("K=7 against K=20 tables should raise")
-    except ValueError as e:
-        assert "priors K=7" in str(e) and "K=20" in str(e), str(e)
-
-    fd._check_priors_k_alignment("s", "full", None, tk)  # uniform: no-op
-    print("✓ priors K alignment tiles K=1 and rejects other mismatches")
 
 
 def test_wrappers_are_thin_and_route_to_their_own_slug():
@@ -236,7 +196,6 @@ def test_wrappers_are_thin_and_route_to_their_own_slug():
         # No protocol logic: these names belong to the dispatcher now.
         for leaked in (
             "resolve_variant_table_kwargs",
-            "build_priors_kwarg",
             "restart_records_to_rows",
             "write_fit_manifest",
             "n_params",
@@ -287,11 +246,7 @@ def test_warm_start_round_trips_for_every_fitted_variant():
         for variant, (_fn, util) in fd._FAMILIES[family]["variants"].items():
             if variant not in fits:
                 continue
-            extras = (
-                ("eta",)
-                if _reweighting.uses_reweighting(slug, list(util))
-                else ()
-            )
+            extras = ("eta",) if _reweighting.uses_reweighting(slug, list(util)) else ()
             # A fit written before the reweighting existed has no param_eta, so
             # it cannot round-trip. That is a stale artifact, not a code defect
             # (it resolves when the study is refit), so skip it and report --
@@ -309,7 +264,9 @@ def test_warm_start_round_trips_for_every_fitted_variant():
             )
             checked += 1
     assert checked, "no fits on disk to check the warm-start round trip against"
-    note = f" ({len(skipped)} pre-reweighting fits skipped: {skipped})" if skipped else ""
+    note = (
+        f" ({len(skipped)} pre-reweighting fits skipped: {skipped})" if skipped else ""
+    )
     print(f"✓ warm start round-trips for {checked} fitted (study, variant) pairs{note}")
 
 
@@ -328,22 +285,6 @@ def run_all_tests():
         sys.exit(1)
     print(f"All {len(tests)} fit-protocol tests passed!")
     print("=" * 60)
-
-
-def test_base_shared_uses_fulls_priors_vintage():
-    """`base_shared` must NOT route to the relationship-free base priors.
-
-    It is base's utility on full's relationship-conditioned comparison set, so
-    its cells carry a relationship axis; the collapsed base priors vintage would
-    misalign with that grid. Pins the exact-match in priors_base_variant against
-    a well-meaning widening to startswith("base").
-    """
-    from _priors import priors_base_variant
-
-    for slug in ("food_inv_desire", "food_inv_joint_de", "nonfood_inv_joint_de"):
-        assert priors_base_variant(slug, "base") is True, slug
-        assert priors_base_variant(slug, "base_shared") is False, slug
-        assert priors_base_variant(slug, "full") is False, slug
 
 
 def test_results_latex_macro_names_are_valid_and_unique():

@@ -47,7 +47,7 @@ def load_runs(slug, filename="lm_runs.jsonl"):
     """One study's scored elicitation runs, or None if it has not been run.
 
     The observed-action labels are checked against `OBSERVED_ACTIONS` rather than
-    assumed: every statistic here groups by that column, so a relabelled
+    assumed: every statistic here groups by that column, so a relabeled
     condition would silently drop its sets from the rates instead of failing.
     """
     path = get_project_root() / "model" / "outputs" / "lm" / slug / filename

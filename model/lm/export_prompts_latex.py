@@ -20,9 +20,6 @@ manuscript:
   3. **Given-magnitude ratings**: the scalar desire and relationship-intimacy
      ratings used in the studies where those variables are given rather than
      inferred.
-  4. **Prior-stage ratings**: the scalar desire, effort, and relationship-
-     intimacy judgments the LM makes before any action is revealed, mirroring
-     the participant's prior-stage screen (the informative-prior elicitation).
 
 Each prompt is rendered verbatim (no paraphrase). Variable content that the
 pipeline fills in per trial -- the scenario vignette, the motivational-state
@@ -59,11 +56,8 @@ DESIRE_OBJECT = "<the resource at stake>"
 RELATIONSHIP = "<relationship descriptor>"
 FEATURE_INSTR = "<feature-specific rating instruction (see below)>"
 ACTIONS = ["<observed action>", "<alternative action 1>", "<... alternative action k>"]
-# The prior-stage prompts are shown the given-condition paragraphs the study
-# reveals before the action (which paragraphs depends on the study); a single
-# placeholder stands in for that block, and the two effort paragraphs are the
-# endpoints of the prior-effort scale.
-PRIOR_CONDITIONS = "<given-condition paragraphs shown before the action>"
+# The two effort paragraphs, shown as an explicit unknown in the studies that
+# infer effort.
 EFFORT_LOW = "<low-effort paragraph>"
 EFFORT_HIGH = "<high-effort paragraph>"
 
@@ -242,51 +236,6 @@ def build_content():
         box(
             "User prompt (template) --- relationship intimacy $I$",
             prompts.relationship_user_prompt(RELATIONSHIP),
-        )
-    )
-
-    # ------------------------------------------------------------------ group 4
-    out.append(subsection("Prior-stage ratings"))
-    out.append(
-        box(
-            "System prompt --- prior desire $d$",
-            prompts.PRIOR_DESIRE_SYSTEM_PROMPT,
-        )
-    )
-    out.append(
-        box(
-            "User prompt (template) --- prior desire $d$",
-            prompts.prior_desire_user_prompt(
-                VIGNETTE, DESIRE_OBJECT, condition_texts=(PRIOR_CONDITIONS,)
-            ),
-        )
-    )
-    out.append(
-        box(
-            "System prompt --- prior effort $P(\\mathrm{high})$",
-            prompts.PRIOR_EFFORT_SYSTEM_PROMPT,
-        )
-    )
-    out.append(
-        box(
-            "User prompt (template) --- prior effort $P(\\mathrm{high})$",
-            prompts.prior_effort_user_prompt(
-                VIGNETTE, EFFORT_LOW, EFFORT_HIGH, condition_texts=(PRIOR_CONDITIONS,)
-            ),
-        )
-    )
-    out.append(
-        box(
-            "System prompt --- prior relationship intimacy $I$",
-            prompts.PRIOR_INTIMACY_SYSTEM_PROMPT,
-        )
-    )
-    out.append(
-        box(
-            "User prompt (template) --- prior relationship intimacy $I$",
-            prompts.prior_intimacy_user_prompt(
-                VIGNETTE, condition_texts=(PRIOR_CONDITIONS,)
-            ),
         )
     )
 

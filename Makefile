@@ -48,7 +48,7 @@ ANALYSIS_QMDS := \
   nonfood-inv-joint-ie-analysis
 
 .PHONY: all help test clean \
-        data lm lm-alternatives lm-base lm-diag lm-base-diag lm-priors \
+        data lm lm-alternatives lm-base lm-diag lm-base-diag \
         fit fit-inverse \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-panels figures-nonfood-domains \
@@ -59,8 +59,6 @@ ANALYSIS_QMDS := \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix lm-diag-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE)) \
-        $(addprefix lm-priors-,$(EXPERIMENTS_ALL)) \
-        $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
         $(addprefix cv-,$(EXPERIMENTS_ALL)) \
         $(addprefix analysis-,$(ANALYSIS_QMDS))
@@ -101,6 +99,7 @@ help:
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/si/"
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
 	@echo "  figures-nonfood-domains - render the Study 3 human panels split by sharing domain into figures/panels/"
+	@echo "  figures-schematic    - render the method-figure schematic panels into figures/panels/"
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
 	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
 	@echo "  figures-si-prereg-predictions - both models' per-cell predictions beside humans, all six studies"
@@ -124,23 +123,18 @@ help:
 	@echo "  deploy-explorer   - build + publish the explorer to athena (one login)"
 	@echo ""
 	@echo "Per-stage aggregates:"
-	@echo "  fit-inverse, cv-inverse   (the food studies; nonfood joins once its data lands)"
+	@echo "  fit-inverse, cv-inverse   (all six studies in EXPERIMENTS_INVERSE)"
 	@echo "  lm, lm-alternatives   (lm-alternatives does all six studies;"
 	@echo "                         'make -j3 lm-alternatives SCENARIO_WORKERS=3 CELL_WORKERS=12' runs them in parallel)"
 	@echo "  lm-base               (relationship-free alternatives for the base model;"
 	@echo "                         given-relationship studies only; smoke with K_RUNS=1)"
 	@echo "  lm-diag, lm-base-diag (K-run-safe diagnostic vintages; never overwrite canonical tables)"
-	@echo "  lm-priors             (prior-scalar elicitation for the informative-prior configs;"
-	@echo "                         4 food studies + the given-relationship base pair; smoke with K_RUNS=1)"
 	@echo ""
 	@echo "Per-experiment (substitute slug):"
 	@echo "  lm-<slug>, fit-<slug>, cv-<slug>, data-<slug>, counterbalancing-<slug>"
-	@echo "  fit-<slug> / cv-<slug> take run-config vars (default = the reported config):"
-	@echo "    PRIORS=informative[:<latents>]  PRIORS_FILE=<name>  NO_REWEIGHTING=1"
-	@echo "    (NO_REWEIGHTING=1 fits the preregistered model: no comparison-set reweighting.)"
-	@echo "    (any non-default config writes model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
+	@echo "  fit-<slug> / cv-<slug> take NO_REWEIGHTING=1 (fits the PREREGISTERED model:"
+	@echo "    no comparison-set reweighting; writes model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
-	@echo "  lm-priors-<slug>, lm-priors-base-<slug>   (base: given-relationship studies only)"
 	@echo "  e.g. make fit-food_inv_desire"
 	@echo ""
 	@echo "Per-qmd:"
@@ -289,24 +283,6 @@ $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE)): lm-base-diag-%:
 	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base --arm-output-only
 	uv run python model/lm/score_merged.py --study $* --base --arm --scenario-workers $(SCENARIO_WORKERS)
 
-# Prior-scalar elicitation (informative-prior configs; cheap, ~$5 for the food
-# four at K=20). This is a standalone stage, decoupled from the alternatives
-# pipeline: for each (scenario x prior-visible conditions) cell it elicits the
-# study's PRIOR-stage scalars (K_RUNS runs) into lm_priors{_base}.jsonl, which
-# the informative-prior fit configs load via tables.load_lm_priors. `lm-priors`
-# runs the four food studies plus the base variants of the given-relationship
-# pair; per-study `lm-priors-<slug>` (any of the six) and `lm-priors-base-<slug>`
-# (given-relationship studies only) cover the rest. Smoke with K_RUNS=1 and
-# preview the call count with a --dry-run first.
-lm-priors: $(addprefix lm-priors-,$(EXPERIMENTS_INVERSE)) \
-           lm-priors-base-food_inv_desire lm-priors-base-food_inv_joint_de
-
-$(addprefix lm-priors-,$(EXPERIMENTS_ALL)): lm-priors-%:
-	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $*
-
-$(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
-	K_RUNS=$(K_RUNS) uv run python model/lm/elicit_priors.py --study $* --base
-
 # =============================================================================
 # Per-study file-target graph (the incremental core, roster-driven)
 #
@@ -337,23 +313,19 @@ $(addprefix lm-priors-base-,$(EXPERIMENTS_BASE)): lm-priors-base-%:
 # recipe writes the whole set atomically, and `clean` removes it as a set.
 # =============================================================================
 
-# Run-config passthrough for fit-/cv- targets (the reported config when unset), e.g.:
-#   make fit-food_inv_joint_de PRIORS=informative
-#   make cv-food_inv_joint_de PRIORS=informative:desire PRIORS_FILE=lm_priors_human.jsonl
+# Run-config passthrough for fit-/cv- targets (the reported config when unset):
 #   make fit-food_inv_joint_de NO_REWEIGHTING=1     # the preregistered model
-# With every var empty CONFIG_FLAGS is empty, so the recipes stay the reported
-# invocation (uniform priors, the comparison-set reweighting, outputs/<slug>/).
-# Any non-default config routes the fit/CV to outputs/<slug>/alt/<tag>/ instead.
+# With the var empty CONFIG_FLAGS is empty, so the recipes stay the reported
+# invocation (the comparison-set reweighting, outputs/<slug>/). The non-default
+# config routes the fit/CV to outputs/<slug>/alt/<tag>/ instead.
 #
 # Note that the file targets below are the study-root paths, so a non-default
 # config's outputs are invisible to make: `make fit-<slug> NO_REWEIGHTING=1`
 # re-runs every time and, worse, is a no-op when the ROOT output is already
 # current. Drive multi-study non-default runs from a script that calls the fit/CV
 # modules directly (see bin/) rather than through these targets.
-PRIORS ?=
-PRIORS_FILE ?=
 NO_REWEIGHTING ?=
-CONFIG_FLAGS = $(if $(PRIORS),--priors $(PRIORS)) $(if $(PRIORS_FILE),--priors-file $(PRIORS_FILE)) $(if $(NO_REWEIGHTING),--no-reweighting)
+CONFIG_FLAGS = $(if $(NO_REWEIGHTING),--no-reweighting)
 
 define MODEL_PIPELINE_RULES
 model/outputs/$(1)/fit_results.json: \
@@ -563,7 +535,7 @@ figures-panels: $(PANEL_WITNESS)
 # =============================================================================
 
 NONFOOD_DOMAIN_WITNESS := $(PANEL_DIR)/results/panel_study3a_domains.pdf
-EXPERIMENTS_NONFOOD_SET := nonfood_inv_joint_de nonfood_inv_joint_ie
+EXPERIMENTS_NONFOOD_SET := $(filter nonfood_%,$(EXPERIMENTS_INVERSE))
 
 $(NONFOOD_DOMAIN_WITNESS): $(FIG_SCRIPTS)/figure_nonfood_domains.py \
     $(FIG_SCRIPTS)/figure_paper_panels.py $(FIG_SHARED) \
@@ -572,6 +544,16 @@ $(NONFOOD_DOMAIN_WITNESS): $(FIG_SCRIPTS)/figure_nonfood_domains.py \
 	uv run python $(FIG_SCRIPTS)/figure_nonfood_domains.py
 
 figures-nonfood-domains: $(NONFOOD_DOMAIN_WITNESS)
+
+# =============================================================================
+# Schematic panels (figures/panels/schematic/): the method-figure components,
+# rebuilt from the cached inputs in figures/figure_data/ (no API calls, no
+# model outputs needed).
+# =============================================================================
+
+.PHONY: figures-schematic
+figures-schematic:
+	uv run python $(FIG_SCRIPTS)/figure_schematic_plots.py
 
 # =============================================================================
 # SI per-scenario figures: one 4x4 scenario facet grid per study, showing the
@@ -717,7 +699,6 @@ test:
 	uv run python model/cv/test_transfer.py
 	uv run python model/cv/test_pooled.py
 	uv run python model/lm/test_elicitation_guards.py
-	uv run python bin/test_overnight_reelicit.py
 	uv run python analysis/test_json_to_csv.py
 	uv run python test_roster_sync.py
 

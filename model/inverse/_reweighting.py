@@ -13,8 +13,7 @@ develops the formal detail in the SI: the forgone-value reading of S, the
 criterion that decides which questions are reweighted, and the specification
 checks.
 
-Design, deliberately mirroring `_priors.py`: the reweighting lives entirely at
-the likelihood layer. It produces a replacement `prior_table` for the observer's
+Design: the reweighting lives entirely at the likelihood layer. It produces a replacement `prior_table` for the observer's
 table kwargs, so `observers.py` and `actors.py` are untouched and the
 preregistered path (`config=None`) stays byte-identical. The only
 thing the fit helpers must do is thread eta through the parameter vector and
