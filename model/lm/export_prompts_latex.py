@@ -56,10 +56,6 @@ DESIRE_OBJECT = "<the resource at stake>"
 RELATIONSHIP = "<relationship descriptor>"
 FEATURE_INSTR = "<feature-specific rating instruction (see below)>"
 ACTIONS = ["<observed action>", "<alternative action 1>", "<... alternative action k>"]
-# The two effort paragraphs, shown as an explicit unknown in the studies that
-# infer effort.
-EFFORT_LOW = "<low-effort paragraph>"
-EFFORT_HIGH = "<high-effort paragraph>"
 
 # --- LaTeX preamble the generated file depends on -----------------------------
 # Kept in one place so both the header comment (non-standalone) and the
@@ -74,24 +70,6 @@ PREAMBLE = r"""\usepackage{fvextra}  % extends fancyvrb; provides Verbatim line-
   fonttitle=\bfseries\footnotesize, coltitle=black, colbacktitle=gray!15,
   title={#1},
 }"""
-
-
-# The generation user prompt has one shape across all six experiments, so the
-# appendix reproduces it once. Which paragraphs each experiment reveals is the
-# experiment design, already stated in the main text, so it is referenced rather
-# than tabulated here.
-GENERATION_STRUCTURE_NOTE = (
-    "The user prompt has the same structure in every experiment: the "
-    "given-condition paragraphs that experiment reveals, in the order its trial "
-    "screens present them, then the quantities the trial leaves open, then the "
-    "observed action and the request for a comparison set. Which paragraphs are "
-    "revealed and which quantities are left open follows each experiment's "
-    "design, so it varies across experiments exactly as the design does. One "
-    "example is reproduced below; where a paragraph is not revealed it is simply "
-    "absent, and the quantity it would have specified is named as unknown "
-    "instead. The base-model ablation additionally drops the relationship "
-    "sentence, since that variant carries no intimacy term.\n\n"
-)
 
 
 def vsub(text):
@@ -126,7 +104,7 @@ def build_content():
     out.append(subsection("Counterfactual action generation"))
     out.append(
         box(
-            "System prompt --- counterfactual action generation ($G_{\\mathrm{LM}}$)",
+            "System prompt --- alternative action generation ($G_{\\mathrm{LM}}$)",
             prompts.ALTERNATIVES_SYSTEM_PROMPT,
         )
     )
@@ -134,24 +112,22 @@ def build_content():
     # branches differ only in which given-condition paragraphs are revealed and
     # which latents are flagged unknown -- which is the experiment design, stated
     # in the main text, so restating it here was pure repetition. The example is
-    # the 1b / 3a branch because it exercises every block: a revealed
-    # relationship sentence, the two-situation effort hypotheses carrying the
-    # unconditional-phrasing rule, and an unknown-magnitude line.
+    # the 1a branch (inferring desire): a revealed effort paragraph and
+    # relationship sentence, with the desire object flagged unknown-magnitude.
     prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"] = RELATIONSHIP
     try:
         alt_user_example = prompts.alternatives_user_prompt(
             VIGNETTE,
             OBSERVED,
+            effort_text=EFFORT_PARA,
             intimacy_level="__tmpl__",
-            effort_hypotheses=(EFFORT_LOW, EFFORT_HIGH),
             unknown_desire_object=DESIRE_OBJECT,
         )
     finally:
         del prompts.RELATIONSHIP_DESCRIPTORS["__tmpl__"]
-    out.append(GENERATION_STRUCTURE_NOTE)
     out.append(
         box(
-            "User prompt (Example) --- counterfactual action generation",
+            "User prompt (Example) --- alternative action generation",
             alt_user_example,
         )
     )
