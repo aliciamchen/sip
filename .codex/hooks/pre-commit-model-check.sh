@@ -5,11 +5,10 @@
 # is under model/. If so, run the whole test suite first; if it fails, block the
 # commit and report what failed.
 #
-# It runs `make test` rather than naming individual test files, deliberately: the
-# suite has grown from one file to five, and a hook that hardcodes a list quietly
-# stops covering the newest tests — which are the ones most likely to be broken.
-# `make test` is the single source of truth for what must pass, and it costs 22s
-# against 18s for the compliance test alone.
+# It runs `make test` rather than naming individual test files, deliberately: a
+# hook that hardcodes a list quietly stops covering the newest tests — which are
+# the ones most likely to be broken. `make test` is the single source of truth
+# for what must pass.
 #
 # Other Bash commands pass through untouched.
 

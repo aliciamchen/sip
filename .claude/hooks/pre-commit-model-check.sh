@@ -2,8 +2,13 @@
 # PreToolUse hook for the Bash tool.
 #
 # When Claude is about to run `git commit`, check whether any staged file
-# is under model/. If so, run model/test_model_compliance.py first; if the
-# test fails, block the commit and tell Claude what failed.
+# is under model/. If so, run the whole test suite first; if it fails, block the
+# commit and report what failed.
+#
+# It runs `make test` rather than naming individual test files, deliberately: a
+# hook that hardcodes a list quietly stops covering the newest tests — which are
+# the ones most likely to be broken. `make test` is the single source of truth
+# for what must pass.
 #
 # Other Bash commands pass through untouched.
 
@@ -29,16 +34,16 @@ if [ -z "$staged_model" ]; then
   exit 0
 fi
 
-# Defensive: skip if the test file isn't present. It's tracked in git, so a
-# normal checkout has it — this guard just avoids blocking commits spuriously
-# if it's ever missing.
-if [ ! -f model/test_model_compliance.py ]; then
+# Every test file is tracked (there is no `*test*` gitignore rule -- an earlier
+# version of this hook assumed one and skipped itself on that basis), so a clone
+# always has them. Still bail out rather than block if `make` is unavailable.
+if ! command -v make >/dev/null 2>&1; then
   exit 0
 fi
 
-# Run the compliance test, capturing output
+# Run the suite, capturing output
 log=$(mktemp)
-if uv run python model/test_model_compliance.py >"$log" 2>&1; then
+if make test >"$log" 2>&1; then
   rm -f "$log"
   exit 0
 fi
@@ -51,7 +56,7 @@ jq -n --arg out "$output" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: "deny",
-    permissionDecisionReason: ("model/test_model_compliance.py failed; commit blocked.\n\nTest output:\n" + $out + "\n\nFix the failures and retry. To bypass this check for a single commit (rare; only when committing docs alongside an unrelated test failure), use `git commit --no-verify` — but the hook still fires, so prefer fixing the test.")
+    permissionDecisionReason: ("make test failed; commit blocked.\n\nTest output:\n" + $out + "\n\nFix the failures and retry. To bypass this check for a single commit (rare; only when committing docs alongside an unrelated test failure), use `git commit --no-verify` — but the hook still fires, so prefer fixing the test.")
   }
 }'
 exit 0

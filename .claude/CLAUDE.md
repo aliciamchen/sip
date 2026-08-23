@@ -79,7 +79,7 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Project instructions
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
-- Before committing a nontrivial change under `model/` or `analysis/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (in Claude Code, the `/code-review` skill) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the model compliance test whenever a staged file is under `model/`.
+- Before committing a nontrivial change under `model/` or `analysis/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (in Claude Code, the `/code-review` skill) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the full test suite (`make test`) whenever a staged file is under `model/`.
 - For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
 - When changing CLAUDE.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 
