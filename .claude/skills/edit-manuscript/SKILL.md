@@ -26,6 +26,11 @@ The manuscript is her design document: she writes the plan into the paper first 
 3. Output a **numbered/lettered findings menu**, ordered by severity, internal-coherence problems separated from suggestions. She replies "do B, C, D". When referring back to a finding, restate its content — never bare codes ("what is c3 again").
 4. Report only; no edits until she picks.
 5. Code-vs-manuscript discrepancies: surface them and ask which side is newer — the direction genuinely alternates.
+6. **Numbers audit** (on "make sure theres no hardcoded numbers", and in any results-section audit): every quantitative claim must trace to a generated macro (`model/export_results_latex.py`) or a named script — hardcoded literals are findings, and so are macros the text never uses (37 dead ones were once found at a stroke). For a contested statistic ("how was this calculated? could you check it"), recompute it from the artifacts rather than explaining the code's intent — one such check surfaced a real data-collection bug.
+
+## Terminology sweeps
+
+When she flags a term as overused, ambiguous, or doing two jobs ("'relational cost' is overused in cognitive science", "'counterfactual actions' and 'alternatives' and 'comparison set' describe the same thing"), run the prose counterpart of the rename-concept skill: tabulate every occurrence with a line of context, split occurrences by sense, propose per-sense replacements as a menu, and apply only the approved rows. Include the generated artifacts' sources (`prompts.py`, the exporter's table headers) — a term fixed in prose but reintroduced by a generated table drifts right back.
 
 ## Explaining methods to her
 
