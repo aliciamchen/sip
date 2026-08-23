@@ -609,7 +609,7 @@ def _run_sources_jsonl(path, cell_cols):
 
     runs = []
     for run_id in sorted(records_by_run):
-        obs_ae, obs_g, alt_rows = {}, {}, []
+        obs_ae, obs_g, obs_risk, alt_rows = {}, {}, {}, []
         for rec in records_by_run[run_id]:
             scenario = rec["scenario_label"]
             o_idx = ACTION_LABEL_TO_IDX[rec["observed_action"]]
@@ -636,6 +636,19 @@ def _run_sources_jsonl(path, cell_cols):
                         (rk, ef),
                         ae_key + (f"run {run_id}",),
                     )
+                    # Risk is effort-marginal (scored once per (scenario, run)
+                    # and written into every record), so it must also agree
+                    # ACROSS effort conditions — the joint loaders keep only
+                    # the low-effort record's copy, which is safe only while
+                    # this holds. The ae_key guard above keys on e_idx and so
+                    # never compares the two.
+                    _assert_no_conflicting_write(
+                        slug,
+                        "observed risk (effort-marginal, across effort conditions)",
+                        obs_risk.get(g_key),
+                        rk,
+                        g_key + (f"run {run_id}",),
+                    )
                     _assert_no_conflicting_write(
                         slug,
                         "observed g",
@@ -644,6 +657,7 @@ def _run_sources_jsonl(path, cell_cols):
                         g_key + (f"run {run_id}",),
                     )
                     obs_ae[ae_key] = (rk, ef)
+                    obs_risk[g_key] = rk
                     obs_g[g_key] = gg
                 else:
                     row = {
@@ -755,6 +769,9 @@ def load_padded_lm_tables_joint_de(
                     for e in range(n_eff):
                         a_risk, a_effort = obs_ae[(scenario, e, o)]
                         effort[k, s, o, rel, e, 0] = a_effort
+                        # Risk has no effort axis; _run_sources_jsonl guards
+                        # that the effort records' risk values agree, so the
+                        # e == 0 copy IS the (effort-marginal) value.
                         if e == 0:
                             risk[k, s, o, rel, 0] = a_risk
                     g[k, s, o, rel, 0] = obs_g[(scenario, o)]
@@ -944,6 +961,9 @@ def load_padded_lm_tables_joint_ie(
                     for e in range(n_eff):
                         a_risk, a_effort = obs_ae[(scenario, e, o)]
                         effort[k, s, o, rew, e, 0] = a_effort
+                        # Risk has no effort axis; _run_sources_jsonl guards
+                        # that the effort records' risk values agree, so the
+                        # e == 0 copy IS the (effort-marginal) value.
                         if e == 0:
                             risk[k, s, o, rew, 0] = a_risk
                     g[k, s, o, rew, 0] = obs_g[(scenario, o)]

@@ -176,11 +176,14 @@ def fit_context(slug, config=None):
     variants = spec["variants"]
 
     data, action, scenario_idx, *rest = spec["loader"](slug)
-    data_kwargs = dict(zip(spec["data_names"], rest))
-    assert len(rest) == len(spec["data_names"]), (
-        f"{family}: loader returned {len(rest)} arrays after scenario_idx but "
-        f"data_names lists {len(spec['data_names'])}"
-    )
+    # A real raise before the zip (not an assert after it): zip truncates
+    # silently on a length mismatch, and assert vanishes under `python -O`.
+    if len(rest) != len(spec["data_names"]):
+        raise ValueError(
+            f"{family}: loader returned {len(rest)} arrays after scenario_idx "
+            f"but data_names lists {len(spec['data_names'])}"
+        )
+    data_kwargs = dict(zip(spec["data_names"], rest, strict=True))
     data_kwargs["action"] = action
     data_kwargs["scenario_idx"] = scenario_idx
 
