@@ -26,8 +26,8 @@ outputs/
     └── cv_model_comparison.json              # bootstrap model-comparison statistics (the paper's numbers)
 ```
 
-The slugs are the six inverse studies' directory names; the canonical slug ↔ Study-number
-roster is in the [root README](../../README.md#experiments). A study's `outputs/lm/<slug>/`
+The slugs are the six inverse studies' directory names; the slug ↔ study mapping is
+in the [root README](../../README.md#experiments). A study's `outputs/lm/<slug>/`
 and `<slug>/` folders appear once its LM elicitation and fits have been run, and the `<slug>/`
 folder is populated by running its fit → CV scripts (`make all`, or the per-study
 `make fit-<slug>` / `cv-<slug>`). There is no separate in-sample prediction stage: CV is the
@@ -238,8 +238,8 @@ A provenance sidecar written by `model/cv/_inverse_dispatcher.py` alongside the 
 outputs above, recording the study slug, a timestamp, the git SHA the CV ran at, and SHA-256
 hashes of the three CV files and of the input data CSV. `model_comparison.py` verifies it with
 the same asymmetry as the fit manifest: a **present but mismatched** manifest (the three CV
-files were not written together, or the data CSV changed since CV ran) is a hard error — the
-mixed-vintage combination the manifest exists to catch — while a **missing** manifest only
+files were not written together, or the data CSV changed since CV ran) is a hard error —
+exactly the mismatch the manifest exists to catch — while a **missing** manifest only
 warns and proceeds, so CV outputs produced before provenance tracking can still be compared.
 Re-run `make cv-<slug>` to record provenance before trusting the final published numbers.
 

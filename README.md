@@ -142,7 +142,7 @@ make figures-panels
 quarto render analysis/food-inv-desire-analysis.qmd
 
 # Run the full test suite (model compliance, fit/CV protocol, the statistics
-# modules, data conversion, elicitation guards, roster sync):
+# modules, data conversion, elicitation guards, experiment-list consistency):
 make test
 ```
 

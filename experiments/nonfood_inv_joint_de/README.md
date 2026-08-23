@@ -18,7 +18,7 @@ Each trial shows: intimacy-descriptor preamble page, then vignette + observed ac
 
 Slider responses: both sliders appear on one page per phase (a prior page and a posterior page), rendered via `survey-html-form` (see `_lib/two-slider.js`) since the `html-slider-response` plugin only supports one slider per trial. The desire slider asks about the scenario's own `desire_object` (e.g. "the chapstick", "to try the harmonica"); the effort slider uses the low_risk_share_effort_low/high paragraph endpoints. Each phase records one trial whose `response` is an object keyed by slider, `{desire, effort}`. The Continue button stays disabled until both sliders are moved.
 
-Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 12 cells. The shared counterbalancing generator (`experiments/build/counterbalancing.py`) produces 240 sequences (15 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
+Each participant sees 16 trials (one per scenario). The design has 12 condition cells, and which cell each scenario gets is balanced across participants by the shared counterbalancing generator (`experiments/build/counterbalancing.py`).
 
 The memory checks come from `NONFOOD_MEMORY_CHECKS` (sleeping-bag + salary; three questions total), and the consent template is the domain-general `_lib/consent/nonfood-inverse.html`.
 

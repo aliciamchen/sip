@@ -16,9 +16,9 @@ Each trial shows: vignette + desire paragraph as preamble, then prior sliders, t
 
 Slider responses: both sliders appear on one page per phase (a prior page and a posterior page), rendered via `survey-html-form` (see `_lib/two-slider.js`) since the `html-slider-response` plugin only supports one slider per trial. An intimacy slider 0–100 with maximally formal / maximally intimate labels and an effort slider with low_risk_share_effort_low / low_risk_share_effort_high paragraph endpoints. Each phase records one trial whose `response` is an object keyed by slider, `{intimacy, effort}`. The Continue button stays disabled until both sliders are moved.
 
-Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 6 cells. The shared counterbalancing generator (`experiments/build/counterbalancing.py`) produces 96 sequences (6 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
+Each participant sees 16 trials (one per scenario). The design has 6 condition cells, and which cell each scenario gets is balanced across participants by the shared counterbalancing generator (`experiments/build/counterbalancing.py`).
 
-The trial flow follows the "noalt" pattern: no candidate action list shown to the participant, only the single observed action at the posterior stage.
+The participant is never shown a list of candidate actions — only the single observed action, at the posterior stage.
 
 ## Stimulus source
 

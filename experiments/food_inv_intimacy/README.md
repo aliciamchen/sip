@@ -16,9 +16,9 @@ Each trial shows: vignette + desire paragraph + effort paragraph + observed acti
 
 Slider responses: one intimacy slider (0–100), prior and posterior.
 
-Each participant sees 16 trials (one per scenario) with cells balanced across participants. Cell space: 12 cells. The shared counterbalancing generator (`experiments/build/counterbalancing.py`) produces 240 sequences (15 rounds × 16 rotations), each a 16-trial assignment of factor cells to the 16 scenarios.
+Each participant sees 16 trials (one per scenario). The design has 12 condition cells, and which cell each scenario gets is balanced across participants by the shared counterbalancing generator (`experiments/build/counterbalancing.py`).
 
-The trial flow follows the "noalt" pattern: no candidate action list shown to the participant, only the single observed action at the posterior stage.
+The participant is never shown a list of candidate actions — only the single observed action, at the posterior stage.
 
 ## Stimulus source
 

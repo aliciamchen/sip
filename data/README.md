@@ -1,6 +1,6 @@
 # Data codebook
 
-The active roster is six inverse-planning studies on the 3-action set: four on the food scenario set and two on the non-food set (the canonical slug ↔ Study-number roster is in the [root README](../README.md#experiments)). Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `analysis/json_to_csv.py`. All six now have collected samples in `data/<slug>/` (retained after exclusions: 1a ~480; 1b, 2a, 3a, and 3b ~240 each; 2b ~120), and the conversion configs for all six are in `json_to_csv.py`. All six are in the Makefile's `EXPERIMENTS_INVERSE` as of the 2026-07-21 roster move.
+There are six inverse-planning studies, all on the same 3-action stimulus structure: four on the food scenario set and two on the non-food set (the slug ↔ study mapping is in the [root README](../README.md#experiments)). Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `analysis/json_to_csv.py`. All six have collected samples in `data/<slug>/` (retained after exclusions: 1a ~480; 1b, 2a, 3a, and 3b ~240 each; 2b ~120), and the conversion configs for all six are in `json_to_csv.py`. The Makefile's `EXPERIMENTS_INVERSE` list names all six and drives the pipeline over them.
 
 | Folder | Study | Inferred | Given |
 |---|---|---|---|
@@ -82,7 +82,7 @@ Two sliders per page, so each row carries both ratings.
 
 ### Studies 3a and 3b — non-food (`nonfood_inv_joint_de/`, `nonfood_inv_joint_ie/`)
 
-The non-food studies repeat 1b's and 2b's designs on the non-food scenario set, so their CSVs use exactly the same columns: Study 3a matches the Study 1b table above and Study 3b matches the Study 2b table. Both now have full samples (~240 each after exclusions).
+The non-food studies repeat 1b's and 2b's designs on the non-food scenario set, so their CSVs use exactly the same columns: Study 3a matches the Study 1b table above and Study 3b matches the Study 2b table. Both have full samples (~240 each after exclusions).
 
 ## Exclusion criteria
 
