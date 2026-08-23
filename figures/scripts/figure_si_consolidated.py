@@ -4,8 +4,7 @@
 The action-set figure combines set size, composition under relationship and
 desire manipulations, and the vanilla-versus-social comparison-set check. The
 variability figure combines the all-study run-spread summary with representative
-predictive densities. The detailed standalone figures remain available for
-diagnostic use, but the journal manuscript includes only these summaries.
+predictive densities.
 """
 
 import json
@@ -16,18 +15,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
+from scipy.spatial.distance import cdist
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "model" / "cv"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from plot_alternatives import (  # noqa: E402
-    _composition_prop,
-    _draw_base_vs_full,
-    _draw_composition_row,
-)
 from plot_si_validation import (  # noqa: E402
-    RUN_SPREAD_COLORS,
     extract_observed,
     load_runs,
 )
@@ -38,8 +32,14 @@ from run_delta_io import (  # noqa: E402
 )
 
 from plot_style import (  # noqa: E402
+    ACTION_COLORS,
     ACTION_LABELS,
     ALT_GREY,
+    DESIRE_COLORS,
+    EFFORT_COLORS,
+    INTIMACY_COLORS,
+    INTIMACY_LABELS,
+    INTIMACY_LEVELS,
     OBSERVED_ACTIONS,
     STUDY_LABELS,
     apply_style,
@@ -50,6 +50,12 @@ from study_registry import SLUGS, slugs_given, studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 SAVE_KW = {"png": True}
+
+#: The two-state world-state DV is colored apart from the continuous latents:
+#: its per-run spread behaves differently (it is a probability difference on a
+#: 2-point support, not a posterior mean over a 101-bin grid). Which DV that is
+#: comes from run_delta_io, shared with the CV fold bodies.
+RUN_SPREAD_COLORS = {False: "#333333", True: EFFORT_COLORS["high"]}
 
 # Panel letters and the bold section headings are placed in figure coordinates
 # rather than as offsets from each panel's axes, because the panels here differ
@@ -111,6 +117,263 @@ def _runs_with_unique_scenarios(study_runs):
         frame["scenario_label"] = study + "__" + frame["scenario_label"].astype(str)
         frames.append(frame)
     return pd.concat(frames, ignore_index=True)
+
+
+def _condition_axes(alts, include_effort=True):
+    """The condition columns of this study's cell grid (besides observed action),
+    with their level order and display palette."""
+    axes = {}
+    if "intimacy_condition" in alts.columns:
+        axes["intimacy_condition"] = ("intimacy", INTIMACY_LEVELS, INTIMACY_COLORS)
+    if "desire_condition" in alts.columns:
+        axes["desire_condition"] = ("desire", ["low", "high"], DESIRE_COLORS)
+    if include_effort and "effort_condition" in alts.columns:
+        axes["effort_condition"] = ("effort", ["low", "high"], None)
+    return axes
+
+
+def _boot_ci(vals, n=1000, seed=0):
+    rng = np.random.default_rng(seed)
+    vals = np.asarray(vals)
+    idx = rng.integers(0, len(vals), size=(n, len(vals)))
+    return np.percentile(vals[idx].mean(axis=1), [2.5, 97.5])
+
+
+def _composition_prop(runs):
+    """For one study's lm_runs, assign every generated alternative to the observed
+    action whose (g, risk, effort) feature centroid is nearest (the space the
+    planner reasons over), and return (main_col, main_name, main_levels, prop),
+    where prop[(observed_action, condition_level)] is the fraction of alternatives
+    nearest each observed action. The condition axis is whichever non-effort
+    condition the study manipulates (relationship or desire)."""
+    cond_axes = _condition_axes(runs)
+    main_col, (main_name, main_levels, _) = next(
+        (c, v) for c, v in cond_axes.items() if c != "effort_condition"
+    )
+    feats = ("g", "risk", "effort")
+
+    def feat_vec(a):
+        return None if any(a[f] is None for f in feats) else [a[f] for f in feats]
+
+    # per-scenario feature centroid of each observed action (slot-0 action),
+    # averaged over runs/conditions
+    acc = {}
+    for rec in runs.itertuples(index=False):
+        obs0 = next((a for a in rec.actions if a["is_observed"]), None)
+        v = feat_vec(obs0) if obs0 is not None else None
+        if v is not None:
+            acc.setdefault((rec.scenario_label, rec.observed_action), []).append(v)
+    centroid = {k: np.mean(v, axis=0) for k, v in acc.items()}
+
+    counts = {
+        (obs, lvl): dict.fromkeys(OBSERVED_ACTIONS, 0)
+        for obs in OBSERVED_ACTIONS
+        for lvl in main_levels
+    }
+    for rec in runs.itertuples(index=False):
+        try:
+            cents = np.array(
+                [centroid[(rec.scenario_label, a)] for a in OBSERVED_ACTIONS]
+            )
+        except KeyError:
+            continue
+        cell = (rec.observed_action, getattr(rec, main_col))
+        if cell not in counts:
+            continue
+        for a in rec.actions:
+            v = None if a["is_observed"] else feat_vec(a)
+            if v is None:
+                continue
+            nearest = OBSERVED_ACTIONS[int(np.argmin(((cents - v) ** 2).sum(axis=1)))]
+            counts[cell][nearest] += 1
+
+    prop = {
+        cell: {
+            a: (c[a] / total if (total := sum(c.values())) else 0.0)
+            for a in OBSERVED_ACTIONS
+        }
+        for cell, c in counts.items()
+    }
+    return main_col, main_name, main_levels, prop
+
+
+def _draw_composition_row(
+    ax_obs, ax_cond, prop, main_col, main_name, main_levels, legend, show_xlabel
+):
+    """Draw one study's two composition panels: (left) proportion nearest each
+    action vs observed action, faint lines = condition levels; (right) vs the
+    manipulated condition, faint lines = observed actions. ``show_xlabel`` adds the
+    x-axis labels (only the bottom row of a figure sets them, since all rows share
+    the same axes)."""
+
+    def draw(ax, x, series_lines, color, label=None):
+        for ys in series_lines:
+            ax.plot(x, ys, color=color, lw=0.7, alpha=0.3, zorder=2)
+        ax.plot(
+            x,
+            np.mean(series_lines, axis=0),
+            color=color,
+            lw=2.2,
+            zorder=4,
+            marker="o",
+            ms=5,
+            label=label,
+        )
+
+    xa = np.arange(len(OBSERVED_ACTIONS))
+    for nc in OBSERVED_ACTIONS:
+        per_level = [
+            [prop[(obs, lvl)][nc] for obs in OBSERVED_ACTIONS] for lvl in main_levels
+        ]
+        draw(
+            ax_obs,
+            xa,
+            per_level,
+            ACTION_COLORS[nc],
+            label=f"Nearest: {ACTION_LABELS[nc].lower()}" if legend else None,
+        )
+    ax_obs.set_xticks(xa)
+    ax_obs.set_xticklabels(
+        [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_ACTIONS], fontsize=8.5
+    )
+    ax_obs.set_xlim(-0.25, len(OBSERVED_ACTIONS) - 0.75)
+    if show_xlabel:
+        ax_obs.set_xlabel("Observed action")
+
+    xb = np.arange(len(main_levels))
+    for nc in OBSERVED_ACTIONS:
+        per_obs = [
+            [prop[(obs, lvl)][nc] for lvl in main_levels] for obs in OBSERVED_ACTIONS
+        ]
+        draw(ax_cond, xb, per_obs, ACTION_COLORS[nc])
+    ax_cond.set_xticks(xb)
+    if main_col == "intimacy_condition":
+        ax_cond.set_xticklabels(
+            [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in main_levels],
+            fontsize=8,
+        )
+        cond_xlabel = "Relationship descriptor"
+    else:
+        ax_cond.set_xticklabels([lvl.capitalize() for lvl in main_levels], fontsize=8.5)
+        cond_xlabel = f"{main_name.capitalize()} condition"
+    ax_cond.set_xlim(-0.25, len(main_levels) - 0.75)
+    if show_xlabel:
+        ax_cond.set_xlabel(cond_xlabel)
+
+
+def _alt_feature_clouds(runs, cell_cols):
+    """cell key -> (N, 3) array of (risk, effort, g) for the alternatives in that
+    cell, pooled over runs. Instances are kept (not deduplicated by text): the
+    per-run sets are what the planner sees, so their pooled feature distribution
+    -- including how often an alternative recurs -- is the landscape we compare."""
+    clouds = {}
+    for key, grp in runs.groupby(cell_cols):
+        pts = [
+            (a["risk"], a["effort"], a["g"])
+            for actions in grp["actions"]
+            for a in actions
+            if not a["is_observed"]
+            and a["risk"] is not None
+            and a["effort"] is not None
+            and a["g"] is not None
+        ]
+        if pts:
+            clouds[key] = np.asarray(pts, dtype=float)
+    return clouds
+
+
+def _energy_distance(X, Y):
+    """Szekely-Rizzo energy distance between two point sets: 2 E|X-Y| - E|X-X'|
+    - E|Y-Y'|, a proper distance between distributions (0 iff equal), computed
+    here in the [0,1]^3 (risk, effort, g) feature space. The within-set terms
+    exclude self-pairs so the estimate is unbiased for finite samples."""
+
+    def within(A):
+        n = len(A)
+        if n < 2:
+            return 0.0
+        D = cdist(A, A)
+        return (D.sum() - np.trace(D)) / (n * (n - 1))
+
+    return max(0.0, 2 * cdist(X, Y).mean() - within(X) - within(Y))
+
+
+def _draw_base_vs_full(ax, base_runs, runs, ylabel):
+    """Draw one given-relationship study's base-vs-conditioned energy distances
+    onto ax: for each (scenario, observed action, effort) cell, the energy
+    distance between the base set's (risk, effort, g) cloud and each relationship
+    level's conditioned cloud, plus the reference distance between conditioned
+    clouds at different levels."""
+    cell_cols = ["scenario_label", "observed_action", "effort_condition"]
+    base_clouds = _alt_feature_clouds(base_runs, cell_cols)
+    cond_clouds = _alt_feature_clouds(runs, [*cell_cols, "intimacy_condition"])
+
+    recs = []
+    for key, bcloud in base_clouds.items():
+        levels = {lvl: cond_clouds.get((*key, lvl)) for lvl in INTIMACY_LEVELS}
+        if any(v is None for v in levels.values()):
+            continue
+        for lvl in INTIMACY_LEVELS:
+            recs.append(
+                dict(
+                    scenario=key[0],
+                    comparison=lvl,
+                    dist=_energy_distance(bcloud, levels[lvl]),
+                )
+            )
+        pairs = [
+            _energy_distance(levels[l1], levels[l2])
+            for i, l1 in enumerate(INTIMACY_LEVELS)
+            for l2 in INTIMACY_LEVELS[i + 1 :]
+        ]
+        recs.append(
+            dict(scenario=key[0], comparison="reference", dist=float(np.mean(pairs)))
+        )
+    per_scen = (
+        pd.DataFrame(recs)
+        .groupby(["scenario", "comparison"], as_index=False)["dist"]
+        .mean()
+    )
+
+    cats = [*INTIMACY_LEVELS, "reference"]
+    wide = per_scen.pivot_table(
+        index="scenario", columns="comparison", values="dist"
+    ).reindex(columns=cats)
+    rng = np.random.default_rng(0)
+    # per-scenario x-offset kept constant across categories, so each scenario's
+    # points connect into a thin line (its trajectory across the levels)
+    xoff = dict(zip(wide.index, rng.uniform(-0.1, 0.1, len(wide))))
+    xs_base = np.arange(len(cats))
+    for s, row in wide.iterrows():
+        xs = xs_base + xoff[s]
+        ys = row[cats].to_numpy()
+        ax.plot(xs, ys, color=ALT_GREY, lw=0.5, alpha=0.4, zorder=2)
+        ax.scatter(xs, ys, s=11, color=ALT_GREY, alpha=0.7, lw=0, zorder=3)
+    for x, cat in enumerate(cats):
+        vals = wide[cat].dropna().to_numpy()
+        lo, hi = _boot_ci(vals)
+        m = vals.mean()
+        ax.errorbar(
+            x,
+            m,
+            yerr=[[m - lo], [hi - m]],
+            fmt="o",
+            color=INTIMACY_COLORS.get(cat, "#333333"),
+            ms=6,
+            capsize=3,
+            lw=1.2,
+            zorder=5,
+        )
+    ax.axvline(len(INTIMACY_LEVELS) - 0.5, color="0.85", lw=1.1, ls=(0, (4, 3)))
+    ax.set_xticks(range(len(cats)))
+    ax.set_xticklabels(
+        [INTIMACY_LABELS[lvl].replace(" ", "\n") for lvl in INTIMACY_LEVELS]
+        + ["Between\nlevels (ref.)"],
+        fontsize=8.5,
+    )
+    if ylabel:
+        ax.set_ylabel("Feature-distribution\ndistance (lower = closer)")
+    ax.set_ylim(bottom=0)
 
 
 def _draw_size_heatmap(ax, runs_by_study):

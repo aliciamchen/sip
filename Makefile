@@ -53,8 +53,7 @@ ANALYSIS_QMDS := \
         cv cv-inverse model-comparison \
         analysis figures-lm-si figures-panels figures-nonfood-domains \
         figures-si-scenarios \
-        figures-si-model-scatter figures-si-prior-posterior \
-        figures-si-prereg-deviation figures-si-prereg-predictions \
+        figures-si-prior-posterior figures-si-prereg-predictions \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-,$(EXPERIMENTS_BASE)) \
@@ -91,7 +90,6 @@ help:
 	@echo "  fit        - fit all active experiments"
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
-	@echo "  run-deltas       - per-run held-out deltas behind each cell mean (SI run-spread figure)"
 	@echo "  transfer         - cross-study parameter transfer over the designed pairs (exploratory)"
 	@echo "  pooled           - one shared utility per domain / across all six (exploratory)"
 	@echo "  generalization-primary - score the transfer/pooled arms on the primary metric"
@@ -104,9 +102,7 @@ help:
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
 	@echo "  figures-nonfood-domains - render the Study 3 human panels split by sharing domain into figures/panels/"
 	@echo "  figures-si-scenarios - render the per-scenario SI facet grids (one per study) into figures/si/"
-	@echo "  figures-si-model-scatter - per-study model-vs-human scatter grid (a diagnostic, not in the paper)"
 	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
-	@echo "  figures-si-prereg-deviation - reported vs preregistered (eta=0) held-out LL per study (a diagnostic, not in the paper)"
 	@echo "  figures-si-prereg-predictions - both models' per-cell predictions beside humans, all six studies"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
 	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
@@ -442,26 +438,6 @@ $(CMP_WITNESS): $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_l
 model-comparison: $(CMP_WITNESS)
 
 # =============================================================================
-# Per-run held-out deltas → outputs/<slug>/cv_run_deltas.json: the K per-run
-# predictions behind each held-out cell's mean, which the SI run-spread figure
-# reads to compare the elicitation mixture's own spread against the fitted sigma.
-#
-# A recompute rather than a re-run: the fold parameters in cv_folds.jsonl are all
-# the forward pass needs, so this recovers the per-run values from the REPORTED CV
-# outputs without refitting and without re-vintaging them. It gates itself — the
-# recomputed means must reproduce the stored predictions — and Study 1a, whose CV
-# outputs already carry the per-run values, is the control the gate checks
-# element-wise (so it writes no sidecar of its own).
-#
-# Not a file target: the recompute takes seconds and depends on the whole CV
-# output set, which the file graph tracks through cv_trial_ll.jsonl.
-# =============================================================================
-
-.PHONY: run-deltas
-run-deltas: $(foreach s,$(EXPERIMENTS_INVERSE),model/outputs/$(s)/cv_trial_ll.jsonl)
-	uv run python model/cv/run_deltas.py
-
-# =============================================================================
 # Cross-study parameter transfer (exploratory; in no preregistration): score one
 # study's fitted utility on another over the designed pairs, in two arms —
 # `frozen` (zero free parameters) and `refit` (utility frozen, alpha_observer /
@@ -530,16 +506,12 @@ $(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
 
 # =============================================================================
 # SI LM-elicitation validation figures (no API calls — read the persisted
-# lm_runs.jsonl / embedding artifacts and write PDFs to figures/si/). Each
-# figure spans all six active studies in one consolidated figure (the
-# alternatives deep-dives require embed_alternatives.py + project_alternatives.py
-# for every study). run-spread / mixture-check stay at Study 1a (model-fit
-# diagnostics).
+# lm_runs.jsonl tables and CV outputs, and write PDFs to figures/si/). Each
+# figure spans all six active studies.
 # =============================================================================
 
 figures-lm-si:
 	uv run python figures/scripts/plot_si_validation.py
-	uv run python figures/scripts/plot_alternatives.py --figures si
 	uv run python figures/scripts/figure_si_consolidated.py
 
 # =============================================================================
@@ -616,22 +588,6 @@ $(SI_SCENARIO_WITNESS): $(FIG_SCRIPTS)/figure_si_scenarios.py $(FIG_SHARED) \
 figures-si-scenarios: $(SI_SCENARIO_WITNESS)
 
 # =============================================================================
-# Model-vs-human scatter: one grid of study x ablation panels, at the scenario x
-# condition grain the model predicts on. A DIAGNOSTIC, not a paper figure — it
-# is not in the journal sync below and nothing in the SI cites it; it exists to
-# check per-study, per-latent agreement, which the pooled correlation panel in
-# the results figures cannot show.
-# =============================================================================
-
-SI_SCATTER := $(FIG_SI)/si_model_scatter_all.pdf
-
-$(SI_SCATTER): $(FIG_SCRIPTS)/figure_si_model_scatter.py \
-    $(FIG_SHARED) $(foreach s,$(EXPERIMENTS_ALL),$(call fig_inputs,$(s)))
-	uv run python $(FIG_SCRIPTS)/figure_si_model_scatter.py
-
-figures-si-model-scatter: $(SI_SCATTER)
-
-# =============================================================================
 # SI prior/posterior figures: the rating LEVELS behind the belief-update DV,
 # from the human data only (no model outputs, no CV). Two figures rather than
 # one two-panel figure, so each lands at \textwidth without being shrunk. Reads
@@ -649,29 +605,12 @@ figures-si-prior-posterior: $(SI_PRIORPOST)
 
 # =============================================================================
 # SI preregistration-deviation figure: what the comparison-set reweighting bought
-# per study, out of sample. Reads the matched-trial comparisons that
-# `model_comparison.py --compare-configs uniform-noreweight reported` writes into
-# outputs/<slug>/alt/, which in turn need the preregistered fit + CV from
-# bin/prereg-eta0.sh. Those live outside the file graph (a non-default run config
-# writes under alt/, which no file target tracks), so this depends on the
-# comparison JSONs themselves and the script skips any study whose comparison is
-# absent, naming the command that produces it.
+# per study, shown in the space the models actually predict in — both models'
+# per-cell predictions beside the human means, all six studies. Reads the two
+# configs' cv_preds_summary.json directly, so it needs only the CV runs (the
+# preregistered fit + CV under alt/uniform-noreweight/ come from
+# bin/prereg-eta0.sh).
 # =============================================================================
-
-SI_DEVIATION := $(FIG_SI)/si_prereg_deviation.pdf
-PREREG_COMPARE := $(foreach s,$(EXPERIMENTS_INVERSE),\
-    $(wildcard model/outputs/$(s)/alt/compare_uniform-noreweight_vs_reported.json))
-
-$(SI_DEVIATION): $(FIG_SCRIPTS)/figure_si_prereg_deviation.py $(FIG_SHARED) \
-    $(PREREG_COMPARE)
-	uv run python $(FIG_SCRIPTS)/figure_si_prereg_deviation.py
-
-figures-si-prereg-deviation: $(SI_DEVIATION)
-
-# The SI figure of the same comparison in the space the models actually predict
-# in: both models' per-cell predictions beside the human means, all six studies.
-# Reads the two configs' cv_preds_summary.json directly (not the comparisons), so
-# it needs only the CV runs.
 SI_PREREG_PREDS := $(FIG_SI)/si_prereg_predictions.pdf
 
 $(SI_PREREG_PREDS): $(FIG_SCRIPTS)/figure_si_prereg_predictions.py $(FIG_SHARED) \

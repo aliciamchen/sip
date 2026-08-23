@@ -18,9 +18,9 @@ Outputs per `outputs/<slug>/`:
     the K per-run held-out deltas the mean was taken over. Those are the
     mixture's own components, and the SI run-spread / mixture-check figures read
     them to show the within-cell run spread against the fitted sigma.
-    `PER_RUN_DELTA_KEYS` names them per family. Only the desire study wrote them
-    until 2026-08-03; older CV outputs for the other five carry the means only,
-    and `cv/run_deltas.py` recomputes the runs for a vintage that predates this.
+    `PER_RUN_DELTA_KEYS` names them per family. A CV output vintage that carries
+    only the means may instead have a `cv_run_deltas.json` sidecar holding the
+    recovered per-run values; `run_delta_io.py` reads either source.
   - `cv_folds.jsonl` — per-fold refit diagnostics (params, train/test NLL).
 
 Each `main_*()` runs end-to-end for one experiment and is exposed through the
@@ -140,8 +140,8 @@ N_ACTIONS = int(len(actions))
 # its fold body computes them. `cv_preds_summary.json` carries `<key>` (the mean
 # over elicitation runs) and `<key>_runs` (the K per-run values). Single source of
 # truth for consumers that need to know which deltas a study has — the SI
-# run-spread figure and `run_deltas.py`, which must agree with the fold bodies
-# about both the names and the order.
+# run-spread figure must agree with the fold bodies about both the names and the
+# order.
 PER_RUN_DELTA_KEYS = {
     "desire": ("delta_desire",),
     "intimacy": ("delta_intimacy",),

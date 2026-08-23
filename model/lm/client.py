@@ -511,8 +511,7 @@ def write_run_manifest(output_path, stage, study, extra=None):
     runs) must be distinguishable. This records how the file was produced — model,
     prompt + code version, timestamp — next to the data file it describes
     (``lm_runs.jsonl`` → ``lm_runs.manifest.json``). ``extra`` carries
-    stage-specific config (K runs, temperature, record counts). Mirrors the
-    plain-JSON style of embed_alternatives.py's lm_clusters.json.
+    stage-specific config (K runs, temperature, record counts).
 
     ``prompt_sha256`` identifies only the rendered prompts used by this stage.
     The legacy whole-source ``prompts_sha256`` remains for traceability. If an

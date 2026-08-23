@@ -14,12 +14,7 @@ outputs/
 │       ├── lm_runs_base.jsonl                # base ablation's relationship-free analog of lm_runs.jsonl (given-relationship studies)
 │       ├── lm_alternatives_base.jsonl        # base ablation's relationship-free analog of lm_alternatives.jsonl
 │       ├── lm_alternatives*.rationale.jsonl  # raw response containing the rationale and alternatives array
-│       ├── *.manifest.json                   # provenance sidecar per elicited JSONL (model, prompt hash, git SHA, timestamp)
-│       ├── lm_embeddings.npz                 # embeddings of the alternatives (semantic diagnostics; where elicited)
-│       ├── lm_alternatives_semantic.jsonl    # per-alternative cluster + nearest-observed-action labels
-│       ├── lm_clusters.json                  # per-scenario action-type clusters with exemplar texts
-│       ├── lm_alternatives_projection.jsonl  # per-scenario 2D projection + mean features, for the R notebook
-│       └── figures/                          # quick-look diagnostic PNGs from plot_alternatives.py
+│       └── *.manifest.json                   # provenance sidecar per elicited JSONL (model, prompt hash, git SHA, timestamp)
 └── <slug>/                               # one folder per inverse study (fits + CV)
     ├── fit_results.json                      # fitted params per ablation (incl. param_sigma)
     ├── fit_restarts.jsonl                    # per-restart fit diagnostics
@@ -154,30 +149,6 @@ restarted because its upstream input cannot be verified. Set
 `LM_RESUME_PROMPT_MISMATCH=allow` only for a deliberate mixed-prompt resume; superseded hashes
 are then preserved in the manifest's history fields.
 
-### Semantic diagnostics — `lm_embeddings.npz`, `lm_alternatives_semantic.jsonl`, `lm_clusters.json`, `lm_alternatives_projection.jsonl`, `figures/`
-
-An optional embedding-based view of the generated alternatives (the inverse fit never reads
-these), present for the studies where it has been run — currently Study 1a has the full set.
-`embed_alternatives.py --study <slug>` embeds each unique alternative text via the Together AI
-embeddings API and writes three artifacts: `lm_embeddings.npz` (the mean-centered, normalized
-embeddings — `alt_emb`, aligned row-for-row with `lm_alternatives_semantic.jsonl`, plus
-`obs_emb` with parallel `obs_scenario`/`obs_action` labels for the observed actions);
-`lm_alternatives_semantic.jsonl` (one record per unique `(scenario_label, action_text)` with
-its per-scenario `cluster` id, `nearest_observed_action`, and `sim_to_observed_action` cosine,
-joined back to `lm_alternatives.jsonl` on those keys); and `lm_clusters.json` (`model`,
-`k_per_scenario`, `dup_threshold`, and the per-scenario action-type `clusters` with
-nearest-centroid exemplar texts for interpretation).
-
-Downstream of those, `project_alternatives.py` computes a per-scenario 2D UMAP layout and
-writes `lm_alternatives_projection.jsonl` — one record per `(scenario_label, action_text)`
-with `is_observed`, `observed_action`, the semantic labels, the run-averaged `g`/`risk`/`effort`,
-and the `dim1`/`dim2` coordinates — which the R elicitation notebook joins and renders in
-ggplot (UMAP is never re-run in R). `plot_alternatives.py` reads the whole artifact family to
-render the SI alternatives figures into repo-root `figures/`, and drops two quick-look
-diagnostic PNGs (`fig1_semantic_map.png`, a global UMAP colored by scenario and by nearest
-observed action; `fig2_decision_space.png`, alternatives vs. the observed action in feature
-space with Pareto-dominance flags) into `outputs/lm/<slug>/figures/`.
-
 ## Per-study fit and CV outputs (`<slug>/`)
 
 Each study jointly fits its actor utility weights, `alpha_observer`, and the response-noise
@@ -236,9 +207,12 @@ A list with one object per held-out cell, giving the held-out `delta_<latent>` (
 `delta_effort` for the joint studies) tagged with `model`. This is the source the analysis qmds
 load for the condition-averaged model-vs-human correlation (secondary/descriptive), and the
 model's per-cell predictions generally. The desire study (`food_inv_desire`) additionally stores
-`delta_desire_runs` — the K per-run held-out `δ_k` for each cell — which the SI run-spread and
-mixture-check figures (`figures/scripts/plot_si_validation.py`) read to show the elicitation-sample
-mixture spread against the fitted `σ`, all out-of-sample.
+`delta_desire_runs` — the K per-run held-out `δ_k` for each cell — which the SI variability
+figure (`figures/scripts/figure_si_consolidated.py`) reads to show the elicitation-sample
+mixture spread against the fitted `σ`, all out-of-sample. For the other studies, whose committed
+CV outputs predate the fold bodies keeping the per-run values, the same per-run deltas are in a
+committed `cv_run_deltas.json` sidecar next to the CV outputs (a fresh CV run writes them into
+`cv_preds_summary.json` directly).
 
 ### `cv_folds.jsonl`
 

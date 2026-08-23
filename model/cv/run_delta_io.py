@@ -5,13 +5,12 @@ mean over the K elicitation runs, and (since 2026-08-03) the K per-run values
 `delta_*_runs` behind it. Those per-run values are the elicitation mixture's own
 components, so anything that reasons about the mixture's spread needs them.
 
-CV runs written before that date carry only the means, and `cv/run_deltas.py`
-recovers the per-run values for such a vintage into a `cv_run_deltas.json`
-sidecar. Consumers therefore have to try two sources in a fixed order and check
-the sidecar's provenance, which is the logic this module exists to hold once:
-three callers need it (the SI run-spread figure, the results-LaTeX exporter, and
-`run_deltas.py` itself for the sidecar's own schema), and a second copy of a
-staleness check is a second place for it to be subtly wrong.
+CV runs written before that date carry only the means and instead have a
+`cv_run_deltas.json` sidecar holding the recovered per-run values (committed
+next to those outputs; a fresh CV run writes the per-run values natively).
+Consumers therefore have to try two sources in a fixed order and check the
+sidecar's provenance, which is the logic this module exists to hold once — a
+second copy of a staleness check is a second place for it to be subtly wrong.
 
 Deliberately stdlib + numpy only -- no jax, no `_helpers` -- exactly as
 `_checkpoint.py` is, so a figure script can import it without paying for a JAX
@@ -24,7 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
-#: The sidecar `cv/run_deltas.py` writes next to a study's CV outputs.
+#: The per-run-delta sidecar kept next to a pre-2026-08-03 study's CV outputs.
 OUTPUT_NAME = "cv_run_deltas.json"
 
 #: The inferred variable (`Study.dvs[...].name`) that is the two-state physical
@@ -92,13 +91,12 @@ def load_per_run_deltas(outputs_dir, variant="full"):
     if not side_path.exists():
         raise RunDeltasUnavailable(
             f"{preds_path.name} has no per-run deltas and there is no "
-            f"{OUTPUT_NAME} sidecar -- run `make run-deltas`"
+            f"{OUTPUT_NAME} sidecar -- re-run the study's CV"
         )
     side = json.loads(side_path.read_text())
     if side.get("variant") != variant:
         raise RunDeltasUnavailable(
-            f"{side_path} holds variant `{side.get('variant')}`, not `{variant}` "
-            f"-- regenerate with `run_deltas.py --variant {variant}`"
+            f"{side_path} holds variant `{side.get('variant')}`, not `{variant}`"
         )
     if side.get("source", {}).get("cv_preds_summary.json") != sha256_file(preds_path):
         raise RunDeltasUnavailable(

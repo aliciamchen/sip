@@ -20,31 +20,11 @@ built from whichever studies are present:
      plane, showing the feature combinations the design targets: no-share
      low/low, low-risk share low-risk/effort-manipulated, high-risk share
      high-risk/low-effort.
-  4. si_lm_run_spread — run-to-run spread of the model's predicted belief
-     updates (Study 1a, full model): each elicitation run is one stochastic
-     sample, so the within-cell spread across the K runs is the spread of the
-     mixture components, shown against the fitted response noise sigma. Unlike
-     figures 1-3 this reads the model's out-of-sample CV predictions
-     (cv_preds_summary.json, produced by model/cv/cv_food_inv_desire.py) and is
-     skipped with a message if they are missing.
-  4b. si_lm_run_spread_all — the same comparison as a summary across every study
-     and inferred DV, since sigma is fitted per study. Reads each study's per-run
-     deltas from cv_preds_summary.json, or from the cv_run_deltas.json sidecar
-     (model/cv/run_deltas.py) for CV vintages that predate the fold bodies
-     keeping them.
-  5. si_lm_choice_set_sizes — distribution of the number of alternatives per
-     scored choice set (cell x run), per study.
-  6. si_lm_mixture_check — predictive check of the elicitation-sample mixture
-     likelihood (Study 1a, full model): the K-component predictive density
-     overlaid on participants' actual belief updates for six example cells.
-     Reads cv_preds_summary.json and data/food_inv_desire/main_trials.csv;
-     skipped with a message if the model outputs are missing.
 
 Usage:
-    uv run python model/lm/plot_si_validation.py
+    uv run python figures/scripts/plot_si_validation.py
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -54,17 +34,10 @@ import pandas as pd
 from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "model" / "cv"))
-from run_delta_io import (  # noqa: E402
-    WORLD_STATE_DV,
-    RunDeltasUnavailable,
-    load_per_run_deltas,
-)
 
 from plot_style import (  # noqa: E402
     ACTION_COLORS,
     ACTION_LABELS,
-    ALT_GREY,
     OBSERVED_ACTIONS,
     DESIRE_COLORS,
     EFFORT_COLORS,
@@ -606,353 +579,6 @@ def fig_observed_scatter(
     return savefig(fig, figname, **SAVE_KW)
 
 
-# ---------------------------------------------------------------- figure 4
-
-
-def fig_run_spread(figname="si_lm_run_spread"):
-    """Run-to-run spread of the model's predicted belief updates (Study 1a,
-    full model, out-of-sample leave-one-scenario-out CV predictions). Each
-    elicitation run is one stochastic sample, so the per-run updates within a
-    cell are the components of the mixture likelihood; the fitted response
-    noise sigma gives the scale to read the spread against."""
-    out_dir = get_project_root() / "model" / "outputs" / "food_inv_desire"
-    preds_path = out_dir / "cv_preds_summary.json"
-    if not preds_path.exists():
-        print(
-            "skipping run-spread figure: cv_preds_summary.json not found "
-            "(run model/cv/cv_food_inv_desire.py first)"
-        )
-        return None
-    with open(preds_path) as f:
-        rows = [r for r in json.load(f) if r["model"] == "full"]
-    if "delta_desire_runs" not in rows[0]:
-        print(
-            "skipping run-spread figure: cv_preds_summary.json lacks per-run "
-            "deltas (re-run model/cv/cv_food_inv_desire.py)"
-        )
-        return None
-    with open(out_dir / "fit_results.json") as f:
-        fits = json.load(f)
-    sigma = float(next(v for v in fits if v["model"] == "full")["param_sigma"])
-
-    means = np.array([r["delta_desire"] for r in rows])
-    runs = np.array([r["delta_desire_runs"] for r in rows])  # (cells, K)
-    sds = runs.std(axis=1)
-    order = np.argsort(means)
-    n_cells, K = runs.shape
-
-    fig, axes = plt.subplots(
-        1, 2, figsize=(6.4, 2.7), gridspec_kw={"width_ratios": [1.7, 1]}
-    )
-
-    # (a) every cell's K per-run updates, against the fitted noise band
-    ax = axes[0]
-    xs = np.arange(n_cells)
-    ax.fill_between(
-        xs,
-        means[order] - sigma,
-        means[order] + sigma,
-        color="#EBEBEB",
-        lw=0,
-        label="mean $\\pm$ fitted $\\sigma$",
-    )
-    ax.axhline(0, color="#CCCCCC", lw=0.7, zorder=0)
-    ax.scatter(
-        np.repeat(xs, K),
-        runs[order].ravel(),
-        s=2,
-        color="#777777",
-        alpha=0.25,
-        lw=0,
-        zorder=3,
-    )
-    ax.plot(
-        xs, means[order], color=MEAN_COLOR, lw=1.3, zorder=5, label="mean over runs"
-    )
-    ax.set_xlabel(f"Condition cells, sorted by mean update ({n_cells} cells)")
-    ax.set_ylabel("Predicted belief update")
-    ax.set_xticks([])
-    ax.legend(loc="upper left")
-    panel_label(ax, "a", dx=-0.06)
-
-    # (b) within-cell run SD, against sigma
-    ax = axes[1]
-    ax.hist(sds, bins=30, color="#9AA0A6", edgecolor="white", lw=0.4)
-    ax.axvline(sigma, color=MEAN_COLOR, ls="--", lw=1.3)
-    ax.annotate(
-        f"fitted $\\sigma$ = {sigma:.2f}",
-        (sigma, ax.get_ylim()[1]),
-        xytext=(-4, -2),
-        textcoords="offset points",
-        ha="right",
-        va="top",
-        fontsize=10,
-    )
-    ax.set_xlabel("Within-cell SD across runs")
-    ax.set_ylabel("Cells")
-    panel_label(ax, "b", dx=-0.18)
-
-    print(
-        f"run spread: median within-cell SD = {np.median(sds):.3f}, "
-        f"fitted sigma = {sigma:.3f} (ratio {np.median(sds) / sigma:.2f})"
-    )
-    fig.tight_layout()
-    return savefig(fig, figname, **SAVE_KW)
-
-
-# ------------------------------------------------------- figure 4b (all six)
-
-
-#: The two-state world-state DV is colored apart from the continuous latents:
-#: its per-run spread behaves differently (it is a probability difference on a
-#: 2-point support, not a posterior mean over a 101-bin grid). Which DV that is
-#: comes from run_delta_io, shared with the results-LaTeX exporter.
-RUN_SPREAD_COLORS = {False: MEAN_COLOR, True: EFFORT_COLORS["high"]}
-
-
-def fig_run_spread_all(figname="si_lm_run_spread_all"):
-    """Within-cell run spread against the fitted response noise, for every study
-    and every inferred DV.
-
-    The companion to `fig_run_spread`, which works one study's spread through in
-    detail. sigma is fitted per study, so whether the elicitation mixture's
-    components sit close together *relative to sigma* is a claim that has to be
-    checked per study rather than generalized from Study 1a — and Study 1a is the
-    one study with no inferred world state, so it cannot show what the
-    world-state DV does. Each row is one (study, DV): points are the individual
-    held-out cells, the tick is the median, the bar spans the 10th-90th
-    percentile, and the rule at 1 marks a run spread equal to the response noise.
-    """
-    from study_registry import studies as _studies
-
-    outputs = get_project_root() / "model" / "outputs"
-    rows = []
-    for st in _studies():
-        try:
-            per_run, sigma = load_per_run_deltas(outputs / st.slug)
-        except RunDeltasUnavailable as e:
-            # A skip here loses one row of a summary figure, so it is a message
-            # rather than an error (the results-LaTeX exporter, where a missing
-            # number would become an undefined macro, lets the same exception
-            # propagate instead).
-            print(f"{st.slug}: {e} — skipped in the run-spread figure")
-            continue
-        for dv in st.dvs:
-            if dv.delta_col not in per_run:
-                continue
-            sds = per_run[dv.delta_col].std(axis=1)
-            rows.append(
-                {
-                    "study": STUDY_LABELS[st.slug].replace("Study ", ""),
-                    "dv": dv.label,
-                    "ratios": sds / sigma,
-                    "sigma": sigma,
-                    "is_world": dv.name == WORLD_STATE_DV,
-                }
-            )
-    if not rows:
-        print("skipping all-study run-spread figure: no per-run deltas available")
-        return None
-
-    rng = np.random.default_rng(0)  # jitter only — no inference depends on it
-    fig, ax = plt.subplots(figsize=(6.4, 0.42 * len(rows) + 1.15))
-    ax.axvline(1.0, color=ALT_GREY, ls="--", lw=1.0, zorder=1)
-    for i, r in enumerate(rows):
-        y = len(rows) - 1 - i  # paper order top-to-bottom
-        c = RUN_SPREAD_COLORS[r["is_world"]]
-        ax.scatter(
-            r["ratios"],
-            y + rng.uniform(-0.17, 0.17, r["ratios"].size),
-            s=3.5,
-            color=c,
-            alpha=0.35,
-            lw=0,
-            zorder=3,
-        )
-        lo, hi = np.percentile(r["ratios"], [10, 90])
-        ax.plot([lo, hi], [y, y], color=c, lw=1.2, alpha=0.9, zorder=4)
-        ax.plot(
-            [np.median(r["ratios"])] * 2,
-            [y - 0.26, y + 0.26],
-            color=c,
-            lw=2.0,
-            zorder=5,
-        )
-    ax.set_yticks(range(len(rows)))
-    ax.set_yticklabels(
-        [f"{r['study']}  {r['dv'].lower()}" for r in reversed(rows)], fontsize=9
-    )
-    ax.set_ylim(-0.7, len(rows) - 0.3)
-    ax.set_xlim(0, max(1.05, max(r["ratios"].max() for r in rows) * 1.04))
-    ax.set_xlabel(
-        "Within-cell SD of the per-run predictions $\\delta_k$, "
-        "relative to the fitted $\\sigma$"
-    )
-    ax.annotate(
-        "spread = $\\sigma$",
-        (1.0, len(rows) - 0.35),
-        xytext=(-4, 0),
-        textcoords="offset points",
-        ha="right",
-        va="top",
-        fontsize=9,
-        color=ALT_GREY,
-    )
-    ax.legend(
-        handles=[
-            Line2D(
-                [], [], color=RUN_SPREAD_COLORS[False], lw=2, label="continuous latent"
-            ),
-            Line2D(
-                [],
-                [],
-                color=RUN_SPREAD_COLORS[True],
-                lw=2,
-                label="two-state world state",
-            ),
-        ],
-        loc="lower right",
-        fontsize=9,
-    )
-    for r in rows:
-        print(
-            f"run spread {r['study']} {r['dv']}: median SD/sigma = "
-            f"{np.median(r['ratios']):.3f}, p90 = {np.percentile(r['ratios'], 90):.3f} "
-            f"(sigma = {r['sigma']:.3f}, {r['ratios'].size} cells)"
-        )
-    fig.tight_layout()
-    return savefig(fig, figname, **SAVE_KW)
-
-
-# ---------------------------------------------------------------- figure 5
-
-
-def fig_choice_set_sizes(runs_by_study, figname="si_lm_choice_set_sizes"):
-    """Distribution of the number of LM-generated alternatives in each scored
-    choice set (one set per cell x run), per study with elicitation data.
-    Documents the "small, focused set" the generation prompt asks for — and
-    makes visible that a fraction of Study 1a's sets contain no alternatives
-    at all."""
-    studies = list(runs_by_study)
-    ncols = 2
-    nrows = (len(studies) + ncols - 1) // ncols
-    fig, axes = plt.subplots(
-        nrows,
-        ncols,
-        figsize=(5.2, 1.9 * nrows),
-        sharex=True,
-        sharey=True,
-        squeeze=False,
-    )
-    xs = np.arange(0, 8)
-    axflat = axes.ravel()
-    for ax, study in zip(axflat, studies):
-        sizes = runs_by_study[study]["actions"].apply(len) - 1
-        pct = sizes.value_counts(normalize=True).sort_index() * 100
-        ax.bar(
-            xs,
-            [pct.get(x, 0) for x in xs],
-            width=0.8,
-            color=ALT_GREY,
-            edgecolor="white",
-            lw=0.5,
-        )
-        ax.set_title(STUDY_LABELS[study])
-        ax.set_xticks(xs[::2])
-    for ax in axflat[len(studies) :]:
-        ax.axis("off")
-    for ax in axes[:, 0]:
-        ax.set_ylabel("% of choice sets")
-    fig.supxlabel("Number of LM-generated alternatives in the scored set", fontsize=12)
-    fig.tight_layout()
-    return savefig(fig, figname, **SAVE_KW)
-
-
-# ---------------------------------------------------------------- figure 6
-
-
-def fig_mixture_check(figname="si_lm_mixture_check"):
-    """Predictive check of the elicitation-sample mixture (Study 1a, full
-    model, out-of-sample LOSO CV predictions): for six cells spanning the range
-    of predicted updates, the K-component predictive density (1/K) sum_k N(u;
-    delta_k, sigma^2) is overlaid on the distribution of participants' actual
-    belief updates in that cell. Ticks at the bottom mark the K per-run delta_k."""
-    out_dir = get_project_root() / "model" / "outputs" / "food_inv_desire"
-    preds_path = out_dir / "cv_preds_summary.json"
-    if not preds_path.exists():
-        print("skipping mixture-check figure: cv_preds_summary.json not found")
-        return None
-    with open(preds_path) as f:
-        rows = [r for r in json.load(f) if r["model"] == "full"]
-    if "delta_desire_runs" not in rows[0]:
-        print(
-            "skipping mixture-check figure: no per-run deltas in cv_preds_summary.json"
-        )
-        return None
-    with open(out_dir / "fit_results.json") as f:
-        fits = json.load(f)
-    sigma = float(next(v for v in fits if v["model"] == "full")["param_sigma"])
-
-    trials = pd.read_csv(
-        get_project_root() / "data" / "food_inv_desire" / "main_trials.csv"
-    )
-    wide = trials.pivot_table(
-        index=[
-            "subject_id",
-            "scenario_label",
-            "action_condition",
-            "effort_condition",
-            "intimacy_condition",
-        ],
-        columns="stage",
-        values="response",
-    ).reset_index()
-    wide["update"] = wide["posterior"] - wide["prior"]
-
-    rows = sorted(rows, key=lambda r: r["delta_desire"])
-    picks = [rows[int(q * (len(rows) - 1))] for q in (0.02, 0.2, 0.4, 0.6, 0.8, 0.98)]
-
-    u = np.linspace(-1, 1, 401)
-    fig, axes = plt.subplots(2, 3, figsize=(6.6, 4.4), sharex=True, sharey=True)
-    for ax, r in zip(axes.ravel(), picks):
-        action_condition = OBSERVED_ACTIONS[r["action"]]
-        h = wide[
-            (wide["scenario_label"] == r["scenario_label"])
-            & (wide["action_condition"] == action_condition)
-            & (wide["effort_condition"] == r["effort_condition"])
-            & (wide["intimacy_condition"] == r["intimacy_condition"])
-        ]["update"].to_numpy()
-        deltas = np.asarray(r["delta_desire_runs"])
-        dens = np.mean(
-            np.exp(-((u[None, :] - deltas[:, None]) ** 2) / (2 * sigma**2))
-            / (sigma * np.sqrt(2 * np.pi)),
-            axis=0,
-        )
-        ax.hist(
-            h,
-            bins=np.arange(-1, 1.01, 0.125),
-            density=True,
-            color="#DDDDDD",
-            edgecolor="white",
-            lw=0.5,
-        )
-        ax.plot(u, dens, color=MEAN_COLOR, lw=1.4, zorder=5)
-        ax.vlines(deltas, 0, 0.16, color="#777777", lw=0.6, alpha=0.7, zorder=4)
-        ax.set_title(
-            f"{r['scenario_label']} - {ACTION_LABELS[action_condition].lower()}\n"
-            f"{r['effort_condition']} effort, {INTIMACY_LABELS[r['intimacy_condition']].lower()}"
-            f"  (n = {len(h)})",
-            fontsize=9,
-        )
-        ax.set_xlim(-1, 1)
-    for ax in axes[-1]:
-        ax.set_xlabel("Belief update", fontsize=9)
-    for ax in axes[:, 0]:
-        ax.set_ylabel("Density", fontsize=9)
-    fig.tight_layout()
-    return savefig(fig, figname, **SAVE_KW)
-
-
 def main():
     apply_style()
     runs_by_study = {}
@@ -968,31 +594,20 @@ def main():
         frames.append(df)
         print(f"{study}: {len(df)} observed-action rows")
     observed = pd.concat(frames, ignore_index=True)
-    # All six studies in one consolidated figure each (roster order), replacing
-    # the earlier per-combination files. run-spread and mixture-check stay at
-    # Study 1a: they are model-fit/CV diagnostics, not LM-elicitation figures,
-    # and the nonfood studies have no CV outputs yet.
+    # All six studies in one consolidated figure each (roster order).
     studies = [s for s in STUDIES if s in runs_by_study]
     # The multi-panel LM-elicitation figures render at reduced SI widths, so use
     # the larger rc profile. The feature-structure grid keeps the base "si" sizes
-    # (dense 6x3, already readable), and the run-spread / mixture-check diagnostics
-    # are placed near full width, where the base sizes already read well.
+    # (dense 6x3, already readable).
     figures = [
         fig_feature_structure(observed, studies, figname="si_lm_feature_structure_all"),
-        fig_run_spread(figname="si_lm_run_spread_1a"),
-        fig_run_spread_all(figname="si_lm_run_spread_all"),
-        fig_mixture_check(figname="si_lm_mixture_check_1a"),
     ]
     with plt.rc_context(SI_LARGE_RC):
-        figures += [
+        figures.append(
             fig_observed_scatter(
                 observed, studies, figname="si_lm_observed_scatter_all"
-            ),
-            fig_choice_set_sizes(
-                {s: runs_by_study[s] for s in studies},
-                figname="si_lm_choice_set_sizes_all",
-            ),
-        ]
+            )
+        )
     # manipulation-checks reads slightly large in the SI_LARGE profile; nudge down.
     manip_rc = {
         **SI_LARGE_RC,
