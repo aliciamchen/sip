@@ -563,6 +563,55 @@ def data_csv_path(slug):
     return get_project_root() / "data" / slug / "main_trials_long.csv"
 
 
+def lm_table_paths(slug, runs_filename="lm_runs.jsonl"):
+    """The study's LM run tables — the given vintage plus its ``_base`` sibling
+    (the relationship-free set, present only for the given-relationship
+    studies). These are fit/CV inputs on par with the data CSV, so the
+    provenance manifests record them. Every current run config reads the
+    default ``lm_runs.jsonl`` vintage (mirroring the CV checkpoint's
+    fingerprint); the parameter exists for any future vintage axis."""
+    lm_dir = get_project_root() / "model" / "outputs" / "lm" / slug
+    names = [runs_filename]
+    if runs_filename.startswith("lm_runs") and not runs_filename.startswith(
+        "lm_runs_base"
+    ):
+        names.append(runs_filename.replace("lm_runs", "lm_runs_base", 1))
+    return [lm_dir / name for name in names]
+
+
+def _sha256_or_none(path):
+    """Hex SHA-256, or None for a missing file (e.g. no ``_base`` sibling for
+    the given-desire studies) — so presence/absence is itself fingerprinted."""
+    path = Path(path)
+    return sha256_file(path) if path.exists() else None
+
+
+def lm_tables_record(slug):
+    """``{project-relative path: sha256 | None}`` for the study's LM tables,
+    recorded in the fit and CV manifests. The CV fold checkpoint already
+    fingerprints these mid-run, but it is deleted once a run lands — this is
+    the durable record, so a re-elicited table makes committed fits verifiably
+    stale instead of silently passing manifest checks."""
+    root = get_project_root()
+    return {str(p.relative_to(root)): _sha256_or_none(p) for p in lm_table_paths(slug)}
+
+
+def verify_recorded_lm_tables(manifest, what, remedy):
+    """Hard-error when a manifest's recorded LM-table hashes no longer match
+    the files on disk. Manifests written before LM tables were recorded lack
+    the field and pass silently — the same asymmetry as a missing manifest."""
+    stale = [
+        rel
+        for rel, sha in (manifest or {}).get("lm_tables", {}).items()
+        if _sha256_or_none(get_project_root() / rel) != sha
+    ]
+    if stale:
+        raise RuntimeError(
+            f"LM table(s) {stale} changed since {what} ran — the outputs are "
+            f"stale relative to the current elicitation; {remedy}."
+        )
+
+
 def write_fit_manifest(slug, output_dir, data_csv=None):
     """Provenance manifest for a fit run: the git SHA plus content hashes of
     the fit outputs and the input data CSV. Written by the fit_*.py wrappers
@@ -585,6 +634,7 @@ def write_fit_manifest(slug, output_dir, data_csv=None):
             ),
             "sha256": sha256_file(data_csv),
         },
+        "lm_tables": lm_tables_record(slug),
     }
     write_json(output_dir / "fit_manifest.json", manifest)
     print(f"Wrote {output_dir / 'fit_manifest.json'}")
@@ -637,6 +687,11 @@ def verify_fit_manifest(slug, output_dir=None, data_csv=None):
             f"warm-started from it) is stale; re-run `make fit-{slug}` and then "
             f"`make cv-{slug}`."
         )
+    verify_recorded_lm_tables(
+        manifest,
+        f"the {slug} fit",
+        f"re-run `make fit-{slug}` and then `make cv-{slug}`",
+    )
     return manifest
 
 

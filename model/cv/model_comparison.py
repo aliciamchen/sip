@@ -46,16 +46,14 @@ from model.inverse._helpers import (
     read_jsonl,
     sha256_file,
     verify_fit_manifest,
+    verify_recorded_lm_tables,
     write_json,
 )
 from study_registry import STUDIES, reported_base, study, study_groups
 from utils import get_project_root
 
+from model.cv._checkpoint import CV_OUTPUT_NAMES
 from model.cv.contrast_tests import condition_gradients, variance_decomposition
-
-# The three CV output files written together by the dispatcher's _write_outputs
-# and hashed into cv_manifest.json (must match CV_OUTPUT_NAMES there).
-_CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
 
 # Per-study cell grid and DV mapping, derived from the shared study registry
 # (study_registry.py) so the model-comparison cells and the figures never
@@ -97,7 +95,7 @@ def _verify_cv_manifest(slug, outputs_dir):
         manifest = json.load(f)
     stale = [
         name
-        for name in _CV_OUTPUT_NAMES
+        for name in CV_OUTPUT_NAMES
         if sha256_file(outputs_dir / name) != manifest.get("outputs", {}).get(name)
     ]
     if stale:
@@ -111,6 +109,11 @@ def _verify_cv_manifest(slug, outputs_dir):
             f"data/{slug}/main_trials_long.csv changed since CV ran — stale CV "
             f"outputs for {slug}; re-run `make fit-{slug}` and `make cv-{slug}`."
         )
+    verify_recorded_lm_tables(
+        manifest,
+        f"the {slug} CV",
+        f"re-run `make fit-{slug}` and `make cv-{slug}`",
+    )
 
 
 def _prepare_data(slug):

@@ -64,6 +64,7 @@ import numpy as np
 import pandas as pd
 
 from model.cv._checkpoint import (
+    CV_OUTPUT_NAMES,
     append_fold,
     checkpoint_path,
     clear_checkpoint,
@@ -94,6 +95,7 @@ from model.inverse._helpers import (
     mixture_nll_2d,
     params_dict_to_array,
     parse_run_config_args,
+    lm_tables_record,
     sha256_file,
     verify_fit_manifest,
     write_json,
@@ -286,9 +288,8 @@ def _load_verified_warm_start(slug, fit_dir):
     return _read_fit_results(fit_dir)
 
 
-# The three CV output files written together per study; the manifest hashes
-# them so model_comparison.py can refuse stale or mixed-vintage combinations.
-CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
+# CV_OUTPUT_NAMES (the three files written together per study) is imported
+# from _checkpoint.py — the single source shared with model_comparison.py.
 
 
 def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows, outputs_dir):
@@ -307,8 +308,9 @@ def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows, outputs_dir):
     print(f"Wrote {outputs_dir / 'cv_folds.jsonl'}")
 
     # Provenance manifest: records the run's git SHA plus content hashes of the
-    # three outputs and the input data, so model_comparison.py can verify it is
-    # combining files from a single CV run over the current data.
+    # three outputs and the inputs (the data CSV and the LM run tables), so
+    # model_comparison.py can verify it is combining files from a single CV run
+    # over the current data and elicitation.
     data_csv = get_project_root() / "data" / slug / "main_trials_long.csv"
     manifest = {
         "experiment": slug,
@@ -319,6 +321,7 @@ def _write_outputs(slug, pred_rows, fold_rows, trial_ll_rows, outputs_dir):
             "path": str(data_csv.relative_to(get_project_root())),
             "sha256": sha256_file(data_csv),
         },
+        "lm_tables": lm_tables_record(slug),
     }
     write_json(outputs_dir / "cv_manifest.json", manifest)
     print(f"Wrote {outputs_dir / 'cv_manifest.json'}")
@@ -577,7 +580,9 @@ def _run_loso(family, slug, workers=None, patience=None, config=None, override=N
     # analysis those carry the donor study's utility weights, which no fit of
     # this study could provide.
     if override.init_params is not None:
-        warms = {v: None for v in variants}  # resolved per fold below
+        # An override supplies every starting vector; warm_for never reads
+        # warms on this branch.
+        warms = None
     else:
         full_fit = _load_verified_warm_start(slug, fit_dir=config.outputs_dir(slug))
         warms = {

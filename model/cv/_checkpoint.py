@@ -42,6 +42,12 @@ CHECKPOINT_VERSION = 1
 
 CHECKPOINT_NAME = "cv_checkpoint.jsonl"
 
+# The three CV output files written together per study by the dispatcher's
+# _write_outputs and hashed into cv_manifest.json. Defined here (stdlib-only
+# module) as the single source for both the dispatcher and model_comparison.py
+# — the latter must stay importable without JAX for the figure scripts.
+CV_OUTPUT_NAMES = ("cv_preds_summary.json", "cv_folds.jsonl", "cv_trial_ll.jsonl")
+
 # The config descriptor a plain (default, reweighted) CV run fingerprints
 # under — the reported model. Kept as a module constant so the no-config
 # default and the checkpoint header agree on the exact dict. Renaming a field
