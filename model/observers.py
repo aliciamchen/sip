@@ -35,7 +35,7 @@ Dependency layer 3: imports from `tables.py` and `actors.py`.
 import jax.numpy as jnp
 from memo import memo
 
-from actors import (
+from model.actors import (
     actor_continuous_base_padded_intimacy,
     actor_continuous_base_padded_joint_ie,
     actor_continuous_discomfort_only_padded_intimacy,
@@ -49,7 +49,7 @@ from actors import (
     actor_discrete_full_padded_desire,
     actor_discrete_full_padded_joint_de,
 )
-from tables import (
+from model.tables import (
     DesireLevels,
     EffortConditions,
     IntimacyLevels,
@@ -1149,9 +1149,7 @@ def _build_variants(full_fn, discomfort_only_fn, base_fn, shared_base=False):
         "discomfort_only": discomfort_only_fn,
         "base": base_fn,
     }
-    out = {
-        name: (fns[name], VARIANT_PARAM_NAMES[name]) for name in VARIANT_PARAM_NAMES
-    }
+    out = {name: (fns[name], VARIANT_PARAM_NAMES[name]) for name in VARIANT_PARAM_NAMES}
     if shared_base:
         out["base_shared"] = (base_fn, VARIANT_PARAM_NAMES["base"])
     return out

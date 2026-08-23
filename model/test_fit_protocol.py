@@ -18,17 +18,14 @@ Run: uv run python model/test_fit_protocol.py
 import sys
 from pathlib import Path
 
+import numpy as np
+
+from model.inverse import _reweighting
+from model.inverse import _fit_dispatcher as fd
+from model.run_config import RunConfig
+from study_registry import SLUGS
+
 _root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_root))
-sys.path.insert(0, str(_root / "model"))
-sys.path.insert(0, str(_root / "model" / "inverse"))
-
-import numpy as np  # noqa: E402
-
-import _fit_dispatcher as fd  # noqa: E402
-import _reweighting  # noqa: E402
-from run_config import RunConfig  # noqa: E402
-from study_registry import SLUGS  # noqa: E402
 
 ROSTER = sorted(SLUGS)
 
@@ -202,7 +199,7 @@ def test_wrappers_are_thin_and_route_to_their_own_slug():
         ):
             assert leaked not in src, f"fit_{slug}.py still carries {leaked!r}"
         assert len(src.splitlines()) < 40, f"fit_{slug}.py is no longer thin"
-        mod = importlib.import_module(f"fit_{slug}")
+        mod = importlib.import_module(f"model.inverse.fit_{slug}")
         assert mod.EXPERIMENT_SLUG == slug
     print("✓ all six wrappers are thin and route to their own slug")
 
@@ -229,12 +226,8 @@ def test_warm_start_round_trips_for_every_fitted_variant():
     only once a CV run had already started. This closes the loop by asserting the
     round trip for every variant whose fit exists on disk.
     """
-    import sys as _sys
-
-    _sys.path.insert(0, str(_root / "model" / "cv"))
-    import _inverse_dispatcher as D
-
-    from _helpers import params_dict_to_array
+    from model.cv import _inverse_dispatcher as D
+    from model.inverse._helpers import params_dict_to_array
 
     checked, skipped = 0, []
     for slug in ROSTER:
@@ -276,7 +269,7 @@ def run_all_tests():
     for fn in tests:
         try:
             fn()
-        except BaseException as e:  # noqa: BLE001 - report, don't abort the suite
+        except BaseException as e:
             failures.append((fn.__name__, f"{type(e).__name__}: {e}"))
             print(f"  FAIL  {fn.__name__}: {type(e).__name__}: {e}")
     print("=" * 60)
@@ -299,7 +292,7 @@ def test_results_latex_macro_names_are_valid_and_unique():
     Skipped when the comparison JSONs are absent (a clean tree), since the
     exporter reads them; the guards are exercised as soon as CV has run.
     """
-    import export_results_latex as X
+    from model import export_results_latex as X
 
     have = [
         s

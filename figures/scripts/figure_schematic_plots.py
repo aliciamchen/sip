@@ -34,26 +34,23 @@ No API calls — fully reproducible from `figures/scripts/figure_scores.json`.
 """
 
 import json
-import sys
-from pathlib import Path
 
 import matplotlib
 import numpy as np
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
+import matplotlib.pyplot as plt
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-from plot_style import (  # noqa: E402
+from plot_style import (
     ACTION_COLORS as OBS_COLORS,
     INTIMACY_COLORS,
     INTIMACY_LABELS,
     INTIMACY_LEVELS,
     OTHER_ACTION_COLOR,
+    PANELS_SCHEMATIC,
     apply_style,
 )
-from utils import get_project_root  # noqa: E402
+from utils import get_project_root
 
 # Manuscript aesthetic (Arial Nova, large-type Illustrator sizes, editable SVG
 # text) — shared with the SI figures via plot_style.py.
@@ -128,8 +125,6 @@ def resolve_weights(full):
         return dict(ILLUSTRATIVE_WEIGHTS)
     return {k: full[f"param_{k}"] for k in ("w_v", "w_e", "w_d", "gamma")}
 
-
-from plot_style import PANELS_SCHEMATIC  # noqa: E402
 
 OUT_DIR = PANELS_SCHEMATIC
 

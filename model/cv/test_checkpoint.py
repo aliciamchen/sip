@@ -18,13 +18,10 @@ Or with pytest:  uv run python -m pytest model/cv/test_checkpoint.py -v
 """
 
 import json
-import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from _checkpoint import (  # noqa: E402
+from model.cv._checkpoint import (
     append_fold,
     checkpoint_path,
     clear_checkpoint,

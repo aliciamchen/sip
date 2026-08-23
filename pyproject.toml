@@ -35,16 +35,41 @@ dev = [
     "ipykernel>=6.30.0",
 ]
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# The repo installs as an editable package (uv sync does this automatically),
+# so scripts import the model code as `model.*` and the root modules
+# (utils, study_registry, plot_style) by name.
+# Editable matters: the code resolves data and outputs relative to its own
+# location, so a copied (non-editable) install would look in site-packages.
+[tool.hatch.build.targets.wheel]
+only-include = [
+    "model",
+    "data_prep",
+    "utils.py",
+    "study_registry.py",
+    "plot_style.py",
+]
+exclude = ["model/outputs"]
+
 [tool.uv]
-package = false
+package = true
 
-
-[tool.ruff.lint]
-# Scripts insert the repo root on sys.path before their intra-repo imports, so
-# module-level imports legitimately follow code (E402).
-extend-ignore = ["E402"]
 
 [tool.ruff.lint.per-file-ignores]
+# plot_style and the schematic script set the matplotlib backend before
+# importing pyplot, so their imports legitimately follow code (E402); the
+# schematic script also uses `I` for the intimacy magnitude, the manuscript's
+# own symbol (E741, like the counterbalancing generator's design-table names).
+"plot_style.py" = ["E402"]
+"figures/scripts/figure_schematic_plots.py" = ["E402", "E741"]
+"experiments/build/counterbalancing.py" = ["E741"]
+# model/lm scripts still use the sys.path-then-import pattern (their package
+# conversion is pending), as do the scenario scripts for experiments/build/.
+"model/lm/*.py" = ["E402"]
+"experiments/scenarios*.py" = ["E402"]
 # The memo DSL injects names (actor, observer, knows, chooses, ...) into its
 # decorated functions at compile time, and its annotated `cast` locals are DSL
 # syntax, so the undefined-name and unused-local rules misfire here.
@@ -53,7 +78,3 @@ extend-ignore = ["E402"]
 # `attention_passed != True` is an elementwise pandas comparison; rewriting it
 # to `is not True` (E712's fix) changes the semantics.
 "data_prep/json_to_csv.py" = ["E712"]
-# `I` is the intimacy magnitude, the manuscript's own symbol; `l`/`I` loop
-# names in the counterbalancing generator mirror the design tables.
-"figures/scripts/figure_schematic_plots.py" = ["E741"]
-"experiments/build/counterbalancing.py" = ["E741"]

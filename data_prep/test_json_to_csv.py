@@ -24,9 +24,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from json_to_csv import (
+from data_prep.json_to_csv import (
     EXPERIMENT_CONFIGS,
     create_main_trials_long,
     process_json_files,

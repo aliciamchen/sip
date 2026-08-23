@@ -1280,7 +1280,7 @@ wheels = [
 [[package]]
 name = "saliva-inverse-planning"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "chex" },
     { name = "jax" },

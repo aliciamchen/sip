@@ -11,21 +11,18 @@ The three observed actions use the schematic's seaborn colorblind palette
 share = amber.
 """
 
-import sys
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.font_manager as fm  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-import seaborn as sns  # noqa: E402
-from matplotlib.colors import to_hex  # noqa: E402
+import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from matplotlib.colors import to_hex
 
-_project_root = Path(__file__).resolve().parent
-sys.path.insert(0, str(_project_root))
-from utils import get_project_root  # noqa: E402
+from utils import get_project_root
 
 # Output roots, one per consumer, so a script never hardcodes a path and the
 # split stays enforceable: `panels/` holds Illustrator components and never an
@@ -264,8 +261,3 @@ INTIMACY_COLORS = {
 }
 
 ALT_GREY = "#9AA0A6"
-
-# Slug -> paper label. Sourced from the shared study registry so the labels
-# can't drift from the rest of the per-study metadata; re-exported here because
-# the figure scripts already import it from plot_style.
-from study_registry import STUDY_LABELS  # noqa: E402,F401

@@ -38,19 +38,12 @@ grants it one. `study_slice` rebuilds a single experiment's ordinary fit vector
 lets the existing per-study scoring code do the scoring unchanged.
 """
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
+import jax.numpy as jnp
+import numpy as np
 
-import jax.numpy as jnp  # noqa: E402
-import numpy as np  # noqa: E402
-
-from _helpers import (  # noqa: E402
+from model.inverse._helpers import (
     ALPHA_OBS_MAX,
     _desire_loss,
     _intimacy_loss,

@@ -8,8 +8,6 @@ predictive densities.
 """
 
 import json
-import sys
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,21 +15,15 @@ import pandas as pd
 from matplotlib.lines import Line2D
 from scipy.spatial.distance import cdist
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "model" / "cv"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from figure_si_lm_validation import (  # noqa: E402
-    extract_observed,
-    load_runs,
-)
-from run_delta_io import (  # noqa: E402
+from figure_si_lm_validation import extract_observed
+from model.lm.set_diagnostics import load_runs
+from model.cv.run_delta_io import (
     WORLD_STATE_DV,
     RunDeltasUnavailable,
     load_per_run_deltas,
 )
 
-from plot_style import (  # noqa: E402
+from plot_style import (
     ACTION_COLORS,
     ACTION_LABELS,
     ALT_GREY,
@@ -41,13 +33,12 @@ from plot_style import (  # noqa: E402
     INTIMACY_LABELS,
     INTIMACY_LEVELS,
     OBSERVED_ACTIONS,
-    STUDY_LABELS,
     apply_style,
     panel_label_at,
     savefig,
 )
-from study_registry import SLUGS, slugs_given, studies  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from study_registry import SLUGS, STUDY_LABELS, slugs_given, studies
+from utils import get_project_root
 
 SAVE_KW = {"png": True}
 

@@ -22,19 +22,12 @@ is derived, not configured per study, so a new study is a registry entry plus a
 wrapper rather than another copy of the protocol.
 """
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
+import pandas as pd
 
-import pandas as pd  # noqa: E402
-
-import _reweighting  # noqa: E402
-from _helpers import (  # noqa: E402
+from model.inverse import _reweighting
+from model.inverse._helpers import (
     ALPHA_OBS_MAX,
     desire_table_kwargs,
     fit_desire_observer_joint,
@@ -55,13 +48,13 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
-from observers import (  # noqa: E402
+from model.observers import (
     VARIANTS_DESIRE,
     VARIANTS_INTIMACY,
     VARIANTS_JOINT_DE,
     VARIANTS_JOINT_IE,
 )
-from run_config import RunConfig  # noqa: E402
+from model.run_config import RunConfig
 
 # `data_names` names the loader's return values AFTER the leading
 # (data, action, scenario_idx), in order, using the keyword each one is passed
@@ -283,9 +276,7 @@ def main(slug, config=None, description=None):
             seed_key=f"{slug}|{variant_name}",
             **fit_data_kwargs,
         )
-        results.append(
-            _result_row(slug, variant_name, utility_names, params, nll, rw)
-        )
+        results.append(_result_row(slug, variant_name, utility_names, params, nll, rw))
         restart_rows.extend(
             restart_records_to_rows(
                 slug,

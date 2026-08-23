@@ -10,19 +10,12 @@ Run standalone: uv run python model/cv/test_pooled.py
 """
 
 import sys
-from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
+import numpy as np
 
-import numpy as np  # noqa: E402
-
-import pooled  # noqa: E402
-from _pooled import LOSS_FACTORY, build_layout, pooled_init  # noqa: E402
-from study_registry import SLUGS, STUDIES  # noqa: E402
+from model.cv import pooled
+from model.inverse._pooled import LOSS_FACTORY, build_layout, pooled_init
+from study_registry import SLUGS, STUDIES
 
 
 def check(name, cond):
@@ -133,7 +126,7 @@ def test_groups_and_rungs():
 
 
 def test_loss_factory_covers_every_family():
-    from _fit_dispatcher import FAMILY_BY_SLUG
+    from model.inverse._fit_dispatcher import FAMILY_BY_SLUG
 
     check(
         "each experiment's observer family has a loss factory",
@@ -144,7 +137,7 @@ def test_loss_factory_covers_every_family():
 def test_fold_alignment():
     """Fold k must mean scenario index k in every experiment, so the rungs are
     comparable to each other and to the reported run on matched trials."""
-    from tables import STUDY_SCENARIO_LABELS as L
+    from model.tables import STUDY_SCENARIO_LABELS as L
 
     check(
         "every experiment has the same number of folds",

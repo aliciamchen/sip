@@ -67,33 +67,25 @@ Usage:
 
 import argparse
 import json
-import sys
-from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
+import numpy as np
+import pandas as pd
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-
-from _fit_dispatcher import fit_context  # noqa: E402
-from _helpers import ALPHA_OBS_SEEDS, read_jsonl, write_json  # noqa: E402
-from _inverse_dispatcher import (  # noqa: E402
+from model.inverse._fit_dispatcher import fit_context
+from model.inverse._helpers import ALPHA_OBS_SEEDS, read_jsonl, write_json
+from model.cv._inverse_dispatcher import (
     N_RESTARTS_CV,
     RunOverride,
     _run_loso,
     _write_outputs,
 )
-from model_comparison import (  # noqa: E402
+from model.cv.model_comparison import (
     _bootstrap_mean_by_subject,
     add_stats_args,
 )
-from observers import VARIANT_PARAM_NAMES  # noqa: E402
-from study_registry import STUDIES, reported_base  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from model.observers import VARIANT_PARAM_NAMES
+from study_registry import STUDIES, reported_base
+from utils import get_project_root
 
 # The designed donor -> recipient pairs, both directions, keyed by the paper's
 # short labels. `kind` names what the pair holds constant and what it varies,

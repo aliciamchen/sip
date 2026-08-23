@@ -24,18 +24,15 @@ Usage:
 """
 
 import argparse
-import sys
 from dataclasses import replace
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import apply_style, savefig  # noqa: E402
-from study_registry import studies  # noqa: E402
+from plot_style import apply_style, savefig
+from study_registry import studies
 
-import _data as data  # noqa: E402
-import _points as points  # noqa: E402
+import _data as data
+import _points as points
 
 NCOLS = 4
 # Sized against what the main text's panels print at -- ~5.3pt markers on a

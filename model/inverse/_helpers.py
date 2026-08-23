@@ -18,11 +18,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -30,8 +25,8 @@ import optax
 import pandas as pd
 from jax.scipy.special import logsumexp
 
-import _reweighting
-from tables import (
+from model.inverse import _reweighting
+from model.tables import (
     ACTION_LABEL_TO_IDX,
     DesireLevels,
     EFFORT_CONDITION_TO_IDX,
@@ -47,7 +42,7 @@ def parse_run_config_args(argv=None, description=None):
     reweighting where its scope rule applies, outputs to outputs/<slug>/."""
     import argparse
 
-    from run_config import RunConfig
+    from model.run_config import RunConfig
 
     p = argparse.ArgumentParser(description=description)
     p.add_argument(
@@ -982,7 +977,7 @@ def desire_table_kwargs(utility_param_names, domain="food", base=False):
     across the relationship axis, so the base table — and the base model's
     predictions — are relationship-invariant. full/discomfort_only keep the
     relationship-conditioned `lm_runs.jsonl`."""
-    from tables import load_lm_relationship_values, load_padded_lm_tables_desire
+    from model.tables import load_lm_relationship_values, load_padded_lm_tables_desire
 
     if domain != "food":
         raise NotImplementedError(
@@ -1020,7 +1015,7 @@ def intimacy_table_kwargs(utility_param_names, domain="food"):
     (scenario, observed_action, desire, effort); infers intimacy (continuous, no
     relationship_values). Desire is given, so the per-condition desire scalar is
     loaded for full/base. 2a has no base variant."""
-    from tables import (
+    from model.tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_intimacy,
     )
@@ -1051,7 +1046,7 @@ def joint_de_table_kwargs(utility_param_names, domain="food", base=False):
     `base=True` (the base ablation, which has no intimacy term) loads the
     relationship-free alternative set (`lm_runs_base.jsonl`) and broadcasts it
     across the relationship axis, exactly as in `desire_table_kwargs`."""
-    from tables import load_lm_relationship_values, load_padded_lm_tables_joint_de
+    from model.tables import load_lm_relationship_values, load_padded_lm_tables_joint_de
 
     slug, study = {
         "food": ("food_inv_joint_de", "Study 1b"),
@@ -1085,7 +1080,7 @@ def joint_ie_table_kwargs(utility_param_names, domain="food"):
     (intimacy, effort) (continuous intimacy, no relationship_values). Desire is
     given, so the per-condition desire scalar is loaded for full/base. 2b/3b have
     no base variant."""
-    from tables import (
+    from model.tables import (
         load_lm_scenario_desire,
         load_padded_lm_tables_joint_ie,
     )

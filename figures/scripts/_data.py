@@ -25,24 +25,18 @@ can proceed before `make cv-<slug>` refreshes them).
 import copy
 import hashlib
 import json
-import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
-
-import model_comparison as _mc  # noqa: E402  (also puts model/inverse on sys.path)
-from plot_style import OBSERVED_ACTIONS  # noqa: E402
-from study_registry import (  # noqa: E402
+from model.cv import model_comparison as _mc
+from plot_style import OBSERVED_ACTIONS
+from study_registry import (
     PREREG_BASE_KEY,
     reported_base,
     study,
 )
-from utils import get_project_root  # noqa: E402
+from utils import get_project_root
 
 # model_comparison's per-study cell/DV spec is itself derived from the study
 # registry, so this and the registry helpers below never disagree.

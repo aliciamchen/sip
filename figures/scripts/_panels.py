@@ -13,11 +13,7 @@ joint-vector panel functions went with `_joint.py` when the figures moved to the
 points design; `git log` has both if they are ever wanted back.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import ACTION_LABELS, OBSERVED_ACTIONS  # noqa: E402
+from plot_style import ACTION_LABELS, OBSERVED_ACTIONS
 
 # Two-line action labels, so the x tick text stays horizontal across a panel row.
 ACTION_AXIS_LABELS = [ACTION_LABELS[a].replace(" ", "\n", 1) for a in OBSERVED_ACTIONS]

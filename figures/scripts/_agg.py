@@ -6,19 +6,16 @@ and `draw_agg_panel` to build panel_model_vs_humans.
 """
 
 import json
-import sys
 from collections import OrderedDict
-from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import DV_MARKERS  # noqa: E402
-from study_registry import study, study_groups  # noqa: E402
+from plot_style import DV_MARKERS
+from study_registry import study, study_groups
 
-import _data as data  # noqa: E402
-import _panels as panels  # noqa: E402
-import _points as points  # noqa: E402
+import _data as data
+import _panels as panels
+import _points as points
 
 # Aggregate poster figure: DV -> marker shape (from plot_style, shared with the
 # points panels). Point color is the given condition, per study, so the two

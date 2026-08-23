@@ -28,17 +28,14 @@ Usage:
     uv run python figures/scripts/figure_si_prior_posterior.py
 """
 
-import sys
 from dataclasses import replace
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import (  # noqa: E402
+from plot_style import (
     ALT_GREY,
     DESIRE_COLORS,
     DV_MARKERS,
@@ -48,12 +45,12 @@ from plot_style import (  # noqa: E402
     apply_style,
     savefig,
 )
-from study_registry import studies, study  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from study_registry import studies, study
+from utils import get_project_root
 
-import _data as data  # noqa: E402
-import _panels as panels  # noqa: E402
-import _points as points  # noqa: E402
+import _data as data
+import _panels as panels
+import _points as points
 
 STAGES = ("prior", "posterior")
 # Facet columns per figure, chosen so each lands at \textwidth without shrinking:

@@ -23,7 +23,6 @@ utility skeleton and the padded LM-alternatives action space:
 """
 
 import json
-import sys
 import tempfile
 from pathlib import Path
 
@@ -32,10 +31,8 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "inverse"))
-
-from actors import actor_discrete_full_padded_desire
-from observers import (
+from model.actors import actor_discrete_full_padded_desire
+from model.observers import (
     VARIANT_PARAM_NAMES,
     _observer_desire_base_memo_reference,
     _observer_desire_discomfort_only_memo_reference,
@@ -63,7 +60,7 @@ from observers import (
     observer_joint_ie_full,
     _sharpened_joint_posterior,
 )
-from tables import (
+from model.tables import (
     MAX_ACTIONS,
     N_ACTIONS,
     RELATIONSHIP_LEVEL_VALUES,
@@ -74,7 +71,7 @@ from tables import (
     _assert_no_missing_scalars,
     _validate_padded_tables,
 )
-from utility import (
+from model.utility import (
     get_utility_base_padded_desire,
     get_utility_discomfort_only_padded_desire,
     get_utility_full_padded_desire,
@@ -193,7 +190,7 @@ def test_observer_desire_posterior_sums_to_one():
 def test_mixture_nll_1d_matches_reference():
     """mixture_nll_1d agrees with a plain-numpy evaluation of
     −log[(1/K) Σ_k N(u | δ_k, σ²)]."""
-    from _helpers import mixture_nll_1d
+    from model.inverse._helpers import mixture_nll_1d
 
     rng = np.random.default_rng(3)
     deltas = rng.normal(0.0, 0.2, size=20)
@@ -207,7 +204,7 @@ def test_mixture_nll_1d_matches_reference():
 
 def test_mixture_nll_2d_matches_reference():
     """mixture_nll_2d agrees with a plain-numpy bivariate isotropic mixture."""
-    from _helpers import mixture_nll_2d
+    from model.inverse._helpers import mixture_nll_2d
 
     rng = np.random.default_rng(4)
     deltas = rng.normal(0.0, 0.2, size=(20, 2))
@@ -708,9 +705,9 @@ def test_loader_validation_rejects_missing_scalars():
 def test_data_loader_rejects_unmapped_label():
     """_map_condition must raise on a condition label with no model index
     (e.g. the pre-rename 'neither'), not silently produce a NaN index."""
-    from _helpers import _map_condition
+    from model.inverse._helpers import _map_condition
 
-    from tables import INTIMACY_CONDITION_TO_IDX
+    from model.tables import INTIMACY_CONDITION_TO_IDX
 
     df = pd.DataFrame({"intimacy": ["max_formal", "neither", "max_intimate"]})
     try:
@@ -726,7 +723,7 @@ def test_data_loader_rejects_duplicate_stage_rows():
     """_validate_long_raw must reject duplicate (subject, scenario, stage) rows
     (they would cross-join in the prior↔posterior merge) and out-of-[0, 1]
     ratings."""
-    from _helpers import _validate_long_raw
+    from model.inverse._helpers import _validate_long_raw
 
     ok = pd.DataFrame(
         {
@@ -756,7 +753,7 @@ def test_data_loader_rejects_duplicate_stage_rows():
 def test_jsonl_loader_rejects_conflicting_duplicates():
     """_run_sources_jsonl must reject a repeated observed-action key with a
     different value (silent last-write-wins) while identical repeats pass."""
-    from tables import _run_sources_jsonl
+    from model.tables import _run_sources_jsonl
 
     def _record(risk):
         return {
@@ -795,7 +792,7 @@ def test_jsonl_loader_rejects_conflicting_duplicates():
 def test_fit_multistart_raises_on_all_nan():
     """_fit_multistart must raise (not return None params) when every restart's
     loss is NaN from the start."""
-    from _helpers import _fit_multistart
+    from model.inverse._helpers import _fit_multistart
 
     def loss_fn(params):
         return jnp.sum(params) * jnp.nan
@@ -822,7 +819,13 @@ def test_delta_helpers_match_reference():
     Guards the shared δ definition: if it silently changed, fit and CV would
     still agree with each other (they call one function) but score the wrong
     quantity — so we pin it to a hand-written reference here."""
-    from _helpers import EFFORT_PRIOR_MEAN, GRID, PRIOR_MEAN, delta_joint, delta_latent
+    from model.inverse._helpers import (
+        EFFORT_PRIOR_MEAN,
+        GRID,
+        PRIOR_MEAN,
+        delta_joint,
+        delta_latent,
+    )
 
     grid_np = np.asarray(GRID)
     pm, epm = float(PRIOR_MEAN), float(EFFORT_PRIOR_MEAN)
@@ -868,7 +871,7 @@ def test_fit_manifest_round_trip():
     changed data CSV or a tampered fit output is refused; a *missing* manifest
     warns and proceeds (returns None) rather than blocking, so CV can still run
     on a fit produced before provenance tracking existed."""
-    from _helpers import verify_fit_manifest, write_fit_manifest
+    from model.inverse._helpers import verify_fit_manifest, write_fit_manifest
 
     with tempfile.TemporaryDirectory() as d:
         out = Path(d)
@@ -907,9 +910,9 @@ def test_parse_run_config_args_defaults():
     """No flags → the default RunConfig (reweighting on), which routes outputs
     to outputs/<slug>/. This is the reported config, so a plain invocation of
     any fit or CV script must keep reproducing the paper's numbers in place."""
-    from _helpers import parse_run_config_args
+    from model.inverse._helpers import parse_run_config_args
 
-    from run_config import RunConfig
+    from model.run_config import RunConfig
 
     cfg = parse_run_config_args([])
     assert cfg == RunConfig(), f"defaults not the reported config: {cfg}"
@@ -924,8 +927,8 @@ def test_parse_run_config_args_no_reweighting():
     runnable, and a config that parsed the flag but left the reweighting on
     would look right while fitting the reported model into the prereg's
     directory."""
-    import _reweighting
-    from _helpers import parse_run_config_args
+    from model.inverse import _reweighting
+    from model.inverse._helpers import parse_run_config_args
 
     cfg = parse_run_config_args(["--no-reweighting"])
     assert cfg.no_reweighting
@@ -1084,7 +1087,7 @@ def _reweighting_fixture(seed=0, n_slots=6):
 def test_reweighting_matches_numpy_oracle():
     """The production weighting equals the multiplicative form it implements in
     log space, on well-formed rows and across the fitted eta range."""
-    import _reweighting
+    from model.inverse import _reweighting
 
     prior, surprise, v = _reweighting_fixture()
     for eta in (0.0, 0.5, 1.01, 2.34, 3.01, 8.0):
@@ -1114,7 +1117,7 @@ def test_reweighting_nests_the_unreweighted_model_at_eta_zero():
     reweighted model as nesting the preregistered one, and every nesting check
     and likelihood-ratio statement depends on this holding to float precision.
     """
-    import _reweighting
+    from model.inverse import _reweighting
 
     prior, surprise, v = _reweighting_fixture(seed=3)
     got = np.asarray(
@@ -1138,7 +1141,7 @@ def test_reweighting_survives_an_all_inactive_row():
     row max. Pinned so nobody "simplifies" production back down to the
     prototype.
     """
-    import _reweighting
+    from model.inverse import _reweighting
 
     prior = np.zeros((1, 2, 4))
     prior[0, 1, :2] = 0.5  # one good row, one all-inactive row
@@ -1165,62 +1168,14 @@ def test_reweighting_survives_an_all_inactive_row():
     print("✓ reweighting guards all-inactive rows (value and gradient finite)")
 
 
-def test_reweighting_matches_the_diagnostics_prototype():
-    """Production and the diagnostics prototype must be the same math.
-
-    The prototype takes `active` and `log_prior` as arguments where production
-    computes them internally; its callers all compute them identically
-    (`prior > _ACTIVE_EPS`, `log(clip(prior, 1e-12))`), so feeding those makes
-    the comparison exact. Skips with a printed note if model/diagnostics/ has
-    been removed — the numpy-oracle test above is the durable guard.
-    """
-    import _reweighting
-
-    sys.path.insert(0, str(Path(__file__).resolve().parent / "diagnostics"))
-    try:
-        from tier3_surprise import _ACTIVE_EPS, _gated_prior
-    except Exception as e:  # noqa: BLE001 - diagnostics is optional
-        print(f"– skipped prototype cross-check (diagnostics unavailable: {e})")
-        return
-
-    assert _ACTIVE_EPS == _reweighting.ACTIVE_EPS, (
-        f"active-slot threshold diverged: prototype {_ACTIVE_EPS} vs "
-        f"production {_reweighting.ACTIVE_EPS}"
-    )
-
-    prior, surprise, v = _reweighting_fixture(seed=7)
-    # Drop the single-active-slot row: it is fine in both, but the prototype has
-    # no all-inactive guard, so keep the comparison to rows both define.
-    pj = jnp.asarray(prior)
-    active = pj > _ACTIVE_EPS
-    log_prior = jnp.log(jnp.clip(pj, 1e-12, None))
-    for eta in (0.0, 1.01, 2.34, 3.01):
-        proto = np.asarray(
-            _gated_prior(
-                pj, active, log_prior, jnp.asarray(surprise), jnp.asarray(v), eta
-            ),
-            dtype=np.float64,
-        )
-        prod = np.asarray(
-            _reweighting.gated_prior(pj, jnp.asarray(surprise), jnp.asarray(v), eta),
-            dtype=np.float64,
-        )
-        assert np.allclose(proto, prod, atol=1e-6), (
-            f"eta={eta}: production and prototype disagree, max |diff| = "
-            f"{np.abs(proto - prod).max():.2e} — the diagnostics results in "
-            "RESULTS.md no longer describe the reported model"
-        )
-    print("✓ reweighting matches the diagnostics prototype (same math)")
-
-
 def test_reweighting_scope_rule_matches_the_reported_matrix():
     """The scope rule derives which (study, variant) pairs carry an eta. The
     paper reports 12 of the 18 pairs as reweighted: a target is dropped when the
     variant lacks the utility channel it acts through (base has no w_d, so the
     intimacy target cannot apply; every variant keeps w_e).
     """
-    import _reweighting
-    from observers import (
+    from model.inverse import _reweighting
+    from model.observers import (
         VARIANTS_DESIRE,
         VARIANTS_INTIMACY,
         VARIANTS_JOINT_DE,
@@ -1264,7 +1219,7 @@ def test_reweighting_sensitivity_scores_are_feature_contrasts():
     """The two sensitivity scores are the leading-order feature contrasts named
     in the SI: the effort swing across world states, and |risk(a) - risk(a_obs)|
     with the observed action in slot 0 (so its own score is exactly zero)."""
-    import _reweighting
+    from model.inverse import _reweighting
 
     rng = np.random.default_rng(1)
     effort = jnp.asarray(rng.random((2, 3, 2, 5)))  # (..., effort_condition, slot)
@@ -1324,7 +1279,6 @@ def run_all_tests():
     test_reweighting_matches_numpy_oracle()
     test_reweighting_nests_the_unreweighted_model_at_eta_zero()
     test_reweighting_survives_an_all_inactive_row()
-    test_reweighting_matches_the_diagnostics_prototype()
     test_reweighting_scope_rule_matches_the_reported_matrix()
     test_reweighting_sensitivity_scores_are_feature_contrasts()
     print("=" * 60)

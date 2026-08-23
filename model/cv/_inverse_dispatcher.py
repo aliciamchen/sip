@@ -58,25 +58,19 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
+import jax
+import jax.numpy as jnp
+import numpy as np
+import pandas as pd
 
-import jax  # noqa: E402
-import jax.numpy as jnp  # noqa: E402
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-
-from _checkpoint import (  # noqa: E402
+from model.cv._checkpoint import (
     append_fold,
     checkpoint_path,
     clear_checkpoint,
     init_checkpoint,
     run_fingerprint,
 )
-from _helpers import (  # noqa: E402
+from model.inverse._helpers import (
     EFFORT_PRIOR_MEAN,
     GRID,
     PRIOR_MEAN,
@@ -105,20 +99,20 @@ from _helpers import (  # noqa: E402
     write_json,
     write_jsonl,
 )
-import _reweighting  # noqa: E402
-from observers import (  # noqa: E402
+from model.inverse import _reweighting
+from model.observers import (
     VARIANTS_DESIRE,
     VARIANTS_INTIMACY,
     VARIANTS_JOINT_DE,
     VARIANTS_JOINT_IE,
 )
-from run_config import RunConfig  # noqa: E402
-from tables import (  # noqa: E402
+from model.run_config import RunConfig
+from model.tables import (
     INTIMACY_CONDITIONS,
     STUDY_SCENARIO_LABELS,
     actions,
 )
-from utils import get_project_root  # noqa: E402
+from utils import get_project_root
 
 
 GRID_NP = np.asarray(GRID)  # 101-bin [0, 1] latent grid

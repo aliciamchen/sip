@@ -27,24 +27,21 @@ Usage:
 """
 
 import argparse
-import sys
 from dataclasses import replace
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import (  # noqa: E402
+from plot_style import (
     PANELS_LEGENDS,
     PANELS_RESULTS,
     apply_style,
     savefig,
 )
-from study_registry import studies  # noqa: E402
+from study_registry import studies
 
-import _agg as corr  # noqa: E402
-import _points as points  # noqa: E402
+import _agg as corr
+import _points as points
 
 OUT_DIR = PANELS_RESULTS
 LEGEND_DIR = PANELS_LEGENDS

@@ -17,7 +17,7 @@ One caveat on a fresh clone: git does not preserve file timestamps, so `make` ma
 ## Pipeline at a glance
 
 ```
-jsPsych experiments (experiments/) → JSON → json_to_csv.py → processed CSVs (data/)
+jsPsych experiments (experiments/) → JSON → data_prep/json_to_csv.py → processed CSVs (data/)
                                                               ↓
 LM elicitation (model/lm/) → scenario tables (model/outputs/lm/<slug>/)
                                                               ↓
@@ -31,9 +31,9 @@ The `Makefile` exposes per-stage and per-experiment targets (`make fit-<slug>`, 
 ## Repository structure
 
 ```
-data_prep/         Raw-data conversion (jsPsych JSON → anonymized CSVs)
 bin/               Helper scripts: the experiment deploy script and the preregistered-model runner
 data/              Processed experiment data (one folder per experiment slug)
+data_prep/         Raw-data conversion (jsPsych JSON → anonymized CSVs)
 experiments/       jsPsych experiment code + scenario definitions
 model/             Computational models
   inverse/         Per-experiment inverse-planning fit scripts
@@ -106,7 +106,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh   # install uv if needed
 uv sync                                            # install deps + create .venv
 ```
 
-To use pip instead: `python3 -m venv .venv && source .venv/bin/activate && pip install .`. Run scripts with plain `python` rather than `uv run python` in that case.
+To use pip instead: `python3 -m venv .venv && source .venv/bin/activate && pip install -e .`. The editable (`-e`) install matters: the repo installs itself as a package (`model`, `data_prep`, and the root modules), and the code locates its data and outputs relative to its own files. Run scripts with plain `python` rather than `uv run python` in that case.
 
 ## Reproducing the results
 

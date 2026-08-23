@@ -211,7 +211,7 @@ _ACTOR_ALIAS = {"base_shared": "base"}
 def _actor(family, variant):
     """The actor memo for one (family, variant), imported lazily so this module
     stays importable in contexts that never build an actor."""
-    import actors
+    from model import actors
 
     prefix = (
         "actor_discrete" if family in ("desire", "joint_de") else "actor_continuous"

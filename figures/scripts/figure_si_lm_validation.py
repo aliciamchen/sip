@@ -22,20 +22,15 @@ built from whichever studies are present:
      high-risk/low-effort.
 
 Usage:
-    uv run python figures/scripts/plot_si_validation.py
+    uv run python figures/scripts/figure_si_lm_validation.py
 """
-
-import sys
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-
-from plot_style import (  # noqa: E402
+from plot_style import (
     ACTION_COLORS,
     ACTION_LABELS,
     OBSERVED_ACTIONS,
@@ -45,16 +40,15 @@ from plot_style import (  # noqa: E402
     INTIMACY_LABELS,
     INTIMACY_LEVELS,
     SI_LARGE_RC,
-    STUDY_LABELS,
     apply_style,
     panel_label,
     savefig,
 )
 
 # `study` aliased: this module reuses the bare name as its loop variable.
-from study_registry import SLUGS, slugs_given  # noqa: E402
-from study_registry import study as _study  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from model.lm.set_diagnostics import load_runs
+from study_registry import SLUGS, STUDY_LABELS, slugs_given
+from study_registry import study as _study
 
 STUDIES = list(SLUGS)  # the six active studies, in paper order
 # The manipulation-check panels overlay the studies whose elicitation carries
@@ -88,15 +82,6 @@ MANIPULATION_ROWS = [
 MEAN_COLOR = "#333333"
 SCENARIO_LINE = dict(color="#999999", alpha=0.4, lw=0.7, zorder=2)
 SAVE_KW = {"png": False}
-
-
-def load_runs(study):
-    """The study's lm_runs.jsonl as a DataFrame, or None if its elicitation
-    hasn't been run yet."""
-    path = get_project_root() / "model" / "outputs" / "lm" / study / "lm_runs.jsonl"
-    if not path.exists():
-        return None
-    return pd.read_json(path, lines=True)
 
 
 def extract_observed(runs):

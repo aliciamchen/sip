@@ -34,23 +34,16 @@ Usage:
 import argparse
 import json
 import statistics
-import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
+from model.inverse._helpers import write_json
+from study_registry import STUDIES, SLUGS, study
+from utils import get_project_root
 
-from _helpers import write_json  # noqa: E402
-from study_registry import STUDIES, SLUGS, study  # noqa: E402
-from utils import get_project_root  # noqa: E402
-
-from contrast_tests import condition_gradients  # noqa: E402
-from model_comparison import (  # noqa: E402
+from model.cv.contrast_tests import condition_gradients
+from model.cv.model_comparison import (
     STUDY_SPECS,
     N_PAIR_BOOT,
     _condition_cells,

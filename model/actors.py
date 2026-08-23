@@ -11,7 +11,7 @@ Dependency layer 2: imports from `tables.py` (enums, axes) and `utility.py`
 
 from memo import memo
 
-from tables import (
+from model.tables import (
     DesireLevels,
     EffortConditions,
     IntimacyLevels,
@@ -21,7 +21,7 @@ from tables import (
     DesireConditions,
     Scenarios,
 )
-from utility import (
+from model.utility import (
     get_prior_padded_desire,
     get_prior_padded_intimacy,
     get_prior_padded_joint_de,

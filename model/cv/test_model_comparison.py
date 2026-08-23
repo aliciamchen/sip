@@ -24,17 +24,11 @@ Run: uv run python model/cv/test_model_comparison.py
 """
 
 import sys
-from pathlib import Path
 
-_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_root))
-sys.path.insert(0, str(_root / "model"))
-sys.path.insert(0, str(_root / "model" / "cv"))
+import numpy as np
+import pandas as pd
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-
-from model_comparison import (  # noqa: E402
+from model.cv.model_comparison import (
     _bootstrap_mean_by_subject,
     _config_dir,
     _primary_comparisons,
@@ -246,7 +240,7 @@ def run_all_tests():
     for fn in tests:
         try:
             fn()
-        except BaseException as e:  # noqa: BLE001 - report, don't abort the suite
+        except BaseException as e:
             failures.append(fn.__name__)
             print(f"  FAIL  {fn.__name__}: {type(e).__name__}: {e}")
     print("=" * 60)

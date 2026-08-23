@@ -9,22 +9,15 @@ Run standalone: uv run python model/cv/test_transfer.py
 """
 
 import sys
-from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
+import jax.numpy as jnp
+import numpy as np
 
-import jax.numpy as jnp  # noqa: E402
-import numpy as np  # noqa: E402
-
-import _helpers  # noqa: E402
-import transfer  # noqa: E402
-from _inverse_dispatcher import RunOverride, _free_mask  # noqa: E402
-from observers import VARIANT_PARAM_NAMES  # noqa: E402
-from study_registry import STUDIES, reported_base  # noqa: E402
+from model.cv import transfer
+from model.cv._inverse_dispatcher import RunOverride, _free_mask
+from model.inverse import _helpers
+from model.observers import VARIANT_PARAM_NAMES
+from study_registry import STUDIES, reported_base
 
 
 def check(name, cond):
@@ -140,7 +133,7 @@ def test_run_override_defaults_are_inert():
     )
     # `_free_mask` reads worker state; with none set it must report "estimate
     # everything", which is what the reported fold refits do.
-    from _inverse_dispatcher import _CV_W
+    from model.cv._inverse_dispatcher import _CV_W
 
     saved = _CV_W.get("free_mask")
     _CV_W["free_mask"] = None

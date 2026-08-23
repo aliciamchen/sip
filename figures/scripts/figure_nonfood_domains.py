@@ -24,24 +24,21 @@ Usage:
 """
 
 import argparse
-import sys
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import PANELS_RESULTS, apply_style, savefig  # noqa: E402
-from study_registry import studies  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from plot_style import PANELS_RESULTS, apply_style, savefig
+from study_registry import studies
+from utils import get_project_root
 
-import _data as data  # noqa: E402
-import _points as points  # noqa: E402
+import _data as data
+import _points as points
 
 # Style, canvas margins and rc overrides come from the four-column results panels
 # rather than being restated, so this figure cannot drift from them: a change to
 # the panel aesthetics shows up here too.
-from figure_paper_panels import PANEL_MARGINS, PANEL_RC, STYLE  # noqa: E402
+from figure_paper_panels import PANEL_MARGINS, PANEL_RC, STYLE
 
 OUT_DIR = PANELS_RESULTS
 

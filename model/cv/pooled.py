@@ -63,40 +63,32 @@ import argparse
 import json
 import multiprocessing as mp
 import os
-import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
+import numpy as np
+import pandas as pd
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-
-from _fit_dispatcher import FAMILY_BY_SLUG, fit_context  # noqa: E402
-from _helpers import (  # noqa: E402
+from model.inverse._fit_dispatcher import FAMILY_BY_SLUG, fit_context
+from model.inverse._helpers import (
     ALPHA_OBS_SEEDS,
     read_jsonl,
     write_json,
     write_jsonl,
 )
-from _inverse_dispatcher import (  # noqa: E402
+from model.cv._inverse_dispatcher import (
     N_RESTARTS_CV,
     RunOverride,
     _capped_worker_threads,
     _run_loso,
     _write_outputs,
 )
-from _pooled import LOSS_FACTORY, build_layout, fit_pooled, pooled_init  # noqa: E402
-from model_comparison import (  # noqa: E402
+from model.inverse._pooled import LOSS_FACTORY, build_layout, fit_pooled, pooled_init
+from model.cv.model_comparison import (
     _bootstrap_mean_by_subject,
     add_stats_args,
 )
-from study_registry import SLUGS, STUDIES  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from study_registry import SLUGS, STUDIES
+from utils import get_project_root
 
 VARIANT = "full"
 N_FOLDS = 16

@@ -30,15 +30,12 @@ the SI grids as a band under the figure (`legend_band`). Palettes stay in
 `plot_style.py`.
 """
 
-import sys
 from dataclasses import dataclass, field
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import (  # noqa: E402
+from plot_style import (
     DESIRE_COLORS,
     DV_MARKERS,
     INTIMACY_COLORS,
@@ -46,10 +43,10 @@ from plot_style import (  # noqa: E402
     INTIMACY_LEVELS,
     OBSERVED_ACTIONS,
 )
-from study_registry import study  # noqa: E402
+from study_registry import study
 
-import _data as data  # noqa: E402
-import _panels as panels  # noqa: E402
+import _data as data
+import _panels as panels
 
 # Shape per inferred latent comes from plot_style (the visual source of truth).
 # Note figure_model_scatter.py reads against this convention -- there the shape is

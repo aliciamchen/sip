@@ -62,12 +62,8 @@ import argparse
 import itertools
 import json
 import random
-import sys
 from collections import Counter
-from pathlib import Path
 
-project_root = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(project_root))
 from utils import get_project_root
 
 # The 16 food scenarios (Studies 1a/1b/2a/2b).

@@ -12,15 +12,7 @@ Accepts the shared run-config flag via the dispatcher: `--no-reweighting`
 runs the preregistered model and writes to alt/uniform-noreweight/ instead.
 """
 
-import sys
-from pathlib import Path
-
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-
-import _fit_dispatcher  # noqa: E402
+from model.inverse import _fit_dispatcher
 
 EXPERIMENT_SLUG = "nonfood_inv_joint_ie"
 

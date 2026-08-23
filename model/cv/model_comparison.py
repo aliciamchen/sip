@@ -37,27 +37,21 @@ import argparse
 import hashlib
 import json
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-
-from _helpers import (  # noqa: E402
+from model.inverse._helpers import (
     _load_long,
     read_jsonl,
     sha256_file,
     verify_fit_manifest,
     write_json,
 )
-from study_registry import STUDIES, reported_base, study, study_groups  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from study_registry import STUDIES, reported_base, study, study_groups
+from utils import get_project_root
 
-from contrast_tests import condition_gradients, variance_decomposition  # noqa: E402
+from model.cv.contrast_tests import condition_gradients, variance_decomposition
 
 # The three CV output files written together by the dispatcher's _write_outputs
 # and hashed into cv_manifest.json (must match CV_OUTPUT_NAMES there).

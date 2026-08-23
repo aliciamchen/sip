@@ -54,22 +54,14 @@ Usage:
 import argparse
 import json
 import math
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-_project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_project_root))
-sys.path.insert(0, str(_project_root / "model"))
-sys.path.insert(0, str(_project_root / "model" / "cv"))
-sys.path.insert(0, str(_project_root / "model" / "inverse"))
-sys.path.insert(0, str(_project_root / "model" / "lm"))
-
-from _helpers import git_sha, verify_fit_manifest  # noqa: E402
-from model_comparison import _verify_cv_manifest  # noqa: E402
-from run_delta_io import sha256_file  # noqa: E402
-from study_registry import STUDIES, reported_base, studies  # noqa: E402
-from utils import get_project_root  # noqa: E402
+from model.inverse._helpers import git_sha, verify_fit_manifest
+from model.cv.model_comparison import _verify_cv_manifest
+from model.cv.run_delta_io import sha256_file
+from study_registry import STUDIES, reported_base, studies
+from utils import get_project_root
 
 # LaTeX command names may contain letters only -- no digits -- so the study
 # labels ("1a", "3b") become letter tokens ("OneA", "ThreeB"). Derived from the
@@ -655,7 +647,7 @@ def _set_diagnostics_macros(m, all_studies):
     The g-contrast and effort-swing ranges this once emitted went with the SI
     prose that quoted them; `set_diagnostics.summarize` still computes them.
     """
-    import set_diagnostics as sd
+    from model.lm import set_diagnostics as sd
 
     wanted = [s.slug for s in all_studies]
     summary = sd.summarize(wanted)

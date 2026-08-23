@@ -28,19 +28,16 @@ Usage:
     uv run python figures/scripts/figure_si_prereg_predictions.py
 """
 
-import sys
 from dataclasses import replace
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import apply_style, savefig  # noqa: E402
-from study_registry import studies, study  # noqa: E402
+from plot_style import apply_style, savefig
+from study_registry import studies, study
 
-import _data as data  # noqa: E402
-import _points as points  # noqa: E402
+import _data as data
+import _points as points
 
 #: The run-config tag `--no-reweighting` writes under (`RunConfig.tag()`).
 PREREG_TAG = "uniform-noreweight"

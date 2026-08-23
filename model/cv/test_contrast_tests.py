@@ -17,14 +17,11 @@ difference of means).
 
 import sys
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from contrast_tests import (  # noqa: E402
+from model.cv.contrast_tests import (
     LEVEL_ORDER,
     condition_gradients,
     focal_condition,
@@ -233,9 +230,9 @@ def test_joint_component_equals_the_sum_when_effects_are_additive():
     slope, act = 0.05, 0.20
     data, z = _synth(focal_slope=slope, action_effect=act, within_sd=0.0)
     got = variance_decomposition(data, STUDY_1B, "u", "desire")
-    assert abs(
-        got["manipulated_var"] - (got["action_var"] + got["focal_var"])
-    ) < 1e-12, (got["manipulated_var"], got["action_var"], got["focal_var"])
+    assert (
+        abs(got["manipulated_var"] - (got["action_var"] + got["focal_var"])) < 1e-12
+    ), (got["manipulated_var"], got["action_var"], got["focal_var"])
     print("✓ the joint component is the sum of its parts on an additive design")
 
 
