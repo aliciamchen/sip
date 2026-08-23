@@ -101,6 +101,24 @@ ACT_SHORT_LABELS = {"a_1": "no-share", "a_obs": "low-risk", "a_2": "high-risk"}
 # Posterior mass enclosed by the credible region the inverse latent-space panel draws.
 HDR_MASS = 0.50
 
+# The desire grid the posterior panels integrate over — matches model/tables.py's
+# DesireLevels (101 bins on [0, 1]); not imported from there because tables.py
+# pulls in JAX, which a figure script doesn't need.
+GRID = np.arange(0, 1.01, 0.01)
+
+
+def utility(W, g, risk, effort, d, I):
+    """The actor utility U(a | d, I) = w_v·d·g − w_d·risk·(1−I)^γ − w_e·effort
+    (actor alpha = 1), mirroring model/utility.py's full family; all inputs
+    broadcast. 1 − I is floored at 1e-8 so a gamma from a refit cannot send the
+    I = 1 slice to inf."""
+    one_minus_I = np.maximum(1.0 - I, 1e-8)
+    return (
+        W["w_v"] * d * g
+        - W["w_d"] * risk * one_minus_I ** W["gamma"]
+        - W["w_e"] * effort
+    )
+
 
 def resolve_weights(full):
     """The utility weights the panels draw with: the illustrative set when one is
@@ -150,14 +168,10 @@ def compute(rec, full):
     I = float(rec["intimacy"])
 
     W = resolve_weights(full)
-    w_v, w_d, w_e, gamma = W["w_v"], W["w_d"], W["w_e"], W["gamma"]
     alpha_obs = full["alpha_observer"]
 
-    grid = np.arange(0, 1.01, 0.01)  # DesireLevels, 101 bins
-    one_minus_I = max(1.0 - I, 1e-8)
-    # U(a | d) = w_v*d*g - w_d*risk*(1-I)^gamma - w_e*effort   (actor alpha = 1)
-    cost = w_d * risk * (one_minus_I**gamma) + w_e * effort  # (4,)
-    U = w_v * np.outer(grid, g) - cost[None, :]  # (101, 4)
+    grid = GRID
+    U = utility(W, g, risk, effort, grid[:, None], I)  # (101, 4)
 
     # actor choice: softmax over actions, uniform action prior
     ex = np.exp(U - U.max(axis=1, keepdims=True))
@@ -301,7 +315,7 @@ def plot_posterior_by_relationship(rec, full):
     risk = np.array([a["risk"] for a in rec["actions"]])
     W = resolve_weights(full)
     alpha_obs = full["alpha_observer"]
-    grid = np.arange(0, 1.01, 0.01)
+    grid = GRID
     dd = grid[1] - grid[0]
     I_by_level = load_intimacy_by_relationship()
 
@@ -311,8 +325,7 @@ def plot_posterior_by_relationship(rec, full):
     means, dens = {}, {}
     for lvl in INTIMACY_LEVELS:
         I = I_by_level[lvl]
-        cost = W["w_d"] * risk * (max(1.0 - I, 1e-8) ** W["gamma"]) + W["w_e"] * effort
-        U = W["w_v"] * np.outer(grid, g) - cost[None, :]
+        U = utility(W, g, risk, effort, grid[:, None], I)
         ex = np.exp(U - U.max(axis=1, keepdims=True))
         p_aobs = (ex / ex.sum(axis=1, keepdims=True))[:, 0]  # slot 0 = a_obs
         post = p_aobs**alpha_obs
@@ -412,19 +425,20 @@ def plot_latent_space(rec, full):
     I = np.linspace(0.0, 1.0, n)
     D, II = np.meshgrid(d, I, indexing="ij")
 
-    # same 1 - I floor the other two utility computations in this file apply, so a
-    # non-positive gamma from a refit can't send the I = 1 row to inf
-    one_minus_I = np.maximum(1.0 - II, 1e-8)
-
     def utilities(effort_low_risk):
         """U(a | d, I) per observed action. The world state (`e_physical` in the
         manuscript; the `effort_condition` column in `model/tables.py`) enters only
         through the low-risk share's effort."""
         return np.stack(
             [
-                W["w_v"] * D * feats[k]["g"]
-                - W["w_e"] * (effort_low_risk if k == "a_obs" else feats[k]["effort"])
-                - W["w_d"] * feats[k]["risk"] * one_minus_I ** W["gamma"]
+                utility(
+                    W,
+                    feats[k]["g"],
+                    feats[k]["risk"],
+                    effort_low_risk if k == "a_obs" else feats[k]["effort"],
+                    D,
+                    II,
+                )
                 for k in OBSERVED_ACTS
             ]
         )
@@ -636,7 +650,6 @@ def plot_joint_desire_worldstate(rec, full):
 
     n = 401
     d = np.linspace(0.0, 1.0, n)
-    one_minus_I = max(1.0 - I_given, 1e-8)
     # panel name -> the low-risk share's effort in that world state
     WORLDS = [("utensils_far", feats["a_obs"]["effort"]), ("utensils_near", 0.0)]
 
@@ -644,9 +657,14 @@ def plot_joint_desire_worldstate(rec, full):
         [
             np.stack(
                 [
-                    W["w_v"] * d * feats[k]["g"]
-                    - W["w_e"] * (eff if k == "a_obs" else feats[k]["effort"])
-                    - W["w_d"] * feats[k]["risk"] * one_minus_I ** W["gamma"]
+                    utility(
+                        W,
+                        feats[k]["g"],
+                        feats[k]["risk"],
+                        eff if k == "a_obs" else feats[k]["effort"],
+                        d,
+                        I_given,
+                    )
                     for _, eff in WORLDS
                 ],
                 axis=-1,

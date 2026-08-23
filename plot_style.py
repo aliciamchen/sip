@@ -21,12 +21,7 @@ import matplotlib.font_manager as fm  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import seaborn as sns  # noqa: E402
-from matplotlib.colors import (  # noqa: E402
-    LinearSegmentedColormap,
-    hsv_to_rgb,
-    rgb_to_hsv,
-    to_hex,
-)
+from matplotlib.colors import to_hex  # noqa: E402
 
 _project_root = Path(__file__).resolve().parent
 sys.path.insert(0, str(_project_root))
@@ -269,35 +264,6 @@ INTIMACY_COLORS = {
 }
 
 ALT_GREY = "#9AA0A6"
-
-# Neutral marker for the observed actions in figures that color the alternatives
-# by a continuous feature: the stars are drawn in this gray with text labels, so
-# a feature colormap never competes with an action color.
-OBSERVED_STAR_COLOR = "#8A8A8A"
-
-
-def _muted_cmap(name, saturation=0.5, value=0.92, n=256):
-    """A desaturated version of a matplotlib colormap: scales HSV saturation
-    (and lightly caps brightness) while keeping the light->dark structure, so it
-    matches the paper's muted palette (sage / mauve / cividis) without losing
-    magnitude ordering or low-value visibility."""
-    cols = plt.get_cmap(name)(np.linspace(0, 1, n))[:, :3]
-    hsv = rgb_to_hsv(cols)
-    hsv[:, 1] *= saturation
-    hsv[:, 2] = np.minimum(hsv[:, 2] * value, 1.0)
-    return LinearSegmentedColormap.from_list(f"{name}_muted", hsv_to_rgb(hsv))
-
-
-# Sequential colormap for the LM-scored features (goal-satisfaction, risk): a
-# desaturated viridis. Perceptually uniform (magnitude reads correctly) and
-# colorblind-safe, muted to sit with the paper's earthy palette rather than
-# viridis's neon; its dark low end keeps low-value points visible on white --
-# important because the diagnostic minority (e.g. the low-g no-share-like
-# alternatives) sits at the low end. Both features share it; change the feature
-# hue here, not in the plotting scripts.
-FEATURE_CMAP = _muted_cmap("viridis", saturation=0.6, value=0.92)
-GOAL_CMAP = FEATURE_CMAP
-RISK_CMAP = FEATURE_CMAP
 
 # Slug -> paper label. Sourced from the shared study registry so the labels
 # can't drift from the rest of the per-study metadata; re-exported here because

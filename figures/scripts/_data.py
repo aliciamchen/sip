@@ -39,7 +39,6 @@ import model_comparison as _mc  # noqa: E402  (also puts model/inverse on sys.pa
 from plot_style import OBSERVED_ACTIONS  # noqa: E402
 from study_registry import (  # noqa: E402
     PREREG_BASE_KEY,
-    PREREG_BASE_LABEL,
     reported_base,
     study,
 )
@@ -75,7 +74,6 @@ MODEL_LABELS = {
     "discomfort_only": "Discomfort-only",
     "full": "Social inv plan",
 }
-PANEL_ORDER = [*MODEL_ORDER, "humans"]
 PANEL_LABELS = {**MODEL_LABELS, "humans": "Humans"}
 
 # Which base ablation the paper reports. Defined in study_registry.py (the
@@ -224,16 +222,6 @@ def _apply_reported_base(slug, comparison):
         for row in comparison.get(block, []):
             row["model"] = ren.get(row["model"], row["model"])
     return comparison
-
-
-def correlation_for(comparison, model, dv):
-    """The reported secondary correlation entry for (model, dv), or None."""
-    if comparison is None:
-        return None
-    for row in comparison.get("secondary_correlations", []):
-        if row["model"] == model and row["dv"] == dv:
-            return row
-    return None
 
 
 def warn_if_stale(slug, trials, comparison):

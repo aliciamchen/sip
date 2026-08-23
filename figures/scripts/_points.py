@@ -33,7 +33,6 @@ the SI grids as a band under the figure (`legend_band`). Palettes stay in
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from string import ascii_lowercase
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -46,8 +45,6 @@ from plot_style import (  # noqa: E402
     INTIMACY_LABELS,
     INTIMACY_LEVELS,
     OBSERVED_ACTIONS,
-    panel_label,
-    savefig,
 )
 from study_registry import study  # noqa: E402
 

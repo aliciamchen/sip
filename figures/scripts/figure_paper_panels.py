@@ -42,7 +42,6 @@ from plot_style import (  # noqa: E402
     savefig,
 )
 from study_registry import studies  # noqa: E402
-from utils import get_project_root  # noqa: E402
 
 import _agg as corr  # noqa: E402
 import _points as points  # noqa: E402

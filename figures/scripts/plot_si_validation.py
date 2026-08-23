@@ -50,7 +50,10 @@ from plot_style import (  # noqa: E402
     panel_label,
     savefig,
 )
-from study_registry import SLUGS  # noqa: E402
+
+# `study` aliased: this module reuses the bare name as its loop variable.
+from study_registry import SLUGS, slugs_given  # noqa: E402
+from study_registry import study as _study  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
 STUDIES = list(SLUGS)  # the six active studies, in paper order
@@ -59,25 +62,28 @@ STUDIES = list(SLUGS)  # the six active studies, in paper order
 # mixed in one panel: a food row (intimacy 1a/1b; desire 2a/2b) over a nonfood
 # row (intimacy 3a; desire 3b). Within a domain the descriptors are shared
 # (1a == 1b, 2a == 2b), so those lines coincide -- a built-in consistency check.
-FOOD_INTIMACY_PANEL_STUDIES = [
-    ("food_inv_desire", "1a"),
-    ("food_inv_joint_de", "1b"),
-]
-FOOD_DESIRE_PANEL_STUDIES = [
-    ("food_inv_intimacy", "2a"),
-    ("food_inv_joint_ie", "2b"),
-]
-NONFOOD_INTIMACY_PANEL_STUDIES = [
-    ("nonfood_inv_joint_de", "3a"),
-]
-NONFOOD_DESIRE_PANEL_STUDIES = [
-    ("nonfood_inv_joint_ie", "3b"),
-]
+# Derived from the study registry rather than restating the study lists.
+
+
+def _panel_studies(condition, domain):
+    """(slug, short label) pairs for one manipulation-check panel: the studies
+    given this condition, within one stimulus domain, in paper order."""
+    return [
+        (slug, _study(slug).short_label)
+        for slug in slugs_given(condition)
+        if _study(slug).domain == domain
+    ]
+
+
 # Rows of the 2x2 manipulation-check figure: (domain label, intimacy studies,
 # desire studies).
 MANIPULATION_ROWS = [
-    ("Food", FOOD_INTIMACY_PANEL_STUDIES, FOOD_DESIRE_PANEL_STUDIES),
-    ("Nonfood", NONFOOD_INTIMACY_PANEL_STUDIES, NONFOOD_DESIRE_PANEL_STUDIES),
+    (
+        domain.capitalize(),
+        _panel_studies("intimacy_condition", domain),
+        _panel_studies("desire_condition", domain),
+    )
+    for domain in ("food", "nonfood")
 ]
 MEAN_COLOR = "#333333"
 SCENARIO_LINE = dict(color="#999999", alpha=0.4, lw=0.7, zorder=2)
