@@ -52,7 +52,7 @@ extend-ignore = ["E402"]
 "model/actors.py" = ["F821", "F842"]
 # `attention_passed != True` is an elementwise pandas comparison; rewriting it
 # to `is not True` (E712's fix) changes the semantics.
-"analysis/json_to_csv.py" = ["E712"]
+"data_prep/json_to_csv.py" = ["E712"]
 # `I` is the intimacy magnitude, the manuscript's own symbol; `l`/`I` loop
 # names in the counterbalancing generator mirror the design tables.
 "figures/scripts/figure_schematic_plots.py" = ["E741"]

@@ -31,7 +31,7 @@ The `Makefile` exposes per-stage and per-experiment targets (`make fit-<slug>`, 
 ## Repository structure
 
 ```
-analysis/          Raw-data conversion (jsPsych JSON → anonymized CSVs)
+data_prep/         Raw-data conversion (jsPsych JSON → anonymized CSVs)
 bin/               Helper scripts: the experiment deploy script and the preregistered-model runner
 data/              Processed experiment data (one folder per experiment slug)
 experiments/       jsPsych experiment code + scenario definitions
@@ -114,7 +114,7 @@ The Makefile is the recommended way to run the pipeline; the steps below show th
 
 ```bash
 # Raw jsPsych JSON → anonymized CSVs (raw data is not included in the repository):
-uv run python analysis/json_to_csv.py <experiment_slug>
+uv run python data_prep/json_to_csv.py <experiment_slug>
 
 # LM elicitation — only to REgenerate the committed tables (requires TOGETHER_API_KEY):
 uv run python model/lm/generate_alternatives.py --study food_inv_desire

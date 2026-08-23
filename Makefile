@@ -194,7 +194,7 @@ entry-files:
 data: $(addprefix data-,$(EXPERIMENTS_INVERSE))
 
 $(addprefix data-,$(EXPERIMENTS_ALL)): data-%:
-	uv run python analysis/json_to_csv.py $*
+	uv run python data_prep/json_to_csv.py $*
 
 # =============================================================================
 # LM elicitation (Llama-3.3-70B via Together AI; needs TOGETHER_API_KEY in .env)
@@ -697,7 +697,7 @@ test:
 	uv run python model/cv/test_transfer.py
 	uv run python model/cv/test_pooled.py
 	uv run python model/lm/test_elicitation_guards.py
-	uv run python analysis/test_json_to_csv.py
+	uv run python data_prep/test_json_to_csv.py
 	uv run python test_roster_sync.py
 
 clean:

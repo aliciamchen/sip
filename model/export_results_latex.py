@@ -330,7 +330,7 @@ def _demographics(slug):
 
     Recruited is every exit-survey row; retained is the distinct participants
     surviving into `main_trials_long.csv`, i.e. the exclusion rule applied by
-    `analysis/json_to_csv.py`.
+    `data_prep/json_to_csv.py`.
     """
     import pandas as pd
 

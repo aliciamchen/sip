@@ -18,7 +18,7 @@ The active roster is six inverse experiments under `data/<slug>/` — `food_inv_
 
 ## Participant exclusion criteria
 
-The rule is per-study (the config's `exclusion_rule` in `analysis/json_to_csv.py`); `memory_correct_count` counts questions (0–3), not checks:
+The rule is per-study (the config's `exclusion_rule` in `data_prep/json_to_csv.py`); `memory_correct_count` counts questions (0–3), not checks:
 
 - **1a (lax, preregistered)**: excluded only if `(attention_passed != True) & (memory_correct_count == 0)` — anyone who passes attention OR answers ≥1 memory question is retained.
 - **1b/2a/2b/3a/3b (strict)**: retained only if `attention_passed == True & memory_correct_count > 0` — 1a's rule excluded 0 participants, so it was tightened for the later studies (matching the manuscript and their preregs). The nonfood studies' memory checks are the sleeping-bag (2 questions) + salary (1 question) scenarios in `NONFOOD_MEMORY_CHECKS`.
@@ -27,7 +27,7 @@ The rule is per-study (the config's `exclusion_rule` in `analysis/json_to_csv.py
 
 ## Anonymization
 
-`analysis/json_to_csv.py` maps each Prolific PID to a deterministic UUID5 (namespace `6ba7b810-9dad-11d1-80b4-00c04fd430c8`); the mapping is regenerated from `raw_data/` on each run and never persisted to disk. Tracked CSVs only ever contain the anonymized UUIDs. The `raw_data/` directories are gitignored repo-wide.
+`data_prep/json_to_csv.py` maps each Prolific PID to a deterministic UUID5 (namespace `6ba7b810-9dad-11d1-80b4-00c04fd430c8`); the mapping is regenerated from `raw_data/` on each run and never persisted to disk. Tracked CSVs only ever contain the anonymized UUIDs. The `raw_data/` directories are gitignored repo-wide.
 
 ## Where else to look
 

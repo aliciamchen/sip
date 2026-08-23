@@ -2,7 +2,7 @@
 Roster-consistency check across the hand-synced experiment registries.
 
 The active experiment roster is declared independently in six places (the
-Makefile, analysis/json_to_csv.py, bin/deploy-experiment, the counterbalancing
+Makefile, data_prep/json_to_csv.py, bin/deploy-experiment, the counterbalancing
 generator, experiments/_lib/config.js, and the per-study directories), each
 with a "keep in sync" comment. This test makes that sync a checked invariant
 instead of a discipline problem: a study added, removed, or migrated in one
@@ -101,9 +101,9 @@ def run_all_checks():
     )
 
     registries = {
-        "analysis/json_to_csv.py EXPERIMENT_CONFIGS": set(
+        "data_prep/json_to_csv.py EXPERIMENT_CONFIGS": set(
             parse_python_dict_keys(
-                ROOT / "analysis" / "json_to_csv.py", "EXPERIMENT_CONFIGS"
+                ROOT / "data_prep" / "json_to_csv.py", "EXPERIMENT_CONFIGS"
             )
         ),
         "experiments/build/counterbalancing.py STUDY_CONFIGS": set(

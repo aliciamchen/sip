@@ -51,7 +51,7 @@ The Supplementary Material `\input`s LaTeX files that are generated from the cod
 ## Workflow
 
 ```
-jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
+jsPsych experiments (experiments/) → JSON → data_prep/json_to_csv.py → CSV (data/)
                                                               ↓
                                   model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
@@ -61,11 +61,11 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                      make sync-journal-figures → SIP_journal/figures/ (Overleaf)
 ```
 
-`analysis/` holds only the raw-data conversion (`json_to_csv.py` + its test). Every figure comes from the Python scripts in `figures/scripts/` (the Illustrator results components, run with `make figures-panels`; the SI LM figures, run with `make figures-lm-si`), the model-comparison statistics from `model/cv/model_comparison.py`, and the manuscript's demographics from `model/export_results_latex.py`. There is no R or Quarto anywhere in the pipeline (the qmds and renv setup were removed for the public release; local R exploration files are gitignored).
+`data_prep/` holds only the raw-data conversion (`json_to_csv.py` + its test). Every figure comes from the Python scripts in `figures/scripts/` (the Illustrator results components, run with `make figures-panels`; the SI LM figures, run with `make figures-lm-si`), the model-comparison statistics from `model/cv/model_comparison.py`, and the manuscript's demographics from `model/export_results_latex.py`. There is no R or Quarto anywhere in the pipeline (the qmds and renv setup were removed for the public release; local R exploration files are gitignored).
 
 ## Common commands
 
-The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{analysis,data,experiments,model}.md`, which load on demand when Claude reads files in those directories.
+The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{data_prep,data,experiments,model}.md`, which load on demand when Claude reads files in those directories.
 
 ## Environment setup
 
@@ -79,7 +79,7 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Project instructions
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
-- Before committing a nontrivial change under `model/` or `analysis/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (in Claude Code, the `/code-review` skill) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the full test suite (`make test`) whenever a staged file is under `model/`.
+- Before committing a nontrivial change under `model/` or `data_prep/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (in Claude Code, the `/code-review` skill) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the full test suite (`make test`) whenever a staged file is under `model/`.
 - For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
 - When changing CLAUDE.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 

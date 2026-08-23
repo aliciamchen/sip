@@ -1,7 +1,7 @@
 """
-Offline tests for the raw-JSON -> CSV converter (analysis/json_to_csv.py).
+Offline tests for the raw-JSON -> CSV converter (data_prep/json_to_csv.py).
 
-Run standalone:  uv run python analysis/test_json_to_csv.py
+Run standalone:  uv run python data_prep/test_json_to_csv.py
 
 Each test builds tiny synthetic jsPsych-style JSON fixtures in a temp
 directory and runs the converter's two stages (process_json_files +

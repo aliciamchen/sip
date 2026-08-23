@@ -1,6 +1,6 @@
 # Data codebook
 
-There are six inverse-planning studies, all on the same 3-action stimulus structure: four on the food scenario set and two on the non-food set (the slug ↔ study mapping is in the [root README](../README.md#experiments)). Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `analysis/json_to_csv.py`. All six have collected samples in `data/<slug>/` (retained after exclusions: 1a ~480; 1b, 2a, 3a, and 3b ~240 each; 2b ~120), and the conversion configs for all six are in `json_to_csv.py`. The Makefile's `EXPERIMENTS_INVERSE` list names all six and drives the pipeline over them.
+There are six inverse-planning studies, all on the same 3-action stimulus structure: four on the food scenario set and two on the non-food set (the slug ↔ study mapping is in the [root README](../README.md#experiments)). Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `data_prep/json_to_csv.py`. All six have collected samples in `data/<slug>/` (retained after exclusions: 1a ~480; 1b, 2a, 3a, and 3b ~240 each; 2b ~120), and the conversion configs for all six are in `json_to_csv.py`. The Makefile's `EXPERIMENTS_INVERSE` list names all six and drives the pipeline over them.
 
 | Folder | Study | Inferred | Given |
 |---|---|---|---|
@@ -86,7 +86,7 @@ The non-food studies repeat 1b's and 2b's designs on the non-food scenario set, 
 
 ## Exclusion criteria
 
-The exclusion rule is per-study (each study's `exclusion_rule` in `analysis/json_to_csv.py`), and `memory_correct_count` counts questions (three across the two memory checks):
+The exclusion rule is per-study (each study's `exclusion_rule` in `data_prep/json_to_csv.py`), and `memory_correct_count` counts questions (three across the two memory checks):
 
 - **Study 1a** (`food_inv_desire`) uses its preregistered lax rule: participants are excluded only if they failed the attention check **and** answered 0 memory questions correctly, i.e. `(attention_passed != True) & (memory_correct_count == 0)`.
 - **Studies 1b, 2a, 2b, 3a, and 3b** use a stricter rule (1a's rule excluded no one, so it was tightened for the later studies): participants are retained only if they passed the attention check **and** answered at least one memory question correctly, i.e. excluded if `(attention_passed != True) | (memory_correct_count == 0)`. The non-food studies' memory checks come from their own scenario set (the sleeping-bag and salary scenarios, three questions total, in `experiments/_lib/memory-checks.js`), but the counting and the rule are the same.
