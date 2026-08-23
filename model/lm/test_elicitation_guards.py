@@ -31,11 +31,10 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import prompts  # noqa: E402
-import client as client_module  # noqa: E402
-from client import (  # noqa: E402
+from model.lm import client as client_module
+from model.lm import prompts
+from model.lm.client import (
     RESUME_PROMPT_MISMATCH_ENV,
     _prompt_sha,
     _prompts_sha,
@@ -303,7 +302,7 @@ def test_prompt_appendix_documents_generation_without_repeating_it():
     collapse is the information itself: every live clause of the example has
     to appear in the rendered output.
     """
-    import export_prompts_latex as exporter
+    from model.lm import export_prompts_latex as exporter
 
     rendered = exporter.build_content()
     assert "User prompt (Example)" in rendered
@@ -345,7 +344,7 @@ def test_generation_resume_refuses_a_caller_routing_change():
     """The exact rendered user messages must guard resume even when
     prompts.py itself is unchanged."""
     import pandas as pd
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     base_cell = {
         "scenario_label": "hot-dog",
@@ -414,7 +413,7 @@ def test_score_rendered_fingerprint_uses_the_production_message_builder():
     """Changing a caller-owned formatter must change the exact scoring-message
     fingerprint, even when prompts.py is untouched."""
     import pandas as pd
-    import score_merged as sm
+    from model.lm import score_merged as sm
 
     scenarios = pd.DataFrame(
         [
@@ -460,7 +459,7 @@ def test_score_rendered_fingerprint_uses_the_production_message_builder():
 def test_scoring_completion_requires_every_unit_and_nonnull_feature():
     """A checkpoint manifest is complete only when the full scenario/run grid
     has valid records."""
-    import score_merged as sm
+    from model.lm import score_merged as sm
 
     valid = {
         "scenario_label": "hot-dog",
@@ -492,7 +491,7 @@ def test_every_generation_captures_a_rationale_at_the_larger_budget():
     """Since the prompt requests an explanation, the elicitation must request
     the raw text and write the generated-rationale sidecar. A budget left at the
     rating stages' default would truncate the array away."""
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     assert ga.ALT_MAX_TOKENS > 800
     assert ga._rationale_path(Path("lm_alternatives.jsonl")).name == (
@@ -515,7 +514,7 @@ def test_every_generation_captures_a_rationale_at_the_larger_budget():
 def test_legacy_reasoning_sidecar_is_loaded_as_rationale():
     """A same-vintage resume must not discard audit records written before the
     sidecar was relabeled."""
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     with tempfile.TemporaryDirectory() as d:
         output = Path(d) / "lm_alternatives.jsonl"
@@ -548,7 +547,7 @@ def test_legacy_reasoning_sidecar_is_loaded_as_rationale():
 def test_missing_rationale_requeues_the_checkpointed_generation_unit():
     """If the main JSONL landed but the rationale sidecar did not, the next
     resume must not permanently skip that unit."""
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     rows = [
         {
@@ -656,7 +655,7 @@ def test_legacy_manifest_history_migrates_to_the_source_hash_history():
 def test_score_refuses_alternatives_from_a_stale_generation_prompt():
     """Scoring must stop before client initialization when the alternatives
     manifest identifies a different generation prompt."""
-    import score_merged as sm
+    from model.lm import score_merged as sm
 
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
@@ -709,7 +708,7 @@ def test_score_refuses_alternatives_from_a_stale_generation_prompt():
 def test_score_refuses_an_in_progress_alternatives_artifact():
     """A checkpoint manifest must not authorize scoring before generation has
     accounted for the complete cell-by-run grid."""
-    import score_merged as sm
+    from model.lm import score_merged as sm
 
     with tempfile.TemporaryDirectory() as d:
         alts = Path(d) / "lm_alternatives.jsonl"
@@ -732,7 +731,7 @@ def test_score_refuses_an_in_progress_alternatives_artifact():
 def test_score_resume_refuses_a_replaced_alternatives_file():
     """A partial scoring file must remain bound to the exact alternatives
     content it began with."""
-    import score_merged as sm
+    from model.lm import score_merged as sm
 
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
@@ -864,7 +863,7 @@ def test_elicitation_is_reachable_for_every_study_in_the_roster():
     a sentinel stops them before any spend. The K=1 smoke and the eventual
     re-elicitation both need 1a and 2a, which the old diagnostic-only path
     excluded."""
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     def _sentinel():
         raise _Reached
@@ -877,7 +876,7 @@ def test_elicitation_is_reachable_for_every_study_in_the_roster():
 
 
 def test_base_mode_is_reachable_for_the_given_relationship_studies():
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     def _sentinel():
         raise _Reached
@@ -889,7 +888,7 @@ def test_base_mode_is_reachable_for_the_given_relationship_studies():
 
 
 def test_base_mode_rejected_where_there_is_no_relationship_paragraph():
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     with _stub(ga, "load_api_key", lambda: "sk-test"):
         with _expect(SystemExit, "--base is only defined for"):
@@ -901,7 +900,7 @@ def test_arm_output_only_available_for_every_study_and_never_canonical():
     which the old effort-inferring-only restriction excluded — and must never
     write the canonical file, since the current fits and figures are built on
     those tables."""
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
 
     assert set(ga._DIAG_STUDIES) == set(ga._STUDY_CONFIG)
 
@@ -924,7 +923,7 @@ def test_arm_output_only_available_for_every_study_and_never_canonical():
 
 def test_arm_output_only_routes_the_base_overlay_to_a_diagnostic_vintage():
     """Base smoke output must be isolated just like the six main variants."""
-    import generate_alternatives as ga
+    from model.lm import generate_alternatives as ga
     import pandas as pd
 
     with tempfile.TemporaryDirectory() as d:
@@ -952,7 +951,7 @@ def test_arm_output_only_routes_the_base_overlay_to_a_diagnostic_vintage():
 
 def test_score_arm_routes_the_base_overlay_to_a_diagnostic_vintage():
     """Base scoring must read and write only the base diagnostic filenames."""
-    import score_merged as sm
+    from model.lm import score_merged as sm
 
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)

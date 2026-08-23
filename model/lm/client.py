@@ -32,8 +32,6 @@ from pathlib import Path
 
 import numpy as np
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
 
@@ -386,7 +384,7 @@ def _prompt_sha(stage):
         try:
             from .prompts import prompt_fingerprint_payload
         except ImportError:
-            from prompts import prompt_fingerprint_payload
+            from model.lm.prompts import prompt_fingerprint_payload
 
         payload = prompt_fingerprint_payload(stage)
         return fingerprint_payload(payload)

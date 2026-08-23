@@ -15,14 +15,10 @@ Usage:
     uv run python model/lm/set_diagnostics.py            # print the summary
 """
 
-import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
 
 from study_registry import STUDIES, SLUGS  # noqa: E402
 from utils import get_project_root  # noqa: E402

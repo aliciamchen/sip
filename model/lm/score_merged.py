@@ -59,7 +59,6 @@ Requires:
 import argparse
 import hashlib
 import itertools
-import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -67,12 +66,9 @@ import numpy as np
 import pandas as pd
 from together import Together
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _features_dispatcher import (
+from model.lm._features_dispatcher import (
     _max_tokens_for,
     format_effort_prompt_variable,
     format_g_prompt_variable,
@@ -86,7 +82,7 @@ from _features_dispatcher import (
     parse_desire_response,
     parse_intimacy_response,
 )
-from client import (
+from model.lm.client import (
     MODEL_ID,
     TEMPERATURE,
     _manifest_prompt_hashes,
@@ -104,14 +100,14 @@ from client import (
     write_jsonl_atomic,
     write_run_manifest,
 )
-from prompts import (
+from model.lm.prompts import (
     DESIRE_SYSTEM_PROMPT,
     INTIMACY_SYSTEM_PROMPT,
     RELATIONSHIP_DESCRIPTORS,
     desire_user_prompt,
     relationship_user_prompt,
 )
-from prompts import system_prompt as build_system_prompt
+from model.lm.prompts import system_prompt as build_system_prompt
 
 N_ACTIONS = 3
 OBSERVED_ACTIONS = ["no_share", "low_risk_share", "high_risk_share"]

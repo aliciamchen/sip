@@ -13,18 +13,15 @@ Requires TOGETHER_API_KEY (in .env) and the `together` package.
 
 import json
 import os
-import sys
-from pathlib import Path
 
 # Shared LM-call infrastructure (JSON helpers, retries) + prompt template.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from client import (
+from model.lm.client import (
     MAX_RETRIES,
     MODEL_ID,
     find_json,
     find_json_array,
 )
-from prompts import ALTERNATIVES_SYSTEM_PROMPT
+from model.lm.prompts import ALTERNATIVES_SYSTEM_PROMPT
 
 # NOTE: this call deliberately does NOT pass a strict json_schema
 # `response_format`. Grammar-constrained decoding against the alternatives

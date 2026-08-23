@@ -37,13 +37,10 @@ Usage:
 """
 
 import argparse
-import os
-import sys
 from pathlib import Path
 
 # prompts.py lives next to this file; import it the same way the LM scripts do.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import prompts  # noqa: E402
+from model.lm import prompts
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 

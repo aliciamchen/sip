@@ -36,24 +36,20 @@ Requires:
 import argparse
 import hashlib
 import os
-import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import pandas as pd
 from together import Together
 
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root))
 from utils import get_project_root
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _alternatives_dispatcher import (
+from model.lm._alternatives_dispatcher import (
     CHECKPOINT_EVERY,
     MAX_CELL_WORKERS,
     elicit_alternatives,
 )
-from client import (
+from model.lm.client import (
     MODEL_ID,
     fingerprint_payload,
     guard_resume_fingerprint_mismatch,
@@ -64,7 +60,7 @@ from client import (
     write_jsonl_atomic,
     write_run_manifest,
 )
-from prompts import ALTERNATIVES_SYSTEM_PROMPT, alternatives_user_prompt
+from model.lm.prompts import ALTERNATIVES_SYSTEM_PROMPT, alternatives_user_prompt
 
 
 # The K-run elicitation-sample pipeline: for each (scenario × condition) cell we

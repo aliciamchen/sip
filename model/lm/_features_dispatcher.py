@@ -10,13 +10,10 @@ import these own the actual LM calls and CSV writing.
 """
 
 import json
-import sys
-from pathlib import Path
 
 # Shared LM-call infrastructure + prompt templates (sibling modules).
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from client import find_json, strip_leading_plus
-from prompts import user_prompt as build_user_prompt
+from model.lm.client import find_json, strip_leading_plus
+from model.lm.prompts import user_prompt as build_user_prompt
 
 
 # ==============================================================================

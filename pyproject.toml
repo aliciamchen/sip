@@ -66,9 +66,8 @@ package = true
 "plot_style.py" = ["E402"]
 "figures/scripts/figure_schematic_plots.py" = ["E402", "E741"]
 "experiments/build/counterbalancing.py" = ["E741"]
-# model/lm scripts still use the sys.path-then-import pattern (their package
-# conversion is pending), as do the scenario scripts for experiments/build/.
-"model/lm/*.py" = ["E402"]
+# The scenario scripts still insert experiments/build/ before importing its
+# writer (experiments/ is not a package).
 "experiments/scenarios*.py" = ["E402"]
 # The memo DSL injects names (actor, observer, knows, chooses, ...) into its
 # decorated functions at compile time, and its annotated `cast` locals are DSL
