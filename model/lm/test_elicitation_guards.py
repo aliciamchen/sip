@@ -26,8 +26,11 @@ Run: uv run python model/lm/test_elicitation_guards.py
 
 import json
 import os
+import signal
+import subprocess
 import sys
 import tempfile
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -971,6 +974,81 @@ def test_score_arm_routes_the_base_overlay_to_a_diagnostic_vintage():
                     sm.main("food_inv_desire", base=True, arm=True)
 
         assert captured == [(expected, "food_inv_desire")]
+
+
+# --- elicitation_lock: flock-based mutual exclusion ---------------------------
+# The lock guards whole-file JSONL checkpoint rewrites, so two concurrent
+# elicitations of the same output silently lose paid-for records. The flock
+# design has two properties worth pinning: a second invocation fails loudly
+# while the first holds, and a killed holder's lock is released by the kernel
+# (no stale-lock file to delete, no reclaim step to race on).
+
+_HOLDER_SRC = """
+import sys, time
+from model.lm.client import elicitation_lock
+with elicitation_lock(sys.argv[1]):
+    print("HOLDING", flush=True)
+    time.sleep(60)
+"""
+
+_TRY_SRC = """
+import sys
+from model.lm.client import elicitation_lock
+with elicitation_lock(sys.argv[1]):
+    print("ACQUIRED", flush=True)
+"""
+
+
+def test_elicitation_lock_excludes_a_concurrent_run():
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "lm_runs.jsonl")
+        with client_module.elicitation_lock(out):
+            probe = subprocess.run(
+                [sys.executable, "-c", _TRY_SRC, out],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        assert probe.returncode != 0, "second invocation acquired a held lock"
+        assert "Another elicitation" in probe.stderr, probe.stderr
+        assert f"pid {os.getpid()}" in probe.stderr, (
+            f"holder pid missing from the message: {probe.stderr!r}"
+        )
+
+
+def test_elicitation_lock_released_when_the_holder_is_killed():
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "lm_runs.jsonl")
+        holder = subprocess.Popen(
+            [sys.executable, "-c", _HOLDER_SRC, out],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            line = holder.stdout.readline()
+            assert line.strip() == "HOLDING", f"holder never acquired: {line!r}"
+            os.kill(holder.pid, signal.SIGKILL)
+            holder.wait(timeout=30)
+            # The kernel released the flock with the process; a new run must
+            # acquire immediately, with no lock file to delete by hand.
+            t0 = time.monotonic()
+            with client_module.elicitation_lock(out):
+                pass
+            assert time.monotonic() - t0 < 5.0
+        finally:
+            if holder.poll() is None:
+                holder.kill()
+            holder.stdout.close()
+
+
+def test_elicitation_lock_is_reusable_and_cleans_up():
+    with tempfile.TemporaryDirectory() as td:
+        out = os.path.join(td, "lm_runs.jsonl")
+        lock_path = out + ".lock"
+        for _ in range(2):
+            with client_module.elicitation_lock(out):
+                assert os.path.exists(lock_path)
+            assert not os.path.exists(lock_path), "lock file left behind"
 
 
 def run_all_tests():

@@ -21,6 +21,7 @@ scenario) and a thread pool keeps callers as plain ``def`` rather than forcing
 """
 
 import contextlib
+import fcntl
 import hashlib
 import json
 import os
@@ -133,19 +134,6 @@ def write_jsonl_atomic(path, rows):
     os.replace(tmp, path)
 
 
-def _pid_alive(pid):
-    """Whether a process with this pid exists (EPERM still means it exists)."""
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return False
-    return True
-
-
 @contextlib.contextmanager
 def elicitation_lock(output_path):
     """Cross-process guard for one elicitation output file.
@@ -153,45 +141,52 @@ def elicitation_lock(output_path):
     The generation and scoring runners checkpoint by rewriting the whole JSONL
     from their own in-memory snapshot, so two concurrent invocations against
     the same output would silently clobber each other's paid-for records (last
-    checkpoint wins). This sidecar lock (``<output>.lock``, holding the owner
-    pid) makes the second invocation fail loudly instead. A lock whose pid is
-    no longer alive is stale (a crashed or killed run) and is reclaimed.
+    checkpoint wins). This sidecar lock (``<output>.lock``) makes the second
+    invocation fail loudly instead.
 
-    The lock is created atomically WITH its pid content (a private temp file
-    hard-linked into place), so a competitor can never observe an empty lock —
-    an unreadable pid therefore means corruption, and is treated as a live
-    holder (fail loudly, human deletes) rather than silently reclaimed."""
+    The exclusion is a kernel flock(2) held on the lock file for the run's
+    duration, not the file's existence: a crashed or killed run's lock is
+    released by the kernel automatically, so there is no stale-lock state, no
+    reclaim step, and never a reason to delete the file by hand. (The previous
+    existence+pid design had a reclaim race — two waiters that both read a
+    dead pid could each unlink-and-recreate, ending with two live holders.)
+    The holder's pid is written into the file purely for the error message.
+
+    After acquiring, the fd's inode is verified against the path: the previous
+    holder unlinks the file on release, so a waiter that opened the doomed
+    inode retries on a fresh file instead of holding a lock nobody can see."""
     lock_path = Path(str(output_path) + ".lock")
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = lock_path.with_name(f"{lock_path.name}.{os.getpid()}.tmp")
-    tmp.write_text(f"{os.getpid()}\n")
-    try:
-        while True:
-            try:
-                os.link(tmp, lock_path)
+    while True:
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            words = os.read(fd, 64).decode(errors="replace").split()
+            os.close(fd)
+            holder = words[0] if words else "unknown"
+            raise SystemExit(
+                f"Another elicitation (pid {holder}) is already writing "
+                f"{Path(output_path).name} — running concurrently would "
+                "silently overwrite its checkpointed records. Wait for it to "
+                "finish (a crashed run releases the lock automatically)."
+            ) from None
+        os.ftruncate(fd, 0)
+        os.write(fd, f"{os.getpid()}\n".encode())
+        try:
+            if os.fstat(fd).st_ino == os.stat(lock_path).st_ino:
                 break
-            except FileExistsError:
-                try:
-                    pid = int(lock_path.read_text().split()[0])
-                except (OSError, ValueError, IndexError):
-                    pid = None
-                if pid is None or _pid_alive(pid):
-                    holder = f"pid {pid}" if pid is not None else "an unreadable pid"
-                    raise SystemExit(
-                        f"Another elicitation ({holder}) is already writing "
-                        f"{Path(output_path).name} — running concurrently would "
-                        "silently overwrite its checkpointed records. Wait for "
-                        f"it to finish, or delete {lock_path} if that process "
-                        "is not actually running."
-                    )
-                # Stale lock from a dead process — reclaim and retry the link.
-                lock_path.unlink(missing_ok=True)
-    finally:
-        tmp.unlink(missing_ok=True)
+        except FileNotFoundError:
+            pass
+        os.close(fd)  # locked a just-unlinked inode; retry on the fresh path
     try:
         yield
     finally:
+        # Unlink while still holding the flock, then close (which releases
+        # it): a waiter that raced onto the old inode fails the inode check
+        # above and retries on the fresh path.
         lock_path.unlink(missing_ok=True)
+        os.close(fd)
 
 
 def read_jsonl_checked(path):
