@@ -79,11 +79,14 @@ run() {
 out_dir() { echo "model/outputs/$1/alt/$TAG"; }
 
 # --- one study's chain: fit then CV, each skipped when already complete --------
+# A subshell, not a brace group: `exit 1` must end only the chain and hand its
+# status to the OK/FAIL line below — inside a brace group it would terminate
+# the whole script before that line, making the FAIL branch unreachable.
 if [ -n "$CHAIN" ]; then
   s="$CHAIN"
   d="$(out_dir "$s")"
   log="$RUN_DIR/$s.log"
-  {
+  (
     echo "=== $s :: preregistered (eta = 0) fit + CV — $(date) ==="
     if [ -f "$d/fit_results.json" ]; then
       echo "-- fit already present in $d — skipping"
@@ -97,7 +100,7 @@ if [ -n "$CHAIN" ]; then
         --no-reweighting || exit 1
     fi
     echo "=== $s done — $(date) ==="
-  } >>"$log" 2>&1
+  ) >>"$log" 2>&1
   status=$?
   [ "$status" = "0" ] && echo "OK   $s" || echo "FAIL $s (see $log)"
   exit "$status"

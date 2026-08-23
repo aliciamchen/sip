@@ -68,23 +68,33 @@ usage() {
 # means merely-uncommitted-but-current assets do not trip the guard.
 ensure_artifacts_current() {
   echo "→ verifying generated experiment assets are in sync with their source…"
-  local artifacts
-  artifacts=$(git ls-files -- \
+  # An array, not an unquoted word-split string, so a path with whitespace or
+  # glob characters can never silently split or expand.
+  local -a artifacts=()
+  local f
+  while IFS= read -r f; do artifacts+=("$f"); done < <(git ls-files -- \
     'experiments/scenarios.csv' \
     'experiments/scenarios_nonfood.csv' \
     'experiments/*/json/stimuli.json' \
     'experiments/*/json/full_counterbalancing.json' \
     'experiments/*/index.html' \
     'experiments/*/experiment.js')
+  # Fail loudly if the globs matched nothing: that means the asset layout
+  # changed under the guard (and an empty array would trip `set -u` on old
+  # bash anyway).
+  if [[ ${#artifacts[@]} -eq 0 ]]; then
+    echo "ERROR: no tracked generated assets matched — check the git ls-files globs above." >&2
+    exit 1
+  fi
   local before after
-  before=$(git hash-object -- $artifacts)
+  before=$(git hash-object -- "${artifacts[@]}")
   make experiments >/dev/null
-  after=$(git hash-object -- $artifacts)
+  after=$(git hash-object -- "${artifacts[@]}")
   if [[ "$before" != "$after" ]]; then
     echo >&2
     echo "ERROR: generated experiment assets were OUT OF SYNC with their source." >&2
     echo "Regenerating from source (make experiments) changed:" >&2
-    paste <(printf '%s\n' $artifacts) <(echo "$before") <(echo "$after") \
+    paste <(printf '%s\n' "${artifacts[@]}") <(echo "$before") <(echo "$after") \
       | awk -F '\t' '$2 != $3 { print "  " $1 }' >&2
     echo >&2
     echo "The files are now regenerated. Review the diff, commit, then re-run the deploy." >&2
