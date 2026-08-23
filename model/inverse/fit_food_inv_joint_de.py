@@ -4,6 +4,9 @@ Study 1b — joint over (desire, effort) given intimacy. Each variant jointly fi
 its utility weights, alpha_observer, and the response-noise sigma from this
 experiment's belief-update data (no transfer between studies). Writes
 outputs/food_inv_joint_de/fit_results.json.
+
+Accepts the shared run-config flag via the dispatcher: `--no-reweighting`
+runs the preregistered model and writes to alt/uniform-noreweight/ instead.
 """
 
 import sys

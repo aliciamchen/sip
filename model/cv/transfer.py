@@ -87,7 +87,10 @@ from _inverse_dispatcher import (  # noqa: E402
     _run_loso,
     _write_outputs,
 )
-from model_comparison import _bootstrap_mean_by_subject  # noqa: E402
+from model_comparison import (  # noqa: E402
+    _bootstrap_mean_by_subject,
+    add_stats_args,
+)
 from observers import VARIANT_PARAM_NAMES  # noqa: E402
 from study_registry import STUDIES, reported_base  # noqa: E402
 from utils import get_project_root  # noqa: E402
@@ -761,9 +764,7 @@ def main():
     parser.add_argument(
         "--to", action="append", metavar="LABEL", help="recipient(s) for --from-pooled"
     )
-    parser.add_argument("--workers", type=int, default=None)
-    parser.add_argument("--n-boot", type=int, default=1000)
-    parser.add_argument("--seed", type=int, default=0)
+    add_stats_args(parser, workers=True)
     parser.add_argument(
         "--summary-only",
         action="store_true",

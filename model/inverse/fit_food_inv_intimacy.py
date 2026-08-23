@@ -4,6 +4,9 @@ Study 2a — observer knows (desire, effort), infers intimacy. Each variant join
 fits its utility weights, alpha_observer, and the response-noise sigma from this
 experiment's belief-update data (no transfer between studies). Writes
 outputs/food_inv_intimacy/fit_results.json.
+
+Accepts the shared run-config flag via the dispatcher: `--no-reweighting`
+runs the preregistered model and writes to alt/uniform-noreweight/ instead.
 """
 
 import sys

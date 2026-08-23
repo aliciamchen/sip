@@ -7,6 +7,9 @@ loaders to outputs/lm/nonfood_inv_joint_ie/). Each variant jointly fits its
 utility weights, alpha_observer, and the response-noise sigma from this
 experiment's belief-update data (no transfer between studies). Writes
 outputs/nonfood_inv_joint_ie/fit_results.json.
+
+Accepts the shared run-config flag via the dispatcher: `--no-reweighting`
+runs the preregistered model and writes to alt/uniform-noreweight/ instead.
 """
 
 import sys

@@ -57,6 +57,7 @@ from model_comparison import (  # noqa: E402
     _prepare_data,
     _seed_for,
     _verify_cv_manifest,
+    merge_condition_cells,
     pair_bootstrap_corr,
 )
 
@@ -107,15 +108,17 @@ def _condition_points(slug, data, preds):
     xs, ys = [], []
     for update_col, delta_col, _dv in STUDY_SPECS[slug]["dvs"]:
         human = data.groupby(keys, as_index=False)[update_col].mean()
-        model = preds.groupby(keys, as_index=False)[delta_col].mean()
-        merged = human.merge(model, on=keys, how="inner")
-        if len(merged) != len(human):
-            raise RuntimeError(
-                f"{slug}: {len(human) - len(merged)} condition cell(s) have no "
-                f"prediction in this arm -- its CV run is incomplete or stale."
-            )
-        xs.append(merged[delta_col].to_numpy())
-        ys.append(merged[update_col].to_numpy())
+        x, y = merge_condition_cells(
+            human,
+            preds,
+            keys,
+            update_col,
+            delta_col,
+            slug,
+            "in this arm -- its CV run is incomplete or stale.",
+        )
+        xs.append(x)
+        ys.append(y)
     return np.concatenate(xs), np.concatenate(ys)
 
 

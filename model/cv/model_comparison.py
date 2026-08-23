@@ -484,6 +484,24 @@ def group_corr_seed_key(number, model, seed=0):
     return f"group|{seed}|{number}|{model}|pair_ci"
 
 
+def merge_condition_cells(
+    human_cells, preds, keys, update_col, delta_col, slug, detail
+):
+    """One DV's (model x, human y) arrays at condition grain: the predictions'
+    cell means inner-merged onto the precomputed human cell means. A human cell
+    the predictions don't cover raises rather than being silently dropped — it
+    means a stale or incomplete CV run, not a cell to skip. `detail` finishes
+    the error message with the caller's remedy."""
+    model_cells = preds.groupby(keys, as_index=False)[delta_col].mean()
+    merged = human_cells.merge(model_cells, on=keys, how="inner")
+    if len(merged) != len(human_cells):
+        raise RuntimeError(
+            f"{slug}: {len(human_cells) - len(merged)} condition cell(s) have "
+            f"no prediction {detail}"
+        )
+    return merged[delta_col].to_numpy(), merged[update_col].to_numpy()
+
+
 def study_group_correlations(seed):
     """Pooled model-vs-human correlation per paper study number, at condition grain.
 
@@ -563,16 +581,17 @@ def study_group_correlations(seed):
                     continue
                 for update_col, delta_col, dv in STUDY_SPECS[st.slug]["dvs"]:
                     keys, cells, _u = human[(st.slug, dv)]
-                    model_cells = pm.groupby(keys, as_index=False)[delta_col].mean()
-                    merged = cells.merge(model_cells, on=keys, how="inner")
-                    if len(merged) != len(cells):
-                        raise RuntimeError(
-                            f"{st.slug}: {len(cells) - len(merged)} condition "
-                            f"cell(s) have no {model} prediction — stale CV "
-                            f"outputs; re-run `make cv-{st.slug}`."
-                        )
-                    xs.append(merged[delta_col].to_numpy())
-                    ys.append(merged[update_col].to_numpy())
+                    x, y = merge_condition_cells(
+                        cells,
+                        pm,
+                        keys,
+                        update_col,
+                        delta_col,
+                        st.slug,
+                        f"for {model} — stale CV outputs; re-run `make cv-{st.slug}`.",
+                    )
+                    xs.append(x)
+                    ys.append(y)
             if not xs:
                 continue
             got = pair_bootstrap_corr(
@@ -870,6 +889,17 @@ def compare_configs(slug, tag_a, tag_b, n_boot, seed):
     return result
 
 
+def add_stats_args(parser, workers=False):
+    """The bootstrap flags shared by the CV statistics CLIs (here, transfer.py,
+    pooled.py): --n-boot and --seed, plus --workers for the scripts that refit.
+    One definition so the defaults cannot drift between the scripts whose
+    numbers are meant to be comparable."""
+    if workers:
+        parser.add_argument("--workers", type=int, default=None)
+    parser.add_argument("--n-boot", type=int, default=1000)
+    parser.add_argument("--seed", type=int, default=0)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument(
@@ -879,8 +909,7 @@ def main():
         help="Which experiment to evaluate (default: every study whose CV "
         "outputs exist; studies without them are skipped with a message).",
     )
-    parser.add_argument("--n-boot", type=int, default=1000)
-    parser.add_argument("--seed", type=int, default=0)
+    add_stats_args(parser)
     parser.add_argument(
         "--compare-configs",
         nargs=2,

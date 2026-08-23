@@ -5,6 +5,9 @@ jointly refits the actor utility weights + alpha_observer on 15 scenarios, then
 predicts the held-out scenario. Each held-out trial's two belief updates
 (desire and world-state) are scored jointly under the K-run bivariate Gaussian
 mixture. See `_inverse_dispatcher` for the loop body.
+
+Accepts the shared run-config flag via the dispatcher: `--no-reweighting`
+runs the preregistered model and writes to alt/uniform-noreweight/ instead.
 """
 
 import sys
