@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "'/Users/aliciachen/Dropbox/projects/saliva-inverse-planning/.codex/hooks/pre-commit-model-check.sh'"
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/pre-commit-model-check.sh\""
           }
         ]
       }
