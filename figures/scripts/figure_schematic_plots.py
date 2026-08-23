@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Schematic-figure plot panels for Study 1a (food desire), the burrito example.
 
-Reads the LM scores cached in `figures/figure_data/figure_scores.json` and the
+Reads the LM scores cached in `figures/scripts/figure_scores.json` and the
 fitted full-model weights, recomputes the actor utility / choice /
 desire-posterior standalone, and renders the vector panels for the Illustrator
 figures:
@@ -30,7 +30,7 @@ The math mirrors `model/utility.py:get_utility_full_padded_desire` and
 prior); we recompute rather than reuse those because the observer code is indexed
 into precomputed per-scenario tables and the burrito is not a data scenario.
 
-No API calls — fully reproducible from `figures/figure_data/figure_scores.json`.
+No API calls — fully reproducible from `figures/scripts/figure_scores.json`.
 """
 
 import json
@@ -143,7 +143,7 @@ def _savefig(fig, stem):
 
 
 def load_inputs():
-    scores_path = get_project_root() / "figures" / "figure_data" / "figure_scores.json"
+    scores_path = get_project_root() / "figures" / "scripts" / "figure_scores.json"
     with open(scores_path) as f:
         rec = json.load(f)
     fits_path = (

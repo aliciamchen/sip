@@ -12,8 +12,10 @@ through the repo-root `plot_style.py`. Output is split by consumer:
 - `si/` — finished figures included directly by the manuscript
   (`make figures-lm-si`, `figures-si-scenarios`, `figures-si-prior-posterior`,
   and `figures-si-prereg-predictions`).
-- `figure_data/` — cached inputs for the schematic panels.
 - `model-eqs/` — hand-authored equation glyphs placed in the schematic figure.
+
+The schematic panels rebuild from `scripts/figure_scores.json`, a cached copy
+of the LM scores for the example scenario, so they need no model outputs.
 
 Only PDFs are committed; each script also writes a gitignored PNG preview
 beside each PDF.

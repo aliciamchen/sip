@@ -47,7 +47,6 @@ figures/           Paper figures
   scripts/         Figure-generation scripts (results panels, SI LM-validation, schematic panels)
   panels/          Illustrator components, never assembled figures (PDF)
   si/              Finished figures that go straight into the manuscript (PDF)
-  figure_data/     Cached inputs for the schematic panels
   model-eqs/       Hand-authored equation glyphs
 utils.py           Project-root path helper used by every script
 study_registry.py  Per-study metadata (conditions, inferred latents, labels), shared by the model and figure code
