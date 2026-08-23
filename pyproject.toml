@@ -15,8 +15,6 @@ dependencies = [
     "optax>=0.2.6",
     "chex>=0.1.91",
     "ml-dtypes>=0.5.3",
-    # Probabilistic programming
-    "memo-lang>=1.2.4",
     # Visualization
     "matplotlib>=3.10.0",
     "seaborn>=0.13.0",
@@ -32,6 +30,11 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff>=0.15.12",
+    # The memo probabilistic-programming DSL is test-only: model/memo_spec.py
+    # holds the memo statement of the actors and observers, and the compliance
+    # tests verify the plain-JAX production code against it. Nothing on the
+    # fit/CV path imports memo.
+    "memo-lang>=1.2.4",
     # Local notebook exploration; nothing in the pipeline imports these.
     "ipython>=9.0.0",
     "ipykernel>=6.30.0",
@@ -73,8 +76,7 @@ package = true
 # The memo DSL injects names (actor, observer, knows, chooses, ...) into its
 # decorated functions at compile time, and its annotated `cast` locals are DSL
 # syntax, so the undefined-name and unused-local rules misfire here.
-"model/observers.py" = ["F821", "F842"]
-"model/actors.py" = ["F821", "F842"]
+"model/memo_spec.py" = ["F821", "F842"]
 # `attention_passed != True` is an elementwise pandas comparison; rewriting it
 # to `is not True` (E712's fix) changes the semantics.
 "data_prep/json_to_csv.py" = ["E712"]

@@ -1286,7 +1286,6 @@ dependencies = [
     { name = "jax" },
     { name = "jaxlib" },
     { name = "matplotlib" },
-    { name = "memo-lang" },
     { name = "ml-dtypes" },
     { name = "numpy" },
     { name = "optax" },
@@ -1302,6 +1301,7 @@ dependencies = [
 dev = [
     { name = "ipykernel" },
     { name = "ipython" },
+    { name = "memo-lang" },
     { name = "ruff" },
 ]
 
@@ -1311,7 +1311,6 @@ requires-dist = [
     { name = "jax", specifier = ">=0.7.2" },
     { name = "jaxlib", specifier = ">=0.7.2" },
     { name = "matplotlib", specifier = ">=3.10.0" },
-    { name = "memo-lang", specifier = ">=1.2.4" },
     { name = "ml-dtypes", specifier = ">=0.5.3" },
     { name = "numpy", specifier = ">=2.3.0" },
     { name = "optax", specifier = ">=0.2.6" },
@@ -1327,6 +1326,7 @@ requires-dist = [
 dev = [
     { name = "ipykernel", specifier = ">=6.30.0" },
     { name = "ipython", specifier = ">=9.0.0" },
+    { name = "memo-lang", specifier = ">=1.2.4" },
     { name = "ruff", specifier = ">=0.15.12" },
 ]
 

@@ -31,9 +31,9 @@ import jax.numpy as jnp
 import numpy as np
 import pandas as pd
 
+from model import actors, memo_spec
 from model.actors import actor_discrete_full_padded_desire
-from model.observers import (
-    VARIANT_PARAM_NAMES,
+from model.memo_spec import (
     _observer_desire_base_memo_reference,
     _observer_desire_discomfort_only_memo_reference,
     _observer_desire_full_memo_reference,
@@ -46,6 +46,9 @@ from model.observers import (
     _observer_joint_ie_base_memo_reference,
     _observer_joint_ie_discomfort_only_memo_reference,
     _observer_joint_ie_full_memo_reference,
+)
+from model.observers import (
+    VARIANT_PARAM_NAMES,
     observer_desire_base,
     observer_desire_discomfort_only,
     observer_desire_full,
@@ -548,6 +551,144 @@ def test_single_latent_observers_match_memo_reference():
                     f"{np.abs(fast - ref).max():.3e}"
                 )
     print("✓ fast single-latent observers match the memo reference (all variants)")
+
+
+# The twelve (family, variant) actor policies. Names are shared between
+# `model.actors` (plain JAX, production) and `model.memo_spec` (memo,
+# specification), so each case pairs the two by name. Actor signatures carry no
+# alpha_observer; table names are listed in signature order.
+_ACTOR_TABLE_NAMES = {
+    ("desire", "full"): (
+        "risk_table",
+        "effort_table",
+        "g_padded_table",
+        "prior_table",
+        "relationship_values",
+    ),
+    ("desire", "discomfort_only"): (
+        "risk_table",
+        "effort_table",
+        "prior_table",
+        "relationship_values",
+    ),
+    ("desire", "base"): ("risk_table", "effort_table", "g_padded_table", "prior_table"),
+    ("intimacy", "full"): (
+        "risk_table",
+        "effort_table",
+        "g_padded_table",
+        "prior_table",
+        "desire_table",
+    ),
+    ("intimacy", "discomfort_only"): ("risk_table", "effort_table", "prior_table"),
+    ("intimacy", "base"): (
+        "risk_table",
+        "effort_table",
+        "g_padded_table",
+        "prior_table",
+        "desire_table",
+    ),
+}
+# The joint families share their single-latent sibling's signatures.
+_ACTOR_TABLE_NAMES.update(
+    {
+        ("joint_de", v): t
+        for (f, v), t in list(_ACTOR_TABLE_NAMES.items())
+        if f == "desire"
+    }
+)
+_ACTOR_TABLE_NAMES.update(
+    {
+        ("joint_ie", v): t
+        for (f, v), t in list(_ACTOR_TABLE_NAMES.items())
+        if f == "intimacy"
+    }
+)
+
+_ACTOR_NAMES = {
+    ("desire", v): f"actor_discrete_{v}_padded_desire" for v in VARIANT_PARAM_NAMES
+}
+_ACTOR_NAMES.update(
+    {
+        ("joint_de", v): f"actor_discrete_{v}_padded_joint_de"
+        for v in VARIANT_PARAM_NAMES
+    }
+)
+_ACTOR_NAMES.update(
+    {
+        ("intimacy", v): f"actor_continuous_{v}_padded_intimacy"
+        for v in VARIANT_PARAM_NAMES
+    }
+)
+_ACTOR_NAMES.update(
+    {
+        ("joint_ie", v): f"actor_continuous_{v}_padded_joint_ie"
+        for v in VARIANT_PARAM_NAMES
+    }
+)
+
+
+def _actor_case_args(family, variant):
+    tables = (
+        _synthetic_single_tables(family)
+        if family in ("desire", "intimacy")
+        else _synthetic_joint_tables(family)
+    )
+    weights = VARIANT_PARAM_NAMES[variant]
+    table_args = [tables[t] for t in _ACTOR_TABLE_NAMES[(family, variant)]]
+    return [_ALPHA] + [_JOINT_WEIGHT_VALUES[w] for w in weights] + table_args
+
+
+def test_actor_policies_match_memo_spec():
+    """The plain-JAX actor policies (actors.py) must reproduce the memo actors
+    (memo_spec.py) on every slot, cell, and latent bin, across all twelve
+    (family, variant) pairs — the guarantee that moving the production actor
+    out of memo changed the implementation, not the model. The policies feed
+    both the observer inversions and the reweighting's surprise term."""
+    for family, variant in _ACTOR_NAMES:
+        name = _ACTOR_NAMES[(family, variant)]
+        args = _actor_case_args(family, variant)
+        fast = np.asarray(getattr(actors, name)(*args))
+        ref = np.asarray(getattr(memo_spec, name)(*args))
+        assert fast.shape == ref.shape, (
+            f"{name}: policy shape {fast.shape} != memo shape {ref.shape}"
+        )
+        assert np.isfinite(fast).all(), f"{name}: policy has non-finite entries"
+        assert np.allclose(fast, ref, rtol=1e-4, atol=1e-6), (
+            f"{name}: plain-JAX policy deviates from the memo actor; "
+            f"max abs diff {np.abs(fast - ref).max():.3e}"
+        )
+    print("✓ plain-JAX actor policies match the memo actors (all variants)")
+
+
+def test_actor_policy_gradients_match_memo_spec():
+    """Fits differentiate through the actor policy (via the observer inversion
+    and, in the reweighted studies, the surprise term), so the plain-JAX
+    policy's gradients must match the memo actor's. One discrete and one
+    continuous family, full variant, d/dw_v at slot 0."""
+    for family in ("joint_de", "joint_ie"):
+        name = _ACTOR_NAMES[(family, "full")]
+        args = _actor_case_args(family, "full")
+
+        def readout(fn, w_v):
+            out = fn(args[0], w_v, *args[2:])
+            return jnp.log(out[0] + 1e-9).sum()  # slot 0 only
+
+        for fn_label, fn in (
+            ("fast", getattr(actors, name)),
+            (
+                "memo",
+                getattr(memo_spec, name),
+            ),
+        ):
+            grad = jax.grad(lambda wv, f=fn: readout(f, wv))(jnp.float32(_W_V))
+            assert np.isfinite(float(grad)), f"{name} ({fn_label}): non-finite grad"
+            if fn_label == "fast":
+                g_fast = float(grad)
+            else:
+                assert np.allclose(g_fast, float(grad), rtol=1e-3), (
+                    f"{name}: d/dw_v fast={g_fast:.6g} vs memo={float(grad):.6g}"
+                )
+    print("✓ plain-JAX actor policy gradients match the memo actors")
 
 
 def test_sharpening_survives_high_alpha():
@@ -1259,6 +1400,8 @@ def run_all_tests():
     test_observer_joint_de_posterior_sums_to_one()
     test_joint_observers_match_memo_reference()
     test_single_latent_observers_match_memo_reference()
+    test_actor_policies_match_memo_spec()
+    test_actor_policy_gradients_match_memo_spec()
     test_sharpening_survives_high_alpha()
     test_single_latent_observer_gradients_are_finite()
     test_joint_observer_gradients_match_memo_reference()

@@ -75,7 +75,7 @@ uv sync                  # Python deps; creates .venv
 uv run python script.py  # run scripts
 ```
 
-Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, optax.
+Key Python deps: JAX, pandas, numpy, optax. memo-lang (probabilistic modeling DSL) is a dev-group dependency: `model/memo_spec.py` states the models in memo as the executable specification, and the compliance tests verify the plain-JAX production code against it.
 
 ## Project instructions
 
