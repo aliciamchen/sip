@@ -37,7 +37,7 @@ The `Makefile` wraps these: `make stimuli`, `make counterbalancing`, `make entry
 
 All six follow the noalt-style presentation: the participant sees a single observed action per trial, with prior and posterior slider responses. The DV scales are desire as a continuous 0–100 rating with a scenario-specific question that names the characters and the thing at stake ("How much do you think Carissa and Josh would like the hot dog?", not at all → moderately → extremely), effort as a continuous 0–100 rating between the two effort paragraphs as endpoints, and intimacy as a continuous 0–100 rating from maximally formal to maximally intimate. When intimacy is a given condition rather than a DV, it is a verbal level (`max_formal` / `somewhat_formal` / `somewhat_intimate` / `max_intimate`) shown as a relationship descriptor, never a number. Each experiment dir's `README.md` documents the design spec.
 
-Each entry links to that study's design spec; the canonical slug ↔ Study-number roster and the full per-study designs (factor grids) are in the [root README](../README.md#experiments).
+Each entry links to that study's design spec; the canonical slug ↔ Study-number roster is in the [root README](../README.md#experiments), and the full per-study designs are specified in the manuscript.
 
 - [food_inv_desire](food_inv_desire/README.md) — **Study 1a**: infer desire under known effort + intimacy.
 - [food_inv_joint_de](food_inv_joint_de/README.md) — **Study 1b**: joint inference over desire and effort given intimacy (two sliders per trial).

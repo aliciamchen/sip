@@ -1,8 +1,6 @@
 # Inverse planning in the context of sociological structure
 
-Cognitive science research on social inference and food sharing: how people decide to share saliva-transferring food with someone given the relationship between them, and how observers infer the relationship, desire, or physical effort from observed actions.
-
-The current manuscript organizes the work into six inverse-planning studies, all built on a 3-action stimulus structure (no sharing / low-risk sharing / high-risk sharing) that lets the three latent variables — desire, effort, and intimacy — be crossed and inferred in different combinations. In each study the observer sees a single action and infers one or two of the latent variables: Study 1a infers desire, Study 1b jointly infers desire and effort, Study 2a infers intimacy, and Study 2b jointly infers intimacy and effort, all on a 16-scenario food stimulus set. Study 3 tests whether the same model generalizes beyond food to other forms of interpersonal vulnerability (bodily access, shared physical exposure, and private access) using a matched 16-scenario non-food set: Study 3a repeats 1b's joint desire + effort design and Study 3b repeats 2b's joint intimacy + effort design on those scenarios.
+This repository holds the experiments, data, model code, and figure pipeline behind a manuscript on social inference from sharing decisions: how people decide to share saliva-transferring food (and analogous non-food resources) with someone given the relationship between them, and how observers invert that decision to infer the relationship, desire, or physical effort from a single observed action. The manuscript is the source of truth for the studies' motivation, designs, and results; this README explains what is in the repo and how to reproduce the reported numbers and figures from it.
 
 ## Quick start
 
@@ -49,9 +47,6 @@ preregs/           AsPredicted-format preregistration documents (all six studies
 figures/           Paper figures
   scripts/         Figure-generation scripts (results panels, SI LM-validation, schematic panels)
   panels/          Illustrator components, never assembled figures (PDF)
-    results/       One four-column row per sub-study, plus the model-vs-humans panel
-    legends/       The four shared legends, one artboard each
-    schematic/     Schematic sub-panels
   si/              Finished figures that go straight into the manuscript (PDF)
   figure_data/     Cached inputs for the schematic panels
   model-eqs/       Hand-authored equation glyphs
@@ -61,65 +56,44 @@ See the [data codebook](data/README.md), [experiments README](experiments/README
 
 ## Experiments
 
-The stable identifier for each experiment is its directory slug in `data/` and `experiments/` (paper-level numbers change as the writeup evolves).
+The stable identifier for each experiment is its directory slug in `data/` and `experiments/`; paper-level study numbers can shift as the writeup evolves, so the code and data are organized by slug. The six studies (designs and procedures are in the manuscript):
 
-On each trial the participant reads a vignette plus whichever condition paragraphs the design reveals, rates their beliefs, sees a single observed action, and rates again; the dependent variable is the belief update (posterior minus prior rating). All ratings are continuous 0–100 sliders, stored on the 0–1 scale.
+| Slug | Study | Infers | Stimulus set |
+|---|---|---|---|
+| `food_inv_desire` | 1a | desire | food (16 scenarios) |
+| `food_inv_joint_de` | 1b | desire + effort | food |
+| `food_inv_intimacy` | 2a | intimacy | food |
+| `food_inv_joint_ie` | 2b | intimacy + effort | food |
+| `nonfood_inv_joint_de` | 3a | desire + effort | non-food (16 scenarios) |
+| `nonfood_inv_joint_ie` | 3b | intimacy + effort | non-food |
 
-- **Study 1a — desire inference** (`food_inv_desire/`) — known: effort + intimacy. Inferred: desire. Design: 2 × 4 × 3.
-- **Study 1b — joint desire + effort** (`food_inv_joint_de/`) — known: intimacy. Inferred jointly: desire and the physical world state. Design: 4 × 3, two sliders per trial.
-- **Study 2a — intimacy inference** (`food_inv_intimacy/`) — known: desire + effort. Inferred: intimacy. Design: 2 × 2 × 3.
-- **Study 2b — joint intimacy + effort** (`food_inv_joint_ie/`) — known: desire. Inferred jointly: intimacy and the physical world state. Design: 2 × 3, two sliders per trial.
-- **Study 3a — joint desire + effort, non-food** (`nonfood_inv_joint_de/`) — Study 1b's design on the non-food scenario set.
-- **Study 3b — joint intimacy + effort, non-food** (`nonfood_inv_joint_ie/`) — Study 2b's design on the non-food scenario set.
+The dependent variable throughout is the belief update (posterior minus prior slider rating, stored on the 0–1 scale). The [experiments README](experiments/README.md) documents the shared jsPsych infrastructure, counterbalancing, the comprehension/attention/memory checks, and a standalone trial-preview page (`make preview`).
 
-The [experiments README](experiments/README.md) documents the shared jsPsych infrastructure, the counterbalancing scheme, the comprehension/attention/memory checks, and a standalone trial-preview page (`make preview`).
-
-### Scenarios
-
-The Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it ([`scenarios.py`](experiments/scenarios.py) → `scenarios.csv` for the food set of Studies 1–2, [`scenarios_nonfood.py`](experiments/scenarios_nonfood.py) → `scenarios_nonfood.csv` for the non-food set of Study 3). Edit the `.py` file and regenerate; the scenario tables in the paper's supplementary material are rendered from these CSVs by [`export_scenarios_latex.py`](experiments/export_scenarios_latex.py).
+The Python scripts in `experiments/` are the source of truth for the stimuli; each writes a `.csv` artifact next to it ([`scenarios.py`](experiments/scenarios.py) → `scenarios.csv` for the food set, [`scenarios_nonfood.py`](experiments/scenarios_nonfood.py) → `scenarios_nonfood.csv` for the non-food set). Edit the `.py` file and regenerate; the scenario tables in the paper's supplementary material are rendered from these CSVs by [`export_scenarios_latex.py`](experiments/export_scenarios_latex.py).
 
 ## Utility model
 
-A joint actor chooses an action by softmaxing over the utility:
+The actor model the observers invert (defined and motivated in the manuscript) is a softmax choice over
 
 ```
-P(a | s, I, d) ∝ exp( U(a | s, I, d) )
-
-U(a | s, I, d) = w_v · d · g(a)
-               − w_d · risk(a) · (1 − I)^γ
-               − w_e · effort(a)
+U(a | s, I, d) = w_v · d · g(a)  −  w_d · risk(a) · (1 − I)^γ  −  w_e · effort(a)
 ```
 
-The reward term multiplies **desire** `d ∈ [0, 1]` (how much the dyad wants the outcome) by the desire-free **goal-satisfaction** `g(a) ∈ [0, 1]` (how fully the action delivers the outcome). **`risk(a)`** measures how much an action opens the actors up to each other — bodily, informationally, or spatially — and is scaled by intimacy `I ∈ [0, 1]` through the power-law modulator `(1 − I)^γ` (γ is a free parameter): at high intimacy the risk penalty shrinks toward zero, so higher-risk actions become relatively more attractive. **`effort(a)`** is the total executional cost of carrying out the action across the dyad, counting physical work, preparation, equipment, time, and utterance-production work performed by either person.
-
-An observer inverts this actor model with Bayesian inference to recover whichever variables the study leaves latent — desire is a continuous latent in Studies 1a/1b and given context in 2a/2b, and vice versa for intimacy. Three ablations are fit and compared:
-
-- **Full** — the complete utility above (the main model).
-- **Discomfort-only** — only the risk-discomfort term; asks whether the relational risk signal alone can account for behavior.
-- **Base** — reward and effort with no relational structure.
+where `g`, `risk`, and `effort` are LM-elicited per-action features and desire `d` and intimacy `I` are each either given context or the inferred latent, depending on the study. The four fitted weights appear in the outputs as `param_w_v`, `param_w_d`, `param_w_e`, and `param_gamma` (the reward-term weight is named `w_v`; `w_d` is the risk weight). Three ablations are fit and compared — `full`, `discomfort_only` (risk term only), and `base` (no relational structure) — and which base variant each study's "Base" column reports is decided in one place, `study_registry.reported_base`.
 
 ## LM-elicited model components
 
-The model's action set and utility features are not hand-specified; they come from a language model (Llama-3.3-70B via Together AI), which plays the role of context-specific retrieval in open-ended scenarios. The elicitation has two steps, and both are repeated for K = 20 independent runs per scenario × condition cell:
+The model's comparison sets and utility features come from a language model (Llama-3.3-70B via Together AI) rather than hand-stipulation, in two steps run for K = 20 independent runs per scenario × condition cell: [`generate_alternatives.py`](model/lm/generate_alternatives.py) proposes the counterfactual actions the pair could have taken, and [`score_merged.py`](model/lm/score_merged.py) scores the observed action and that run's alternatives together on `risk`, `effort`, and `g` (plus the given-condition scalars where a study needs them). The prompts are in [`prompts.py`](model/lm/prompts.py) and are reproduced verbatim in the supplementary material via [`export_prompts_latex.py`](model/lm/export_prompts_latex.py).
 
-1. **Generate alternatives** (`model/lm/generate_alternatives.py --study <slug>`): given the vignette, the observer-visible condition paragraphs, and the observed action, the LM proposes the plausible counterfactual actions the pair could have taken. The observer's actor then chooses from `{observed action} ∪ alternatives`. Participants never see these alternatives; they exist only inside the observer's model of how the actor chose.
-2. **Score features** (`model/lm/score_merged.py --study <slug>`): the observed actions and that run's alternatives are scored together — one shared comparative frame — on `risk`, `effort`, and `g`, each on a 0–6 scale normalized to [0, 1]. Variables that are given rather than inferred in a study (the desire condition in 2a/2b, the relationship level in 1a/1b) are also rated by the LM, per run, on a 0–100 scale normalized to [0, 1].
-
-Each run supplies its own alternatives and feature scores, and the run-to-run spread becomes part of the model's predicted response distribution through the elicitation-sample mixture below. Because the base ablation has no intimacy term, its alternatives are elicited without the relationship description (`make lm-base`), so its choice set — and its predictions — cannot depend on the relationship. That design makes the preregistered base differ from the full model in two ways at once, both the missing discomfort term and the different choice set, so the paper reports as "Base" a variant that keeps base's utility but scores it against the full model's relationship-conditioned choice set. The comparison isolates the discomfort term, and the preregistered version is reported alongside it in the preregistration-deviation section. Which variant each study reports is decided in one place, `study_registry.reported_base`.
-
-The prompts live in [`model/lm/prompts.py`](model/lm/prompts.py) and are reproduced verbatim in the paper's supplementary material via [`export_prompts_latex.py`](model/lm/export_prompts_latex.py). The elicited tables are committed under `model/outputs/lm/<slug>/` (see the [outputs codebook](model/outputs/README.md)); regenerating them requires `TOGETHER_API_KEY` in `.env`. Implementation details — cell grids, table shapes, loaders — are documented in the code and in [`.claude/rules/model.md`](.claude/rules/model.md).
+The elicited tables are committed under `model/outputs/lm/<slug>/` (see the [outputs codebook](model/outputs/README.md)), so nothing needs re-eliciting to reproduce the results; regenerating them requires `TOGETHER_API_KEY` in `.env`. Implementation details — cell grids, table shapes, loaders — are documented in the code and in [`.claude/rules/model.md`](.claude/rules/model.md).
 
 ## Model fitting and comparison
 
-Each study jointly fits its ablations' utility weights, an observer softmax temperature `α_obs`, and a response-noise scale `σ` from its own belief-update data by maximum likelihood; no parameters are shared or transferred between studies in any reported fit. A participant's belief update `u` is scored under the K-component elicitation-sample mixture `(1/K) Σ_k N(u | δ_k, σ²)`, where `δ_k` is run k's predicted update; the joint studies score their two sliders together under a bivariate version.
-
-All reported predictions are out-of-sample, from leave-one-scenario-out cross-validation: for each of the 16 scenarios, all parameters are refit on the other 15 and used to predict the held-out one. The paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`): the difference between the full model and each ablation in per-trial held-out log-likelihood, with 95% confidence intervals from bootstrap resampling of participants (1,000 resamples), plus the secondary condition-averaged model-vs-human correlations. Results are written to `model/outputs/<slug>/cv_model_comparison.json`. Two complementary statistics, computed by `model/cv/contrast_tests.py` into the same file, characterize the effect the studies actually test: a variance decomposition of where trial-level variance lives, and a gradient test of how the given condition modulates the inferences.
+Each study fits its own parameters from its own data, and every reported prediction is out-of-sample from leave-one-scenario-out cross-validation — CV is the sole source of model predictions. The paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`), with the complementary variance decomposition and condition-gradient statistics from `model/cv/contrast_tests.py`; both write into `model/outputs/<slug>/cv_model_comparison.json`. The likelihood, priors, and comparison construction are specified in the manuscript.
 
 The default configuration reproduces the paper's numbers and writes to `model/outputs/<slug>/`. The one alternative configuration is the preregistered model: `NO_REWEIGHTING=1` drops the comparison-set reweighting (a declared deviation from the preregistration), writes to `model/outputs/<slug>/alt/uniform-noreweight/`, and is run for all six studies by `bin/prereg-eta0.sh`; `model/cv/model_comparison.py --compare-configs` then compares the two on matched trials.
 
-### Exploratory generalization analyses
-
-Three exploratory analyses (in no preregistration) ask whether the fitted utility is one stable object rather than six separately flexible fits. `model/cv/transfer.py` (`make transfer`) scores one study's fitted utility weights on a design-matched partner study, out of sample, in a zero-free-parameter arm and an arm that re-estimates only the response layer. `model/cv/pooled.py` (`make pooled`) fits a single shared utility per stimulus domain, and one across all six studies, under the same cross-validation. `model/cv/generalization_primary.py` (`make generalization-primary`) scores those arms on the metrics the paper reports. Outputs land under `model/outputs/<slug>/alt/` with summaries in `model/outputs/{transfer,pooled}/` and `model/outputs/generalization_primary.json`.
+Three exploratory analyses reported in the supplement live in `model/cv/`: `transfer.py` (`make transfer`), `pooled.py` (`make pooled`), and `generalization_primary.py` (`make generalization-primary`). Their outputs land under `model/outputs/<slug>/alt/` with summaries in `model/outputs/{transfer,pooled}/` and `model/outputs/generalization_primary.json`.
 
 ## Dependencies
 
@@ -148,8 +122,7 @@ The Makefile is the recommended way to run the pipeline; the steps below show th
 # Raw jsPsych JSON → anonymized CSVs (raw data is not included in the repository):
 uv run python analysis/json_to_csv.py <experiment_slug>
 
-# LM elicitation — only to REgenerate the committed tables (requires TOGETHER_API_KEY);
-# see "LM-elicited model components" above for what these two steps do:
+# LM elicitation — only to REgenerate the committed tables (requires TOGETHER_API_KEY):
 uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
