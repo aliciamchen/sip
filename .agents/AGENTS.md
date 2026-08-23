@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guidance for Codex sessions working in this repository. Project overview, the experiment roster, the utility model, and run instructions live in [README.md](../README.md). This file holds Codex-specific context that isn't in the public docs.
+Guidance for Codex sessions working in this repository. Project overview, the experiment roster, the utility model, and run instructions live in [README.md](../README.md). This file holds agent-facing context that isn't in the public docs.
 
 ## Naming and structure conventions
 
@@ -11,7 +11,7 @@ Guidance for Codex sessions working in this repository. Project overview, the ex
 
 ## Legacy data
 
-Archived participant data from earlier (removed) experiments is under `data/legacy/` — there is no legacy *code*. A little active code reads `data/legacy/` (the `utils.R` demographics fallback); those archived CSVs use older column names than the active ones.
+Archived participant data from earlier, superseded experiments sits in the local-only, gitignored `data/legacy/` — there is no legacy *code*, and nothing in the active pipeline reads it. Those archived CSVs use older column names than the active ones.
 
 ## Terminology
 
@@ -55,7 +55,8 @@ jsPsych experiments (experiments/) → JSON → json_to_csv.py → CSV (data/)
                                                               ↓
                                   model fits + LOSO CV (model/) → out-of-sample predictions
                                                               ↓
-          paper figures: Python scripts in figures/scripts/ → figures/panels/ + figures/si/
+     paper figures: Python scripts in figures/scripts/ (styled by plot_style.py)
+                    → figures/panels/ (Illustrator components) + figures/si/ (finished)
                                                               ↓
                      make sync-journal-figures → SIP_journal/figures/ (Overleaf)
 ```
@@ -64,7 +65,7 @@ The R/Quarto qmds in `analysis/` report demographics and data checks only — ev
 
 ## Common commands
 
-The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{analysis,data,experiments,model}.md`, which load on demand when reading files in those directories.
+The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{analysis,data,experiments,model}.md`, which hold the stage-specific details.
 
 ## Environment setup
 
@@ -78,18 +79,14 @@ Key Python deps: JAX, memo-lang (probabilistic modeling DSL), pandas, numpy, opt
 ## Project instructions
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
+- Before committing a nontrivial change under `model/` or `analysis/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a careful code review of the diff and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the model compliance test whenever a staged file is under `model/`.
 - For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
-- Before committing a nontrivial change under `model/` (fitting/likelihood logic, data
-  loaders, CV, new pipeline stages — not figure styling or prose), make sure the test
-  suite passes. `.codex/hooks/pre-commit-model-check.sh` enforces this automatically:
-  it fires on `git commit`, and when any staged file is under `model/` it runs the
-  suite and blocks the commit on failure.
 - When changing AGENTS.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 
 ## Utility helpers
 
 - `utils.py` — `get_project_root()` for constructing paths relative to project root.
-- `study_registry.py` — the single source of truth for per-study metadata (given conditions, inferred latents with their `<rating>_update` / `delta_<latent>` column pairs, paper label, stimulus domain), plus `reported_base(slug)` for which variant the paper's "Base" column means. Imported by `model/cv/model_comparison.py`, `model/export_results_latex.py`, `model/cv/run_deltas.py` and the figure scripts, and listed in the Makefile's `FIG_SHARED`. Read a per-study fact from here rather than hardcoding it in a consumer. Details in `.claude/rules/model.md`.
+- `study_registry.py` — the single source of truth for per-study metadata (given conditions, inferred latents with their `<rating>_update` / `delta_<latent>` column pairs, paper label, stimulus domain), plus `reported_base(slug)` for which variant the paper's "Base" column means. Imported by `model/cv/model_comparison.py`, `model/export_results_latex.py`, and the figure scripts, and listed in the Makefile's `FIG_SHARED`. Read a per-study fact from here rather than hardcoding it in a consumer. Details in `.claude/rules/model.md`.
 - `analysis/utils.R` — shared R helpers for the qmds and exploratory scripts: `report_demographics()`, `calculate_belief_update()`, the model JSON readers, and the condition factor orders. No plotting code — that all moved to Python.
-- `plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `plot_si_validation.py` + `plot_alternatives.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + a gitignored PNG preview, into whichever output root the caller names (default `figures/si/`), plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-panels` regenerates the Illustrator components; `make figures-lm-si` the LM SI set.
-- `figures/scripts/` — output is split by consumer, with the roots named in `plot_style.py`: `figures/panels/` for Illustrator components and `figures/si/` for finished figures. The assembled per-study scripts were removed on 2026-08-02; `figure_paper_panels.py` writes components instead. Shared data prep is in `_data.py`, the points design in `_points.py`, and the pooled model-vs-humans panel in `_agg.py` (a helper module, not a script).
+- `plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `plot_si_validation.py` + `figure_si_consolidated.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + a gitignored PNG preview, into whichever output root the caller names (default `figures/si/`), plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-panels` regenerates the Illustrator components; `make figures-lm-si` the LM SI set.
+- `figures/scripts/` — output is split by consumer, with the roots named in `plot_style.py` (`PANELS_RESULTS`, `PANELS_LEGENDS`, `PANELS_SCHEMATIC`, `SI_DIR`): `figures/panels/` for Illustrator components and `figures/si/` for finished figures. The paper's results figures are assembled by hand, so `figure_paper_panels.py` writes components, not finished figures — the assembled per-study scripts were removed on 2026-08-02. Shared data prep is in `_data.py` (reusing `model/cv/model_comparison.py`'s cell specs and loaders), the points design in `_points.py`, and the pooled model-vs-humans panel in `_agg.py` (a helper module, not a script). Each renders the panels whose inputs exist, skips the rest with a printed note, and warns when CV outputs are stale relative to the data CSV.

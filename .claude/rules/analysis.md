@@ -19,14 +19,11 @@ equivalents are in `figures/scripts/_data.py`, which reuses
 Core analysis files (named after their data folder, not paper experiment number):
 
 - `utils.R` — Shared R helpers for the qmds and exploratory scripts:
-  `report_demographics()` (with `data/legacy/` fallback), `calculate_belief_update()`,
-  the model JSON/JSONL readers, and the `INTIMACY_LEVELS` / `ACTION_LEVELS`
-  factor orders. `report_demographics()` reads the retained-after-exclusions N
-  off the study's `main_trials_long.csv` rather than re-implementing the
-  exclusion rules in R — `json_to_csv.py` is the single source of truth for
-  those. The local-only `signature_tests.R` (exploratory, non-preregistered)
-  also sources this file; keep `calculate_belief_update`, `ACTION_LEVELS`, and
-  `INTIMACY_LEVELS` available for it.
+  `report_demographics()`, `calculate_belief_update()`, the model JSON/JSONL
+  readers, and the `INTIMACY_LEVELS` / `ACTION_LEVELS` factor orders.
+  `report_demographics()` reads the retained-after-exclusions N off the study's
+  `main_trials_long.csv` rather than re-implementing the exclusion rules in R —
+  `json_to_csv.py` is the single source of truth for those.
 - `json_to_csv.py` — Data processing pipeline; converts jsPsych raw JSON to anonymized CSVs. Applies each study's exclusion rule from its config: 1a's preregistered lax rule (exclude only failed-attention AND 0 memory questions), strict for the later studies (retain only passed-attention AND >=1 memory question). This script is the single source of truth for exclusion rules. It fails fast on bad raw data (unparseable files, missing or duplicate subject IDs, trial/exit-survey subject mismatches, zero parsed rows) and normalizes the legacy pre-2026-06-19 `neither` intimacy label to `somewhat_formal` at parse time.
 - `test_json_to_csv.py` — Offline tests for the converter on synthetic fixtures (`uv run python analysis/test_json_to_csv.py`).
 
