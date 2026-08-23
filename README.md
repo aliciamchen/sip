@@ -35,9 +35,8 @@ The `Makefile` exposes per-stage and per-experiment targets (`make fit-<slug>`, 
 
 ```
 analysis/          Data processing plus R/Quarto demographics and data-check documents
-bin/               Helper scripts: the experiment deploy script and a git-worktree environment setup
+bin/               Helper scripts: the experiment deploy script and the preregistered-model runner
 data/              Processed experiment data (one folder per experiment slug)
-docs/              Design notes recording modeling decisions
 experiments/       jsPsych experiment code + scenario definitions
 model/             Computational models
   inverse/         Per-experiment inverse-planning fit scripts
@@ -73,7 +72,7 @@ On each trial the participant reads a vignette plus whichever condition paragrap
 - **Study 3a — joint desire + effort, non-food** (`nonfood_inv_joint_de/`) — Study 1b's design on the non-food scenario set.
 - **Study 3b — joint intimacy + effort, non-food** (`nonfood_inv_joint_ie/`) — Study 2b's design on the non-food scenario set.
 
-The [experiments README](experiments/README.md) documents the shared jsPsych infrastructure, the counterbalancing scheme, the comprehension/attention/memory checks, and a standalone trial-preview page (`make preview`). Data from earlier, superseded experiments is archived under `data/legacy/` and described in [data/legacy/README.md](data/legacy/README.md).
+The [experiments README](experiments/README.md) documents the shared jsPsych infrastructure, the counterbalancing scheme, the comprehension/attention/memory checks, and a standalone trial-preview page (`make preview`).
 
 ### Scenarios
 
@@ -112,39 +111,15 @@ The prompts live in [`model/lm/prompts.py`](model/lm/prompts.py) and are reprodu
 
 ## Model fitting and comparison
 
-Each study jointly fits its ablations' utility weights, an observer softmax temperature `α_obs`, and a response-noise scale `σ` from its own belief-update data by maximum likelihood. No parameters are shared or transferred between studies in any reported fit; the exploratory transfer analysis described below is the one place where a study is scored under another study's parameters, and it writes to its own output directories. A participant's belief update `u` is scored under the K-component elicitation-sample mixture `(1/K) Σ_k N(u | δ_k, σ²)`, where `δ_k` is run k's predicted update; the joint studies score their two sliders together under a bivariate version.
+Each study jointly fits its ablations' utility weights, an observer softmax temperature `α_obs`, and a response-noise scale `σ` from its own belief-update data by maximum likelihood; no parameters are shared or transferred between studies in any reported fit. A participant's belief update `u` is scored under the K-component elicitation-sample mixture `(1/K) Σ_k N(u | δ_k, σ²)`, where `δ_k` is run k's predicted update; the joint studies score their two sliders together under a bivariate version.
 
-All reported predictions are out-of-sample, from leave-one-scenario-out cross-validation: for each of the 16 scenarios, all parameters are refit on the other 15 and used to predict the held-out one. The paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`): the difference between the full model and each ablation in per-trial held-out log-likelihood, with 95% confidence intervals from bootstrap resampling of participants (1,000 resamples), plus the secondary condition-averaged model-vs-human correlations. Results are written to `model/outputs/<slug>/cv_model_comparison.json`.
+All reported predictions are out-of-sample, from leave-one-scenario-out cross-validation: for each of the 16 scenarios, all parameters are refit on the other 15 and used to predict the held-out one. The paper's model-comparison statistics come from `model/cv/model_comparison.py` (`make model-comparison`): the difference between the full model and each ablation in per-trial held-out log-likelihood, with 95% confidence intervals from bootstrap resampling of participants (1,000 resamples), plus the secondary condition-averaged model-vs-human correlations. Results are written to `model/outputs/<slug>/cv_model_comparison.json`. Two complementary statistics, computed by `model/cv/contrast_tests.py` into the same file, characterize the effect the studies actually test: a variance decomposition of where trial-level variance lives, and a gradient test of how the given condition modulates the inferences.
 
-That primary metric is a global fit index, which is a low-powered test of the specific claim these studies make. The paper's hypothesis is about a modulation -- how the condition that is *given* to the observer changes what an action reveals about the variables that are not -- and that modulation accounts for only 1-3% of the variance in individual trials, most of which is response noise no model can predict. Two further sets of statistics, computed by `model/cv/contrast_tests.py` and written into the same JSON file, complement it: a variance decomposition that measures where a study's trial-level variance actually lives -- the within-cell share no model can predict, the observed action's share, and the action and given condition taken jointly, which is what the paper's SI table reports -- and a gradient test that scores the modulation itself, comparing how much each model variant's held-out predictions change across the given condition's levels against how much human judgments do. Both are secondary to the preregistered comparison; the variance decomposition is reported in the SI, while the gradient test remains a computed diagnostic after the section quoting it was cut in the manuscript's shortening.
+The default configuration reproduces the paper's numbers and writes to `model/outputs/<slug>/`. The one alternative configuration is the preregistered model: `NO_REWEIGHTING=1` drops the comparison-set reweighting (a declared deviation from the preregistration), writes to `model/outputs/<slug>/alt/uniform-noreweight/`, and is run for all six studies by `bin/prereg-eta0.sh`; `model/cv/model_comparison.py --compare-configs` then compares the two on matched trials.
 
-The fits and cross-validation default to the configuration the paper reports — uniform priors over the inferred latent variables, plus the surprise-weighted reweighting of the comparison set — and this default reproduces the paper's numbers, writing its outputs to `model/outputs/<slug>/` byte-for-byte as before. So that alternative configurations can be evaluated without disturbing that baseline, both `make fit-<slug>` and `make cv-<slug>` accept run-configuration variables. `PRIORS=informative` (or `PRIORS=informative:<latents>` for a subset) switches the observer onto informative LM-elicited priors. `NO_REWEIGHTING=1` drops the comparison-set reweighting, which recovers the preregistered model exactly: the reweighting is a deviation from what was registered, so the paper has to be able to report the preregistered model's held-out numbers beside the reported ones, and `bin/prereg-eta0.sh` runs that comparison across all six studies.
+### Exploratory generalization analyses
 
-Any non-default configuration writes its outputs to a separate `model/outputs/<slug>/alt/<tag>/` directory whose tag encodes the configuration, so the reported baseline and each variant coexist on disk and can be compared on matched trials with `model/cv/model_comparison.py --compare-configs <a> <b>`. This keeps exploratory model development running alongside the reported analysis rather than overwriting it. Note that the Makefile's file targets are the study-root paths, so multi-study runs of a non-default configuration should be driven from a script rather than through `make`.
-
-### Cross-study parameter transfer
-
-Because every study is fit on its own data, six studies give six parameter sets, and nothing in the reported analysis says whether the utility function is one stable psychological object or six separately flexible fits. `model/cv/transfer.py` (`make transfer`) asks that question directly: it takes one study's fitted utility weights, puts them in another study's model, and scores the recipient's data out of sample under the same leave-one-scenario-out protocol as every reported number. This analysis is exploratory and appears in no preregistration.
-
-It runs on designed pairs rather than as a single leave-one-study-out number, because the studies differ in more than one way at a time and a single average would hide which ones are compatible. Studies 1a and 2a, and Studies 1b and 2b, share their stimuli and differ only in which latent variable the observer infers, so they test whether the actor's utility is invariant to the question the observer is asked. Studies 1b and 3a, and 2b and 3b, are design-matched across the food and nonfood stimulus sets, so they test whether the utility survives a change of domain. Each pair is run in both directions.
-
-Two arms separate two things that a naive transfer test would confound. The `frozen` arm estimates nothing on the recipient at all: the donor's whole vector, including `α_obs` and `σ`, is used verbatim. That is the strictest test, but `α_obs` is not really comparable across studies, since it sharpens a posterior over different latent spaces and trades off against the overall scale of the weights. The `refit` arm therefore freezes only the utility weights and re-estimates the response layer (`α_obs`, `σ`, and the reweighting gain `η`) on the recipient, which is the arm to read for the psychological claim. Both are compared against the recipient's own cross-validation as a ceiling; because held-out likelihood carries no parameter penalty, a transfer with no free parameters can in principle beat a study's own fit, which would mean that fit overfits.
-
-The reweighting gain `η` is treated as recipient-side rather than transferred, because its scope is defined per study by which questions are contrastive-only there, and Study 1a has none at all. Outputs land in `model/outputs/<slug>/alt/transfer-<donor>-<arm>/` in the standard cross-validation file set, with the summary in `model/outputs/transfer/transfer_summary.json`.
-
-### Pooled fits: how many utilities do the data require?
-
-The transfer analysis asks whether one experiment's weights happen to work on another. `model/cv/pooled.py` (`make pooled`) asks the question directly, by fitting a single shared utility across a group of experiments and cross-validating it. Three groupings are compared, each nesting in the one above: one utility per experiment (the reported model), one per stimulus domain, and one across all six. Only the utility weights are shared — each experiment keeps its own `α_obs`, `σ` and `η`, for the reasons the transfer analysis established. Like the transfer analysis, this is exploratory and supplements the per-experiment fits rather than replacing them.
-
-The two steps ask different questions. Going from per-experiment to per-domain asks whether one utility serves every observer task within a domain; since the utility describes the actor and the inference problem is a property of the observer's task, that is closer to a coherence requirement than a hypothesis, with the caveat that the elicited comparison sets also differ across experiments. Going from per-domain to a single utility asks whether one utility serves both domains, where "risk" means saliva-sharing discomfort on one side and disclosure risk on the other. That is a substantive claim, and a loss there is a finding rather than a defect.
-
-It runs in two stages so that no scoring code is duplicated: each fold's shared utility is fitted on the group's training trials, and then each experiment's held-out trials are scored by handing its slice of that fold's vector to the ordinary cross-validation machinery with nothing left free. Fold *k* holds out scenario index *k* in every experiment, so all three groupings have the same sixteen folds and identical held-out trials and can be compared on matched trials. Results are always reported per experiment rather than as a pooled total, because the joint objective weights experiments by trial count and by how many sliders they use.
-
-### Scoring the generalization arms on the primary metric
-
-Both analyses above compare models by held-out log-likelihood, which is the preregistered metric but not the one the paper reports. That measure is insensitive by construction to the effect these experiments test, because the manipulated condition accounts for only a few percent of trial-level variance, so a shared utility could keep most of the predicted response while losing the relationship or desire modulation and the difference would still look small. Since the generalization analyses make an equivalence claim, that matters: a null on an insensitive measure is weak evidence.
-
-`model/cv/generalization_primary.py` (`make generalization-primary`) therefore scores the same arms on the condition-averaged model-vs-human correlation the paper reports and on the fraction of participants' modulation each arm recovers. Only the second is actually sensitive to the modulation: measured across the six studies, the full model and the ablation that differs from it only in relationship-sensitivity differ by 0.001-0.014 in correlation but by 30-90 percentage points in recovered gradient, so the correlation is a descriptive index of overall fit rather than a test of the claim. The paper's SI table reports the correlation only; the recovered-gradient numbers stay in `generalization_primary.json`. Nothing is refitted, since the transfer and pooled runs already wrote standard cross-validation output sets; this reads their held-out predictions, so it is cheap and needs re-running whenever either of them is. The three measures do not always rank the arms the same way, which is the expected consequence of a modulation worth a few percent of trial variance.
+Three exploratory analyses (in no preregistration) ask whether the fitted utility is one stable object rather than six separately flexible fits. `model/cv/transfer.py` (`make transfer`) scores one study's fitted utility weights on a design-matched partner study, out of sample, in a zero-free-parameter arm and an arm that re-estimates only the response layer. `model/cv/pooled.py` (`make pooled`) fits a single shared utility per stimulus domain, and one across all six studies, under the same cross-validation. `model/cv/generalization_primary.py` (`make generalization-primary`) scores those arms on the metrics the paper reports. Outputs land under `model/outputs/<slug>/alt/` with summaries in `model/outputs/{transfer,pooled}/` and `model/outputs/generalization_primary.json`.
 
 ## Dependencies
 
@@ -179,12 +154,9 @@ uv run python model/lm/generate_alternatives.py --study food_inv_desire
 uv run python model/lm/score_merged.py          --study food_inv_desire
 
 # Fit → CV → model comparison (per study; CV produces the out-of-sample predictions).
-# The CV's independent (variant × fold) refits run as parallel worker processes
-# (8 single-threaded workers by default). The outputs are identical to a
-# sequential run, so CV_WORKERS / CV_WORKER_THREADS only change the wall-clock
-# time. A CV run that is interrupted resumes from its completed folds on the
-# next invocation, via a checkpoint file that is discarded automatically
-# whenever the study's inputs, fitting configuration, or model code change:
+# The CV's independent (variant × fold) refits run as parallel worker processes;
+# the outputs are identical to a sequential run, and an interrupted CV resumes
+# from its completed folds on the next invocation:
 uv run python model/inverse/fit_food_inv_desire.py
 uv run python model/cv/cv_food_inv_desire.py
 uv run python model/cv/model_comparison.py
@@ -196,21 +168,11 @@ make figures-panels
 # Render an analysis document (demographics + data checks):
 quarto render analysis/food-inv-desire-analysis.qmd
 
-# Tests (`make test`): model compliance + CV checkpoint + JSON→CSV converter + roster sync
-uv run python model/test_model_compliance.py
-uv run python model/cv/test_checkpoint.py
-uv run python analysis/test_json_to_csv.py
-uv run python test_roster_sync.py
+# Run the full test suite (model compliance, fit/CV protocol, the statistics
+# modules, data conversion, elicitation guards, roster sync):
+make test
 ```
 
 ### Manuscript figures
 
-The paper's figures are generated by the Python plotting scripts in `figures/scripts/`, all styled through the shared `plot_style.py`, which is the single source of truth for palettes, fonts, and the output directories. Output is split by who consumes it: `figures/panels/` holds the individual components that are assembled by hand in Illustrator, and `figures/si/` holds finished figures that go straight into the manuscript. That split is the rule to preserve when adding a script -- `panels/` should never accumulate an assembled multi-panel figure.
-
-`make figures-panels` writes the results components: one four-column row per sub-study into `panels/results/`, plus the four legends they share into `panels/legends/`, as PDFs whose text stays editable in Illustrator. `make figures-lm-si` renders the SI LM-validation figures. The analysis qmds report demographics and data checks rather than producing any figure.
-
-The non-food scenarios span three domains of interpersonal vulnerability (bodily access, shared physical exposure, and private access), which the Study 3 rows average over. `make figures-nonfood-domains` draws the human side of those rows one domain at a time instead: a three-column panel per non-food study (`panel_study3a_domains.pdf` and `panel_study3b_domains.pdf`), in the same encoding and at the same scale as the results panels, so it can be placed beside them in Illustrator with the same legends.
-
-Because the main results figures average over the 16 scenarios, `make figures-si-scenarios` renders the supplementary per-scenario view: one 4x4 facet grid per study (`si_scenarios_study1a.pdf` and friends), where each facet is a single scenario's human cell means with bootstrap CIs. These carry no legend, since they are assembled in Illustrator alongside the panel legends.
-
-The journal manuscript is a separate Overleaf-synced git repository (`SIP_journal/`, not part of this repo), and Overleaf needs the figure files committed inside it rather than referenced from here. The `make sync-journal-figures` target copies a curated set of figure PDFs into `SIP_journal/figures/`, renaming each to the name the manuscript uses; the mapping is the `JOURNAL_FIGURES` list in the `Makefile`.
+The paper's figures are generated by the Python plotting scripts in `figures/scripts/`, all styled through the shared `plot_style.py`, which is the single source of truth for palettes, fonts, and the output directories. Output is split by who consumes it: `figures/panels/` holds the individual components that are assembled by hand in Illustrator (`make figures-panels` for the results rows and legends, `make figures-schematic` for the method-figure panels, `make figures-nonfood-domains` for the Study 3 per-domain view), and `figures/si/` holds finished figures that go straight into the manuscript (`make figures-lm-si` for the LM-validation figures, `make figures-si-scenarios` for the per-scenario grids, plus the prior/posterior and preregistration-comparison figures listed by `make help`). The journal manuscript itself is a separate repository, so it is not part of this one.
