@@ -28,9 +28,22 @@ esac
 project_dir="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 cd "$project_dir" 2>/dev/null || exit 0
 
-# Skip if no model/ files are staged
+# Skip if no model/ files are staged — but the staged set alone misses two
+# commit forms: `git commit -a`/`--all` also commits unstaged tracked changes,
+# and a pathspec commit (`git commit model/x.py -m ...`) commits files that
+# were never staged. Widen the trigger for those; a false positive (e.g. a
+# commit message that happens to contain "model/") just runs the test suite.
 staged_model=$(git diff --cached --name-only | grep -E '^model/' || true)
-if [ -z "$staged_model" ]; then
+extra_model=""
+case "$command" in
+  *" -a"*|*"--all"*)
+    extra_model=$(git diff --name-only | grep -E '^model/' || true)
+    ;;
+esac
+case "$command" in
+  *model/*) extra_model="pathspec" ;;
+esac
+if [ -z "$staged_model" ] && [ -z "$extra_model" ]; then
   exit 0
 fi
 
