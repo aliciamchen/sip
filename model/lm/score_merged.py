@@ -88,6 +88,7 @@ from model.lm.client import (
     _manifest_prompt_hashes,
     _prompt_sha,
     aggregate_action_ratings,
+    elicitation_lock,
     fingerprint_payload,
     get_ratings_concurrent,
     guard_resume_fingerprint_mismatch,
@@ -666,6 +667,33 @@ def _scoring_grid_completed(records, scenario_labels, run_ids):
     )
 
 
+def _rate_scalar_call(
+    client, system_prompt, user_prompt, parse_fn, schema, label, seed
+):
+    """Single given-magnitude scalar pass with the same perturbed-seed parse
+    retry as ``_score_one_call``: a seed that deterministically draws malformed
+    output would otherwise fail identically on every resume, leaving the unit
+    permanently stuck (the seeded call reproduces its own failure). Attempt 0
+    keeps the canonical seed so a clean call stays reproducible. Returns the
+    raw 0-100 rating, or None when every retry failed."""
+    for attempt in range(_SCORE_PARSE_RETRIES):
+        call_seed = seed if attempt == 0 else (seed + attempt) & 0x7FFFFFFF
+        ratings, _ = get_ratings_concurrent(
+            client,
+            system_prompt,
+            user_prompt,
+            parse_fn,
+            num_runs=1,
+            max_tokens=64,
+            response_format=schema,
+            label=label,
+            seed=call_seed,
+        )
+        if ratings:
+            return float(ratings[0])
+    return None
+
+
 def _rate_desire_for_scenario(client, scenario_row, run_id):
     """Per-desire_condition desire scalar in [0, 1] for one scenario, scored in
     one run's pass (folded into that (scenario, run)'s records). The K runs are
@@ -675,7 +703,7 @@ def _rate_desire_for_scenario(client, scenario_row, run_id):
     scenario = scenario_row["scenario_label"]
 
     def _rate_one(dc):
-        ratings, _ = get_ratings_concurrent(
+        rating = _rate_scalar_call(
             client,
             DESIRE_SYSTEM_PROMPT,
             desire_user_prompt(
@@ -684,13 +712,11 @@ def _rate_desire_for_scenario(client, scenario_row, run_id):
                 scenario_row["desire_object"],
             ),
             parse_desire_response,
-            num_runs=1,
-            max_tokens=64,
-            response_format=numeric_desire_schema(),
+            numeric_desire_schema(),
             label=f"{scenario}/desire[{dc}]",
             seed=_lm_seed_for(scenario, run_id, f"desire_{dc}"),
         )
-        return (float(ratings[0]) / 100.0) if ratings else None
+        return (rating / 100.0) if rating is not None else None
 
     # Independent, deterministically seeded per condition → safe to rate
     # concurrently; ex.map preserves the DESIRES key order.
@@ -705,18 +731,16 @@ def _rate_relationship_values(client, run_id):
     reproduce."""
 
     def _rate_one(level):
-        ratings, _ = get_ratings_concurrent(
+        rating = _rate_scalar_call(
             client,
             INTIMACY_SYSTEM_PROMPT,
             relationship_user_prompt(RELATIONSHIP_DESCRIPTORS[level]),
             parse_intimacy_response,
-            num_runs=1,
-            max_tokens=64,
-            response_format=numeric_intimacy_schema(),
+            numeric_intimacy_schema(),
             label=f"relationship[{level}]",
             seed=_lm_seed_for("__relationship__", run_id, f"intimacy_{level}"),
         )
-        return (float(ratings[0]) / 100.0) if ratings else None
+        return (rating / 100.0) if rating is not None else None
 
     # Independent, deterministically seeded per level → safe to rate
     # concurrently; ex.map preserves the INTIMACY_LEVELS key order.
@@ -787,6 +811,9 @@ def _scoring_prompt_sha(scenarios_df, alts_df, cfg):
 
 
 def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
+    """Resolve the run's config and paths, then score under the cross-process
+    lock — a concurrent invocation against the same runs file would silently
+    clobber this run's checkpoints (see ``elicitation_lock``)."""
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Supported: {sorted(_STUDY_CONFIG.keys())}"
@@ -811,6 +838,11 @@ def main(study, scenario_workers=SCENARIO_WORKERS, base=False, arm=False):
     study_dir.mkdir(parents=True, exist_ok=True)
     alts_path = study_dir / cfg.get("alternatives", "lm_alternatives.jsonl")
     runs_path = study_dir / cfg.get("runs", "lm_runs.jsonl")
+    with elicitation_lock(runs_path):
+        _score(study, cfg, scenario_workers, base, scenarios_path, alts_path, runs_path)
+
+
+def _score(study, cfg, scenario_workers, base, scenarios_path, alts_path, runs_path):
     if not alts_path.exists():
         raise SystemExit(
             f"Alternatives JSONL not found at {alts_path}. Run "

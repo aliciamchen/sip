@@ -51,6 +51,7 @@ from model.lm._alternatives_dispatcher import (
 )
 from model.lm.client import (
     MODEL_ID,
+    elicitation_lock,
     fingerprint_payload,
     guard_resume_fingerprint_mismatch,
     guard_resume_prompt_mismatch,
@@ -274,11 +275,15 @@ def _rationale_record(cell, cell_cols, run, raw_text):
 def _requeue_units_missing_rationales(results, rationale_rows, cell_cols):
     """Drop completed alternative rows whose audit response is absent.
 
-    The main alternatives file is the completion ledger. If a process was
-    interrupted after writing it but before the rationale sidecar, retaining
-    those rows would make resume skip the unit permanently. Dropping the whole
-    unit requeues it; deterministic seeds make the retry reproducible
-    best-effort.
+    The main alternatives file is the completion ledger, and ``_checkpoint``
+    writes the rationale sidecar BEFORE it, so an interrupted run can only
+    leave extra rationales — never rationale-less ledger rows. A ledger row
+    with no sidecar record therefore means the two files diverged outside the
+    pipeline: a partial checkout or merge that touched one file but not the
+    other, a hand edit, or data predating the sidecar. Dropping the whole unit
+    requeues it (deterministic seeds make the retry reproducible best-effort);
+    the caller must warn loudly with the count, because every requeued unit is
+    re-elicited at API cost.
     """
     result_units = {_cell_key(row, cell_cols, row["run_id"]) for row in results}
     rationale_units = {
@@ -408,6 +413,9 @@ def _generation_prompt_sha(cells):
 
 
 def main(study, base=False, arm_output_only=False):
+    """Resolve the run's config and output path, then elicit under the
+    cross-process lock — a concurrent invocation against the same output file
+    would silently clobber this run's checkpoints (see ``elicitation_lock``)."""
     if study not in _STUDY_CONFIG:
         raise SystemExit(
             f"Unknown study: {study!r}. Currently supported: "
@@ -429,16 +437,22 @@ def main(study, base=False, arm_output_only=False):
                 f"the arm-output mode is defined for {_DIAG_STUDIES}; got {study!r}."
             )
         cfg["output"] = _diagnostic_filename(cfg["output"])
+    # Credentials before the lock (or any filesystem work): a missing key must
+    # stop the run without side effects, and the reachability tests stub this
+    # call as their stop-point so they never touch the production lock path.
     api_key = load_api_key()
-
-    print(f"Loading scenarios (study={study})...", flush=True)
-    scenarios_df = load_scenarios(study)
-    print(f"Loaded {len(scenarios_df)} scenarios", flush=True)
-
     output_path = _output_path_for(study, base)
     if arm_output_only:
         output_path = output_path.with_name(cfg["output"])
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    with elicitation_lock(output_path):
+        _elicit(study, cfg, output_path, api_key)
+
+
+def _elicit(study, cfg, output_path, api_key):
+    print(f"Loading scenarios (study={study})...", flush=True)
+    scenarios_df = load_scenarios(study)
+    print(f"Loaded {len(scenarios_df)} scenarios", flush=True)
 
     cell_cols = cfg["cell_cols"]
     all_cells = _build_cells(scenarios_df, cfg, study)
@@ -471,8 +485,13 @@ def main(study, base=False, arm_output_only=False):
         )
         if requeued_missing_rationale:
             print(
-                f"Re-queued {len(requeued_missing_rationale)} (cell, run) units "
-                "whose alternatives were checkpointed without a rationale.",
+                f"WARNING: re-queued {len(requeued_missing_rationale)} (cell, run) "
+                f"units whose {output_path.name} rows have no record in "
+                f"{_rationale_path(output_path).name}. The checkpoint writes the "
+                "sidecar first, so this means the two files diverged outside the "
+                "pipeline (partial checkout/merge, hand edit, or pre-sidecar "
+                "data). Each re-queued unit will be RE-ELICITED at API cost by "
+                "this run.",
                 flush=True,
             )
         if results and "run_id" in results[0]:

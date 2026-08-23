@@ -20,6 +20,7 @@ scenario) and a thread pool keeps callers as plain ``def`` rather than forcing
 ``async def`` propagation up every call stack.
 """
 
+import contextlib
 import hashlib
 import json
 import os
@@ -130,6 +131,67 @@ def write_jsonl_atomic(path, rows):
         f.flush()
         os.fsync(f.fileno())
     os.replace(tmp, path)
+
+
+def _pid_alive(pid):
+    """Whether a process with this pid exists (EPERM still means it exists)."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+@contextlib.contextmanager
+def elicitation_lock(output_path):
+    """Cross-process guard for one elicitation output file.
+
+    The generation and scoring runners checkpoint by rewriting the whole JSONL
+    from their own in-memory snapshot, so two concurrent invocations against
+    the same output would silently clobber each other's paid-for records (last
+    checkpoint wins). This sidecar lock (``<output>.lock``, holding the owner
+    pid) makes the second invocation fail loudly instead. A lock whose pid is
+    no longer alive is stale (a crashed or killed run) and is reclaimed.
+
+    The lock is created atomically WITH its pid content (a private temp file
+    hard-linked into place), so a competitor can never observe an empty lock —
+    an unreadable pid therefore means corruption, and is treated as a live
+    holder (fail loudly, human deletes) rather than silently reclaimed."""
+    lock_path = Path(str(output_path) + ".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = lock_path.with_name(f"{lock_path.name}.{os.getpid()}.tmp")
+    tmp.write_text(f"{os.getpid()}\n")
+    try:
+        while True:
+            try:
+                os.link(tmp, lock_path)
+                break
+            except FileExistsError:
+                try:
+                    pid = int(lock_path.read_text().split()[0])
+                except (OSError, ValueError, IndexError):
+                    pid = None
+                if pid is None or _pid_alive(pid):
+                    holder = f"pid {pid}" if pid is not None else "an unreadable pid"
+                    raise SystemExit(
+                        f"Another elicitation ({holder}) is already writing "
+                        f"{Path(output_path).name} — running concurrently would "
+                        "silently overwrite its checkpointed records. Wait for "
+                        f"it to finish, or delete {lock_path} if that process "
+                        "is not actually running."
+                    )
+                # Stale lock from a dead process — reclaim and retry the link.
+                lock_path.unlink(missing_ok=True)
+    finally:
+        tmp.unlink(missing_ok=True)
+    try:
+        yield
+    finally:
+        lock_path.unlink(missing_ok=True)
 
 
 def read_jsonl_checked(path):
@@ -374,7 +436,10 @@ def _prompts_sha():
     try:
         prompts_path = Path(__file__).resolve().parent / "prompts.py"
         return hashlib.sha256(prompts_path.read_bytes()).hexdigest()[:12]
-    except Exception:
+    except OSError:
+        # Narrow, like _prompt_sha: a swallowed unexpected error here would
+        # return None, and the resume guards treat None as "no mismatch" —
+        # silently disabling the very check this hash exists for.
         return None
 
 

@@ -48,6 +48,10 @@ model/outputs/*/alt/pooled-*/
 # canonical filename contains "_diag".
 model/outputs/lm/*/*_diag*
 
+# Cross-process elicitation lock sidecars (deleted on normal exit; a stale one
+# from a killed run is reclaimed automatically).
+model/outputs/lm/*/*.lock
+
 .positai
 .claude/worktrees/
 

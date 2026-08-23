@@ -87,6 +87,16 @@ def parse_alternatives(response_text):
         if not isinstance(action, str):
             continue
         out.append({"action": action.strip()})
+    # Dropping malformed items from an otherwise-valid array is tolerated (the
+    # kept items are fine), but never silently: a systematic pattern of stray
+    # non-conforming items would otherwise be invisible, unlike the feature
+    # scorer's all-or-nothing parser.
+    if out and len(out) < len(arr):
+        print(
+            f"  parse_alternatives: dropped {len(arr) - len(out)}/{len(arr)} "
+            "malformed item(s) from an otherwise-valid alternatives array",
+            flush=True,
+        )
     # An empty array is a VALID "no alternatives" response — return [] with no
     # retries. Only a non-empty array with no parseable item is a parse failure.
     return out if (out or not arr) else None
