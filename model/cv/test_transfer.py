@@ -26,12 +26,10 @@ from _inverse_dispatcher import RunOverride, _free_mask  # noqa: E402
 from observers import VARIANT_PARAM_NAMES  # noqa: E402
 from study_registry import STUDIES, reported_base  # noqa: E402
 
-PASS, FAIL = [], []
-
 
 def check(name, cond):
-    (PASS if cond else FAIL).append(name)
     print(f"{'✓' if cond else '✗'} {name}")
+    assert cond, name
 
 
 # A convex toy loss with a known optimum, so a masked fit's answer is checkable
@@ -235,19 +233,17 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Cross-study transfer tests")
     print("=" * 60)
-    test_none_mask_delegates()
-    test_frozen_slots_do_not_move()
-    test_empty_mask_estimates_nothing()
-    test_mask_validation()
-    test_run_override_defaults_are_inert()
-    test_pairs_are_well_formed()
-    test_roles_transfer_the_same_utility_terms()
-    test_eta_policy()
-    test_free_mask_layout()
-    test_tags_are_distinct_per_donor_and_arm()
+    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
+    failures = []
+    for fn in tests:
+        try:
+            fn()
+        except BaseException as e:  # noqa: BLE001 - report, don't abort the suite
+            failures.append(fn.__name__)
+            print(f"  FAIL  {fn.__name__}: {type(e).__name__}: {e}")
     print("=" * 60)
-    if FAIL:
-        print(f"{len(FAIL)} FAILED: {', '.join(FAIL)}")
+    if failures:
+        print(f"{len(failures)} of {len(tests)} FAILED: {', '.join(failures)}")
         sys.exit(1)
-    print(f"All {len(PASS)} tests passed!")
+    print(f"All {len(tests)} tests passed!")
     print("=" * 60)

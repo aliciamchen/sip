@@ -24,12 +24,10 @@ import pooled  # noqa: E402
 from _pooled import LOSS_FACTORY, build_layout, pooled_init  # noqa: E402
 from study_registry import SLUGS, STUDIES  # noqa: E402
 
-PASS, FAIL = [], []
-
 
 def check(name, cond):
-    (PASS if cond else FAIL).append(name)
     print(f"{'✓' if cond else '✗'} {name}")
+    assert cond, name
 
 
 def _layout(has_eta=(False, True, True)):
@@ -163,17 +161,17 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Pooled cross-experiment fit tests")
     print("=" * 60)
-    test_layout_sizes()
-    test_study_slice_is_a_real_fit_vector()
-    test_slices_do_not_share_response_params()
-    test_param_names_line_up()
-    test_pooled_init_averages_utility_keeps_response()
-    test_groups_and_rungs()
-    test_loss_factory_covers_every_family()
-    test_fold_alignment()
+    tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
+    failures = []
+    for fn in tests:
+        try:
+            fn()
+        except BaseException as e:  # noqa: BLE001 - report, don't abort the suite
+            failures.append(fn.__name__)
+            print(f"  FAIL  {fn.__name__}: {type(e).__name__}: {e}")
     print("=" * 60)
-    if FAIL:
-        print(f"{len(FAIL)} FAILED: {', '.join(FAIL)}")
+    if failures:
+        print(f"{len(failures)} of {len(tests)} FAILED: {', '.join(failures)}")
         sys.exit(1)
-    print(f"All {len(PASS)} tests passed!")
+    print(f"All {len(tests)} tests passed!")
     print("=" * 60)
