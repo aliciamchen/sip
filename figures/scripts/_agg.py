@@ -2,9 +2,7 @@
 """Aggregate model-vs-human panel: the pooled scatter and its bootstrap r.
 
 Helper module, not a figure script. `figure_paper_panels.py` calls `agg_points`
-and `draw_agg_panel` to build panel_model_vs_humans; the assembled 3x3
-correlation grids this file used to emit were dropped when the paper moved to
-Illustrator-assembled panels (see git history for figure_model_corr.py).
+and `draw_agg_panel` to build panel_model_vs_humans.
 """
 
 import argparse
@@ -34,11 +32,10 @@ DV_LEGEND_ORDER = ["desire", "intimacy", "effort"]
 # encodings match the results panels -- `agg_points` resolves it there.
 # Markers and their human-CI error bars are fully opaque, so a crowded cluster
 # cannot darken into a blob: overlap is shown by the white seam each marker
-# carries rather than by accumulated tint. The seam is deliberately thinner than
-# the 0.5 the points panels use — at 0.7pt on a 4.6pt marker it ate enough of the
-# face that a cluster read as mostly white. The bars stay a neutral gray rather
-# than taking each point's color: they are uncertainty about the estimate, and
-# at this density coloring them too turns a crowded region into hatching.
+# carries rather than by accumulated tint. The seam is thinner than the points
+# panels' so the faces stay dominant at this marker size, and the bars stay a
+# neutral gray: they are uncertainty about the estimate, and at this density
+# coloring them too turns a crowded region into hatching.
 AGG_POINT_MS = 7.0
 AGG_POINT_EDGE = "white"
 AGG_POINT_EDGEWIDTH = 0.2
@@ -188,8 +185,8 @@ def corr_with_pair_ci(x, y, *, n_boot=None, seed_key="figures:agg:pair_ci"):
     bootstrap for a correlation, and what this literature reports beside an r.
     Inverting the published intervals of six comparable papers gives an effective
     sample size that stays ~constant across correlations spanning r = 0.01 to
-    0.93, the signature of resampling points rather than participants (see
-    `notes/2026-08-03-correlation-ci-audit.md`). It replaced a subject-cluster
+    0.93 — the signature of resampling points rather than participants. It
+    replaced a subject-cluster
     interval that was *mislocated*: a resample holds ~63% unique participants, so
     its cell means carry extra noise, noise in y attenuates r against a fixed x,
     and the whole bootstrap distribution sat below the observed r -- for the

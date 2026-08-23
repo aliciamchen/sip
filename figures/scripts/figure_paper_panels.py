@@ -55,11 +55,10 @@ LEGEND_DIR = PANELS_LEGENDS
 # wide, so text lands at print size once the row is scaled to column width.
 # Markers are smaller than the poster's because they trade against the human
 # CIs: the whiskers are drawn behind the marker in its own color with no caps,
-# so any CI narrower than the marker disappears under it. Measured over all six
-# studies' Humans columns, the share of whisker ends the marker hides runs 37%
-# at markersize 9.5, 43% at 10, 51% at 10.5 -- the size below is the last one
-# that keeps most of them, so raising it further should come with a change to
-# how the CIs are drawn (caps, or a darker whisker) rather than on its own.
+# so any CI narrower than the marker disappears under it. The size below is the
+# largest that keeps most whisker ends visible across the six studies' Humans
+# columns; raising it further should come with a change to how the CIs are
+# drawn (caps, or a darker whisker) rather than on its own.
 STYLE = replace(
     points.POSTER,
     panel_w=2.9,

@@ -1,10 +1,9 @@
 """Shared matplotlib style for the Python-generated manuscript figures.
 
 One place for what all the figure scripts in figures/scripts/ (the main results
-figures, the schematic panels, and the SI LM-elicitation figures
-plot_si_validation.py / plot_alternatives.py) must agree on: the Arial Nova
-font (matching the
-R analysis figures), the despined white look, and the palettes. apply_style()
+figures, the schematic panels, and the SI LM-elicitation figures) must agree
+on: the Arial Nova font (matching the R analysis figures), the despined white
+look, and the palettes. apply_style()
 takes a context — "si" for print-sized supplement figures, "schematic" for the
 large-type vector panels assembled in Illustrator.
 
