@@ -75,6 +75,7 @@ from model.inverse._helpers import (
     write_json,
     write_jsonl,
 )
+from model.cv import _checkpoint
 from model.cv._inverse_dispatcher import (
     N_RESTARTS_CV,
     RunOverride,
@@ -249,9 +250,24 @@ def fit_full_data(group):
 
 def _stage1_fingerprint(group, layout, full_params, patience):
     """What determines a pooled fold's result: the group, the vector layout, the
-    warm start every fold begins from, and the refit configuration. A checkpoint
-    whose fingerprint differs is from another run and is discarded rather than
-    spliced."""
+    warm start every fold begins from, the refit configuration, and — hashed
+    directly, as in `_checkpoint.run_fingerprint` — the input data, the LM run
+    tables, and the model-math sources (plus this module and `_pooled.py`,
+    whose fold-fitting code the folds run through). The full-data params alone
+    are not a sound vintage proxy: a code or input change that alters fold
+    behavior without moving the full-data optimum would slip through and splice
+    mixed-vintage folds. A checkpoint whose fingerprint differs is from another
+    run and is discarded rather than spliced."""
+    root = get_project_root()
+    code_files = _checkpoint._CODE_FILES + (
+        "model/cv/pooled.py",
+        "model/inverse/_pooled.py",
+        # The pooled folds resolve their table kwargs through fit_context /
+        # _table_kwargs_builder, which the ordinary CV path never imports —
+        # so this file determines fold results here even though it is not in
+        # _checkpoint._CODE_FILES.
+        "model/inverse/_fit_dispatcher.py",
+    )
     return {
         "group": group,
         "slugs": list(layout.slugs),
@@ -260,21 +276,59 @@ def _stage1_fingerprint(group, layout, full_params, patience):
         "full_data_params": [round(float(x), 10) for x in full_params],
         "n_restarts": N_RESTARTS_CV,
         "patience": int(patience),
+        "code_sha256": {rel: _checkpoint._sha256(root / rel) for rel in code_files},
+        "data_sha256": {
+            slug: _checkpoint._sha256(root / "data" / slug / "main_trials_long.csv")
+            for slug in layout.slugs
+        },
+        "lm_sha256": {
+            slug: _checkpoint._sha256(
+                root / "model" / "outputs" / "lm" / slug / "lm_runs.jsonl"
+            )
+            for slug in layout.slugs
+        },
     }
 
 
 def _load_stage1_checkpoint(path, fingerprint):
-    """Completed pooled folds from an interrupted run, as {fold: params}."""
+    """Completed pooled folds from an interrupted run, as {fold: params}.
+
+    Like `_checkpoint.init_checkpoint`, a malformed line (a partial tail from a
+    death mid-append) ends the good prefix rather than discarding the whole
+    multi-hour checkpoint: everything before it is kept and the file is
+    rewritten to just the complete records so appends stay parseable."""
     if not path.exists():
         return {}
     try:
-        rows = read_jsonl(path)
-    except (OSError, ValueError):
+        with open(path) as f:
+            lines = f.readlines()
+    except OSError:
         return {}
+    rows, n_good = [], 0
+    for line in lines:
+        # A malformed or non-record line (a partial tail, or corruption) ends
+        # the good prefix, as in _checkpoint.init_checkpoint.
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            break
+        if not isinstance(rec, dict):
+            break
+        rows.append(rec)
+        n_good += 1
     if not rows or rows[0].get("fingerprint") != fingerprint:
         if rows:
             print("    checkpoint is from a different run — discarding")
         return {}
+    if n_good < len(lines):
+        print(
+            f"    checkpoint has a partial tail line — keeping the "
+            f"{n_good - 1} complete fold record(s) and dropping the tail"
+        )
+        with open(path, "w") as f:
+            f.writelines(lines[:n_good])
+            f.flush()
+            os.fsync(f.fileno())
     return {
         int(r["fold"]): np.asarray(r["params"], dtype=float)
         for r in rows[1:]
@@ -315,8 +369,14 @@ def stage1(group, workers=None, patience=100):
     def record(fold, params):
         per_fold[fold] = params
         with open(ckpt, "a") as f:
+            # allow_nan=False, as in _checkpoint.append_fold: a NaN here means
+            # the fold fit diverged — fail that fold loudly rather than persist
+            # garbage that would only surface as an opaque stage-2 crash.
             f.write(
-                json.dumps({"fold": int(fold), "params": [float(x) for x in params]})
+                json.dumps(
+                    {"fold": int(fold), "params": [float(x) for x in params]},
+                    allow_nan=False,
+                )
                 + "\n"
             )
             f.flush()

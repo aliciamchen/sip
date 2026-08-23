@@ -154,8 +154,14 @@ def _gradient_recovery(slug, data, preds_by_arm, n_boot):
                 ref = by[("own", dv_name, action)]
                 if got is None:
                     continue
+                # Signed, matching condition_gradients' recovered_fraction: an
+                # arm whose predicted modulation runs OPPOSITE the human
+                # direction must read as negative recovery, not partial
+                # recovery. (Verified 2026-08-23: no reliable cell in the
+                # committed arms flips sign, so the reported medians are
+                # unchanged by dropping the old abs().)
                 per_arm.setdefault(arm, []).append(
-                    abs(got["model_gradient"] / ref["human_gradient"])
+                    got["model_gradient"] / ref["human_gradient"]
                 )
     return {
         arm: (statistics.median(vals), len(vals))
