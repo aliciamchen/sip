@@ -508,7 +508,7 @@ generalization-primary:
 
 # =============================================================================
 # Results LaTeX (SIP_journal/): every number the results section states, as
-# generated macros plus the two table bodies. Depends on the comparison JSONs,
+# generated macros plus the table bodies. Depends on the comparison JSONs,
 # so it rebuilds fit -> cv -> model-comparison first when any is stale, and the
 # exporter itself verifies both manifests before emitting anything. Not a file
 # target: SIP_journal/ is a separate gitignored repo that may not be present.
@@ -699,21 +699,16 @@ JOURNAL_FIG_DIR := $(JOURNAL_DIR)/figures
 # here on purpose: they are assembled by hand in Illustrator from the components
 # in figures/panels/, so the assembled artwork is placed into the manuscript
 # directly rather than generated and copied.
+# Only the figures main.tex actually includes; the other generated SI figures
+# (run-spread, mixture-check, base-vs-full, choice-set-sizes, semantic-space,
+# composition, set-similarity) were dropped from the sync on 2026-08-22 after
+# the manuscript's shortening cut their sections. They are still generated into
+# figures/si/ -- re-add a pair here if a revision brings one back.
 JOURNAL_FIGURES := \
   si_lm_feature_structure_all.pdf:si-lm-feature-structure.pdf \
   si_lm_manipulation_checks_all.pdf:si-lm-manipulation-checks.pdf \
   si_lm_observed_scatter_all.pdf:si-lm-observed-scatter.pdf \
-  si_lm_choice_set_sizes_all.pdf:si-lm-choice-set-sizes.pdf \
-  si_lm_semantic_space_example_1a.pdf:si-lm-semantic-space-example.pdf \
-  si_lm_semantic_space_example_3a.pdf:si-lm-semantic-space-example-nonfood.pdf \
-  si_lm_alternatives_composition_relationship.pdf:si-lm-alternatives-composition-relationship.pdf \
-  si_lm_alternatives_composition_desire.pdf:si-lm-alternatives-composition-desire.pdf \
-  si_lm_alternatives_set_similarity_all.pdf:si-lm-alternatives-set-similarity.pdf \
-  si_lm_base_vs_full_1a_1b_3a.pdf:si-lm-base-vs-full.pdf \
   si_lm_action_sets_combined.pdf:si-lm-action-sets-combined.pdf \
-  si_lm_run_spread_1a.pdf:si-lm-run-spread.pdf \
-  si_lm_run_spread_all.pdf:si-lm-run-spread-all.pdf \
-  si_lm_mixture_check_1a.pdf:si-lm-mixture-check.pdf \
   si_lm_variability_checks.pdf:si-lm-variability-checks.pdf \
   si_scenarios_study1a.pdf:si-scenarios-study1a.pdf \
   si_scenarios_study1b.pdf:si-scenarios-study1b.pdf \

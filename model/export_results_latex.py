@@ -2,12 +2,21 @@
 """Render the fits and CV results into LaTeX for the manuscript.
 
 Every number the results section states is produced here from the pipeline's
-own outputs, so the paper cannot drift from the artifacts. Writes three
-generated files into `SIP_journal/`:
+own outputs, so the paper cannot drift from the artifacts. Writes the macros
+file plus one file per generated table into `SIP_journal/`:
 
-  results_macros.tex                  one \\newcommand per reported number
-  results_table_model_comparison.tex  the tabular for tab:model-comparison
-  results_table_fitted_params.tex     the tabular for tab:fitted-params
+  results_macros.tex                   one \\newcommand per reported number
+  results_table_model_comparison.tex   tab:model-comparison
+  results_table_fitted_params.tex      tab:fitted-params
+  results_table_prereg_deviation.tex   tab:prereg-deviation
+  results_table_variance.tex           tab:variance-decomposition
+  results_table_generalization*.tex    tab:generalization / -primary (if run)
+
+Only what the manuscript references is emitted: the gradient, scenario-
+correlation and design tables and their macros were removed 2026-08-22 after
+the manuscript's shortening cut the sections quoting them. The underlying
+statistics stay in cv_model_comparison.json; restore the emitters from git if
+a revision brings the sections back.
 
 Each table file is a complete `tabular` environment, top rule to bottom rule.
 The caller keeps the float, \\caption, \\label and \\tabcolsep, so placement and
@@ -46,7 +55,6 @@ Usage:
 import argparse
 import json
 import math
-import statistics
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -58,15 +66,9 @@ sys.path.insert(0, str(_project_root / "model" / "cv"))
 sys.path.insert(0, str(_project_root / "model" / "inverse"))
 sys.path.insert(0, str(_project_root / "model" / "lm"))
 
-import numpy as np  # noqa: E402
-
 from _helpers import git_sha, verify_fit_manifest  # noqa: E402
 from model_comparison import _verify_cv_manifest  # noqa: E402
-from run_delta_io import (  # noqa: E402
-    WORLD_STATE_DV,
-    load_per_run_deltas,
-    sha256_file,
-)
+from run_delta_io import sha256_file  # noqa: E402
 from study_registry import STUDIES, reported_base, studies  # noqa: E402
 from utils import get_project_root  # noqa: E402
 
@@ -312,57 +314,6 @@ def _prereg_deviation_macros(m, tok, slug, reported_ll, *, scale):
     return entry
 
 
-def _run_spread_macros(m, all_studies):
-    """The SI likelihood-check ranges: how big the elicitation mixture's own
-    within-cell spread is relative to the fitted response noise.
-
-    Reported as ranges over the per-(study, DV) summaries rather than per study,
-    because the result groups by the KIND of inferred variable, not by study: the
-    continuous latents sit at a small fraction of sigma everywhere, while the
-    two-state world state is several times that. Study 1a, which the SI check
-    originally generalized from, is the one study where the world state is given
-    and so cannot exhibit the second group at all.
-
-    `run_delta_io` raising here is deliberately fatal: an absent macro would
-    surface as an undefined control sequence at LaTeX time, far from the cause.
-    """
-    per_group = {False: {"median": [], "tail": []}, True: {"median": [], "tail": []}}
-    for study in all_studies:
-        outputs = get_project_root() / "model" / "outputs" / study.slug
-        per_run, sigma = load_per_run_deltas(outputs)
-        for dv in study.dvs:
-            if dv.delta_col not in per_run:
-                raise KeyError(
-                    f"{study.slug}: per-run deltas carry no {dv.delta_col}, but the "
-                    f"registry lists it as an inferred DV. Re-run `make run-deltas`."
-                )
-            ratios = per_run[dv.delta_col].std(axis=1) / sigma
-            group = per_group[dv.name == WORLD_STATE_DV]
-            group["median"].append(float(np.median(ratios)))
-            group["tail"].append(float(np.percentile(ratios, 90)))
-    for is_world, name in ((False, "Latent"), (True, "World")):
-        stats = per_group[is_world]
-        if not stats["median"]:
-            raise ValueError(
-                f"no {'world-state' if is_world else 'continuous-latent'} DVs found "
-                "across the studies being exported; the SI states both ranges."
-            )
-        for kind, key in (("Median", "median"), ("Tail", "tail")):
-            vals = [100.0 * v for v in stats[key]]
-            m.add(
-                f"runSpread{name}{kind}",
-                _fmt_range(min(vals), max(vals)),
-                "as a percentage of the fitted sigma, min--max over (study, DV)"
-                if (is_world, kind) == (False, "Median")
-                else None,
-            )
-    # How much a component spread s widens the predictive density on top of the
-    # response noise: sqrt(sigma^2 + s^2) / sigma. Quoted for the world state,
-    # where the spread is large enough for the widening to be worth stating.
-    widen = [math.sqrt(1.0 + s**2) for s in per_group[True]["median"]]
-    m.add("runSpreadWorldWidening", _fmt_range(min(widen), max(widen), dp=1))
-
-
 #: Gender categories as recorded in exit_survey.csv, and the macro suffix each
 #: gets. `abstain` is a real fourth category -- participants who declined to
 #: report -- so female + male + nonconforming does NOT sum to the recruited
@@ -454,12 +405,14 @@ def _load_generalization():
 
 
 def _generalization_macros(m, gen, *, scale):
-    """Macros for the two cross-experiment generalization analyses.
+    """Macros for the all-six pooled-utility contrasts (tab:generalization).
 
     `scale` turns the stored per-trial numbers into the per-participant unit the
     paper reports, exactly as the primary contrasts do -- these come from the
     same held-out likelihood and must not be quoted in a different unit from the
-    numbers beside them.
+    numbers beside them. The food-to-nonfood transfer is quoted on the primary
+    metric instead (`_generalization_primary_macros`); its held-out-LL contrasts
+    are no longer emitted.
     """
     if gen is None:
         return
@@ -469,19 +422,7 @@ def _generalization_macros(m, gen, *, scale):
         m.add(f"ci{label}", _fmt_ci([scale * v for v in ci]))
         m.add(f"stat{label}", rf"\dll{label}~\ci{label}")
 
-    # (1) A pooled group's utility applied outside that group (food -> nonfood).
-    xfer = {r["recipient"]: r for r in gen["transfer"].get("pooled_donor", [])}
-    names = {"3a": "XferThreeA", "3b": "XferThreeB", "combined": "XferNonfood"}
-    for recipient, label in names.items():
-        if recipient in xfer:
-            contrast(
-                label,
-                xfer[recipient]["diff"],
-                xfer[recipient]["ci_95"],
-                f"food-fitted utility on {recipient}, minus its own fit",
-            )
-
-    # (2) One utility shared across all six.
+    # One utility shared across all six.
     pooled = [r for r in gen["pooled"]["rows"] if r["group"] == "all"]
     if pooled:
         for r in pooled:
@@ -502,27 +443,24 @@ def _generalization_macros(m, gen, *, scale):
                 agg["ci_95"],
                 "one shared utility, combined over all six experiments",
             )
-        m.add("nUtilityParamsPooled", "4")
-        m.add("nUtilityParamsSeparate", str(4 * len(pooled)))
 
 
 def build(all_studies):
     m = Macros()
     loaded = {}
     # Constants that must be identical across studies (elicitation runs, CV
-    # folds, bootstrap resamples, the scenario count). Collected per study and
-    # then checked, so a study that silently diverged is an error rather than
-    # whichever value happened to be written last.
+    # folds, the scenario count). Collected per study and then checked, so a
+    # study that silently diverged is an error rather than whichever value
+    # happened to be written last.
     shared = {}
-    totals = {"recruited": 0, "retained": 0, "trials": 0}
+    totals = {"recruited": 0, "retained": 0}
 
     for study in all_studies:
         slug, tok = study.slug, token(study)
         comparison, preds_rows, full_fit, primary, deviation = load_study(slug)
         loaded[slug] = (comparison, full_fit, primary, deviation)
-        # The model's own cell grid, so the reported design counts describe what
-        # was actually fitted rather than a restatement of the intended design.
-        n_variants = len({r["model"] for r in preds_rows})
+        # From the model's own cell grid, so the counts describe what was
+        # actually fitted rather than a restatement of the intended design.
         n_scenarios = len({r["scenario_label"] for r in preds_rows})
         # K, the temperatures and the LM come from the elicitation manifests --
         # the run that actually produced the tables the fit loaded -- rather than
@@ -536,7 +474,6 @@ def build(all_studies):
             ("nFolds", n_scenarios),
             # The training-set size the LOSO description states (15 of 16).
             ("nFoldsTrain", n_scenarios - 1),
-            ("nBoot", comparison["n_boot"]),
             ("altTemperature", alts_manifest["gen_temperature"]),
             ("scoreTemperature", runs_manifest["score_temperature"]),
             ("lmName", runs_manifest["model"].split("/")[-1]),
@@ -562,16 +499,9 @@ def build(all_studies):
             )
         totals["recruited"] += int(demo["_nRecruitedRaw"])
         totals["retained"] += n_retained
-        totals["trials"] += comparison["n_trials_per_model"]
         demo.pop("_nRecruitedRaw")
         for i, (key, value) in enumerate(demo.items()):
             m.add(f"{key}{tok}", value, study.paper_label if i == 0 else None)
-
-        # --- design counts and trial totals ---
-        m.add(f"nTrials{tok}", _fmt_int(comparison["n_trials_per_model"]))
-        n_cells = len(preds_rows) // n_variants
-        m.add(f"nCells{tok}", _fmt_int(n_cells))
-        m.add(f"nConditions{tok}", _fmt_int(n_cells // n_scenarios))
 
         # --- the full model's own held-out LL, and the reported contrasts ---
         # Rescaled from the artifacts' preregistered per-trial unit; see
@@ -601,47 +531,6 @@ def build(all_studies):
             scale=scale,
         )
 
-        # --- preregistration deviation, only where the reported base differs ---
-        if base_key != "base":
-            _contrast_macros(
-                m,
-                tok,
-                "PreregBase",
-                primary["base"],
-                "preregistered full - base",
-                scale=scale,
-            )
-            set_only = deviation.get(f"{base_key}_minus_base")
-            if set_only is None:
-                raise KeyError(
-                    f"{slug}: prereg_deviation has no {base_key}_minus_base entry; "
-                    "re-run `make model-comparison`."
-                )
-            _contrast_macros(
-                m, tok, "SetOnly", set_only, "comparison set alone", scale=scale
-            )
-
-        # --- secondary correlations, per (reported variant, DV) ---
-        by_key = {
-            (row["model"], row["dv"]): row
-            for row in comparison.get("secondary_correlations", [])
-        }
-        for variant, label in (
-            ("full", "Full"),
-            ("discomfort_only", "Disc"),
-            (base_key, "Base"),
-        ):
-            for dv in study.dvs:
-                row = by_key.get((variant, dv.name))
-                if row is None:
-                    continue
-                dv_tok = dv.name.capitalize()
-                # r is undefined (not merely missing) when an ablation cannot
-                # infer this latent at all: its per-cell prediction is a
-                # constant, so the correlation has zero variance in x. That is
-                # the visible ablation contrast, not a failure -- emit n/a.
-                m.add(f"r{label}{dv_tok}{tok}", _fmt(row["r"], DP_R))
-
         # --- fitted parameters of the reported full model ---
         for field, label in (
             ("param_w_v", "Wv"),
@@ -655,69 +544,6 @@ def build(all_studies):
         # eta exists only for reweighted variants; it is nested at zero, so an
         # absent eta is a fitted zero rather than missing data.
         m.add(f"pEta{tok}", _fmt(full_fit.get("param_eta", 0.0), DP_PARAM))
-
-    # --- SI likelihood check: the elicitation mixture's own spread ---
-    _run_spread_macros(m, all_studies)
-
-    # --- SI cross-experiment generalization (exploratory; skipped if unrun) ---
-    focal_fracs = []
-    manip_fracs, action_fracs, within_fracs = [], [], []
-    ceil_fracs = {}
-    for study in all_studies:
-        comparison, _full_fit, _primary, _deviation = loaded[study.slug]
-        _modulation_macros(m, token(study), study.slug, comparison)
-        for dv, pct in _ceiling_macros(m, token(study), comparison).items():
-            ceil_fracs.setdefault(dv, []).append(pct)
-        # The range quoted in Methods is over each study's PRIMARY inferred
-        # latent (desire or intimacy), not the physical world state: the world
-        # state is a second DV in four studies only, and its focal share is the
-        # noisiest number in the set (one estimate corrects to exactly zero), so
-        # including it would widen the quoted range without adding a claim.
-        primary_dv = study.dvs[0].name
-        for d in comparison.get("variance_decomposition", []):
-            if "manipulated_frac_of_total" not in d:
-                raise RuntimeError(
-                    f"{study.slug}: cv_model_comparison.json predates the "
-                    f"action/manipulated variance components. Re-run "
-                    f"`make model-comparison` before `make results-latex`."
-                )
-            if d["dv"] == primary_dv:
-                focal_fracs.append(d["focal_frac_of_total"])
-                manip_fracs.append(d["manipulated_frac_of_total"])
-                action_fracs.append(d["action_frac_of_total"])
-                within_fracs.append(1.0 - d["frac_explainable"])
-    if focal_fracs:
-        m.add(
-            "modFracRange",
-            _fmt_range(100 * min(focal_fracs), 100 * max(focal_fracs), dp=1) + r"\%",
-            "manipulated condition alone, share of trial variance, primary latent",
-        )
-        # The three the Methods paragraph quotes: what no model can predict, what
-        # the design accounts for, and how much of that is the observed action.
-        m.add(
-            "withinFracRange",
-            _fmt_range(100 * min(within_fracs), 100 * max(within_fracs)) + r"\%",
-            "within-cell participant variance, share of trial variance",
-        )
-        m.add(
-            "manipFracRange",
-            _fmt_range(100 * min(manip_fracs), 100 * max(manip_fracs)) + r"\%",
-            "action + condition jointly, share of trial variance",
-        )
-        m.add(
-            "actionFracRange",
-            _fmt_range(100 * min(action_fracs), 100 * max(action_fracs)) + r"\%",
-            "observed action, share of trial variance",
-        )
-    # Min--max over the studies reporting each DV, so the SI's "the full model
-    # reaches X--Y of the ceiling on desire" cannot invert when a refit moves
-    # which study sits at either end.
-    for dv, pcts in ceil_fracs.items():
-        m.add(
-            f"ceilRange{dv.capitalize()}",
-            _fmt_range(min(pcts), max(pcts)) + r"\%",
-            f"full-model r as a fraction of the {dv} ceiling, min--max over studies",
-        )
 
     # --- the results text's one correlation per study, and its ceiling ---
     _group_correlation_macros(m)
@@ -738,7 +564,6 @@ def build(all_studies):
     # Cross-study totals, for the abstract's overall N.
     m.add("nRecruitedTotal", _fmt_int(totals["recruited"]), "all six experiments")
     m.add("nRetainedTotal", _fmt_int(totals["retained"]))
-    m.add("nTrialsTotal", _fmt_int(totals["trials"]))
 
     # One macro per shared constant, but only once every study agrees on it.
     for key, per_study in shared.items():
@@ -824,12 +649,13 @@ def generalization_primary_table(gen):
 
 
 def _set_diagnostics_macros(m, all_studies):
-    """The SI's descriptive claims about the elicited comparison sets.
+    """The SI's descriptive claim about the elicited comparison sets.
 
-    Ranges over studies rather than one macro per study: the prose only ever
-    quotes them as ranges ("in 40--61% of refusal sets ..."), and a range emitted
-    whole cannot be mis-paired or hand-ordered backwards, which is what a pair of
-    per-study macros in running text invites.
+    A range over studies rather than one macro per study: the prose quotes it as
+    a range, and a range emitted whole cannot be mis-paired or hand-ordered
+    backwards, which is what a pair of per-study macros in running text invites.
+    The g-contrast and effort-swing ranges this once emitted went with the SI
+    prose that quoted them; `set_diagnostics.summarize` still computes them.
     """
     import set_diagnostics as sd
 
@@ -837,60 +663,14 @@ def _set_diagnostics_macros(m, all_studies):
     summary = sd.summarize(wanted)
     missing = [s for s in wanted if s not in summary]
     if missing:
-        # Not just "none found": these macros are documented as min--max over
+        # Not just "none found": this macro is documented as min--max over
         # STUDIES, so a partially re-elicited state would quietly narrow the
         # range to whichever studies happen to be on disk.
         raise FileNotFoundError(
             f"no outputs/lm/<slug>/lm_runs.jsonl for {missing} -- the SI quotes "
-            "these as ranges over every study, so a subset would understate "
-            "them. Re-run the LM elicitation for those studies."
+            "this as a range over every study, so a subset would understate "
+            "it. Re-run the LM elicitation for those studies."
         )
-
-    refusal_whole, refusal_alts, share_whole = [], [], []
-    for entry in summary.values():
-        for act, (whole, alts, _n, _empty) in entry["g_contrast"].items():
-            if act == sd.REFUSAL:
-                refusal_whole.append(whole)
-                if alts == alts:  # NaN where every set was alternative-free
-                    refusal_alts.append(alts)
-            else:
-                share_whole.append(whole)
-    m.add(
-        "gFlatRefusalWhole",
-        _fmt_range(min(refusal_whole), max(refusal_whole), dp=1) + r"\%",
-        "refusal sets with no g contrast over the whole comparison set",
-    )
-    m.add(
-        "gFlatShareWhole",
-        _fmt_range(min(share_whole), max(share_whole)) + r"\%",
-        "share sets with no g contrast over the whole comparison set",
-    )
-    m.add(
-        "gFlatRefusalAlts",
-        _fmt_range(min(refusal_alts), max(refusal_alts)) + r"\%",
-        "refusal sets whose forgone alternatives carry no g contrast",
-    )
-
-    # The physical-state claim covers the refusal and the high-risk share. The
-    # low-risk share is the action the state paragraph is written to describe, so
-    # it swings by design and is quoted separately as the contrast.
-    flat_acts = (sd.REFUSAL, "high_risk_share")
-    flat, described, alt_max = [], [], []
-    for entry in summary.values():
-        swings = entry.get("effort_swing_observed")
-        if not swings:
-            continue
-        flat += [v for act, v in swings.items() if act in flat_acts]
-        described += [v for act, v in swings.items() if act not in flat_acts]
-        alt_max.append(entry["effort_swing_alt_max"])
-    if flat:
-        m.add(
-            "effortSwingFlat",
-            _fmt_range(min(flat), max(flat), dp=2),
-            "|effort(high) - effort(low)| for a refusal or high-risk share",
-        )
-        m.add("effortSwingDescribed", _fmt_range(min(described), max(described), dp=2))
-        m.add("effortSwingAltMax", _fmt(max(alt_max), 2))
 
     medians = [entry["n_alts_median"] for entry in summary.values()]
     m.add(
@@ -911,9 +691,9 @@ def _group_correlation_macros(m):
     study, with the noise ceiling it is judged against.
 
     Condition grain -- each point averaged over the scenarios -- which is the
-    grain the results figures plot and a DIFFERENT number from the per-(study,
-    DV) `r*` macros above, which are at scenario x condition grain. Both are
-    emitted; the paper says which grain it is quoting where it quotes one.
+    grain the results figures plot. The scenario x condition grain still lives
+    in cv_model_comparison.json (`secondary_correlations`); its macros and SI
+    table were removed with the manuscript's shortening.
 
     Only the full model gets macros: the text reports one correlation per study,
     and an ablation's pooled r mixes a DV it can predict with one whose
@@ -927,15 +707,13 @@ def _group_correlation_macros(m):
             "per study. Run `make model-comparison` (it writes this after every "
             "study, since the correlations pool across studies)."
         )
-    fracs = []
     for entry in json.loads(path.read_text()):
         tok = _group_token(entry["study"])
         # This file is written only by the ALL-studies pass, so re-running one
         # study (`model_comparison.py --study <slug>`, the documented single-study
         # path) refreshes that study's cv_model_comparison.json and leaves this a
-        # vintage behind -- and `\rStudyOne` would then sit beside
-        # `\rFullDesireOneB` from a different CV run. Every other input here is
-        # manifest-verified; this one carries the hashes it was computed from.
+        # vintage behind. Every other input here is manifest-verified; this one
+        # carries the hashes it was computed from.
         for slug, recorded in entry.get("source", {}).items():
             actual = (
                 get_project_root()
@@ -969,138 +747,6 @@ def _group_correlation_macros(m):
                 _fmt(ceiling["ceiling"], DP_R),
                 "split-half noise ceiling, same grain",
             )
-            frac = 100 * full["r"] / ceiling["ceiling"]
-            fracs.append(frac)
-            m.add(f"ceilFrac{tok}", rf"\ensuremath{{{frac:.0f}\%}}")
-    if fracs:
-        # The SI says the model reaches "at least X% of it in every study". A
-        # minimum stays true however the studies move, where naming one study's
-        # figure and asserting the others match it would not.
-        m.add(
-            "ceilFracStudyMin",
-            rf"\ensuremath{{{_round_half_up(min(fracs)):.0f}\%}}",
-            "smallest of the per-study fractions of the ceiling",
-        )
-
-
-def _ceiling_macros(m, tok, comparison):
-    """Full-model correlation as a fraction of the split-half noise ceiling.
-
-    The ceiling is the highest correlation ANY model could reach given the
-    sampling noise in the cell means, so this ratio is what says whether a given
-    r is near the attainable limit -- an r of 0.64 against a ceiling of 0.96
-    means something different from the same r against a ceiling of 0.70. Emitted
-    per DV, because the two kinds of inferred variable sit at very different
-    fractions and reporting one number for a study would hide that.
-
-    Returns {dv: percentage} so the caller can emit the across-study ranges the
-    SI quotes. Those ranges are computed rather than written into the prose as a
-    pair of per-study macros: which study sits at the minimum is itself a result,
-    and a hand-ordered range would silently invert if a refit moved it.
-    """
-    out = {}
-    ceilings = {c["dv"]: c["ceiling"] for c in comparison.get("noise_ceilings", [])}
-    r_full = {
-        c["dv"]: c["r"]
-        for c in comparison.get("secondary_correlations", [])
-        if c["model"] == "full"
-    }
-    for dv, ceiling in ceilings.items():
-        r = r_full.get(dv)
-        # `r != r` is the NaN test: with CONSTANT_PREDICTION_TOL a NaN r is a
-        # normal outcome for a variant that cannot infer the DV, and one
-        # reaching here would print `nan%` in tab:scenario-correlations AND
-        # poison the ceilRange* min/max the SI quotes.
-        if r is None or r != r or not ceiling:
-            continue
-        out[dv] = 100 * r / ceiling
-        m.add(
-            f"ceil{dv.capitalize()}{tok}",
-            rf"\ensuremath{{{out[dv]:.0f}\%}}",
-            f"full-model r as a fraction of the {dv} noise ceiling",
-        )
-    return out
-
-
-def _modulation_macros(m, tok, slug, comparison):
-    """Macros for the hypothesis-matched statistics (cv/contrast_tests.py).
-
-    Two things the paper quotes. The focal effect's share of trial-level
-    variance, which is why the global held-out likelihood is insensitive to the
-    modulation these studies manipulate; and how much of participants' gradient
-    each model variant recovers, summarized as the median over the cells where
-    that gradient is reliably nonzero.
-
-    The median, not the mean: a recovered fraction is a ratio, and the cells
-    where the human denominator is small but survives the reliability screen
-    would otherwise dominate. Cells whose human gradient is NOT reliable carry no
-    ratio at all (contrast_tests withholds it), and are excluded here rather than
-    counted as zero -- the model is not wrong there, the data are silent.
-    """
-    decomp = comparison.get("variance_decomposition", [])
-    grads = comparison.get("condition_gradients", [])
-    if not decomp or not grads:
-        return
-    base_key = reported_base(slug)
-
-    # Focal share of trial-level variance: the widest interval across this
-    # study's DVs, so the quoted range covers every DV it reports.
-    lo = min(d["focal_frac_of_total_ci_95"][0] for d in decomp)
-    hi = max(d["focal_frac_of_total_ci_95"][1] for d in decomp)
-    m.add(f"focalVar{tok}", _fmt_range(100 * lo, 100 * hi, dp=1) + r"\%")
-
-    reliable = [
-        (g["dv"], g["action"])
-        for g in grads
-        if g["model"] == "full" and g["recovered_fraction"] is not None
-    ]
-    m.add(f"nGradCells{tok}", str(len(reliable)), "cells with a reliable gradient")
-    if not reliable:
-        return
-    by = {(g["model"], g["dv"], g["action"]): g for g in grads}
-    for name, variant in (
-        ("Full", "full"),
-        ("Base", base_key),
-        ("Disc", "discomfort_only"),
-    ):
-        vals = []
-        for dv, action in reliable:
-            got, ref = by.get((variant, dv, action)), by[("full", dv, action)]
-            if got is None:
-                continue
-            vals.append(abs(got["model_gradient"] / ref["human_gradient"]))
-        if vals:
-            m.add(
-                f"grad{name}{tok}",
-                rf"\ensuremath{{{100 * statistics.median(vals):.0f}\%}}",
-            )
-
-
-def gradients_table(all_studies):
-    """tab:gradients: how much of participants' modulation each variant recovers.
-
-    One row per study rather than per (study, action): the per-action detail is a
-    30-row table that belongs in the SI, and the main text's claim is about the
-    ordering of the three variants, which the summary carries.
-    """
-
-    def cells(study):
-        tok = token(study)
-        return rf"\nGradCells{tok} & \gradFull{tok} & \gradBase{tok} & \gradDisc{tok}"
-
-    header = (
-        r" & \multicolumn{1}{c}{Cells} & \multicolumn{3}{c}{Median gradient recovered} \\"
-        "\n"
-        r"\cmidrule(lr){3-5}"
-        "\n"
-        r"Study & $n$ & Full & Vanilla & Discomfort-only \\"
-    )
-    return _tabular("lcccc", header, _rows(all_studies, cells, domain_heading=5))
-
-
-#: Human-readable action names for the SI gradient table, by the integer index
-#: cv_preds_summary.json uses.
-_ACTION_LABEL = {0: "no share", 1: "low-risk", 2: "high-risk"}
 
 
 def variance_table(all_studies, loaded):
@@ -1109,6 +755,12 @@ def variance_table(all_studies, loaded):
     for study in all_studies:
         comparison = loaded[study.slug][0]
         for d in comparison.get("variance_decomposition", []):
+            if "manipulated_frac_of_total" not in d:
+                raise RuntimeError(
+                    f"{study.slug}: cv_model_comparison.json predates the "
+                    f"action/manipulated variance components. Re-run "
+                    f"`make model-comparison` before `make results-latex`."
+                )
             lo, hi = d["manipulated_frac_of_total_ci_95"]
             lines.append(
                 rf"{study.short_label} & {_PAPER_TARGET[d['dv']]} & "
@@ -1122,133 +774,6 @@ def variance_table(all_studies, loaded):
         r"Manipulated / explainable \\"
     )
     return _tabular("llrrcr", header, "\n".join(lines))
-
-
-def gradients_full_table(all_studies, loaded):
-    """tab:gradients-full (SI): the per-action gradients behind tab:gradients."""
-    lines = []
-    for study in all_studies:
-        comparison = loaded[study.slug][0]
-        grads = comparison.get("condition_gradients", [])
-        if not grads:
-            continue
-        base_key = reported_base(study.slug)
-        by = {(g["model"], g["dv"], g["action"]): g for g in grads}
-        for dv in (d.name for d in study.dvs):
-            for action in sorted({g["action"] for g in grads if g["dv"] == dv}):
-                ref = by.get(("full", dv, action))
-                if ref is None:
-                    continue
-                lo, hi = ref["human_ci_95"]
-                rec = ref["recovered_fraction"]
-                cells = " & ".join(
-                    _fmt(by[(v, dv, action)]["model_gradient"], 3)
-                    if (v, dv, action) in by
-                    else r"\textit{n/a}"
-                    for v in ("full", base_key, "discomfort_only")
-                )
-                lines.append(
-                    rf"{study.short_label} & {_PAPER_TARGET[dv]} & "
-                    rf"{_ACTION_LABEL.get(action, action)} & "
-                    rf"{_fmt(ref['human_gradient'], 3)} "
-                    rf"\ensuremath{{[{lo:.3f},\ {hi:.3f}]}} & {cells} & "
-                    + (
-                        rf"\ensuremath{{{100 * rec:.0f}\%}}"
-                        if rec is not None
-                        else r"\textit{n.s.}"
-                    )
-                    + r" \\"
-                )
-    header = (
-        r" & & & \multicolumn{1}{c}{Human} & \multicolumn{3}{c}{Model gradient} & \\"
-        "\n"
-        r"\cmidrule(lr){5-7}"
-        "\n"
-        r"Study & Inferred & Action & gradient [95\% CI] & Full & Vanilla & "
-        r"Disc.\ only & Recovered \\"
-    )
-    return _tabular("lllccccr", header, "\n".join(lines))
-
-
-def scenario_correlations_table(all_studies, loaded):
-    """tab:scenario-correlations (SI): the model-vs-human correlation per
-    (study, inferred variable) at SCENARIO x CONDITION grain, against that DV's
-    noise ceiling.
-
-    The main text quotes one correlation per study over condition means, where
-    averaging the scenarios leaves both r and the ceiling near one. This table is
-    the grain at which the ceiling separates the DVs -- the continuous latents
-    sit near it and the world state does not -- which is the comparison that says
-    something. Cells are macro references wherever a macro exists, so the table
-    and any in-text mention cannot drift apart.
-    """
-    lines = []
-    for study in all_studies:
-        comparison = loaded[study.slug][0]
-        tok = token(study)
-        ceilings = {c["dv"]: c["ceiling"] for c in comparison.get("noise_ceilings", [])}
-        for dv in study.dvs:
-            if dv.name not in ceilings:
-                continue
-            dv_tok = dv.name.capitalize()
-            lines.append(
-                rf"{study.short_label} & {_PAPER_TARGET[dv.name]} & "
-                rf"\rFull{dv_tok}{tok} & \rBase{dv_tok}{tok} & "
-                rf"\rDisc{dv_tok}{tok} & {_fmt(ceilings[dv.name], DP_R)} & "
-                rf"\ceil{dv_tok}{tok} \\"
-            )
-    header = (
-        r" & & \multicolumn{3}{c}{Pearson $r$} & & \\"
-        "\n"
-        r"\cmidrule(lr){3-5}"
-        "\n"
-        r"Study & Inferred & Full & Vanilla & Disc.\ only & Ceiling & "
-        r"Full / ceiling \\"
-    )
-    return _tabular("llccccr", header, "\n".join(lines))
-
-
-def design_table(all_studies):
-    """tab:design: the design space the six studies traverse.
-
-    Derived from the registry rather than written out, so it cannot disagree
-    with what was actually fitted. The layout follows how the text describes the
-    space: the observer's primary inference target crossed with whether the
-    competing physical cause is given in the vignette or inferred alongside it
-    (the `a' versus `b' variants). Each study gives the observer exactly one of
-    relationship or desire and infers the other, so naming the inferred latent in
-    the row header fixes the given one too.
-    """
-    rows = {}
-    for study in all_studies:
-        primary = study.dvs[0].name
-        physical_given = "effort_condition" in study.given_conditions
-        label = study.short_label
-        if study.domain != "food":
-            label = rf"{label}\textsuperscript{{$\dagger$}}"
-        rows.setdefault(primary, {}).setdefault(physical_given, []).append(label)
-
-    body = []
-    for primary, given_label in (
-        ("desire", r"Desire \emph{(relationship given)}"),
-        ("intimacy", r"Relationship \emph{(desire given)}"),
-    ):
-        if primary not in rows:
-            continue
-        cells = [
-            ", ".join(rows[primary].get(is_given, [])) or r"\textit{--}"
-            for is_given in (True, False)
-        ]
-        body.append(rf"{given_label} & {cells[0]} & {cells[1]} \\")
-
-    header = "\n".join(
-        [
-            r" & \multicolumn{2}{c}{Physical world state} \\",
-            r"\cmidrule(lr){2-3}",
-            r"Observer infers & Given & Inferred \\",
-        ]
-    )
-    return _tabular("lcc", header, "\n".join(body))
 
 
 def _rows(all_studies, cells_for, *, domain_heading=None):
@@ -1424,23 +949,8 @@ def main():
         "results_table_prereg_deviation.tex": (
             HEADER + provenance() + prereg_deviation_table(all_studies) + "\n"
         ),
-        "results_table_design.tex": (
-            HEADER + provenance() + design_table(all_studies) + "\n"
-        ),
-        "results_table_gradients.tex": (
-            HEADER + provenance() + gradients_table(all_studies) + "\n"
-        ),
         "results_table_variance.tex": (
             HEADER + provenance() + variance_table(all_studies, _loaded) + "\n"
-        ),
-        "results_table_gradients_full.tex": (
-            HEADER + provenance() + gradients_full_table(all_studies, _loaded) + "\n"
-        ),
-        "results_table_scenario_correlations.tex": (
-            HEADER
-            + provenance()
-            + scenario_correlations_table(all_studies, _loaded)
-            + "\n"
         ),
     }
     # Only when the exploratory generalization analyses have been run -- writing
