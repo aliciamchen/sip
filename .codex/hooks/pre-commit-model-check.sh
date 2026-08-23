@@ -35,11 +35,14 @@ cd "$project_dir" 2>/dev/null || exit 0
 # commit message that happens to contain "model/") just runs the test suite.
 staged_model=$(git diff --cached --name-only | grep -E '^model/' || true)
 extra_model=""
-case "$command" in
-  *" -a"*|*"--all"*)
-    extra_model=$(git diff --name-only | grep -E '^model/' || true)
-    ;;
-esac
+# Catch -a in any short-option cluster (-a, -am, -qam, -qa, ...) as well as
+# --all. Substring-matching " -a" missed clusters where a is not first
+# (`git commit -qam` skipped the gate). The regex also fires on look-alikes
+# (--amend, a message word starting with a dash) — a false positive just runs
+# the test suite, which is the cheap direction.
+if [[ "$command" =~ (^|[[:space:]])-[a-zA-Z]*a || "$command" == *"--all"* ]]; then
+  extra_model=$(git diff --name-only | grep -E '^model/' || true)
+fi
 case "$command" in
   *model/*) extra_model="pathspec" ;;
 esac
