@@ -80,6 +80,7 @@ help:
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance + elicitation-guard + data-converter + experiment-list tests"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
+	@echo "  freshen-outputs - restamp the committed outputs after a fresh clone (see README)"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/si/"
 	@echo "  figures-panels       - render the Illustrator results panels + legends into figures/panels/"
 	@echo "  figures-nonfood-domains - render the Study 3 human panels split by sharing domain into figures/panels/"
@@ -658,6 +659,27 @@ deploy-explorer: explorer
 # =============================================================================
 # Utilities
 # =============================================================================
+
+# Git does not preserve file timestamps, so on a fresh clone `make all` may
+# consider the committed fit/CV outputs out of date and start refitting instead
+# of no-oping. This restamps the committed pipeline files in dependency order
+# (metadata only — no file contents change); afterwards every pipeline target
+# is current. Safe to run at any time. $(wildcard ...) restricts each touch to
+# files that exist, so nothing is ever created.
+.PHONY: freshen-outputs
+freshen-outputs:
+	touch $(wildcard data/*/main_trials_long.csv model/outputs/lm/*/lm_runs*.jsonl)
+	touch $(wildcard model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl \
+	  model/outputs/*/fit_manifest.json model/outputs/*/alt/*/fit_results.json \
+	  model/outputs/*/alt/*/fit_restarts.jsonl model/outputs/*/alt/*/fit_manifest.json)
+	touch $(wildcard model/outputs/*/cv_trial_ll.jsonl model/outputs/*/cv_preds_summary.json \
+	  model/outputs/*/cv_folds.jsonl model/outputs/*/cv_manifest.json \
+	  model/outputs/*/cv_run_deltas.json model/outputs/*/alt/*/cv_trial_ll.jsonl \
+	  model/outputs/*/alt/*/cv_preds_summary.json model/outputs/*/alt/*/cv_folds.jsonl \
+	  model/outputs/*/alt/*/cv_manifest.json)
+	touch $(wildcard model/outputs/*/cv_model_comparison.json \
+	  model/outputs/*/alt/compare_*.json model/outputs/group_correlations.json)
+	touch $(wildcard figures/panels/*/*.pdf figures/si/*.pdf)
 
 test:
 	uv run python model/test_model_compliance.py
