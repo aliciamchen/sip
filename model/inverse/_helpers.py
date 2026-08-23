@@ -958,10 +958,16 @@ def _padded_table_kwargs(
                 )
             kw["desire_table"] = desire
     if uses_intimacy and relationship_loader is not None:
-        # Per-run LM-rated intimacy magnitude per relationship level, shape (K, 4)
-        # (falls back to the placeholder RELATIONSHIP_LEVEL_VALUES as K=1 until the
-        # per-run `intimacy` field exists in lm_runs.jsonl).
-        kw["relationship_values"] = relationship_loader()
+        # Per-run LM-rated intimacy magnitude per relationship level, shape (K, 4),
+        # from the per-record `intimacy` field of lm_runs.jsonl.
+        relationship_values = relationship_loader()
+        if relationship_values is None:
+            raise FileNotFoundError(
+                f"relationship intimacy values not found for {study} — the "
+                "given-relationship studies need the per-run intimacy scalar. "
+                f"Run `model/lm/score_merged.py --study {slug_hint}` first."
+            )
+        kw["relationship_values"] = relationship_values
     return kw
 
 
@@ -1250,6 +1256,22 @@ def _intimacy_loss(
     return loss_fn, n_params, n_core
 
 
+def _check_init_params_len(init_params, n_params, n_core):
+    """Reject a warm-start vector whose length doesn't match this fit. JAX
+    clamps out-of-bounds indices, so a mis-sized vector would be silently
+    mis-sliced (eta would read sigma) instead of erroring."""
+    if init_params is not None and len(init_params) != n_params:
+        raise ValueError(
+            f"init_params has length {len(init_params)} but this fit expects "
+            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
+            f"{n_params - n_core} extra slot(s) for this configuration's "
+            "eta. A warm start that doesn't match would be silently "
+            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
+            "read sigma). Build it with params_dict_to_array(..., "
+            "extra_param_names=[...]) naming the same extras."
+        )
+
+
 def fit_intimacy_observer_joint(
     observer_fn,
     utility_param_names,
@@ -1294,16 +1316,7 @@ def fit_intimacy_observer_joint(
         table_kwargs,
         reweighting=reweighting,
     )
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
-            f"{n_params - n_core} extra slot(s) for this configuration's "
-            "eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
-            "read sigma). Build it with params_dict_to_array(..., "
-            "extra_param_names=[...]) naming the same extras."
-        )
+    _check_init_params_len(init_params, n_params, n_core)
 
     params, nll, restarts = fit_masked(
         loss_fn,
@@ -1420,16 +1433,7 @@ def fit_desire_observer_joint(
         table_kwargs,
         reweighting=reweighting,
     )
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
-            f"{n_params - n_core} extra slot(s) for this configuration's "
-            "eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
-            "read sigma). Build it with params_dict_to_array(..., "
-            "extra_param_names=[...]) naming the same extras."
-        )
+    _check_init_params_len(init_params, n_params, n_core)
 
     params, nll, restarts = fit_masked(
         loss_fn,
@@ -1555,16 +1559,7 @@ def fit_joint_de_observer_joint(
         table_kwargs,
         reweighting=reweighting,
     )
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
-            f"{n_params - n_core} extra slot(s) for this configuration's "
-            "eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
-            "read sigma). Build it with params_dict_to_array(..., "
-            "extra_param_names=[...]) naming the same extras."
-        )
+    _check_init_params_len(init_params, n_params, n_core)
 
     params, nll, restarts = fit_masked(
         loss_fn,
@@ -1690,16 +1685,7 @@ def fit_joint_ie_observer_joint(
         table_kwargs,
         reweighting=reweighting,
     )
-    if init_params is not None and len(init_params) != n_params:
-        raise ValueError(
-            f"init_params has length {len(init_params)} but this fit expects "
-            f"{n_params}: utility+alpha_observer+sigma ({n_core}) plus "
-            f"{n_params - n_core} extra slot(s) for this configuration's "
-            "eta. A warm start that doesn't match would be silently "
-            "mis-sliced (JAX clamps out-of-bounds indices, so eta would "
-            "read sigma). Build it with params_dict_to_array(..., "
-            "extra_param_names=[...]) naming the same extras."
-        )
+    _check_init_params_len(init_params, n_params, n_core)
 
     params, nll, restarts = fit_masked(
         loss_fn,

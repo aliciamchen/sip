@@ -42,12 +42,6 @@ CHECKPOINT_VERSION = 1
 
 CHECKPOINT_NAME = "cv_checkpoint.jsonl"
 
-# The LM table files whose contents feed the observer tables (the base file
-# exists only for the given-relationship studies; hash whichever are present).
-# These are the default (unsuffixed) names; a non-default run config swaps in
-# its own vintage via `config_fields["runs"]` (see `run_fingerprint`).
-_LM_TABLE_NAMES = ("lm_runs.jsonl", "lm_runs_base.jsonl")
-
 # The config descriptor a plain (default, reweighted) CV run fingerprints
 # under — the reported model. Kept as a module constant so the no-config
 # default and the checkpoint header agree on the exact dict. Renaming a field

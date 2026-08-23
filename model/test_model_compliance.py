@@ -64,7 +64,6 @@ from observers import (
     _sharpened_joint_posterior,
 )
 from tables import (
-    INTIMACY_CONDITIONS,
     MAX_ACTIONS,
     N_ACTIONS,
     RELATIONSHIP_LEVEL_VALUES,

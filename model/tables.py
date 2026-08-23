@@ -37,8 +37,7 @@ DesireLevels = jnp.arange(0, 1.01, 0.01)
 # = no sharing, action 1 = low-risk sharing, action 2 = high-risk sharing.
 # Stimulus set is `experiments/scenarios.csv`; the per-study LM tables are
 # `outputs/lm/<slug>/lm_runs.jsonl` (scored observed + alternative risk/effort/g
-# across K runs) and `lm_alternatives.jsonl` (stage-1 texts). The legacy
-# `lm_scenario.csv` + `lm_alternatives.csv` remain only as a K=1 fallback.
+# across K runs) and `lm_alternatives.jsonl` (stage-1 texts).
 actions = jnp.array([0, 1, 2])
 N_ACTIONS = 3
 # The 3 observed actions in index order. Experiment data and LM CSVs label the
@@ -75,13 +74,11 @@ INTIMACY_CONDITIONS = [
 ]
 INTIMACY_CONDITION_TO_IDX = {slug: i for i, slug in enumerate(INTIMACY_CONDITIONS)}
 
-# Continuous intimacy values for each RelationshipConditions level — used by
-# the relationship-keyed padded memos to evaluate the (1 - I) risk term
-# without dragging the 101-level IntimacyLevels axis into the memo. These are
-# placeholder magnitudes for each verbal level (pending LM elicitation); they
-# are model-internal and never saved as condition labels. Evenly spaced to match
-# the symmetric four-level scale (max_formal / somewhat_formal / somewhat_intimate
-# / max_intimate); the elicited values override these.
+# Continuous intimacy magnitudes for the four RelationshipConditions levels,
+# used by the relationship-keyed padded memos to evaluate the (1 - I) risk term
+# without dragging the 101-level IntimacyLevels axis into the memo. The fits use
+# the LM-elicited per-run values (load_lm_relationship_values); this evenly
+# spaced vector is the shape-matched stand-in the model tests fit against.
 RELATIONSHIP_LEVEL_VALUES = jnp.array([0.0, 0.33, 0.67, 1.0])
 
 EFFORT_CONDITION_TO_IDX = {"low": 0, "high": 1}
@@ -186,10 +183,6 @@ NONFOOD_SCENARIO_LABELS = [
     "sunscreen",
     "towel",
 ]
-NONFOOD_SCENARIO_TO_IDX = {
-    label: idx for idx, label in enumerate(NONFOOD_SCENARIO_LABELS)
-}
-
 # Scenario-label registry keyed by study slug. The nonfood studies (3a/3b) share
 # the memo enums, actors, and observers with the food studies — both stimulus
 # sets have 16 scenarios and the memo `Scenarios` axis is positional — so the
@@ -216,10 +209,9 @@ def scenario_to_idx_for_study(slug):
 # Three-action LM-derived scenario parameter tables
 # ==============================================================================
 # Per-study observed-action risk/effort/g and the padded LM-alternatives action spaces
-# are loaded by the `load_padded_lm_tables_*` functions below (preferring the
-# K-run `outputs/lm/<slug>/lm_runs.jsonl`, falling back to the legacy single-run
-# `lm_scenario.csv` + `lm_alternatives.csv`). The *given-magnitude* scalars are
-# now folded per-run into `lm_runs.jsonl` (a `desire` field on each record for the
+# are loaded by the `load_padded_lm_tables_*` functions below from the K-run
+# `outputs/lm/<slug>/lm_runs.jsonl`. The *given-magnitude* scalars are
+# folded per-run into `lm_runs.jsonl` (a `desire` field on each record for the
 # given-desire studies, an `intimacy` field for the given-relationship studies),
 # loaded by load_lm_scenario_desire / load_lm_relationship_values below — both
 # carrying the same leading run axis as the padded tables.
@@ -255,12 +247,10 @@ def load_lm_scenario_desire(slug, runs_filename="lm_runs.jsonl"):
     each `lm_runs.jsonl` record's `desire` field), so it carries a leading run
     axis aligned with the padded feature tables.
 
-    Source: the per-record `desire` field of `outputs/lm/<slug>/lm_runs.jsonl`;
-    falls back to the legacy single-run `lm_scenario_desire.csv` (as K=1) so fits
-    run before the JSON regeneration.
+    Source: the per-record `desire` field of `outputs/lm/<slug>/lm_runs.jsonl`.
 
     Returns a jnp.array of shape (K, 16, 2) indexed by
-    (run, scenario, desire_condition), or None if neither source is present.
+    (run, scenario, desire_condition), or None if the file is missing.
     The scenario axis follows the study's own label order
     (STUDY_SCENARIO_LABELS[slug]).
     """
@@ -272,48 +262,30 @@ def load_lm_scenario_desire(slug, runs_filename="lm_runs.jsonl"):
     n_scenarios = len(scenario_to_idx)
 
     runs_path = _runs_jsonl_path(slug).with_name(runs_filename)
-    if runs_path.exists():
-        records_by_run = _read_runs_jsonl(runs_path)
-        run_ids = sorted(records_by_run)
-        # NaN-init so a missing or failed (null) rating is caught below instead
-        # of silently becoming desire = 0 (which would zero the reward term for
-        # that run × scenario × condition).
-        d = np.full((len(run_ids), n_scenarios, 2), np.nan, dtype=np.float32)
-        for k, rid in enumerate(run_ids):
-            for rec in records_by_run[rid]:
-                if rec.get("desire") is None:
-                    continue
-                s = scenario_to_idx[rec["scenario_label"]]
-                r = desire_to_idx[rec["desire_condition"]]
-                _assert_no_conflicting_write(
-                    slug,
-                    "desire",
-                    d[k, s, r],
-                    float(rec["desire"]),
-                    (rec["scenario_label"], rec["desire_condition"], f"run {rid}"),
-                )
-                d[k, s, r] = float(rec["desire"])
-        _assert_no_missing_scalars(slug, "desire", d)
-        return jnp.array(d)
-
-    # Legacy CSV fallback (K=1, pre-regeneration).
-    filepath = (
-        Path(__file__).resolve().parent
-        / "outputs"
-        / "lm"
-        / slug
-        / "lm_scenario_desire.csv"
-    )
-    if not Path(filepath).exists():
+    if not runs_path.exists():
         return None
-    df = pd.read_csv(filepath)
-    d = np.full((n_scenarios, 2), np.nan, dtype=np.float32)
-    for _, row in df.iterrows():
-        s = scenario_to_idx[row["scenario_label"]]
-        r = desire_to_idx[row["desire_condition"]]
-        d[s, r] = row["desire"]
+    records_by_run = _read_runs_jsonl(runs_path)
+    run_ids = sorted(records_by_run)
+    # NaN-init so a missing or failed (null) rating is caught below instead
+    # of silently becoming desire = 0 (which would zero the reward term for
+    # that run × scenario × condition).
+    d = np.full((len(run_ids), n_scenarios, 2), np.nan, dtype=np.float32)
+    for k, rid in enumerate(run_ids):
+        for rec in records_by_run[rid]:
+            if rec.get("desire") is None:
+                continue
+            s = scenario_to_idx[rec["scenario_label"]]
+            r = desire_to_idx[rec["desire_condition"]]
+            _assert_no_conflicting_write(
+                slug,
+                "desire",
+                d[k, s, r],
+                float(rec["desire"]),
+                (rec["scenario_label"], rec["desire_condition"], f"run {rid}"),
+            )
+            d[k, s, r] = float(rec["desire"])
     _assert_no_missing_scalars(slug, "desire", d)
-    return jnp.array(d)[None, :, :]
+    return jnp.array(d)
 
 
 def load_lm_relationship_values(slug, runs_filename="lm_runs.jsonl"):
@@ -327,34 +299,33 @@ def load_lm_relationship_values(slug, runs_filename="lm_runs.jsonl"):
     a leading run axis aligned with the padded feature tables.
 
     Source: the per-record `intimacy` field of `outputs/lm/<slug>/lm_runs.jsonl`,
-    placed by INTIMACY_CONDITION_TO_IDX. Falls back to the placeholder
-    `RELATIONSHIP_LEVEL_VALUES` (as K=1) so 1a/1b run before the elicitation exists.
+    placed by INTIMACY_CONDITION_TO_IDX.
 
-    Returns a jnp.array of shape (K, 4).
+    Returns a jnp.array of shape (K, 4), or None if the file is missing.
     """
     runs_path = _runs_jsonl_path(slug).with_name(runs_filename)
-    if runs_path.exists():
-        records_by_run = _read_runs_jsonl(runs_path)
-        run_ids = sorted(records_by_run)
-        # NaN-init so a missing or failed (null) rating is caught below instead
-        # of silently becoming intimacy = 0 (max formal).
-        out = np.full((len(run_ids), 4), np.nan, dtype=np.float32)
-        for k, rid in enumerate(run_ids):
-            for rec in records_by_run[rid]:
-                if rec.get("intimacy") is None:
-                    continue
-                i = INTIMACY_CONDITION_TO_IDX[rec["intimacy_condition"]]
-                _assert_no_conflicting_write(
-                    slug,
-                    "intimacy",
-                    out[k, i],
-                    float(rec["intimacy"]),
-                    (rec["intimacy_condition"], f"run {rid}"),
-                )
-                out[k, i] = float(rec["intimacy"])
-        _assert_no_missing_scalars(slug, "intimacy", out)
-        return jnp.array(out)
-    return RELATIONSHIP_LEVEL_VALUES[None, :]
+    if not runs_path.exists():
+        return None
+    records_by_run = _read_runs_jsonl(runs_path)
+    run_ids = sorted(records_by_run)
+    # NaN-init so a missing or failed (null) rating is caught below instead
+    # of silently becoming intimacy = 0 (max formal).
+    out = np.full((len(run_ids), 4), np.nan, dtype=np.float32)
+    for k, rid in enumerate(run_ids):
+        for rec in records_by_run[rid]:
+            if rec.get("intimacy") is None:
+                continue
+            i = INTIMACY_CONDITION_TO_IDX[rec["intimacy_condition"]]
+            _assert_no_conflicting_write(
+                slug,
+                "intimacy",
+                out[k, i],
+                float(rec["intimacy"]),
+                (rec["intimacy_condition"], f"run {rid}"),
+            )
+            out[k, i] = float(rec["intimacy"])
+    _assert_no_missing_scalars(slug, "intimacy", out)
+    return jnp.array(out)
 
 
 # ==============================================================================
@@ -366,6 +337,20 @@ def load_lm_relationship_values(slug, runs_filename="lm_runs.jsonl"):
 # trial. The actor inside the observer's `thinks[...]` block reasons over the
 # continuous desire latent (DesireLevels); g (goal-satisfaction) is desire-free,
 # so it carries no desire axis.
+
+
+# The prior a null-padded slot gets: small enough to carry no probability
+# mass at fitted scales, nonzero so the softmax stays differentiable.
+NULL_EPSILON = 1e-8
+
+
+def _uniform_prior_over_valid(valid_mask):
+    """The padded action prior: uniform over each cell's valid slots,
+    NULL_EPSILON on the null padding."""
+    n_valid = valid_mask.sum(axis=-1, keepdims=True)
+    return np.where(valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
+        np.float32
+    )
 
 
 def load_padded_lm_tables_desire(
@@ -393,15 +378,13 @@ def load_padded_lm_tables_desire(
     alternative's risk/effort/g and text read from
     `outputs/lm/food_inv_desire/lm_runs.jsonl` (keyed by alt_idx; the stage-1
     texts also live in `lm_alternatives.jsonl`, which is not read here).
-    (The legacy `lm_scenario.csv` / `lm_alternatives.csv` are read only as a
-    K=1 fallback.)
     Remaining slots are null-padded (risk/effort/g = 0; prior = NULL_EPSILON to
     keep the softmax differentiable).
 
     The returned arrays carry a leading run axis K (one elicitation run per
-    component of the elicitation-sample mixture); K=1 on the legacy single-run
-    CSVs. Returns a dict {risk, effort, g, prior, n_runs} of jnp.arrays, or None
-    if the tables are missing or not yet scored.
+    component of the elicitation-sample mixture). Returns a dict
+    {risk, effort, g, prior, n_runs} of jnp.arrays, or None if the tables are
+    missing.
 
     `runs_filename` / `broadcast_relationship` support the base-model alternative
     set: the `base` ablation has no intimacy term, so its alternatives are elicited
@@ -491,11 +474,7 @@ def load_padded_lm_tables_desire(
     for arr in (risk, effort, g):
         arr[~valid_mask] = 0.0
 
-    NULL_EPSILON = 1e-8
-    n_valid = valid_mask.sum(axis=-1, keepdims=True)
-    prior_table = np.where(
-        valid_mask, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON
-    ).astype(np.float32)
+    prior_table = _uniform_prior_over_valid(valid_mask)
 
     _warn_truncation(runs)
 
@@ -514,85 +493,29 @@ def load_padded_lm_tables_desire(
 # Each mirrors load_padded_lm_tables_desire but with the cell grid and
 # feature axes appropriate to which variables the observer infers (see the
 # utility.py / observers.py sections for the shape rationale). All return None
-# when any required CSV is missing, so imports stay clean before LM elicitation
-# has been run for that study.
-#
-# Expected schema for the legacy fallback CSVs (the K=1 back-compat path; the
-# current primary output of score_merged.py --study <slug>, written into that
-# study's folder outputs/lm/<slug>/, is lm_runs.jsonl):
-#   - observed: lm_scenario.csv
-#       (scenario_label, effort_condition, action, risk, effort, g)
-#   - alternatives: lm_alternatives.csv keyed by the study's generation cell +
-#       effort_condition + alt_idx, with columns action_text, risk,
-#       effort, g (effort is a feature axis — for effort-inferred studies each
-#       alt has a row per effort_condition; risk/g repeat across them)
-
-
-def _observed_lookups(observed_path):
-    """Observed-action (slot-0) lookups from lm_scenario.csv: (risk, effort) per
-    (scenario, effort_condition, action) and goal-satisfaction g per
-    (scenario, action). risk/effort/g all live in one row; g is desire-free
-    (repeated across the effort_condition rows, so we read it once per
-    (scenario, action))."""
-    df = pd.read_csv(observed_path)
-    ae = {}
-    g = {}
-    for _, row in df.iterrows():
-        e_idx = EFFORT_CONDITION_TO_IDX[row["effort_condition"]]
-        a_idx = ACTION_LABEL_TO_IDX[row["action"]]
-        ae[(row["scenario_label"], e_idx, a_idx)] = (
-            float(row["risk"]),
-            float(row["effort"]),
-        )
-        g[(row["scenario_label"], a_idx)] = float(row["g"])
-    return ae, g
-
-
-def _alts_ready(alts_df):
-    """An alternatives table is ready to load only once score_merged has filled
-    the feature columns (risk/effort/g). Until then it's the stage-1 action list
-    (texts only) and the loader returns None."""
-    return (
-        {"risk", "effort", "g"}.issubset(alts_df.columns)
-        and not alts_df["risk"].isna().all()
-        and not alts_df["g"].isna().all()
-    )
+# when the study's lm_runs.jsonl is missing, so imports stay clean before LM
+# elicitation has been run for that study.
 
 
 def _run_sources(outputs_dir, cell_cols, runs_filename="lm_runs.jsonl"):
-    """Return a list (over elicitation runs) of `(obs_ae, obs_g, alts_df)`,
-    or None if no scored LM tables exist yet.
+    """Return a list (over elicitation runs) of `(obs_ae, obs_g, alts_df)` read
+    from `lm_runs.jsonl` — one record per (run_id, cell), each carrying its
+    run's scored actions (slot 0 = observed action, slots 1+ = alternatives) —
+    or None if the file does not exist yet.
 
     This is the single seam between the K-run JSON pipeline and the per-study
     padded-table loaders below: each loader just iterates the returned list and
-    fills its arrays per run, reusing its existing observed/alternatives fill
-    logic unchanged (each run's `(obs_ae, obs_g, alts_df)` looks exactly like
-    the legacy single-run inputs).
-
-    Source precedence:
-      - `lm_runs.jsonl` (K runs) if present — one record per (run_id, cell), each
-        carrying its run's scored actions (slot 0 = observed action,
-        slots 1+ = alternatives).
-      - else the legacy `lm_scenario.csv` + `lm_alternatives.csv` as a single run
-        (K=1), the back-compat path so fits run before the JSON regeneration.
+    fills its arrays per run.
 
     `cell_cols` are the condition columns this study's alternatives fill reads
     (e.g. ["effort_condition", "intimacy_condition"] for 1a); the JSONL records
-    must carry them so the reconstructed `alts_df` matches the legacy schema.
+    must carry them so the reconstructed `alts_df` has the columns the fill
+    expects.
     """
     jsonl = outputs_dir / runs_filename
-    if jsonl.exists():
-        return _run_sources_jsonl(jsonl, cell_cols)
-
-    observed_path = outputs_dir / "lm_scenario.csv"
-    alternatives_path = outputs_dir / "lm_alternatives.csv"
-    if not observed_path.exists() or not alternatives_path.exists():
+    if not jsonl.exists():
         return None
-    alts_df = pd.read_csv(alternatives_path)
-    if not _alts_ready(alts_df):
-        return None
-    obs_ae, obs_g = _observed_lookups(observed_path)
-    return [(obs_ae, obs_g, alts_df)]
+    return _run_sources_jsonl(jsonl, cell_cols)
 
 
 def _nan_if_none(v):
@@ -870,11 +793,7 @@ def load_padded_lm_tables_joint_de(
     g[~valid] = 0.0
     effort[~valid_e] = 0.0
 
-    NULL_EPSILON = 1e-8
-    n_valid = valid.sum(axis=-1, keepdims=True)
-    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
-        np.float32
-    )
+    prior = _uniform_prior_over_valid(valid)
     _warn_truncation(runs)
     return {
         "risk": jnp.array(risk),
@@ -961,11 +880,7 @@ def load_padded_lm_tables_intimacy(runs_filename="lm_runs.jsonl"):
     for arr in (risk, effort, g):
         arr[~valid] = 0.0
 
-    NULL_EPSILON = 1e-8
-    n_valid = valid.sum(axis=-1, keepdims=True)
-    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
-        np.float32
-    )
+    prior = _uniform_prior_over_valid(valid)
     _warn_truncation(runs)
     return {
         "risk": jnp.array(risk),
@@ -1061,11 +976,7 @@ def load_padded_lm_tables_joint_ie(
     g[~valid] = 0.0
     effort[~valid_e] = 0.0
 
-    NULL_EPSILON = 1e-8
-    n_valid = valid.sum(axis=-1, keepdims=True)
-    prior = np.where(valid, 1.0 / np.maximum(n_valid, 1), NULL_EPSILON).astype(
-        np.float32
-    )
+    prior = _uniform_prior_over_valid(valid)
     _warn_truncation(runs)
     return {
         "risk": jnp.array(risk),

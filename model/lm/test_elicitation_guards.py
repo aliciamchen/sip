@@ -26,7 +26,6 @@ Run: uv run python model/lm/test_elicitation_guards.py
 
 import json
 import os
-import subprocess
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -294,39 +293,31 @@ def test_alternatives_prompt_keeps_the_methodological_framing():
 
 
 def test_prompt_appendix_documents_generation_without_repeating_it():
-    """The appendix reproduces the generation user prompt ONCE, as an example,
-    and tabulates what differs per experiment.
+    """The appendix reproduces the generation user prompt ONCE, as a worked
+    example (Study 1a's branch: a revealed relationship and effort paragraph,
+    desire flagged unknown), rather than one box per experiment.
 
-    Six near-identical boxes (one per live branch) were repetitive without adding
-    information. What must survive the collapse is the information itself: every
-    live clause has to appear in the rendered example, and every experiment has
-    to be accounted for in the table -- otherwise a reader cannot tell what any
-    given study's observer actually saw.
+    Six near-identical boxes (one per live branch) were repetitive without
+    adding information -- which paragraphs each experiment reveals is the
+    experiment design, already stated in the main text. What must survive the
+    collapse is the information itself: every live clause of the example has
+    to appear in the rendered output.
     """
     import export_prompts_latex as exporter
 
     rendered = exporter.build_content()
     assert "User prompt (Example)" in rendered
     # Exactly one generation user-prompt box, not one per study.
-    assert rendered.count("--- counterfactual action generation") == 2, (
+    assert rendered.count("--- alternative action generation") == 2, (
         "expected one system-prompt box and one example user-prompt box"
     )
-    # Which paragraphs each experiment reveals is the experiment design, stated
-    # in the main text, so the appendix must POINT at it rather than restate it.
-    assert "follows each experiment's design" in rendered
-    assert "1b, 3a &" not in rendered, "the per-experiment table should be gone"
-    assert "base-model" in rendered, "the base variant must still be described"
     # Every live clause still visible in the example.
     for live_clause in (
+        "in a relationship they would describe as",
         "do not know how much the two people would like",
-        "One of the following is true of the situation",
-        "not whether it is available",
         "comparison set you would use to interpret their choice",
     ):
         assert live_clause in rendered, live_clause
-    # The intimacy-inferred branch has no revealed relationship, so its clause
-    # is named in the table rather than shown; make sure it is not simply lost.
-    assert "relationship" in rendered
 
 
 # --------------------------------------------- prompt-stage provenance

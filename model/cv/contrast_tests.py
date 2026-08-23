@@ -174,7 +174,6 @@ def _decompose(wide, rel_noise, n_scen, resid_of_row):
     is near zero and the consistent part clips first; measured on synthetic data
     with a near-null effect that happened on 12 of 200 seeds, once at 291%.
     """
-    n_lev = wide.shape[1]
     rel = wide - wide.mean(axis=1, keepdims=True)
     cons = np.zeros_like(rel)
     for r in np.unique(resid_of_row):
@@ -210,7 +209,9 @@ def _coherent_joint(ms_joint, *parts):
     return float(np.clip(ms_joint, lo, hi))
 
 
-def _own_component(cells, cell_mean, counts, sig2_w, keys, factors, return_layout=False):
+def _own_component(
+    cells, cell_mean, counts, sig2_w, keys, factors, return_layout=False
+):
     """The variance component of one factor, or of several taken together: the
     mean square of each cell mean's deviation from the average over those
     factors' levels, everything else held fixed, less the sampling variance that
