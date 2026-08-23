@@ -2,16 +2,13 @@
 
 One place for what all the figure scripts in figures/scripts/ (the main results
 figures, the schematic panels, and the SI LM-elicitation figures) must agree
-on: the Arial Nova font (matching the R analysis figures), the despined white
-look, and the palettes. apply_style()
-takes a context — "si" for print-sized supplement figures, "schematic" for the
-large-type vector panels assembled in Illustrator.
+on: the Arial Nova font, the despined white look, and the palettes.
+apply_style() takes a context — "si" for print-sized supplement figures,
+"schematic" for the large-type vector panels assembled in Illustrator.
 
 The three observed actions use the schematic's seaborn colorblind palette
 (desaturated), assigned no share = blue, low-risk share = green, high-risk
-share = amber. The effort / desire / intimacy palettes match analysis/utils.R.
-(The R elicitation notebooks still color actions with an older green/gold/red
-scheme; update those scales if the R figures should match.)
+share = amber.
 """
 
 import sys
@@ -249,8 +246,7 @@ ACTION_LABELS = {
 # aggregate correlation scatter).
 DV_MARKERS = {"desire": "o", "intimacy": "s", "effort": "^"}
 
-# Condition palettes — hex values match analysis/utils.R so Python and R
-# figures share one visual language.
+# Condition palettes, shared by every figure.
 EFFORT_COLORS = {"low": "#B5C9A8", "high": "#4A7A4A"}
 DESIRE_COLORS = {"low": "#C9A8B0", "high": "#7A4A5A"}
 
@@ -266,7 +262,7 @@ INTIMACY_LABELS = {
     "somewhat_intimate": "Somewhat intimate",
     "max_intimate": "Maximally intimate",
 }
-# viridisLite::viridis(4, begin = 0.1, end = 0.85, option = "cividis") in utils.R
+# = viridisLite::viridis(4, begin = 0.1, end = 0.85, option = "cividis")
 INTIMACY_COLORS = {
     lvl: to_hex(plt.get_cmap("cividis")(x))
     for lvl, x in zip(INTIMACY_LEVELS, np.linspace(0.1, 0.85, 4))

@@ -6,14 +6,11 @@ This repository holds the experiments, data, model code, and figure pipeline beh
 
 ```bash
 uv sync                 # Python deps (uv-managed .venv)
-# R deps: open R from the project root, then run renv::restore()
-make all                # full pipeline: fit → CV → model comparison → render qmds
+make all                # full pipeline: fit → CV → model comparison → figures
 make help               # list all targets
 ```
 
-Rendering the analysis documents also needs Quarto. See [Dependencies](#dependencies) below for the full install details (uv, the pip alternative, the required R version, and Quarto).
-
-Everything `make all` needs is checked into the repo: the processed experiment CSVs (`data/`) and the LM-elicited scenario tables (`model/outputs/lm/`), so the fits, cross-validation, and analyses reproduce from a fresh clone without raw participant JSON or a Together AI key. Rendered analysis documents land in `_output/analysis/`; figures land in `figures/panels/` and `figures/si/`.
+Everything `make all` needs is checked into the repo: the processed experiment CSVs (`data/`) and the LM-elicited scenario tables (`model/outputs/lm/`), so the fits, cross-validation, and figures reproduce from a fresh clone without raw participant JSON or a Together AI key (see [Dependencies](#dependencies) for the uv install and the pip alternative). Figures land in `figures/panels/` and `figures/si/`.
 
 ## Pipeline at a glance
 
@@ -24,7 +21,7 @@ LM elicitation (model/lm/) → scenario tables (model/outputs/lm/<slug>/)
                                                               ↓
                      fit (model/inverse/) → leave-one-scenario-out CV (model/cv/)
                                                               ↓
-                     model comparison (model/cv/model_comparison.py) + analysis (analysis/)
+                model comparison (model/cv/model_comparison.py) → figures (figures/scripts/)
 ```
 
 The `Makefile` exposes per-stage and per-experiment targets (`make fit-<slug>`, `make cv-<slug>`, etc.); `make help` lists them. The underlying script invocations are in [Reproducing the results](#reproducing-the-results) below.
@@ -32,7 +29,7 @@ The `Makefile` exposes per-stage and per-experiment targets (`make fit-<slug>`, 
 ## Repository structure
 
 ```
-analysis/          Data processing plus R/Quarto demographics and data-check documents
+analysis/          Raw-data conversion (jsPsych JSON → anonymized CSVs)
 bin/               Helper scripts: the experiment deploy script and the preregistered-model runner
 data/              Processed experiment data (one folder per experiment slug)
 experiments/       jsPsych experiment code + scenario definitions
@@ -97,7 +94,7 @@ Three exploratory analyses reported in the supplement live in `model/cv/`: `tran
 
 ## Dependencies
 
-### Python (uv)
+Everything runs on Python, managed with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh   # install uv if needed
@@ -105,14 +102,6 @@ uv sync                                            # install deps + create .venv
 ```
 
 To use pip instead: `python3 -m venv .venv && source .venv/bin/activate && pip install .`. Run scripts with plain `python` rather than `uv run python` in that case.
-
-### R (renv)
-
-R version 4.5.2 is required (specified in the lockfile). Open R from the project root — `.Rprofile` will bootstrap renv automatically, then run `renv::restore()` to install all packages. If the auto-bootstrap fails: `install.packages("renv"); renv::activate(); renv::restore()`.
-
-### Quarto
-
-[Quarto](https://quarto.org/docs/get-started/) is needed to render the analysis documents.
 
 ## Reproducing the results
 
@@ -137,9 +126,6 @@ uv run python model/cv/model_comparison.py
 # Render the main results figures (each script skips studies whose data or
 # CV predictions don't exist yet, so this runs at any pipeline stage):
 make figures-panels
-
-# Render an analysis document (demographics + data checks):
-quarto render analysis/food-inv-desire-analysis.qmd
 
 # Run the full test suite (model compliance, fit/CV protocol, the statistics
 # modules, data conversion, elicitation guards, experiment-list consistency):

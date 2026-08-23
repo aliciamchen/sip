@@ -328,10 +328,9 @@ _GENDER_SUFFIX = {
 def _demographics(slug):
     """Recruitment, exclusions and demographics for one study.
 
-    Computed the same way as `analysis/utils.R::report_demographics` -- recruited
-    is every exit-survey row, retained is the distinct participants surviving
-    into `main_trials_long.csv` -- so the paper and the analysis qmds cannot
-    report different numbers for the same study.
+    Recruited is every exit-survey row; retained is the distinct participants
+    surviving into `main_trials_long.csv`, i.e. the exclusion rule applied by
+    `analysis/json_to_csv.py`.
     """
     import pandas as pd
 

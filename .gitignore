@@ -21,6 +21,13 @@ design_exploration
 SIP_journal
 notes/
 
+# Local R environment (nothing in the pipeline uses R; kept only for local
+# exploration).
+.Rprofile
+renv.lock
+renv/
+_quarto.yml
+
 # Archived data from earlier, superseded experiments (forward-planning, the
 # pre-3-action inverse studies, pilots, and side projects). None of it is read
 # by the active pipeline, so the whole archive is kept local-only.

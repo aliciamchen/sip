@@ -93,4 +93,4 @@ The exclusion rule is per-study (each study's `exclusion_rule` in `analysis/json
 
 (There is no comprehension-check exclusion: participants who fail the comprehension check after three attempts are ended before any data is saved, so they never appear in `raw_data/`.)
 
-`main_trials_long.csv` reflects exclusions; `main_trials.csv` does not. `analysis/utils.R`'s `report_demographics()` reports both the total recruited and the count surviving exclusions.
+`main_trials_long.csv` reflects exclusions; `main_trials.csv` does not. The total recruited is the number of rows in `exit_survey.csv`, and the retained count is the number of distinct `subject_id` values in `main_trials_long.csv` (this is also how `model/export_results_latex.py` computes the demographics the manuscript reports).

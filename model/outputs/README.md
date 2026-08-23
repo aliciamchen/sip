@@ -187,7 +187,7 @@ best-of-restarts and that restarts converge.
 
 ## Cross-validation outputs
 
-All model-vs-human numbers reported in the analysis qmds are **out-of-sample**, from
+All reported model-vs-human numbers are **out-of-sample**, from
 leave-one-scenario-out (LOSO) CV: for each held-out scenario the weights, `alpha_observer`, and
 `sigma` are refit on the other 15 scenarios (a warm start from the full-data fit plus a cold
 restart, keeping the better optimum). CV is the only place predictions are generated — there is
@@ -204,9 +204,9 @@ held-out LL can be bootstrapped over participants.
 ### `cv_preds_summary.json`
 
 A list with one object per held-out cell, giving the held-out `delta_<latent>` (and
-`delta_effort` for the joint studies) tagged with `model`. This is the source the analysis qmds
-load for the condition-averaged model-vs-human correlation (secondary/descriptive), and the
-model's per-cell predictions generally. The desire study (`food_inv_desire`) additionally stores
+`delta_effort` for the joint studies) tagged with `model`. This is the source the figure
+scripts and `model_comparison.py` load for the condition-averaged model-vs-human correlation
+(secondary/descriptive), and the model's per-cell predictions generally. The desire study (`food_inv_desire`) additionally stores
 `delta_desire_runs` — the K per-run held-out `δ_k` for each cell — which the SI variability
 figure (`figures/scripts/figure_si_consolidated.py`) reads to show the elicitation-sample
 mixture spread against the fitted `σ`, all out-of-sample. For the other studies, whose committed

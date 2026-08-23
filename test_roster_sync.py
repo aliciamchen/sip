@@ -7,8 +7,8 @@ generator, experiments/_lib/config.js, and the per-study directories), each
 with a "keep in sync" comment. This test makes that sync a checked invariant
 instead of a discipline problem: a study added, removed, or migrated in one
 registry but not another (e.g. moving the Study 3 slugs into
-EXPERIMENTS_INVERSE without adding their analysis qmds) fails `make test` and
-CI rather than being silently skipped by one pipeline stage.
+EXPERIMENTS_INVERSE without adding them to bin/deploy-experiment) fails
+`make test` and CI rather than being silently skipped by one pipeline stage.
 
 Run standalone:  uv run python test_roster_sync.py
 """
@@ -70,12 +70,6 @@ def parse_js_object_keys(text, name):
     return re.findall(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:", m.group(1), re.MULTILINE)
 
 
-def slug_to_qmd_stem(slug):
-    """A study slug's analysis notebook stem (food_inv_desire ->
-    food-inv-desire-analysis)."""
-    return slug.replace("_", "-") + "-analysis"
-
-
 def run_all_checks():
     print("=" * 60)
     print("Experiment roster consistency checks")
@@ -85,7 +79,6 @@ def run_all_checks():
     inverse = parse_make_list(makefile, "EXPERIMENTS_INVERSE")
     nonfood = parse_make_list(makefile, "EXPERIMENTS_NONFOOD")
     base = parse_make_list(makefile, "EXPERIMENTS_BASE")
-    qmd_stems = parse_make_list(makefile, "ANALYSIS_QMDS")
     roster = set(inverse) | set(nonfood)
 
     failures = []
@@ -158,26 +151,6 @@ def run_all_checks():
         "PROLIFIC_COMPLETION_CODES only names roster slugs",
         f"unknown slugs: {sorted(completion - roster)}",
     )
-
-    # Every data-collected study (EXPERIMENTS_INVERSE) must have its analysis
-    # qmd listed AND present — this is the check that catches the Study 3
-    # migration forgetting ANALYSIS_QMDS.
-    for slug in inverse:
-        stem = slug_to_qmd_stem(slug)
-        check(
-            stem in qmd_stems,
-            f"ANALYSIS_QMDS lists {stem} (for {slug})",
-            "add it when the study's data lands",
-        )
-    for stem in qmd_stems:
-        qmd = ROOT / "analysis" / f"{stem}.qmd"
-        check(qmd.exists(), f"analysis/{stem}.qmd exists", "listed but missing")
-        expected_slug = stem.removesuffix("-analysis").replace("-", "_")
-        check(
-            expected_slug in inverse,
-            f"{stem} maps back to an EXPERIMENTS_INVERSE slug",
-            f"{expected_slug} is not in EXPERIMENTS_INVERSE",
-        )
 
     if failures:
         print("=" * 60)

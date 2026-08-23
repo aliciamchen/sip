@@ -14,8 +14,7 @@ exactly the quantities the paper reports rather than re-deriving them:
   from cv_model_comparison.json (written by `make model-comparison`) so every
   number printed on a figure equals the paper's.
 - Cell-mean CIs use the project-standard subject-cluster bootstrap (resample
-  participants, recompute cell means; 95% percentile interval), the Python
-  port of analysis/utils.R::boot_cluster_means.
+  participants, recompute cell means; 95% percentile interval).
 
 Studies whose inputs are missing return None so each figure script can skip
 panels gracefully; CV outputs whose subject count no longer matches the data
@@ -268,7 +267,7 @@ def bootstrap_cell_means(
 
     Returns one row per observed cell with columns `<col>`, `<col>_ci_lower`,
     `<col>_ci_upper`. Cells that lose all trials in a resample are dropped
-    pairwise from that resample (matching utils.R::boot_cluster_means).
+    pairwise from that resample.
 
     With `return_boots`, also returns {col: (n_boot, n_cells) resampled means}.
     Every `value_cols` entry is resampled under the SAME subject draws, so a

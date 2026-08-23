@@ -9,7 +9,7 @@ Each experiment folder is named after its slug and contains:
 
 - `raw_data/` — JSON files from jsPsych (gitignored).
 - `main_trials.csv` — wide-format processed trials (all participants).
-- `main_trials_long.csv` — long format with excluded participants removed; this is what the analysis qmds load.
+- `main_trials_long.csv` — long format with excluded participants removed; this is what the model and figure code load.
 - `exit_survey.csv` — demographics and attention/memory checks.
 
 The active roster is six inverse experiments under `data/<slug>/` — `food_inv_desire` (1a), `food_inv_joint_de` (1b), `food_inv_intimacy` (2a), `food_inv_joint_ie` (2b), `nonfood_inv_joint_de` (3a), `nonfood_inv_joint_ie` (3b). All six now have full samples (retained after exclusions: 1a ~480; 1b, 2a, 3a, 3b ~240 each; 2b ~120); all are in the Makefile's `EXPERIMENTS_INVERSE` as of the 2026-07-21 roster move.

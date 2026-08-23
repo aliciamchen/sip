@@ -1,10 +1,10 @@
 # Makefile for saliva-inverse-planning
 #
-# Pipeline: data → LM elicitation → fit → CV → analysis (qmds)
+# Pipeline: data → LM elicitation → fit → CV → model comparison → figures
 # (CV is the sole source of model predictions — all reported model-vs-human
 #  numbers are out-of-sample; there is no separate in-sample predict stage.)
 #
-# Processed CSVs are checked into the repo, so the model + analysis stages
+# Processed CSVs are checked into the repo, so the model and figure stages
 # work without re-running data processing or LM elicitation.
 #
 # fit / CV / model-comparison are a real file-target dependency graph (not just
@@ -20,11 +20,9 @@
 #   nonfood_inv_joint_de  (Study 3a — 1b's design on the nonfood scenarios)
 #   nonfood_inv_joint_ie  (Study 3b — 2b's design on the nonfood scenarios)
 #
-# All six are now data-complete, so EXPERIMENTS_INVERSE holds the whole roster
+# All six are data-complete, so EXPERIMENTS_INVERSE holds the whole roster
 # and drives the data-dependent aggregate stages (data / fit / cv /
-# model-comparison / analysis / lm-alternatives). The Study 3 slugs were folded
-# in on 2026-07-21, once the nonfood data, LM tables, fits/CV, and analysis qmds
-# all existed. EXPERIMENTS_NONFOOD is kept (empty) so the roster-sync test's
+# model-comparison / lm-alternatives). EXPERIMENTS_NONFOOD is kept (empty) so the roster-sync test's
 # disjoint-lists invariant still has both variables to read, and as the holding
 # list for any future not-yet-data-complete study family; per-study targets
 # (lm-/fit-/cv-/data-<slug>) cover the roster either way.
@@ -39,19 +37,11 @@ EXPERIMENTS_ALL := $(EXPERIMENTS_INVERSE) $(EXPERIMENTS_NONFOOD)
 # intimacy, so they never show a relationship paragraph).
 EXPERIMENTS_BASE := food_inv_desire food_inv_joint_de nonfood_inv_joint_de
 
-ANALYSIS_QMDS := \
-  food-inv-desire-analysis \
-  food-inv-joint-de-analysis \
-  food-inv-intimacy-analysis \
-  food-inv-joint-ie-analysis \
-  nonfood-inv-joint-de-analysis \
-  nonfood-inv-joint-ie-analysis
-
 .PHONY: all help test clean \
         data lm lm-alternatives lm-base lm-diag lm-base-diag \
         fit fit-inverse \
         cv cv-inverse model-comparison \
-        analysis figures-lm-si figures-panels figures-nonfood-domains \
+        figures-lm-si figures-panels figures-nonfood-domains \
         figures-si-scenarios \
         figures-si-prior-posterior figures-si-prereg-predictions \
         $(addprefix data-,$(EXPERIMENTS_ALL)) \
@@ -60,38 +50,32 @@ ANALYSIS_QMDS := \
         $(addprefix lm-diag-,$(EXPERIMENTS_ALL)) \
         $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE)) \
         $(addprefix fit-,$(EXPERIMENTS_ALL)) \
-        $(addprefix cv-,$(EXPERIMENTS_ALL)) \
-        $(addprefix analysis-,$(ANALYSIS_QMDS))
+        $(addprefix cv-,$(EXPERIMENTS_ALL))
 
 # The pipeline stages must run strictly in order even under `make -j`. CV
 # warm-starts each fold from the full-data fit, so a cv running concurrently with
-# fit silently produces different results (and model-comparison/analysis read the
-# CV outputs). fit → cv → model-comparison is now self-ordering through the file
-# graph (cv depends on each study's fit_results.json, model-comparison on every
-# study's CV output), but `analysis` is a phony quarto-render step with no
-# file-time edge to the CV outputs, so a bare `all: … analysis` would let -j start
-# rendering before CV finished. Keeping `all` as sequential sub-makes guarantees
-# the ordering; each sub-make is now incremental (a no-op when its stage's outputs
-# are already current) and still parallelizes internally.
+# fit silently produces different results, and the figure prerequisites are
+# wildcard-resolved at parse time, so they cannot order themselves behind a CV
+# that runs in the same make invocation. Keeping `all` as sequential sub-makes
+# guarantees the ordering; each sub-make is incremental (a no-op when its
+# stage's outputs are already current) and still parallelizes internally.
 all:
 	$(MAKE) fit
 	$(MAKE) cv
 	$(MAKE) model-comparison
 	$(MAKE) figures-panels
-	$(MAKE) analysis
 
 help:
 	@echo "Saliva inverse planning pipeline"
 	@echo ""
 	@echo "Aggregates (active experiments only; incremental -- rebuild only what is stale):"
-	@echo "  all        - fit -> cv -> model-comparison -> figures-panels -> analysis, in order"
+	@echo "  all        - fit -> cv -> model-comparison -> figures-panels, in order"
 	@echo "  fit        - fit all active experiments"
 	@echo "  cv         - leave-one-scenario-out CV for all active experiments (the predictions)"
 	@echo "  model-comparison - held-out LL differences + correlations with bootstrap CIs"
 	@echo "  transfer         - cross-study parameter transfer over the designed pairs (exploratory)"
 	@echo "  pooled           - one shared utility per domain / across all six (exploratory)"
 	@echo "  generalization-primary - score the transfer/pooled runs on the reported metrics"
-	@echo "  analysis   - render all active quarto analysis qmds"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance + elicitation-guard + data-converter + experiment-list tests"
@@ -136,10 +120,6 @@ help:
 	@echo "    no comparison-set reweighting; writes model/outputs/<slug>/alt/<tag>/ instead of <slug>/)"
 	@echo "  lm-base-<slug>   (given-relationship studies only)"
 	@echo "  e.g. make fit-food_inv_desire"
-	@echo ""
-	@echo "Per-qmd:"
-	@echo "  analysis-<name>  (without .qmd suffix)"
-	@echo "  e.g. make analysis-food-inv-desire-analysis"
 	@echo ""
 	@echo "Inverse study slugs:  $(EXPERIMENTS_INVERSE)"
 
@@ -465,16 +445,6 @@ generalization-primary:
 .PHONY: results-latex
 results-latex: $(CMP_WITNESS)
 	uv run python model/export_results_latex.py
-
-
-# =============================================================================
-# Analysis: quarto render
-# =============================================================================
-
-analysis: $(addprefix analysis-,$(ANALYSIS_QMDS))
-
-$(addprefix analysis-,$(ANALYSIS_QMDS)): analysis-%:
-	quarto render analysis/$*.qmd
 
 # =============================================================================
 # SI LM-elicitation validation figures (no API calls — read the persisted

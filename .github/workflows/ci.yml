@@ -1,6 +1,4 @@
-# Minimal CI: the Python side only (uv sync + make test). The R/Quarto
-# analysis stage is not covered here because restoring the renv library is too
-# heavy for CI for now.
+# Minimal CI: uv sync + make test + the generated-experiment-asset check.
 name: ci
 
 on:
