@@ -49,8 +49,6 @@ import _data as data
 import _panels as panels
 
 # Shape per inferred latent comes from plot_style (the visual source of truth).
-# Note figure_model_scatter.py reads against this convention -- there the shape is
-# the sub-study and the color is the latent.
 # The effort entry names the quantity, not the construct: what 1b/2b/3a/3b
 # infer is the probability that the world is the harder of the two states,
 # which is the same variable 1a/2a put on the axis as Easy | Hard.
