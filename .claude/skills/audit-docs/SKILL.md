@@ -106,7 +106,7 @@ For each file:
 
 4. **Onboarding path.** Could a fresh reviewer reach a `make all` invocation from `README.md` within the first 50 lines? Front-loaded context that delays the practical instructions is a smell.
 
-5. **Style.** Sentence-case headings (only first word capitalized). Complete sentences over telegraphic shorthand. Native R pipe `|>` not `%>%`. Lowercase casual commit-message style. LaTeX em-dashes use ` -- ` not `---`. Flag style violations with line numbers.
+5. **Style.** Sentence-case headings (only first word capitalized). Complete sentences over telegraphic shorthand. Lowercase casual commit-message style. LaTeX em-dashes use ` -- ` not `---`. Flag style violations with line numbers.
 
 6. **Broken links.** Verify relative markdown links resolve — and split the
    target on `#` first: the file part must exist, and the anchor must match a
@@ -114,7 +114,9 @@ For each file:
    Testing the whole `file.md#anchor` string as a path reports every anchored
    link as broken, which is a false alarm, not a finding.
 
-7. **Factual accuracy.** Cross-check counts and states against the filesystem: the roster is six inverse-planning studies (there is no forward pipeline — it was removed, so a doc still describing one is stale, not merely out of date). Read `EXPERIMENTS_INVERSE` in the Makefile as the roster's source of truth.
+7. **History-dependent framing** (public docs only — READMEs). A fresh reader has no "before": flag wording that assumes project history, like "the *current* desire naming", "not standalone *anymore*", pointers to local archives or git history, and descriptions of removed mechanisms. Grep for telltales: `current|renamed|previously|no longer|anymore|legacy|earlier|git history|used to`. Rewrite as timeless statements or delete; self-contained history a reviewer needs (why an exclusion rule differs between studies) stays.
+
+8. **Factual accuracy.** Cross-check counts and states against the filesystem: the roster is six inverse-planning studies (there is no forward pipeline — it was removed, so a doc still describing one is stale, not merely out of date). Read `EXPERIMENTS_INVERSE` in the Makefile as the roster's source of truth.
 
 ## Output format
 

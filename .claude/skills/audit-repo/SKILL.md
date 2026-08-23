@@ -32,9 +32,11 @@ If this skill's own assumptions look stale against the repo (slugs, file names, 
 
 7. **Git state.** `git status`, large untracked files, branches diverged from origin/main, stale worktrees under `.claude/worktrees/`. Note anything weird without acting on it.
 
-8. **Gitignore correctness.** Anything tracked that shouldn't be (raw_data, large binaries, secrets, build artifacts) — or vice versa: files that docs claim are tracked but `git ls-files` doesn't know about. Check `git ls-files | grep -E '\.json$' | grep raw_data` returns zero, sample subject_id columns to confirm anonymization (UUIDs, not Prolific IDs), and `git check-ignore` anything suspicious. Be suspicious of broad patterns (a bare `*test*`-style glob has bitten this repo before).
+8. **Gitignore correctness.** Anything tracked that shouldn't be (raw_data, large binaries, secrets, build artifacts) — or vice versa: files that docs claim are tracked but `git ls-files` doesn't know about. Check `git ls-files | grep -E '\.json$' | grep raw_data` returns zero, sample subject_id columns to confirm anonymization (UUIDs, not Prolific IDs), and `git check-ignore` anything suspicious. Be suspicious of broad patterns (a bare `*test*`-style glob has bitten this repo before). Also check the reverse staleness: ignore entries whose generating code no longer exists (two dead si-figure entries once outlived their scripts' removal).
 
-9. **Anything else surprising.** Half-finished implementations, scattered TODOs, dead branches, files that look like debugging leftovers.
+9. **Dead exports.** Module-level constants and functions with no importer: `git grep -w <name>` each public name in the shared modules (`model/tables.py`, `plot_style.py`, the figure helpers). Ruff catches unused imports but not unused exports — one sweep found ~15.
+
+10. **Anything else surprising.** Half-finished implementations, scattered TODOs, dead branches, files that look like debugging leftovers.
 
 ## Output format
 

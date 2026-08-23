@@ -21,91 +21,40 @@ design_exploration
 SIP_journal
 notes/
 
-# Local R environment (nothing in the pipeline uses R; kept only for local
-# exploration).
+# Local R exploration files (nothing in the pipeline uses R).
 .Rprofile
 renv.lock
 renv/
 _quarto.yml
 
-# Archived data from earlier, superseded experiments (forward-planning, the
-# pre-3-action inverse studies, pilots, and side projects). None of it is read
-# by the active pipeline, so the whole archive is kept local-only.
+# Local-only archives and exploration: superseded-experiment data, the
+# non-fitted model-behavior visualizations, LM-baseline evals, figure sources.
 data/legacy/
-
-# Non-fitted model-behavior visualizations (parameter sweeps + belief-update
-# plots at hand-picked params). Exploratory and not part of the fit pipeline;
-# regenerate from the scripts in model/model_viz_nonfit/. Kept local.
 model/model_viz_nonfit/
-
-# Live-run CV fold checkpoint (lets an interrupted LOSO run resume; deleted
-# when the run's final outputs are written). Transient by design — the
-# committed CV artifacts are the cv_* outputs, never this side file. Both the
-# study root and the alt/<tag>/ configs write one.
-model/outputs/*/cv_checkpoint.jsonl
-model/outputs/*/alt/*/cv_checkpoint.jsonl
-
-# Cross-study parameter-transfer runs (model/cv/transfer.py). Sixteen
-# (pair x arm) CV output sets at ~2.8 MB each, for an exploratory analysis that
-# is in no preregistration — the same reasoning that keeps the other
-# exploratory alt/ configs out of the repo, and unlike the preregistered-model
-# (uniform-noreweight) outputs, which are committed because the paper quotes
-# numbers derived from them. Regenerate with `make transfer`; the summary the
-# result is read from, model/outputs/transfer/transfer_summary.json, is small
-# and IS committed. If the analysis becomes paper material, promote it the same
-# way the eta = 0 run was.
-model/outputs/*/alt/transfer-*/
-
-# Pooled cross-experiment CV runs (model/cv/pooled.py), same reasoning as the
-# transfer runs above: exploratory, in no preregistration, and ~1.7 MB per
-# group. Regenerate with `make pooled`; the summary the result is read from,
-# model/outputs/pooled/, is small and IS committed.
-model/outputs/*/alt/pooled-*/
-
-# Diagnostic-arm LM elicitations, written by `generate_alternatives.py
-# --arm-output-only` and `score_merged.py --arm`. These exist to evaluate a
-# prompt edit side-by-side against the committed tables without displacing
-# them, so they are throwaway by construction: a K=1 smoke, a candidate
-# vintage, an arm that may never be adopted. The tables the reported fits read
-# are the unsuffixed lm_alternatives/lm_runs files, which stay committed. If an
-# arm IS adopted, it is promoted by re-eliciting into the canonical filenames,
-# never by committing the diag vintage.
-# One glob rather than per-suffix rules: the sidecars have grown (.rationale,
-# .empty_units, .manifest) and a saved-aside vintage adds an infix, both of which
-# escaped the narrower patterns. No canonical filename contains "_diag".
-model/outputs/lm/*/*_diag*
-
-.positai
-.claude/worktrees/ 
-
-# Exploratory end-to-end LM-baseline evals (the full package lives on the
-# LM-evals branch) and manuscript figure sources. Both kept local-only.
 LM_evals/
 writing/
 
-# Session-derived Claude skills (mined from session history 2026-07-06); kept
-# local-only. The audit-docs / audit-repo / fix-latex-build skills stay tracked.
-.claude/skills/build-manuscript/
-.claude/skills/check-new-data/
-.claude/skills/edit-manuscript/
-.claude/skills/iterate-figures/
-.claude/skills/preview-experiments/
-.claude/skills/regen-experiments/
-.claude/skills/rename-concept/
-.claude/skills/rerun-lm-elicitation/
+# Transient CV fold checkpoint (resume file; deleted when the final outputs land).
+model/outputs/*/cv_checkpoint.jsonl
+model/outputs/*/alt/*/cv_checkpoint.jsonl
 
-# PNG previews of the generated figures. The committed artifacts are the PDFs
-# (Illustrator places PDFs, and a PNG beside each would double the repo's figure
-# weight for a preview that regenerates in seconds).
+# Exploratory transfer/pooled CV runs (`make transfer` / `make pooled`); only
+# their small summaries under model/outputs/{transfer,pooled}/ are committed.
+model/outputs/*/alt/transfer-*/
+model/outputs/*/alt/pooled-*/
+
+# Diagnostic-arm LM elicitations (--arm smokes); throwaway by construction —
+# the reported fits read only the unsuffixed committed tables, and no
+# canonical filename contains "_diag".
+model/outputs/lm/*/*_diag*
+
+.positai
+.claude/worktrees/
+
+# PNG previews beside the generated figure PDFs; regenerate in seconds.
 figures/**/*.png
 
-# Diagnostics that render into figures/si/ but are not paper figures: nothing in
-# the SI cites them and the journal sync does not copy them. Their scripts stay
-# committed — each is the only view of something the paper still depends on, or
-# still prints numbers the SI quotes — but their output is regenerated on demand
-# rather than tracked alongside the figures that are actually in the paper.
-figures/si/si_model_scatter_all.pdf
+# Generated but not cited by the paper (the levels figure is; this one isn't).
 figures/si/si_prior_posterior_distributions.pdf
-figures/si/si_prereg_deviation.pdf
 
 .agents/skills
