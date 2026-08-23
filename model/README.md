@@ -49,7 +49,8 @@ The output files are documented field-by-field in the [outputs codebook](outputs
 ## Tests
 
 ```bash
-uv run python model/test_model_compliance.py
+make test                                        # the full suite
+uv run python model/test_model_compliance.py     # just the model checks
 ```
 
-Covers the utility ablation algebra, observer posterior normalization (single and joint), the mixture likelihoods against a plain-numpy reference, a bound on the probability mass reaching null padding slots, and the table loaders' error checks on missing or failed ratings.
+The model checks cover the utility ablation algebra, observer posterior normalization (single and joint), the mixture likelihoods against a plain-numpy reference, a bound on the probability mass reaching null padding slots, and the table loaders' error checks on missing or failed ratings. `make test` adds the fit/CV protocol, checkpoint, statistics-module, elicitation-guard, data-conversion, and experiment-list tests.

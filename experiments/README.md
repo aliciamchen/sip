@@ -2,7 +2,7 @@
 
 ## Stimulus sources
 
-There are two scenario CSVs, each generated from a Python source of truth: `scenarios.py` → `scenarios.csv` (the food set, Studies 1a/1b/2a/2b) and `scenarios_nonfood.py` → `scenarios_nonfood.csv` (the non-food set, Studies 3a/3b). Edit the `.py` file and regenerate with `uv run python experiments/<file>.py` — never edit the CSVs directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/build/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`. The earlier stimulus sets are kept in git history (see the Legacy section below).
+There are two scenario CSVs, each generated from a Python source of truth: `scenarios.py` → `scenarios.csv` (the food set, Studies 1a/1b/2a/2b) and `scenarios_nonfood.py` → `scenarios_nonfood.csv` (the non-food set, Studies 3a/3b). Edit the `.py` file and regenerate with `uv run python experiments/<file>.py` — never edit the CSVs directly, since the next regeneration will overwrite the edits. After regenerating, run `uv run python experiments/build/csv_to_json.py` to propagate the changes into each experiment's `json/stimuli.json`.
 
 ### `scenarios.csv` and `scenarios_nonfood.csv` — 3-action sets
 
@@ -46,10 +46,6 @@ Each entry links to that study's design spec; the slug ↔ study mapping is in t
 - [nonfood_inv_joint_de](nonfood_inv_joint_de/README.md) — **Study 3a**: Study 1b's design on the non-food scenario set.
 - [nonfood_inv_joint_ie](nonfood_inv_joint_ie/README.md) — **Study 3b**: Study 2b's design on the non-food scenario set.
 
-## Legacy
-
-The **data** from earlier experiments is archived locally (outside the repository); the legacy experiment code, scenario sets, and analysis are in git history.
-
 ## Counterbalancing
 
 [`build/counterbalancing.py`](build/counterbalancing.py) generates every experiment's `json/full_counterbalancing.json`: an array of pre-built sequences, each assigning one condition cell to each of the 16 scenarios. When a participant starts, `experiment.js` uses their jsPsychPipe `condition_assignment` to pick a sequence, so each participant sees 16 trials (one per scenario) with the scenario-to-condition assignment balanced in both directions: across participants, every condition cell (and every scenario × cell pairing) appears equally often; within a participant, the 16 trials are split as evenly across each factor's levels as 16 trials allow. The number of sequences matches each study's target sample size, so every participant in a full sample gets a distinct scenario → condition mapping. Each study's design, sequence count, and seed are in the script's `STUDY_CONFIGS` table, and the balancing scheme itself is implemented and commented in the script.
@@ -68,7 +64,7 @@ Most of each experiment lives in shared modules under [`_lib/`](_lib/); each `tr
 
 So a `trials.js` only defines that study's `makeStimulusTrials` (composing the `_lib` pieces) and exports `CONFIG`, `INSTRUCTIONS_PAGES`, `COMPREHENSION_QUESTIONS`, and `makeStimulusTrials`. The per-experiment `index.html` and `experiment.js` are generated from a single source by `build/sync_entry_files.py` (identical across studies except for the consent template named in `experiment.js`; run it after changing the entry template, e.g. a jsPsych version bump).
 
-This shared layout means the experiments are not standalone folders anymore: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
+This shared layout means the experiments are not standalone folders: each one references `../_lib/` via relative paths. Deploys (see below) need to push `_lib/` to the server alongside the experiment.
 
 ## Deploying experiments
 

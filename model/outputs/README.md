@@ -129,25 +129,21 @@ stages write `status: "in_progress"` before their first paid call and replace it
 JSONL checkpoint distinguishable from a completed elicitation. Because the values in these
 files are LM-generated, two regenerations must be distinguishable, so each new manifest
 records how its file was produced: `stage`
-(`generate_alternatives`, `score_merged`, or `priors`), `study`, `model`,
+(`generate_alternatives` or `score_merged`), `study`, `model`,
 `prompt_sha256` (a short hash of the rendered prompt surfaces that determine that stage's
-output, including generation prompts upstream of `score_merged`), `prompts_sha256` (the
-legacy whole-file source hash retained for traceability), `rendered_prompt_sha256` (the exact
+output, including generation prompts upstream of `score_merged`), `prompts_sha256` (a
+broader hash of the whole prompt module, kept alongside), `rendered_prompt_sha256` (the exact
 messages assembled by the production caller for that study and input data), `git_sha`,
 `created_utc`, and stage-specific config (`k_runs`, the generation or scoring temperature,
 and record counts). A scoring manifest also records hashes of the exact alternatives JSONL,
 its generation manifest, and its generation-prompt fingerprint. These fields prevent a
 partial scoring resume from using replaced or stale alternatives.
 
-Legacy manifests contain only `prompts_sha256`. The prompt resume guard uses the
-stage-specific hash when present and falls back to the legacy whole-file hash, so a generation
-run is invalidated by a generation-prompt edit but not by an unrelated rating-prompt or
-comment edit. New manifests also guard the exact rendered-message fingerprint. A legacy
-generation manifest may resume through the fallback when its whole-source hash matches, but
-a partial scoring file whose manifest predates alternatives-input fingerprinting must be
-restarted because its upstream input cannot be verified. Set
-`LM_RESUME_PROMPT_MISMATCH=allow` only for a deliberate mixed-prompt resume; superseded hashes
-are then preserved in the manifest's history fields.
+The resume guard keys on the stage-specific hash, so a generation run is invalidated by a
+generation-prompt edit but not by an unrelated rating-prompt or comment edit, and also guards
+the exact rendered-message fingerprint. Set `LM_RESUME_PROMPT_MISMATCH=allow` only for a
+deliberate mixed-prompt resume; superseded hashes are then preserved in the manifest's history
+fields.
 
 ## Per-study fit and CV outputs (`<slug>/`)
 

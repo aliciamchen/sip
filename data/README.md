@@ -11,11 +11,6 @@ There are six inverse-planning studies, all on the same 3-action stimulus struct
 | `nonfood_inv_joint_de/` | 3a | desire + effort (jointly) | intimacy |
 | `nonfood_inv_joint_ie/` | 3b | intimacy + effort (jointly) | desire |
 
-Data from earlier, superseded experiments is archived locally under `legacy/`, which is not part of the repository — nothing in the active pipeline reads it.
-
-## Terminology note
-
-The CSVs use the current "desire" naming (e.g., `desire_condition`).
 
 ## Exit survey (all experiments)
 
