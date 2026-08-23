@@ -65,7 +65,7 @@ The R/Quarto qmds in `analysis/` report demographics and data checks only — ev
 
 ## Common commands
 
-The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{analysis,data,experiments,model}.md`, which hold the stage-specific details.
+The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{analysis,data,experiments,model}.md`, one per pipeline stage.
 
 ## Environment setup
 
