@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "model" / "cv"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from plot_si_validation import (  # noqa: E402
+from figure_si_lm_validation import (  # noqa: E402
     extract_observed,
     load_runs,
 )

@@ -460,7 +460,7 @@ results-latex: $(CMP_WITNESS)
 # =============================================================================
 
 figures-lm-si:
-	uv run python figures/scripts/plot_si_validation.py
+	uv run python figures/scripts/figure_si_lm_validation.py
 	uv run python figures/scripts/figure_si_consolidated.py
 
 # =============================================================================
@@ -524,7 +524,7 @@ figures-nonfood-domains: $(NONFOOD_DOMAIN_WITNESS)
 
 # =============================================================================
 # Schematic panels (figures/panels/schematic/): the method-figure components,
-# rebuilt from the cached inputs in figures/figure_data/ (no API calls, no
+# rebuilt from the cached figures/scripts/figure_scores.json (no API calls, no
 # model outputs needed).
 # =============================================================================
 
