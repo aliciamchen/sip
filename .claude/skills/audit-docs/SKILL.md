@@ -36,14 +36,16 @@ modulo the agent name and report any difference that is not just "Claude" vs
 "Codex":
 
 ```
-diff <(sed 's/Claude/AGENT/g' .claude/CLAUDE.md)     <(sed 's/Codex/AGENT/g' .agents/AGENTS.md)
+diff <(sed 's/Claude/AGENT/g' .claude/CLAUDE.md)     <(sed 's/Codex/AGENT/g' AGENTS.md)
 diff <(sed 's/Claude/AGENT/g' ~/.claude/CLAUDE.md)   <(sed 's/Codex/AGENT/g' ~/.codex/AGENTS.md)
 for n in .claude/skills/*/; do diff "$n/SKILL.md" ".agents/skills/$(basename $n)/SKILL.md"; done
 ```
 
-1. **`.claude/CLAUDE.md` vs `.agents/AGENTS.md`** (project). AGENTS.md once
-   claimed `EXPERIMENTS_NONFOOD` holds the nonfood studies with "no participant
-   data yet", long after Study 3 went live and that list was emptied.
+1. **`.claude/CLAUDE.md` vs the root `AGENTS.md`** (project; the root copy is
+   what Codex discovers — a third copy in `.agents/` had no reader and was
+   dropped 2026-08-24). AGENTS.md once claimed `EXPERIMENTS_NONFOOD` holds the
+   nonfood studies with "no participant data yet", long after Study 3 went live
+   and that list was emptied.
 2. **`~/.claude/CLAUDE.md` vs `~/.codex/AGENTS.md`** (global preferences —
    outside the repo, but in scope precisely because nothing else audits them).
    The commit-message convention was updated in one and not the other.
@@ -51,9 +53,10 @@ for n in .claude/skills/*/; do diff "$n/SKILL.md" ".agents/skills/$(basename $n)
    once referenced a `.Codex/` directory that has never existed. Report the
    drifted pairs by name rather than counting them.
 
-Expected, legitimate differences: the agent's name, `.claude/` vs `.agents/`
-paths, and tool-specific instructions (Claude slash commands, Codex hooks).
-Everything else is drift.
+Expected, legitimate differences: the agent's name, the README link path
+(`README.md` from the root copy vs `../README.md` from `.claude/`), and
+tool-specific instructions (Claude slash commands, Codex hooks). Everything
+else is drift.
 
 Never search inside `.claude/worktrees/`: those are checkouts of old branches,
 stale by design, and they swamp every grep.
@@ -63,7 +66,7 @@ Audience each file should serve:
 - `README.md` → reviewers / cloners (what the project is + a quick start)
 - `data/`, `experiments/`, `model/`, `model/outputs/` READMEs → developers in
   that subfolder; the outputs one is the artifact codebook
-- `.claude/CLAUDE.md` / `.agents/AGENTS.md` → the agent: terminology drift,
+- `.claude/CLAUDE.md` / root `AGENTS.md` → the agent: terminology drift,
   naming conventions, gitignored Overleaf folders, anything not in the code or
   public docs. Keep the pair in sync.
 - `~/.claude/CLAUDE.md` / `~/.codex/AGENTS.md` → cross-project preferences
