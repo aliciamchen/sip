@@ -9,6 +9,8 @@ file plus one file per generated table into `SIP_journal/`:
   results_table_model_comparison.tex   tab:model-comparison
   results_table_fitted_params.tex      tab:fitted-params
   results_table_prereg_deviation.tex   tab:prereg-deviation
+  results_table_preregistered_model_comparison.tex
+                                       tab:preregistered-model-comparison
   results_table_variance.tex           tab:variance-decomposition
   results_table_generalization*.tex    tab:generalization / -primary (if run)
 
@@ -57,8 +59,8 @@ import math
 from datetime import datetime, timezone
 from pathlib import Path
 
-from model.inverse._helpers import git_sha, verify_fit_manifest
-from model.cv.model_comparison import _verify_cv_manifest
+from model.inverse._helpers import git_sha, read_jsonl, verify_fit_manifest
+from model.cv.model_comparison import _primary_comparisons, _verify_cv_manifest
 from model.cv.run_delta_io import sha256_file
 from study_registry import STUDIES, reported_base, studies
 from utils import get_project_root
@@ -108,6 +110,8 @@ def _fmt(value, dp):
     """
     if value is None or (isinstance(value, float) and not math.isfinite(value)):
         return r"\textit{n/a}"
+    if abs(value) < 0.5 * 10**-dp:
+        value = 0.0
     return rf"\ensuremath{{{value:.{dp}f}}}"
 
 
@@ -148,6 +152,8 @@ def _per_participant(comparison):
 def _fmt_ci(ci, dp=DP_LL):
     """An interval as `[lo, hi]`; unsigned positives, as in `_fmt`."""
     lo, hi = ci
+    lo = 0.0 if abs(lo) < 0.5 * 10**-dp else lo
+    hi = 0.0 if abs(hi) < 0.5 * 10**-dp else hi
     return rf"\ensuremath{{[{lo:.{dp}f},\ {hi:.{dp}f}]}}"
 
 
@@ -241,6 +247,84 @@ def load_study(slug):
 #: a missing file with this path in the message, not as a silent skip.
 PREREG_TAG = "uniform-noreweight"
 PREREG_COMPARE_NAME = f"compare_{PREREG_TAG}_vs_reported.json"
+
+
+def load_preregistered_model_comparison(slug):
+    """Within-run ablation comparison for the fully preregistered specification.
+
+    The preregistered CV outputs set eta to zero for every variant. In the three
+    given-relationship studies, the table also uses raw `base` -- whose
+    alternatives omit the relationship paragraph -- rather than the promoted
+    `base_shared` used by the reported comparison. Statistics are recomputed
+    from the matched trial likelihoods with the same participant bootstrap seed
+    and resample count recorded by the reported-vs-preregistered comparison.
+    """
+    import numpy as np
+    import pandas as pd
+
+    outputs = get_project_root() / "model" / "outputs" / slug
+    prereg_dir = outputs / "alt" / PREREG_TAG
+    trial_path = prereg_dir / "cv_trial_ll.jsonl"
+    compare_path = outputs / "alt" / PREREG_COMPARE_NAME
+    for path in (trial_path, compare_path):
+        if not path.exists():
+            raise FileNotFoundError(
+                f"{path} missing -- run `bin/prereg-eta0.sh`, then "
+                f"`model_comparison.py --study {slug} --compare-configs "
+                f"{PREREG_TAG} reported`."
+            )
+
+    _verify_cv_manifest(slug, prereg_dir)
+    verify_fit_manifest(slug, output_dir=prereg_dir)
+    config_comparison = json.loads(compare_path.read_text())
+    recorded = config_comparison.get("source", {}).get(
+        f"{PREREG_TAG}/cv_trial_ll.jsonl"
+    )
+    if recorded != sha256_file(trial_path):
+        raise ValueError(
+            f"{trial_path} has changed since {compare_path.name} was computed -- "
+            "the preregistered ablation table would mix CV vintages. Re-run the "
+            "--compare-configs call."
+        )
+
+    trial_df = pd.DataFrame(read_jsonl(trial_path))
+    n_models = trial_df["model"].nunique()
+    n_trials_per_model = len(trial_df) / n_models
+    if abs(n_trials_per_model - round(n_trials_per_model)) > 1e-9:
+        raise ValueError(
+            f"{trial_path} has {len(trial_df)} rows over {n_models} variants -- "
+            "the variants do not contribute equal trial counts."
+        )
+    summary = {
+        "n_subjects": int(trial_df["subject_id"].nunique()),
+        "n_trials_per_model": int(round(n_trials_per_model)),
+        "mean_held_out_ll_per_trial": {
+            model: float(value)
+            for model, value in trial_df.groupby("model")["held_out_ll"].mean().items()
+        },
+        "primary": {
+            entry["comparison"].removeprefix("full_minus_"): entry
+            for entry in _primary_comparisons(
+                trial_df,
+                int(config_comparison["n_boot"]),
+                np.random.default_rng(int(config_comparison["seed"])),
+            )
+        },
+        "n_boot": int(config_comparison["n_boot"]),
+        "seed": int(config_comparison["seed"]),
+    }
+    for required in ("full", "base", "discomfort_only"):
+        source = (
+            summary["mean_held_out_ll_per_trial"]
+            if required == "full"
+            else summary["primary"]
+        )
+        if required not in source:
+            raise KeyError(
+                f"{trial_path} has no preregistered `{required}` variant needed "
+                "by the preregistered model-comparison table."
+            )
+    return summary
 
 
 def _prereg_deviation_macros(m, tok, slug, reported_ll, *, scale):
@@ -830,6 +914,39 @@ def model_comparison_table(all_studies):
     return _tabular("llccc", header, _rows(all_studies, cells, domain_heading=5))
 
 
+def preregistered_model_comparison_table(all_studies, comparisons):
+    """tab:preregistered-model-comparison under every preregistered choice.
+
+    Unlike `model_comparison_table`, the vanilla column deliberately uses raw
+    `base` in every study. For 1a/1b/3a that is the preregistered
+    relationship-free comparison set, not the reported `base_shared` variant.
+    """
+
+    def contrast_cell(entry, scale):
+        estimate = _fmt(scale * entry["mean_per_trial_ll_diff"], DP_LL)
+        interval = _fmt_ci([scale * value for value in entry["ci_95"]])
+        return rf"{estimate}~{interval}"
+
+    def cells(study):
+        comparison = comparisons[study.slug]
+        scale = _per_participant(comparison)
+        target = " $+$ ".join(_PAPER_TARGET[dv.name] for dv in study.dvs)
+        full = _fmt(scale * comparison["mean_held_out_ll_per_trial"]["full"], DP_LL)
+        base = contrast_cell(comparison["primary"]["base"], scale)
+        discomfort = contrast_cell(comparison["primary"]["discomfort_only"], scale)
+        return f"{target:<26} & {full} & {base} & {discomfort}"
+
+    header = "\n".join(
+        [
+            r" & & \multicolumn{3}{c}{Held-out LL / participant} \\",
+            r"\cmidrule(lr){3-5}",
+            r"Study & Inferred target & Full & Full $-$ vanilla & "
+            r"Full $-$ discomfort-only \\",
+        ]
+    )
+    return _tabular("llccc", header, _rows(all_studies, cells, domain_heading=5))
+
+
 def fitted_params_table(all_studies):
     """tab:fitted-params: the reported full model's MLE per study."""
 
@@ -900,6 +1017,7 @@ def provenance():
         f"% git {git_sha()}  generated {datetime.now(timezone.utc).isoformat()}\n"
         f"% Source: model/outputs/<slug>/{{cv_model_comparison,fit_results}}.json\n"
         f"%   and  model/outputs/<slug>/alt/{PREREG_COMPARE_NAME}\n"
+        f"%   and  model/outputs/<slug>/alt/{PREREG_TAG}/cv_trial_ll.jsonl\n"
     )
 
 
@@ -918,6 +1036,10 @@ def main():
 
     all_studies = studies()
     m, _loaded = build(all_studies)
+    preregistered_comparisons = {
+        study.slug: load_preregistered_model_comparison(study.slug)
+        for study in all_studies
+    }
 
     files = {
         "results_macros.tex": (
@@ -938,6 +1060,14 @@ def main():
         ),
         "results_table_prereg_deviation.tex": (
             HEADER + provenance() + prereg_deviation_table(all_studies) + "\n"
+        ),
+        "results_table_preregistered_model_comparison.tex": (
+            HEADER
+            + provenance()
+            + preregistered_model_comparison_table(
+                all_studies, preregistered_comparisons
+            )
+            + "\n"
         ),
         "results_table_variance.tex": (
             HEADER + provenance() + variance_table(all_studies, _loaded) + "\n"

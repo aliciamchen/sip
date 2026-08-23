@@ -315,5 +315,55 @@ def test_results_latex_macro_names_are_valid_and_unique():
     print(f"✓ {len(names)} results-latex macros, all letters-only and unique")
 
 
+def test_preregistered_results_table_uses_preregistered_base():
+    """The preregistered table must use raw `base`, not reported `base_shared`.
+
+    This distinction changes the sign of Study 1b's held-out contrast, so a
+    reporting-layer reuse of `reported_base` would produce a plausible but
+    substantively wrong table.
+    """
+    from model import export_results_latex as X
+
+    all_studies = X.studies()
+    required_paths = [
+        _root
+        / "model"
+        / "outputs"
+        / study.slug
+        / "alt"
+        / X.PREREG_TAG
+        / "cv_trial_ll.jsonl"
+        for study in all_studies
+    ]
+    if not all(path.exists() for path in required_paths):
+        print("~ preregistered results table: CV outputs absent, skipped")
+        return
+
+    comparisons = {
+        study.slug: X.load_preregistered_model_comparison(study.slug)
+        for study in all_studies
+    }
+    table = X.preregistered_model_comparison_table(all_studies, comparisons)
+    rows = {
+        line.split(" & ", 1)[0]: line
+        for line in table.splitlines()
+        if any(line.startswith(f"{study.short_label} & ") for study in all_studies)
+    }
+    for study in all_studies:
+        comparison = comparisons[study.slug]
+        scale = X._per_participant(comparison)
+        raw_base = comparison["primary"]["base"]
+        expected = (
+            X._fmt(scale * raw_base["mean_per_trial_ll_diff"], X.DP_LL)
+            + "~"
+            + X._fmt_ci([scale * value for value in raw_base["ci_95"]])
+        )
+        assert expected in rows[study.short_label], (
+            f"{study.slug}: preregistered row does not use full_minus_base"
+        )
+    assert "-0.00" not in table, "rounded intervals should not display negative zero"
+    print("✓ preregistered results table uses raw base and has no negative zero")
+
+
 if __name__ == "__main__":
     run_all_tests()
