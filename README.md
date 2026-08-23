@@ -50,7 +50,7 @@ figures/           Paper figures
   model-eqs/       Hand-authored equation glyphs
 utils.py           Project-root path helper used by every script
 study_registry.py  Per-study metadata (conditions, inferred latents, labels), shared by the model and figure code
-test_roster_sync.py  Consistency test across the experiment lists (Makefile, registry, deploy script)
+test_roster_sync.py  Consistency test across the hand-synced registries (experiment roster incl. study_registry.py, shared constants, agent docs)
 ```
 
 See the [data codebook](data/README.md), [experiments README](experiments/README.md), [figures README](figures/README.md), [model README](model/README.md), and [model outputs codebook](model/outputs/README.md) for details on each directory. Files prefixed with an underscore (`_data.py`, `_helpers.py`, …) are internal helpers imported by the entry-point scripts, not scripts to run. The `.claude/`, `.codex/`, and `.agents/` directories and `AGENTS.md` are configuration for the AI coding assistants used during development; they are not part of the pipeline and can be ignored.
