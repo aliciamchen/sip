@@ -5,28 +5,21 @@ Helper module, not a figure script. `figure_paper_panels.py` calls `agg_points`
 and `draw_agg_panel` to build panel_model_vs_humans.
 """
 
-import argparse
+import json
 import sys
 from collections import OrderedDict
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-from plot_style import DV_MARKERS, apply_style, savefig  # noqa: E402
+from plot_style import DV_MARKERS  # noqa: E402
 from study_registry import study, study_groups  # noqa: E402
 
 import _data as data  # noqa: E402
 import _panels as panels  # noqa: E402
 import _points as points  # noqa: E402
 
-# Same construct colors as figure_model_scatter.py (dark anchor per DV). Used by
-# the per-study grids; the poster aggregate encodes DV by MARKER SHAPE instead.
-DV_COLORS = {"desire": "#7A4A5A", "effort": "#4A7A4A", "intimacy": "#274D77"}
-DV_LABELS = {"desire": "Desire", "effort": "Effort", "intimacy": "Intimacy"}
-DV_LEGEND_ORDER = ["desire", "intimacy", "effort"]
 # Aggregate poster figure: DV -> marker shape (from plot_style, shared with the
 # points panels). Point color is the given condition, per study, so the two
 # encodings match the results panels -- `agg_points` resolves it there.
@@ -143,6 +136,20 @@ def agg_points(slugs=None):
     return out, _agg_correlations(model_x, obs_y, number)
 
 
+def _group_corr_seed(number):
+    """The seed recorded in group_correlations.json for this study group, so the
+    panel annotation reuses exactly the bootstrap stream the manuscript quotes.
+    0 — model_comparison's default — when the artifact or the entry is missing."""
+    path = data.get_project_root() / "model" / "outputs" / "group_correlations.json"
+    if not path.exists():
+        return 0
+    with open(path) as f:
+        for entry in json.load(f):
+            if entry.get("study") == number:
+                return entry.get("seed", 0)
+    return 0
+
+
 def _agg_correlations(model_x, obs_y, number=None):
     """{model: (r, lo, hi)} -- the correlation pooled over the panel's studies and
     DVs, with the interval bootstrapped over the plotted points.
@@ -157,7 +164,7 @@ def _agg_correlations(model_x, obs_y, number=None):
         if not obs_y[model]:
             continue
         seed_key = (
-            data._mc.group_corr_seed_key(number, model)
+            data._mc.group_corr_seed_key(number, model, _group_corr_seed(number))
             if number is not None
             else f"figures:agg:pooled|{model}|pair_ci"
         )
@@ -204,33 +211,6 @@ def corr_with_pair_ci(x, y, *, n_boot=None, seed_key="figures:agg:pair_ci"):
     return (got["r"], got["ci_95"][0], got["ci_95"][1])
 
 
-def corr_with_ci(x, y, ys):
-    """(r, lo, hi) for the model-vs-human correlation: the observed Pearson r
-    over (x, y), with a percentile CI recomputed over the resampled human means
-    `ys` (n_boot, n_points). Resamples that lose a cell drop it pairwise.
-
-    An ablation whose predictions have no spread (vanilla or discomfort-only on a
-    latent it cannot infer) yields NaN rather than a spurious r. The threshold is
-    `CONSTANT_PREDICTION_TOL`, shared with `pair_bootstrap_corr`: the vanilla
-    model's intimacy predictions in 2b/3b are flat only to float32 rounding
-    (std ~2e-8), so a tighter guard here would print `r = 0.26` on the SI scatter
-    for exactly the cells the SI table and the pooled panels report as `n/a`.
-    """
-    tol = data._mc.CONSTANT_PREDICTION_TOL
-    if np.std(x) < tol:
-        return (np.nan, np.nan, np.nan)
-    r = float(np.corrcoef(x, y)[0, 1])
-    rs = []
-    for b in range(ys.shape[0]):
-        ok = ~np.isnan(ys[b])
-        if ok.sum() > 2 and np.std(x[ok]) > tol:
-            rs.append(np.corrcoef(x[ok], ys[b][ok])[0, 1])
-    rs = np.asarray(rs)
-    rs = rs[np.isfinite(rs)]
-    lo, hi = np.percentile(rs, [2.5, 97.5]) if rs.size else (np.nan, np.nan)
-    return (r, float(lo), float(hi))
-
-
 def _r_label(ci, x, y):
     """The panel annotation: "r = 0.96" over its bootstrap CI, or the bare
     observed r when no CI was supplied.
@@ -247,7 +227,8 @@ def _r_label(ci, x, y):
         # every cell, so there is no correlation to report -- printing one (or a
         # NaN) beside a column that is visibly a vertical stripe reads as a fit.
         # `n/a` is what tab:scenario-correlations shows for the same cases.
-        if np.std(x) < data._mc.CONSTANT_PREDICTION_TOL:
+        tol = data._mc.CONSTANT_PREDICTION_TOL
+        if np.std(x) < tol or np.std(y) < tol:
             return "$r$ = n/a"
         return f"$r$ = {np.corrcoef(x, y)[0, 1]:.2f}"
     r, lo, hi = ci
