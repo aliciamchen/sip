@@ -38,3 +38,22 @@ dev = [
 [tool.uv]
 package = false
 
+
+[tool.ruff.lint]
+# Scripts insert the repo root on sys.path before their intra-repo imports, so
+# module-level imports legitimately follow code (E402).
+extend-ignore = ["E402"]
+
+[tool.ruff.lint.per-file-ignores]
+# The memo DSL injects names (actor, observer, knows, chooses, ...) into its
+# decorated functions at compile time, and its annotated `cast` locals are DSL
+# syntax, so the undefined-name and unused-local rules misfire here.
+"model/observers.py" = ["F821", "F842"]
+"model/actors.py" = ["F821", "F842"]
+# `attention_passed != True` is an elementwise pandas comparison; rewriting it
+# to `is not True` (E712's fix) changes the semantics.
+"analysis/json_to_csv.py" = ["E712"]
+# `I` is the intimacy magnitude, the manuscript's own symbol; `l`/`I` loop
+# names in the counterbalancing generator mirror the design tables.
+"figures/scripts/figure_schematic_plots.py" = ["E741"]
+"experiments/build/counterbalancing.py" = ["E741"]
