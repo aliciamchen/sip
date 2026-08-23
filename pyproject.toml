@@ -41,7 +41,7 @@ build-backend = "hatchling.build"
 
 # The repo installs as an editable package (uv sync does this automatically),
 # so scripts import the model code as `model.*` and the root modules
-# (utils, study_registry, plot_style) by name.
+# (utils, study_registry) by name.
 # Editable matters: the code resolves data and outputs relative to its own
 # location, so a copied (non-editable) install would look in site-packages.
 [tool.hatch.build.targets.wheel]
@@ -50,7 +50,6 @@ only-include = [
     "data_prep",
     "utils.py",
     "study_registry.py",
-    "plot_style.py",
 ]
 exclude = ["model/outputs"]
 
@@ -63,7 +62,7 @@ package = true
 # importing pyplot, so their imports legitimately follow code (E402); the
 # schematic script also uses `I` for the intimacy magnitude, the manuscript's
 # own symbol (E741, like the counterbalancing generator's design-table names).
-"plot_style.py" = ["E402"]
+"figures/scripts/plot_style.py" = ["E402"]
 "figures/scripts/figure_schematic_plots.py" = ["E402", "E741"]
 "experiments/build/counterbalancing.py" = ["E741"]
 # The scenario scripts still insert experiments/build/ before importing its

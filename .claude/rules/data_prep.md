@@ -7,7 +7,7 @@ paths:
 
 `data_prep/` holds only the raw-data conversion. There are no notebooks or R
 here: every figure is made by the Python scripts in `figures/scripts/` (styled
-by the repo-root `plot_style.py` and written to `figures/panels/` and
+by `figures/scripts/plot_style.py` and written to `figures/panels/` and
 `figures/si/`), the paper's model-comparison statistics come from
 `model/cv/model_comparison.py` (`make model-comparison`), and the manuscript's
 demographics numbers come from `model/export_results_latex.py`. The former

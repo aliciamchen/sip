@@ -134,8 +134,7 @@ def study(slug: str) -> Study:
     return STUDIES[slug]
 
 
-# Slug -> paper label, for figures that only need the label (re-exported by
-# plot_style.py, which many figure scripts already import it from).
+# Slug -> paper label, for figures that only need the label.
 STUDY_LABELS: dict[str, str] = {slug: s.paper_label for slug, s in STUDIES.items()}
 
 # The active roster in paper order (1a, 1b, 2a, 2b, 3a, 3b). Every consumer that

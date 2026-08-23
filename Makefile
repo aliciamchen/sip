@@ -475,7 +475,7 @@ FIG_SI := figures/si
 # a silent no-op for `make figures-panels`.
 FIG_SHARED := $(FIG_SCRIPTS)/_data.py $(FIG_SCRIPTS)/_panels.py $(FIG_SCRIPTS)/_points.py \
               $(FIG_SCRIPTS)/_agg.py \
-              plot_style.py study_registry.py model/cv/model_comparison.py
+              $(FIG_SCRIPTS)/plot_style.py study_registry.py model/cv/model_comparison.py
 
 # The data + model outputs a study contributes to a figure. Deliberately only
 # the CV *side-outputs* that are NOT make targets -- the data CSV and
