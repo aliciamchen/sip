@@ -12,11 +12,10 @@ file plus one file per generated table into `SIP_journal/`:
   results_table_variance.tex           tab:variance-decomposition
   results_table_generalization*.tex    tab:generalization / -primary (if run)
 
-Only what the manuscript references is emitted: the gradient, scenario-
-correlation and design tables and their macros were removed 2026-08-22 after
-the manuscript's shortening cut the sections quoting them. The underlying
-statistics stay in cv_model_comparison.json; restore the emitters from git if
-a revision brings the sections back.
+Only what the manuscript references is emitted: emitters for the gradient,
+scenario-correlation, and design tables went with the manuscript sections that
+quoted them. The underlying statistics stay in cv_model_comparison.json;
+restore the emitters from git history if a revision brings a section back.
 
 Each table file is a complete `tabular` environment, top rule to bottom rule.
 The caller keeps the float, \\caption, \\label and \\tabcolsep, so placement and
@@ -111,9 +110,9 @@ def _fmt(value, dp):
     """A number as LaTeX math, so a negative renders as a real minus sign in
     running text as well as in math mode.
 
-    Positives carry no sign. Differences were printed with an explicit `+` until
-    2026-08-06, which made a column of improvements read as a column of
-    annotations; the direction is legible from the minus signs alone.
+    Positives carry no sign: an explicit `+` on differences makes a column of
+    improvements read as a column of annotations, and the direction is legible
+    from the minus signs alone.
     """
     if value is None or (isinstance(value, float) and not math.isfinite(value)):
         return r"\textit{n/a}"

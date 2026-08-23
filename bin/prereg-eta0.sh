@@ -6,10 +6,8 @@
 # Why: the paper reports the reweighted fits and declares the reweighting a
 # deviation from the preregistered specification, so the preregistered model's
 # held-out numbers have to be reportable beside them (main.tex: the
-# prereg-deviations section). The diagnostics-layer sweep in
-# notes/candidate-sweep-2026-07-28/ cannot supply them — its fitted eta disagrees
-# with the production fits for 2a, 2b and 3b, so a table built from it would
-# report a different model than tab:fitted-params describes in half the studies.
+# prereg-deviations section), computed by the same production fit and CV code
+# as every other reported number.
 #
 # Every invocation passes --no-reweighting, which routes ALL outputs to
 # model/outputs/<slug>/alt/uniform-noreweight/. The reported outputs under

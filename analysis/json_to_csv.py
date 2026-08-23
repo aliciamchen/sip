@@ -358,9 +358,7 @@ def process_json_files(input_dir, output_dir, config):
 
     def generate_deterministic_id(original_id):
         """Generate a deterministic UUID based on the original subject ID."""
-        # Use a fixed namespace UUID for this project
         namespace = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-        # Create a deterministic UUID based on the original subject ID
         return str(uuid.uuid5(namespace, original_id))
 
     # Process each JSON file
@@ -572,10 +570,7 @@ Examples:
     # Get experiment configuration
     config = EXPERIMENT_CONFIGS[args.experiment]
 
-    # Get project root directory
     project_root = get_project_root()
-
-    # Define paths relative to project root
     input_dir = project_root / f"data/{args.experiment}/raw_data"
     output_dir = project_root / f"data/{args.experiment}"
 

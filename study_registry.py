@@ -180,7 +180,7 @@ def slugs_given(condition: str) -> list[str]:
 # relationship axis, so base's predictions are relationship-invariant. In the
 # given-relationship studies that makes base differ from full along TWO axes at
 # once -- the discomfort term AND the comparison set -- so `full - base` is not
-# a test of the discomfort term. Measured on the 2026-07-31 CV run the
+# a test of the discomfort term. Measured on the reported CV outputs, the
 # comparison-set half is large enough to reverse the sign in Study 1b (utility
 # +0.0214, comparison set -0.0447, total -0.0232 per-trial held-out LL).
 #

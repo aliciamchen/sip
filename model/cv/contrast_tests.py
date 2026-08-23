@@ -491,8 +491,7 @@ def _decomposition_ci(
     under-corrects, and the whole bootstrap distribution lands ABOVE the point
     estimate -- measured here, a [0.047, 0.080] interval around a 0.039 estimate.
     That is the same mislocation `_secondary_correlation` documents for the
-    correlation CI (notes/2026-08-03-correlation-ci-audit.md), reached by the
-    same route.
+    correlation CI, reached by the same route.
 
     With `w_s` the multiplicity of subject `s` and `C_sc` their trial count in
     cell `c`, the resampled mean's sampling variance is

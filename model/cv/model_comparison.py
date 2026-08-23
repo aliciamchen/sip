@@ -316,15 +316,14 @@ def _secondary_correlation(slug, data, preds, keys, update_col, delta_col, model
     """Pearson r between per-cell human updates and the model's per-cell delta,
     with the interval bootstrapped over the PLOTTED POINTS (the cells).
 
-    The interval was a subject-cluster bootstrap until 2026-08-04, and it was
-    mislocated: a resample holds ~63% unique participants, so its cell means carry
-    extra noise, noise in y attenuates r against a fixed x, and the whole bootstrap
-    distribution sits below the observed r. At these scenario-level cells — a
-    handful of judgments each — that put the interval below its own point estimate
-    for most correlations. Resampling the cells reuses the observed means untouched,
+    This replaced a subject-cluster bootstrap that was mislocated: a resample
+    holds ~63% unique participants, so its cell means carry extra noise, noise in
+    y attenuates r against a fixed x, and the whole bootstrap distribution sits
+    below the observed r. At these scenario-level cells — a handful of judgments
+    each — that put the interval below its own point estimate for most
+    correlations. Resampling the cells reuses the observed means untouched,
     injects no noise, and is unbiased; it also matches both the panels
-    (`_agg.corr_with_pair_ci`) and what comparable papers report. See
-    `notes/2026-08-03-correlation-ci-audit.md`.
+    (`_agg.corr_with_pair_ci`) and what comparable papers report.
 
     What the interval therefore means: how far r would move with a different sample
     of *cells*, not of *participants*. The participant-driven limit on r is
@@ -504,9 +503,9 @@ def study_group_correlations(seed):
     `CONSTANT_PREDICTION_TOL`.
 
     `seed` enters every stream this computes, so `--seed` moves these intervals
-    the way it moves the primary ones. It was accepted and ignored until
-    2026-08-16, which made a seed-sensitivity check wrongly conclude the pooled
-    correlations were seed-independent.
+    the way it moves the primary ones — a seed that is accepted but ignored
+    makes a seed-sensitivity check wrongly conclude the pooled correlations are
+    seed-independent.
 
     Each entry records the SHA-256 of the `cv_preds_summary.json` it read, so the
     exporter can refuse to quote these beside per-study numbers from a newer CV
@@ -775,12 +774,12 @@ def run_study(slug, n_boot, seed):
 #: comparison rather than merely inconvenience the caller.
 _RETIRED_CONFIG_TAGS = {
     "canonical": (
-        "'canonical' (retired 2026-07-30) read as 'the authoritative model', "
+        "'canonical' read as 'the authoritative model', "
         "which the study root is not by itself — the reported fits add the "
         "comparison-set reweighting on top. Pass 'reported'."
     ),
     "preregistered": (
-        "'preregistered' (retired 2026-08-03) named the study root, but the "
+        "'preregistered' named the study root, but the "
         "root holds the REPORTED model, which deviates from the "
         "preregistration by reweighting the comparison set. Pass 'reported' for "
         "the root; the preregistered model is the --no-reweighting run, tag "
