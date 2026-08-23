@@ -223,9 +223,15 @@ SCENARIO_WORKERS ?= 8
 CELL_WORKERS ?= 32
 # K_RUNS = elicitation runs per cell (the simulated-observer mixture components);
 # ALT_T = generation temperature (nonzero, so runs explore different alternatives).
+# Their defaults (20 / 0.7) live in model/lm/generate_alternatives.py — the
+# recipes pass them through only when set on the make command line, so the
+# Python defaults stay the single source.
 # A K=1 smoke test before the full paid run:  make lm-alternatives K_RUNS=1
-K_RUNS ?= 20
-ALT_T ?= 0.7
+K_RUNS ?=
+ALT_T ?=
+# Guarded with $(if ...): passing an empty K_RUNS= through the environment would
+# crash generate_alternatives on int("").
+LM_ENV = $(if $(K_RUNS),K_RUNS=$(K_RUNS)) $(if $(ALT_T),ALT_T=$(ALT_T)) CELL_WORKERS=$(CELL_WORKERS)
 
 # `lm-alternatives` re-elicits the whole roster (all six studies). It is always
 # an explicit, paid step, never a side effect of `make fit`/`cv` (those depend
@@ -235,7 +241,7 @@ lm-alternatives: $(addprefix lm-,$(EXPERIMENTS_INVERSE))
 # score_merged.py takes no K_RUNS: it scores whatever runs the alternatives
 # file contains, so the run count is set once at generation time.
 $(addprefix lm-,$(EXPERIMENTS_ALL)): lm-%:
-	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $*
+	$(LM_ENV) uv run python model/lm/generate_alternatives.py --study $*
 	uv run python model/lm/score_merged.py --study $* --scenario-workers $(SCENARIO_WORKERS)
 
 # Base-model alternatives: same two-stage pipeline with --base, so the LM is NOT
@@ -246,7 +252,7 @@ $(addprefix lm-,$(EXPERIMENTS_ALL)): lm-%:
 lm-base: $(addprefix lm-base-,$(EXPERIMENTS_BASE))
 
 $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
-	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base
+	$(LM_ENV) uv run python model/lm/generate_alternatives.py --study $* --base
 	uv run python model/lm/score_merged.py --study $* --base --scenario-workers $(SCENARIO_WORKERS)
 
 # Diagnostic main/base vintages for K=1 prompt and pipeline smokes. These are
@@ -255,13 +261,13 @@ $(addprefix lm-base-,$(EXPERIMENTS_BASE)): lm-base-%:
 lm-diag: $(addprefix lm-diag-,$(EXPERIMENTS_INVERSE))
 
 $(addprefix lm-diag-,$(EXPERIMENTS_ALL)): lm-diag-%:
-	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --arm-output-only
+	$(LM_ENV) uv run python model/lm/generate_alternatives.py --study $* --arm-output-only
 	uv run python model/lm/score_merged.py --study $* --arm --scenario-workers $(SCENARIO_WORKERS)
 
 lm-base-diag: $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE))
 
 $(addprefix lm-base-diag-,$(EXPERIMENTS_BASE)): lm-base-diag-%:
-	K_RUNS=$(K_RUNS) ALT_T=$(ALT_T) CELL_WORKERS=$(CELL_WORKERS) uv run python model/lm/generate_alternatives.py --study $* --base --arm-output-only
+	$(LM_ENV) uv run python model/lm/generate_alternatives.py --study $* --base --arm-output-only
 	uv run python model/lm/score_merged.py --study $* --base --arm --scenario-workers $(SCENARIO_WORKERS)
 
 # =============================================================================
