@@ -21,15 +21,10 @@ design_exploration
 SIP_journal
 notes/
 
-# Legacy data that deliberately left git history (commit 8a348e6): the six
-# superseded 4-action/2-action inverse experiments, early pilots, and the
-# planning_comm side project. Kept local-only; see data/legacy/README.md.
-# The forward-planning and Study 1a pilot CSVs under data/legacy/ remain
-# tracked.
-data/legacy/*_alt/
-data/legacy/*_noalt/
-data/legacy/pilots/
-data/legacy/planning_comm/
+# Archived data from earlier, superseded experiments (forward-planning, the
+# pre-3-action inverse studies, pilots, and side projects). None of it is read
+# by the active pipeline, so the whole archive is kept local-only.
+data/legacy/
 
 # Non-fitted model-behavior visualizations (parameter sweeps + belief-update
 # plots at hand-picked params). Exploratory and not part of the fit pipeline;

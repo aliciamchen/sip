@@ -1,8 +1,7 @@
-# analysis/utils.R - Shared R helpers for the analysis qmds and exploratory
-# scripts (signature_tests.R). All figures — and their palettes — are Python
-# now (repo-root plot_style.py is the visual source of truth; the qmds report
-# demographics and data checks only), so this file keeps just the data-side
-# helpers.
+# analysis/utils.R - Shared R helpers for the analysis qmds. All figures — and
+# their palettes — are Python (repo-root plot_style.py is the visual source of
+# truth; the qmds report demographics and data checks only), so this file keeps
+# just the data-side helpers.
 
 library(here)
 library(tidyverse)
@@ -83,9 +82,6 @@ calculate_belief_update <- function(df, rating_col) {
 # manuscript-facing retention count reported here.
 report_demographics <- function(data_dir) {
   path <- here("data", data_dir, "exit_survey.csv")
-  if (!file.exists(path)) {
-    path <- here("data", "legacy", data_dir, "exit_survey.csv")
-  }
   df_exit <- read_csv(path, show_col_types = FALSE)
   n_total <- nrow(df_exit)
   cat("Total participants recruited:", n_total, "\n")

@@ -48,7 +48,7 @@ Each entry links to that study's design spec; the canonical slug ↔ Study-numbe
 
 ## Legacy
 
-The **data** from earlier experiments is archived under [`data/legacy/`](../data/legacy/); the legacy experiment code, scenario sets, and analysis are in git history.
+The **data** from earlier experiments is archived locally (outside the repository); the legacy experiment code, scenario sets, and analysis are in git history.
 
 ## Counterbalancing
 

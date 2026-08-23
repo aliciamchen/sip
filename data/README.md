@@ -11,11 +11,11 @@ The active roster is six inverse-planning studies on the 3-action set: four on t
 | `nonfood_inv_joint_de/` | 3a | desire + effort (jointly) | intimacy |
 | `nonfood_inv_joint_ie/` | 3b | intimacy + effort (jointly) | desire |
 
-Data from earlier experiments (forward-planning, the superseded 4-action/2-action inverse studies, early pilots, and side projects) is archived under [`legacy/`](legacy/README.md), which documents what is tracked versus kept local-only.
+Data from earlier, superseded experiments is archived locally under `legacy/`, which is not part of the repository — nothing in the active pipeline reads it.
 
 ## Terminology note
 
-The active CSVs use the current "desire" naming (e.g., `desire_condition`); the archived CSVs under `legacy/` keep older column names (see [legacy/README.md](legacy/README.md)).
+The CSVs use the current "desire" naming (e.g., `desire_condition`).
 
 ## Exit survey (all experiments)
 
