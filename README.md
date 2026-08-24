@@ -31,6 +31,18 @@ pipeline stages. Run the test suite with:
 make test
 ```
 
+Before submitting or reviewing reported results, run the stricter audit gate:
+
+```bash
+make check-reported
+```
+
+This command independently reconstructs the committed held-out likelihoods and
+headline statistics, verifies artifact provenance, and checks that generated
+tables, macros, and figures match the manuscript. The manuscript checks require
+a local `SIP_journal/` checkout and a LaTeX installation; they skip when the
+separate manuscript repository is absent.
+
 ## Studies
 
 | Slug | Study | What participants infer | Scenarios |

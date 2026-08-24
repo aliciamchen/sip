@@ -37,7 +37,7 @@ EXPERIMENTS_ALL := $(EXPERIMENTS_INVERSE) $(EXPERIMENTS_NONFOOD)
 # intimacy, so they never show a relationship paragraph).
 EXPERIMENTS_BASE := food_inv_desire food_inv_joint_de nonfood_inv_joint_de
 
-.PHONY: all help test clean \
+.PHONY: all help test check-reported clean \
         data lm lm-alternatives lm-base lm-diag lm-base-diag \
         fit fit-inverse \
         cv cv-inverse model-comparison \
@@ -79,6 +79,7 @@ help:
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
 	@echo "  test       - model compliance + elicitation-guard + data-converter + experiment-list tests"
+	@echo "  check-reported - test + independent output reconstruction + manuscript synchronization"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  freshen-outputs - restamp the committed outputs after a fresh clone (see README)"
 	@echo "  figures-lm-si        - render the SI LM-elicitation validation figures into figures/si/"
@@ -692,13 +693,23 @@ test:
 	uv run python model/test_run_config.py
 	uv run python model/test_fit_protocol.py
 	uv run python model/cv/test_checkpoint.py
+	uv run python model/cv/test_loso_integrity.py
 	uv run python model/cv/test_model_comparison.py
 	uv run python model/cv/test_contrast_tests.py
 	uv run python model/cv/test_transfer.py
 	uv run python model/cv/test_pooled.py
 	uv run python model/lm/test_elicitation_guards.py
+	uv run python model/lm/test_table_content.py
 	uv run python data_prep/test_json_to_csv.py
+	uv run python data_prep/test_participant_integrity.py
 	uv run python test_roster_sync.py
+
+# Submission/review gate. The numerical oracle intentionally reimplements the
+# reported likelihoods and statistics rather than calling production helpers.
+# Manuscript checks skip when the separate, gitignored SIP_journal repo is absent.
+check-reported: test
+	uv run python model/test_reported_outputs.py
+	uv run python model/test_manuscript_sync.py --build
 
 clean:
 	rm -f model/outputs/*/fit_results.json model/outputs/*/fit_restarts.jsonl model/outputs/*/fit_manifest.json

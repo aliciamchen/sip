@@ -32,6 +32,8 @@ from model.cv.model_comparison import (
     _bootstrap_mean_by_subject,
     _config_dir,
     _primary_comparisons,
+    pair_bootstrap_corr,
+    split_half_ceiling,
 )
 
 N_BOOT = 4000
@@ -232,6 +234,52 @@ def test_config_dir_routes_reported_to_the_root_and_rejects_retired_names():
         except SystemExit as e:
             assert "reported" in str(e), str(e)
     print("✓ config_dir routes 'reported' to the root, rejects retired tags")
+
+
+def test_pair_bootstrap_is_invariant_to_cell_order():
+    """A figure and a table can assemble the same cells in different orders.
+    Their interval must still be byte-for-byte identical for a shared seed."""
+    rng = np.random.default_rng(31)
+    x = rng.normal(size=60)
+    y = 0.7 * x + rng.normal(scale=0.5, size=60)
+    order = rng.permutation(len(x))
+    original = pair_bootstrap_corr(x, y, seed_key="order-test", n_boot=500)
+    shuffled = pair_bootstrap_corr(
+        x[order], y[order], seed_key="order-test", n_boot=500
+    )
+    assert original == shuffled
+    print("✓ pair bootstrap is invariant to cell order")
+
+
+def test_pair_bootstrap_treats_float_noise_as_a_structural_null():
+    """A theoretically constant ablation can vary at float32 precision. That
+    numerical dust must remain an undefined correlation, not a scientific
+    effect."""
+    x = 0.2 + np.linspace(-4e-7, 4e-7, 50)
+    y = np.linspace(-1.0, 1.0, 50)
+    result = pair_bootstrap_corr(x, y, seed_key="constant-test", n_boot=100)
+    assert np.isnan(result["r"])
+    assert np.isnan(result["ci_95"]).all()
+    assert result["ci_method"] == "undefined (constant predictions)"
+    print("✓ pair bootstrap maps float-level structural nulls to n/a")
+
+
+def test_split_half_ceiling_applies_both_required_corrections():
+    """The ceiling is sqrt(Spearman-Brown(split-half reliability)), not the
+    raw split-half correlation or the reliability itself."""
+    rng = np.random.default_rng(41)
+    truth = np.linspace(-0.7, 0.8, 10)
+    sums = truth + rng.normal(scale=0.65, size=(24, len(truth)))
+    counts = np.ones_like(sums)
+    result = split_half_ceiling(
+        [[(sums, counts)]], n_split=300, rng=np.random.default_rng(42)
+    )
+    assert result is not None
+    expected_reliability = 2 * result["split_half"] / (1 + result["split_half"])
+    assert np.isclose(result["reliability"], expected_reliability)
+    assert np.isclose(result["ceiling"], np.sqrt(expected_reliability))
+    assert 0 < result["reliability"] < result["ceiling"] < 1
+    print("✓ split-half ceiling uses Spearman-Brown then square root")
 
 
 def run_all_tests():
