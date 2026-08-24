@@ -1253,23 +1253,25 @@ def _build_observer_tables_runs(observer_fn, params, utility_param_names, table_
     return jax.vmap(_run_one)(run_tables)
 
 
-def _intimacy_loss(
+def _mixture_loss(
+    nll_trial_builder,
+    data_arrays,
     observer_fn,
     utility_param_names,
-    action,
-    scenario_idx,
-    desire_condition,
-    effort_condition,
-    response,
     table_kwargs,
-    reweighting=None,
+    reweighting,
 ):
-    """Study 2a's mixture NLL as a function of the fit's parameter vector.
+    """The fit protocol shared by every study's loss: parameter layout,
+    reweighting, the K-run observer-table build, and the vmap-and-sum over
+    trials. The four `_{family}_loss` factories differ ONLY in their
+    `nll_trial_builder` — the per-trial slice of the observer table, the delta
+    computation, and the (1D or 2D) mixture — so a protocol change (a new
+    parameter, a different noise model) is made here once instead of four
+    times.
 
-    Split out of `fit_intimacy_observer_joint` so the pooled cross-experiment fit
-    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
-    under one shared utility. The fit helper is the only other caller; both go
-    through this, so there is one definition of what a study's likelihood is.
+    `nll_trial_builder(tables, sigma)` returns the per-trial NLL function that
+    is vmapped over `data_arrays` (the family's trial arrays, in the order its
+    nll_trial expects them).
 
     Returns (loss_fn, n_params, n_core), where the parameter vector is
     `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
@@ -1290,20 +1292,46 @@ def _intimacy_loss(
         tables = _build_observer_tables_runs(
             observer_fn, params[:n_core], utility_param_names, tk
         )
-        sigma = params[n_core - 1]
+        nll_trial = nll_trial_builder(tables, params[n_core - 1])
+        return jnp.sum(jax.vmap(nll_trial)(*data_arrays))
 
+    return loss_fn, n_params, n_core
+
+
+def _intimacy_loss(
+    observer_fn,
+    utility_param_names,
+    action,
+    scenario_idx,
+    desire_condition,
+    effort_condition,
+    response,
+    table_kwargs,
+    reweighting=None,
+):
+    """Study 2a's mixture NLL as a function of the fit's parameter vector.
+
+    The fit helper and the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) both call this, so there is one definition of
+    what the study's likelihood is; the shared protocol is `_mixture_loss`.
+    """
+
+    def nll_trial_builder(tables, sigma):
         def nll_trial(a, s, r, e, u):
             post_runs = tables[:, 0, s, a, r, e, :]  # (K, 101)
             deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
-        return jnp.sum(
-            jax.vmap(nll_trial)(
-                action, scenario_idx, desire_condition, effort_condition, response
-            )
-        )
+        return nll_trial
 
-    return loss_fn, n_params, n_core
+    return _mixture_loss(
+        nll_trial_builder,
+        (action, scenario_idx, desire_condition, effort_condition, response),
+        observer_fn,
+        utility_param_names,
+        table_kwargs,
+        reweighting,
+    )
 
 
 def _check_init_params_len(init_params, n_params, n_core):
@@ -1399,44 +1427,27 @@ def _desire_loss(
 ):
     """Study 1a's mixture NLL as a function of the fit's parameter vector.
 
-    Split out of `fit_desire_observer_joint` so the pooled cross-experiment fit
-    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
-    under one shared utility. The fit helper is the only other caller; both go
-    through this, so there is one definition of what a study's likelihood is.
-
-    Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
-    past sigma.
+    The fit helper and the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) both call this, so there is one definition of
+    what the study's likelihood is; the shared protocol is `_mixture_loss`.
     """
-    n_core = len(utility_param_names) + 2
-    n_params = n_core + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active.
-    i_eta = n_params - 1 if reweighting else None
 
-    def loss_fn(params):
-        tk = _reweighting.apply(
-            reweighting,
-            table_kwargs,
-            params[:n_core],
-            params[i_eta] if reweighting else 0.0,
-        )
-        tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, tk
-        )
-        sigma = params[n_core - 1]
-
+    def nll_trial_builder(tables, sigma):
         def nll_trial(a, s, e, rel, u):
             post_runs = tables[:, 0, s, a, e, rel, :]  # (K, 101)
             deltas = delta_latent(post_runs, GRID, PRIOR_MEAN)  # (K,)
             return mixture_nll_1d(u, deltas, sigma)
 
-        return jnp.sum(
-            jax.vmap(nll_trial)(
-                action, scenario_idx, effort_condition, relationship_condition, response
-            )
-        )
+        return nll_trial
 
-    return loss_fn, n_params, n_core
+    return _mixture_loss(
+        nll_trial_builder,
+        (action, scenario_idx, effort_condition, relationship_condition, response),
+        observer_fn,
+        utility_param_names,
+        table_kwargs,
+        reweighting,
+    )
 
 
 def fit_desire_observer_joint(
@@ -1516,32 +1527,12 @@ def _joint_de_loss(
 ):
     """Studies 1b/3a's bivariate mixture NLL as a function of the fit's parameter vector.
 
-    Split out of `fit_joint_de_observer_joint` so the pooled cross-experiment fit
-    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
-    under one shared utility. The fit helper is the only other caller; both go
-    through this, so there is one definition of what a study's likelihood is.
-
-    Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
-    past sigma.
+    The fit helper and the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) both call this, so there is one definition of
+    what the study's likelihood is; the shared protocol is `_mixture_loss`.
     """
-    n_core = len(utility_param_names) + 2
-    n_params = n_core + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active.
-    i_eta = n_params - 1 if reweighting else None
 
-    def loss_fn(params):
-        tk = _reweighting.apply(
-            reweighting,
-            table_kwargs,
-            params[:n_core],
-            params[i_eta] if reweighting else 0.0,
-        )
-        tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, tk
-        )
-        sigma = params[n_core - 1]
-
+    def nll_trial_builder(tables, sigma):
         def nll_trial(a, s, rel, u_desire, u_effort):
             joint = tables[:, 0, s, a, rel, :, :]  # (K, 101, 2)
             d_desire, d_effort = delta_joint(
@@ -1550,17 +1541,22 @@ def _joint_de_loss(
             deltas = jnp.stack([d_desire, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_desire, u_effort]), deltas, sigma)
 
-        return jnp.sum(
-            jax.vmap(nll_trial)(
-                action,
-                scenario_idx,
-                relationship_condition,
-                response_desire,
-                response_effort,
-            )
-        )
+        return nll_trial
 
-    return loss_fn, n_params, n_core
+    return _mixture_loss(
+        nll_trial_builder,
+        (
+            action,
+            scenario_idx,
+            relationship_condition,
+            response_desire,
+            response_effort,
+        ),
+        observer_fn,
+        utility_param_names,
+        table_kwargs,
+        reweighting,
+    )
 
 
 def fit_joint_de_observer_joint(
@@ -1642,32 +1638,12 @@ def _joint_ie_loss(
 ):
     """Studies 2b/3b's bivariate mixture NLL as a function of the fit's parameter vector.
 
-    Split out of `fit_joint_ie_observer_joint` so the pooled cross-experiment fit
-    (`model/inverse/_pooled.py`) can sum this study's loss with the others'
-    under one shared utility. The fit helper is the only other caller; both go
-    through this, so there is one definition of what a study's likelihood is.
-
-    Returns (loss_fn, n_params, n_core), where the parameter vector is
-    `[*utility, alpha_observer, sigma, *(eta)]` and `n_core` is the index one
-    past sigma.
+    The fit helper and the pooled cross-experiment fit
+    (`model/inverse/_pooled.py`) both call this, so there is one definition of
+    what the study's likelihood is; the shared protocol is `_mixture_loss`.
     """
-    n_core = len(utility_param_names) + 2
-    n_params = n_core + (1 if reweighting else 0)
-    # eta is the LAST slot when the reweighting is active.
-    i_eta = n_params - 1 if reweighting else None
 
-    def loss_fn(params):
-        tk = _reweighting.apply(
-            reweighting,
-            table_kwargs,
-            params[:n_core],
-            params[i_eta] if reweighting else 0.0,
-        )
-        tables = _build_observer_tables_runs(
-            observer_fn, params[:n_core], utility_param_names, tk
-        )
-        sigma = params[n_core - 1]
-
+    def nll_trial_builder(tables, sigma):
         def nll_trial(a, s, r, u_intimacy, u_effort):
             joint = tables[:, 0, s, a, r, :, :]  # (K, 101, 2)
             d_intimacy, d_effort = delta_joint(
@@ -1676,17 +1652,16 @@ def _joint_ie_loss(
             deltas = jnp.stack([d_intimacy, d_effort], axis=1)  # (K, 2)
             return mixture_nll_2d(jnp.array([u_intimacy, u_effort]), deltas, sigma)
 
-        return jnp.sum(
-            jax.vmap(nll_trial)(
-                action,
-                scenario_idx,
-                desire_condition,
-                response_intimacy,
-                response_effort,
-            )
-        )
+        return nll_trial
 
-    return loss_fn, n_params, n_core
+    return _mixture_loss(
+        nll_trial_builder,
+        (action, scenario_idx, desire_condition, response_intimacy, response_effort),
+        observer_fn,
+        utility_param_names,
+        table_kwargs,
+        reweighting,
+    )
 
 
 def fit_joint_ie_observer_joint(

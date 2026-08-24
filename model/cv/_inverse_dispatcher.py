@@ -416,12 +416,89 @@ def _rw_cached(slug, variant):
 
 
 def _cv_fold(variant, fold, warm, patience):
-    """One leave-one-scenario-out refit + held-out scoring. Reads the shared
-    data (and the observer family) from `_CV_W` and dispatches to the family's
-    fold body. Top-level + picklable so a ProcessPoolExecutor can run folds
-    concurrently; fully deterministic given (variant, fold, warm, patience), so
-    the parallel output equals the sequential."""
-    return _FAMILIES[_CV_W["family"]]["fold_impl"](variant, fold, warm, patience)
+    """One leave-one-scenario-out refit + held-out scoring — the fold protocol
+    shared by every family: refit on the training scenarios, rebuild the K-run
+    observer tables at the refit parameters (reweighted where the scope rule
+    applies), emit the held-out cell predictions and per-trial held-out
+    log-likelihoods, and pack the fold row. The per-family math lives in the
+    registry: which arrays feed the fitter (`train_kwargs`), the held-out cell
+    grid and delta keys (`predictions`), and the per-trial table slice +
+    mixture (`test_lls`).
+
+    Reads the shared data (and the observer family) from `_CV_W`. Top-level +
+    picklable so a ProcessPoolExecutor can run folds concurrently; fully
+    deterministic given (variant, fold, warm, patience), so the parallel
+    output equals the sequential."""
+    fam = _FAMILIES[_CV_W["family"]]
+    obs_fn, utility_names = fam["variants"][variant]
+    slug = _CV_W["slug"]
+    tk = _tk_cached(_CV_W["family"], slug, variant)
+    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
+    n_core = len(utility_names) + 2
+    arr = _CV_W["arrays"]
+    sc = arr["scenario"]
+    scenario_label = STUDY_SCENARIO_LABELS[slug][fold]
+    train_mask, test_mask = sc != fold, sc == fold
+    n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
+    _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
+
+    params, train_nll, _ = fam["fitter"](
+        observer_fn=obs_fn,
+        utility_param_names=utility_names,
+        **fam["train_kwargs"](arr, train_mask),
+        table_kwargs=tk,
+        reweighting=rw,
+        verbose=False,
+        n_restarts=N_RESTARTS_CV,
+        init_params=warm,
+        patience=patience,
+        seed_key=f"{slug}|{variant}|{scenario_label}",
+        free_mask=_free_mask(variant),
+    )
+    sigma = float(params[n_core - 1])
+    tables = np.asarray(
+        _build_observer_tables_runs(
+            obs_fn,
+            params[:n_core],
+            utility_names,
+            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
+        )
+    )
+
+    pred_rows = fam["predictions"](tables, fold, slug, scenario_label, variant)
+
+    trial_ll_rows = []
+    ti = np.where(test_mask)[0]
+    if len(ti):
+        lls = fam["test_lls"](tables, arr, ti, sigma)
+        test_nll = -float(lls.sum())
+        for j, i in enumerate(ti):
+            trial_ll_rows.append(
+                {
+                    "experiment": slug,
+                    "model": variant,
+                    "subject_id": str(arr["subj"][i]),
+                    "scenario_label": scenario_label,
+                    "held_out_ll": float(lls[j]),
+                }
+            )
+    else:
+        test_nll = 0.0
+
+    fold_row = _fold_row(
+        slug,
+        variant,
+        fold,
+        scenario_label,
+        params,
+        utility_names,
+        train_nll,
+        test_nll,
+        n_train,
+        n_test,
+        extra_param_names=(("eta",) if rw else ()),
+    )
+    return pred_rows, fold_row, trial_ll_rows
 
 
 @contextlib.contextmanager
@@ -720,57 +797,26 @@ def _tk_intimacy(variant, utility_names, slug):
     return intimacy_table_kwargs(utility_names)
 
 
-def _fold_impl_intimacy(variant, fold, warm, patience):
-    obs_fn, utility_names = VARIANTS_INTIMACY[variant]
-    slug = _CV_W["slug"]
-    tk = _tk_cached(_CV_W["family"], slug, variant)
-    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
-    n_core = len(utility_names) + 2
-    arr = _CV_W["arrays"]
-    sc, act = arr["scenario"], arr["action"]
-    des, eff = arr["desire"], arr["effort"]
-    resp, subj = arr["response"], arr["subj"]
-    scenario_label = STUDY_SCENARIO_LABELS[slug][fold]
-    train_mask, test_mask = sc != fold, sc == fold
-    n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
-    _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
-
-    params, train_nll, _ = fit_intimacy_observer_joint(
-        observer_fn=obs_fn,
-        utility_param_names=utility_names,
-        action=jnp.asarray(act[train_mask]),
-        scenario_idx=jnp.asarray(sc[train_mask]),
-        desire_condition=jnp.asarray(des[train_mask]),
-        effort_condition=jnp.asarray(eff[train_mask]),
-        response=jnp.asarray(resp[train_mask]),
-        table_kwargs=tk,
-        reweighting=rw,
-        verbose=False,
-        n_restarts=N_RESTARTS_CV,
-        init_params=warm,
-        patience=patience,
-        seed_key=f"{slug}|{variant}|{scenario_label}",
-        free_mask=_free_mask(variant),
-    )
-    sigma = float(params[n_core - 1])
-    # (run, slot, scenario, observed_action, desire, effort, intimacy_101)
-    tables = np.asarray(
-        _build_observer_tables_runs(
-            obs_fn,
-            params[:n_core],
-            utility_names,
-            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
-        )
+def _train_kwargs_intimacy(arr, m):
+    return dict(
+        action=jnp.asarray(arr["action"][m]),
+        scenario_idx=jnp.asarray(arr["scenario"][m]),
+        desire_condition=jnp.asarray(arr["desire"][m]),
+        effort_condition=jnp.asarray(arr["effort"][m]),
+        response=jnp.asarray(arr["response"][m]),
     )
 
-    # Predicted belief update δ per held-out cell (mean over runs).
-    pred_rows = []
+
+def _predictions_intimacy(tables, fold, slug, scenario_label, variant):
+    """Predicted belief update δ per held-out cell (mean over runs). Table dims:
+    (run, slot, scenario, observed_action, desire, effort, intimacy_101)."""
+    rows = []
     for a_idx in range(N_ACTIONS):
         for r in (0, 1):
             for e in (0, 1):
                 density_runs = tables[:, 0, fold, a_idx, r, e, :]  # (K, 101)
                 deltas = delta_latent(density_runs, GRID_NP, PRIOR_MEAN_F)  # (K,)
-                pred_rows.append(
+                rows.append(
                     {
                         "experiment": slug,
                         "scenario_label": scenario_label,
@@ -784,42 +830,15 @@ def _fold_impl_intimacy(variant, fold, warm, patience):
                         "model": variant,
                     }
                 )
+    return rows
 
-    # Per-trial held-out log-likelihood under the mixture.
-    trial_ll_rows = []
-    ti = np.where(test_mask)[0]
-    if len(ti):
-        post = tables[:, 0, sc[ti], act[ti], des[ti], eff[ti], :]  # (K, n_test, 101)
-        deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T  # (n_test, K)
-        lls = _held_out_ll_1d(deltas_t, resp[ti], sigma)
-        test_nll = -float(lls.sum())
-        for j, i in enumerate(ti):
-            trial_ll_rows.append(
-                {
-                    "experiment": slug,
-                    "model": variant,
-                    "subject_id": str(subj[i]),
-                    "scenario_label": scenario_label,
-                    "held_out_ll": float(lls[j]),
-                }
-            )
-    else:
-        test_nll = 0.0
 
-    fold_row = _fold_row(
-        slug,
-        variant,
-        fold,
-        scenario_label,
-        params,
-        utility_names,
-        train_nll,
-        test_nll,
-        n_train,
-        n_test,
-        extra_param_names=(("eta",) if rw else ()),
-    )
-    return pred_rows, fold_row, trial_ll_rows
+def _test_lls_intimacy(tables, arr, ti, sigma):
+    """Per-trial held-out log-likelihood under the mixture."""
+    sc, act = arr["scenario"], arr["action"]
+    post = tables[:, 0, sc[ti], act[ti], arr["desire"][ti], arr["effort"][ti], :]
+    deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T  # (n_test, K)
+    return _held_out_ll_1d(deltas_t, arr["response"][ti], sigma)
 
 
 def main_intimacy(config=None):
@@ -858,56 +877,26 @@ def _tk_desire(variant, utility_names, slug):
     return desire_table_kwargs(utility_names, base=(variant == "base"))
 
 
-def _fold_impl_desire(variant, fold, warm, patience):
-    obs_fn, utility_names = VARIANTS_DESIRE[variant]
-    slug = _CV_W["slug"]
-    tk = _tk_cached(_CV_W["family"], slug, variant)
-    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
-    n_core = len(utility_names) + 2
-    arr = _CV_W["arrays"]
-    sc, act = arr["scenario"], arr["action"]
-    eff, rel = arr["effort"], arr["rel"]
-    resp, subj = arr["response"], arr["subj"]
-    scenario_label = STUDY_SCENARIO_LABELS[slug][fold]
-    train_mask, test_mask = sc != fold, sc == fold
-    n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
-    _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
-
-    params, train_nll, _ = fit_desire_observer_joint(
-        observer_fn=obs_fn,
-        utility_param_names=utility_names,
-        action=jnp.asarray(act[train_mask]),
-        scenario_idx=jnp.asarray(sc[train_mask]),
-        effort_condition=jnp.asarray(eff[train_mask]),
-        relationship_condition=jnp.asarray(rel[train_mask]),
-        response=jnp.asarray(resp[train_mask]),
-        table_kwargs=tk,
-        reweighting=rw,
-        verbose=False,
-        n_restarts=N_RESTARTS_CV,
-        init_params=warm,
-        patience=patience,
-        seed_key=f"{slug}|{variant}|{scenario_label}",
-        free_mask=_free_mask(variant),
-    )
-    sigma = float(params[n_core - 1])
-    # (run, slot, scenario, observed_action, effort, intimacy, desire_101)
-    tables = np.asarray(
-        _build_observer_tables_runs(
-            obs_fn,
-            params[:n_core],
-            utility_names,
-            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
-        )
+def _train_kwargs_desire(arr, m):
+    return dict(
+        action=jnp.asarray(arr["action"][m]),
+        scenario_idx=jnp.asarray(arr["scenario"][m]),
+        effort_condition=jnp.asarray(arr["effort"][m]),
+        relationship_condition=jnp.asarray(arr["rel"][m]),
+        response=jnp.asarray(arr["response"][m]),
     )
 
-    pred_rows = []
+
+def _predictions_desire(tables, fold, slug, scenario_label, variant):
+    """Predicted belief update δ per held-out cell (mean over runs). Table dims:
+    (run, slot, scenario, observed_action, effort, intimacy, desire_101)."""
+    rows = []
     for a_idx in range(N_ACTIONS):
         for rel_idx in range(4):
             for e in (0, 1):
                 post = tables[:, 0, fold, a_idx, e, rel_idx, :]  # (K, 101)
                 deltas = delta_latent(post, GRID_NP, PRIOR_MEAN_F)
-                pred_rows.append(
+                rows.append(
                     {
                         "experiment": slug,
                         "scenario_label": scenario_label,
@@ -921,41 +910,15 @@ def _fold_impl_desire(variant, fold, warm, patience):
                         "model": variant,
                     }
                 )
+    return rows
 
-    trial_ll_rows = []
-    ti = np.where(test_mask)[0]
-    if len(ti):
-        post = tables[:, 0, sc[ti], act[ti], eff[ti], rel[ti], :]  # (K, n_test, 101)
-        deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T
-        lls = _held_out_ll_1d(deltas_t, resp[ti], sigma)
-        test_nll = -float(lls.sum())
-        for j, i in enumerate(ti):
-            trial_ll_rows.append(
-                {
-                    "experiment": slug,
-                    "model": variant,
-                    "subject_id": str(subj[i]),
-                    "scenario_label": scenario_label,
-                    "held_out_ll": float(lls[j]),
-                }
-            )
-    else:
-        test_nll = 0.0
 
-    fold_row = _fold_row(
-        slug,
-        variant,
-        fold,
-        scenario_label,
-        params,
-        utility_names,
-        train_nll,
-        test_nll,
-        n_train,
-        n_test,
-        extra_param_names=(("eta",) if rw else ()),
-    )
-    return pred_rows, fold_row, trial_ll_rows
+def _test_lls_desire(tables, arr, ti, sigma):
+    """Per-trial held-out log-likelihood under the mixture."""
+    sc, act = arr["scenario"], arr["action"]
+    post = tables[:, 0, sc[ti], act[ti], arr["effort"][ti], arr["rel"][ti], :]
+    deltas_t = delta_latent(post, GRID_NP, PRIOR_MEAN_F).T  # (n_test, K)
+    return _held_out_ll_1d(deltas_t, arr["response"][ti], sigma)
 
 
 def main_desire(config=None):
@@ -1001,58 +964,27 @@ def _tk_joint_de(variant, utility_names, slug):
     )
 
 
-def _fold_impl_joint_de(variant, fold, warm, patience):
-    obs_fn, utility_names = VARIANTS_JOINT_DE[variant]
-    slug = _CV_W["slug"]
-    tk = _tk_cached(_CV_W["family"], slug, variant)
-    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
-    n_core = len(utility_names) + 2
-    arr = _CV_W["arrays"]
-    sc, act = arr["scenario"], arr["action"]
-    rel = arr["rel"]
-    rd, re = arr["rd"], arr["re"]
-    subj = arr["subj"]
-    scenario_label = STUDY_SCENARIO_LABELS[slug][fold]
-    train_mask, test_mask = sc != fold, sc == fold
-    n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
-    _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
-
-    params, train_nll, _ = fit_joint_de_observer_joint(
-        observer_fn=obs_fn,
-        utility_param_names=utility_names,
-        action=jnp.asarray(act[train_mask]),
-        scenario_idx=jnp.asarray(sc[train_mask]),
-        relationship_condition=jnp.asarray(rel[train_mask]),
-        response_desire=jnp.asarray(rd[train_mask]),
-        response_effort=jnp.asarray(re[train_mask]),
-        table_kwargs=tk,
-        reweighting=rw,
-        verbose=False,
-        n_restarts=N_RESTARTS_CV,
-        init_params=warm,
-        patience=patience,
-        seed_key=f"{slug}|{variant}|{scenario_label}",
-        free_mask=_free_mask(variant),
-    )
-    sigma = float(params[n_core - 1])
-    # (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)
-    tables = np.asarray(
-        _build_observer_tables_runs(
-            obs_fn,
-            params[:n_core],
-            utility_names,
-            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
-        )
+def _train_kwargs_joint_de(arr, m):
+    return dict(
+        action=jnp.asarray(arr["action"][m]),
+        scenario_idx=jnp.asarray(arr["scenario"][m]),
+        relationship_condition=jnp.asarray(arr["rel"][m]),
+        response_desire=jnp.asarray(arr["rd"][m]),
+        response_effort=jnp.asarray(arr["re"][m]),
     )
 
-    pred_rows = []
+
+def _predictions_joint_de(tables, fold, slug, scenario_label, variant):
+    """Predicted belief updates per held-out cell (means over runs). Table dims:
+    (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)."""
+    rows = []
     for a_idx in range(N_ACTIONS):
         for rel_idx in range(4):
             joint_runs = tables[:, 0, fold, a_idx, rel_idx, :, :]  # (K, 101, 2)
             d_desire, d_effort = delta_joint(
                 joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
             )
-            pred_rows.append(
+            rows.append(
                 {
                     "experiment": slug,
                     "scenario_label": scenario_label,
@@ -1067,46 +999,20 @@ def _fold_impl_joint_de(variant, fold, warm, patience):
                     "model": variant,
                 }
             )
+    return rows
 
-    trial_ll_rows = []
-    ti = np.where(test_mask)[0]
-    if len(ti):
-        joint_t = tables[:, 0, sc[ti], act[ti], rel[ti], :, :]  # (K, n_test, 101, 2)
-        d_desire_t, d_effort_t = delta_joint(
-            joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
-        )
-        deltas_t = np.stack([d_desire_t, d_effort_t], axis=-1)  # (K, n_test, 2)
-        deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
-        u_t = np.stack([rd[ti], re[ti]], axis=1)  # (n_test, 2)
-        lls = _held_out_ll_2d(deltas_t, u_t, sigma)
-        test_nll = -float(lls.sum())
-        for j, i in enumerate(ti):
-            trial_ll_rows.append(
-                {
-                    "experiment": slug,
-                    "model": variant,
-                    "subject_id": str(subj[i]),
-                    "scenario_label": scenario_label,
-                    "held_out_ll": float(lls[j]),
-                }
-            )
-    else:
-        test_nll = 0.0
 
-    fold_row = _fold_row(
-        slug,
-        variant,
-        fold,
-        scenario_label,
-        params,
-        utility_names,
-        train_nll,
-        test_nll,
-        n_train,
-        n_test,
-        extra_param_names=(("eta",) if rw else ()),
+def _test_lls_joint_de(tables, arr, ti, sigma):
+    """Per-trial held-out log-likelihood under the bivariate mixture."""
+    sc, act = arr["scenario"], arr["action"]
+    joint_t = tables[:, 0, sc[ti], act[ti], arr["rel"][ti], :, :]  # (K, n_test, 101, 2)
+    d_desire_t, d_effort_t = delta_joint(
+        joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
     )
-    return pred_rows, fold_row, trial_ll_rows
+    deltas_t = np.stack([d_desire_t, d_effort_t], axis=-1)  # (K, n_test, 2)
+    deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
+    u_t = np.stack([arr["rd"][ti], arr["re"][ti]], axis=1)  # (n_test, 2)
+    return _held_out_ll_2d(deltas_t, u_t, sigma)
 
 
 def main_joint_de(slug="food_inv_joint_de", config=None):
@@ -1149,58 +1055,27 @@ def _tk_joint_ie(variant, utility_names, slug):
     return joint_ie_table_kwargs(utility_names, domain=_domain_for(slug))
 
 
-def _fold_impl_joint_ie(variant, fold, warm, patience):
-    obs_fn, utility_names = VARIANTS_JOINT_IE[variant]
-    slug = _CV_W["slug"]
-    tk = _tk_cached(_CV_W["family"], slug, variant)
-    rw = _rw_cached(slug, variant)  # None where the scope rule grants none
-    n_core = len(utility_names) + 2
-    arr = _CV_W["arrays"]
-    sc, act = arr["scenario"], arr["action"]
-    des = arr["desire"]
-    ri, re = arr["ri"], arr["re"]
-    subj = arr["subj"]
-    scenario_label = STUDY_SCENARIO_LABELS[slug][fold]
-    train_mask, test_mask = sc != fold, sc == fold
-    n_train, n_test = int(train_mask.sum()), int(test_mask.sum())
-    _print_fold_header(slug, variant, fold, scenario_label, n_train, n_test)
-
-    params, train_nll, _ = fit_joint_ie_observer_joint(
-        observer_fn=obs_fn,
-        utility_param_names=utility_names,
-        action=jnp.asarray(act[train_mask]),
-        scenario_idx=jnp.asarray(sc[train_mask]),
-        desire_condition=jnp.asarray(des[train_mask]),
-        response_intimacy=jnp.asarray(ri[train_mask]),
-        response_effort=jnp.asarray(re[train_mask]),
-        table_kwargs=tk,
-        reweighting=rw,
-        verbose=False,
-        n_restarts=N_RESTARTS_CV,
-        init_params=warm,
-        patience=patience,
-        seed_key=f"{slug}|{variant}|{scenario_label}",
-        free_mask=_free_mask(variant),
-    )
-    sigma = float(params[n_core - 1])
-    # (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)
-    tables = np.asarray(
-        _build_observer_tables_runs(
-            obs_fn,
-            params[:n_core],
-            utility_names,
-            _reweighting.apply(rw, tk, params[:n_core], params[-1] if rw else 0.0),
-        )
+def _train_kwargs_joint_ie(arr, m):
+    return dict(
+        action=jnp.asarray(arr["action"][m]),
+        scenario_idx=jnp.asarray(arr["scenario"][m]),
+        desire_condition=jnp.asarray(arr["desire"][m]),
+        response_intimacy=jnp.asarray(arr["ri"][m]),
+        response_effort=jnp.asarray(arr["re"][m]),
     )
 
-    pred_rows = []
+
+def _predictions_joint_ie(tables, fold, slug, scenario_label, variant):
+    """Predicted belief updates per held-out cell (means over runs). Table dims:
+    (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)."""
+    rows = []
     for a_idx in range(N_ACTIONS):
         for r in (0, 1):
             joint_runs = tables[:, 0, fold, a_idx, r, :, :]  # (K, 101, 2)
             d_intimacy, d_effort = delta_joint(
                 joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
             )
-            pred_rows.append(
+            rows.append(
                 {
                     "experiment": slug,
                     "scenario_label": scenario_label,
@@ -1215,46 +1090,22 @@ def _fold_impl_joint_ie(variant, fold, warm, patience):
                     "model": variant,
                 }
             )
+    return rows
 
-    trial_ll_rows = []
-    ti = np.where(test_mask)[0]
-    if len(ti):
-        joint_t = tables[:, 0, sc[ti], act[ti], des[ti], :, :]  # (K, n_test, 101, 2)
-        d_intimacy_t, d_effort_t = delta_joint(
-            joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
-        )
-        deltas_t = np.stack([d_intimacy_t, d_effort_t], axis=-1)  # (K,n_test,2)
-        deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
-        u_t = np.stack([ri[ti], re[ti]], axis=1)  # (n_test, 2)
-        lls = _held_out_ll_2d(deltas_t, u_t, sigma)
-        test_nll = -float(lls.sum())
-        for j, i in enumerate(ti):
-            trial_ll_rows.append(
-                {
-                    "experiment": slug,
-                    "model": variant,
-                    "subject_id": str(subj[i]),
-                    "scenario_label": scenario_label,
-                    "held_out_ll": float(lls[j]),
-                }
-            )
-    else:
-        test_nll = 0.0
 
-    fold_row = _fold_row(
-        slug,
-        variant,
-        fold,
-        scenario_label,
-        params,
-        utility_names,
-        train_nll,
-        test_nll,
-        n_train,
-        n_test,
-        extra_param_names=(("eta",) if rw else ()),
+def _test_lls_joint_ie(tables, arr, ti, sigma):
+    """Per-trial held-out log-likelihood under the bivariate mixture."""
+    sc, act = arr["scenario"], arr["action"]
+    joint_t = tables[
+        :, 0, sc[ti], act[ti], arr["desire"][ti], :, :
+    ]  # (K, n_test, 101, 2)
+    d_intimacy_t, d_effort_t = delta_joint(
+        joint_t, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
     )
-    return pred_rows, fold_row, trial_ll_rows
+    deltas_t = np.stack([d_intimacy_t, d_effort_t], axis=-1)  # (K, n_test, 2)
+    deltas_t = np.transpose(deltas_t, (1, 0, 2))  # (n_test, K, 2)
+    u_t = np.stack([arr["ri"][ti], arr["re"][ti]], axis=1)  # (n_test, 2)
+    return _held_out_ll_2d(deltas_t, u_t, sigma)
 
 
 def main_joint_ie(slug="food_inv_joint_ie", config=None):
@@ -1280,7 +1131,10 @@ _FAMILIES = {
         "variants": VARIANTS_INTIMACY,
         "load_arrays": _load_arrays_intimacy,
         "table_kwargs": _tk_intimacy,
-        "fold_impl": _fold_impl_intimacy,
+        "fitter": fit_intimacy_observer_joint,
+        "train_kwargs": _train_kwargs_intimacy,
+        "predictions": _predictions_intimacy,
+        "test_lls": _test_lls_intimacy,
         "default_workers": DEFAULT_WORKERS,
         "worker_threads": DEFAULT_WORKER_THREADS,
     },
@@ -1288,7 +1142,10 @@ _FAMILIES = {
         "variants": VARIANTS_DESIRE,
         "load_arrays": _load_arrays_desire,
         "table_kwargs": _tk_desire,
-        "fold_impl": _fold_impl_desire,
+        "fitter": fit_desire_observer_joint,
+        "train_kwargs": _train_kwargs_desire,
+        "predictions": _predictions_desire,
+        "test_lls": _test_lls_desire,
         "default_workers": DEFAULT_WORKERS,
         "worker_threads": DEFAULT_WORKER_THREADS,
     },
@@ -1296,7 +1153,10 @@ _FAMILIES = {
         "variants": VARIANTS_JOINT_DE,
         "load_arrays": _load_arrays_joint_de,
         "table_kwargs": _tk_joint_de,
-        "fold_impl": _fold_impl_joint_de,
+        "fitter": fit_joint_de_observer_joint,
+        "train_kwargs": _train_kwargs_joint_de,
+        "predictions": _predictions_joint_de,
+        "test_lls": _test_lls_joint_de,
         "default_workers": DEFAULT_WORKERS,
         "worker_threads": DEFAULT_WORKER_THREADS,
     },
@@ -1304,7 +1164,10 @@ _FAMILIES = {
         "variants": VARIANTS_JOINT_IE,
         "load_arrays": _load_arrays_joint_ie,
         "table_kwargs": _tk_joint_ie,
-        "fold_impl": _fold_impl_joint_ie,
+        "fitter": fit_joint_ie_observer_joint,
+        "train_kwargs": _train_kwargs_joint_ie,
+        "predictions": _predictions_joint_ie,
+        "test_lls": _test_lls_joint_ie,
         "default_workers": DEFAULT_WORKERS,
         "worker_threads": DEFAULT_WORKER_THREADS,
     },
