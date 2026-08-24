@@ -1,91 +1,102 @@
 # Data codebook
 
-There are six inverse-planning studies, all on the same 3-action stimulus structure: four on the food scenario set and two on the non-food set (the slug ↔ study mapping is in the [root README](../README.md#experiments)). Each experiment folder contains `main_trials.csv` (all participants), `main_trials_long.csv` (exclusions applied; this is what the model and analysis code load), and `exit_survey.csv`, all produced from the gitignored `raw_data/` JSON by `data_prep/json_to_csv.py`. All six have collected samples in `data/<slug>/` (retained after exclusions: 1a ~480; 1b, 2a, 3a, and 3b ~240 each; 2b ~120), and the conversion configs for all six are in `json_to_csv.py`. The Makefile's `EXPERIMENTS_INVERSE` list names all six and drives the pipeline over them.
+The `data/` directory contains the processed, de-identified data from all six
+studies. Each study directory contains three CSV files:
 
-| Folder | Study | Inferred | Given |
+- `main_trials.csv` contains all prior and posterior ratings from participants
+  who completed the study.
+- `main_trials_long.csv` excludes participants who did not meet that study's
+  inclusion criteria. The model and figure code use this file.
+- `exit_survey.csv` contains demographics, study feedback, and the responses
+  used to determine inclusion.
+
+The raw jsPsych JSON files may contain identifying information and are not
+included. `data_prep/json_to_csv.py` converts those files into the CSV files
+described here.
+
+| Directory | Study | Ratings participants provide | Information they are given |
 |---|---|---|---|
-| `food_inv_desire/` | 1a | desire | effort, intimacy |
-| `food_inv_joint_de/` | 1b | desire + effort (jointly) | intimacy |
-| `food_inv_intimacy/` | 2a | intimacy | desire, effort |
-| `food_inv_joint_ie/` | 2b | intimacy + effort (jointly) | desire |
-| `nonfood_inv_joint_de/` | 3a | desire + effort (jointly) | intimacy |
-| `nonfood_inv_joint_ie/` | 3b | intimacy + effort (jointly) | desire |
+| `food_inv_desire/` | 1a | desire | effort and intimacy |
+| `food_inv_joint_de/` | 1b | desire and effort | intimacy |
+| `food_inv_intimacy/` | 2a | intimacy | desire and effort |
+| `food_inv_joint_ie/` | 2b | intimacy and effort | desire |
+| `nonfood_inv_joint_de/` | 3a | desire and effort | intimacy |
+| `nonfood_inv_joint_ie/` | 3b | intimacy and effort | desire |
 
+## Trial data
 
-## Exit survey (all experiments)
-
-| Column | Description |
-|--------|-------------|
-| `subject_id` | Anonymized participant UUID |
-| `gender` | Self-reported gender |
-| `age` | Self-reported age |
-| `understood` | Whether participant understood the task ("yes"/"no") |
-| `comments` | Free-text comments |
-| `attention_passed` | Whether participant passed attention check (True/False) |
-| `memory_correct_count` | Number of correct responses on memory check (0-3) |
-| `comprehension_attempt` | Which attempt (1–3) the participant passed the comprehension check on. Everyone in the data passed (those who failed all three attempts are ended before data is saved and never appear in `raw_data/`), so this is a quality signal, not an exclusion field. |
-
-## Main trials
-
-Each row of `main_trials.csv` is one rating page (one prior or posterior elicitation for one scenario). All ratings are collected on 0–100 sliders and stored on the 0–1 scale. Columns shared by all studies:
+Each row of `main_trials.csv` records one rating page for one scenario. Ratings
+were collected on sliders from 0 to 100 and are stored as values from 0 to 1.
+The following columns appear in every study:
 
 | Column | Description |
-|--------|-------------|
-| `subject_id` | Anonymized participant UUID |
-| `scenario_label` | Scenario identifier (e.g., "apples") |
-| `stimulus_index` | 0-based order in which the participant encountered this scenario (0–15; identical on the scenario's prior and posterior rows), copied from the jsPsych trial data. Supports the first-half-of-trials (repeated-exposure) robustness analyses. |
-| `action_condition` | Observed action: "no_share", "low_risk_share", or "high_risk_share" |
-| `stage` | "prior" or "posterior" (before vs. after seeing the action) |
+|---|---|
+| `subject_id` | An anonymized participant ID. |
+| `scenario_label` | The scenario name, such as `apples`. |
+| `stimulus_index` | The order in which the participant saw the scenario, from 0 to 15. |
+| `action_condition` | The observed action: `no_share`, `low_risk_share`, or `high_risk_share`. |
+| `stage` | Whether the rating was made before (`prior`) or after (`posterior`) the observed action. |
 
-In `main_trials_long.csv` the given-condition columns are renamed to bare factor names (`effort_condition` → `effort`, `intimacy_condition` → `intimacy`, `desire_condition` → `desire`) and excluded participants are removed.
+`main_trials_long.csv` contains the same rows after exclusions. In that file,
+the columns for information given to participants use shorter names:
+`effort_condition` becomes `effort`, `intimacy_condition` becomes `intimacy`,
+and `desire_condition` becomes `desire`.
 
-### Study 1a — desire inference (`food_inv_desire/`)
-
-| Column | Description |
-|--------|-------------|
-| `effort_condition` | "low" or "high" |
-| `intimacy_condition` | "max_formal", "somewhat_formal", "somewhat_intimate", or "max_intimate" |
-| `response` | Desire rating ("how much do they want the food?"), stored 0–1 |
-
-### Study 1b — joint desire + effort (`food_inv_joint_de/`)
-
-Two sliders per page (a `survey-html-form` trial), so each row carries both ratings.
+### Study 1a -- desire
 
 | Column | Description |
-|--------|-------------|
-| `intimacy_condition` | "max_formal", "somewhat_formal", "somewhat_intimate", or "max_intimate" |
-| `desire_rating` | Desire rating, stored 0–1 |
-| `effort_rating` | Which effort situation is more likely, stored 0–1 (0 = effort-low paragraph, 1 = effort-high paragraph) |
+|---|---|
+| `effort_condition` | Whether obtaining another serving requires low or high effort. |
+| `intimacy_condition` | The relationship description, from `max_formal` to `max_intimate`. |
+| `response` | The participant's desire rating. |
 
-### Study 2a — intimacy inference (`food_inv_intimacy/`)
-
-| Column | Description |
-|--------|-------------|
-| `desire_condition` | "low" or "high" |
-| `effort_condition` | "low" or "high" |
-| `intimacy_rating` | Intimacy rating, stored 0–1 |
-
-### Study 2b — joint intimacy + effort (`food_inv_joint_ie/`)
-
-Two sliders per page, so each row carries both ratings.
+### Study 1b -- desire and effort
 
 | Column | Description |
-|--------|-------------|
-| `desire_condition` | "low" or "high" |
-| `intimacy_rating` | Intimacy rating, stored 0–1 |
-| `effort_rating` | Which effort situation is more likely, stored 0–1 (0 = effort-low paragraph, 1 = effort-high paragraph) |
+|---|---|
+| `intimacy_condition` | The relationship description, from `max_formal` to `max_intimate`. |
+| `desire_rating` | The participant's desire rating. |
+| `effort_rating` | The participant's judgment of which effort situation is more likely. A value of 0 corresponds to the low-effort description and 1 to the high-effort description. |
 
-### Studies 3a and 3b — non-food (`nonfood_inv_joint_de/`, `nonfood_inv_joint_ie/`)
+### Study 2a -- intimacy
 
-The non-food studies repeat 1b's and 2b's designs on the non-food scenario set, so their CSVs use exactly the same columns: Study 3a matches the Study 1b table above and Study 3b matches the Study 2b table. Both have full samples (~240 each after exclusions).
+| Column | Description |
+|---|---|
+| `desire_condition` | Whether the characters have low or high desire. |
+| `effort_condition` | Whether obtaining another serving requires low or high effort. |
+| `intimacy_rating` | The participant's intimacy rating, from maximally formal to maximally intimate. |
 
-## Exclusion criteria
+### Study 2b -- intimacy and effort
 
-The exclusion rule is per-study (each study's `exclusion_rule` in `data_prep/json_to_csv.py`), and `memory_correct_count` counts questions (three across the two memory checks):
+| Column | Description |
+|---|---|
+| `desire_condition` | Whether the characters have low or high desire. |
+| `intimacy_rating` | The participant's intimacy rating, from maximally formal to maximally intimate. |
+| `effort_rating` | The participant's judgment of which effort situation is more likely. A value of 0 corresponds to the low-effort description and 1 to the high-effort description. |
 
-- **Study 1a** (`food_inv_desire`) uses its preregistered lax rule: participants are excluded only if they failed the attention check **and** answered 0 memory questions correctly, i.e. `(attention_passed != True) & (memory_correct_count == 0)`.
-- **Studies 1b, 2a, 2b, 3a, and 3b** use a stricter rule (1a's rule excluded no one, so it was tightened for the later studies): participants are retained only if they passed the attention check **and** answered at least one memory question correctly, i.e. excluded if `(attention_passed != True) | (memory_correct_count == 0)`. The non-food studies' memory checks come from their own scenario set (the sleeping-bag and salary scenarios, three questions total, in `experiments/_lib/memory-checks.js`), but the counting and the rule are the same.
+Studies 3a and 3b use non-food scenarios. Their columns match Studies 1b and
+2b, respectively.
 
-(There is no comprehension-check exclusion: participants who fail the comprehension check after three attempts are ended before any data is saved, so they never appear in `raw_data/`.)
+## Exit survey
 
-`main_trials_long.csv` reflects exclusions; `main_trials.csv` does not. The total recruited is the number of rows in `exit_survey.csv`, and the retained count is the number of distinct `subject_id` values in `main_trials_long.csv` (this is also how `model/export_results_latex.py` computes the demographics the manuscript reports).
+| Column | Description |
+|---|---|
+| `subject_id` | An anonymized participant ID. |
+| `gender` | The participant's self-reported gender. |
+| `age` | The participant's self-reported age. |
+| `understood` | Whether the participant reported understanding the task. |
+| `comments` | Free-text feedback. |
+| `attention_passed` | Whether the participant passed the attention check. |
+| `memory_correct_count` | The number of correct answers across the three memory questions. |
+| `comprehension_attempt` | The attempt on which the participant passed the comprehension check, from 1 to 3. |
+
+## Exclusions
+
+Study 1a excludes participants only when they both fail the attention check and
+answer none of the memory questions correctly. The other five studies require
+participants to pass the attention check and answer at least one memory
+question correctly.
+
+Participants must pass the comprehension check before beginning the study.
+Those who do not pass within three attempts do not produce a saved data file,
+so no additional comprehension-check exclusion is needed.

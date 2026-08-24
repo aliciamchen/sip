@@ -1,255 +1,191 @@
 # Model outputs codebook
 
-Outputs are grouped by experiment slug. Everything the pipeline writes is JSON or JSON
-Lines. JSON Lines is used for the large, append/resume-friendly per-record logs (per-run LM
-scores, stage-1 alternatives, per-restart and per-fold fit diagnostics, per-trial held-out
-likelihoods); plain JSON is used for the smaller structured summaries.
+The `model/outputs/` directory contains the language-model ratings used as
+model inputs and the results produced by model fitting and cross-validation.
+Files are grouped by study slug. Large collections of records use JSON Lines
+(`.jsonl`), with one JSON object per line; smaller summaries use regular JSON.
 
-```
+## Directory structure
+
+```text
 outputs/
-├── lm/                                   # LM-elicited tables, one folder per study slug
-│   └── <slug>/
-│       ├── lm_runs.jsonl                     # scored actions + per-run given magnitude, one record per (run, cell)  ← primary
-│       ├── lm_alternatives.jsonl             # stage-1 generated alternative texts (one record per alt)
-│       ├── lm_runs_base.jsonl                # base ablation's relationship-free analog of lm_runs.jsonl (given-relationship studies)
-│       ├── lm_alternatives_base.jsonl        # base ablation's relationship-free analog of lm_alternatives.jsonl
-│       ├── lm_alternatives*.rationale.jsonl  # raw response containing the rationale and alternatives array
-│       └── *.manifest.json                   # provenance sidecar per elicited JSONL (model, prompt hash, git SHA, timestamp)
-└── <slug>/                               # one folder per inverse study (fits + CV)
-    ├── fit_results.json                      # fitted params per ablation (incl. param_sigma)
-    ├── fit_restarts.jsonl                    # per-restart fit diagnostics
-    ├── fit_manifest.json                     # fit provenance: git SHA + sha256 of the fit outputs and input data
-    ├── cv_trial_ll.jsonl                     # per-trial held-out log-likelihood, by subject_id  ← primary metric
-    ├── cv_preds_summary.json                 # held-out per-cell delta_<latent> (the model's predictions)
-    ├── cv_folds.jsonl                        # per-fold refit diagnostics
-    ├── cv_manifest.json                      # CV provenance: git SHA + sha256 of the CV outputs and input data
-    └── cv_model_comparison.json              # bootstrap model-comparison statistics (the paper's numbers)
+|-- lm/
+|   `-- <slug>/
+|       |-- lm_alternatives.jsonl
+|       |-- lm_runs.jsonl
+|       |-- lm_alternatives_base.jsonl   # some studies only
+|       |-- lm_runs_base.jsonl           # some studies only
+|       `-- *.manifest.json
+`-- <slug>/
+    |-- fit_results.json
+    |-- fit_restarts.jsonl
+    |-- fit_manifest.json
+    |-- cv_trial_ll.jsonl
+    |-- cv_preds_summary.json
+    |-- cv_folds.jsonl
+    |-- cv_manifest.json
+    `-- cv_model_comparison.json
 ```
 
-The slugs are the six inverse studies' directory names; the slug ↔ study mapping is
-in the [root README](../../README.md#experiments). A study's `outputs/lm/<slug>/`
-and `<slug>/` folders appear once its LM elicitation and fits have been run, and the `<slug>/`
-folder is populated by running its fit → CV scripts (`make all`, or the per-study
-`make fit-<slug>` / `cv-<slug>`). There is no separate in-sample prediction stage: CV is the
-sole source of model predictions, because every reported model-vs-human number is
-out-of-sample.
+The language-model ratings and the main fit and cross-validation results are
+included in the repository. This allows readers to inspect the reported
+results and regenerate figures without repeating the paid language-model
+elicitation.
 
-The elicited LM tables (`lm_runs.jsonl`, `lm_alternatives.jsonl`, and their `_base` variants
-where the study has one), their provenance manifests, and the fit/CV outputs are committed, so
-the fit → CV → analysis pipeline is reproducible from a fresh clone without a Together AI key.
-They are regenerated when the pipeline changes: the LM tables by `generate_alternatives.py` +
-`score_merged.py`, and the fit/CV outputs by the fit and CV scripts. A study whose
-`lm_runs.jsonl` is missing has no LM tables — its loaders return `None` and its fit raises a
-clear `FileNotFoundError`.
+## Language-model ratings
 
-## What the numbers mean
+The model uses a language model to suggest other actions the characters could
+have taken and to rate the observed and alternative actions. Ratings of risk,
+effort, and goal satisfaction are collected on a scale from 0 to 6 and
+converted to values between 0 and 1 before model fitting. Each scenario and
+condition is elicited 20 times so that the analysis does not depend on a
+single language-model response.
 
-The dependent measure is the **belief update** `u = posterior rating − prior rating` (per
-participant per trial). Each LM elicitation run `k` yields a model belief update
-`δ_k = posterior mean − prior mean` for the inferred latent, and a trial is scored under the
-K-component Gaussian mixture `(1/K) Σ_k N(u | δ_k, σ²)` with a fitted response-noise `σ`. So
-the predicted quantities below are all in belief-update space (the `delta_<latent>` fields),
-not raw-posterior space, and every fit carries `param_sigma` alongside the utility weights and
-`alpha_observer`. The utility model and the naming of the `param_*` fields (the `w_v · desire · g`
-reward term, the `risk` feature with weight `w_d`) are defined in
-[README.md](../../README.md#utility-model); the model implementation is described in
-[`model/README.md`](../README.md).
+### `lm_alternatives.jsonl`
 
-## LM-elicited tables (`outputs/lm/<slug>/`)
+This file contains the alternative actions generated for each scenario,
+condition, and elicitation run. Important fields include:
 
-Each study keeps its LM tables in its own folder. The observed actions are re-scored in the
-comparative frame of that study's own alternative set, so each study's scores can differ —
-keeping them per-folder means no study's elicitation overwrites another's. All `risk`,
-`effort`, and `g` values are LM ratings on a 0–6 scale normalized to `[0, 1]`. The pipeline
-runs `K` independent elicitation runs per cell (`K_RUNS`, default 20); the runs are the
-elicitation-sample mixture's components, so the alternatives, their feature scores, **and** the
-given-magnitude scalars all vary run to run.
+| Field | Description |
+|---|---|
+| `scenario_label` | The scenario name. |
+| `observed_action` | The action shown in the experiment. |
+| `run_id` | The elicitation run, from 0 to 19. |
+| `alt_idx` | The alternative's position within that run. |
+| `action_text` | The generated alternative action. |
+| `is_share` | Whether the action involves sharing. |
 
-### `lm_runs.jsonl` — scored actions per run (primary)
+The condition columns differ by study because participants are given different
+information in different studies.
 
-One record per `(run_id, cell)`, where a cell is `(scenario, observed_action, +
-observer-visible condition levels)`. Each record holds that run's full action list — slot 0 is
-the observed action, slots 1.. are that run's alternatives — scored together in one
-comparative frame, plus that run's **given-magnitude scalar** for the cell's condition: `desire`
-for the given-desire studies (2a/2b), `intimacy` for the given-relationship studies (1a/1b).
-Written by `score_merged.py`; consumed by `tables.py` (the `load_padded_lm_tables_*` loaders
-for the action features, `load_lm_scenario_desire` / `load_lm_relationship_values` for the
-given magnitudes), all stacking the runs on a leading `K` axis.
+### `lm_runs.jsonl`
 
-```json
-{
-  "run_id": 0,
-  "scenario_label": "apples",
-  "observed_action": "no_share",
-  "intimacy_condition": "somewhat_formal",
-  "effort_condition": "low",
-  "intimacy": 0.48,
-  "actions": [
-    {"slot": 0, "is_observed": true,  "action_text": "...", "is_share": 0,
-     "risk": 0.0, "effort": 0.0, "g": 0.5},
-    {"slot": 1, "alt_idx": 0, "is_observed": false, "action_text": "...", "is_share": 1,
-     "risk": 0.17, "effort": 0.33, "g": 1.0}
-  ]
-}
-```
+This file contains the rated actions used by the fitted models. Each record
+represents one elicitation run for one scenario and condition. Its `actions`
+list contains the observed action followed by the generated alternatives.
 
-The condition keys between `observed_action` and the given scalar follow the study's cell grid;
-`effort_condition` is always present (the loaders key the observed slot on it). The given
-scalar is `intimacy` here (1a/1b); for 2a/2b it is `desire` instead. It is denormalized — the
-same value repeats across every record sharing a `(run, condition)` — because the given
-magnitude is a property of the condition, not of the action list. The `actions` list is ragged:
-a run that produced no alternatives for a cell still emits the record with just slot 0.
-`risk`/`effort`/`g` are `null` when a rating failed. Resume keys on `(scenario_label, run_id)`.
+Each action has an `action_text`, an `is_observed` indicator, and ratings for
+`risk`, `effort`, and `g`, where `g` is goal satisfaction. Studies in which
+desire or intimacy is given to participants also include the language model's
+numeric rating of that condition.
 
-### `lm_alternatives.jsonl` — stage-1 generated alternatives
+### Base-model files
 
-The LM-generated counterfactual actions, written by `generate_alternatives.py --study <slug>`
-and read back by `score_merged.py`. One record per generated alternative, with fields
-`scenario_label`, `observed_action`, the study's generation-cell condition columns, `run_id`,
-`alt_idx`, `action_text`, and `is_share`. The feature scores (`risk`/`effort`/`g`) are *not*
-here — scoring happens in `score_merged.py` and lands in `lm_runs.jsonl`. This is the stage-1
-input to scoring.
+Studies 1a, 1b, and 3a also have `lm_alternatives_base.jsonl` and
+`lm_runs_base.jsonl`. These files contain actions elicited without a
+relationship description for the preregistered base model.
 
-### `lm_alternatives_base.jsonl` / `lm_runs_base.jsonl` — the base ablation's tables
+### Manifest files
 
-The same two-stage pipeline run with `--base` (`make lm-base`), for the given-relationship
-studies only (1a/1b/3a). Because the base ablation has no intimacy term, its choice set must
-not depend on the relationship either, so these alternatives are elicited **without** the
-relationship description and scored into `lm_runs_base.jsonl` with no per-run intimacy scalar.
-The record shapes match the main files' (the cell grid just drops the relationship axis); the
-base fit and CV load them via `desire_table_kwargs(base=True)`, which broadcasts the
-relationship-free set across the relationship conditions.
+Each elicited file has a neighboring `*.manifest.json` file. The manifest
+records whether the elicitation finished, which language model and settings
+were used, when it ran, and identifiers for the prompts and input files. These
+records make it possible to tell whether two output files came from the same
+elicitation.
 
-### `*.manifest.json` — provenance sidecars
+The `*.rationale.jsonl` files preserve the language model's complete response
+from the alternative-generation step. They are included for inspection but
+are not read by the fitted models.
 
-Every elicited JSONL gets a small plain-JSON sidecar next to it (`lm_runs.jsonl` →
-`lm_runs.manifest.json`), written by `client.write_run_manifest`. The generation and scoring
-stages write `status: "in_progress"` before their first paid call and replace it with
-`status: "complete"` only after the full intended grid is valid. This makes an interrupted
-JSONL checkpoint distinguishable from a completed elicitation. Because the values in these
-files are LM-generated, two regenerations must be distinguishable, so each new manifest
-records how its file was produced: `stage`
-(`generate_alternatives` or `score_merged`), `study`, `model`,
-`prompt_sha256` (a short hash of the rendered prompt surfaces that determine that stage's
-output, including generation prompts upstream of `score_merged`), `prompts_sha256` (a
-broader hash of the whole prompt module, kept alongside), `rendered_prompt_sha256` (the exact
-messages assembled by the production caller for that study and input data), `git_sha`,
-`created_utc`, and stage-specific config (`k_runs`, the generation or scoring temperature,
-and record counts). A scoring manifest also records hashes of the exact alternatives JSONL,
-its generation manifest, and its generation-prompt fingerprint. These fields prevent a
-partial scoring resume from using replaced or stale alternatives.
+## Fitted models
 
-The resume guard keys on the stage-specific hash, so a generation run is invalidated by a
-generation-prompt edit but not by an unrelated rating-prompt or comment edit, and also guards
-the exact rendered-message fingerprint. Set `LM_RESUME_PROMPT_MISMATCH=allow` only for a
-deliberate mixed-prompt resume; superseded hashes are then preserved in the manifest's history
-fields.
-
-## Per-study fit and CV outputs (`<slug>/`)
-
-Each study jointly fits its actor utility weights, `alpha_observer`, and the response-noise
-`sigma` from its own belief-update data (weights are **not** transferred between studies).
+Each study's main results are in `outputs/<slug>/`. The parameters are fit to
+the change between each participant's prior and posterior rating.
 
 ### `fit_results.json`
 
-A list with one object per ablation (`full`, `discomfort_only`, `base`). Each object carries
-only the parameters its ablation actually uses, so there are no blank cells:
+This file contains one record for each fitted model variant. All studies have
+`full`, `discomfort_only`, and `base` variants. Studies in which intimacy is
+given also have `base_shared`, which uses the base model with the full model's
+relationship-specific set of possible actions.
 
 | Field | Description |
-|--------|-------------|
-| `model` | `full`, `discomfort_only`, or `base` |
-| `experiment` | Slug (e.g. `food_inv_desire`) |
-| `nll`, `n_params` | Fit diagnostics (negative log-likelihood of the mixture; parameter count) |
-| `param_alpha` | Actor softmax temperature (fixed at 1.0) |
-| `alpha_observer` | Fitted observer inverse temperature |
-| `param_sigma` | Fitted response-noise scale `σ` |
-| `param_w_v`, `param_w_d`, `param_w_e`, `param_gamma` | Fitted utility weights, only those the ablation uses |
+|---|---|
+| `model` | The model variant. |
+| `experiment` | The study slug. |
+| `nll` | The negative log-likelihood for the fit. |
+| `n_params` | The number of fitted parameters. |
+| `param_alpha` | The actor's fixed choice parameter. |
+| `alpha_observer` | The fitted strength of the observer's belief update. |
+| `alpha_observer_at_bound` | Whether `alpha_observer` reached its allowed upper limit. |
+| `param_sigma` | The fitted amount of response noise. |
+| `param_w_v` | The weight on goal satisfaction. |
+| `param_w_d` | The weight on risk or discomfort. |
+| `param_w_e` | The weight on effort. |
+| `param_gamma` | How strongly intimacy changes the cost of risk. |
 
-`full` carries all four weights; `discomfort_only` carries `w_d` and `gamma` (no reward or
-effort term); `base` carries `w_v` and `w_e` (no relational structure, so no `gamma`). Two
-caveats when reading the values: a weight sitting at the `1e-6` lower bound has collapsed out
-of the model, and some ablation × study combinations leave parameters unidentified — the
-`discomfort_only` utility does not depend on desire (or effort), so in the desire studies its
-posterior cannot move and its fitted `w_d`/`gamma` are arbitrary leftovers of the
-initialization; the same applies to `base` in the intimacy studies. Those values should not be
-interpreted.
+A record contains only the parameters used by that model variant.
 
 ### `fit_restarts.jsonl`
 
-One record per multi-start restart: `experiment`, `model`, `restart`, the resulting `nll`, and
-an `init_<param>` / `param_<param>` pair for each fitted parameter (`w_v`, `w_d`, `w_e`,
-`gamma`, `alpha_observer`, `sigma`). Useful for checking that the reported fit is the
-best-of-restarts and that restarts converge.
-
-## Cross-validation outputs
-
-All reported model-vs-human numbers are **out-of-sample**, from
-leave-one-scenario-out (LOSO) CV: for each held-out scenario the weights, `alpha_observer`, and
-`sigma` are refit on the other 15 scenarios (a warm start from the full-data fit plus a cold
-restart, keeping the better optimum). CV is the only place predictions are generated — there is
-no in-sample predict stage.
-
-### `cv_trial_ll.jsonl` — per-trial held-out log-likelihood (primary metric)
-
-The primary model-comparison output. One record per held-out trial: `experiment`, `model`,
-`subject_id`, `scenario_label`, and `held_out_ll` (the log mixture-likelihood of that
-participant's belief update under the model refit without their scenario). `subject_id` is the
-anonymized participant UUID, carried through so the **full − ablation** difference in mean
-held-out LL can be bootstrapped over participants.
-
-### `cv_preds_summary.json`
-
-A list with one object per held-out cell, giving the held-out `delta_<latent>` (and
-`delta_effort` for the joint studies) tagged with `model`. This is the source the figure
-scripts and `model_comparison.py` load for the condition-averaged model-vs-human correlation
-(secondary/descriptive), and the model's per-cell predictions generally. The desire study (`food_inv_desire`) additionally stores
-`delta_desire_runs` — the K per-run held-out `δ_k` for each cell — which the SI variability
-figure (`figures/scripts/figure_si_consolidated.py`) reads to show the elicitation-sample
-mixture spread against the fitted `σ`, all out-of-sample. For the other studies, whose committed
-CV outputs predate the fold bodies keeping the per-run values, the same per-run deltas are in a
-committed `cv_run_deltas.json` sidecar next to the CV outputs (a fresh CV run writes them into
-`cv_preds_summary.json` directly).
-
-### `cv_folds.jsonl`
-
-Per-fold refit diagnostics (16 folds × 3 ablations). Each record has `experiment`, `variant`,
-`fold`, `held_out_scenario`, the refit `alpha_observer` / `param_sigma` / `param_*` weights, and
-`train_nll` / `test_nll` with `n_train` / `n_test`.
+The fitting procedure starts from several initial parameter values. This file
+records the initial and final parameters and the negative log-likelihood for
+each attempt. `fit_results.json` contains the best result.
 
 ### `fit_manifest.json`
 
-The fit-side counterpart of `cv_manifest.json`, written by the `fit_*.py` wrappers alongside
-`fit_results.json` and `fit_restarts.jsonl`: the study slug, a timestamp, the git SHA the fit
-ran at, and SHA-256 hashes of the two fit outputs and of the input data CSV. The CV dispatcher
-verifies it before warm-starting folds from the fit, and `model_comparison.py` verifies it
-again. The check is deliberately asymmetric: a manifest that is **present but no longer matches**
-(the fit outputs were rewritten, or the data CSV changed since the fit ran) is a hard error —
-that is genuine staleness; a **missing** manifest only warns and proceeds, so a fit produced
-before provenance tracking existed stays usable (CV can still run on it) rather than forcing a
-re-fit. Re-run the fit to record provenance before trusting the final published numbers.
+This file records when the fit ran, the Git commit used, and checksums for the
+fit results, participant data, and language-model ratings. Cross-validation
+checks this file before using a fit.
+
+## Cross-validation
+
+The reported predictions come from leave-one-scenario-out cross-validation.
+For each of the 16 scenarios, the model is fit to the other 15 and then used to
+predict responses to the held-out scenario.
+
+### `cv_trial_ll.jsonl`
+
+This is the main input to the model comparisons. Each record contains one
+participant trial's held-out log-likelihood under one model variant.
+
+| Field | Description |
+|---|---|
+| `experiment` | The study slug. |
+| `model` | The model variant. |
+| `subject_id` | The anonymized participant ID. |
+| `scenario_label` | The scenario left out during fitting. |
+| `held_out_ll` | The log-likelihood of that participant's response. |
+
+### `cv_preds_summary.json`
+
+This file contains the model's predicted belief change for every held-out
+scenario and condition. The predicted means are stored as `delta_desire`,
+`delta_intimacy`, or `delta_effort`, depending on the study. The corresponding
+`delta_*_runs` fields contain the 20 individual predictions whose mean is
+reported. Figure scripts use this file for model predictions.
+
+### `cv_folds.jsonl`
+
+This file records the fitted parameters and training and test loss for each
+held-out scenario and model variant. It is useful for checking individual
+cross-validation fits.
 
 ### `cv_manifest.json`
 
-A provenance sidecar written by `model/cv/_inverse_dispatcher.py` alongside the three CV
-outputs above, recording the study slug, a timestamp, the git SHA the CV ran at, and SHA-256
-hashes of the three CV files and of the input data CSV. `model_comparison.py` verifies it with
-the same asymmetry as the fit manifest: a **present but mismatched** manifest (the three CV
-files were not written together, or the data CSV changed since CV ran) is a hard error —
-exactly the mismatch the manifest exists to catch — while a **missing** manifest only
-warns and proceeds, so CV outputs produced before provenance tracking can still be compared.
-Re-run `make cv-<slug>` to record provenance before trusting the final published numbers.
+This file records when cross-validation ran, the Git commit used, and checksums
+for the cross-validation outputs and their input data. The model-comparison
+code uses it to avoid combining files from different runs.
 
 ### `cv_model_comparison.json`
 
-The model-comparison statistics reported in the paper, computed from `cv_trial_ll.jsonl` and
-`cv_preds_summary.json` by `model/cv/model_comparison.py` (`make model-comparison`):
+This file contains the statistics reported from the cross-validated results,
+including:
 
-- `primary` — for each ablation, the mean full − ablation difference in per-trial held-out
-  log-likelihood with a 95% CI from bootstrap resampling of participants (`n_boot`, default
-  1,000; trials are matched across model variants on subject × scenario).
-- `mean_held_out_ll_per_trial` — each model's mean held-out log-likelihood.
-- `secondary_correlations` — for each model and dependent variable, the Pearson correlation
-  between the condition-averaged human belief updates and the model's held-out per-cell
-  predictions, with a subject-cluster bootstrap 95% CI. The percentile interval is
-  conservative for r: resampling participants adds noise to the cell means, which attenuates
-  the bootstrapped correlations when per-cell trial counts are small.
+- differences in held-out log-likelihood between the full model and its
+  comparison models;
+- confidence intervals based on resampling participants;
+- correlations between model predictions and participants' average belief
+  changes; and
+- the additional contrasts and reliability estimates reported in the
+  manuscript.
+
+Run `make model-comparison` to regenerate these files from the cross-validation
+outputs.
+
+## Additional analyses
+
+Alternative model settings are written under each study's `alt/` directory so
+that they do not replace the main results. The exploratory transfer, pooled,
+and generalization analyses also write summaries under `model/outputs/`. Run
+`make help` for the commands that generate them.

@@ -1,57 +1,78 @@
-# `model/` — modeling pipeline
+# Model pipeline
 
-Every script in this folder is named after either the experiment it serves (fit/CV) or the LM output it produces. There are six inverse-planning studies, all on the same 3-action stimulus structure — four on the food scenario set, plus two non-food studies that repeat the joint designs on the non-food set. The [per-experiment table below](#per-experiment-files) maps each slug to its fit/CV scripts; the slug ↔ study mapping is in the [root README](../README.md#experiments).
+The `model/` directory contains the code that builds the model inputs, fits the
+models, evaluates their predictions, and compares the model variants. Each of
+the six studies is fit separately.
 
-## Pipeline at a glance
+## Workflow
 
-```
-LM elicitation  (lm/)   — K = 20 independent samples per cell (the elicitation-sample mixture)
-    generate_alternatives.py --study <slug>  →  outputs/lm/<slug>/lm_alternatives.jsonl
-    score_merged.py          --study <slug>  →  outputs/lm/<slug>/lm_runs.jsonl
-        ↓
-Fits  (inverse/)
-    fit_<slug>.py  →  outputs/<slug>/fit_results.json  (+ fit_restarts.jsonl)
-        ↓
-Leave-one-scenario-out CV  (cv/)   — the model's predictions, all out-of-sample
-    cv_<slug>.py  →  outputs/<slug>/cv_trial_ll.jsonl + cv_preds_summary.json + cv_folds.jsonl
-        ↓
-Model comparison  (cv/model_comparison.py)
-    →  outputs/<slug>/cv_model_comparison.json  (the paper's statistics)
+```text
+language-model elicitation (`lm/`)
+    -> ratings of possible actions (`outputs/lm/<slug>/`)
+    -> model fitting (`inverse/`)
+    -> leave-one-scenario-out cross-validation (`cv/`)
+    -> model comparisons and figure inputs (`outputs/<slug>/`)
 ```
 
-## Per-experiment files
+The language-model ratings are included in the repository. They do not need to
+be regenerated in order to fit or evaluate the models.
 
-All six studies infer one or two latent variables from a single observed action; the observer reasons over `{observed action} ∪ LM-generated alternatives`. The dependent measure is the **belief update** (posterior − prior rating). Each elicitation run k yields a model update `δ_k`, and a participant's update is scored under the K-component Gaussian mixture `(1/K) Σ_k N(u | δ_k, σ²)` with a fitted response-noise `σ` (bivariate with isotropic σ for the joint studies). The fitted parameters are the ablation's utility weights, the observer temperature `α_observer`, and `σ`; the primary model-comparison metric is per-trial held-out log-likelihood under leave-one-scenario-out CV.
+## Running the models
 
-| Slug | Study | Infers | Fit | CV |
-|---|---|---|---|---|
-| `food_inv_desire`   | 1a | desire            | `inverse/fit_food_inv_desire.py`   | `cv/cv_food_inv_desire.py` |
-| `food_inv_joint_de` | 1b | desire + effort   | `inverse/fit_food_inv_joint_de.py` | `cv/cv_food_inv_joint_de.py` |
-| `food_inv_intimacy` | 2a | intimacy          | `inverse/fit_food_inv_intimacy.py` | `cv/cv_food_inv_intimacy.py` |
-| `food_inv_joint_ie` | 2b | intimacy + effort | `inverse/fit_food_inv_joint_ie.py` | `cv/cv_food_inv_joint_ie.py` |
-| `nonfood_inv_joint_de` | 3a | desire + effort   | `inverse/fit_nonfood_inv_joint_de.py` | `cv/cv_nonfood_inv_joint_de.py` |
-| `nonfood_inv_joint_ie` | 3b | intimacy + effort | `inverse/fit_nonfood_inv_joint_ie.py` | `cv/cv_nonfood_inv_joint_ie.py` |
+The `Makefile` is the recommended way to run the pipeline:
 
-Run any script directly as `uv run python <path>`, or via `make fit-<slug>` / `make cv-<slug>`. Per-experiment scripts are thin wrappers: shared logic lives in `inverse/_helpers.py` and `cv/_inverse_dispatcher.py`, and each wrapper calls the shared main with its slug hardcoded. The non-food studies reuse the joint studies' observers and helpers wholesale — both stimulus sets have 16 scenarios, so only the scenario labels and the LM-table folder differ. A fit runs only once its study's data is in `data/<slug>/` and its LM tables have been elicited (otherwise it raises a `FileNotFoundError` naming the elicitation commands to run).
+```bash
+make fit                 # fit all six studies
+make cv                  # run cross-validation for all six studies
+make model-comparison    # compare models using held-out predictions
+```
 
-## Layout
+The same stages can be run for one study by adding its slug:
 
-- `tables.py` — enums and axes, plus the loaders that assemble `outputs/lm/<slug>/lm_runs.jsonl` into the padded per-study feature tables. A missing or failed rating raises an error at load time rather than flowing silently into a fit.
-- `utility.py` — jit-compiled utility functions implementing `w_v · d · g − w_d · risk · (1 − I)^γ − w_e · effort` and its ablations (see the [utility model](../README.md#utility-model)).
-- `actors.py` / `observers.py` — the actor policies and their Bayesian observers, one family per study, each in `full` / `discomfort_only` / `base` variants. Both are plain JAX: the actor is a softmax policy over the padded action space, and every observer conditions on the observed action and returns the posterior over the study's latent(s) by direct Bayesian inversion of the actor policy, computed in log space for numerical stability. The joint studies return a joint posterior that downstream code marginalizes to the two sliders.
-- `memo_spec.py` — the same actors and observers written as [memo](https://github.com/kach/memo) probabilistic programs. This is the executable specification of the model, and the test suite verifies the production code against it on every variant. The fits and cross-validation do not run it: the memo observers needed several gigabytes of intermediate memory per gradient step and lose float32 precision at large observer sharpening, which is why the plain-JAX forms in `actors.py` and `observers.py` exist.
-- `inverse/_helpers.py` — mixture likelihoods, data loaders, the Adam multi-start fit loop, and the per-study fit entry points.
-- `cv/_inverse_dispatcher.py` — the leave-one-scenario-out loops (each fold refits on 15 scenarios with a warm start from the full-data fit plus a cold restart, keeping the better optimum).
-- `cv/model_comparison.py` — the paper's statistics from the CV outputs: full − ablation per-trial held-out log-likelihood with participant-bootstrap 95% CIs, plus the secondary model-vs-human correlations.
-- `lm/` — elicitation scripts, prompt templates (`prompts.py`), and the shared Together AI client (`client.py`).
+```bash
+make fit-food_inv_desire
+make cv-food_inv_desire
+```
 
-The output files are documented field-by-field in the [outputs codebook](outputs/README.md). Finer-grained implementation notes (cell grids, table shapes, run-axis handling) are in [`.claude/rules/model.md`](../.claude/rules/model.md) and the module docstrings.
+Cross-validation leaves out one scenario at a time, refits the model on the
+other 15 scenarios, and predicts responses for the held-out scenario. The
+figures and model comparisons use these held-out predictions.
+
+Regenerating the language-model ratings is a separate, optional step. It
+requires `TOGETHER_API_KEY` in a `.env` file and incurs API costs:
+
+```bash
+make lm
+```
+
+## Directory contents
+
+- `lm/` contains the prompts and scripts that generate possible actions and
+  rate their risk, effort, and goal satisfaction.
+- `inverse/` contains the shared fitting code and one script for each study.
+- `cv/` contains the shared cross-validation code, one script for each study,
+  and the scripts that compare models across studies.
+- `actors.py` defines the model's action choices, and `observers.py` defines
+  how an observer updates their beliefs after seeing an action.
+- `memo_spec.py` expresses the same models in the memo probabilistic
+  programming language. The tests compare this specification with the JAX
+  code used for fitting.
+- `tables.py` loads the language-model ratings into the arrays used by the
+  models.
+- `outputs/` contains the language-model ratings, fits, cross-validation
+  results, and model comparisons. See the [model outputs
+  codebook](outputs/README.md).
 
 ## Tests
 
+Run the complete test suite from the repository root:
+
 ```bash
-make test                                        # the full suite
-uv run python model/test_model_compliance.py     # just the model checks
+make test
 ```
 
-The model checks cover the utility ablation algebra, observer posterior normalization (single and joint), the mixture likelihoods against a plain-numpy reference, a bound on the probability mass reaching null padding slots, and the table loaders' error checks on missing or failed ratings. `make test` adds the fit/CV protocol, checkpoint, statistics-module, elicitation-guard, data-conversion, and experiment-list tests.
+To run only the tests that compare the model implementations:
+
+```bash
+uv run python model/test_model_compliance.py
+```
