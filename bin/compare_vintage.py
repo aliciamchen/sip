@@ -17,23 +17,15 @@ import json
 import subprocess
 import sys
 
+from study_registry import SLUGS
 from utils import get_project_root
-
-STUDIES = [
-    "food_inv_desire",
-    "food_inv_joint_de",
-    "food_inv_intimacy",
-    "food_inv_joint_ie",
-    "nonfood_inv_joint_de",
-    "nonfood_inv_joint_ie",
-]
 
 # Headline outputs, repo-relative. Manifests are excluded (their hashes and
 # timestamps change by construction); per-trial JSONLs are covered through the
 # aggregates in cv_model_comparison.json.
 FILES = (
-    [f"model/outputs/{s}/fit_results.json" for s in STUDIES]
-    + [f"model/outputs/{s}/cv_model_comparison.json" for s in STUDIES]
+    [f"model/outputs/{s}/fit_results.json" for s in SLUGS]
+    + [f"model/outputs/{s}/cv_model_comparison.json" for s in SLUGS]
     + [
         "model/outputs/group_correlations.json",
         "model/outputs/transfer/transfer_summary.json",
@@ -121,6 +113,13 @@ def main():
         f"\n{n_clean} clean, {n_flagged} with moves beyond tol={args.tol:g}, "
         f"{len(notes)} skipped"
     )
+    # Missing files are a FAILURE, not a pass: the gate must never report a
+    # vintage verified when an upstream stage silently produced nothing.
+    if n_clean == 0 or any(note.startswith("missing") for note in notes):
+        print(
+            "GATE FAILED: expected outputs are missing — the regeneration is incomplete."
+        )
+        sys.exit(2)
     sys.exit(1 if n_flagged else 0)
 
 

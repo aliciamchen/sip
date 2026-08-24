@@ -57,10 +57,14 @@ done
 LOGDIR="notes/regenerate-vintage-logs"
 mkdir -p "$LOGDIR"
 
+# Fatal: a failed command aborts its stage immediately. Stage functions run
+# on the left side of stage()'s tee pipeline (a subshell), so `exit 1` here
+# fails that pipeline (pipefail) and stage() reports the failure — an
+# intermediate command's failure is never swallowed by a later one succeeding.
 run() {
   echo "+ $*"
   [ "$DRY" = 1 ] && return 0
-  "$@"
+  "$@" || { echo "FAILED: $*" >&2; exit 1; }
 }
 
 stage() {
@@ -91,16 +95,17 @@ stage_clean() {
 
 stage_prereg() {
   run bin/prereg-eta0.sh
-  for s in food_inv_desire food_inv_joint_de food_inv_intimacy food_inv_joint_ie \
-           nonfood_inv_joint_de nonfood_inv_joint_ie; do
+  # Roster from study_registry (the single source of truth), not a hand copy.
+  for s in $(uv run python -c "from study_registry import SLUGS; print(' '.join(SLUGS))"); do
     run uv run python model/cv/model_comparison.py --study "$s" \
       --compare-configs uniform-noreweight reported
   done
 }
 
 stage_arms() {
-  run make transfer
-  run make pooled
+  # transfer and pooled are independent (each depends only on the per-study CV
+  # outputs); run them concurrently — generalization-primary needs both.
+  run make -j2 transfer pooled
   run make generalization-primary
 }
 

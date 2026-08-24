@@ -112,6 +112,9 @@ from model.run_config import RunConfig
 from model.tables import (
     INTIMACY_CONDITIONS,
     STUDY_SCENARIO_LABELS,
+    DesireConditions,
+    EffortConditions,
+    RelationshipConditions,
     actions,
 )
 from utils import get_project_root
@@ -812,8 +815,8 @@ def _predictions_intimacy(tables, fold, slug, scenario_label, variant):
     (run, slot, scenario, observed_action, desire, effort, intimacy_101)."""
     rows = []
     for a_idx in range(N_ACTIONS):
-        for r in (0, 1):
-            for e in (0, 1):
+        for r in range(len(DesireConditions)):
+            for e in range(len(EffortConditions)):
                 density_runs = tables[:, 0, fold, a_idx, r, e, :]  # (K, 101)
                 deltas = delta_latent(density_runs, GRID_NP, PRIOR_MEAN_F)  # (K,)
                 rows.append(
@@ -892,8 +895,8 @@ def _predictions_desire(tables, fold, slug, scenario_label, variant):
     (run, slot, scenario, observed_action, effort, intimacy, desire_101)."""
     rows = []
     for a_idx in range(N_ACTIONS):
-        for rel_idx in range(4):
-            for e in (0, 1):
+        for rel_idx in range(len(RelationshipConditions)):
+            for e in range(len(EffortConditions)):
                 post = tables[:, 0, fold, a_idx, e, rel_idx, :]  # (K, 101)
                 deltas = delta_latent(post, GRID_NP, PRIOR_MEAN_F)
                 rows.append(
@@ -979,7 +982,7 @@ def _predictions_joint_de(tables, fold, slug, scenario_label, variant):
     (run, slot, scenario, observed_action, relationship_4, desire_101, effort_2)."""
     rows = []
     for a_idx in range(N_ACTIONS):
-        for rel_idx in range(4):
+        for rel_idx in range(len(RelationshipConditions)):
             joint_runs = tables[:, 0, fold, a_idx, rel_idx, :, :]  # (K, 101, 2)
             d_desire, d_effort = delta_joint(
                 joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F
@@ -1070,7 +1073,7 @@ def _predictions_joint_ie(tables, fold, slug, scenario_label, variant):
     (run, slot, scenario, observed_action, desire, intimacy_101, effort_2)."""
     rows = []
     for a_idx in range(N_ACTIONS):
-        for r in (0, 1):
+        for r in range(len(DesireConditions)):
             joint_runs = tables[:, 0, fold, a_idx, r, :, :]  # (K, 101, 2)
             d_intimacy, d_effort = delta_joint(
                 joint_runs, GRID_NP, PRIOR_MEAN_F, EFFORT_PRIOR_MEAN_F

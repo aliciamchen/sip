@@ -80,9 +80,16 @@ def _axis(values, ndim, axis):
 def _slot_policy(prior, utility, shape):
     """Softmax of `prior · exp(utility)` over the slot axis (axis 0),
     broadcast to the family's full table shape (`prior` and `utility` may be
-    constant — size 1 — along latent axes their variant ignores)."""
+    constant — size 1 — along latent axes their variant ignores).
+
+    `nan_to_num` mirrors the memo spec's guard: a cell whose every slot
+    underflows (or overflows) in float32 at extreme parameters yields an
+    all-zero policy rather than NaN. The log-space observers mask zeros and
+    NaN alike, but `_reweighting.action_surprise` consumes the raw policy —
+    without the guard a pathological cold-start draw would poison that
+    restart's loss with NaN instead of a large-but-finite surprise."""
     w = prior * jnp.exp(utility)
-    return jnp.broadcast_to(w / w.sum(axis=0, keepdims=True), shape)
+    return jnp.broadcast_to(jnp.nan_to_num(w / w.sum(axis=0, keepdims=True)), shape)
 
 
 # Enum-axis index grids (value grids are DesireLevels / IntimacyLevels).
@@ -99,20 +106,18 @@ _DESIRE_CONDS = jnp.arange(len(DesireConditions))
 # relationship, desire)
 # ==============================================================================
 
-_DESIRE_SHAPE = (
-    len(PaddedActionSlots),
-    len(Scenarios),
-    len(ObservedActions),
-    len(EffortConditions),
-    len(RelationshipConditions),
-    DesireLevels.shape[0],
-)
 _D_SLOT = _axis(_SLOTS, 6, 0)
 _D_SCEN = _axis(_SCENARIOS, 6, 1)
 _D_OBS = _axis(_OBSERVED, 6, 2)
 _D_EFF = _axis(_EFFORTS, 6, 3)
 _D_REL = _axis(_RELATIONSHIPS, 6, 4)
 _D_DESIRE = _axis(DesireLevels, 6, 5)
+# Full table shape, derived from the reserved-dimension axis constants so the
+# two can never drift apart (each axis occupies its own dimension, so the
+# broadcast of their shapes IS the table shape).
+_DESIRE_SHAPE = jnp.broadcast_shapes(
+    *(a.shape for a in (_D_SLOT, _D_SCEN, _D_OBS, _D_EFF, _D_REL, _D_DESIRE))
+)
 
 
 @jax.jit
@@ -222,20 +227,18 @@ def actor_discrete_base_padded_desire(
 # relationship, desire, effort)
 # ==============================================================================
 
-_JOINT_DE_SHAPE = (
-    len(PaddedActionSlots),
-    len(Scenarios),
-    len(ObservedActions),
-    len(RelationshipConditions),
-    DesireLevels.shape[0],
-    len(EffortConditions),
-)
 _JDE_SLOT = _axis(_SLOTS, 6, 0)
 _JDE_SCEN = _axis(_SCENARIOS, 6, 1)
 _JDE_OBS = _axis(_OBSERVED, 6, 2)
 _JDE_REL = _axis(_RELATIONSHIPS, 6, 3)
 _JDE_DESIRE = _axis(DesireLevels, 6, 4)
 _JDE_EFF = _axis(_EFFORTS, 6, 5)
+_JOINT_DE_SHAPE = jnp.broadcast_shapes(
+    *(
+        a.shape
+        for a in (_JDE_SLOT, _JDE_SCEN, _JDE_OBS, _JDE_REL, _JDE_DESIRE, _JDE_EFF)
+    )
+)
 
 
 @jax.jit
@@ -345,20 +348,15 @@ def actor_discrete_base_padded_joint_de(
 # effort, relationship)
 # ==============================================================================
 
-_INTIMACY_SHAPE = (
-    len(PaddedActionSlots),
-    len(Scenarios),
-    len(ObservedActions),
-    len(DesireConditions),
-    len(EffortConditions),
-    IntimacyLevels.shape[0],
-)
 _I_SLOT = _axis(_SLOTS, 6, 0)
 _I_SCEN = _axis(_SCENARIOS, 6, 1)
 _I_OBS = _axis(_OBSERVED, 6, 2)
 _I_DES = _axis(_DESIRE_CONDS, 6, 3)
 _I_EFF = _axis(_EFFORTS, 6, 4)
 _I_REL = _axis(IntimacyLevels, 6, 5)
+_INTIMACY_SHAPE = jnp.broadcast_shapes(
+    *(a.shape for a in (_I_SLOT, _I_SCEN, _I_OBS, _I_DES, _I_EFF, _I_REL))
+)
 
 
 @jax.jit
@@ -467,20 +465,15 @@ def actor_continuous_base_padded_intimacy(
 # dimensions (from the axis order) and the call order (from the signature)
 # differ here.
 
-_JOINT_IE_SHAPE = (
-    len(PaddedActionSlots),
-    len(Scenarios),
-    len(ObservedActions),
-    len(DesireConditions),
-    IntimacyLevels.shape[0],
-    len(EffortConditions),
-)
 _JIE_SLOT = _axis(_SLOTS, 6, 0)
 _JIE_SCEN = _axis(_SCENARIOS, 6, 1)
 _JIE_OBS = _axis(_OBSERVED, 6, 2)
 _JIE_DES = _axis(_DESIRE_CONDS, 6, 3)
 _JIE_REL = _axis(IntimacyLevels, 6, 4)
 _JIE_EFF = _axis(_EFFORTS, 6, 5)
+_JOINT_IE_SHAPE = jnp.broadcast_shapes(
+    *(a.shape for a in (_JIE_SLOT, _JIE_SCEN, _JIE_OBS, _JIE_DES, _JIE_REL, _JIE_EFF))
+)
 
 
 @jax.jit
