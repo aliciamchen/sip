@@ -1,13 +1,17 @@
 {
   "experiment": "food_inv_desire",
-  "timestamp": "2026-08-03T05:41:24.007179+00:00",
-  "git_sha": "396099fc869bc8b8ec1f8950dbbabec0ea1aec64",
+  "timestamp": "2026-08-24T05:33:49.733829+00:00",
+  "git_sha": "aca486d2f882069f92e03ba7cf95e4d686e6240b",
   "outputs": {
-    "fit_results.json": "85f16071172d09526508f4c9381a28d20df02173b3d8c2442bae01063e5863d5",
-    "fit_restarts.jsonl": "156f37b51d1e93482b99bc5b1a2673390d1bc28eb62d0a0441a2404d7488f615"
+    "fit_results.json": "12e4c96646717cd972be57dc29ca2c8fcce23cefe1982bc2809cd0f05f733fe8",
+    "fit_restarts.jsonl": "ff647aafe0765019a13de06a5d3d090f8cc70ac1a2c2ab66863cf858d8d05e05"
   },
   "input_data": {
     "path": "data/food_inv_desire/main_trials_long.csv",
     "sha256": "63bdfdeb941994c85da9d107672f0be93eefb01d5bc85eb4cb3a0b3f431b978c"
+  },
+  "lm_tables": {
+    "model/outputs/lm/food_inv_desire/lm_runs.jsonl": "4ccbc8b1c138f967a09f8cd96f23007b3e70c0ac7a2dbfeda2b02d4ec7700726",
+    "model/outputs/lm/food_inv_desire/lm_runs_base.jsonl": "8408599daff7ffe62dcd2b61221c2c3ab5cf52759c8c9981442643728ee578af"
   }
 }

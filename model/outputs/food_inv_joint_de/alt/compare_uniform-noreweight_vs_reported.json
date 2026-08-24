@@ -4,34 +4,34 @@
   "n_boot": 1000,
   "seed": 0,
   "source": {
-    "uniform-noreweight/cv_trial_ll.jsonl": "5b2b6a8b5232c3f1e84db6ae1da8c773932409260cecf8f9f1f636abcc9fc158",
-    "reported/cv_trial_ll.jsonl": "b551d181836e6073e9680df957341fb46bf4326ce0cd0c95cc65e84eb362cb44"
+    "uniform-noreweight/cv_trial_ll.jsonl": "4007ed6d88af03d3898ecc44f1b58060845188691e010274560401c8874bb78e",
+    "reported/cv_trial_ll.jsonl": "63e7dea882e10fbcac69f6116c0ae6dafbbb3d839ddf1c25114c76c72abc109f"
   },
   "per_variant": [
     {
       "variant": "base",
-      "mean_ll_a": -0.3921721588647315,
-      "mean_ll_b": -0.34352287867023973,
-      "mean_per_trial_ll_diff": 0.04864928019449178,
+      "mean_ll_a": -0.391995902334336,
+      "mean_ll_b": -0.3435258507288458,
+      "mean_per_trial_ll_diff": 0.04847005160549019,
       "ci_95": [
-        0.03518440918721856,
-        0.06208359148384775
+        0.03499677173463227,
+        0.06188381682248306
       ]
     },
     {
       "variant": "base_shared",
-      "mean_ll_a": -0.3937797568392653,
-      "mean_ll_b": -0.3881735730963417,
-      "mean_per_trial_ll_diff": 0.005606183742923576,
+      "mean_ll_a": -0.3937401650198401,
+      "mean_ll_b": -0.3881699635886945,
+      "mean_per_trial_ll_diff": 0.005570201431145648,
       "ci_95": [
-        -0.004515344794163724,
-        0.01591376165391775
+        -0.004551018030237297,
+        0.015858345193481893
       ]
     },
     {
       "variant": "discomfort_only",
-      "mean_ll_a": -0.7253970700602994,
-      "mean_ll_b": -0.7253970700602994,
+      "mean_ll_a": -0.7253963963014667,
+      "mean_ll_b": -0.7253963963014667,
       "mean_per_trial_ll_diff": 0.0,
       "ci_95": [
         0.0,
@@ -40,12 +40,12 @@
     },
     {
       "variant": "full",
-      "mean_ll_a": -0.3939243822598256,
-      "mean_ll_b": -0.3667500774191402,
-      "mean_per_trial_ll_diff": 0.027174304840685445,
+      "mean_ll_a": -0.3940212097223298,
+      "mean_ll_b": -0.36675163433898855,
+      "mean_per_trial_ll_diff": 0.027269575383341262,
       "ci_95": [
-        0.014311989352798664,
-        0.040393439195421425
+        0.014409988111018632,
+        0.04048672552507386
       ]
     }
   ]

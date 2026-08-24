@@ -5,18 +5,18 @@
     "nll": 520.2938842773438,
     "n_params": 7,
     "param_alpha": 1.0,
-    "alpha_observer": 2.9639363288879395,
+    "alpha_observer": 2.963979721069336,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.25351521372795105,
-    "param_eta": 0.41789790987968445,
+    "param_sigma": 0.25351518392562866,
+    "param_eta": 0.4178958237171173,
     "reweighting_targets": [
       "intimacy",
       "world"
     ],
-    "param_w_v": 3.953866958618164,
-    "param_w_d": 1.455392837524414,
-    "param_w_e": 1.9309033155441284,
-    "param_gamma": 0.9131125211715698
+    "param_w_v": 3.9538378715515137,
+    "param_w_d": 1.4553720951080322,
+    "param_w_e": 1.9308750629425049,
+    "param_gamma": 0.9131126403808594
   },
   {
     "model": "discomfort_only",
@@ -24,30 +24,30 @@
     "nll": 914.1324462890625,
     "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 28.672880172729492,
+    "alpha_observer": 28.70368194580078,
     "alpha_observer_at_bound": false,
     "param_sigma": 0.30599379539489746,
-    "param_eta": 0.6209478974342346,
+    "param_eta": 0.620890736579895,
     "reweighting_targets": [
       "intimacy"
     ],
-    "param_w_d": 0.13558201491832733,
-    "param_gamma": 1.1492130756378174
+    "param_w_d": 0.13543814420700073,
+    "param_gamma": 1.1491401195526123
   },
   {
     "model": "base",
     "experiment": "food_inv_joint_ie",
-    "nll": 846.6781005859375,
+    "nll": 846.67822265625,
     "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 4.43320894241333,
+    "alpha_observer": 4.433248519897461,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.2842687964439392,
+    "param_sigma": 0.28426888585090637,
     "param_eta": 9.999999974752427e-07,
     "reweighting_targets": [
       "world"
     ],
-    "param_w_v": 17.429401397705078,
-    "param_w_e": 1.259192943572998
+    "param_w_v": 17.429271697998047,
+    "param_w_e": 1.2591792345046997
   }
 ]

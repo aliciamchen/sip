@@ -4,14 +4,14 @@
   "n_boot": 1000,
   "seed": 0,
   "source": {
-    "uniform-noreweight/cv_trial_ll.jsonl": "3aeedda81099f38c8c5e25c83e61263ac7e639b0ed78d501c43f239e5bf5f0ca",
-    "reported/cv_trial_ll.jsonl": "3aeedda81099f38c8c5e25c83e61263ac7e639b0ed78d501c43f239e5bf5f0ca"
+    "uniform-noreweight/cv_trial_ll.jsonl": "4a9970eddaa847172a6973fc90fe96dc05c3281decc46c0a071fe6ffe72811e9",
+    "reported/cv_trial_ll.jsonl": "4a9970eddaa847172a6973fc90fe96dc05c3281decc46c0a071fe6ffe72811e9"
   },
   "per_variant": [
     {
       "variant": "base",
-      "mean_ll_a": -0.058413052292474836,
-      "mean_ll_b": -0.058413052292474836,
+      "mean_ll_a": -0.058413846081358974,
+      "mean_ll_b": -0.058413846081358974,
       "mean_per_trial_ll_diff": 0.0,
       "ci_95": [
         0.0,
@@ -20,8 +20,8 @@
     },
     {
       "variant": "base_shared",
-      "mean_ll_a": -0.05661539510357157,
-      "mean_ll_b": -0.05661539510357157,
+      "mean_ll_a": -0.056617168744487724,
+      "mean_ll_b": -0.056617168744487724,
       "mean_per_trial_ll_diff": 0.0,
       "ci_95": [
         0.0,
@@ -30,8 +30,8 @@
     },
     {
       "variant": "discomfort_only",
-      "mean_ll_a": -0.2580767009802271,
-      "mean_ll_b": -0.2580767009802271,
+      "mean_ll_a": -0.2580727165770134,
+      "mean_ll_b": -0.2580727165770134,
       "mean_per_trial_ll_diff": 0.0,
       "ci_95": [
         0.0,
@@ -40,8 +40,8 @@
     },
     {
       "variant": "full",
-      "mean_ll_a": -0.051820955117254396,
-      "mean_ll_b": -0.051820955117254396,
+      "mean_ll_a": -0.051821564639804266,
+      "mean_ll_b": -0.051821564639804266,
       "mean_per_trial_ll_diff": 0.0,
       "ci_95": [
         0.0,

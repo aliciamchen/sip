@@ -2,21 +2,21 @@
   {
     "model": "full",
     "experiment": "nonfood_inv_joint_ie",
-    "nll": 1772.5162353515625,
+    "nll": 1772.5164794921875,
     "n_params": 7,
     "param_alpha": 1.0,
-    "alpha_observer": 27.021785736083984,
+    "alpha_observer": 27.0325870513916,
     "alpha_observer_at_bound": false,
     "param_sigma": 0.2821534276008606,
-    "param_eta": 0.5774095058441162,
+    "param_eta": 0.5774073600769043,
     "reweighting_targets": [
       "intimacy",
       "world"
     ],
-    "param_w_v": 3.0905728340148926,
-    "param_w_d": 0.1423128843307495,
-    "param_w_e": 0.2066761702299118,
-    "param_gamma": 1.2333409786224365
+    "param_w_v": 3.090532064437866,
+    "param_w_d": 0.14225609600543976,
+    "param_w_e": 0.2065926343202591,
+    "param_gamma": 1.2333241701126099
   },
   {
     "model": "discomfort_only",
@@ -24,15 +24,15 @@
     "nll": 2269.98193359375,
     "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 29.36996078491211,
+    "alpha_observer": 29.370691299438477,
     "alpha_observer_at_bound": false,
     "param_sigma": 0.32519084215164185,
-    "param_eta": 1.4735521078109741,
+    "param_eta": 1.4735534191131592,
     "reweighting_targets": [
       "intimacy"
     ],
-    "param_w_d": 0.10743646323680878,
-    "param_gamma": 2.2186577320098877
+    "param_w_d": 0.10743385553359985,
+    "param_gamma": 2.218656539916992
   },
   {
     "model": "base",
@@ -40,14 +40,14 @@
     "nll": 2312.22314453125,
     "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 27.690155029296875,
+    "alpha_observer": 27.69037437438965,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.31340232491493225,
-    "param_eta": 0.01700115017592907,
+    "param_sigma": 0.3134020268917084,
+    "param_eta": 0.016896473243832588,
     "reweighting_targets": [
       "world"
     ],
-    "param_w_v": 4.023565769195557,
-    "param_w_e": 0.18653622269630432
+    "param_w_v": 4.025325298309326,
+    "param_w_e": 0.18653661012649536
   }
 ]

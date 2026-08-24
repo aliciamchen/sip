@@ -1,14 +1,18 @@
 {
   "experiment": "food_inv_joint_ie",
-  "timestamp": "2026-07-31T08:46:03.057258+00:00",
-  "git_sha": "57357682264ad5e6b0059bc9d3eed7453d6baf94",
+  "timestamp": "2026-08-24T04:30:53.390960+00:00",
+  "git_sha": "aca486d2f882069f92e03ba7cf95e4d686e6240b",
   "outputs": {
-    "cv_preds_summary.json": "20f6cae2912b74e8a6b3f22501056182f8d42c96f9ef72ec7922b2f7731fc22d",
-    "cv_folds.jsonl": "2111dd0db073e8bfaa6e316adbcfe53bcd775f4870e1e8cb43ccc190dbeaefbe",
-    "cv_trial_ll.jsonl": "add5223760745ed7eee5e7262b65a9120039bc78522508709af15dd81c076367"
+    "cv_preds_summary.json": "eeed3468ff25ef8073cf564f5eeae56fbd2cf57efd9d35527c0ae529595107a0",
+    "cv_folds.jsonl": "91c6188606c3695f28d17e70828584690ec7231e79bc4f9d64f85c0343d69b48",
+    "cv_trial_ll.jsonl": "1b4c4cc3233c603099b2fa1aba5e340bd6103e79a3cb5ddd86140911612ed641"
   },
   "input_data": {
     "path": "data/food_inv_joint_ie/main_trials_long.csv",
     "sha256": "f787996c31a9e6bda7db042d89b8f2301df3176d8a503d1d763b75d326311a07"
+  },
+  "lm_tables": {
+    "model/outputs/lm/food_inv_joint_ie/lm_runs.jsonl": "3ffd5ebbf58b85a322b1e36eab753f04ad03b315b32ab34588f5eec71a3ea2db",
+    "model/outputs/lm/food_inv_joint_ie/lm_runs_base.jsonl": null
   }
 }

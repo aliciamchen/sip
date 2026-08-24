@@ -104,8 +104,13 @@ stage_prereg() {
 
 stage_arms() {
   # transfer and pooled are independent (each depends only on the per-study CV
-  # outputs); run them concurrently — generalization-primary needs both.
+  # outputs); run them concurrently — everything below needs both.
   run make -j2 transfer pooled
+  # The pooled-food-to-nonfood transfer arm (alt/transfer-pooled-food-refit) is
+  # a separate transfer.py mode, not one of the eight designed pairs — the
+  # manuscript's \rNonfoodFoodFit and generalization_primary's `food` arm read
+  # it, so the vintage is incomplete without it.
+  run uv run python model/cv/transfer.py --from-pooled food --to 3a --to 3b
   run make generalization-primary
 }
 

@@ -5,13 +5,13 @@
     "nll": 2542.31396484375,
     "n_params": 6,
     "param_alpha": 1.0,
-    "alpha_observer": 3.294895887374878,
+    "alpha_observer": 3.2950849533081055,
     "alpha_observer_at_bound": false,
     "param_sigma": 0.3196227550506592,
-    "param_w_v": 3.5396344661712646,
-    "param_w_d": 1.5466667413711548,
-    "param_w_e": 1.920681118965149,
-    "param_gamma": 3.4762356281280518
+    "param_w_v": 3.539346218109131,
+    "param_w_d": 1.5465586185455322,
+    "param_w_e": 1.9205660820007324,
+    "param_gamma": 3.4765405654907227
   },
   {
     "model": "discomfort_only",
@@ -19,11 +19,11 @@
     "nll": 3562.31982421875,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 2.440335512161255,
+    "alpha_observer": 3.6633927822113037,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.3855239748954773,
-    "param_w_d": 0.343129962682724,
-    "param_gamma": 0.2468549907207489
+    "param_sigma": 0.3855211138725281,
+    "param_w_d": 1.8377695083618164,
+    "param_gamma": 0.6144847273826599
   },
   {
     "model": "base",
@@ -31,22 +31,22 @@
     "nll": 2530.238525390625,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 5.219882011413574,
+    "alpha_observer": 5.217282772064209,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.31880077719688416,
-    "param_w_v": 1.945852518081665,
-    "param_w_e": 1.259243369102478
+    "param_sigma": 0.3188013434410095,
+    "param_w_v": 1.9471241235733032,
+    "param_w_e": 1.2598658800125122
   },
   {
     "model": "base_shared",
     "experiment": "nonfood_inv_joint_de",
-    "nll": 2562.837158203125,
+    "nll": 2562.8369140625,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 5.435375213623047,
+    "alpha_observer": 5.44334602355957,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.31995880603790283,
-    "param_w_v": 1.7883775234222412,
-    "param_w_e": 1.191280484199524
+    "param_sigma": 0.3199556767940521,
+    "param_w_v": 1.7850708961486816,
+    "param_w_e": 1.189626932144165
   }
 ]

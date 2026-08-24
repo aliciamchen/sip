@@ -5,48 +5,48 @@
     "nll": 1453.507080078125,
     "n_params": 6,
     "param_alpha": 1.0,
-    "alpha_observer": 32.80145263671875,
+    "alpha_observer": 32.80133056640625,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.2714853882789612,
-    "param_w_v": 0.16306902468204498,
-    "param_w_d": 1.0615485906600952,
-    "param_w_e": 0.22022178769111633,
-    "param_gamma": 3.395310640335083
+    "param_sigma": 0.2714853286743164,
+    "param_w_v": 0.1630696952342987,
+    "param_w_d": 1.061545729637146,
+    "param_w_e": 0.2202225923538208,
+    "param_gamma": 3.3953053951263428
   },
   {
     "model": "discomfort_only",
     "experiment": "food_inv_joint_de",
-    "nll": 2744.326416015625,
+    "nll": 2744.32666015625,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 29.003969192504883,
+    "alpha_observer": 9.999999974752427e-07,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.3475040793418884,
-    "param_w_d": 0.9773319363594055,
-    "param_gamma": 3.13118839263916
+    "param_sigma": 0.3474411964416504,
+    "param_w_d": 1.7623785734176636,
+    "param_gamma": 0.5924462080001831
   },
   {
     "model": "base",
     "experiment": "food_inv_joint_de",
-    "nll": 1463.2694091796875,
+    "nll": 1463.26953125,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 38.00861740112305,
+    "alpha_observer": 38.00869369506836,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.27111250162124634,
-    "param_w_v": 0.14544235169887543,
-    "param_w_e": 0.20917363464832306
+    "param_sigma": 0.2711125314235687,
+    "param_w_v": 0.14544224739074707,
+    "param_w_e": 0.20917321741580963
   },
   {
     "model": "base_shared",
     "experiment": "food_inv_joint_de",
-    "nll": 1463.384765625,
+    "nll": 1463.3848876953125,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 33.68466567993164,
+    "alpha_observer": 33.68449020385742,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.27175045013427734,
-    "param_w_v": 0.16223561763763428,
-    "param_w_e": 0.22077350318431854
+    "param_sigma": 0.27175047993659973,
+    "param_w_v": 0.16223643720149994,
+    "param_w_e": 0.22077475488185883
   }
 ]

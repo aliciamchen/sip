@@ -8,16 +8,16 @@
     "grain": "condition (averaged over scenarios)",
     "seed": 0,
     "source": {
-      "food_inv_desire": "c8522d4268bc8ca5737c117954f8e7e93c994525f658f5133e25af14656c6294",
-      "food_inv_joint_de": "f15bac3a0bc82a9348d69b603a4385774d6aa2ff621c3edd96d7a658b60ed126"
+      "food_inv_desire": "d32128d8310e8d8ada1aba406b3e4a7534ff35e15b799b510418380208975f5d",
+      "food_inv_joint_de": "56dfd3d47eeff481851010494f206d23e4e77079a1ce1908327834fee780a5fc"
     },
     "correlations": [
       {
         "model": "base",
-        "r": 0.9861206364084754,
+        "r": 0.9861212922158413,
         "ci_95": [
-          0.9795301787456684,
-          0.9915663622191692
+          0.9795306108808899,
+          0.9915660542005722
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 48
@@ -34,10 +34,10 @@
       },
       {
         "model": "full",
-        "r": 0.9914478304308806,
+        "r": 0.9914477876345217,
         "ci_95": [
-          0.9871074314335814,
-          0.9946143996472194
+          0.987106317813627,
+          0.994614551729911
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 48
@@ -59,36 +59,36 @@
     "grain": "condition (averaged over scenarios)",
     "seed": 0,
     "source": {
-      "food_inv_intimacy": "10e307f6a14ce6d2a16ec8e89ab7b92156fb9669558be687c5105319738c243a",
-      "food_inv_joint_ie": "20f6cae2912b74e8a6b3f22501056182f8d42c96f9ef72ec7922b2f7731fc22d"
+      "food_inv_intimacy": "2e3ff0a8c5b8b8f8fae78a6d42b2097d8314d9d67dfd8eaad1bdfe0726d6d76a",
+      "food_inv_joint_ie": "eeed3468ff25ef8073cf564f5eeae56fbd2cf57efd9d35527c0ae529595107a0"
     },
     "correlations": [
       {
         "model": "base",
-        "r": 0.4853229955863986,
+        "r": 0.4853220711034203,
         "ci_95": [
-          0.1882933723935787,
-          0.6949030637005233
+          0.1851793796482229,
+          0.6873646793715927
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 24
       },
       {
         "model": "discomfort_only",
-        "r": 0.8451145005157817,
+        "r": 0.8451832311984624,
         "ci_95": [
-          0.6929494932034623,
-          0.9452698822467696
+          0.6918675191419228,
+          0.9370487554740854
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 24
       },
       {
         "model": "full",
-        "r": 0.9873275869989694,
+        "r": 0.9873278451433863,
         "ci_95": [
-          0.9782625110723479,
-          0.9940932783948253
+          0.9782629064333606,
+          0.9940935096775563
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 24
@@ -110,36 +110,36 @@
     "grain": "condition (averaged over scenarios)",
     "seed": 0,
     "source": {
-      "nonfood_inv_joint_de": "699bac0494c03f8c8c6bd1f8b0fe8c90259d587a43fe80b431921ce76ae335a4",
-      "nonfood_inv_joint_ie": "f6eef1fc565736cf2a0c2f71b92f68fa9887decf1e624cdaf03d8b52bf934415"
+      "nonfood_inv_joint_de": "399d3ad4d80961712fb52dfee2db797818bcf538b8e66a068d848d2ada15ab8f",
+      "nonfood_inv_joint_ie": "5a6b3189b33f74f7e1ac5101a1ecac3ccc5ee9fc07b596cd26c39c9ca6e42897"
     },
     "correlations": [
       {
         "model": "base",
-        "r": 0.9066342594125089,
+        "r": 0.9066359970464677,
         "ci_95": [
-          0.8124048754763098,
-          0.9626798134782275
+          0.808135563592684,
+          0.9666969459170482
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 36
       },
       {
         "model": "discomfort_only",
-        "r": 0.3588835004525145,
+        "r": 0.35888350019876014,
         "ci_95": [
-          0.1529122190000329,
-          0.5358247222503596
+          0.151430345038056,
+          0.5368458745909636
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 36
       },
       {
         "model": "full",
-        "r": 0.9877145154998745,
+        "r": 0.9877142678095681,
         "ci_95": [
-          0.9801286045567165,
-          0.9926087415550705
+          0.980129413002161,
+          0.9926071778181043
         ],
         "ci_method": "percentile bootstrap over cells",
         "n_cells": 36

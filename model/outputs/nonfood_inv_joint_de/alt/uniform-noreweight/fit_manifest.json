@@ -1,13 +1,17 @@
 {
   "experiment": "nonfood_inv_joint_de",
-  "timestamp": "2026-08-03T08:32:23.552625+00:00",
-  "git_sha": "9466df95de9a485979879aca8a2edb5a09a00e3a",
+  "timestamp": "2026-08-24T07:15:59.387833+00:00",
+  "git_sha": "aca486d2f882069f92e03ba7cf95e4d686e6240b",
   "outputs": {
-    "fit_results.json": "66fb5376341dd72234f90d89525df26e50126ac2db8031f593b549fa4193bb87",
-    "fit_restarts.jsonl": "fbd87820f8dcfd9f76756ac7184b71a44511d1ddc0d734ff0d8d2a01f5cb0c29"
+    "fit_results.json": "df40f7be4d99843bea2fcd843b0cda7217319f35c9ae669917101d80b126e280",
+    "fit_restarts.jsonl": "c03e42bb2a616bd63a27a51c344339cc03c55a2964a087f5ac0059adc464e9a1"
   },
   "input_data": {
     "path": "data/nonfood_inv_joint_de/main_trials_long.csv",
     "sha256": "07a35cd1207052bb72621da25324f550bc7ddeb922634b48c7175a52e3c60782"
+  },
+  "lm_tables": {
+    "model/outputs/lm/nonfood_inv_joint_de/lm_runs.jsonl": "db2fe48b8af8d7c237539675304fafb5f3bb728ad265e2ad31f9b1eea1633f00",
+    "model/outputs/lm/nonfood_inv_joint_de/lm_runs_base.jsonl": "74da1d914c48709034c1024e033ba9f467bc5a3156cf9ff04a21bd7a6dd4c085"
   }
 }

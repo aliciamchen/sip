@@ -6,34 +6,34 @@
   "n_subjects": 237,
   "n_trials_per_model": 3792,
   "mean_held_out_ll_per_trial": {
-    "base": -0.34352287867023973,
-    "base_shared": -0.3881735730963417,
-    "discomfort_only": -0.7253970700602994,
-    "full": -0.3667500774191402
+    "base": -0.3435258507288458,
+    "base_shared": -0.3881699635886945,
+    "discomfort_only": -0.7253963963014667,
+    "full": -0.36675163433898855
   },
   "primary": [
     {
       "comparison": "full_minus_base",
-      "mean_per_trial_ll_diff": -0.02322719874890042,
+      "mean_per_trial_ll_diff": -0.023225783610142735,
       "ci_95": [
-        -0.034156478257684766,
-        -0.011835048882927322
+        -0.03416066726174535,
+        -0.011837243972511232
       ]
     },
     {
       "comparison": "full_minus_base_shared",
-      "mean_per_trial_ll_diff": 0.021423495677201556,
+      "mean_per_trial_ll_diff": 0.021418329249705947,
       "ci_95": [
-        0.014124189725122121,
-        0.02937924165813103
+        0.01412006253101529,
+        0.02937745839231628
       ]
     },
     {
       "comparison": "full_minus_discomfort_only",
-      "mean_per_trial_ll_diff": 0.35864699264115923,
+      "mean_per_trial_ll_diff": 0.3586447619624782,
       "ci_95": [
-        0.31952173692814784,
-        0.39268584055472405
+        0.3195193925479482,
+        0.3926855082085301
       ]
     }
   ],
@@ -41,10 +41,10 @@
     {
       "model": "base",
       "dv": "desire",
-      "r": 0.8874993091101545,
+      "r": 0.8874941724500842,
       "ci_95": [
-        0.8644966398988888,
-        0.9103699831220297
+        0.8644930667621004,
+        0.9103645568664355
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -52,10 +52,10 @@
     {
       "model": "base",
       "dv": "effort",
-      "r": 0.8231631941073688,
+      "r": 0.8231627116801492,
       "ci_95": [
-        0.7842886334133686,
-        0.8565424895238974
+        0.784409827892919,
+        0.8567412753158455
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -63,10 +63,10 @@
     {
       "model": "base_shared",
       "dv": "desire",
-      "r": 0.8756635013395716,
+      "r": 0.8756601144711007,
       "ci_95": [
-        0.8520521422791566,
-        0.8991278706934875
+        0.852095050614271,
+        0.8992745659543337
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -74,10 +74,10 @@
     {
       "model": "base_shared",
       "dv": "effort",
-      "r": 0.7666594216211965,
+      "r": 0.7666744288163081,
       "ci_95": [
-        0.715388245056142,
-        0.8136126312499403
+        0.7154000219897326,
+        0.8136211837747168
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -107,10 +107,10 @@
     {
       "model": "full",
       "dv": "desire",
-      "r": 0.8897091433481028,
+      "r": 0.8897044856254194,
       "ci_95": [
-        0.8651228806542955,
-        0.9124191350504333
+        0.8650746217599234,
+        0.9126466810703496
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -118,10 +118,10 @@
     {
       "model": "full",
       "dv": "effort",
-      "r": 0.783603978855201,
+      "r": 0.7835930561987493,
       "ci_95": [
-        0.7333563951398726,
-        0.8317387916227031
+        0.7326602714498454,
+        0.8313767916815089
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -130,10 +130,10 @@
   "prereg_deviation": [
     {
       "comparison": "base_shared_minus_base",
-      "mean_per_trial_ll_diff": -0.04465069442610197,
+      "mean_per_trial_ll_diff": -0.044644112859848685,
       "ci_95": [
-        -0.05514438148697972,
-        -0.03486773554345727
+        -0.05513503162764044,
+        -0.03486399299186116
       ],
       "meaning": "the deviation itself: comparison set alone, utility and parameter count held fixed. Pairs with primary's full_minus_base (the preregistered contrast, which moves both) and full_minus_base_shared (the reported one, utility alone)"
     }
@@ -250,15 +250,15 @@
         -0.11745698615561694,
         -0.03866412814854913
       ],
-      "model_gradient": 0.00010572601429650885,
+      "model_gradient": 0.00010558954686445965,
       "human_endpoint_gradient": -0.06183544303797464,
-      "model_endpoint_gradient": -0.0009974707625335089,
-      "human_minus_model": -0.07869248834659895,
+      "model_endpoint_gradient": -0.000997606429118142,
+      "human_minus_model": -0.0786923518791669,
       "human_minus_model_ci_95": [
-        -0.11756271216991344,
-        -0.03876985416284564
+        -0.1175625757024814,
+        -0.03876971769541359
       ],
-      "recovered_fraction": -0.00134534126561225
+      "recovered_fraction": -0.001343604746279997
     },
     {
       "model": "base",
@@ -271,15 +271,15 @@
         -0.08393072818939751,
         -0.0321994047126558
       ],
-      "model_gradient": 0.0018065546251586143,
+      "model_gradient": 0.0018078098119417019,
       "human_endpoint_gradient": -0.05037735849056603,
-      "model_endpoint_gradient": 0.0024279297077618306,
-      "human_minus_model": -0.059220493964241214,
+      "model_endpoint_gradient": 0.0024290155361658405,
+      "human_minus_model": -0.0592217491510243,
       "human_minus_model_ci_95": [
-        -0.08573728281455611,
-        -0.03400595933781442
+        -0.08573853800133921,
+        -0.034007214524597505
       ],
-      "recovered_fraction": -0.031465435849807
+      "recovered_fraction": -0.03148729790626118
     },
     {
       "model": "base",
@@ -292,13 +292,13 @@
         -0.039782922753307415,
         0.01909130270892449
       ],
-      "model_gradient": 1.316434582084025e-05,
+      "model_gradient": 1.3076371960754618e-05,
       "human_endpoint_gradient": -0.010636942675159244,
-      "model_endpoint_gradient": 0.000889264355609376,
-      "human_minus_model": -0.010747387198173933,
+      "model_endpoint_gradient": 0.0008888539760284614,
+      "human_minus_model": -0.010747299224313847,
       "human_minus_model_ci_95": [
-        -0.039796087099128255,
-        0.01907813836310365
+        -0.03979599912526817,
+        0.019078226336963735
       ],
       "recovered_fraction": null
     },
@@ -313,15 +313,15 @@
         -0.11745698615561694,
         -0.03866412814854913
       ],
-      "model_gradient": 0.0013399100477807235,
+      "model_gradient": 0.0013400722309094282,
       "human_endpoint_gradient": -0.06183544303797464,
-      "model_endpoint_gradient": -0.00023081229080129662,
-      "human_minus_model": -0.07992667238008316,
+      "model_endpoint_gradient": -0.00022994028993800208,
+      "human_minus_model": -0.07992683456321187,
       "human_minus_model_ci_95": [
-        -0.11879689620339766,
-        -0.040004038196329854
+        -0.11879705838652636,
+        -0.04000420037945856
       ],
-      "recovered_fraction": -0.01705007316772948
+      "recovered_fraction": -0.017052136913885844
     },
     {
       "model": "base_shared",
@@ -334,15 +334,15 @@
         -0.08393072818939751,
         -0.0321994047126558
       ],
-      "model_gradient": -0.0034454043690432534,
+      "model_gradient": -0.003443710213909927,
       "human_endpoint_gradient": -0.05037735849056603,
-      "model_endpoint_gradient": -0.004043258082285617,
-      "human_minus_model": -0.053968534970039346,
+      "model_endpoint_gradient": -0.004042232467693349,
+      "human_minus_model": -0.05397022912517267,
       "human_minus_model_ci_95": [
-        -0.08048532382035425,
-        -0.02875400034361255
+        -0.08048701797548757,
+        -0.028755694498745876
       ],
-      "recovered_fraction": 0.060009893219396475
+      "recovered_fraction": 0.059980385487427054
     },
     {
       "model": "base_shared",
@@ -355,13 +355,13 @@
         -0.039782922753307415,
         0.01909130270892449
       ],
-      "model_gradient": -0.0010673178917751103,
+      "model_gradient": -0.0010681710514598708,
       "human_endpoint_gradient": -0.010636942675159244,
-      "model_endpoint_gradient": 0.0006103068234244724,
-      "human_minus_model": -0.009666904960577982,
+      "model_endpoint_gradient": 0.0006091869406544409,
+      "human_minus_model": -0.009666051800893222,
       "human_minus_model_ci_95": [
-        -0.038715604861532305,
-        0.0201586206006996
+        -0.038714751701847544,
+        0.02015947376038436
       ],
       "recovered_fraction": null
     },
@@ -439,15 +439,15 @@
         -0.11745698615561694,
         -0.03866412814854913
       ],
-      "model_gradient": -0.06134077758332951,
+      "model_gradient": -0.06133719018597818,
       "human_endpoint_gradient": -0.06183544303797464,
-      "model_endpoint_gradient": -0.05985410959471629,
-      "human_minus_model": -0.01724598474897293,
+      "model_endpoint_gradient": -0.05985130596009991,
+      "human_minus_model": -0.017249572146324263,
       "human_minus_model_ci_95": [
-        -0.05611620857228743,
-        0.022676649434780382
+        -0.05611979596963876,
+        0.02267306203742905
       ],
-      "recovered_fraction": 0.7805484761409478
+      "recovered_fraction": 0.780502827265172
     },
     {
       "model": "full",
@@ -460,15 +460,15 @@
         -0.08393072818939751,
         -0.0321994047126558
       ],
-      "model_gradient": -0.04422939426281775,
+      "model_gradient": -0.04422845568605196,
       "human_endpoint_gradient": -0.05037735849056603,
-      "model_endpoint_gradient": -0.042455296401145315,
-      "human_minus_model": -0.013184545076264848,
+      "model_endpoint_gradient": -0.04245318451298857,
+      "human_minus_model": -0.013185483653030641,
       "human_minus_model_ci_95": [
-        -0.039701333926579756,
-        0.012029989550161947
+        -0.03970227250334555,
+        0.012029050973396153
       ],
-      "recovered_fraction": 0.770359859852189
+      "recovered_fraction": 0.7703435123105188
     },
     {
       "model": "full",
@@ -481,13 +481,13 @@
         -0.039782922753307415,
         0.01909130270892449
       ],
-      "model_gradient": -0.0008063552387385514,
+      "model_gradient": -0.0008068003572000021,
       "human_endpoint_gradient": -0.010636942675159244,
-      "model_endpoint_gradient": 0.0010117066573280403,
-      "human_minus_model": -0.009927867613614541,
+      "model_endpoint_gradient": 0.0010104858595284677,
+      "human_minus_model": -0.00992742249515309,
       "human_minus_model_ci_95": [
-        -0.03897656751456886,
-        0.01989765794766304
+        -0.03897612239610741,
+        0.01989810306612449
       ],
       "recovered_fraction": null
     },
@@ -502,13 +502,13 @@
         -0.04722989723769928,
         0.04466329506446678
       ],
-      "model_gradient": 0.003990235693423438,
+      "model_gradient": 0.003990924104444127,
       "human_endpoint_gradient": 0.0013607594936709266,
-      "model_endpoint_gradient": 0.005989926907711357,
-      "human_minus_model": -0.006008191254996326,
+      "model_endpoint_gradient": 0.005990749776519588,
+      "human_minus_model": -0.006008879666017014,
       "human_minus_model_ci_95": [
-        -0.051220132931122715,
-        0.04067305937104334
+        -0.051220821342143404,
+        0.04067237096002265
       ],
       "recovered_fraction": null
     },
@@ -523,13 +523,13 @@
         -0.0636269824877847,
         0.022430292185138024
       ],
-      "model_gradient": 0.0022054466571605202,
+      "model_gradient": 0.0022044964978741866,
       "human_endpoint_gradient": -0.020628930817610275,
-      "model_endpoint_gradient": 0.002245860420308027,
-      "human_minus_model": -0.022829917836531474,
+      "model_endpoint_gradient": 0.002245421492078792,
+      "human_minus_model": -0.02282896767724514,
       "human_minus_model_ci_95": [
-        -0.06583242914494522,
-        0.020224845527977504
+        -0.06583147898565889,
+        0.020225795687263837
       ],
       "recovered_fraction": null
     },
@@ -544,15 +544,15 @@
         -0.17815380899758387,
         -0.08068144705984566
       ],
-      "model_gradient": -0.00520413025582897,
+      "model_gradient": -0.005204100063255654,
       "human_endpoint_gradient": -0.12133757961783462,
-      "model_endpoint_gradient": -0.00475370770047423,
-      "human_minus_model": -0.12255199615302848,
+      "model_endpoint_gradient": -0.004753182671821815,
+      "human_minus_model": -0.12255202634560179,
       "human_minus_model_ci_95": [
-        -0.1729496787417549,
-        -0.07547731680401669
+        -0.1729497089343282,
+        -0.07547734699659
       ],
-      "recovered_fraction": 0.04073487825682983
+      "recovered_fraction": 0.0407346419270806
     },
     {
       "model": "base_shared",
@@ -565,13 +565,13 @@
         -0.04722989723769928,
         0.04466329506446678
       ],
-      "model_gradient": 0.006246561966374367,
+      "model_gradient": 0.006244877478129712,
       "human_endpoint_gradient": 0.0013607594936709266,
-      "model_endpoint_gradient": 0.007670066284039351,
-      "human_minus_model": -0.008264517527947254,
+      "model_endpoint_gradient": 0.007668869152128749,
+      "human_minus_model": -0.0082628330397026,
       "human_minus_model_ci_95": [
-        -0.053476459204073644,
-        0.03841673309809241
+        -0.05347477471582899,
+        0.038418417586337066
       ],
       "recovered_fraction": null
     },
@@ -586,13 +586,13 @@
         -0.0636269824877847,
         0.022430292185138024
       ],
-      "model_gradient": -0.003673515201242511,
+      "model_gradient": -0.003676166400952141,
       "human_endpoint_gradient": -0.020628930817610275,
-      "model_endpoint_gradient": -0.004659331397815297,
-      "human_minus_model": -0.016950955978128443,
+      "model_endpoint_gradient": -0.004662421174675413,
+      "human_minus_model": -0.016948304778418813,
       "human_minus_model_ci_95": [
-        -0.059953467286542196,
-        0.026103807386380535
+        -0.059950816086832566,
+        0.026106458586090165
       ],
       "recovered_fraction": null
     },
@@ -607,15 +607,15 @@
         -0.17815380899758387,
         -0.08068144705984566
       ],
-      "model_gradient": -0.01880488566202619,
+      "model_gradient": -0.018804639198515702,
       "human_endpoint_gradient": -0.12133757961783462,
-      "model_endpoint_gradient": -0.015867000730459102,
-      "human_minus_model": -0.10895124074683125,
+      "model_endpoint_gradient": -0.015867085925712704,
+      "human_minus_model": -0.10895148721034174,
       "human_minus_model_ci_95": [
-        -0.15934892333555767,
-        -0.061876561397819475
+        -0.15934916979906816,
+        -0.061876807861329965
       ],
-      "recovered_fraction": 0.14719361169299222
+      "recovered_fraction": 0.14719168252123804
     },
     {
       "model": "discomfort_only",
@@ -691,13 +691,13 @@
         -0.04722989723769928,
         0.04466329506446678
       ],
-      "model_gradient": 0.04296362443857541,
+      "model_gradient": 0.042962352273527904,
       "human_endpoint_gradient": 0.0013607594936709266,
-      "model_endpoint_gradient": 0.04300956384432089,
-      "human_minus_model": -0.0449815800001483,
+      "model_endpoint_gradient": 0.04300775973986881,
+      "human_minus_model": -0.04498030783510079,
       "human_minus_model_ci_95": [
-        -0.09019352167627467,
-        0.0016996706258913647
+        -0.09019224951122717,
+        0.0017009427909388717
       ],
       "recovered_fraction": null
     },
@@ -712,13 +712,13 @@
         -0.0636269824877847,
         0.022430292185138024
       ],
-      "model_gradient": -0.02817638019407251,
+      "model_gradient": -0.028171493899400796,
       "human_endpoint_gradient": -0.020628930817610275,
-      "model_endpoint_gradient": -0.028802542554788618,
-      "human_minus_model": 0.007551909014701555,
+      "model_endpoint_gradient": -0.028798336620038417,
+      "human_minus_model": 0.007547022720029842,
       "human_minus_model_ci_95": [
-        -0.0354506022937122,
-        0.05060667237921053
+        -0.03545548858838391,
+        0.050601786084538816
       ],
       "recovered_fraction": null
     },
@@ -733,15 +733,15 @@
         -0.17815380899758387,
         -0.08068144705984566
       ],
-      "model_gradient": -0.10049696655021516,
+      "model_gradient": -0.10050305234346081,
       "human_endpoint_gradient": -0.12133757961783462,
-      "model_endpoint_gradient": -0.094245463882567,
-      "human_minus_model": -0.027259159858642287,
+      "model_endpoint_gradient": -0.09425022476797651,
+      "human_minus_model": -0.027253074065396635,
       "human_minus_model_ci_95": [
-        -0.07765684244736872,
-        0.019815519490369495
+        -0.07765075665412306,
+        0.019821605283615148
       ],
-      "recovered_fraction": 0.7866312902177004
+      "recovered_fraction": 0.7866789262365491
     }
   ]
 }

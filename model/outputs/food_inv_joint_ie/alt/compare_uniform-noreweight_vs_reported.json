@@ -4,38 +4,38 @@
   "n_boot": 1000,
   "seed": 0,
   "source": {
-    "uniform-noreweight/cv_trial_ll.jsonl": "2d33efa3cb7f77802baa8aae1c612e9f7e5a34aeef4a29aaae7b7f96fa53206d",
-    "reported/cv_trial_ll.jsonl": "add5223760745ed7eee5e7262b65a9120039bc78522508709af15dd81c076367"
+    "uniform-noreweight/cv_trial_ll.jsonl": "1e8e0b5f2592f7157ec7c8d217c8a6f8b6b46647576865925e35dc284988c7ea",
+    "reported/cv_trial_ll.jsonl": "1b4c4cc3233c603099b2fa1aba5e340bd6103e79a3cb5ddd86140911612ed641"
   },
   "per_variant": [
     {
       "variant": "base",
-      "mean_ll_a": -0.44847370920081936,
-      "mean_ll_b": -0.4484495321288705,
-      "mean_per_trial_ll_diff": 2.4177071948846182e-05,
+      "mean_ll_a": -0.44846987891942264,
+      "mean_ll_b": -0.4484588949630658,
+      "mean_per_trial_ll_diff": 1.0983956356843312e-05,
       "ci_95": [
-        1.2192842550575733e-05,
-        3.58075617502133e-05
+        -2.780539604524771e-06,
+        2.4606961136062938e-05
       ]
     },
     {
       "variant": "discomfort_only",
-      "mean_ll_a": -0.4798526345441739,
-      "mean_ll_b": -0.4823863790060083,
-      "mean_per_trial_ll_diff": -0.0025337444618344306,
+      "mean_ll_a": -0.4798527084911863,
+      "mean_ll_b": -0.48236367801825203,
+      "mean_per_trial_ll_diff": -0.002510969527065754,
       "ci_95": [
-        -0.00427998379804194,
-        -0.0006818889252220592
+        -0.0042546843457967045,
+        -0.0006631665769964457
       ]
     },
     {
       "variant": "full",
-      "mean_ll_a": -0.28883474804461,
-      "mean_ll_b": -0.28806528182079394,
-      "mean_per_trial_ll_diff": 0.0007694662238160769,
+      "mean_ll_a": -0.2888339397807916,
+      "mean_ll_b": -0.2880624502276381,
+      "mean_per_trial_ll_diff": 0.0007714895531535148,
       "ci_95": [
-        -0.0033854362337539592,
-        0.0043629124527797105
+        -0.003382179370770852,
+        0.004367509906490643
       ]
     }
   ]

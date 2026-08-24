@@ -2,16 +2,16 @@
   {
     "model": "full",
     "experiment": "food_inv_desire",
-    "nll": 353.1480712890625,
+    "nll": 353.1480407714844,
     "n_params": 6,
     "param_alpha": 1.0,
-    "alpha_observer": 0.8437078595161438,
+    "alpha_observer": 0.8437386751174927,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.24841614067554474,
-    "param_w_v": 9.014585494995117,
-    "param_w_d": 4.239544868469238,
-    "param_w_e": 3.628476619720459,
-    "param_gamma": 0.6802590489387512
+    "param_sigma": 0.2484162598848343,
+    "param_w_v": 9.0142240524292,
+    "param_w_d": 4.239409923553467,
+    "param_w_e": 3.628288507461548,
+    "param_gamma": 0.680266797542572
   },
   {
     "model": "discomfort_only",
@@ -19,34 +19,34 @@
     "nll": 1968.854248046875,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 33.028839111328125,
+    "alpha_observer": 29.13193130493164,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.31249141693115234,
-    "param_w_d": 9.999999974752427e-07,
-    "param_gamma": 1.957005500793457
+    "param_sigma": 0.3125098943710327,
+    "param_w_d": 1.5830347537994385,
+    "param_gamma": 1.0725064277648926
   },
   {
     "model": "base",
     "experiment": "food_inv_desire",
-    "nll": 410.0278015136719,
+    "nll": 410.02783203125,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 1.7483561038970947,
+    "alpha_observer": 1.7482187747955322,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.25177544355392456,
-    "param_w_v": 4.010010242462158,
-    "param_w_e": 2.236410140991211
+    "param_sigma": 0.2517755627632141,
+    "param_w_v": 4.010341167449951,
+    "param_w_e": 2.236738443374634
   },
   {
     "model": "base_shared",
     "experiment": "food_inv_desire",
-    "nll": 397.01190185546875,
+    "nll": 397.0119323730469,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 1.6311537027359009,
+    "alpha_observer": 1.6311616897583008,
     "alpha_observer_at_bound": false,
     "param_sigma": 0.2511107623577118,
-    "param_w_v": 4.330239772796631,
-    "param_w_e": 2.786663055419922
+    "param_w_v": 4.330132484436035,
+    "param_w_e": 2.786634683609009
   }
 ]

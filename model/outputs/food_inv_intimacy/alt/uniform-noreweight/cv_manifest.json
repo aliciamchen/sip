@@ -1,14 +1,18 @@
 {
   "experiment": "food_inv_intimacy",
-  "timestamp": "2026-08-03T07:53:09.308012+00:00",
-  "git_sha": "9466df95de9a485979879aca8a2edb5a09a00e3a",
+  "timestamp": "2026-08-24T06:54:21.004181+00:00",
+  "git_sha": "aca486d2f882069f92e03ba7cf95e4d686e6240b",
   "outputs": {
-    "cv_preds_summary.json": "d6d61d571afda8f6b303cdf86f6b56a8b5a7742cb08d6098de1e3f9a26c35ef4",
-    "cv_folds.jsonl": "463ad88b284fad5f163f25289d1643b7b56a6c3412f26694a717eb8a945af234",
-    "cv_trial_ll.jsonl": "0bd8c6b51fc7a4c297ab9610d772f0c2731b564ecee4972b9b7c1789e36f6217"
+    "cv_preds_summary.json": "1e969d99f418110100ae1aae1c21f26e246689041cd15c3905a530e174a7dd9f",
+    "cv_folds.jsonl": "7ed53f407e0018bea51606752c79072d6273a7e1974d6983a96f8ada5f04615e",
+    "cv_trial_ll.jsonl": "1b5b04d2be99e365e110ed4c08257ba328d12fc24fc7c405f626dfbef140a1a7"
   },
   "input_data": {
     "path": "data/food_inv_intimacy/main_trials_long.csv",
     "sha256": "3c61ead03a03e88cae4930d04cd00ef0931559a475f722e68ced8608b86ffa04"
+  },
+  "lm_tables": {
+    "model/outputs/lm/food_inv_intimacy/lm_runs.jsonl": "fa78064dd72383f97012305d8e45e4df37ce4f47a1d7a5eeb98995856878c13c",
+    "model/outputs/lm/food_inv_intimacy/lm_runs_base.jsonl": null
   }
 }

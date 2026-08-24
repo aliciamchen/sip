@@ -6,25 +6,25 @@
   "n_subjects": 239,
   "n_trials_per_model": 3824,
   "mean_held_out_ll_per_trial": {
-    "base": -0.21908331581364118,
-    "discomfort_only": 0.05615054220584646,
-    "full": 0.060834087899040476
+    "base": -0.21909301378861631,
+    "discomfort_only": 0.05609209255693348,
+    "full": 0.06083537697417966
   },
   "primary": [
     {
       "comparison": "full_minus_base",
-      "mean_per_trial_ll_diff": 0.27991740371268165,
+      "mean_per_trial_ll_diff": 0.27992839076279596,
       "ci_95": [
-        0.25565148645380675,
-        0.3042954358603478
+        0.2556603779307095,
+        0.3043059985297557
       ]
     },
     {
       "comparison": "full_minus_discomfort_only",
-      "mean_per_trial_ll_diff": 0.004683545693194019,
+      "mean_per_trial_ll_diff": 0.004743284417246176,
       "ci_95": [
-        0.0009785929601249833,
-        0.0081057860465354
+        0.00105221251641482,
+        0.00817610067802493
       ]
     }
   ],
@@ -43,10 +43,10 @@
     {
       "model": "discomfort_only",
       "dv": "intimacy",
-      "r": 0.9007845424409259,
+      "r": 0.9006261892598757,
       "ci_95": [
-        0.8737503641987089,
-        0.9219539047154498
+        0.872939265357213,
+        0.9227252597304014
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -54,10 +54,10 @@
     {
       "model": "full",
       "dv": "intimacy",
-      "r": 0.9023555058340411,
+      "r": 0.9023568741209855,
       "ci_95": [
-        0.8749104733707036,
-        0.9237164697346886
+        0.8749136966288148,
+        0.9237172152312458
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 192
@@ -191,15 +191,15 @@
         -0.0952013981731968,
         -0.055095776539906174
       ],
-      "model_gradient": -0.008713445653594304,
+      "model_gradient": -0.008711223505488891,
       "human_endpoint_gradient": -0.07518897222547755,
-      "model_endpoint_gradient": -0.008713445653594304,
-      "human_minus_model": -0.06647552657188324,
+      "model_endpoint_gradient": -0.008711223505488891,
+      "human_minus_model": -0.06647774871998866,
       "human_minus_model_ci_95": [
-        -0.08648795251960249,
-        -0.04638233088631187
+        -0.0864901746677079,
+        -0.046384553034417284
       ],
-      "recovered_fraction": 0.11588728234593132
+      "recovered_fraction": 0.11585772817010419
     },
     {
       "model": "discomfort_only",
@@ -212,15 +212,15 @@
         -0.0867212961850066,
         -0.03711715708125342
       ],
-      "model_gradient": -0.0024372555293674103,
+      "model_gradient": -0.0025852190168060493,
       "human_endpoint_gradient": -0.061233489268024216,
-      "model_endpoint_gradient": -0.0024372555293674103,
-      "human_minus_model": -0.058796233738656806,
+      "model_endpoint_gradient": -0.0025852190168060493,
+      "human_minus_model": -0.05864827025121817,
       "human_minus_model_ci_95": [
-        -0.08428404065563919,
-        -0.03467990155188601
+        -0.08413607716820054,
+        -0.03453193806444737
       ],
-      "recovered_fraction": 0.03980265633237614
+      "recovered_fraction": 0.042219038106587795
     },
     {
       "model": "discomfort_only",
@@ -233,15 +233,15 @@
         -0.07033022131117031,
         -0.024705654056162346
       ],
-      "model_gradient": -0.002011482897235739,
+      "model_gradient": -0.002088648665614201,
       "human_endpoint_gradient": -0.047265245601465056,
-      "model_endpoint_gradient": -0.002011482897235739,
-      "human_minus_model": -0.04525376270422932,
+      "model_endpoint_gradient": -0.002088648665614201,
+      "human_minus_model": -0.045176596935850855,
       "human_minus_model_ci_95": [
-        -0.06831873841393457,
-        -0.022694171158926607
+        -0.06824157264555611,
+        -0.022617005390548145
       ],
-      "recovered_fraction": 0.042557335133648184
+      "recovered_fraction": 0.04418994631331103
     },
     {
       "model": "full",
@@ -254,15 +254,15 @@
         -0.0952013981731968,
         -0.055095776539906174
       ],
-      "model_gradient": -0.01787466853337516,
+      "model_gradient": -0.017874658154398287,
       "human_endpoint_gradient": -0.07518897222547755,
-      "model_endpoint_gradient": -0.01787466853337516,
-      "human_minus_model": -0.057314303692102386,
+      "model_endpoint_gradient": -0.017874658154398287,
+      "human_minus_model": -0.05731431407107926,
       "human_minus_model_ci_95": [
-        -0.07732672963982164,
-        -0.037221108006531015
+        -0.07732674001879851,
+        -0.03722111838550789
       ],
-      "recovered_fraction": 0.237729922411659
+      "recovered_fraction": 0.2377297843731067
     },
     {
       "model": "full",
@@ -275,15 +275,15 @@
         -0.0867212961850066,
         -0.03711715708125342
       ],
-      "model_gradient": -0.025238824032394393,
+      "model_gradient": -0.025238518532193048,
       "human_endpoint_gradient": -0.061233489268024216,
-      "model_endpoint_gradient": -0.025238824032394393,
-      "human_minus_model": -0.03599466523562982,
+      "model_endpoint_gradient": -0.025238518532193048,
+      "human_minus_model": -0.03599497073583117,
       "human_minus_model_ci_95": [
-        -0.061482472152612204,
-        -0.011878333048859028
+        -0.06148277765281355,
+        -0.011878638549060372
       ],
-      "recovered_fraction": 0.4121735399059476
+      "recovered_fraction": 0.4121685508026808
     },
     {
       "model": "full",
@@ -296,15 +296,15 @@
         -0.07033022131117031,
         -0.024705654056162346
       ],
-      "model_gradient": -0.02501518102421324,
+      "model_gradient": -0.025014928352787902,
       "human_endpoint_gradient": -0.047265245601465056,
-      "model_endpoint_gradient": -0.02501518102421324,
-      "human_minus_model": -0.022250064577251816,
+      "model_endpoint_gradient": -0.025014928352787902,
+      "human_minus_model": -0.022250317248677154,
       "human_minus_model_ci_95": [
-        -0.04531504028695708,
-        0.00030952696805089326
+        -0.045315292958382415,
+        0.0003092742966255551
       ],
-      "recovered_fraction": 0.5292510534090583
+      "recovered_fraction": 0.5292457075905372
     }
   ]
 }

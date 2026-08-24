@@ -5,17 +5,17 @@
     "nll": 2470.536865234375,
     "n_params": 7,
     "param_alpha": 1.0,
-    "alpha_observer": 3.1016361713409424,
+    "alpha_observer": 3.1016366481781006,
     "alpha_observer_at_bound": false,
     "param_sigma": 0.3075235188007355,
-    "param_eta": 2.875434637069702,
+    "param_eta": 2.875434398651123,
     "reweighting_targets": [
       "world"
     ],
-    "param_w_v": 3.443701982498169,
-    "param_w_d": 1.9808999300003052,
-    "param_w_e": 2.62851619720459,
-    "param_gamma": 3.095008134841919
+    "param_w_v": 3.4437015056610107,
+    "param_w_d": 1.9809001684188843,
+    "param_w_e": 2.6285159587860107,
+    "param_gamma": 3.09500789642334
   },
   {
     "model": "discomfort_only",
@@ -23,27 +23,27 @@
     "nll": 3562.31982421875,
     "n_params": 4,
     "param_alpha": 1.0,
-    "alpha_observer": 2.440335512161255,
+    "alpha_observer": 3.6633927822113037,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.3855239748954773,
-    "param_w_d": 0.343129962682724,
-    "param_gamma": 0.2468549907207489
+    "param_sigma": 0.3855211138725281,
+    "param_w_d": 1.8377695083618164,
+    "param_gamma": 0.6144847273826599
   },
   {
     "model": "base",
     "experiment": "nonfood_inv_joint_de",
-    "nll": 2474.613037109375,
+    "nll": 2474.61328125,
     "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 5.4598822593688965,
+    "alpha_observer": 5.452773571014404,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.31149277091026306,
-    "param_eta": 2.0617101192474365,
+    "param_sigma": 0.31149202585220337,
+    "param_eta": 2.062349557876587,
     "reweighting_targets": [
       "world"
     ],
-    "param_w_v": 1.7243361473083496,
-    "param_w_e": 1.2963695526123047
+    "param_w_v": 1.7268704175949097,
+    "param_w_e": 1.2982550859451294
   },
   {
     "model": "base_shared",
@@ -51,14 +51,14 @@
     "nll": 2502.140625,
     "n_params": 5,
     "param_alpha": 1.0,
-    "alpha_observer": 5.219577312469482,
+    "alpha_observer": 5.218581199645996,
     "alpha_observer_at_bound": false,
-    "param_sigma": 0.310811311006546,
-    "param_eta": 2.4257168769836426,
+    "param_sigma": 0.31081119179725647,
+    "param_eta": 2.4258265495300293,
     "reweighting_targets": [
       "world"
     ],
-    "param_w_v": 1.7680628299713135,
-    "param_w_e": 1.4424513578414917
+    "param_w_v": 1.7684346437454224,
+    "param_w_e": 1.4427616596221924
   }
 ]

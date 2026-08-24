@@ -4,182 +4,182 @@
       "slug": "food_inv_desire",
       "experiment": "1a",
       "arm": "own",
-      "r": 0.9916926055118945,
+      "r": 0.9916920235607775,
       "ci_95": [
-        0.984272825345287,
-        0.997249742954049
+        0.9842705946757406,
+        0.997249457831225
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.931694030221952,
+      "grad_median_recovered": 0.9317600636722028,
       "n_grad_cells": 2
     },
     {
       "slug": "food_inv_desire",
       "experiment": "1a",
       "arm": "pooled",
-      "r": 0.9924710707487365,
+      "r": 0.9924702676448769,
       "ci_95": [
-        0.9877143504347425,
-        0.9973271815837528
+        0.9877130543646675,
+        0.9973268521049417
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.6451445451423392,
+      "grad_median_recovered": 0.6451017824649165,
       "n_grad_cells": 2
     },
     {
       "slug": "food_inv_joint_de",
       "experiment": "1b",
       "arm": "own",
-      "r": 0.9930570559422961,
+      "r": 0.9930578421844801,
       "ci_95": [
-        0.9872989967547023,
-        0.9970354676650094
+        0.9873003269603617,
+        0.9970358174052302
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.7805484761409478,
+      "grad_median_recovered": 0.780502827265172,
       "n_grad_cells": 3
     },
     {
       "slug": "food_inv_joint_de",
       "experiment": "1b",
       "arm": "pooled",
-      "r": 0.9778900046292158,
+      "r": 0.9778881894923154,
       "ci_95": [
-        0.9659426765676167,
-        0.9884900073794342
+        0.9659411969042704,
+        0.9884888814901811
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.6246091362279601,
+      "grad_median_recovered": 0.6245962774641948,
       "n_grad_cells": 3
     },
     {
       "slug": "food_inv_intimacy",
       "experiment": "2a",
       "arm": "own",
-      "r": 0.992212508594365,
+      "r": 0.9922125661195021,
       "ci_95": [
-        0.9754107518350809,
-        0.9983302753135515
+        0.9754109078304747,
+        0.9983303223816106
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.4121735399059476,
+      "grad_median_recovered": 0.4121685508026808,
       "n_grad_cells": 3
     },
     {
       "slug": "food_inv_intimacy",
       "experiment": "2a",
       "arm": "pooled",
-      "r": 0.9924093451906325,
+      "r": 0.9924077124328488,
       "ci_95": [
-        0.9775862887532697,
-        0.9986703622516135
+        0.9775790100340955,
+        0.9986699154922409
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.9517559176857967,
+      "grad_median_recovered": 0.9518974934478825,
       "n_grad_cells": 3
     },
     {
       "slug": "food_inv_joint_ie",
       "experiment": "2b",
       "arm": "own",
-      "r": 0.9879825230498513,
+      "r": 0.987982487661822,
       "ci_95": [
-        0.9807377909090668,
-        0.9957547263555818
+        0.9807374183907916,
+        0.9957550557233257
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.45502620400616245,
+      "grad_median_recovered": 0.455002352592988,
       "n_grad_cells": 4
     },
     {
       "slug": "food_inv_joint_ie",
       "experiment": "2b",
       "arm": "pooled",
-      "r": 0.9867402607359239,
+      "r": 0.9867418232714983,
       "ci_95": [
-        0.9760423607940132,
-        0.9962501669930354
+        0.9760454535388371,
+        0.9962517352001797
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.5097892165413802,
+      "grad_median_recovered": 0.509782571451331,
       "n_grad_cells": 4
     },
     {
       "slug": "nonfood_inv_joint_de",
       "experiment": "3a",
       "arm": "own",
-      "r": 0.9900636918157858,
+      "r": 0.9900645528458756,
       "ci_95": [
-        0.9801989146207134,
-        0.9956570493538858
+        0.9802033751088708,
+        0.9956562319088511
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.5411857062030933,
+      "grad_median_recovered": 0.5413289754026346,
       "n_grad_cells": 3
     },
     {
       "slug": "nonfood_inv_joint_de",
       "experiment": "3a",
       "arm": "food",
-      "r": 0.9890266155618797,
+      "r": 0.9890262981963265,
       "ci_95": [
-        0.9801001583034802,
-        0.9950384020193637
+        0.9801011650652608,
+        0.9950384172087472
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.563397292352261,
+      "grad_median_recovered": 0.5635529277456561,
       "n_grad_cells": 3
     },
     {
       "slug": "nonfood_inv_joint_de",
       "experiment": "3a",
       "arm": "pooled",
-      "r": 0.9891702352541278,
+      "r": 0.9891688930014296,
       "ci_95": [
-        0.9804495711581819,
-        0.9951571391210626
+        0.9804464384270929,
+        0.9951559340983529
       ],
       "n_points": 24,
-      "grad_median_recovered": 0.4537606382810492,
+      "grad_median_recovered": 0.45380691811495405,
       "n_grad_cells": 3
     },
     {
       "slug": "nonfood_inv_joint_ie",
       "experiment": "3b",
       "arm": "own",
-      "r": 0.9816200878020273,
+      "r": 0.9816144827612169,
       "ci_95": [
-        0.9655907820881235,
-        0.9935700251239531
+        0.9655765863765264,
+        0.9935687517024172
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.34387974021511053,
+      "grad_median_recovered": 0.3438243464524875,
       "n_grad_cells": 5
     },
     {
       "slug": "nonfood_inv_joint_ie",
       "experiment": "3b",
       "arm": "food",
-      "r": 0.9423393663931932,
+      "r": 0.9423255128904166,
       "ci_95": [
-        0.8965173646718789,
-        0.9781754006099523
+        0.8965107513565534,
+        0.9781694158920247
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.5653689313792419,
+      "grad_median_recovered": 0.5655458902159037,
       "n_grad_cells": 5
     },
     {
       "slug": "nonfood_inv_joint_ie",
       "experiment": "3b",
       "arm": "pooled",
-      "r": 0.9584622424015572,
+      "r": 0.9584610475010524,
       "ci_95": [
-        0.9237418861802524,
-        0.98483121023899
+        0.9237387283577861,
+        0.9848290621966651
       ],
       "n_points": 12,
-      "grad_median_recovered": 0.49799002663132613,
+      "grad_median_recovered": 0.49799826573925937,
       "n_grad_cells": 5
     }
   ],
@@ -191,10 +191,10 @@
         "nonfood_inv_joint_de",
         "nonfood_inv_joint_ie"
       ],
-      "r": 0.9877145154998745,
+      "r": 0.9877142678095681,
       "ci_95": [
-        0.9799154098982475,
-        0.9927273370025724
+        0.979918923523675,
+        0.9927281391278981
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 36
@@ -206,10 +206,10 @@
         "nonfood_inv_joint_de",
         "nonfood_inv_joint_ie"
       ],
-      "r": 0.9773752518098989,
+      "r": 0.9773715186285032,
       "ci_95": [
-        0.9645568644031295,
-        0.9877027342534423
+        0.9645495802708766,
+        0.9876999141326913
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 36
@@ -221,10 +221,10 @@
         "nonfood_inv_joint_de",
         "nonfood_inv_joint_ie"
       ],
-      "r": 0.981403236512372,
+      "r": 0.9814017453181286,
       "ci_95": [
-        0.96978189474935,
-        0.9893684063036788
+        0.9697774618521018,
+        0.9893683502260181
       ],
       "ci_method": "percentile bootstrap over cells",
       "n_cells": 36
