@@ -25,8 +25,9 @@ make figures-si-prereg-predictions  # preregistered and reported predictions
 ```
 
 All plotting scripts use `figures/scripts/plot_style.py` for fonts, colors, and
-output locations. Each script saves a PDF and a PNG preview. The PDFs are
-included in the repository; the PNG previews are ignored by Git.
+output locations. They save vector PDFs, and most also save PNG previews. The
+PDFs are included in the repository; generated PNG previews are ignored by
+Git.
 
 The schematic panels use the example scores in
 `figures/scripts/figure_scores.json`, so they can be generated without running

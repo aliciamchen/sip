@@ -1,14 +1,11 @@
 #!/bin/bash
 # PreToolUse hook for the Bash tool.
 #
-# When Claude is about to run `git commit`, check whether any staged file
+# When an agent is about to run `git commit`, check whether any staged file
 # is under model/. If so, run the whole test suite first; if it fails, block the
 # commit and report what failed.
 #
-# It runs `make test` rather than naming individual test files, deliberately: a
-# hook that hardcodes a list quietly stops covering the newest tests — which are
-# the ones most likely to be broken. `make test` is the single source of truth
-# for what must pass.
+# `make test` is the single source of truth for the required suite.
 #
 # Other Bash commands pass through untouched.
 
@@ -24,11 +21,11 @@ case "$command" in
   *) exit 0 ;;
 esac
 
-# Resolve project dir; CLAUDE_PROJECT_DIR is set when Claude invokes the hook
+# Use the harness-provided project directory when available, then fall back to Git.
 project_dir="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 cd "$project_dir" 2>/dev/null || exit 0
 
-# Skip if no model/ files are staged — but the staged set alone misses two
+# Skip if no model/ files are staged -- but the staged set alone misses two
 # commit forms: `git commit -a`/`--all` also commits unstaged tracked changes,
 # and a pathspec commit (`git commit model/x.py -m ...`) commits files that
 # were never staged. Widen the trigger for those; a false positive (e.g. a
@@ -38,7 +35,7 @@ extra_model=""
 # Catch -a in any short-option cluster (-a, -am, -qam, -qa, ...) as well as
 # --all. Substring-matching " -a" missed clusters where a is not first
 # (`git commit -qam` skipped the gate). The regex also fires on look-alikes
-# (--amend, a message word starting with a dash) — a false positive just runs
+# (--amend, a message word starting with a dash) -- a false positive just runs
 # the test suite, which is the cheap direction.
 if [[ "$command" =~ (^|[[:space:]])-[a-zA-Z]*a || "$command" == *"--all"* ]]; then
   extra_model=$(git diff --name-only | grep -E '^model/' || true)
@@ -50,9 +47,7 @@ if [ -z "$staged_model" ] && [ -z "$extra_model" ]; then
   exit 0
 fi
 
-# Every test file is tracked (there is no `*test*` gitignore rule -- an earlier
-# version of this hook assumed one and skipped itself on that basis), so a clone
-# always has them. Still bail out rather than block if `make` is unavailable.
+# Do not block a commit merely because `make` is unavailable.
 if ! command -v make >/dev/null 2>&1; then
   exit 0
 fi
@@ -64,7 +59,7 @@ if make test >"$log" 2>&1; then
   exit 0
 fi
 
-# Test failed — block the commit
+# Test failed -- block the commit
 output=$(cat "$log")
 rm -f "$log"
 
@@ -72,7 +67,7 @@ jq -n --arg out "$output" '{
   hookSpecificOutput: {
     hookEventName: "PreToolUse",
     permissionDecision: "deny",
-    permissionDecisionReason: ("make test failed; commit blocked.\n\nTest output:\n" + $out + "\n\nFix the failures and retry. To bypass this check for a single commit (rare; only when committing docs alongside an unrelated test failure), use `git commit --no-verify` — but the hook still fires, so prefer fixing the test.")
+    permissionDecisionReason: ("make test failed; commit blocked.\n\nTest output:\n" + $out + "\n\nFix the failures and retry. `--no-verify` bypasses Git hooks, not this agent hook.")
   }
 }'
 exit 0

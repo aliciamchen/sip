@@ -1,113 +1,45 @@
 ---
 name: rerun-lm-elicitation
-description: Use when LM elicitation tables need regenerating or smoke-testing — after edits to model/lm/prompts.py, the scenarios, or generate_alternatives.py / score_merged.py, when the user asks to rerun an elicitation, or before running make lm-<slug> / lm-base.
+description: Use when Together AI elicitation tables need smoke-testing or regeneration after prompt, scenario, generation, or scoring changes, or when the user asks to run an lm or lm-base target. Protect canonical paid outputs and require approval for full runs.
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Rerun an LM elicitation safely
 
-Elicitations are **paid Together AI runs** (K=20 over hundreds of cells) and
-their outputs are expensive to reproduce. Two standing rules, both from real
-incidents:
+Elicitations spend API money and feed every downstream fit. Never start a full run merely because upstream files changed. A direct request to rerun authorizes the workflow, but still state the estimated cost and elapsed time before the paid full run.
 
-1. **Never launch a full K=20 run as a side effect of another task.** A direct
-   user request to rerun an elicitation is the go-ahead: smoke-test first, state
-   the cost/time estimate, then proceed. Without a direct request, give the
-   estimate and stop — she often defers ("later i will rerun all elicitations");
-   build and plot against the current tables and flag the staleness.
-2. **A smoke must never write to the canonical filenames.** Use the diagnostic
-   vintage (below), which is gitignored and cannot displace the tables the
-   reported fits read.
+## Output vintages
 
-## Two output vintages
+Canonical `lm_alternatives*.jsonl` and `lm_runs*.jsonl` files are committed model inputs. Diagnostic `*_diag*` files are gitignored and cannot overwrite them. Smoke-test only through diagnostic targets; promote an accepted change by re-eliciting canonical files, not by copying diagnostic files.
 
-The canonical tables — `lm_alternatives.jsonl`, `lm_runs.jsonl`, plus
-`*_base.jsonl` for the given-relationship studies (1a/1b/3a) — are committed and
-feed every reported fit.
-
-`--arm-output-only` (generate) and `--arm` (score) write a parallel
-**diagnostic** vintage instead: `lm_alternatives_diag.jsonl`,
-`lm_runs_diag.jsonl`, plus `.empty_units.jsonl`, `.rationale.jsonl` and
-`.manifest.json` siblings. It is available for **all six studies**, and
-`.gitignore` excludes `*_diag*` under `model/outputs/lm/`, so a smoke there is
-free: no backup dance, no risk of degrading a downstream fit. This supersedes
-the old "back up the study folder, then restore" runbook.
-
-An adopted arm is promoted by **re-eliciting into the canonical filenames**,
-never by copying the diag files over them.
+The resume guard compares prompt hashes in manifests and rejects incompatible appends. Override it with `LM_RESUME_PROMPT_MISMATCH=allow` only for an intentional extension whose mixed prompt history has been reviewed and will be recorded.
 
 ## Preconditions
 
-- Confirm the key without printing it: `grep -c TOGETHER_API_KEY .env`.
-- Check for her own running jobs before adding load:
-  `ps aux | grep -E "generate_alternatives|score_merged|fit_|cv_" | grep -v grep`.
-- **Prompt/schema pairing check** — feature scoring only. `score_merged.py` /
-  `_features_dispatcher.py` still use grammar-constrained `json_schema`
-  decoding, and a prompt whose fields no longer match the schema does NOT
-  error: Together jams the model's intended JSON into free-text fields,
-  silently corrupting output (the `is_share` incident). Alternatives generation
-  no longer uses a schema (free decoding, adopted after grammar constraint
-  collapsed ~27% of Study 3 cells to empty arrays), so it is not exposed to this
-  — but it IS exposed to parse failures, which the tolerant parser retries.
-- **There is exactly one alternatives prompt and it reasons before answering.**
-  `ALTERNATIVES_SYSTEM_PROMPT` carries the think-step-by-step preamble and the
-  explain-then-JSON close; generation always requests the raw text
-  (`ALT_MAX_TOKENS = 1400`) and always writes a `.rationale.jsonl` sidecar. The
-  sidecar stores a generated rationale for auditing the comparison set, not
-  evidence about the model's hidden reasoning process. Do not add a selectable
-  second variant unless the selected variant is recorded explicitly in the
-  manifest.
+1. Confirm `.env` contains `TOGETHER_API_KEY` without printing its value.
+2. Check for active elicitation, fit, or CV processes before adding load.
+3. Review the diff and identify affected studies and stages. A scoring prompt or JSON schema change must keep prompt fields and schema fields aligned.
+4. Confirm the prompt, input, and output filenames in the generated manifest will identify the intended vintage.
 
-## The resume guard
+## Diagnostic smoke
 
-`guard_resume_prompt_mismatch` **hard-errors** when the existing manifest's
-stage-specific `prompt_sha256` differs from the current rendered prompt
-surfaces, so a rerun after a relevant prompt edit cannot silently append onto
-the old vintage. Legacy manifests have only the whole-file `prompts_sha256`;
-the guard falls back to that field for old artifacts. Consequences:
+Run one elicitation component per cell into the diagnostic vintage:
 
-- Deleting stale JSONL before regenerating is still the right move, but the
-  guard is what protects you if you forget.
-- For new manifests, an edit blocks only the stage whose rendered prompt
-  surfaces changed or feed it upstream: a scoring table is also invalidated by
-  a generation-prompt edit because it embeds those generated alternatives.
-  Comments and prompts used only by an unrelated stage do not block resume.
-- To extend K across an intentional prompt mismatch, set
-  `LM_RESUME_PROMPT_MISMATCH=allow`; the superseded hash is then recorded in
-  the manifest's history rather than hidden.
+```bash
+make lm-diag-<slug> K_RUNS=1
+make lm-base-diag-<slug> K_RUNS=1  # Studies 1a, 1b, and 3a only
+```
 
-## Runbook
+Validate expected cell and run coverage against the study registry, empty or singleton alternative sets, parse failures, rationale leakage into action text, null observed-action features, and successful loading through `model/tables.py`. Compare distributions with a previously validated vintage; do not infer stability from a few K=1 events.
 
-1. **K=1 smoke into the diag vintage**, generation only:
-   `K_RUNS=1 uv run python model/lm/generate_alternatives.py --study <slug> --arm-output-only`
-   Expected cells: 1a 384, 1b/2a/3a 192, 2b/3b 96 (records = cells × K).
-   Validate: full cell coverage, zero empty units, no singleton sets, mean set
-   size in the 2.5–3.5 band, no conditional "if available" hedging about the
-   unknown world state (it neutralises the effort swing at scoring), and no
-   generated-rationale prose leaking into `action_text`.
-   **Calibrate against a study whose vintage is already validated** rather than
-   absolute thresholds, and check counts before believing a rate: at K=1 a
-   handful of events is noise, not a signal.
-2. **Score the smoke** if the feature stage is in scope:
-   `uv run python model/lm/score_merged.py --study <slug> --arm`, then load
-   through `model/tables.py` and scan for null slot-0 features.
-3. **Full run — only on her explicit go-ahead.** State cost + ETA first. Delete
-   the stale canonical JSONL for the studies in scope, then
-   `make lm-<slug>` (and `lm-base-<slug>` for 1a/1b/3a). Run in the background
-   with `tee` to a scratchpad log; tune `SCENARIO_WORKERS` / `CELL_WORKERS` per
-   the Makefile comments (lower under `make -j`). `caffeinate -i` stops a closed
-   laptop pausing it. "Failed to parse JSON" retry lines are noise.
-4. **Post-run validation**: record counts and run_id coverage per cell,
-   null-feature scan, per-scenario g/risk/effort means against the previous
-   vintage, a loader check, then `make test`.
-5. **Post-run bookkeeping that is easy to forget:**
-   - Delete the `VINTAGE MARKER` block in `prompts.py` **if one is present** (it
-     exists precisely to say the prompt is ahead of the tables — once it isn't,
-     the marker lies; there is none while the two are in sync).
-   - Re-run `model/lm/export_prompts_latex.py` to refresh
-     `SIP_journal/si_prompts.tex`, which a marker would have been blocking.
-   - Regenerate fits → CV → model-comparison → figures. Fit and CV outputs
-     must never mix vintages; the CV checkpoint fingerprint hashes the LM tables, so
-     a stale checkpoint is discarded rather than spliced.
-6. Commit what she asks — pipeline code and outputs separately; never
-   `git add -A` (other tabs may have in-flight work).
+## Full run
+
+Proceed only after the cost and time estimate has been acknowledged. Preserve the previous canonical vintage through Git or a scratch backup, make the intended output scope explicit, then run the applicable per-study targets. Use Makefile worker controls, reduce aggregate concurrency when running studies in parallel, stream logs to a temporary file, and prevent laptop sleep for unattended runs.
+
+After completion:
+
+1. Verify record counts, run IDs per cell, manifests, null features, loader behavior, and rating distributions against the previous vintage.
+2. Run `make test`.
+3. Remove a `VINTAGE MARKER` from `model/lm/prompts.py` only when the canonical tables now match it, then regenerate `SIP_journal/si_prompts.tex`.
+4. Regenerate fits, CV, model comparison, and affected figures as one coherent vintage. Do not mix old and new artifacts.
+5. Commit only when asked and stage explicit files.

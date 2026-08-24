@@ -113,8 +113,11 @@ relationship-specific set of possible actions.
 | `param_w_d` | The weight on risk or discomfort. |
 | `param_w_e` | The weight on effort. |
 | `param_gamma` | How strongly intimacy changes the cost of risk. |
+| `param_eta` | The fitted comparison-set reweighting strength, when reweighting applies. |
+| `reweighting_targets` | The action categories reweighted by `param_eta`, when reweighting applies. |
 
-A record contains only the parameters used by that model variant.
+A record contains only the parameters and reweighting fields used by that
+model variant.
 
 ### `fit_restarts.jsonl`
 

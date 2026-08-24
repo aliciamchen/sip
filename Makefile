@@ -78,7 +78,7 @@ help:
 	@echo "  generalization-primary - score the transfer/pooled runs on the reported metrics"
 	@echo "  lm         - regenerate the LM-elicited JSONL tables (needs TOGETHER_API_KEY)"
 	@echo "  data       - process raw JSON to CSV for all active experiments"
-	@echo "  test       - model compliance + elicitation-guard + data-converter + experiment-list tests"
+	@echo "  test       - complete offline test suite"
 	@echo "  check-reported - test + independent output reconstruction + manuscript synchronization"
 	@echo "  clean      - remove fit, CV, and model-comparison outputs"
 	@echo "  freshen-outputs - restamp the committed outputs after a fresh clone (see README)"
@@ -703,6 +703,7 @@ test:
 	uv run python data_prep/test_json_to_csv.py
 	uv run python data_prep/test_participant_integrity.py
 	uv run python test_roster_sync.py
+	uv run python test_agent_docs.py
 
 # Submission/review gate. The numerical oracle intentionally reimplements the
 # reported likelihoods and statistics rather than calling production helpers.

@@ -12,11 +12,9 @@ study_registry.STUDIES) fails `make test` and CI rather than silently dropping
 that study from one pipeline stage — study_registry feeds the model
 comparison, the LaTeX export, and every figure script.
 
-Two further hand-synced invariants ride along: the OBSERVED_ACTIONS constant
-(declared in plot_style.py, set_diagnostics.py, and score_merged.py, which
-cannot share one source without dragging heavy imports across layers), and the
-agent docs (the root AGENTS.md and .agents/skills are symlinks into .claude/,
-so each guide and skill is one file under two names).
+One further hand-synced invariant rides along: the OBSERVED_ACTIONS constant,
+declared in plot_style.py, set_diagnostics.py, and score_merged.py. These
+modules cannot share one source without dragging heavy imports across layers.
 
 Run standalone:  uv run python test_roster_sync.py
 """
@@ -89,30 +87,6 @@ def parse_js_object_keys(text, name):
     if m is None:
         raise AssertionError(f"JS object {name} not found")
     return re.findall(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:", m.group(1), re.MULTILINE)
-
-
-# The agent docs are single files under two names: the root `AGENTS.md` symlinks
-# to `.claude/CLAUDE.md`, and `.agents/skills` symlinks to `.claude/skills`.
-# Both used to be hand-maintained near-copies and both drifted within weeks, so
-# the symlink itself is the invariant worth checking — a `cp`, an editor that
-# writes through a symlink by replacing it, or a checkout on a filesystem
-# without symlinks all bring the drift back.
-_AGENT_DOC_SYMLINKS = [
-    ("AGENTS.md", ".claude/CLAUDE.md"),
-    (".agents/skills", ".claude/skills"),
-]
-
-
-def _agent_doc_symlink_problems():
-    """Empty when both agent-doc paths are symlinks onto their targets."""
-    problems = []
-    for link, target in _AGENT_DOC_SYMLINKS:
-        path = ROOT / link
-        if not path.is_symlink():
-            problems.append(f"{link} is not a symlink (should point at {target})")
-        elif path.resolve() != (ROOT / target).resolve():
-            problems.append(f"{link} points at {path.readlink()}, not {target}")
-    return problems
 
 
 def run_all_checks():
@@ -223,14 +197,6 @@ def run_all_checks():
         all(v == reference for v in observed_defs.values()),
         "OBSERVED_ACTIONS agrees across plot_style / set_diagnostics / score_merged",
         f"definitions: {observed_defs}",
-    )
-
-    # The agent docs are one file under two names, kept that way by symlink.
-    symlink_problems = _agent_doc_symlink_problems()
-    check(
-        not symlink_problems,
-        "AGENTS.md and .agents/skills are symlinks into .claude/",
-        "; ".join(symlink_problems),
     )
 
     if failures:

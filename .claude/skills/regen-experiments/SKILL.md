@@ -1,25 +1,17 @@
 ---
 name: regen-experiments
-description: Use when experiments/scenarios.py, scenarios_nonfood.py, model/lm/prompts.py, or experiments/_lib code has been edited — including when the user says "i made some edits, can you regenerate the artifacts". Also use before committing any experiments/ change.
+description: Use when scenario sources, prompt sources, or shared experiment code changed, when generated experiment artifacts need refreshing, or before committing changes under experiments.
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
-# Regenerate experiment artifacts after source edits
+# Regenerate experiment artifacts
 
-The scenario CSVs, per-experiment `stimuli.json`, counterbalancing JSON, entry files, and the SI LaTeX tables are all **generated**; their sources of truth are the `.py` files. The user frequently edits sources herself between or during sessions, so the chain below gets re-run often — and a partial run leaves stale artifacts that the deploy guard will catch later.
+1. Inspect `git diff --stat` and the changed files so manual edits and the affected scope are clear.
+2. Run `make experiments` to regenerate scenario CSVs, per-study stimuli, counterbalancing, and entry files.
+3. Run `make check-experiments` to verify tracked assets match their sources.
+4. If scenario sources changed and `SIP_journal/` is present, run `uv run python experiments/export_scenarios_latex.py`.
+5. If `model/lm/prompts.py` changed, run `uv run python model/lm/export_prompts_latex.py` when the exporter allows the current vintage.
+6. Flag only the LM tables affected by the changed scenario set, prompt surface, or elicitation stage. Shared browser code does not make LM tables stale. Do not launch a paid elicitation unless the user requests it; use the rerun-lm-elicitation skill then.
+7. If a preview is open, hard-reload it after regeneration.
 
-## The chain
-
-1. `git diff --stat` first — discover her manual edits before assuming file state.
-2. `make experiments` — regenerates scenario CSVs → `stimuli.json` → counterbalancing → entry files, in order.
-3. `make check-experiments` — verifies nothing is still drifted (this is also what `bin/deploy-experiment` runs before every push).
-4. SI LaTeX exports (no make target; skip if `SIP_journal/` is absent):
-   - scenarios changed → `uv run python experiments/export_scenarios_latex.py`
-   - `prompts.py` changed → `uv run python model/lm/export_prompts_latex.py`
-   Never hand-edit or read the generated `si_*.tex` as a source — they mirror the `.py` files.
-5. **Flag LM staleness.** A scenario or prompt change makes every `outputs/lm/<slug>/` table stale. Say so explicitly, but do not re-elicit — that is a paid run the user triggers herself (see the rerun-lm-elicitation skill).
-6. If the preview server is running, remind her to hard-reload the browser (stale-looking stimuli after a regen are almost always browser cache).
-
-## Committing
-
-Commit the edited source and its regenerated artifacts together, staging an explicit file list (she often has unrelated work in flight from another tab — never `git add -A` or stage by directory). Lowercase verb-first message.
+Never edit generated CSV, JSON, or SI LaTeX files as sources. If a commit is requested, stage explicit source and artifact files together and use a conventional commit message.

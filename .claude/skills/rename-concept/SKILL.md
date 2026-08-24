@@ -1,21 +1,17 @@
 ---
 name: rename-concept
-description: Use when renaming a concept or term across the repo — code identifiers, data keys, docs, prose, figure slugs (like the desire/risk and canonical→observed renames), or when a term collides with another concept and needs replacing.
-allowed-tools: Bash, Read, Edit, Grep, Glob, Agent
+description: Use when renaming a concept across code identifiers, persisted data keys, documentation, manuscript prose, reader-visible labels, or file and figure slugs.
+allowed-tools: Bash, Read, Edit, Grep, Glob
 ---
 
-# Rename a concept across the repo
+# Rename a concept
 
-She renames aggressively when a term collides with another concept, and three renames (reward/motivation→desire, canonical→observed, and canonical→preregistered for the run config) converged on the same recipe. Renames here touch **persisted data keys**, not just code, so a grep-and-replace alone breaks the loaders.
+1. Search every relevant tracked file and classify matches as prose, identifiers, reader-visible labels, persisted keys, filenames, generated artifacts, or intentional historical records. Include the canonical skill tree.
+2. Derive exclusions from the requested scope. Do not automatically exclude nested manuscript repositories or preregistrations when the user included them; treat frozen records and local archives separately.
+3. If the request leaves persisted keys, public labels, nested repositories, or frozen records ambiguous, show the classified scope and obtain approval for those categories before writing.
+4. Update approved occurrences with syntax-aware or boundary-aware edits. Check string comparisons, configuration tags, serialization keys, and camelCase or snake_case variants separately.
+5. Migrate persisted formats with a reproducible script or existing converter. Prefer a clear failure for retired live keys over maintaining two spellings indefinitely.
+6. Rename files with `git mv`, update references, regenerate downstream artifacts, and remove superseded outputs only when their replacement is verified.
+7. Verify with `make test`, relevant build checks, and an exhaustive old-term search. List intentional survivors and why they remain.
 
-## Recipe
-
-1. **Inventory and classify** every occurrence (parallel search agents for big terms): (a) prose/docs, (b) code identifiers, (c) reader-visible labels (figures, experiment text, manuscript), (d) persisted data keys (JSONL fields, npz keys, CSV columns), (e) file/figure slugs. Search with the standard exclusions: `.venv/`, `cogsci-cr/`, `SIP_journal/`, `.claude/worktrees/`, `data/legacy/`, `notes/`. Include the skill tree, `.claude/skills/*/SKILL.md` (`.agents/skills` symlinks to it) — a skill naming the old term will keep reintroducing it.
-
-Two lessons from the run-config rename specifically: a term can be doing real work in a **string comparison** (`model_comparison.py` routed on `tag == "canonical"`), which a prose-level grep misses; and where a retired spelling could still be passed in, reject it with a pointer to the new name rather than aliasing it, so there is never a window with two live spellings.
-2. **Present the scope as a menu by tier** and get approval before touching anything — especially data keys (she has approved partial scopes: "can you do code identifiers and data keys"). Reader-visible labels and manuscript prose may deliberately keep a different word than the code.
-3. Batch-replace with word boundaries: `perl -i -pe 's/\bOLD\b/NEW/g'` over the approved file list (watch camelCase/snake_case variants separately).
-4. **Migrate persisted data** with a small script (rewrite JSONL/npz keys), never by hand; keep old-key reads out — fail fast instead.
-5. `git mv` renamed files/figure slugs; delete orphaned outputs from the old naming.
-6. **Verify**: `python -m py_compile` sweep over touched .py, the full `make test` suite, and an exhaustive `rg '\bOLD\b'` with the exclusions to confirm zero survivors (decide explicitly about intentional survivals, e.g. a legacy figure slug).
-7. Work on a branch, `git merge --ff-only` to main; add a memory or agent-guide note recording the rename and any intentional exceptions.
+Do not commit, branch, or merge unless requested. If a commit is requested, stage explicit files and use the repository's conventional commit format.

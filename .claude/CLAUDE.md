@@ -1,92 +1,51 @@
 # Agent guide
 
-Guidance for coding-agent sessions working in this repository. The project overview, the experiment roster, the utility model, and run instructions are in the README at the repository root. This file holds agent-facing context that isn't in the public docs. It is one file with two paths: `.claude/CLAUDE.md`, symlinked to the root as `AGENTS.md`.
+This file contains durable, agent-facing context for this repository. The public project overview and run instructions are in `README.md`; the `Makefile` is the command and active-roster source of truth. `AGENTS.md` is a symlink to this file.
 
-## Naming and structure conventions
+## Sources of truth
 
-- The stable identifier for each experiment is its directory slug in `data/<slug>/` and `experiments/<slug>/`. Paper-level experiment numbers shift as the writeup evolves; slugs don't. Slugs are all-underscore (no hyphens), so the per-experiment fit/cv scripts can also be imported as modules if needed.
-- The active roster is six inverse-planning studies, all on the 3-action structure: `food_inv_desire` (Study 1a), `food_inv_joint_de` (Study 1b), `food_inv_intimacy` (Study 2a), `food_inv_joint_ie` (Study 2b) on the food scenario set, plus `nonfood_inv_joint_de` (Study 3a, mirroring 1b) and `nonfood_inv_joint_ie` (Study 3b, mirroring 2b) on the nonfood set. The nonfood pair reuses the food joint studies' observers, fit helpers, and CV dispatcher — only the stimulus set, scenario labels, and LM tables differ (`domain="nonfood"` in the table-kwargs builders; `STUDY_SCENARIO_LABELS` in `model/tables.py`).
-- Per-experiment scripts are genuinely thin wrappers (~25 lines) that call a shared dispatcher with their hardcoded slug: `model/inverse/fit_<slug>.py` → `_fit_dispatcher.main(slug)`, `model/cv/cv_<slug>.py` → `_inverse_dispatcher.main_<family>(slug)`. The whole fit and CV protocol lives in those two dispatchers, keyed by a `_FAMILIES` registry; a wrapper carries nothing but its slug and docstring, and `model/test_fit_protocol.py` enforces that. To trace what a script does, follow the import.
-- The repo installs as an editable package (`uv sync` does it; hatchling build, `[tool.uv] package = true`): packages `model` (with `model/inverse`, `model/cv`, `model/lm`) and `data_prep`, plus the root modules `utils.py` and `study_registry.py`. All intra-repo imports are package-qualified (`from model.tables import …`, `from model.cv import model_comparison`); never add a `sys.path.insert` — the only deliberate survivors are `experiments/scenarios*.py`'s build-dir insert (experiments/ is not a package). Figure scripts import their siblings (`_data`, `plot_style`) bare, which works because Python puts a script's own directory on sys.path.
-- The experiment roster lives in the `Makefile`: `EXPERIMENTS_INVERSE` holds all six studies (the Study 3 nonfood pair was folded in on 2026-07-21, once their data, LM tables, fits/CV, and analysis qmds all existed), and the data-dependent aggregates `make data`/`fit`/`cv`/`model-comparison` run over it. `EXPERIMENTS_NONFOOD` is kept but empty (the roster-sync test reads both lists; it's the holding list for any future not-yet-data-complete study family). `make all` runs fit → cv → model-comparison → figures over `EXPERIMENTS_INVERSE` as sequential sub-makes, so the stages stay ordered even under `make -j` (CV produces the out-of-sample predictions; there is no separate predict stage); per-study targets (`lm-/fit-/cv-/data-<slug>`) cover the roster too.
+- Use directory slugs as stable study identifiers. Paper numbers can change, but the slugs in `study_registry.py` and the `Makefile` do not.
+- Read per-study metadata from `study_registry.py`, including paper labels, domains, given conditions, inferred variables, and which variant the paper reports as "Base." Do not duplicate that metadata in consumers.
+- Treat `SIP_journal/main.tex` as the usual source of truth for project intent and claims. Code can occasionally be newer. If manuscript and code disagree, identify the divergence, use recent edits and Git history to assess which is newer, and ask which direction to reconcile before changing either.
+- Before answering a design or methods question, check the local-only `notes/decisions.md`. If the discussion reaches a new conclusion, propose a dated entry with the question, decision, rationale, and firm or provisional status; do not append it without showing the user first.
 
-## Legacy data
+## Naming and model terminology
 
-Archived participant data from earlier, superseded experiments sits in the local-only, gitignored `data/legacy/` — there is no legacy *code*, and nothing in the active pipeline reads it. Those archived CSVs use older column names than the active ones.
+- Study slugs use underscores so per-study scripts remain importable. Fit and CV scripts are thin slug wrappers over registries in `model/inverse/_fit_dispatcher.py` and `model/cv/_inverse_dispatcher.py`; follow the dispatcher to understand behavior.
+- The repository installs as an editable package with `uv sync`. Use package-qualified imports and do not add `sys.path.insert`. The only intentional exceptions are the build-directory inserts in `experiments/scenarios*.py`; `experiments/` is not a package. Figure scripts can import sibling helpers directly because their directory is on `sys.path` when run as scripts.
+- The reward term is `w_v · desire · g`. Here `g` is desire-free goal satisfaction, desire is inferred in Studies 1a, 1b, and 3a and given in Studies 2a, 2b, and 3b, and risk is the per-action discomfort feature weighted by `w_d`.
+- Keep the fitted reward weight named `w_v` and its output column `param_w_v`; do not rename it to the risk weight `w_d`.
 
-## Terminology
+## Repository boundaries
 
-The codebase uses **desire** and **risk** throughout. Two points worth knowing:
+- `data/legacy/` contains local-only, gitignored participant data from superseded studies. No active code reads it.
+- `SIP_journal/` is the current journal manuscript and a separate, gitignored Git repository synced to Overleaf.
+- `cogsci-cr/` is the self-contained CogSci 2026 camera-ready fork. Keep fixes for that fork inside its directory; do not change the main pipeline to make the fork work.
+- Generated SI files must not be edited by hand. `model/lm/prompts.py` is the source for `SIP_journal/si_prompts.tex`, rendered by `model/lm/export_prompts_latex.py`; `experiments/scenarios.py` and `scenarios_nonfood.py` generate the scenario CSVs, which `experiments/export_scenarios_latex.py` renders into `SIP_journal/si_scenarios_food.tex` and `si_scenarios_nonfood.tex`.
 
-- The reward term is `w_v · desire · g`: `g` is the LM-elicited, desire-free goal-satisfaction; `desire` (`d ∈ [0, 1]`) is the inferred latent in 1a/1b and an observed `desire_condition` in 2a/2b. **risk** is the per-action discomfort feature, weight `w_d`.
-- The fitted reward-term weight is `w_v` (column `param_w_v`), *not* `w_d` — keep it named `w_v`; don't "fix" it to `w_d`.
+## Workflow and commands
 
-## Source of truth for project intent
-
-The manuscript (`SIP_journal/main.tex`) is generally the most up-to-date description of the project: what the studies are, what design they have, what the model is, how it's fit, and what's being claimed. Treat it as the authoritative plan when the two are out of sync. The code often lags — a script, prompt, or utility shape can be a step or two behind what the manuscript now describes — and bringing the code in line with the manuscript is usually the right move.
-
-The reverse can also happen: the user sometimes develops code first (a new prompt, a new fitting procedure, a new pipeline stage) before writing it up. In that case the code is ahead of the manuscript, and the manuscript needs to catch up rather than the code being rolled back. So discrepancies don't have a single default direction — they usually mean either the code needs an update or the manuscript needs one.
-
-When you spot a discrepancy, don't silently reconcile it. Surface it: name the divergence, say which side looks newer based on context (recent edits, conversation, git log), and ask which direction to update before changing either one.
-
-## Decisions log
-
-`notes/decisions.md` (local-only, like the rest of `notes/`) records design and methods decisions reached in conversation, so they don't get re-derived from scratch. Two obligations:
-
-- **Before answering a design/methods question**, check the log. If a decision exists, start from its recorded rationale rather than re-litigating — the user may still overturn it, but deliberately.
-- **At the end of a consulting or design discussion that reaches a conclusion**, propose an entry: date, the question, the decision, the why, and whether it's firm or provisional. Don't append without showing the proposed entry first.
-
-## Submission status
-
-The current journal version is in `SIP_journal/` (gitignored; its own git repo synced to Overleaf).
-
-The camera-ready CogSci 2026 fork is in `cogsci-cr/` (gitignored; its own repo, with the LaTeX in the nested `cogsci-cr/cogsci-2026/` synced to Overleaf). It's a self-contained subset with its own slimmed `model/`, data, analysis, and paper, using hand-stipulated utility tables instead of the LM pipeline. Keep any changes isolated to that subfolder — don't edit HEAD code to make `cogsci-cr/` work. Conference reviews: `cogsci-cr/cogsci-2026/cogsci-2026-reviews.md`.
-
-## Generated SI artifacts (don't hand-edit)
-
-The Supplementary Material `\input`s LaTeX files that are generated from the code. Don't read or edit these `.tex` files to inspect or change a prompt or scenario — read the source and regenerate. Each carries an "AUTO-GENERATED — do not edit by hand" header.
-
-- `SIP_journal/si_prompts.tex` ← `model/lm/export_prompts_latex.py`, rendered from `model/lm/prompts.py`. To read or change a prompt, go to `prompts.py` and re-run the script.
-- `SIP_journal/si_scenarios_food.tex`, `si_scenarios_nonfood.tex` ← `experiments/export_scenarios_latex.py`, rendered from `experiments/scenarios.csv` / `scenarios_nonfood.csv`. Those CSVs are themselves generated from `experiments/scenarios.py` / `scenarios_nonfood.py` (see the experiments rules), so the scenarios' source of truth is the `.py` files — to change a scenario, edit the `.py`, regenerate the CSV, then re-run the table export.
-
-## Workflow
-
-```
-jsPsych experiments (experiments/) → JSON → data_prep/json_to_csv.py → CSV (data/)
-                                                              ↓
-                                  model fits + LOSO CV (model/) → out-of-sample predictions
-                                                              ↓
-     paper figures: Python scripts in figures/scripts/ (styled by plot_style.py)
-                    → figures/panels/ (Illustrator components) + figures/si/ (finished)
-                                                              ↓
-                     make sync-journal-figures → SIP_journal/figures/ (Overleaf)
+```text
+experiments/ -> raw JSON -> data_prep/json_to_csv.py -> data CSVs
+                                                    -> model fits and LOSO CV
+                                                    -> statistics and figures
 ```
 
-`data_prep/` holds only the raw-data conversion (`json_to_csv.py` + its test). Every figure comes from the Python scripts in `figures/scripts/` (the Illustrator results components, run with `make figures-panels`; the SI LM figures, run with `make figures-lm-si`), the model-comparison statistics from `model/cv/model_comparison.py`, and the manuscript's demographics from `model/export_results_latex.py`. There is no R or Quarto anywhere in the pipeline (the qmds and renv setup were removed for the public release; local R exploration files are gitignored).
+The model's cross-validation outputs are the sole prediction source. Python scripts in `figures/scripts/` generate plotted manuscript figures and components; `figures/model-eqs/` also contains authored equation graphics. Use `make help` for current commands.
 
-## Common commands
-
-The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{data_prep,data,experiments,model}.md`, one per pipeline stage; harnesses that support directory-scoped rules load them on demand when reading files in those directories.
-
-## Environment setup
+Set up and run Python through uv:
 
 ```bash
-uv sync                  # Python deps; creates .venv
-uv run python script.py  # run scripts
+uv sync
+uv run python path/to/script.py
 ```
 
-Key Python deps: JAX, pandas, numpy, optax. memo-lang (probabilistic modeling DSL) is a dev-group dependency: `model/memo_spec.py` states the models in memo as the executable specification, and the compliance tests verify the plain-JAX production code against it.
+Before changing files in `data/`, `data_prep/`, `experiments/`, or `model/`, read the corresponding `.claude/rules/<area>.md` unless the harness loaded it automatically.
 
 ## Project instructions
 
-- Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
-- Before committing a nontrivial change under `model/` or `data_prep/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (the `code-review` skill, if your harness has one) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the full test suite (`make test`) whenever a staged file is under `model/`.
-- For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
-- When changing this guide or the rules files, also update README.md if relevant. README.md is what reviewers and the public read.
-
-## Utility helpers
-
-- `utils.py` — `get_project_root()` for constructing paths relative to project root.
-- `study_registry.py` — the single source of truth for per-study metadata (given conditions, inferred latents with their `<rating>_update` / `delta_<latent>` column pairs, paper label, stimulus domain), plus `reported_base(slug)` for which variant the paper's "Base" column means. Imported by `model/cv/model_comparison.py`, `model/export_results_latex.py`, and the figure scripts, and listed in the Makefile's `FIG_SHARED`. Read a per-study fact from here rather than hardcoding it in a consumer. Details in `.claude/rules/model.md`.
-- `figures/scripts/plot_style.py` — shared style for **all** Python-generated figures (every script in `figures/scripts/`: the main results figures, the `figure_schematic_plots.py` panels, and the LM-elicitation SI figures `figure_si_lm_validation.py` + `figure_si_consolidated.py`): `apply_style("si"|"schematic")`, `savefig()` → vector PDF + a gitignored PNG preview, into whichever output root the caller names (default `figures/si/`), plus every palette and colormap. It is the visual source of truth — change figure colors, fonts, or colormaps here, not inline in the plotting scripts. `make figures-panels` regenerates the Illustrator components; `make figures-lm-si` the LM SI set.
-- `figures/scripts/` — output is split by consumer, with the roots named in `plot_style.py` (`PANELS_RESULTS`, `PANELS_LEGENDS`, `PANELS_SCHEMATIC`, `SI_DIR`): `figures/panels/` for Illustrator components and `figures/si/` for finished figures. The paper's results figures are assembled by hand, so `figure_paper_panels.py` writes components, not finished figures — the assembled per-study scripts were removed on 2026-08-02. Shared data prep is in `_data.py` (reusing `model/cv/model_comparison.py`'s cell specs and loaders), the points design in `_points.py`, and the pooled model-vs-humans panel in `_agg.py` (a helper module, not a script). Each renders the panels whose inputs exist, skips the rest with a printed note, and warns when CV outputs are stale relative to the data CSV.
+- Use Context7 whenever library or API documentation, code generation, setup, or configuration guidance is needed.
+- Before committing a nontrivial change to fitting, likelihood, data-loading, CV, or pipeline logic under `model/` or `data_prep/`, run an available code-review skill on the diff and apply or surface its findings. The pre-commit hook also runs `make test` when staged files are under `model/`.
+- For Together AI work, use the relevant `togetherai-skills:*` skill and current Together AI documentation rather than model recall.
+- When changing this guide or a scoped rule, update `README.md` only when the public documentation is affected.
+- `figures/scripts/plot_style.py` is the style and output-routing source of truth for Python-generated figures. Change shared colors, fonts, colormaps, and output roots there.

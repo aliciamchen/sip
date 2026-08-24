@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# rebuild-outside-dropbox.sh — repair a corrupted LaTeX build in a Dropbox-synced
+# rebuild-outside-dropbox.sh -- repair a corrupted LaTeX build in a Dropbox-synced
 # project. It (1) diagnoses the corruption, (2) clears the biber PAR cache, and
 # (3) rebuilds in a scratch dir OUTSIDE Dropbox and copies the good artifacts
 # back, sidestepping the local-latexmk-vs-Dropbox race that keeps breaking the
@@ -72,12 +72,12 @@ for f in glob.glob(os.path.join(proj, "*.synctex(busy)")):
     issues.append((os.path.basename(f) + " present", "build interrupted / being raced by sync"))
 for f in sorted(set(glob.glob(os.path.join(proj, "*conflicted copy*"))
                     + glob.glob(os.path.join(proj, "*conflict*")))):
-    issues.append((os.path.basename(f), "Dropbox conflict copy — resolve by hand"))
+    issues.append((os.path.basename(f), "Dropbox conflict copy -- resolve by hand"))
 if issues:
     for what, cause in issues:
         print(f"  [!] {what:<44} -> {cause}")
 else:
-    print("  no corruption signatures right now — this may have been a transient")
+    print("  no corruption signatures right now -- this may have been a transient")
     print("  mid-sync state that already settled. Rebuilding still gives a PDF")
     print("  that is guaranteed to match the current source.")
 PY
@@ -90,7 +90,7 @@ fi
 
 # ---- 2. guard: don't race a live local build ------------------------------
 if [ "$FORCE" != 1 ] && pgrep -fl 'latexmk|pdflatex|xelatex|lualatex|biber' >/dev/null 2>&1; then
-  echo "ERROR: a local latex/biber process is running — refusing to rebuild (would race it)." >&2
+  echo "ERROR: a local latex/biber process is running -- refusing to rebuild (would race it)." >&2
   echo "       Wait for it to finish, or pass --force:" >&2
   pgrep -fl 'latexmk|pdflatex|xelatex|lualatex|biber' >&2
   exit 3
@@ -169,4 +169,4 @@ done
 rm -f "$PROJECT_DIR/$BASE.fdb_latexmk" "$PROJECT_DIR/$BASE.fls" "$PROJECT_DIR/$BASE.synctex(busy)"
 
 echo
-echo "DONE — $PROJECT_DIR/$BASE.pdf is a clean ${PAGES:-?}-page build of the current source."
+echo "DONE -- $PROJECT_DIR/$BASE.pdf is a clean ${PAGES:-?}-page build of the current source."
