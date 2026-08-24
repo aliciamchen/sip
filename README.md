@@ -1,9 +1,6 @@
 # Inverse planning of social interactions in relationships
 
-This repository contains the experiments, de-identified data, model code, and
-figure code for the manuscript "Inverse planning of social interactions in relationships."
-
-Preprint: [TODO]
+This repository contains the code and data for the manuscript "Inverse planning of social interactions in relationships."
 
 ## Reproducing the results
 
@@ -16,9 +13,8 @@ uv sync
 make all
 ```
 
-Model fitting and cross-validation can take a long time, but their outputs are
-included in the repository. Because Git does not preserve file timestamps, a
-fresh clone may rerun calculations whose outputs are already included. To use
+Model fitting and cross-validation can take a long time; their outputs are
+included in the repository. To use
 the included outputs without recomputing them, run:
 
 ```bash
@@ -50,8 +46,6 @@ make test
 
 - `data/` contains the de-identified participant data. The
   [data codebook](data/README.md) describes the files and columns.
-- `data_prep/` contains the script that converts raw data to the
-  processed CSV files.
 - `experiments/` contains the jsPsych experiments and the source files for the
   food and non-food scenarios. See the [experiments
   README](experiments/README.md).
@@ -73,12 +67,5 @@ participant data       +
 language-model ratings +
 ```
 
-The language-model ratings in `model/outputs/lm/` are included in the
-repository. Regenerating them is optional, requires a Together AI key, and
-incurs API costs. The `make lm` command runs that separate step.
-
-The Python files in `experiments/` define the scenario text and generate the
-CSV and JSON files used by the experiments. After editing a scenario, run
-`make experiments` to regenerate the experiment files. The `make
-check-experiments` command checks that the generated files match their Python
-sources.
+The LM outputs in `model/outputs/lm/` are included in the
+repository. Regenerating them requires a Together AI key in `.env`.

@@ -649,7 +649,11 @@ def _draw_run_spread(ax, rows):
     ax.legend(
         handles=[
             Line2D(
-                [], [], color=RUN_SPREAD_COLORS[False], lw=2, label="continuous latent"
+                [],
+                [],
+                color=RUN_SPREAD_COLORS[False],
+                lw=2,
+                label="continuous latent variable",
             ),
             Line2D(
                 [],
