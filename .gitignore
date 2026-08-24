@@ -21,7 +21,6 @@ design_exploration
 SIP_journal
 notes/
 
-# Local R exploration files (nothing in the pipeline uses R).
 .Rprofile
 renv.lock
 renv/
@@ -32,7 +31,7 @@ _quarto.yml
 data/legacy/
 model/model_viz_nonfit/
 LM_evals/
-writing/
+writing/old_stuff
 
 # Transient CV fold checkpoint (resume file; deleted when the final outputs land).
 model/outputs/*/cv_checkpoint.jsonl
@@ -60,5 +59,3 @@ figures/**/*.png
 
 # Generated but not cited by the paper (the levels figure is; this one isn't).
 figures/si/si_prior_posterior_distributions.pdf
-
-.agents/skills
