@@ -15,8 +15,8 @@ comparison, the LaTeX export, and every figure script.
 Two further hand-synced invariants ride along: the OBSERVED_ACTIONS constant
 (declared in plot_style.py, set_diagnostics.py, and score_merged.py, which
 cannot share one source without dragging heavy imports across layers), and the
-agent docs (AGENTS.md is CLAUDE.md's Codex-facing near-copy; they must differ
-only in the known agent-specific phrasings).
+agent docs (the root AGENTS.md and .agents/skills are symlinks into .claude/,
+so each guide and skill is one file under two names).
 
 Run standalone:  uv run python test_roster_sync.py
 """
@@ -91,54 +91,28 @@ def parse_js_object_keys(text, name):
     return re.findall(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*:", m.group(1), re.MULTILINE)
 
 
-# The phrasings AGENTS.md and .claude/CLAUDE.md intentionally differ on (each
-# pair collapses to one token before comparing). Rewording one of these in both
-# files requires updating this list — that is the point: the two docs may only
-# diverge deliberately.
-_AGENT_DOC_EQUIVALENTS = [
-    ("# AGENTS.md", "# <TITLE>"),
-    ("# CLAUDE.md", "# <TITLE>"),
-    ("Codex sessions", "<AGENT> sessions"),
-    ("Claude Code sessions", "<AGENT> sessions"),
-    ("[README.md](README.md)", "<README-LINK>"),
-    ("[README.md](../README.md)", "<README-LINK>"),
-    ("agent-facing context", "<WHOSE> context"),
-    ("Claude-specific context", "<WHOSE> context"),
-    (
-        "`.claude/rules/{data_prep,data,experiments,model}.md`, one per pipeline stage.",
-        "<RULES-NOTE>",
-    ),
-    (
-        "`.claude/rules/{data_prep,data,experiments,model}.md`, which load on "
-        "demand when Claude reads files in those directories.",
-        "<RULES-NOTE>",
-    ),
-    ("run a careful code review of the diff", "<REVIEW-HOW>"),
-    (
-        "run a code review on the diff (in Claude Code, the `/code-review` skill)",
-        "<REVIEW-HOW>",
-    ),
-    ("When changing AGENTS.md or rules files", "When changing <TITLE> or rules files"),
-    ("When changing CLAUDE.md or rules files", "When changing <TITLE> or rules files"),
+# The agent docs are single files under two names: the root `AGENTS.md` symlinks
+# to `.claude/CLAUDE.md`, and `.agents/skills` symlinks to `.claude/skills`.
+# Both used to be hand-maintained near-copies and both drifted within weeks, so
+# the symlink itself is the invariant worth checking — a `cp`, an editor that
+# writes through a symlink by replacing it, or a checkout on a filesystem
+# without symlinks all bring the drift back.
+_AGENT_DOC_SYMLINKS = [
+    ("AGENTS.md", ".claude/CLAUDE.md"),
+    (".agents/skills", ".claude/skills"),
 ]
 
 
-def _agent_docs_diff(agents_text, claude_text):
-    """None when the two docs match after normalizing the known intentional
-    differences; otherwise a message naming the first diverging line."""
-
-    def normalize(text):
-        for variant, token in _AGENT_DOC_EQUIVALENTS:
-            text = text.replace(variant, token)
-        return text.splitlines()
-
-    a, c = normalize(agents_text), normalize(claude_text)
-    for i, (la, lc) in enumerate(zip(a, c), start=1):
-        if la != lc:
-            return f"first divergence at line {i}: {la!r} (AGENTS.md) vs {lc!r} (CLAUDE.md)"
-    if len(a) != len(c):
-        return f"line counts differ: AGENTS.md {len(a)} vs CLAUDE.md {len(c)}"
-    return None
+def _agent_doc_symlink_problems():
+    """Empty when both agent-doc paths are symlinks onto their targets."""
+    problems = []
+    for link, target in _AGENT_DOC_SYMLINKS:
+        path = ROOT / link
+        if not path.is_symlink():
+            problems.append(f"{link} is not a symlink (should point at {target})")
+        elif path.resolve() != (ROOT / target).resolve():
+            problems.append(f"{link} points at {path.readlink()}, not {target}")
+    return problems
 
 
 def run_all_checks():
@@ -251,17 +225,12 @@ def run_all_checks():
         f"definitions: {observed_defs}",
     )
 
-    # AGENTS.md is CLAUDE.md's Codex-facing near-copy. Normalize the known
-    # intentional phrasing differences and require the rest to be identical, so
-    # an edit to one file that skips the other fails here instead of drifting.
-    agents_diff = _agent_docs_diff(
-        (ROOT / "AGENTS.md").read_text(),
-        (ROOT / ".claude" / "CLAUDE.md").read_text(),
-    )
+    # The agent docs are one file under two names, kept that way by symlink.
+    symlink_problems = _agent_doc_symlink_problems()
     check(
-        agents_diff is None,
-        "AGENTS.md matches .claude/CLAUDE.md (modulo the known agent phrasings)",
-        agents_diff or "",
+        not symlink_problems,
+        "AGENTS.md and .agents/skills are symlinks into .claude/",
+        "; ".join(symlink_problems),
     )
 
     if failures:

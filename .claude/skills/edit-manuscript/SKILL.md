@@ -10,7 +10,7 @@ The manuscript is her design document: she writes the plan into the paper first 
 
 ## Writing style (every one of these came from repeated corrections)
 
-- **Short and compact.** Her most common edit to Claude-written text is "too long, too much detail." Default to the minimal addition; she'd rather expand than cut.
+- **Short and compact.** Her most common edit to agent-written text is "too long, too much detail." Default to the minimal addition; she'd rather expand than cut.
 - **Intuitive over formal.** Prefer "we fit a Gaussian" + a package citation over derivations; equations only where they earn their place.
 - **Understate.** No "heavy handed" novelty claims ("captures two advances… not previously brought together" got rejected). Every empirical claim needs computed evidence or a hedge — she interrogates "what is the evidence that…" line by line.
 - **Synthesize, don't parallel.** Later studies' sections must not mirror earlier sections' structure; integrate points smoothly rather than bolting on paragraphs.

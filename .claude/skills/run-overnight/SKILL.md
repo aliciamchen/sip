@@ -1,6 +1,6 @@
 ---
 name: run-overnight
-description: Use when the user starts a long unattended compute run (overnight fits, CV, LM elicitation, sweeps) and leaves Claude to supervise — "start the overnight run", "run this while i sleep", "how is it going", "did runs finish".
+description: Use when the user starts a long unattended compute run (overnight fits, CV, LM elicitation, sweeps) and leaves the agent to supervise — "start the overnight run", "run this while i sleep", "how is it going", "did runs finish".
 allowed-tools: Bash, Read, Edit, Write, Grep, Glob, Agent
 ---
 

@@ -10,7 +10,7 @@ She renames aggressively when a term collides with another concept, and three re
 
 ## Recipe
 
-1. **Inventory and classify** every occurrence (parallel Explore agents for big terms): (a) prose/docs, (b) code identifiers, (c) reader-visible labels (figures, experiment text, manuscript), (d) persisted data keys (JSONL fields, npz keys, CSV columns), (e) file/figure slugs. Search with the standard exclusions: `.venv/`, `cogsci-cr/`, `SIP_journal/`, `.claude/worktrees/`, `data/legacy/`, `notes/`. Include both skill trees, `.claude/skills/*/SKILL.md` and `.agents/skills/*/SKILL.md` — a skill naming the old term will keep reintroducing it.
+1. **Inventory and classify** every occurrence (parallel search agents for big terms): (a) prose/docs, (b) code identifiers, (c) reader-visible labels (figures, experiment text, manuscript), (d) persisted data keys (JSONL fields, npz keys, CSV columns), (e) file/figure slugs. Search with the standard exclusions: `.venv/`, `cogsci-cr/`, `SIP_journal/`, `.claude/worktrees/`, `data/legacy/`, `notes/`. Include the skill tree, `.claude/skills/*/SKILL.md` (`.agents/skills` symlinks to it) — a skill naming the old term will keep reintroducing it.
 
 Two lessons from the run-config rename specifically: a term can be doing real work in a **string comparison** (`model_comparison.py` routed on `tag == "canonical"`), which a prose-level grep misses; and where a retired spelling could still be passed in, reject it with a pointer to the new name rather than aliasing it, so there is never a window with two live spellings.
 2. **Present the scope as a menu by tier** and get approval before touching anything — especially data keys (she has approved partial scopes: "can you do code identifiers and data keys"). Reader-visible labels and manuscript prose may deliberately keep a different word than the code.
@@ -18,4 +18,4 @@ Two lessons from the run-config rename specifically: a term can be doing real wo
 4. **Migrate persisted data** with a small script (rewrite JSONL/npz keys), never by hand; keep old-key reads out — fail fast instead.
 5. `git mv` renamed files/figure slugs; delete orphaned outputs from the old naming.
 6. **Verify**: `python -m py_compile` sweep over touched .py, the full `make test` suite, and an exhaustive `rg '\bOLD\b'` with the exclusions to confirm zero survivors (decide explicitly about intentional survivals, e.g. a legacy figure slug).
-7. Work on a branch, `git merge --ff-only` to main; add a memory/CLAUDE.md note recording the rename and any intentional exceptions.
+7. Work on a branch, `git merge --ff-only` to main; add a memory or agent-guide note recording the rename and any intentional exceptions.

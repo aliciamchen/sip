@@ -1,6 +1,6 @@
-# CLAUDE.md
+# Agent guide
 
-Guidance for Claude Code sessions working in this repository. Project overview, the experiment roster, the utility model, and run instructions live in [README.md](../README.md). This file holds Claude-specific context that isn't in the public docs.
+Guidance for coding-agent sessions working in this repository. The project overview, the experiment roster, the utility model, and run instructions are in the README at the repository root. This file holds agent-facing context that isn't in the public docs. It is one file with two paths: `.claude/CLAUDE.md`, symlinked to the root as `AGENTS.md`.
 
 ## Naming and structure conventions
 
@@ -66,7 +66,7 @@ jsPsych experiments (experiments/) → JSON → data_prep/json_to_csv.py → CSV
 
 ## Common commands
 
-The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{data_prep,data,experiments,model}.md`, which load on demand when Claude reads files in those directories.
+The `Makefile` wraps everything; `make help` lists targets. Stage-specific details are in `.claude/rules/{data_prep,data,experiments,model}.md`, one per pipeline stage; harnesses that support directory-scoped rules load them on demand when reading files in those directories.
 
 ## Environment setup
 
@@ -80,9 +80,9 @@ Key Python deps: JAX, pandas, numpy, optax. memo-lang (probabilistic modeling DS
 ## Project instructions
 
 - Always use Context7 when needing library/API documentation, code generation, setup, or configuration steps — without me having to explicitly ask.
-- Before committing a nontrivial change under `model/` or `data_prep/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (in Claude Code, the `/code-review` skill) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the full test suite (`make test`) whenever a staged file is under `model/`.
+- Before committing a nontrivial change under `model/` or `data_prep/` (fitting/likelihood logic, data loaders, CV, new pipeline stages — not figure styling or prose), run a code review on the diff (the `code-review` skill, if your harness has one) and apply or surface the findings. Do this on your own initiative; the user won't ask. A pre-commit hook independently runs the full test suite (`make test`) whenever a staged file is under `model/`.
 - For anything involving Together AI (the LM pipeline's inference provider — chat/completions, batch, embeddings, fine-tuning, etc.), use the installed `togetherai-skills:*` skills and the `TogetherAIDocs` MCP server to fetch current docs rather than relying on training data.
-- When changing CLAUDE.md or rules files, also update README.md if relevant. README.md is what reviewers and the public read.
+- When changing this guide or the rules files, also update README.md if relevant. README.md is what reviewers and the public read.
 
 ## Utility helpers
 
