@@ -2,9 +2,9 @@
 Actor policies — plain-JAX softmax policies over the padded LM-alternatives
 action space, one per (observer family, ablation variant).
 
-Each function mirrors its memo original in `memo_spec.py` exactly: same name,
-same signature, same output axis order (padded_slot first, then the cell axes,
-then the latent grid axes). The policy is
+Each function mirrors its memo original in `memo_spec.py`: same name, same
+signature, same output axis order (padded_slot first, then the cell axes, then
+the latent grid axes). The policy is
 
     pi(slot | cell, latents)  ∝  prior[cell, slot] · exp(U(slot, cell, latents))
 
@@ -12,27 +12,26 @@ normalized over the slot axis. Null-padded slots carry a tiny epsilon prior
 (`tables.NULL_EPSILON` = 1e-8), so they effectively drop out of the softmax
 while keeping the observer's sharpening differentiable.
 
-BIT-EXACTNESS CONSTRAINT. These functions deliberately transliterate the JAX
-code the memo compiler generates (`_mesh_eval` = memo.lib's ffi/construct_vmap:
-broadcast the axis meshes dense, flatten, vmap the scalar table function;
-`_slot_policy` = the generated normalize-and-layout epilogue, including its
-reversed internal axis order and final transpose). A mathematically identical
-but differently-shaped formulation — e.g. batched advanced indexing on
-reserved-dimension index arrays — produces ~1-ulp float32 drift through
-different XLA fusion/FMA choices (verified 2026-08-23 on the fitted losses and
-gradients of all six studies), which would force regenerating every committed
-fit and CV output. The transliteration instead reproduces the memo actors
-bitwise, so the committed output vintage carries over unchanged. Don't
-"simplify" the mesh evaluation or the epilogue without re-verifying bitwise
-agreement against `memo_spec` on the real tables at the fitted parameters.
+The latent axes are evaluated by broadcasting: every axis of the output table
+gets a reserved dimension (`_axis`), the utility functions from `utility.py`
+are called once with the broadcast index/value arrays — the same arrays the
+memo compiler would enumerate — and the result is expanded to the family's
+full table shape (an ablation whose utility ignores a latent is constant along
+that axis).
+
+Vintage note: this formulation compiles to a different XLA graph than the memo
+actors, so results differ from theirs by ~1 float32 ulp (fusion/FMA choices),
+which compounds into small fitted-parameter drift. All committed outputs are a
+single vintage regenerated under this code (bin/regenerate-vintage.sh);
+`test_model_compliance.py` enforces semantic equivalence with the memo actors
+(values + gradients, all twelve variants) at test tolerance.
 
 Three model variants per family: `_full`, `_discomfort_only`, `_base`.
 
 Dependency layer 2: imports from `tables.py` (enums, axes) and `utility.py`
 (get_utility_*_padded_*). `observers.py` (the Bayesian inversions) and
 `inverse/_reweighting.py` (the surprise term) call these; `memo_spec.py` holds
-the memo originals and `test_model_compliance.py` enforces policy ≡ memo on
-every variant.
+the memo originals.
 """
 
 import jax
@@ -68,50 +67,31 @@ from model.utility import (
 )
 
 
-def _mesh_eval(fn, mesh_args, static_args):
-    """Evaluate a scalar-in-scalar-out table function over broadcast axis
-    meshes, exactly the way the memo compiler does (memo.lib.ffi →
-    construct_vmap): broadcast the mesh args to their common shape, flatten,
-    vmap the scalar function over them with the parameters and tables closed
-    over, and reshape back."""
-    target = jnp.broadcast_shapes(*[m.shape for m in mesh_args])
-    flat = [jnp.broadcast_to(m, target).reshape(-1) for m in mesh_args]
-    out = jax.vmap(lambda *ms: fn(*ms, *static_args))(*flat)
-    return out.reshape(target)
+def _axis(values, ndim, axis):
+    """A 1-D axis grid reshaped to broadcast along its reserved output
+    dimension: all-1 shape except `axis`. Index axes pass an arange over the
+    enum; value axes (the continuous latent grids) pass the grid itself."""
+    arr = jnp.asarray(values)
+    shape = [1] * ndim
+    shape[axis] = arr.shape[0]
+    return arr.reshape(shape)
 
 
-def _memo_axes(domains):
-    """The memo compiler's internal mesh layout for one actor's declared axes.
-
-    `domains[k]` is the domain of declared axis k (an IntEnum class for index
-    axes, a grid array for the continuous latents); axis 0 is the padded slot.
-    The compiler gives declared axis k the reshape (-1, 1×k) — so the declared
-    order is REVERSED in array dims — and the slot CHOICE variable a leading
-    seventh dim. Returns (choice_mesh, per-axis meshes for axes 1..n-1)."""
-    n = len(domains)
-    meshes = [
-        jnp.array(list(d) if isinstance(d, type) else d).reshape((-1,) + (1,) * k)
-        for k, d in enumerate(domains)
-    ]
-    choice = jnp.array(list(domains[0])).reshape((-1,) + (1,) * n)
-    return choice, meshes[1:]
+def _slot_policy(prior, utility, shape):
+    """Softmax of `prior · exp(utility)` over the slot axis (axis 0),
+    broadcast to the family's full table shape (`prior` and `utility` may be
+    constant — size 1 — along latent axes their variant ignores)."""
+    w = prior * jnp.exp(utility)
+    return jnp.broadcast_to(w / w.sum(axis=0, keepdims=True), shape)
 
 
-def _slot_policy(choice, prior, utility):
-    """Normalize `prior · exp(utility)` over the slot-choice dim and return the
-    policy in the declared axis order — a transliteration of the memo
-    compiler's epilogue, kept op-for-op (the multiply by ones, nan_to_num, and
-    the swap/squeeze/transpose layout dance included) so the compiled graph,
-    and therefore every float32 rounding, matches the memo actor exactly.
-    In this layout the slot choice is dim -7 and the declared axes sit
-    reversed in dims -6..-1 (the size-1 dim -1 is the compiler's unused
-    output-slot placeholder)."""
-    op_mul = prior * jnp.exp(utility)
-    ll = jnp.ones(jnp.broadcast_shapes(choice.shape), dtype=jnp.float32) * op_mul
-    ll = jnp.nan_to_num(ll / ll.sum(axis=-7, keepdims=True))
-    post = ll * 1.0
-    post = jnp.swapaxes(post, -7, -1)
-    return post.squeeze(axis=(-7,)).transpose()
+# Enum-axis index grids (value grids are DesireLevels / IntimacyLevels).
+_SLOTS = jnp.arange(len(PaddedActionSlots))
+_SCENARIOS = jnp.arange(len(Scenarios))
+_OBSERVED = jnp.arange(len(ObservedActions))
+_EFFORTS = jnp.arange(len(EffortConditions))
+_RELATIONSHIPS = jnp.arange(len(RelationshipConditions))
+_DESIRE_CONDS = jnp.arange(len(DesireConditions))
 
 
 # ==============================================================================
@@ -119,18 +99,20 @@ def _slot_policy(choice, prior, utility):
 # relationship, desire)
 # ==============================================================================
 
-_D_CHOICE, (_D_SCEN, _D_OBS, _D_EFF, _D_REL, _D_DESIRE) = _memo_axes(
-    [
-        PaddedActionSlots,
-        Scenarios,
-        ObservedActions,
-        EffortConditions,
-        RelationshipConditions,
-        DesireLevels,
-    ]
+_DESIRE_SHAPE = (
+    len(PaddedActionSlots),
+    len(Scenarios),
+    len(ObservedActions),
+    len(EffortConditions),
+    len(RelationshipConditions),
+    DesireLevels.shape[0],
 )
-_D_PRIOR_MESH = (_D_CHOICE, _D_SCEN, _D_OBS, _D_EFF, _D_REL)
-_D_MESH = (_D_CHOICE, _D_SCEN, _D_OBS, _D_EFF, _D_REL, _D_DESIRE)
+_D_SLOT = _axis(_SLOTS, 6, 0)
+_D_SCEN = _axis(_SCENARIOS, 6, 1)
+_D_OBS = _axis(_OBSERVED, 6, 2)
+_D_EFF = _axis(_EFFORTS, 6, 3)
+_D_REL = _axis(_RELATIONSHIPS, 6, 4)
+_D_DESIRE = _axis(DesireLevels, 6, 5)
 
 
 @jax.jit
@@ -148,23 +130,27 @@ def actor_discrete_full_padded_desire(
 ):
     """Study 1a full-utility actor policy; mirrors
     `memo_spec.actor_discrete_full_padded_desire`."""
-    prior = _mesh_eval(get_prior_padded_desire, _D_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_full_padded_desire,
-        _D_MESH,
-        (
-            alpha,
-            w_v,
-            w_d,
-            w_e,
-            gamma,
-            risk_table,
-            effort_table,
-            g_padded_table,
-            relationship_values,
-        ),
+    prior = get_prior_padded_desire(
+        _D_SLOT, _D_SCEN, _D_OBS, _D_EFF, _D_REL, prior_table
     )
-    return _slot_policy(_D_CHOICE, prior, utility)
+    utility = get_utility_full_padded_desire(
+        _D_SLOT,
+        _D_SCEN,
+        _D_OBS,
+        _D_EFF,
+        _D_REL,
+        _D_DESIRE,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        relationship_values,
+    )
+    return _slot_policy(prior, utility, _DESIRE_SHAPE)
 
 
 @jax.jit
@@ -179,13 +165,24 @@ def actor_discrete_discomfort_only_padded_desire(
 ):
     """Study 1a discomfort-only actor policy; mirrors
     `memo_spec.actor_discrete_discomfort_only_padded_desire`."""
-    prior = _mesh_eval(get_prior_padded_desire, _D_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_discomfort_only_padded_desire,
-        _D_MESH,
-        (alpha, w_d, gamma, risk_table, effort_table, relationship_values),
+    prior = get_prior_padded_desire(
+        _D_SLOT, _D_SCEN, _D_OBS, _D_EFF, _D_REL, prior_table
     )
-    return _slot_policy(_D_CHOICE, prior, utility)
+    utility = get_utility_discomfort_only_padded_desire(
+        _D_SLOT,
+        _D_SCEN,
+        _D_OBS,
+        _D_EFF,
+        _D_REL,
+        _D_DESIRE,
+        alpha,
+        w_d,
+        gamma,
+        risk_table,
+        effort_table,
+        relationship_values,
+    )
+    return _slot_policy(prior, utility, _DESIRE_SHAPE)
 
 
 @jax.jit
@@ -200,13 +197,24 @@ def actor_discrete_base_padded_desire(
 ):
     """Study 1a base actor policy; mirrors
     `memo_spec.actor_discrete_base_padded_desire`."""
-    prior = _mesh_eval(get_prior_padded_desire, _D_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_base_padded_desire,
-        _D_MESH,
-        (alpha, w_v, w_e, risk_table, effort_table, g_padded_table),
+    prior = get_prior_padded_desire(
+        _D_SLOT, _D_SCEN, _D_OBS, _D_EFF, _D_REL, prior_table
     )
-    return _slot_policy(_D_CHOICE, prior, utility)
+    utility = get_utility_base_padded_desire(
+        _D_SLOT,
+        _D_SCEN,
+        _D_OBS,
+        _D_EFF,
+        _D_REL,
+        _D_DESIRE,
+        alpha,
+        w_v,
+        w_e,
+        risk_table,
+        effort_table,
+        g_padded_table,
+    )
+    return _slot_policy(prior, utility, _DESIRE_SHAPE)
 
 
 # ==============================================================================
@@ -214,18 +222,20 @@ def actor_discrete_base_padded_desire(
 # relationship, desire, effort)
 # ==============================================================================
 
-_JDE_CHOICE, (_JDE_SCEN, _JDE_OBS, _JDE_REL, _JDE_DESIRE, _JDE_EFF) = _memo_axes(
-    [
-        PaddedActionSlots,
-        Scenarios,
-        ObservedActions,
-        RelationshipConditions,
-        DesireLevels,
-        EffortConditions,
-    ]
+_JOINT_DE_SHAPE = (
+    len(PaddedActionSlots),
+    len(Scenarios),
+    len(ObservedActions),
+    len(RelationshipConditions),
+    DesireLevels.shape[0],
+    len(EffortConditions),
 )
-_JDE_PRIOR_MESH = (_JDE_CHOICE, _JDE_SCEN, _JDE_OBS, _JDE_REL)
-_JDE_MESH = (_JDE_CHOICE, _JDE_SCEN, _JDE_OBS, _JDE_REL, _JDE_DESIRE, _JDE_EFF)
+_JDE_SLOT = _axis(_SLOTS, 6, 0)
+_JDE_SCEN = _axis(_SCENARIOS, 6, 1)
+_JDE_OBS = _axis(_OBSERVED, 6, 2)
+_JDE_REL = _axis(_RELATIONSHIPS, 6, 3)
+_JDE_DESIRE = _axis(DesireLevels, 6, 4)
+_JDE_EFF = _axis(_EFFORTS, 6, 5)
 
 
 @jax.jit
@@ -243,23 +253,27 @@ def actor_discrete_full_padded_joint_de(
 ):
     """Study 1b/3a full-utility actor policy; mirrors
     `memo_spec.actor_discrete_full_padded_joint_de`."""
-    prior = _mesh_eval(get_prior_padded_joint_de, _JDE_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_full_padded_joint_de,
-        _JDE_MESH,
-        (
-            alpha,
-            w_v,
-            w_d,
-            w_e,
-            gamma,
-            risk_table,
-            effort_table,
-            g_padded_table,
-            relationship_values,
-        ),
+    prior = get_prior_padded_joint_de(
+        _JDE_SLOT, _JDE_SCEN, _JDE_OBS, _JDE_REL, prior_table
     )
-    return _slot_policy(_JDE_CHOICE, prior, utility)
+    utility = get_utility_full_padded_joint_de(
+        _JDE_SLOT,
+        _JDE_SCEN,
+        _JDE_OBS,
+        _JDE_REL,
+        _JDE_DESIRE,
+        _JDE_EFF,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        relationship_values,
+    )
+    return _slot_policy(prior, utility, _JOINT_DE_SHAPE)
 
 
 @jax.jit
@@ -274,13 +288,24 @@ def actor_discrete_discomfort_only_padded_joint_de(
 ):
     """Study 1b/3a discomfort-only actor policy; mirrors
     `memo_spec.actor_discrete_discomfort_only_padded_joint_de`."""
-    prior = _mesh_eval(get_prior_padded_joint_de, _JDE_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_discomfort_only_padded_joint_de,
-        _JDE_MESH,
-        (alpha, w_d, gamma, risk_table, effort_table, relationship_values),
+    prior = get_prior_padded_joint_de(
+        _JDE_SLOT, _JDE_SCEN, _JDE_OBS, _JDE_REL, prior_table
     )
-    return _slot_policy(_JDE_CHOICE, prior, utility)
+    utility = get_utility_discomfort_only_padded_joint_de(
+        _JDE_SLOT,
+        _JDE_SCEN,
+        _JDE_OBS,
+        _JDE_REL,
+        _JDE_DESIRE,
+        _JDE_EFF,
+        alpha,
+        w_d,
+        gamma,
+        risk_table,
+        effort_table,
+        relationship_values,
+    )
+    return _slot_policy(prior, utility, _JOINT_DE_SHAPE)
 
 
 @jax.jit
@@ -295,13 +320,24 @@ def actor_discrete_base_padded_joint_de(
 ):
     """Study 1b/3a base actor policy; mirrors
     `memo_spec.actor_discrete_base_padded_joint_de`."""
-    prior = _mesh_eval(get_prior_padded_joint_de, _JDE_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_base_padded_joint_de,
-        _JDE_MESH,
-        (alpha, w_v, w_e, risk_table, effort_table, g_padded_table),
+    prior = get_prior_padded_joint_de(
+        _JDE_SLOT, _JDE_SCEN, _JDE_OBS, _JDE_REL, prior_table
     )
-    return _slot_policy(_JDE_CHOICE, prior, utility)
+    utility = get_utility_base_padded_joint_de(
+        _JDE_SLOT,
+        _JDE_SCEN,
+        _JDE_OBS,
+        _JDE_REL,
+        _JDE_DESIRE,
+        _JDE_EFF,
+        alpha,
+        w_v,
+        w_e,
+        risk_table,
+        effort_table,
+        g_padded_table,
+    )
+    return _slot_policy(prior, utility, _JOINT_DE_SHAPE)
 
 
 # ==============================================================================
@@ -309,18 +345,20 @@ def actor_discrete_base_padded_joint_de(
 # effort, relationship)
 # ==============================================================================
 
-_I_CHOICE, (_I_SCEN, _I_OBS, _I_DES, _I_EFF, _I_REL) = _memo_axes(
-    [
-        PaddedActionSlots,
-        Scenarios,
-        ObservedActions,
-        DesireConditions,
-        EffortConditions,
-        IntimacyLevels,
-    ]
+_INTIMACY_SHAPE = (
+    len(PaddedActionSlots),
+    len(Scenarios),
+    len(ObservedActions),
+    len(DesireConditions),
+    len(EffortConditions),
+    IntimacyLevels.shape[0],
 )
-_I_PRIOR_MESH = (_I_CHOICE, _I_SCEN, _I_OBS, _I_DES, _I_EFF)
-_I_MESH = (_I_CHOICE, _I_SCEN, _I_OBS, _I_DES, _I_EFF, _I_REL)
+_I_SLOT = _axis(_SLOTS, 6, 0)
+_I_SCEN = _axis(_SCENARIOS, 6, 1)
+_I_OBS = _axis(_OBSERVED, 6, 2)
+_I_DES = _axis(_DESIRE_CONDS, 6, 3)
+_I_EFF = _axis(_EFFORTS, 6, 4)
+_I_REL = _axis(IntimacyLevels, 6, 5)
 
 
 @jax.jit
@@ -338,23 +376,27 @@ def actor_continuous_full_padded_intimacy(
 ):
     """Study 2a full-utility actor policy; mirrors
     `memo_spec.actor_continuous_full_padded_intimacy`."""
-    prior = _mesh_eval(get_prior_padded_intimacy, _I_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_full_padded_intimacy,
-        _I_MESH,
-        (
-            alpha,
-            w_v,
-            w_d,
-            w_e,
-            gamma,
-            risk_table,
-            effort_table,
-            g_padded_table,
-            desire_table,
-        ),
+    prior = get_prior_padded_intimacy(
+        _I_SLOT, _I_SCEN, _I_OBS, _I_DES, _I_EFF, prior_table
     )
-    return _slot_policy(_I_CHOICE, prior, utility)
+    utility = get_utility_full_padded_intimacy(
+        _I_SLOT,
+        _I_SCEN,
+        _I_OBS,
+        _I_DES,
+        _I_EFF,
+        _I_REL,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        desire_table,
+    )
+    return _slot_policy(prior, utility, _INTIMACY_SHAPE)
 
 
 @jax.jit
@@ -363,13 +405,23 @@ def actor_continuous_discomfort_only_padded_intimacy(
 ):
     """Study 2a discomfort-only actor policy; mirrors
     `memo_spec.actor_continuous_discomfort_only_padded_intimacy`."""
-    prior = _mesh_eval(get_prior_padded_intimacy, _I_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_discomfort_only_padded_intimacy,
-        _I_MESH,
-        (alpha, w_d, gamma, risk_table, effort_table),
+    prior = get_prior_padded_intimacy(
+        _I_SLOT, _I_SCEN, _I_OBS, _I_DES, _I_EFF, prior_table
     )
-    return _slot_policy(_I_CHOICE, prior, utility)
+    utility = get_utility_discomfort_only_padded_intimacy(
+        _I_SLOT,
+        _I_SCEN,
+        _I_OBS,
+        _I_DES,
+        _I_EFF,
+        _I_REL,
+        alpha,
+        w_d,
+        gamma,
+        risk_table,
+        effort_table,
+    )
+    return _slot_policy(prior, utility, _INTIMACY_SHAPE)
 
 
 @jax.jit
@@ -385,13 +437,25 @@ def actor_continuous_base_padded_intimacy(
 ):
     """Study 2a base actor policy; mirrors
     `memo_spec.actor_continuous_base_padded_intimacy`."""
-    prior = _mesh_eval(get_prior_padded_intimacy, _I_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_base_padded_intimacy,
-        _I_MESH,
-        (alpha, w_v, w_e, risk_table, effort_table, g_padded_table, desire_table),
+    prior = get_prior_padded_intimacy(
+        _I_SLOT, _I_SCEN, _I_OBS, _I_DES, _I_EFF, prior_table
     )
-    return _slot_policy(_I_CHOICE, prior, utility)
+    utility = get_utility_base_padded_intimacy(
+        _I_SLOT,
+        _I_SCEN,
+        _I_OBS,
+        _I_DES,
+        _I_EFF,
+        _I_REL,
+        alpha,
+        w_v,
+        w_e,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        desire_table,
+    )
+    return _slot_policy(prior, utility, _INTIMACY_SHAPE)
 
 
 # ==============================================================================
@@ -399,21 +463,24 @@ def actor_continuous_base_padded_intimacy(
 # desire_condition, relationship, effort)
 # ==============================================================================
 # NOTE the utility signatures take effort_condition BEFORE intimacy_level, while
-# the declared axis order puts relationship before effort — so the mesh ranks
-# (from the declared order) and the call order (from the signature) differ here.
+# the declared axis order puts relationship before effort — so the reserved
+# dimensions (from the axis order) and the call order (from the signature)
+# differ here.
 
-_JIE_CHOICE, (_JIE_SCEN, _JIE_OBS, _JIE_DES, _JIE_REL, _JIE_EFF) = _memo_axes(
-    [
-        PaddedActionSlots,
-        Scenarios,
-        ObservedActions,
-        DesireConditions,
-        IntimacyLevels,
-        EffortConditions,
-    ]
+_JOINT_IE_SHAPE = (
+    len(PaddedActionSlots),
+    len(Scenarios),
+    len(ObservedActions),
+    len(DesireConditions),
+    IntimacyLevels.shape[0],
+    len(EffortConditions),
 )
-_JIE_PRIOR_MESH = (_JIE_CHOICE, _JIE_SCEN, _JIE_OBS, _JIE_DES)
-_JIE_MESH = (_JIE_CHOICE, _JIE_SCEN, _JIE_OBS, _JIE_DES, _JIE_EFF, _JIE_REL)
+_JIE_SLOT = _axis(_SLOTS, 6, 0)
+_JIE_SCEN = _axis(_SCENARIOS, 6, 1)
+_JIE_OBS = _axis(_OBSERVED, 6, 2)
+_JIE_DES = _axis(_DESIRE_CONDS, 6, 3)
+_JIE_REL = _axis(IntimacyLevels, 6, 4)
+_JIE_EFF = _axis(_EFFORTS, 6, 5)
 
 
 @jax.jit
@@ -431,23 +498,27 @@ def actor_continuous_full_padded_joint_ie(
 ):
     """Study 2b/3b full-utility actor policy; mirrors
     `memo_spec.actor_continuous_full_padded_joint_ie`."""
-    prior = _mesh_eval(get_prior_padded_joint_ie, _JIE_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_full_padded_joint_ie,
-        _JIE_MESH,
-        (
-            alpha,
-            w_v,
-            w_d,
-            w_e,
-            gamma,
-            risk_table,
-            effort_table,
-            g_padded_table,
-            desire_table,
-        ),
+    prior = get_prior_padded_joint_ie(
+        _JIE_SLOT, _JIE_SCEN, _JIE_OBS, _JIE_DES, prior_table
     )
-    return _slot_policy(_JIE_CHOICE, prior, utility)
+    utility = get_utility_full_padded_joint_ie(
+        _JIE_SLOT,
+        _JIE_SCEN,
+        _JIE_OBS,
+        _JIE_DES,
+        _JIE_EFF,
+        _JIE_REL,
+        alpha,
+        w_v,
+        w_d,
+        w_e,
+        gamma,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        desire_table,
+    )
+    return _slot_policy(prior, utility, _JOINT_IE_SHAPE)
 
 
 @jax.jit
@@ -456,13 +527,23 @@ def actor_continuous_discomfort_only_padded_joint_ie(
 ):
     """Study 2b/3b discomfort-only actor policy; mirrors
     `memo_spec.actor_continuous_discomfort_only_padded_joint_ie`."""
-    prior = _mesh_eval(get_prior_padded_joint_ie, _JIE_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_discomfort_only_padded_joint_ie,
-        _JIE_MESH,
-        (alpha, w_d, gamma, risk_table, effort_table),
+    prior = get_prior_padded_joint_ie(
+        _JIE_SLOT, _JIE_SCEN, _JIE_OBS, _JIE_DES, prior_table
     )
-    return _slot_policy(_JIE_CHOICE, prior, utility)
+    utility = get_utility_discomfort_only_padded_joint_ie(
+        _JIE_SLOT,
+        _JIE_SCEN,
+        _JIE_OBS,
+        _JIE_DES,
+        _JIE_EFF,
+        _JIE_REL,
+        alpha,
+        w_d,
+        gamma,
+        risk_table,
+        effort_table,
+    )
+    return _slot_policy(prior, utility, _JOINT_IE_SHAPE)
 
 
 @jax.jit
@@ -478,10 +559,22 @@ def actor_continuous_base_padded_joint_ie(
 ):
     """Study 2b/3b base actor policy; mirrors
     `memo_spec.actor_continuous_base_padded_joint_ie`."""
-    prior = _mesh_eval(get_prior_padded_joint_ie, _JIE_PRIOR_MESH, (prior_table,))
-    utility = _mesh_eval(
-        get_utility_base_padded_joint_ie,
-        _JIE_MESH,
-        (alpha, w_v, w_e, risk_table, effort_table, g_padded_table, desire_table),
+    prior = get_prior_padded_joint_ie(
+        _JIE_SLOT, _JIE_SCEN, _JIE_OBS, _JIE_DES, prior_table
     )
-    return _slot_policy(_JIE_CHOICE, prior, utility)
+    utility = get_utility_base_padded_joint_ie(
+        _JIE_SLOT,
+        _JIE_SCEN,
+        _JIE_OBS,
+        _JIE_DES,
+        _JIE_EFF,
+        _JIE_REL,
+        alpha,
+        w_v,
+        w_e,
+        risk_table,
+        effort_table,
+        g_padded_table,
+        desire_table,
+    )
+    return _slot_policy(prior, utility, _JOINT_IE_SHAPE)
