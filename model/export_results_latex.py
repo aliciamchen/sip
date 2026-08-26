@@ -3,7 +3,7 @@
 
 Every number the results section states is produced here from the pipeline's
 own outputs, so the paper cannot drift from the artifacts. Writes the macros
-file plus one file per generated table into `SIP_journal/`:
+file plus one file per generated table into `SIP_journal/results/`:
 
   results_macros.tex                   one \\newcommand per reported number
   results_table_model_comparison.tex   tab:model-comparison
@@ -25,7 +25,7 @@ spacing stay hand-controlled while the columns and numbers are generated:
 
     \\begin{table}[t]
       \\centering \\small
-      \\input{results_table_model_comparison.tex}
+      \\input{results/results_table_model_comparison.tex}
       \\caption{...} \\label{tab:model-comparison}
     \\end{table}
 
@@ -1026,8 +1026,8 @@ def main():
     ap.add_argument(
         "--out-dir",
         type=Path,
-        default=get_project_root() / "SIP_journal",
-        help="where to write the generated .tex (default: SIP_journal/)",
+        default=get_project_root() / "SIP_journal" / "results",
+        help="where to write the generated .tex (default: SIP_journal/results/)",
     )
     ap.add_argument(
         "--print", action="store_true", help="print to stdout and write nothing"

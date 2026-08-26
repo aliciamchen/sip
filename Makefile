@@ -90,7 +90,7 @@ help:
 	@echo "  figures-si-prior-posterior - SI prior/posterior rating levels + distributions into figures/si/"
 	@echo "  figures-si-prereg-predictions - both models' per-cell predictions beside humans, all six studies"
 	@echo "  sync-journal-figures - copy curated figures/ PDFs into SIP_journal/ (Overleaf)"
-	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/"
+	@echo "  results-latex        - regenerate the results macros + table bodies in SIP_journal/results/"
 	@echo ""
 	@echo "Experiment assets (jsPsych build):"
 	@echo "  experiments       - regenerate stimuli + counterbalancing + entry files"
@@ -443,7 +443,7 @@ generalization-primary:
 	uv run python model/cv/generalization_primary.py $(ARGS)
 
 # =============================================================================
-# Results LaTeX (SIP_journal/): every number the results section states, as
+# Results LaTeX (SIP_journal/results/): every number the results section states, as
 # generated macros plus the table bodies. Depends on the comparison JSONs,
 # so it rebuilds fit -> cv -> model-comparison first when any is stale, and the
 # exporter itself verifies both manifests before emitting anything. Not a file

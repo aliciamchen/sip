@@ -84,6 +84,13 @@ REF_NCOLS = 4
 # panel here uses STYLE.markersize.
 POOLED_POINT_MS = 9.0
 
+# Figure-only annotation exceptions. The Study 1 discomfort-only predictions
+# are statistically constant, but float32 residue gives a finite raw Pearson
+# value. Show that requested point estimate and raw cell-bootstrap interval on
+# this panel while leaving the model-comparison artifact and all other
+# degenerate correlations as `n/a`.
+RAW_DEGENERATE_R_MODELS = {"study1": {"discomfort_only"}}
+
 # The model-vs-human scatter is laid out FROM the points row rather than tuned on
 # its own, so the two stack: `scatter_layout` gives each square box the same
 # width, column pitch and left offset as one points column, and lets the canvas
@@ -229,7 +236,11 @@ def visible_ticks(lim, nbins=5):
 
 
 def draw_scatter_panel(
-    stem="panel_model_vs_humans", slugs=None, label="scatter", lim=None
+    stem="panel_model_vs_humans",
+    slugs=None,
+    label="scatter",
+    lim=None,
+    raw_degenerate_r_models=(),
 ):
     """Model-vs-humans scatter on its own artboard, over `slugs` (all six when
     None).
@@ -242,8 +253,9 @@ def draw_scatter_panel(
     artboard like every other panel here.
 
     Aggregation and rendering live in `_agg`, which is also where the pooled
-    bootstrap r is computed, so the panel and the reported correlation cannot
-    disagree.
+    bootstrap r is computed. `raw_degenerate_r_models` is a figure-only escape
+    hatch for showing a raw point estimate and cell-bootstrap interval when the
+    shared statistics code classifies a model's predictions as constant.
 
     Pass `lim` to force the axis range; without it the range is computed from the
     points drawn and returned, so the caller can compute it once on the pooled
@@ -259,7 +271,7 @@ def draw_scatter_panel(
     # panels' -- at the shared size its clusters merge into blocks of color, and
     # it also hides more of the CI bars, which are drawn in the point's color.
     style = replace(STYLE, markersize=POOLED_POINT_MS) if slugs is None else STYLE
-    agg, agg_cis = corr.agg_points(slugs)
+    agg, agg_cis = corr.agg_points(slugs, raw_degenerate_models=raw_degenerate_r_models)
     if not any(agg.values()):
         print(f"[{label}] no CV predictions yet — skipped")
         return None
@@ -296,7 +308,12 @@ def draw_scatter_panel(
     fig.subplots_adjust(**margins)
     for ax, model in zip(axes, keys):
         corr.draw_agg_panel(
-            ax, agg[model], lim, agg_cis.get(model), zero_lw=STYLE.zero_lw, style=style
+            ax,
+            agg[model],
+            lim,
+            agg_cis.get(model),
+            zero_lw=STYLE.zero_lw,
+            style=style,
         )
         ax.set_title(points.data.MODEL_LABELS[model], fontsize=STYLE.title_fs)
         ax.tick_params(labelsize=STYLE.tick_fs)
@@ -426,6 +443,7 @@ def main():
                 slugs=[slug for slug, _paper in members],
                 label=name,
                 lim=shared_lim,
+                raw_degenerate_r_models=RAW_DEGENERATE_R_MODELS.get(group_stem, ()),
             )
         n_legends = draw_legends()
     print(f"\n{len(drawn)} panel(s) + {n_legends} legend(s) in {OUT_DIR}")

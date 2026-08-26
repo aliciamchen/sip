@@ -50,7 +50,7 @@ STUDY_GROUPS = [
 N_BOOT_AGG = 1000
 
 
-def agg_points(slugs=None):
+def agg_points(slugs=None, *, raw_degenerate_models=()):
     """({model: [(dv, x, y, y_lo, y_hi), ...]}, {model: (r, lo, hi)}) over the
     given studies at condition level (averaged over the 16 scenarios). `slugs`
     None pools all six; a subset gives the same quantities for one study number.
@@ -62,6 +62,12 @@ def agg_points(slugs=None):
     are different participant pools), every DV of a study reuses that study's
     draw, and r is recomputed over all pooled points per resample. This mirrors
     model_comparison._secondary_correlation's per-study convention.
+
+    `raw_degenerate_models` is a figure-only exception: for those models, a
+    sub-tolerance but nonzero prediction spread is standardized before computing
+    r and its interval. Pearson correlation is invariant to that transformation;
+    it only lets the bootstrap operate on the floating-point residue that the
+    statistical artifacts intentionally classify as constant.
 
     Restricting `slugs` cannot perturb the error bars of the studies that remain:
     each study's resampling seed is derived from its own slug, so a
@@ -130,7 +136,12 @@ def agg_points(slugs=None):
     # One paper study number -> that group's seed key, so the panel annotation
     # and the manuscript's `\rStudyOne`-family macros are the same numbers.
     number = contributed.pop() if len(contributed) == 1 else None
-    return out, _agg_correlations(model_x, obs_y, number)
+    return out, _agg_correlations(
+        model_x,
+        obs_y,
+        number,
+        raw_degenerate_models=raw_degenerate_models,
+    )
 
 
 def _group_corr_seed(number):
@@ -147,7 +158,7 @@ def _group_corr_seed(number):
     return 0
 
 
-def _agg_correlations(model_x, obs_y, number=None):
+def _agg_correlations(model_x, obs_y, number=None, *, raw_degenerate_models=()):
     """{model: (r, lo, hi)} -- the correlation pooled over the panel's studies and
     DVs, with the interval bootstrapped over the plotted points.
 
@@ -155,7 +166,8 @@ def _agg_correlations(model_x, obs_y, number=None):
     draws, which is what makes the annotation readable off the panel. When the
     panel covers one paper study number, `number` names it and the bootstrap runs
     on that group's seed key, so the annotation is byte-identical to the
-    `group_correlations.json` entry the manuscript quotes."""
+    `group_correlations.json` entry the manuscript quotes, except for an explicit
+    `raw_degenerate_models` figure override."""
     cis = {}
     for model in data.MODEL_ORDER:
         if not obs_y[model]:
@@ -169,11 +181,19 @@ def _agg_correlations(model_x, obs_y, number=None):
             np.concatenate(model_x[model]),
             np.concatenate(obs_y[model]),
             seed_key=seed_key,
+            show_raw_degenerate=model in raw_degenerate_models,
         )
     return cis
 
 
-def corr_with_pair_ci(x, y, *, n_boot=None, seed_key="figures:agg:pair_ci"):
+def corr_with_pair_ci(
+    x,
+    y,
+    *,
+    n_boot=None,
+    seed_key="figures:agg:pair_ci",
+    show_raw_degenerate=False,
+):
     """(r, lo, hi) with the interval bootstrapped over the PLOTTED POINTS.
 
     Delegates to `model_comparison.pair_bootstrap_corr`, which is the single
@@ -202,6 +222,15 @@ def corr_with_pair_ci(x, y, *, n_boot=None, seed_key="figures:agg:pair_ci"):
     ceiling on r set by that noise is reported separately (`noise_ceilings` in
     each study's cv_model_comparison.json).
     """
+    if show_raw_degenerate:
+        x = np.asarray(x, dtype=float)
+        x_sd = float(np.std(x))
+        if 0 < x_sd < data._mc.CONSTANT_PREDICTION_TOL:
+            # Pearson r is unchanged by positive affine scaling. Standardizing
+            # here lets the shared bootstrap resample the raw float residue
+            # instead of classifying it as constant, without weakening the
+            # statistical pipeline's tolerance or changing its artifacts.
+            x = (x - np.mean(x)) / x_sd
     got = data._mc.pair_bootstrap_corr(
         x, y, seed_key=seed_key, n_boot=n_boot or N_BOOT_AGG
     )

@@ -98,7 +98,7 @@ def build_content():
     out = []
 
     # ------------------------------------------------------------------ group 1
-    out.append(subsection("Counterfactual action generation"))
+    out.append(subsection("Alternative action generation"))
     out.append(
         box(
             "System prompt --- alternative action generation ($G_{\\mathrm{LM}}$)",

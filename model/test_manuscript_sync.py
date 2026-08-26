@@ -31,7 +31,8 @@ from utils import get_project_root
 ROOT = get_project_root()
 JOURNAL = ROOT / "SIP_journal"
 MAIN = JOURNAL / "main.tex"
-MACROS = JOURNAL / "results_macros.tex"
+RESULTS = JOURNAL / "results"
+MACROS = RESULTS / "results_macros.tex"
 MACRO_START = re.compile(r"\\newcommand\{\\([A-Za-z]+)\}\{")
 CONTROL_SEQUENCE = re.compile(r"\\([A-Za-z]+)")
 INPUT = re.compile(r"\\input\{([^}]+)\}")
@@ -95,7 +96,7 @@ def _normalized_generated(text):
 
 
 def test_results_latex_reexports_byte_for_byte():
-    committed = sorted(JOURNAL.glob("results*.tex"))
+    committed = sorted(RESULTS.glob("results*.tex"))
     with tempfile.TemporaryDirectory(prefix="sip-results-audit-") as directory:
         output = Path(directory)
         run = subprocess.run(
@@ -120,7 +121,7 @@ def test_results_latex_reexports_byte_for_byte():
 
 def test_generated_inputs_and_result_macros_have_no_orphans():
     main_text = MAIN.read_text()
-    generated = {path.name for path in JOURNAL.glob("results*.tex")}
+    generated = {path.name for path in RESULTS.glob("results*.tex")}
     referenced_inputs = {
         Path(name).name
         for name in INPUT.findall(main_text)
@@ -134,7 +135,7 @@ def test_generated_inputs_and_result_macros_have_no_orphans():
     bodies = _macro_bodies()
     defined = set(bodies)
     table_text = "\n".join(
-        path.read_text() for path in JOURNAL.glob("results_table_*.tex")
+        path.read_text() for path in RESULTS.glob("results_table_*.tex")
     )
     used = set(CONTROL_SEQUENCE.findall(main_text + "\n" + table_text))
     result_uses = {name for name in used if RESULT_MACRO.match(name)}
